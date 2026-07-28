@@ -10,7 +10,7 @@ namespace Elastic.Documentation.ServiceDefaults;
 /// <summary>Centralizes env-var + user-secrets reading for Elasticsearch configuration.</summary>
 public static class ElasticsearchEndpointFactory
 {
-	private const string UserSecretsId = "72f50f33-6fb9-4d08-bff3-39568fe370b3";
+	private const string UserSecretsId = "docs-builder";
 
 	/// <summary>
 	/// Creates <see cref="DocumentationEndpoints"/> from user secrets and environment variables.
@@ -25,19 +25,19 @@ public static class ElasticsearchEndpointFactory
 
 		var url =
 			config["DOCUMENTATION_ELASTIC_URL"]
-			?? config["Parameters:DocumentationElasticUrl"];
+			?? config["Parameters:ElasticsearchUrl"];
 
 		var apiKey =
 			config["DOCUMENTATION_ELASTIC_APIKEY"]
-			?? config["Parameters:DocumentationElasticApiKey"];
+			?? config["Parameters:ElasticsearchApiKey"];
 
 		var password =
 			config["DOCUMENTATION_ELASTIC_PASSWORD"]
-			?? config["Parameters:DocumentationElasticPassword"];
+			?? config["Parameters:ElasticsearchPassword"];
 
 		var username =
 			config["DOCUMENTATION_ELASTIC_USERNAME"]
-			?? config["Parameters:DocumentationElasticUsername"]
+			?? config["Parameters:ElasticsearchUsername"]
 			?? "elastic";
 
 		if (string.IsNullOrEmpty(url))
@@ -64,7 +64,7 @@ public static class ElasticsearchEndpointFactory
 
 		var searchIndexOverride =
 			config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"]
-			?? config["Parameters:DocumentationElasticIndexOverride"];
+			?? config["Parameters:ElasticsearchIndexOverride"];
 
 		return new DocumentationEndpoints
 		{

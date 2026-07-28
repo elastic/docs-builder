@@ -31,7 +31,7 @@ public static class LlmRenderingHelpers
 {
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
-		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, block, static (tmpRenderer, obj) =>
+		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, block, static (tmpRenderer, obj) =>
 		{
 			_ = tmpRenderer.Render(obj);
 		});
@@ -359,7 +359,7 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 		}
 
 		// Render other blocks in separate context and re-indent each line
-		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, block, static (tmpRenderer, obj) =>
+		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, block, static (tmpRenderer, obj) =>
 		{
 			_ = tmpRenderer.Render(obj);
 		});
@@ -464,6 +464,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 	private static string RenderTableCellContent(LlmMarkdownRenderer renderer, TableCell cell) =>
 		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
 			renderer.BuildContext,
+			renderer.LinkUrlRewriter,
 			cell,
 			static (tmpRenderer, c) =>
 			{
@@ -893,7 +894,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	private static void WriteChildrenWithIndentation(LlmMarkdownRenderer renderer, Block container, string indent)
 	{
 		// Capture output and manually add indentation
-		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, container, static (tmpRenderer, obj) =>
+		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, container, static (tmpRenderer, obj) =>
 		{
 			switch (obj)
 			{
@@ -946,7 +947,7 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 
 	private static string GetPlainTextFromLeafBlock(LlmMarkdownRenderer renderer, LeafBlock leafBlock)
 	{
-		var markdownText = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, leafBlock, static (tmpRenderer, obj) =>
+		var markdownText = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, leafBlock, static (tmpRenderer, obj) =>
 		{
 			tmpRenderer.WriteLeafInline(obj);
 		});

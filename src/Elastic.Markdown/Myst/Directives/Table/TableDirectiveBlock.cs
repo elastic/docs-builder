@@ -22,8 +22,16 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public IReadOnlyList<double> ColumnWidths { get; private set; } = [];
 
+	/// <summary>
+	/// When set, hovering a cell highlights its whole row and column (cross-hair highlight).
+	/// Intended for lookup-style tables with a row-heading first column and a header row.
+	/// </summary>
+	public bool Matrix { get; private set; }
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		Matrix = PropBool("matrix");
+
 		var widthsValue = Prop("widths")?.Trim();
 
 		if (string.IsNullOrEmpty(widthsValue) || widthsValue.Equals("auto", StringComparison.OrdinalIgnoreCase))

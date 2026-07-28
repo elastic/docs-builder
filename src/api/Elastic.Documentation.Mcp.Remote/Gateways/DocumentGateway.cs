@@ -5,6 +5,7 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Mcp.Remote.Gateways;
@@ -28,15 +29,15 @@ public class DocumentGateway(
 			// currently Body is always fetched even when includeBody=false, wasting network + deserialization.
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s => s
 				.Indices(clientAccessor.SearchIndex)
-				.Query(q => q.Term(t => t.Field(f => f.Url).Value(normalizedUrl)))
+				.Query(q => q.Term(t => t.Field(f => f.Path).Value(normalizedUrl)))
 				.Size(1)
 				.Source(sf => sf.Filter(f => f.Includes(
-					e => e.Url,
+					e => e.Path,
 					e => e.Title,
 					e => e.SearchTitle,
 					e => e.Type,
 					e => e.Description,
-					e => e.NavigationSection,
+					e => e.Section,
 					e => e.Body,
 					e => e.Parents,
 					e => e.Headings,
@@ -60,16 +61,16 @@ public class DocumentGateway(
 			var doc = response.Documents.First();
 			return new DocumentResult
 			{
-				Url = doc.Url,
+				Url = doc.Path,
 				Title = doc.Title,
 				Type = doc.Type,
 				Description = doc.Description,
-				NavigationSection = doc.NavigationSection,
+				NavigationSection = doc.Section,
 				Body = doc.Body,
 				Parents = doc.Parents.Select(p => new DocumentParent
 				{
 					Title = p.Title,
-					Url = p.Url
+					Url = p.Path
 				}).ToArray(),
 				Headings = doc.Headings,
 				Links = doc.Links ?? [],
@@ -78,10 +79,10 @@ public class DocumentGateway(
 				AiQuestions = doc.AiQuestions,
 				AiUseCases = doc.AiUseCases,
 				LastUpdated = doc.LastUpdated,
-				Product = doc.Product?.Id != null ? new DocumentProduct
+				Product = doc.Product is { } productId ? new DocumentProduct
 				{
-					Id = doc.Product.Id,
-					Repository = doc.Product.Repository
+					Id = productId,
+					Repository = null
 				} : null,
 				RelatedProducts = doc.RelatedProducts?
 						.Where(p => p.Id != null)
@@ -107,11 +108,11 @@ public class DocumentGateway(
 			var normalizedUrl = NormalizeUrl(url);
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s => s
 				.Indices(clientAccessor.SearchIndex)
-				.Query(q => q.Term(t => t.Field(f => f.Url).Value(normalizedUrl)))
+				.Query(q => q.Term(t => t.Field(f => f.Path).Value(normalizedUrl)))
 				.Size(1)
 			// Body is fetched solely to compute BodyLength — no stored length field exists in the index.
 			.Source(sf => sf.Filter(f => f.Includes(
-				e => e.Url,
+				e => e.Path,
 				e => e.Title,
 				e => e.SearchTitle,
 				e => e.Type,
@@ -134,7 +135,7 @@ public class DocumentGateway(
 			var doc = response.Documents.First();
 			return new DocumentStructure
 			{
-				Url = doc.Url,
+				Url = doc.Path,
 				Title = doc.Title,
 				HeadingCount = doc.Headings.Length,
 				LinkCount = doc.Links?.Length ?? 0,
@@ -144,7 +145,7 @@ public class DocumentGateway(
 				Parents = doc.Parents.Select(p => new DocumentParent
 				{
 					Title = p.Title,
-					Url = p.Url
+					Url = p.Path
 				}).ToArray(),
 				HasAiSummary = !string.IsNullOrEmpty(doc.AiShortSummary),
 				HasAiQuestions = doc.AiQuestions is { Length: > 0 },

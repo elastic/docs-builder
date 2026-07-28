@@ -113,51 +113,14 @@ internal sealed class RegistryBuilder(
 	}
 
 	/// <summary>Extracts the grouping key (product for <c>bundle/{product}/…</c>, <c>{org}/{repo}/{branch}</c> for <c>changelog/{org}/{repo}/{branch}/…</c>) from an artifact-root S3 key, or null.</summary>
-	private static string? ExtractGroupKey(string s3Key, RegistryScope scope)
-	{
-		var prefix = scope == RegistryScope.Changelog ? "changelog/" : "bundle/";
-		if (!s3Key.StartsWith(prefix, StringComparison.Ordinal))
-			return null;
-
-		var rest = s3Key.AsSpan(prefix.Length);
-
-		// Bundles group by the single product segment (bundle/{product}/{file}). Changelog entries group by
-		// the whole {org}/{repo}/{branch} prefix (changelog/{org}/{repo}/{branch...}/{file}), which can carry
-		// extra slashes when the branch itself contains them — so take everything before the final segment.
-		if (scope == RegistryScope.Bundle)
-		{
-			var slash = rest.IndexOf('/');
-			return slash <= 0 ? null : rest[..slash].ToString();
-		}
-
-		var lastSlash = rest.LastIndexOf('/');
-		if (lastSlash <= 0)
-			return null;
-		var group = rest[..lastSlash];
-		// Require at least org/repo/branch (3 segments) ahead of the file name.
-		return CountSegments(group) >= 3 ? group.ToString() : null;
-	}
-
-	/// <summary>Counts the non-empty-delimited segments in a <c>/</c>-joined path span.</summary>
-	private static int CountSegments(ReadOnlySpan<char> path)
-	{
-		if (path.IsEmpty)
-			return 0;
-		var count = 1;
-		foreach (var c in path)
-		{
-			if (c == '/')
-				count++;
-		}
-		return count;
-	}
+	private static string? ExtractGroupKey(string s3Key, RegistryScope scope) => scope == RegistryScope.Changelog
+		? ChangelogKeys.ExtractChangelogGroup(s3Key)
+		: ChangelogKeys.ExtractBundleGroup(s3Key);
 
 	/// <summary>The S3 key of the manifest for the given <paramref name="scope"/> and grouping segment.</summary>
-	private static string RegistryKeyFor(string group, RegistryScope scope) => scope switch
-	{
-		RegistryScope.Changelog => $"changelog/{group}/registry.json",
-		_ => $"bundle/{group}/registry.json"
-	};
+	private static string RegistryKeyFor(string group, RegistryScope scope) => scope == RegistryScope.Changelog
+		? ChangelogKeys.ChangelogRegistryKey(group)
+		: ChangelogKeys.BundleRegistryKey(group);
 
 	/// <summary>Builds manifest entries for this run's bundles, recording the per-<paramref name="product"/> target for the bundle index.</summary>
 	private async Task<List<RegistryBundle>> BuildLocalEntries(
@@ -208,8 +171,11 @@ internal sealed class RegistryBuilder(
 		{
 			var content = fileSystem.File.ReadAllText(localPath);
 			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+
+			// Amends published before products were copied from the parent omit them; record the
+			// parent bundle's target so :version:-filtered consumers still discover the amend.
 			if (bundle.Products.Count == 0)
-				return null;
+				return ReadTargetFromParentBundle(localPath, product);
 
 			var match = bundle.Products.FirstOrDefault(p => string.Equals(p.ProductId, product, StringComparison.Ordinal));
 			return (match ?? bundle.Products[0]).Target;
@@ -219,6 +185,20 @@ internal sealed class RegistryBuilder(
 			collector.EmitWarning(localPath, $"Could not read bundle target for manifest: {ex.Message}");
 			return null;
 		}
+	}
+
+	private string? ReadTargetFromParentBundle(string amendFilePath, string product)
+	{
+		var parentPath = BundleAmendMerger.GetParentBundlePath(amendFilePath);
+		if (parentPath == null || !fileSystem.File.Exists(parentPath))
+			return null;
+
+		var parent = ReleaseNotesSerialization.DeserializeBundle(fileSystem.File.ReadAllText(parentPath));
+		if (parent.Products.Count == 0)
+			return null;
+
+		var match = parent.Products.FirstOrDefault(p => string.Equals(p.ProductId, product, StringComparison.Ordinal));
+		return (match ?? parent.Products[0]).Target;
 	}
 
 	private enum WriteOutcome { Updated, Unchanged, Failed }

@@ -85,8 +85,7 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			Tree = navigation,
 			TopLevelItems = navigation.TopLevelItems,
 			TitleUrl = navigation.Index.Url,
-			IsUsingNavigationDropdown = true,
-			Htmx = new DefaultHtmxAttributeProvider("/")
+			IsUsingNavigationDropdown = true
 		});
 		var html = await slice.RenderAsync(cancellationToken: ctx);
 		var context = BrowsingContext.New();

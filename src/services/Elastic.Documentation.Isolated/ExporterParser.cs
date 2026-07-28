@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Isolated;
 /// </summary>
 /// <remarks>
 /// Aliases: llm/llmtext, es/elasticsearch, html, config/configuration,
-///          links/linkmetadata, state/documentationstate, redirect/redirects,
+///          links/linkmetadata, state/documentationstate, redirect/redirects, okf,
 ///          default (expands to <see cref="ExportOptions.Default"/>),
 ///          metadata (expands to <see cref="ExportOptions.MetadataOnly"/>),
 ///          none (empty set).
@@ -53,6 +53,9 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 				case "redirects":
 					_ = set.Add(Exporter.Redirects);
 					break;
+				case "okf":
+					_ = set.Add(Exporter.Okf);
+					break;
 				case "none":
 					break;
 				case "default":
@@ -65,7 +68,7 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 					break;
 				default:
 					throw new ArgumentException(
-						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, default, metadata, none.");
+						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, default, metadata, none.");
 			}
 		}
 		result = set;

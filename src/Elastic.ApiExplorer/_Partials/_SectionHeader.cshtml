@@ -1,0 +1,16 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.SectionHeader>
+<h3 class="section-header" id="@Model.Anchor" data-section="@Model.Anchor">
+	<span>@Model.Title</span>
+	@if (!string.IsNullOrEmpty(Model.ContentTypeBadge))
+	{
+		<span class="content-type-badge">@Model.ContentTypeBadge</span>
+	}
+	@if (Model.Route != null)
+	{
+		<span class="section-nav">
+			<span class="section-path">@Model.Route</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+	}
+</h3>

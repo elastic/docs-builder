@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search.Common;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

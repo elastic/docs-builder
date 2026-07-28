@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Markdown.Exporters.Elasticsearch;
 
 namespace Elastic.Markdown.Tests.Search;
@@ -22,7 +23,7 @@ public class NavigationEnrichmentTests
 
 	private static DocumentationDocument NewDoc() => new()
 	{
-		Url = "/docs/reference/some-page",
+		Path = "/docs/reference/some-page",
 		Title = "Some Page",
 		SearchTitle = "Some Page"
 	};
@@ -35,10 +36,10 @@ public class NavigationEnrichmentTests
 
 		ElasticsearchMarkdownExporter.CommonEnrichments(doc, root);
 
-		doc.NavigationDepth.Should().Be(0);
-		doc.NavigationDepth.Should().NotBe(PenaltyDefault);
-		doc.NavigationTableOfContents.Should().NotBe(PenaltyDefault);
-		doc.NavigationSection.Should().Be("reference");
+		doc.Navigation.Depth.Should().Be(0);
+		doc.Navigation.Depth.Should().NotBe(PenaltyDefault);
+		doc.Navigation.TableOfContents.Should().NotBe(PenaltyDefault);
+		doc.Section.Should().Be("reference");
 	}
 
 	[Fact]
@@ -52,12 +53,12 @@ public class NavigationEnrichmentTests
 		var otherDoc = NewDoc();
 		ElasticsearchMarkdownExporter.CommonEnrichments(otherDoc, otherRoot);
 
-		releaseNotesDoc.NavigationSection.Should().Be("release notes");
-		releaseNotesDoc.NavigationTableOfContents.Should().NotBe(PenaltyDefault);
+		releaseNotesDoc.Section.Should().Be("release notes");
+		releaseNotesDoc.Navigation.TableOfContents.Should().NotBe(PenaltyDefault);
 		// navigation_table_of_contents has NEGATIVE score impact, so a HIGHER value means MORE
 		// penalty. Release notes get effectively flattened by product, so its ranking is dampened
 		// via a steeper multiplier (4x vs 2x depth, both capped at 48) than a regular root.
-		releaseNotesDoc.NavigationTableOfContents.Should().BeGreaterThan(otherDoc.NavigationTableOfContents);
+		releaseNotesDoc.Navigation.TableOfContents.Should().BeGreaterThan(otherDoc.Navigation.TableOfContents);
 	}
 
 	[Fact]
@@ -69,9 +70,9 @@ public class NavigationEnrichmentTests
 
 		ElasticsearchMarkdownExporter.CommonEnrichments(doc, node);
 
-		doc.NavigationDepth.Should().BeGreaterThan(0);
-		doc.NavigationDepth.Should().NotBe(PenaltyDefault);
-		doc.NavigationTableOfContents.Should().Be(50);
+		doc.Navigation.Depth.Should().BeGreaterThan(0);
+		doc.Navigation.Depth.Should().NotBe(PenaltyDefault);
+		doc.Navigation.TableOfContents.Should().Be(50);
 	}
 
 	[Fact]
@@ -84,10 +85,10 @@ public class NavigationEnrichmentTests
 
 		ElasticsearchMarkdownExporter.CommonEnrichments(doc, leaf);
 
-		doc.NavigationDepth.Should().Be(2);
-		doc.NavigationDepth.Should().NotBe(PenaltyDefault);
-		doc.NavigationTableOfContents.Should().Be(100);
-		doc.NavigationSection.Should().Be("elasticsearch");
+		doc.Navigation.Depth.Should().Be(2);
+		doc.Navigation.Depth.Should().NotBe(PenaltyDefault);
+		doc.Navigation.TableOfContents.Should().Be(100);
+		doc.Section.Should().Be("elasticsearch");
 	}
 
 	[Fact]
@@ -98,10 +99,10 @@ public class NavigationEnrichmentTests
 		ElasticsearchMarkdownExporter.CommonEnrichments(doc, null);
 
 		// explicit fallback (20), not the contract's penalty default (50)
-		doc.NavigationDepth.Should().Be(20);
-		doc.NavigationDepth.Should().NotBe(PenaltyDefault);
-		doc.NavigationTableOfContents.Should().Be(100);
-		doc.NavigationTableOfContents.Should().NotBe(PenaltyDefault);
+		doc.Navigation.Depth.Should().Be(20);
+		doc.Navigation.Depth.Should().NotBe(PenaltyDefault);
+		doc.Navigation.TableOfContents.Should().Be(100);
+		doc.Navigation.TableOfContents.Should().NotBe(PenaltyDefault);
 	}
 
 	[Fact]
@@ -113,7 +114,7 @@ public class NavigationEnrichmentTests
 
 		ElasticsearchMarkdownExporter.CommonEnrichments(doc, root);
 
-		doc.NavigationSection.Should().Be("api");
+		doc.Section.Should().Be("api");
 	}
 
 	private sealed class FakeNavigationModel : INavigationModel;

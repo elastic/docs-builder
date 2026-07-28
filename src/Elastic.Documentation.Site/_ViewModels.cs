@@ -40,7 +40,6 @@ public record GlobalLayoutViewModel
 
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
-	public required IHtmxAttributeProvider Htmx { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
@@ -76,6 +75,10 @@ public record GlobalLayoutViewModel
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	public bool RenderHamburgerIcon { get; init; } = true;
+
+	/// <summary>Whether the git remote belongs to the <c>elastic</c> GitHub organization.</summary>
+	public bool IsElasticOrg =>
+		GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
 
 	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
 	public BrandingConfiguration? Branding { get; init; }

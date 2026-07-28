@@ -1,9 +1,4 @@
-import {
-    applyHtmxAttributes,
-    getPathFromUrl,
-    isExternalDocsUrl,
-    useCurrentPathname,
-} from './utils'
+import { getPathFromUrl, isExternalDocsUrl } from './utils'
 import htmx from 'htmx.org'
 import { RefObject, useEffect, useMemo, useRef } from 'react'
 
@@ -15,13 +10,11 @@ export interface UseHtmxLinkResult {
 }
 
 /**
- * Hook that applies htmx attributes to a single anchor element.
- * Returns a ref to attach to the anchor element and the normalized href.
+ * Hook that normalizes a single anchor: internal docs links get a path href
+ * and inherit hx-boost from <body>; external links (other domains, /docs/api)
+ * get hx-disable so htmx leaves them alone.
  *
  * Handles both paths (/docs/...) and full URLs (https://elastic.co/docs/...).
- * HTMX attributes are not applied for:
- * - External non-elastic.co URLs
- * - External docs URLs (e.g., /docs/api) which are served from separate sites
  *
  * @param url - The path or full URL for the link
  * @returns Object with ref and normalized href
@@ -37,7 +30,6 @@ export interface UseHtmxLinkResult {
  */
 export const useHtmxLink = (url: string): UseHtmxLinkResult => {
     const anchorRef = useRef<HTMLAnchorElement>(null)
-    const currentPathname = useCurrentPathname()
 
     // Normalize URL to path, returns null for external non-elastic.co URLs
     const path = useMemo(() => getPathFromUrl(url), [url])
@@ -54,11 +46,10 @@ export const useHtmxLink = (url: string): UseHtmxLinkResult => {
             // Explicitly disable HTMX for external links
             anchorRef.current.setAttribute('hx-disable', 'true')
         } else {
-            // Apply HTMX attributes for internal docs links
-            applyHtmxAttributes(anchorRef.current, path, currentPathname)
+            // Internal docs links inherit hx-boost from <body>; processing wires them up
             htmx.process(anchorRef.current)
         }
-    }, [path, currentPathname])
+    }, [path])
 
     return { ref: anchorRef, href }
 }

@@ -178,7 +178,6 @@ public class HtmlWriter(
 			NavigationActiveUrl = navActiveUrl,
 			NavigationHtml = navigationHtmlRenderResult.Html,
 			UrlPathPrefix = markdown.UrlPathPrefix,
-			SiteRootPath = DocumentationSet.Context.SiteRootPath,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",

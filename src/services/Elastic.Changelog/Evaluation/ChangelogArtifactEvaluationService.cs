@@ -8,6 +8,7 @@ using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -89,18 +90,22 @@ public class ChangelogArtifactEvaluationService(
 		var shouldCommentSuccess = statusParsed && metadataStatus == PrEvaluationResult.Success && !metadata.CanCommit;
 		var shouldCommentFailure = statusParsed && metadataStatus == PrEvaluationResult.NoLabel;
 
+		// All artifact-derived outputs flow through OutputSanitizer to strip
+		// control characters and enforce per-field length caps. metadata.json
+		// is produced upstream from PR-author input, so each text field is
+		// treated as untrusted at this boundary. See elastic/docs-eng-team#491.
 		await coreService.SetOutputAsync("pr-number", metadata.PrNumber.ToString(CultureInfo.InvariantCulture));
-		await coreService.SetOutputAsync("head-ref", metadata.HeadRef);
-		await coreService.SetOutputAsync("head-sha", metadata.HeadSha);
-		await coreService.SetOutputAsync("status", metadata.Status);
+		await coreService.SetOutputAsync("head-ref", OutputSanitizer.SanitizeForOutput(metadata.HeadRef, OutputSanitizer.PathMaxLength));
+		await coreService.SetOutputAsync("head-sha", OutputSanitizer.SanitizeForOutput(metadata.HeadSha, OutputSanitizer.PathMaxLength));
+		await coreService.SetOutputAsync("status", OutputSanitizer.SanitizeForOutput(metadata.Status, OutputSanitizer.TypeMaxLength));
 		await coreService.SetOutputAsync("is-fork", metadata.IsFork ? "true" : "false");
-		await coreService.SetOutputAsync("head-repo", metadata.HeadRepo ?? string.Empty);
-		await coreService.SetOutputAsync("config-file", metadata.ConfigFile ?? string.Empty);
-		await coreService.SetOutputAsync("changelog-dir", metadata.ChangelogDir ?? string.Empty);
-		await coreService.SetOutputAsync("changelog-filename", metadata.ChangelogFilename ?? string.Empty);
-		await coreService.SetOutputAsync("label-table", metadata.LabelTable ?? string.Empty);
-		await coreService.SetOutputAsync("product-label-table", metadata.ProductLabelTable ?? string.Empty);
-		await coreService.SetOutputAsync("skip-labels", metadata.SkipLabels ?? string.Empty);
+		await coreService.SetOutputAsync("head-repo", OutputSanitizer.SanitizeForOutput(metadata.HeadRepo, OutputSanitizer.PathMaxLength));
+		await coreService.SetOutputAsync("config-file", OutputSanitizer.SanitizeForOutput(metadata.ConfigFile, OutputSanitizer.PathMaxLength));
+		await coreService.SetOutputAsync("changelog-dir", OutputSanitizer.SanitizeForOutput(metadata.ChangelogDir, OutputSanitizer.PathMaxLength));
+		await coreService.SetOutputAsync("changelog-filename", OutputSanitizer.SanitizeForOutput(metadata.ChangelogFilename, OutputSanitizer.PathMaxLength));
+		await coreService.SetOutputAsync("label-table", OutputSanitizer.SanitizeForOutput(metadata.LabelTable, OutputSanitizer.LabelTableMaxLength));
+		await coreService.SetOutputAsync("product-label-table", OutputSanitizer.SanitizeForOutput(metadata.ProductLabelTable, OutputSanitizer.LabelTableMaxLength));
+		await coreService.SetOutputAsync("skip-labels", OutputSanitizer.SanitizeForOutput(metadata.SkipLabels, OutputSanitizer.LabelsMaxLength));
 		await coreService.SetOutputAsync("should-commit", shouldCommit ? "true" : "false");
 		await coreService.SetOutputAsync("should-comment-success", shouldCommentSuccess ? "true" : "false");
 		await coreService.SetOutputAsync("should-comment-failure", shouldCommentFailure ? "true" : "false");

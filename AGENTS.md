@@ -8,6 +8,8 @@ Elastic's documentation build toolchain. Processes Markdown from multiple repos 
 |---|---|
 | `src/Elastic.Markdown/` | Core Markdown parser and Myst directive/role engine |
 | `src/tooling/docs-builder/` | CLI — entry point `Program.cs`, commands in `Commands/` |
+| `src/tooling/essc/` | AOT CLI indexing elastic.co content (Contentstack, Labs) into Elasticsearch; ships as `ghcr.io/elastic/website-search-essc` |
+| `src/services/search/Elastic.Documentation.Search.Contract/` | Shared search document/mapping/API contract used by docs search and essc |
 | `src/Elastic.Documentation.Site/` | Frontend (TypeScript · React · Parcel) |
 | `src/Elastic.Documentation.Configuration/` | YAML config schema and loading |
 | `src/Elastic.Documentation.Navigation/` | Nav tree assembly and validation |
@@ -36,7 +38,7 @@ dotnet test tests/Elastic.Markdown.Tests/       # single test project
 dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplemental CLI docs under `docs/cli/`.
+See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplemental CLI docs under `docs/schema-support/cli-schema/`.
 
 ### TypeScript frontend
 
@@ -55,12 +57,24 @@ npm run compile:check   # TypeScript type check only
 
 Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
-- **C#**: xUnit v3 · TUnit · FakeItEasy
+- **C#**: xUnit v3 · AwesomeAssertions · FakeItEasy is the current stack across every test project. TUnit is the elastic/dotnet org's target standard and the intended destination for a future migration, but no project has moved yet — don't write new tests against TUnit APIs until that migration actually happens.
 - **TypeScript**: Jest
 - **F# authoring**: `tests/authoring/`
 - **Integration**: clones real repos, runs full assembler — only run when integration files change
 
-Use the `/test` skill to pick the right test project automatically.
+Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):
+
+| Changed path | Test project / command |
+|---|---|
+| `src/Elastic.Markdown/` | `dotnet test tests/Elastic.Markdown.Tests/` |
+| `src/Elastic.Documentation.Configuration/` | `dotnet test tests/Elastic.Documentation.Configuration.Tests/` |
+| `src/Elastic.Documentation.Navigation/` | `dotnet test tests/Navigation.Tests/` (prefix dropped) |
+| `src/Elastic.Documentation.Indexing/` | `dotnet test tests/Elastic.Documentation.Indexing.Tests/` |
+| `src/tooling/essc/` | `dotnet test tests/Elastic.SiteSearch.Tests/` (essc's root namespace is `Elastic.SiteSearch.Cli`) |
+| `src/Elastic.ApiExplorer/` | `dotnet test tests/Elastic.ApiExplorer.Tests/` |
+| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |
+| `tests-integration/` | `./build.sh integrate` |
+| Multiple / uncertain | `./build.sh unit-test` |
 
 ## Key Locations
 
@@ -74,6 +88,20 @@ Use the `/test` skill to pick the right test project automatically.
 | Repo / nav config | `config/` |
 | Docs site | `/docs/` |
 
+## Cross-cutting decisions
+
+- **AOT + source-generated JSON everywhere.** Both CLIs (`docs-builder`, `essc`), the Lambda functions in `src/infra/`, and most shared libraries are Native AOT (`<PublishAot>true</PublishAot>`) or AOT-compatible (`<IsAotCompatible>true</IsAotCompatible>`). The load-bearing rule this implies: **any new serialized type must be registered with `[JsonSerializable]` on the right `JsonSerializerContext`** (canonical example: `src/Elastic.Documentation/Serialization/SourceGenerationContext.cs`) or it fails at runtime once published/trimmed, not at compile time. Code in AOT/AOT-compatible projects must stay reflection-free — this is why `SYSLIB1100`/`SYSLIB1101`/`IL3050` are suppressed in those `.csproj` files rather than fixed; they can't be fixed, only worked around.
+- **The shared search contract.** `src/services/search/Elastic.Documentation.Search.Contract/` exists as a separate, dependency-light project specifically so both the docs indexing pipeline (`Elastic.Markdown/Exporters/Elasticsearch/`) and `essc` reference the same document schema, mappings, and analysis config — one content-source's fields can't drift from another's. See `docs/development/essc.md` for the source-by-source detail (Contentstack, Labs).
+
+## Boundaries: never touch / human-gated
+
+- **Destructive `essc indices` commands target production Elasticsearch.** `unify`, `copy --force`, `cleanup`, `sync-remote`, `unify-incremental-sync` (`src/tooling/essc/Commands/IndicesCommands.cs`) delete indices and repoint aliases against real clusters. Never run these against a real cluster without an explicit human decision; prefer `--dry-run` first. `cleanup`'s planning step (`IndicesCleanupPlanner.Plan`, same folder) is a pure function that's idempotent by design — retrying a cleanup run after a partial apply re-plans against current state and deletes nothing further (see `Applying_the_plan_then_replanning_yields_no_further_deletions` in `tests/Elastic.SiteSearch.Tests/IndicesCleanupPlannerTests.cs`); the mutating steps around it still touch a real cluster, so the caution above still applies.
+- **`docs-builder` commands tagged `[CommandIntent(Intent.Destructive)]` / `[MutationScope(MutationScope.Global)]` / `[RequiresAuth]`** — Assembler `Apply`, Codex `Apply`, `ChangelogCommand`'s publish path, `Move`/`mv` (`src/tooling/docs-builder/Commands/`). These do mass S3 deletes or repo-wide link rewrites; the attributes on a command are the ground truth for its blast radius — read them before running anything unfamiliar.
+- **Prod Lambda deploys are GitHub-Environment-gated.** `deploy-link-index-updater-lambda-prod` and `deploy-changelog-scrubber-lambda-prod` in `.github/workflows/release.yml` require the `link-index-updater-prod` / `changelog-scrubber-prod` environments respectively. Don't try to route around environment protection.
+- **`config/assembler.yml` is baked into the changelog-scrubber Lambda as its public-bucket allowlist.** Editing it changes what private-repo content can be published to the public bucket — treat changes here as high blast-radius, not a routine config edit.
+- **Credentials load from dotnet user-secrets (the `docs-builder` store) or environment variables** (`src/tooling/essc/Elasticsearch/SourcingConfiguration.cs`, `ContentStackConfiguration.cs`) — never hardcode a key/URL or commit one to config.
+- Never skip hooks (`--no-verify`) — see Code Style.
+
 ## Code Style
 
 Mechanical formatting is fully enforced by `.editorconfig` and the Husky.Net pre-commit/pre-push hooks — run `dotnet format` or `/lint` to fix before committing. Never use `--no-verify`.
@@ -86,7 +114,7 @@ Beyond what `.editorconfig` can check:
 - **Early returns**: guard clauses first, happy path last.
 - **Parameters**: max 4 — use a record/options object beyond that. Boolean params must be named at call sites.
 - **Collections**: never return `null` — return `[]`. Use the TryGet pattern for lookups.
-- **Testing**: TUnit for new test projects; AwesomeAssertions fluent style. Method naming: `Method_Scenario_Expected`.
+- **Testing**: xUnit v3 with AwesomeAssertions fluent style is the current standard (see Testing section — TUnit is a future migration target, not yet used). Method naming: `Method_Scenario_Expected`.
 - **Comments**: only when *why* is non-obvious. No `#region`. No multi-paragraph docstrings.
 
 Use `/style-review` to check a diff against these rules.

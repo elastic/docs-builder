@@ -14,7 +14,7 @@ import { useRef } from 'react'
 
 interface Props {
     title: string
-    logoHref: string
+    logoHref?: string
     githubRepository?: string
     githubLink?: string
     gitBranch: string
@@ -29,6 +29,8 @@ interface Props {
      * component does not have to infer branding state from other optional props.
      */
     branded?: boolean
+    /** When true the git remote belongs to the `elastic` GitHub organization. Controls whether the Elastic logo is shown as default. */
+    elasticOrg?: boolean
     /** Custom header background CSS colour. Only used when branded=true; defaults to #000000. */
     headerBg?: string
     /** Custom icon image URL. When set (and branded=true), renders an <img> instead of the title text. */
@@ -45,6 +47,7 @@ export const Header = ({
     githubRef,
     airGapped = false,
     branded = false,
+    elasticOrg = false,
     headerBg,
     iconSrc,
 }: Props) => {
@@ -52,51 +55,65 @@ export const Header = ({
     const containerRef = useRef<HTMLSpanElement>(null)
     useHtmxContainer(containerRef)
 
-    const logoSection = branded ? (
-        iconSrc ? (
-            // Branded with icon — plain <a>, no HTMX (no containerRef)
-            <a
-                href={logoHref}
+    const brandedIconContent = iconSrc ? (
+        <>
+            <img
+                src={iconSrc}
+                alt={title}
                 css={css`
-                    display: inline-flex;
-                    align-items: center;
-                    gap: ${euiTheme.size.s};
-                    color: var(--color-white);
-                    text-decoration: none;
-                    padding: ${euiTheme.size.s};
+                    height: 32px;
+                    width: auto;
                 `}
-            >
-                <img
-                    src={iconSrc}
-                    alt={title}
-                    css={css`
-                        height: 32px;
-                        width: auto;
-                    `}
-                />
-                {title}
+            />
+            {title}
+        </>
+    ) : (
+        <>{title}</>
+    )
+
+    const brandedStyles = iconSrc
+        ? css`
+              display: inline-flex;
+              align-items: center;
+              gap: ${euiTheme.size.s};
+              color: var(--color-white);
+              text-decoration: none;
+              padding: ${euiTheme.size.s};
+          `
+        : css`
+              display: inline-flex;
+              align-items: center;
+              color: var(--color-white);
+              text-decoration: none;
+              padding: ${euiTheme.size.s};
+              font-weight: ${euiTheme.font.weight.bold};
+          `
+
+    const plainStyles = css`
+        display: inline-flex;
+        align-items: center;
+        padding: ${euiTheme.size.s};
+        font-weight: ${euiTheme.font.weight.bold};
+        color: ${euiTheme.colors.textInk};
+        text-decoration: none;
+        border-radius: ${euiTheme.border.radius.small};
+        &:hover {
+            background: rgba(0, 0, 0, 0.06);
+        }
+    `
+
+    const logoSection = branded ? (
+        logoHref ? (
+            <a href={logoHref} css={brandedStyles}>
+                {brandedIconContent}
             </a>
         ) : (
-            // Branded without icon — title text only, no HTMX
-            <a
-                href={logoHref}
-                css={css`
-                    display: inline-flex;
-                    align-items: center;
-                    color: var(--color-white);
-                    text-decoration: none;
-                    padding: ${euiTheme.size.s};
-                    font-weight: ${euiTheme.font.weight.bold};
-                `}
-            >
-                {title}
-            </a>
+            <span css={brandedStyles}>{brandedIconContent}</span>
         )
-    ) : (
-        // Default: Elastic-branded logo (light-mode styling)
+    ) : elasticOrg ? (
         <span ref={containerRef}>
             <EuiHeaderLogo
-                href={logoHref}
+                href={logoHref ?? undefined}
                 css={css`
                     padding-block: 7px;
                     height: auto;
@@ -112,6 +129,16 @@ export const Header = ({
             >
                 {title}
             </EuiHeaderLogo>
+        </span>
+    ) : (
+        <span ref={containerRef}>
+            {logoHref ? (
+                <a href={logoHref} css={plainStyles}>
+                    {title}
+                </a>
+            ) : (
+                <span css={plainStyles}>{title}</span>
+            )}
         </span>
     )
 
@@ -197,6 +224,7 @@ customElements.define(
             githubRef: 'string',
             airGapped: 'boolean',
             branded: 'boolean',
+            elasticOrg: 'boolean',
             headerBg: 'string',
             iconSrc: 'string',
         },

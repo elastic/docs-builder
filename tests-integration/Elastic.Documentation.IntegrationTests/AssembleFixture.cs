@@ -30,11 +30,11 @@ public static class DistributedApplicationExtensions
 			builder.Configuration[$"Parameters:{parameter.Name}"] = string.Empty;
 
 		var configBuilder = new ConfigurationBuilder();
-		_ = configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
+		_ = configBuilder.AddUserSecrets("docs-builder");
 		var config = configBuilder.Build();
 
-		builder.Configuration[$"Parameters:DocumentationElasticUrl"] = config["Parameters:DocumentationElasticUrl"] ?? "http://localhost.example:9200";
-		builder.Configuration[$"Parameters:DocumentationElasticApiKey"] = config["Parameters:DocumentationElasticApiKey"] ?? "not-configured";
+		builder.Configuration[$"Parameters:ElasticsearchUrl"] = config["Parameters:ElasticsearchUrl"] ?? "http://localhost.example:9200";
+		builder.Configuration[$"Parameters:ElasticsearchApiKey"] = config["Parameters:ElasticsearchApiKey"] ?? "not-configured";
 		return builder;
 	}
 }

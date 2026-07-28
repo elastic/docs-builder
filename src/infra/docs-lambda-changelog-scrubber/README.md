@@ -37,6 +37,6 @@ The `bootstrap` binary should be available under:
 
 ## Scrubbing logic
 
-- **Bundle files** (`bundle/{product}/*.yaml`, detected by the `bundle/` key prefix): `LinkAllowlistSanitizer.TryApplyBundle` scrubs `prs`/`issues` lists
+- **Bundle files** (`bundle/{product}/*.yaml`, detected by the `bundle/` key prefix): `LinkAllowlistSanitizer.ScrubBundleForPublic` scrubs `prs`/`issues` lists and text fields, dropping disallowed references (no sentinels in public output)
 - **Changelog entries** (`changelog/{org}/{repo}/{branch}/*.yaml`): `LinkAllowlistSanitizer.TryApplyChangelogEntry` scrubs `prs`, `issues`, `description`, `impact`, `action`
-- The allowlist is built once at cold start from the embedded `assembler.yml` via `BuildAllowReposFromAssembler`
+- The allowlist is built once at cold start from the embedded `assembler.yml` via `BuildAllowReposFromAssembler`: every reference repository **not** marked `private: true` is allowed. `skip: true` is ignored here — it only means the repo publishes no docs, so public link-only repos (e.g. `elastic/roadmap`) stay linkable

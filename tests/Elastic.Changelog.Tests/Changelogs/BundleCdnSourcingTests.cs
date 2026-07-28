@@ -81,8 +81,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		{
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
 			Output = output,
-			Repo = "elasticsearch",
-			Resolve = true
+			Repo = "elasticsearch"
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -113,8 +112,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			Output = output,
 			Owner = "acme-corp",
 			Repo = "elasticsearch",
-			Branch = "8.x",
-			Resolve = true
+			Branch = "8.x"
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -137,8 +135,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		{
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
 			Output = output,
-			Repo = "acme-corp/widget",
-			Resolve = true
+			Repo = "acme-corp/widget"
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -172,7 +169,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
-		var input = new BundleChangelogsArguments { Config = configPath, Output = output, All = true, Resolve = true };
+		var input = new BundleChangelogsArguments { Config = configPath, Output = output, All = true };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
@@ -212,8 +209,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		{
 			Config = configPath,
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
-			Output = output,
-			Resolve = true
+			Output = output
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -236,8 +232,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		{
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
 			Output = OutputPath(),
-			Repo = "elasticsearch",
-			Resolve = true
+			Repo = "elasticsearch"
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -267,8 +262,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		{
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
 			Output = OutputPath(),
-			Repo = "elasticsearch",
-			Resolve = true
+			Repo = "elasticsearch"
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);

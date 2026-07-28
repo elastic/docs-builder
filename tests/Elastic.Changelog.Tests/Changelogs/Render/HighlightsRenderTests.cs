@@ -15,10 +15,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 	public async Task RenderChangelogs_WithHighlightedEntries_CreatesHighlightsFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with highlight
+		// Changelog entry with highlight
 		// language=yaml
 		var changelog1 =
 			"""
@@ -34,31 +31,25 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-highlight-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			entries:
-			  - file:
-			      name: 1755268130-highlight-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
-			""";
+			""",
+			("1755268130-highlight-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.3.0"
 		};
@@ -90,10 +81,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 	public async Task RenderChangelogs_WithoutHighlightedEntries_DoesNotCreateHighlightsFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file without highlight
+		// Changelog entry without highlight
 		// language=yaml
 		var changelog1 =
 			"""
@@ -106,31 +94,25 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-regular-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			entries:
-			  - file:
-			      name: 1755268130-regular-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
-			""";
+			""",
+			("1755268130-regular-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.3.0"
 		};
@@ -150,10 +132,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 	public async Task RenderChangelogs_WithHighlightedEntries_IncludesHighlightsInAsciidoc()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with highlight
+		// Changelog entry with highlight
 		// language=yaml
 		var changelog1 =
 			"""
@@ -168,31 +147,25 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			- "200"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-highlight-enhancement.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			entries:
-			  - file:
-			      name: 1755268130-highlight-enhancement.yaml
-			      checksum: {ComputeSha1(changelog1)}
-			""";
+			""",
+			("1755268130-highlight-enhancement.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.3.0",
 			FileType = ChangelogFileType.Asciidoc
@@ -219,10 +192,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 	public async Task RenderChangelogs_WithMultipleHighlightedEntries_GroupsByArea()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog files with highlights
+		// Changelog entries with highlights in different areas
 		// language=yaml
 		var changelog1 =
 			"""
@@ -253,36 +223,26 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			- "200"
 			""";
 
-		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-search.yaml");
-		var file2 = FileSystem.Path.Join(changelogDir, "1755268140-indexing.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			entries:
-			  - file:
-			      name: 1755268130-search.yaml
-			      checksum: {ComputeSha1(changelog1)}
-			  - file:
-			      name: 1755268140-indexing.yaml
-			      checksum: {ComputeSha1(changelog2)}
-			""";
+			""",
+			("1755268130-search.yaml", changelog1),
+			("1755268140-indexing.yaml", changelog2));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.3.0",
 			Subsections = true

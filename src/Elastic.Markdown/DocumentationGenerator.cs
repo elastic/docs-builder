@@ -232,8 +232,19 @@ public partial class DocumentationGenerator
 			}
 
 			var destination = _writeFileSystem.FileInfo.New(Path.Join(outputStaticDir, source.Name));
-			_ = source.CopyTo(destination.FullName, overwrite: true);
+			CopyFileAcrossFileSystems(source, destination);
 			_logger.LogInformation("Copied branding asset {Source} -> {Destination}", source.FullName, destination.FullName);
+		}
+	}
+
+	private void CopyFileAcrossFileSystems(IFileInfo source, IFileInfo destination)
+	{
+		if (Context.ReadFileSystem == _writeFileSystem)
+			Context.ReadFileSystem.File.Copy(source.FullName, destination.FullName, overwrite: true);
+		else
+		{
+			var bytes = Context.ReadFileSystem.File.ReadAllBytes(source.FullName);
+			_writeFileSystem.File.WriteAllBytes(destination.FullName, bytes);
 		}
 	}
 

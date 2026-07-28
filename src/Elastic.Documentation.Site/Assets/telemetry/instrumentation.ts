@@ -41,6 +41,7 @@ let traceProvider: WebTracerProvider | null = null
 let loggerProvider: LoggerProvider | null = null
 
 export function initializeOtel(options: OtelConfigOptions = {}): boolean {
+    if (isSyntheticMonitor()) return false
     if (isAlreadyInitialized()) return false
 
     markAsInitialized()
@@ -64,6 +65,14 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
         isInitialized = false
         return false
     }
+}
+
+// The backend excludes synthetic traffic via the X-Docs-Synthetic-Monitor header (see
+// synthetics.config.ts / TelemetryConstants.SyntheticMonitorHeaderName), but page JS can't
+// read its own outgoing request headers. @elastic/synthetics appends this to the browser's
+// UA instead (unless a custom userAgent is configured), so we sniff that for the same effect.
+function isSyntheticMonitor(): boolean {
+    return navigator.userAgent.includes('Elastic/Synthetics')
 }
 
 function isAlreadyInitialized(): boolean {

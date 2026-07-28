@@ -5,12 +5,12 @@
 using System.Text.RegularExpressions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Highlighting;
-using Elastic.Internal.Search;
 using Microsoft.Extensions.Logging;
-using InternalSearch = Elastic.Internal.Search;
-using SearchRequest = Elastic.Internal.Search.SearchRequest;
-using SortMode = Elastic.Internal.Search.SortMode;
+using Contract = Elastic.Documentation.Search.Contract;
+using SearchRequest = Elastic.Documentation.Search.Contract.SearchRequest;
+using SortMode = Elastic.Documentation.Search.Contract.SortMode;
 
 namespace Elastic.Documentation.Search;
 
@@ -34,13 +34,13 @@ public partial class DefaultSearchService<TDocument>(
 
 	private static readonly string[] AutocompleteSourceIncludes =
 	[
-		"content_type", "title", "search_title", "url", "description", "parents", "headings"
+		"content_type", "title", "search_title", "path", "description", "parents", "headings"
 	];
 
 	private static readonly string[] SearchSourceIncludes =
 	[
-		"content_type", "title", "search_title", "url", "description", "parents", "headings",
-		"navigation_section", "ai_short_summary", "ai_rag_optimized_summary",
+		"content_type", "title", "search_title", "path", "description", "parents", "headings",
+		"section", "ai_short_summary", "ai_rag_optimized_summary",
 		"last_updated", "product", "related_products"
 	];
 
@@ -118,7 +118,7 @@ public partial class DefaultSearchService<TDocument>(
 								.Analyzer("highlight_analyzer")))
 							.PreTags(PreTag)
 							.PostTags(PostTag))
-						.Add(QueryFieldNames.StrippedBody, hf => hf
+						.Add(QueryFieldNames.Body, hf => hf
 							.FragmentSize(150)
 							.NumberOfFragments(3)
 							.NoMatchSize(150)
@@ -138,9 +138,9 @@ public partial class DefaultSearchService<TDocument>(
 		var typeAgg = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response, "type");
 
 		LogAutocompleteResults(request.PageSize, request.PageNumber, request.Query,
-			results.Select(r => r.Document.Url).ToArray());
+			results.Select(r => r.Document.Path).ToArray());
 
-		// NOTE: ElasticsearchTookMs and IsValidResponse require a Contract version > 0.9.2 — restore when published.
+		// NOTE: ElasticsearchTookMs and IsValidResponse are available on the in-repo contract — restore in a follow-up.
 		return new AutocompleteResponse<TDocument>
 		{
 			Results = results,
@@ -151,10 +151,10 @@ public partial class DefaultSearchService<TDocument>(
 		};
 	}
 
-	// NOTE: probe-mode SearchAsync branch (request.Components bitmask path) requires
-	// SearchQueryComponents from Elastic.Internal.Search.Contract — restore when that type is published.
+	// NOTE: probe-mode SearchAsync branch (request.Components bitmask path) uses SearchQueryComponents,
+	// now available from the in-repo contract — restore in a follow-up.
 
-	public async Task<InternalSearch.SearchResponse<TDocument>> SearchAsync(SearchRequest request, CancellationToken ct = default)
+	public async Task<Contract.SearchResponse<TDocument>> SearchAsync(SearchRequest request, CancellationToken ct = default)
 	{
 		var isSemantic = searchConfig.SemanticEnabled && IsSemanticQuery(request.Query);
 
@@ -183,7 +183,7 @@ public partial class DefaultSearchService<TDocument>(
 				.Query(filteredQuery)
 				.Aggregations(agg => agg
 					.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType)))
-					.Add("navigation_section", a => a.Terms(t => t.Field(QueryFieldNames.NavigationSection)))
+					.Add("navigation_section", a => a.Terms(t => t.Field(QueryFieldNames.Section)))
 					.Add("product", a => a.Terms(t => t.Field(QueryFieldNames.RelatedProductsId).Size(100))))
 				.Source(sf => sf.Filter(f => f.Includes(SearchSourceIncludes)));
 
@@ -201,7 +201,7 @@ public partial class DefaultSearchService<TDocument>(
 								.Analyzer("highlight_analyzer")))
 							.PreTags(PreTag)
 							.PostTags(PostTag))
-						.Add(QueryFieldNames.StrippedBody, hf => hf
+						.Add(QueryFieldNames.Body, hf => hf
 							.FragmentSize(150)
 							.NumberOfFragments(3)
 							.NoMatchSize(150)
@@ -225,7 +225,7 @@ public partial class DefaultSearchService<TDocument>(
 			Type = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "type"),
 			NavigationSection = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "navigation_section"),
 			Product = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "product")
-				.ToDictionary(kvp => kvp.Key, kvp => new InternalSearch.ProductAggregationBucket
+				.ToDictionary(kvp => kvp.Key, kvp => new Contract.ProductAggregationBucket
 				{
 					Count = kvp.Value,
 					DisplayName = productNameLookup is not null && productNameLookup.TryGetProductName(kvp.Key, out var name)
@@ -235,10 +235,10 @@ public partial class DefaultSearchService<TDocument>(
 		};
 
 		LogSearchResults(request.PageSize, request.PageNumber, request.Query, isSemantic,
-			results2.Select(r => r.Document.Url).ToArray());
+			results2.Select(r => r.Document.Path).ToArray());
 
-		// NOTE: ElasticsearchTookMs and IsValidResponse require a Contract version > 0.9.2 — restore when published.
-		return new InternalSearch.SearchResponse<TDocument>
+		// NOTE: ElasticsearchTookMs and IsValidResponse are available on the in-repo contract — restore in a follow-up.
+		return new Contract.SearchResponse<TDocument>
 		{
 			Results = results2,
 			TotalResults = response2.Total,
@@ -270,7 +270,7 @@ public partial class DefaultSearchService<TDocument>(
 		if (request.SectionFilter is { Length: > 0 })
 		{
 			filters.Add(new TermsQuery(
-				QueryFieldNames.NavigationSection,
+				QueryFieldNames.Section,
 				new TermsQueryField(request.SectionFilter.Select(s => (FieldValue)s).ToArray())));
 		}
 

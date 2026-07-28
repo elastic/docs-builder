@@ -13,7 +13,6 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
@@ -122,7 +121,7 @@ async Task ScrubAndCopyToPublicBucket(IAmazonS3 s3Client, string sourceBucket, s
 {
 	context.Logger.LogDebug("Scrubbing {Key} to public bucket", key);
 
-	if (RegistryKey.IsRegistry(key))
+	if (ChangelogKeys.IsRegistry(key))
 	{
 		await CopyPassThrough(s3Client, sourceBucket, key, context);
 		return;
@@ -184,7 +183,7 @@ async Task<string> ScrubContent(string key, string content, ILambdaContext conte
 	// Artifact-root layout: bundles live under "bundle/{product}/...", entries under
 	// "changelog/{org}/{repo}/{branch}/...". Match the bundle prefix (not a "/bundle/" substring, which no
 	// longer appears in the new keys) so bundles are not misclassified as changelog entries.
-	var isBundlePath = key.StartsWith("bundle/", StringComparison.OrdinalIgnoreCase);
+	var isBundlePath = key.StartsWith(ChangelogKeys.BundlePrefix, StringComparison.OrdinalIgnoreCase);
 
 	if (isBundlePath)
 		return await ScrubBundle(content, context);

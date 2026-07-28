@@ -4,7 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;

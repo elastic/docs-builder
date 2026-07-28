@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
@@ -59,5 +61,52 @@ public class OpenApiOperationIdSearchTitleTests
 		doc.Title.Should().Be("Bulk index or delete documents - Elasticsearch API");
 		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk");
 		doc.SearchTitle.Should().Contain("_bulk");
+	}
+
+	private static OpenApiDocument CreateSpecWithSummaryWhitespace(string summary) => new()
+	{
+		Paths = new OpenApiPaths
+		{
+			["/_bulk"] = new OpenApiPathItem
+			{
+				Operations = new Dictionary<HttpMethod, OpenApiOperation>
+				{
+					[HttpMethod.Put] = new OpenApiOperation
+					{
+						OperationId = "_bulk",
+						Summary = summary
+					}
+				}
+			}
+		}
+	};
+
+	[Fact]
+	public void Operation_SummaryWithTrailingNewline_DoesNotLeakIntoTitleOrSearchTitle()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+
+		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"), "elasticsearch").ToArray();
+
+		docs.Should().HaveCount(1);
+		var doc = docs[0];
+
+		doc.Title.Should().Be("Bulk index or delete documents - Elasticsearch API");
+		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk");
+		doc.Title.Should().NotContain("\n");
+		doc.SearchTitle.Should().NotContain("\n");
+	}
+
+	[Fact]
+	public void Operation_BlankSummary_FallsBackToOperationId()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+
+		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("   "), "elasticsearch").ToArray();
+
+		docs.Should().HaveCount(1);
+		var doc = docs[0];
+
+		doc.Title.Should().Be("_bulk - Elasticsearch API");
 	}
 }
