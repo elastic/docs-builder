@@ -139,6 +139,163 @@ Other content for version 9.0
 :::::
 ::::::
 
+## Dropdown appearance
+
+Add `:appearance: dropdown` to render the switch as a compact dropdown instead of tabs. This works well for version-specific code examples: readers select the version they run, and the code block, including its callouts, updates to match.
+
+Because each `applies-item` contains both the code block and its callout list, the callouts always match the selected version.
+
+The dropdown appearance requires every `applies-item` to start with a code block: the selector chip attaches to the code block's top edge. A switch with other leading content falls back to the tabs appearance and docs-builder emits a warning.
+
+Instead of badges, the selector shows a compact text form of each `applies_to` definition: Elastic Stack entries show only the version (`9.1+`, `=9.0`, `9.1-9.3`), other entries keep their product or deployment name (`Serverless`, `ECH 8.0+`), and the lifecycle appears in parentheses when it is not GA, for example `9.0 (preview)`. Hover the selector to see the full definition.
+
+The appearance only changes the presentation. Switches with the same `applies_to` definitions stay in sync through the same [automatic grouping](#automatic-grouping) regardless of their appearance: selecting a version in a dropdown switch also updates tab switches on the page, and the other way around.
+
+::::::{tab-set}
+:::::{tab-item} Output
+
+::::{applies-switch}
+:appearance: dropdown
+
+:::{applies-item} { serverless: ga, stack: ga 9.1+ }
+:selected:
+```console
+PUT api/dashboards/dashboard/my-dashboard
+{
+  "attributes": {
+    "title": "My dashboard", <1>
+    "panels": [
+      {
+        "type": "metric",
+        "config": {
+          "metrics": [ { "field": "system.cpu.usage" } ] <2>
+        }
+      }
+    ]
+  }
+}
+```
+
+1. The dashboard title, displayed in the dashboard listing.
+2. In this version, the metric chart accepts multiple metrics.
+
+:::
+
+:::{applies-item} stack: preview =9.0
+```console
+PUT api/dashboards/dashboard/my-dashboard
+{
+  "attributes": {
+    "title": "My dashboard", <1>
+    "panels": [
+      {
+        "type": "metric",
+        "config": {
+          "metric": { "field": "system.cpu.usage" } <2>
+        }
+      }
+    ]
+  }
+}
+```
+
+1. The dashboard title, displayed in the dashboard listing.
+2. In this version, the metric chart accepts a single metric.
+
+:::
+
+::::
+
+:::::
+:::::{tab-item} Markdown
+
+`````markdown
+::::{applies-switch}
+:appearance: dropdown
+
+:::{applies-item} { serverless: ga, stack: ga 9.1+ }
+:selected:
+```console
+PUT api/dashboards/dashboard/my-dashboard
+{
+  "attributes": {
+    "title": "My dashboard", <1>
+    ...
+  }
+}
+```
+
+1. The dashboard title, displayed in the dashboard listing.
+
+:::
+
+:::{applies-item} stack: preview =9.0
+```console
+PUT api/dashboards/dashboard/my-dashboard
+{
+  "attributes": { ... }
+}
+```
+
+1. The dashboard title, displayed in the dashboard listing.
+
+:::
+
+::::
+`````
+:::::
+::::::
+
+## Default selection
+
+By default, the first `applies-item` is selected. Add the `:selected:` option to an item to select a different one, for example to default to the newest version when older versions come first in the source. If multiple items have `:selected:`, only the first one is honored and docs-builder emits a warning.
+
+::::::{tab-set}
+:::::{tab-item} Output
+
+::::{applies-switch}
+:appearance: dropdown
+
+:::{applies-item} stack: preview =9.0
+```console
+GET api/dashboards/dashboard
+```
+:::
+
+:::{applies-item} stack: ga 9.1+
+:selected:
+```console
+GET api/dashboards/dashboard?page=1
+```
+:::
+
+::::
+
+:::::
+:::::{tab-item} Markdown
+
+````markdown
+::::{applies-switch}
+:appearance: dropdown
+
+:::{applies-item} stack: preview =9.0
+```console
+GET api/dashboards/dashboard
+```
+:::
+
+:::{applies-item} stack: ga 9.1+
+:selected:
+```console
+GET api/dashboards/dashboard?page=1
+```
+:::
+
+::::
+````
+:::::
+::::::
+
 ## Supported `applies_to` definitions
 
 The `applies-item` directive accepts any valid applies_to definition that would work with the `{applies_to}` role.
@@ -153,3 +310,4 @@ Use applies switches when:
 - You want to show applies_to badges as tab titles instead of text
 - You need to group related content that differs by applicability
 - You want to provide a clear visual indication of what each content section applies to
+- You want to offer version-specific code examples without duplicating the surrounding prose: use the dropdown appearance
