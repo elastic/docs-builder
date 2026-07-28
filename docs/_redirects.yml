@@ -1,9 +1,9 @@
 redirects:
-  # ── Legacy redirects (pre-existing) ──────────────────────────────
+  # ── Legacy (pre-existing on main) ───────────────────────────────
   'migration/freeze/gh-action.md': 'index.md'
   'migration/freeze/index.md': 'index.md'
 
-  # ── Migration section (removed) ─────────────────────────────────
+  # ── Migration section (deleted) ─────────────────────────────────
   'migration/index.md': 'index.md'
   'migration/syntax.md': 'syntax/index.md'
   'migration/ia.md': 'index.md'
@@ -17,7 +17,14 @@ redirects:
   'migration/guide/mapping.md': 'index.md'
   'migration/guide/how-to-set-up-docs-previews.md': 'index.md'
 
-  # ── building-blocks/ → final targets ───────────────────────────
+  # ── Removed syntax stubs ────────────────────────────────────────
+  'syntax/conditionals.md': 'syntax/index.md'
+  'syntax/example_blocks.md': 'syntax/index.md'
+  'syntax/passthrough.md': 'syntax/index.md'
+  'syntax/sidebars.md': 'syntax/index.md'
+  'syntax/tagged_regions.md': 'syntax/file_inclusion.md'
+
+  # ── building-blocks/ (deleted, content absorbed) ────────────────
   'building-blocks/index.md': 'documentation/distributed-builds.md'
   'building-blocks/documentation-set.md': 'documentation/isolated/configure/index.md'
   'building-blocks/assembled-documentation.md': 'documentation/assembler/index.md'
@@ -30,110 +37,7 @@ redirects:
   'building-blocks/documentation-set-navigation.md': 'documentation/isolated/navigation.md'
   'building-blocks/global-navigation.md': 'documentation/assembler/navigation.md'
 
-  # ── architecture/ → final targets ──────────────────────────────
-  'architecture/index.md': 'documentation/distributed-builds.md'
-  'architecture/documentation-set.md': 'documentation/isolated/configure/index.md'
-  'architecture/assembled-documentation.md': 'documentation/assembler/index.md'
-  'architecture/distributed-documentation.md': 'documentation/distributed-builds.md'
-  'architecture/link-service.md': 'documentation/distributed-builds.md'
-  'architecture/link-index.md': 'documentation/distributed-builds.md'
-  'architecture/link-catalog.md': 'documentation/distributed-builds.md'
-  'architecture/outbound-cross-links.md': 'documentation/cross-links.md'
-  'architecture/inbound-cross-links.md': 'documentation/cross-links.md'
-  'architecture/documentation-set-navigation.md': 'documentation/isolated/navigation.md'
-  'architecture/global-navigation.md': 'documentation/assembler/navigation.md'
-
-  # ── development/ deleted pages → documentation/ ─────────────────
-  'development/index.md': 'documentation/distributed-builds.md'
-  'development/building-blocks.md': 'documentation/distributed-builds.md'
-  'development/link-infrastructure.md': 'documentation/distributed-builds.md'
-  'development/link-validation.md': 'documentation/cross-links.md'
-
-  # ── development/navigation/ sub-pages → development/navigation.md ──
-  'development/navigation/navigation.md': 'development/navigation.md'
-  'development/navigation/visual-walkthrough.md': 'development/navigation.md'
-  'development/navigation/first-principles.md': 'development/navigation.md'
-  'development/navigation/functional-principles.md': 'development/navigation.md'
-  'development/navigation/technical-principles.md': 'development/navigation.md'
-  'development/navigation/two-phase-loading.md': 'development/navigation.md'
-  'development/navigation/node-types.md': 'development/navigation.md'
-  'development/navigation/home-provider-architecture.md': 'development/navigation.md'
-  'development/navigation/assembler-process.md': 'development/navigation.md'
-
-  # ── development/ingest/ and link-validation/ flattened ──────────
-  'development/ingest/index.md': 'development/ingest.md'
-  'development/link-validation/link-validation.md': 'documentation/cross-links.md'
-
-  # ── syntax/ stays at top level (original location preserved) ─────
-  # Removed stub pages redirect to syntax index
-  'syntax/conditionals.md': 'syntax/index.md'
-  'syntax/example_blocks.md': 'syntax/index.md'
-  'syntax/passthrough.md': 'syntax/index.md'
-  'syntax/sidebars.md': 'syntax/index.md'
-  'syntax/tagged_regions.md': 'syntax/file_inclusion.md'
-
-  # ── documentation/syntax/ → syntax/ (intermediate location) ────
-  'documentation/syntax/index.md': 'syntax/index.md'
-  'documentation/syntax/quick-ref.md': 'syntax/quick-ref.md'
-  'documentation/syntax/directives.md': 'syntax/directives.md'
-  'documentation/syntax/headings.md': 'syntax/headings.md'
-  'documentation/syntax/admonitions.md': 'syntax/admonitions.md'
-  'documentation/syntax/code.md': 'syntax/code.md'
-  'documentation/syntax/links.md': 'syntax/links.md'
-  'documentation/syntax/images.md': 'syntax/images.md'
-  'documentation/syntax/tabs.md': 'syntax/tabs.md'
-  'documentation/syntax/tables.md': 'syntax/tables.md'
-  'documentation/syntax/frontmatter.md': 'syntax/frontmatter.md'
-  'documentation/syntax/changelog.md': 'syntax/changelog.md'
-  'documentation/syntax/file_inclusion.md': 'syntax/file_inclusion.md'
-  'documentation/syntax/icons.md': 'syntax/icons.md'
-  'documentation/syntax/diagrams.md': 'syntax/diagrams.md'
-  'documentation/syntax/dropdowns.md': 'syntax/dropdowns.md'
-  'documentation/syntax/sidebars.md': 'syntax/index.md'
-  'documentation/syntax/passthrough.md': 'syntax/index.md'
-  'documentation/syntax/example_blocks.md': 'syntax/index.md'
-  'documentation/syntax/conditionals.md': 'syntax/index.md'
-  'documentation/syntax/tagged_regions.md': 'syntax/file_inclusion.md'
-
-  # ── documentation/assembler.md, codex.md, isolated.md → index.md ──
-  'documentation/assembler.md': 'documentation/assembler/index.md'
-  'documentation/codex.md': 'documentation/codex/index.md'
-  'documentation/isolated.md': 'documentation/isolated/index.md'
-
-  # ── documentation/configure/ → new locations ────────────────────
-  'documentation/configure/index.md': 'documentation/isolated/configure/index.md'
-  'documentation/configure/page.md': 'documentation/isolated/configure/index.md'
-  'documentation/configure/content-sources.md': 'documentation/assembler/environments.md'
-  'documentation/configure/site/index.md': 'documentation/assembler/configure/index.md'
-  'documentation/configure/site/content.md': 'documentation/assembler/configure/index.md'
-  'documentation/configure/site/navigation.md': 'documentation/assembler/navigation.md'
-  'documentation/configure/site/products.md': 'documentation/catalog/products.md'
-  'documentation/configure/site/versions.md': 'documentation/catalog/versions.md'
-  'documentation/configure/site/legacy-url-mappings.md': 'documentation/catalog/legacy-url-mappings.md'
-  'documentation/configure/site/synonyms.md': 'documentation/catalog/synonyms.md'
-  'documentation/configure/content-set/index.md': 'documentation/isolated/configure/index.md'
-  'documentation/configure/content-set/navigation.md': 'documentation/isolated/configure/index.md'
-  'documentation/configure/content-set/attributes.md': 'documentation/isolated/configure/index.md'
-  'documentation/configure/content-set/file-structure.md': 'documentation/isolated/urls.md'
-  'documentation/configure/content-set/extensions.md': 'documentation/isolated/extensions.md'
-  'documentation/configure/content-set/cta.md': 'documentation/isolated/cta.md'
-
-  # ── documentation/how-to/ → new locations ───────────────────────
-  'documentation/how-to/index.md': 'documentation/isolated/index.md'
-  'documentation/how-to/move.md': 'documentation/isolated/how-to/move.md'
-  'documentation/how-to/redirects.md': 'documentation/redirects.md'
-  'documentation/how-to/add-repo.md': 'documentation/assembler/add-repo.md'
-  'documentation/how-to/branching-strategy.md': 'documentation/assembler/environments.md'
-  'documentation/how-to/release-new-version.md': 'documentation/assembler/environments.md'
-  'documentation/how-to/locally.md': 'documentation/isolated/how-to/locally.md'
-  'documentation/how-to/on-the-web.md': 'documentation/isolated/how-to/on-the-web.md'
-  'documentation/how-to/cumulative-docs/index.md': 'documentation/isolated/how-to/cumulative-docs/index.md'
-  'documentation/how-to/cumulative-docs/guidelines.md': 'documentation/isolated/how-to/cumulative-docs/guidelines.md'
-  'documentation/how-to/cumulative-docs/badge-placement.md': 'documentation/isolated/how-to/cumulative-docs/badge-placement.md'
-  'documentation/how-to/cumulative-docs/example-scenarios.md': 'documentation/isolated/how-to/cumulative-docs/example-scenarios.md'
-  'documentation/how-to/cumulative-docs/reference.md': 'documentation/isolated/how-to/cumulative-docs/reference.md'
-
-  # ── configure/ → final targets (old top-level) ──────────────────
+  # ── configure/ → per-mode locations ─────────────────────────────
   'configure/index.md': 'documentation/isolated/configure/index.md'
   'configure/page.md': 'documentation/isolated/configure/index.md'
   'configure/content-sources.md': 'documentation/assembler/environments.md'
@@ -150,8 +54,9 @@ redirects:
   'configure/content-set/file-structure.md': 'documentation/isolated/urls.md'
   'configure/content-set/extensions.md': 'documentation/isolated/extensions.md'
   'configure/content-set/cta.md': 'documentation/isolated/cta.md'
+  'configure/content-set/api-explorer.md': 'data/openapi/api-explorer.md'
 
-  # ── contribute/ → final targets ─────────────────────────────────
+  # ── contribute/ → per-mode locations ────────────────────────────
   'contribute/index.md': 'documentation/isolated/index.md'
   'contribute/move.md': 'documentation/isolated/how-to/move.md'
   'contribute/redirects.md': 'documentation/redirects.md'
@@ -165,44 +70,27 @@ redirects:
   'contribute/cumulative-docs/badge-placement.md': 'documentation/isolated/how-to/cumulative-docs/badge-placement.md'
   'contribute/cumulative-docs/example-scenarios.md': 'documentation/isolated/how-to/cumulative-docs/example-scenarios.md'
   'contribute/cumulative-docs/reference.md': 'documentation/isolated/how-to/cumulative-docs/reference.md'
-
-  # ── contribute/ changelog files → data/release-notes/ ────────────
   'contribute/changelog.md': 'data/release-notes/overview.md'
   'contribute/configure-changelogs.md': 'data/release-notes/configure.md'
   'contribute/configure-changelogs-ref.md': 'data/release-notes/configure-ref.md'
   'contribute/create-changelogs.md': 'data/release-notes/create.md'
   'contribute/bundle-changelogs.md': 'data/release-notes/bundle.md'
   'contribute/publish-changelogs.md': 'data/release-notes/publish.md'
-  'release-notes/index.md': 'data/release-notes/index.md'
-  'release-notes/overview.md': 'data/release-notes/overview.md'
-  'release-notes/configure.md': 'data/release-notes/configure.md'
-  'release-notes/configure-ref.md': 'data/release-notes/configure-ref.md'
-  'release-notes/create.md': 'data/release-notes/create.md'
-  'release-notes/bundle.md': 'data/release-notes/bundle.md'
-  'release-notes/publish.md': 'data/release-notes/publish.md'
-  'release-notes/explorer.md': 'data/release-notes/explorer.md'
 
   # ── schema-support/ → data/ ─────────────────────────────────────
   'schema-support/index.md': 'data/index.md'
   'schema-support/api-explorer/index.md': 'data/openapi/api-explorer.md'
   'schema-support/cli-schema/index.md': 'data/cli-schema/index.md'
   'schema-support/cli-schema/supplemental.md': 'data/cli-schema/supplemental.md'
-  'data/api-explorer/index.md': 'data/openapi/api-explorer.md'
 
   # ── mcp/ → data/mcp/ ────────────────────────────────────────────
   'mcp/index.md': 'data/mcp/index.md'
 
-  # ── cli/ installation moved to getting-started/ ─────────────────
+  # ── cli/ moves ──────────────────────────────────────────────────
   'cli/installation.md': 'getting-started/installation.md'
   'cli/shell-autocompletion.md': 'getting-started/installation.md'
-  'getting-started/shell-autocompletion.md': 'getting-started/installation.md'
-
-  # ── Older schema-support redirects (chain through new paths) ────
   'cli/cli-reference-how-to.md': 'data/cli-schema/index.md'
   'cli/cli-supplemental-docs.md': 'data/cli-schema/supplemental.md'
-  'configure/content-set/api-explorer.md': 'data/openapi/api-explorer.md'
-
-  # ── CLI docs: old static pages → schema-generated equivalents ───
   'cli/index.md': 'getting-started/installation.md'
   'cli/assembler/index.md': 'getting-started/installation.md'
   'cli/changelog/add.md': 'cli/changelog/index.md'
@@ -240,13 +128,20 @@ redirects:
   'cli/links/inbound-links-validate-all.md': 'getting-started/installation.md'
   'cli/links/inbound-links-validate-link-reference.md': 'getting-started/installation.md'
 
-  # ── assembler content-sources/branching/release merged into environments ──
-  'documentation/assembler/content-sources.md': 'documentation/assembler/environments.md'
-  'documentation/assembler/how-to/branching-strategy.md': 'documentation/assembler/environments.md'
-  'documentation/assembler/how-to/release-new-version.md': 'documentation/assembler/environments.md'
-  'documentation/assembler/how-to/add-repo.md': 'documentation/assembler/add-repo.md'
+  # ── development/ flattened ──────────────────────────────────────
+  'development/ingest/index.md': 'development/ingest.md'
+  'development/link-validation/link-validation.md': 'documentation/cross-links.md'
+  'development/navigation/navigation.md': 'development/navigation.md'
+  'development/navigation/visual-walkthrough.md': 'development/navigation.md'
+  'development/navigation/first-principles.md': 'development/navigation.md'
+  'development/navigation/functional-principles.md': 'development/navigation.md'
+  'development/navigation/technical-principles.md': 'development/navigation.md'
+  'development/navigation/two-phase-loading.md': 'development/navigation.md'
+  'development/navigation/node-types.md': 'development/navigation.md'
+  'development/navigation/home-provider-architecture.md': 'development/navigation.md'
+  'development/navigation/assembler-process.md': 'development/navigation.md'
 
-  # ── testing/ → removed (moved to docs-tests/ separate docset) ────
+  # ── testing/ → removed (moved to docs-tests/) ──────────────────
   'testing/index.md': 'index.md'
   'testing/archive.md': 'index.md'
   'testing/cross-links.md': 'index.md'

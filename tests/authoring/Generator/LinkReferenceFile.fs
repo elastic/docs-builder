@@ -74,8 +74,6 @@ Through various means $$$including-this-inline-syntax$$$
     "data/release-notes/configure-ref.md": {},
     "data/release-notes/configure.md": {},
     "data/release-notes/create.md": {},
-    "data/release-notes/explorer.md": {},
-    "data/release-notes/index.md": {},
     "data/release-notes/overview.md": {},
     "data/release-notes/publish.md": {},
     "development/ingest.md": {},
@@ -89,7 +87,6 @@ Through various means $$$including-this-inline-syntax$$$
     "documentation/catalog/products.md": {},
     "documentation/catalog/synonyms.md": {},
     "documentation/catalog/versions.md": {},
-    "documentation/codex/index.md": {},
     "documentation/cross-links.md": {},
     "documentation/distributed-builds.md": {},
     "documentation/isolated/configure/index.md": {},
@@ -116,22 +113,8 @@ Through various means $$$including-this-inline-syntax$$$
         "and-anchored"
       ]
     },
-    "syntax/admonitions.md": {},
-    "syntax/changelog.md": {},
-    "syntax/code.md": {},
-    "syntax/diagrams.md": {},
-    "syntax/directives.md": {},
-    "syntax/dropdowns.md": {},
     "syntax/file_inclusion.md": {},
-    "syntax/frontmatter.md": {},
-    "syntax/headings.md": {},
-    "syntax/icons.md": {},
-    "syntax/images.md": {},
     "syntax/index.md": {},
-    "syntax/links.md": {},
-    "syntax/quick-ref.md": {},
-    "syntax/tables.md": {},
-    "syntax/tabs.md": {},
     "testing/redirects/5th-page.md": {
       "anchors": [
         "bb"
@@ -199,6 +182,21 @@ Through various means $$$including-this-inline-syntax$$$
     "migration/guide/how-to-set-up-docs-previews.md": {
       "to": "index.md"
     },
+    "syntax/conditionals.md": {
+      "to": "syntax/index.md"
+    },
+    "syntax/example_blocks.md": {
+      "to": "syntax/index.md"
+    },
+    "syntax/passthrough.md": {
+      "to": "syntax/index.md"
+    },
+    "syntax/sidebars.md": {
+      "to": "syntax/index.md"
+    },
+    "syntax/tagged_regions.md": {
+      "to": "syntax/file_inclusion.md"
+    },
     "building-blocks/index.md": {
       "to": "documentation/distributed-builds.md"
     },
@@ -231,258 +229,6 @@ Through various means $$$including-this-inline-syntax$$$
     },
     "building-blocks/global-navigation.md": {
       "to": "documentation/assembler/navigation.md"
-    },
-    "architecture/index.md": {
-      "to": "documentation/distributed-builds.md"
-    },
-    "architecture/documentation-set.md": {
-      "to": "documentation/isolated/configure/index.md"
-    },
-    "architecture/assembled-documentation.md": {
-      "to": "documentation/assembler/index.md"
-    },
-    "architecture/distributed-documentation.md": {
-      "to": "documentation/distributed-builds.md"
-    },
-    "architecture/link-service.md": {
-      "to": "documentation/distributed-builds.md"
-    },
-    "architecture/link-index.md": {
-      "to": "documentation/distributed-builds.md"
-    },
-    "architecture/link-catalog.md": {
-      "to": "documentation/distributed-builds.md"
-    },
-    "architecture/outbound-cross-links.md": {
-      "to": "documentation/cross-links.md"
-    },
-    "architecture/inbound-cross-links.md": {
-      "to": "documentation/cross-links.md"
-    },
-    "architecture/documentation-set-navigation.md": {
-      "to": "documentation/isolated/navigation.md"
-    },
-    "architecture/global-navigation.md": {
-      "to": "documentation/assembler/navigation.md"
-    },
-    "development/index.md": {
-      "to": "documentation/distributed-builds.md"
-    },
-    "development/building-blocks.md": {
-      "to": "documentation/distributed-builds.md"
-    },
-    "development/link-infrastructure.md": {
-      "to": "documentation/distributed-builds.md"
-    },
-    "development/link-validation.md": {
-      "to": "documentation/cross-links.md"
-    },
-    "development/navigation/navigation.md": {
-      "to": "development/navigation.md"
-    },
-    "development/navigation/visual-walkthrough.md": {
-      "to": "development/navigation.md"
-    },
-    "development/navigation/first-principles.md": {
-      "to": "development/navigation.md"
-    },
-    "development/navigation/functional-principles.md": {
-      "to": "development/navigation.md"
-    },
-    "development/navigation/technical-principles.md": {
-      "to": "development/navigation.md"
-    },
-    "development/navigation/two-phase-loading.md": {
-      "to": "development/navigation.md"
-    },
-    "development/navigation/node-types.md": {
-      "to": "development/navigation.md"
-    },
-    "development/navigation/home-provider-architecture.md": {
-      "to": "development/navigation.md"
-    },
-    "development/navigation/assembler-process.md": {
-      "to": "development/navigation.md"
-    },
-    "development/ingest/index.md": {
-      "to": "development/ingest.md"
-    },
-    "development/link-validation/link-validation.md": {
-      "to": "documentation/cross-links.md"
-    },
-    "syntax/conditionals.md": {
-      "to": "syntax/index.md"
-    },
-    "syntax/example_blocks.md": {
-      "to": "syntax/index.md"
-    },
-    "syntax/passthrough.md": {
-      "to": "syntax/index.md"
-    },
-    "syntax/sidebars.md": {
-      "to": "syntax/index.md"
-    },
-    "syntax/tagged_regions.md": {
-      "to": "syntax/file_inclusion.md"
-    },
-    "documentation/syntax/index.md": {
-      "to": "syntax/index.md"
-    },
-    "documentation/syntax/quick-ref.md": {
-      "to": "syntax/quick-ref.md"
-    },
-    "documentation/syntax/directives.md": {
-      "to": "syntax/directives.md"
-    },
-    "documentation/syntax/headings.md": {
-      "to": "syntax/headings.md"
-    },
-    "documentation/syntax/admonitions.md": {
-      "to": "syntax/admonitions.md"
-    },
-    "documentation/syntax/code.md": {
-      "to": "syntax/code.md"
-    },
-    "documentation/syntax/links.md": {
-      "to": "syntax/links.md"
-    },
-    "documentation/syntax/images.md": {
-      "to": "syntax/images.md"
-    },
-    "documentation/syntax/tabs.md": {
-      "to": "syntax/tabs.md"
-    },
-    "documentation/syntax/tables.md": {
-      "to": "syntax/tables.md"
-    },
-    "documentation/syntax/frontmatter.md": {
-      "to": "syntax/frontmatter.md"
-    },
-    "documentation/syntax/changelog.md": {
-      "to": "syntax/changelog.md"
-    },
-    "documentation/syntax/file_inclusion.md": {
-      "to": "syntax/file_inclusion.md"
-    },
-    "documentation/syntax/icons.md": {
-      "to": "syntax/icons.md"
-    },
-    "documentation/syntax/diagrams.md": {
-      "to": "syntax/diagrams.md"
-    },
-    "documentation/syntax/dropdowns.md": {
-      "to": "syntax/dropdowns.md"
-    },
-    "documentation/syntax/sidebars.md": {
-      "to": "syntax/index.md"
-    },
-    "documentation/syntax/passthrough.md": {
-      "to": "syntax/index.md"
-    },
-    "documentation/syntax/example_blocks.md": {
-      "to": "syntax/index.md"
-    },
-    "documentation/syntax/conditionals.md": {
-      "to": "syntax/index.md"
-    },
-    "documentation/syntax/tagged_regions.md": {
-      "to": "syntax/file_inclusion.md"
-    },
-    "documentation/assembler.md": {
-      "to": "documentation/assembler/index.md"
-    },
-    "documentation/codex.md": {
-      "to": "documentation/codex/index.md"
-    },
-    "documentation/isolated.md": {
-      "to": "documentation/isolated/index.md"
-    },
-    "documentation/configure/index.md": {
-      "to": "documentation/isolated/configure/index.md"
-    },
-    "documentation/configure/page.md": {
-      "to": "documentation/isolated/configure/index.md"
-    },
-    "documentation/configure/content-sources.md": {
-      "to": "documentation/assembler/environments.md"
-    },
-    "documentation/configure/site/index.md": {
-      "to": "documentation/assembler/configure/index.md"
-    },
-    "documentation/configure/site/content.md": {
-      "to": "documentation/assembler/configure/index.md"
-    },
-    "documentation/configure/site/navigation.md": {
-      "to": "documentation/assembler/navigation.md"
-    },
-    "documentation/configure/site/products.md": {
-      "to": "documentation/catalog/products.md"
-    },
-    "documentation/configure/site/versions.md": {
-      "to": "documentation/catalog/versions.md"
-    },
-    "documentation/configure/site/legacy-url-mappings.md": {
-      "to": "documentation/catalog/legacy-url-mappings.md"
-    },
-    "documentation/configure/site/synonyms.md": {
-      "to": "documentation/catalog/synonyms.md"
-    },
-    "documentation/configure/content-set/index.md": {
-      "to": "documentation/isolated/configure/index.md"
-    },
-    "documentation/configure/content-set/navigation.md": {
-      "to": "documentation/isolated/configure/index.md"
-    },
-    "documentation/configure/content-set/attributes.md": {
-      "to": "documentation/isolated/configure/index.md"
-    },
-    "documentation/configure/content-set/file-structure.md": {
-      "to": "documentation/isolated/urls.md"
-    },
-    "documentation/configure/content-set/extensions.md": {
-      "to": "documentation/isolated/extensions.md"
-    },
-    "documentation/configure/content-set/cta.md": {
-      "to": "documentation/isolated/cta.md"
-    },
-    "documentation/how-to/index.md": {
-      "to": "documentation/isolated/index.md"
-    },
-    "documentation/how-to/move.md": {
-      "to": "documentation/isolated/how-to/move.md"
-    },
-    "documentation/how-to/redirects.md": {
-      "to": "documentation/redirects.md"
-    },
-    "documentation/how-to/add-repo.md": {
-      "to": "documentation/assembler/add-repo.md"
-    },
-    "documentation/how-to/branching-strategy.md": {
-      "to": "documentation/assembler/environments.md"
-    },
-    "documentation/how-to/release-new-version.md": {
-      "to": "documentation/assembler/environments.md"
-    },
-    "documentation/how-to/locally.md": {
-      "to": "documentation/isolated/how-to/locally.md"
-    },
-    "documentation/how-to/on-the-web.md": {
-      "to": "documentation/isolated/how-to/on-the-web.md"
-    },
-    "documentation/how-to/cumulative-docs/index.md": {
-      "to": "documentation/isolated/how-to/cumulative-docs/index.md"
-    },
-    "documentation/how-to/cumulative-docs/guidelines.md": {
-      "to": "documentation/isolated/how-to/cumulative-docs/guidelines.md"
-    },
-    "documentation/how-to/cumulative-docs/badge-placement.md": {
-      "to": "documentation/isolated/how-to/cumulative-docs/badge-placement.md"
-    },
-    "documentation/how-to/cumulative-docs/example-scenarios.md": {
-      "to": "documentation/isolated/how-to/cumulative-docs/example-scenarios.md"
-    },
-    "documentation/how-to/cumulative-docs/reference.md": {
-      "to": "documentation/isolated/how-to/cumulative-docs/reference.md"
     },
     "configure/index.md": {
       "to": "documentation/isolated/configure/index.md"
@@ -531,6 +277,9 @@ Through various means $$$including-this-inline-syntax$$$
     },
     "configure/content-set/cta.md": {
       "to": "documentation/isolated/cta.md"
+    },
+    "configure/content-set/api-explorer.md": {
+      "to": "data/openapi/api-explorer.md"
     },
     "contribute/index.md": {
       "to": "documentation/isolated/index.md"
@@ -589,30 +338,6 @@ Through various means $$$including-this-inline-syntax$$$
     "contribute/publish-changelogs.md": {
       "to": "data/release-notes/publish.md"
     },
-    "release-notes/index.md": {
-      "to": "data/release-notes/index.md"
-    },
-    "release-notes/overview.md": {
-      "to": "data/release-notes/overview.md"
-    },
-    "release-notes/configure.md": {
-      "to": "data/release-notes/configure.md"
-    },
-    "release-notes/configure-ref.md": {
-      "to": "data/release-notes/configure-ref.md"
-    },
-    "release-notes/create.md": {
-      "to": "data/release-notes/create.md"
-    },
-    "release-notes/bundle.md": {
-      "to": "data/release-notes/bundle.md"
-    },
-    "release-notes/publish.md": {
-      "to": "data/release-notes/publish.md"
-    },
-    "release-notes/explorer.md": {
-      "to": "data/release-notes/explorer.md"
-    },
     "schema-support/index.md": {
       "to": "data/index.md"
     },
@@ -625,9 +350,6 @@ Through various means $$$including-this-inline-syntax$$$
     "schema-support/cli-schema/supplemental.md": {
       "to": "data/cli-schema/supplemental.md"
     },
-    "data/api-explorer/index.md": {
-      "to": "data/openapi/api-explorer.md"
-    },
     "mcp/index.md": {
       "to": "data/mcp/index.md"
     },
@@ -637,17 +359,11 @@ Through various means $$$including-this-inline-syntax$$$
     "cli/shell-autocompletion.md": {
       "to": "getting-started/installation.md"
     },
-    "getting-started/shell-autocompletion.md": {
-      "to": "getting-started/installation.md"
-    },
     "cli/cli-reference-how-to.md": {
       "to": "data/cli-schema/index.md"
     },
     "cli/cli-supplemental-docs.md": {
       "to": "data/cli-schema/supplemental.md"
-    },
-    "configure/content-set/api-explorer.md": {
-      "to": "data/openapi/api-explorer.md"
     },
     "cli/index.md": {
       "to": "getting-started/installation.md"
@@ -757,17 +473,38 @@ Through various means $$$including-this-inline-syntax$$$
     "cli/links/inbound-links-validate-link-reference.md": {
       "to": "getting-started/installation.md"
     },
-    "documentation/assembler/content-sources.md": {
-      "to": "documentation/assembler/environments.md"
+    "development/ingest/index.md": {
+      "to": "development/ingest.md"
     },
-    "documentation/assembler/how-to/branching-strategy.md": {
-      "to": "documentation/assembler/environments.md"
+    "development/link-validation/link-validation.md": {
+      "to": "documentation/cross-links.md"
     },
-    "documentation/assembler/how-to/release-new-version.md": {
-      "to": "documentation/assembler/environments.md"
+    "development/navigation/navigation.md": {
+      "to": "development/navigation.md"
     },
-    "documentation/assembler/how-to/add-repo.md": {
-      "to": "documentation/assembler/add-repo.md"
+    "development/navigation/visual-walkthrough.md": {
+      "to": "development/navigation.md"
+    },
+    "development/navigation/first-principles.md": {
+      "to": "development/navigation.md"
+    },
+    "development/navigation/functional-principles.md": {
+      "to": "development/navigation.md"
+    },
+    "development/navigation/technical-principles.md": {
+      "to": "development/navigation.md"
+    },
+    "development/navigation/two-phase-loading.md": {
+      "to": "development/navigation.md"
+    },
+    "development/navigation/node-types.md": {
+      "to": "development/navigation.md"
+    },
+    "development/navigation/home-provider-architecture.md": {
+      "to": "development/navigation.md"
+    },
+    "development/navigation/assembler-process.md": {
+      "to": "development/navigation.md"
     },
     "testing/index.md": {
       "to": "index.md"
