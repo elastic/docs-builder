@@ -203,7 +203,7 @@ function buildComponents(inputs: CalculatorInputs): ComponentRow[] {
     const int = formatGroupedInteger
     const rows: ComponentRow[] = []
 
-    // Raw vectors (.vec) — always written, kept for rescoring.
+    // Raw vectors (.vec) - always written, kept for rescoring.
     const rpv = rawBytesPerVector(elementType, D)
     const rawResident = quantization === 'none' && indexType !== 'disk_bbq'
     rows.push({
@@ -219,7 +219,6 @@ function buildComponents(inputs: CalculatorInputs): ComponentRow[] {
         description: rawResident
             ? 'Full-precision vectors, scanned directly during search.'
             : 'Full-precision vectors; kept on disk, read only for optional rescoring.',
-        source: 'LuceneFilesExtensions.java:81 · float=4 / byte=1 / bit=⌈D/8⌉ · bfloat16=2 BFloat16.java:20',
     })
 
     // Quantized vectors (hnsw / flat only).
@@ -233,7 +232,6 @@ function buildComponents(inputs: CalculatorInputs): ComponentRow[] {
             offHeap: 'yes',
             description:
                 '1 byte/dim + a 16-byte OSQ correction (3 floats + int component sum).',
-            source: 'DenseVectorFieldMapper.java:2095 · +16 = 3×float+int Int7uOSQVectorScorerSupplier.java:42,57',
         })
     } else if (indexType !== 'disk_bbq' && quantization === 'int4') {
         rows.push({
@@ -245,7 +243,6 @@ function buildComponents(inputs: CalculatorInputs): ComponentRow[] {
             offHeap: 'yes',
             description:
                 '0.5 byte/dim (nibble-packed) + the same 16-byte OSQ correction.',
-            source: 'DenseVectorFieldMapper.java:2290 · ⌈D/2⌉+16 Int4VectorScorerSupplier.java:49',
         })
     } else if (indexType !== 'disk_bbq' && quantization === 'bbq') {
         const packed = Math.ceil(D / 64) * 8
@@ -258,7 +255,6 @@ function buildComponents(inputs: CalculatorInputs): ComponentRow[] {
             offHeap: 'yes',
             description:
                 '1 bit/dim (D padded up to a multiple of 64) + 14-byte correction (3 floats + short).',
-            source: 'ES818BinaryQuantizedVectorsWriter · +14 ES93BinaryQuantizedVectorScorer.java:23 · discretize BQVectorUtils.java:44',
         })
     }
 
@@ -273,7 +269,6 @@ function buildComponents(inputs: CalculatorInputs): ComponentRow[] {
             offHeap: 'yes',
             description:
                 'Proximity graph, ~4 bytes per neighbour × m. Heuristic; the real .vex is varint delta-encoded and multi-level. Memory-mapped → off-heap.',
-            source: 'LuceneFilesExtensions.java:82 · m = DEFAULT_MAX_CONN = 16 DenseVectorFieldMapper.java:138',
         })
     }
 
@@ -289,19 +284,17 @@ function buildComponents(inputs: CalculatorInputs): ComponentRow[] {
             offHeap: 'yes',
             description:
                 '7-bit OSQ centroids (1 byte/dim) + 16-byte correction. Lower bound: excludes the parent centroid layer and vector→centroid lookup table.',
-            source: 'ES940DiskBBQVectorsFormat.java:55 · C = 384 (:80) · writeQuantizedValue ES940DiskBBQVectorsWriter.java:860-864',
         })
         const oneBit = D >= DISKBBQ_ONE_BIT_MIN_DIMS
         const codeBytes = oneBit ? Math.ceil(D / 8) : Math.ceil(D / 2)
         rows.push({
-            name: 'DiskBBQ clusters (quantized vectors)',
+            name: 'DiskBBQ clusters',
             ext: 'clivf',
             formula: oneBit ? 'V × 2 × (⌈D/8⌉ + 16)' : 'V × 2 × (⌈D/2⌉ + 16)',
             detail: `${int(V)} × 2 × (${int(codeBytes)} + 16)`,
             bytes: V * 2 * (codeBytes + 16),
             offHeap: 'partial',
             description: `${oneBit ? '1' : '4'}-bit OSQ vectors + 16-byte correction; D≥384 uses 1-bit, else 4-bit. The ×2 is a conservative SOAR-overspill upper bound. Only touched clusters are paged in.`,
-            source: 'ES940DiskBBQVectorsFormat.java:57 · bits DenseVectorFieldMapper.java:511 · SOAR ES940DiskBBQVectorsWriter.java:272-276',
         })
     }
 
@@ -325,18 +318,9 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     if (isNaN(V) || isNaN(D) || V <= 0 || D <= 0) return null
     if (D > 4096) return null
 
-    const diskFormulas: string[] = []
-    const ramFormulas: string[] = []
-    const clusterFormulas: string[] = []
-
     // --- Disk ---
-
-    // Raw vectors
     const rpv = rawBytesPerVector(elementType, D)
     const rawDisk = V * rpv
-    diskFormulas.push(
-        `Raw vectors on disk = ${formatGroupedInteger(V)} × ${rpv} = ${formatBytesString(rawDisk)}`
-    )
 
     // Quantized vectors (disk)
     let quantDisk = 0
@@ -346,23 +330,14 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
             case 'int8':
                 quantDisk = V * quantizedBytesPerVector('int8', D)
                 quantLabel = 'int8 quantized vectors'
-                diskFormulas.push(
-                    `int8 quantized = V × (D + 16) = ${formatBytesString(quantDisk)}`
-                )
                 break
             case 'int4':
                 quantDisk = V * quantizedBytesPerVector('int4', D)
                 quantLabel = 'int4 quantized vectors'
-                diskFormulas.push(
-                    `int4 quantized = V × (⌈D/2⌉ + 16) = ${formatBytesString(quantDisk)}`
-                )
                 break
             case 'bbq':
                 quantDisk = V * quantizedBytesPerVector('bbq', D)
                 quantLabel = 'BBQ quantized vectors'
-                diskFormulas.push(
-                    `BBQ quantized = V × (⌈D/64⌉×8 + 14) = ${formatBytesString(quantDisk)}`
-                )
                 break
         }
     }
@@ -376,9 +351,6 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     if (indexType === 'hnsw') {
         indexDisk = V * 4 * m
         indexLabel = 'HNSW graph'
-        diskFormulas.push(
-            `HNSW graph = V × 4 × ${m} = ${formatBytesString(indexDisk)}`
-        )
     } else if (indexType === 'disk_bbq') {
         const nc = Math.ceil(V / vpc)
         // Centroids: 7-bit OSQ quantized (1 byte/dim) + 16-byte correction.
@@ -387,26 +359,12 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         // overspill upper bound; + 16-byte correction (3 floats + 1 int).
         const clusterCodeBytes =
             D < DISKBBQ_ONE_BIT_MIN_DIMS ? Math.ceil(D / 2) : Math.ceil(D / 8)
-        const clusterCodeLabel =
-            D < DISKBBQ_ONE_BIT_MIN_DIMS ? '⌈D/2⌉' : '⌈D/8⌉'
         bbqVectors = V * 2 * (clusterCodeBytes + 16)
         indexDisk = bbqCentroids + bbqVectors
         indexLabel = 'DiskBBQ structures'
-        diskFormulas.push(
-            `DiskBBQ clusters = ⌈V / ${vpc}⌉ = ${formatGroupedInteger(nc)}`
-        )
-        diskFormulas.push(
-            `Centroid bytes = ⌈V/${vpc}⌉ × (D + 16) = ${formatBytesString(bbqCentroids)}`
-        )
-        diskFormulas.push(
-            `Quantized cluster vectors = V × 2 × (${clusterCodeLabel} + 16) = ${formatBytesString(bbqVectors)}`
-        )
     }
 
     const totalDisk = rawDisk + quantDisk + indexDisk
-    diskFormulas.push(
-        `Total disk (per replica) = ${formatBytesString(totalDisk)}`
-    )
 
     // Build disk breakdown
     const diskBreakdown: BreakdownItem[] = [
@@ -425,7 +383,7 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
             color: 'warning',
         })
 
-    // --- RAM ---
+    // --- RAM (off-heap working set) ---
     let ramVectors = 0
     let ramVectorsLabel = ''
     let ramIndex = 0
@@ -438,36 +396,23 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
             case 'none':
                 ramVectors = rawDisk
                 ramVectorsLabel = 'Raw vectors in RAM'
-                ramFormulas.push(
-                    `Vector RAM = ${formatBytesString(ramVectors)}`
-                )
                 break
             case 'int8':
                 ramVectors = V * quantizedBytesPerVector('int8', D)
                 ramVectorsLabel = 'int8 vectors in RAM'
-                ramFormulas.push(
-                    `Vector RAM (int8) = ${formatBytesString(ramVectors)}`
-                )
                 break
             case 'int4':
                 ramVectors = V * quantizedBytesPerVector('int4', D)
                 ramVectorsLabel = 'int4 vectors in RAM'
-                ramFormulas.push(
-                    `Vector RAM (int4) = ${formatBytesString(ramVectors)}`
-                )
                 break
             case 'bbq':
                 ramVectors = V * quantizedBytesPerVector('bbq', D)
                 ramVectorsLabel = 'BBQ vectors in RAM'
-                ramFormulas.push(
-                    `Vector RAM (BBQ) = ${formatBytesString(ramVectors)}`
-                )
                 break
         }
         if (indexType === 'hnsw') {
             ramIndex = V * 4 * m
             ramIndexLabel = 'HNSW graph in RAM'
-            ramFormulas.push(`HNSW graph RAM = ${formatBytesString(ramIndex)}`)
         }
     } else if (indexType === 'disk_bbq') {
         const pct = clampDiskBbqOffHeapPercent(offHeapRamPercent) / 100
@@ -477,23 +422,8 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         diskBbqRamMax =
             bbqCentroids +
             Math.ceil(bbqVectors * DISKBBQ_VECTOR_CACHE_MAX_FRACTION)
-        const ramSelected = bbqCentroids + Math.ceil(bbqVectors * pct)
-        ramVectors = ramSelected
+        ramVectors = bbqCentroids + Math.ceil(bbqVectors * pct)
         ramVectorsLabel = 'DiskBBQ off-heap RAM'
-        const minPct = DISKBBQ_VECTOR_CACHE_MIN_FRACTION * 100
-        const maxPct = DISKBBQ_VECTOR_CACHE_MAX_FRACTION * 100
-        ramFormulas.push(
-            `DiskBBQ RAM min = centroids + ${minPct}% × posting lists = ${formatBytesString(diskBbqRamMin)}`
-        )
-        ramFormulas.push(
-            `DiskBBQ RAM max = centroids + ${maxPct}% × posting lists = ${formatBytesString(diskBbqRamMax)}`
-        )
-        ramFormulas.push(
-            `DiskBBQ RAM (${clampDiskBbqOffHeapPercent(offHeapRamPercent)}% posting lists cached) = centroids + ${clampDiskBbqOffHeapPercent(offHeapRamPercent)}% × posting lists = ${formatBytesString(ramSelected)}`
-        )
-        ramFormulas.push(
-            '  All centroids stay resident; the cached posting-list fraction depends on throughput/latency goals'
-        )
     }
 
     const usesRamRange = indexType === 'disk_bbq'
@@ -502,11 +432,6 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         indexType === 'disk_bbq' ? diskBbqRamMin + ramIndex : totalRam
     const totalRamMax =
         indexType === 'disk_bbq' ? diskBbqRamMax + ramIndex : totalRam
-    ramFormulas.push(
-        usesRamRange
-            ? `Total off-heap RAM (per replica) = ${formatBytesRangeLabel(totalRamMin, totalRamMax)}`
-            : `Total off-heap RAM (per replica) = ${formatBytesString(totalRam)}`
-    )
 
     // Build RAM breakdown
     const ramBreakdown: BreakdownItem[] = []
@@ -528,15 +453,6 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     const clusterRam = totalRam * totalCopies
     const clusterRamMax = totalRamMax * totalCopies
     const clusterRamMin = totalRamMin * totalCopies
-
-    clusterFormulas.push(
-        `Cluster total disk = per-replica × ${totalCopies} copies = ${formatBytesString(clusterDisk)}`
-    )
-    clusterFormulas.push(
-        usesRamRange
-            ? `Cluster total RAM  = per-replica × ${totalCopies} copies = ${formatBytesRangeLabel(clusterRamMin, clusterRamMax)}`
-            : `Cluster total RAM  = per-replica × ${totalCopies} copies = ${formatBytesString(clusterRam)}`
-    )
 
     const components = buildComponents(inputs)
     const indexOptionsType = deriveIndexOptionsType(indexType, quantization)
@@ -560,15 +476,10 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         diskToRamRatioMin,
         diskToRamRatioMax,
         totalCopies,
-        formulas: {
-            disk: diskFormulas,
-            ram: ramFormulas,
-            cluster: clusterFormulas,
-        },
     }
 }
 
-/** Hero-style RAM label; supports DiskBBQ min–max range. */
+/** Hero-style RAM label; supports DiskBBQ min-max range. */
 export function formatRamHeroLabel(minBytes: number, maxBytes: number): string {
     if (minBytes <= 0 && maxBytes <= 0) return '0 MiB'
     if (minBytes === maxBytes) return formatRamHeroSingle(minBytes)
@@ -580,9 +491,9 @@ export function formatRamHeroLabel(minBytes: number, maxBytes: number): string {
     if (minUnit === maxUnit) {
         const minValue = minLabel.slice(0, -(minUnit!.length + 1))
         const maxValue = maxLabel.slice(0, -(maxUnit!.length + 1))
-        return `${minValue}–${maxValue} ${minUnit}`
+        return `${minValue}-${maxValue} ${minUnit}`
     }
-    return `${minLabel} – ${maxLabel}`
+    return `${minLabel} - ${maxLabel}`
 }
 
 /** Split hero label into value + unit for DiskBBQ RAM ranges. */
@@ -621,13 +532,13 @@ function formatRamHeroSingle(bytes: number): string {
     return mb >= 10 ? `${Math.round(mb)} MiB` : `${mb.toFixed(1)} MiB`
 }
 
-/** KV-row byte label for min–max RAM. */
+/** KV-row byte label for min-max RAM. */
 export function formatBytesRangeLabel(
     minBytes: number,
     maxBytes: number
 ): string {
     if (minBytes === maxBytes) return formatBytesString(minBytes)
-    return `${formatBytesString(minBytes)} – ${formatBytesString(maxBytes)}`
+    return `${formatBytesString(minBytes)} - ${formatBytesString(maxBytes)}`
 }
 
 /**

@@ -13,7 +13,7 @@ export interface CalculatorInputs {
     hnswM: number
     efConstruction: number
     vectorsPerCluster: number
-    /** DiskBBQ: share of quantized vectors cached in off-heap RAM (0–100). */
+    /** DiskBBQ: share of quantized vectors cached in off-heap RAM (0-100). */
     offHeapRamPercent: number
 }
 
@@ -41,14 +41,6 @@ export interface ComponentRow {
     bytes: number
     offHeap: OffHeapResidency
     description: string
-    /** Verified Elasticsearch source reference(s) for the constants. */
-    source: string
-}
-
-export interface SizingFormulas {
-    disk: string[]
-    ram: string[]
-    cluster: string[]
 }
 
 export interface SizingResult {
@@ -69,14 +61,13 @@ export interface SizingResult {
     clusterRam: number
     clusterRamMin: number
     clusterRamMax: number
-    /** DiskBBQ: hero and per-replica RAM show min–max (5%–10% posting-list cache). */
+    /** DiskBBQ: hero and per-replica RAM show min-max (5%-10% posting-list cache). */
     usesRamRange: boolean
-    /** Disk ÷ off-heap RAM ratio (per replica). For DiskBBQ this is the min–max band. */
+    /** Disk ÷ off-heap RAM ratio (per replica). For DiskBBQ this is the min-max band. */
     diskToRamRatioMin: number
     diskToRamRatioMax: number
     /** Index copies = 1 primary + replicas. */
     totalCopies: number
-    formulas: SizingFormulas
 }
 
 export interface ValidationResult {

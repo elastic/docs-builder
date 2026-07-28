@@ -2,7 +2,7 @@ import { formatBytesRangeLabel, formatBytesString } from '../calculations'
 import { formatGroupedInteger } from '../formatNumbers'
 import type { SizingResult, ValidationResult } from '../types'
 import { HeroSizeLine } from './HeroSizeLine'
-import { EuiHorizontalRule, EuiIcon, EuiLink, EuiText } from '@elastic/eui'
+import { EuiHorizontalRule, EuiLink, EuiText } from '@elastic/eui'
 
 interface ResultsPanelProps {
     result: SizingResult | null
@@ -34,12 +34,12 @@ function formatRatio(value: number): string {
 
 function diskToRamRatioLabel(result: SizingResult): string {
     if (result.diskToRamRatioMin <= 0) {
-        return '—'
+        return '-'
     }
     if (result.diskToRamRatioMin === result.diskToRamRatioMax) {
         return formatRatio(result.diskToRamRatioMin)
     }
-    return `${formatRatio(result.diskToRamRatioMin)} – ${formatRatio(result.diskToRamRatioMax)}`
+    return `${formatRatio(result.diskToRamRatioMin)} - ${formatRatio(result.diskToRamRatioMax)}`
 }
 
 export function ResultsPanel({
@@ -138,7 +138,7 @@ export function ResultsPanel({
                             >
                                 {showBody && result
                                     ? result.indexOptionsType
-                                    : '—'}
+                                    : '-'}
                             </EuiText>
                             <EuiText
                                 size="s"
@@ -173,17 +173,10 @@ export function ResultsPanel({
                             >
                                 {showBody && result
                                     ? diskToRamRatioLabel(result)
-                                    : '—'}
+                                    : '-'}
                             </EuiText>
                         </div>
                     </div>
-
-                    <EuiText size="xs" className="vectorSizingCalc__heapNote">
-                        <EuiIcon type="memory" size="s" /> JVM heap is transient
-                        only (per-query queues + a merge-time graph build) — it
-                        is not a persistent, index-sized structure. Size it for
-                        concurrency and merges, not for fitting the vectors.
-                    </EuiText>
 
                     <EuiHorizontalRule margin="l" />
 

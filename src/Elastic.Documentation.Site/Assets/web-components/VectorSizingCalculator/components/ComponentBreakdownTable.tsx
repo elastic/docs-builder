@@ -55,14 +55,22 @@ export function ComponentBreakdownTable({
                     compressed
                 >
                     <EuiTableHeader>
-                        <EuiTableHeaderCell>Component</EuiTableHeaderCell>
-                        <EuiTableHeaderCell>File</EuiTableHeaderCell>
-                        <EuiTableHeaderCell>Formula</EuiTableHeaderCell>
-                        <EuiTableHeaderCell align="right">
+                        <EuiTableHeaderCell width="18%">
+                            Component
+                        </EuiTableHeaderCell>
+                        <EuiTableHeaderCell width="8%">File</EuiTableHeaderCell>
+                        <EuiTableHeaderCell width="22%">
+                            Formula
+                        </EuiTableHeaderCell>
+                        <EuiTableHeaderCell width="12%" align="right">
                             Size
                         </EuiTableHeaderCell>
-                        <EuiTableHeaderCell>Off-heap RAM</EuiTableHeaderCell>
-                        <EuiTableHeaderCell>What it is</EuiTableHeaderCell>
+                        <EuiTableHeaderCell width="10%">
+                            Off-heap RAM
+                        </EuiTableHeaderCell>
+                        <EuiTableHeaderCell width="30%">
+                            What it is
+                        </EuiTableHeaderCell>
                     </EuiTableHeader>
 
                     <EuiTableBody>
@@ -75,7 +83,7 @@ export function ComponentBreakdownTable({
                                     <EuiTableRowCell className="vectorSizingCalc__breakdownName">
                                         {component.name}
                                     </EuiTableRowCell>
-                                    <EuiTableRowCell>
+                                    <EuiTableRowCell className="vectorSizingCalc__breakdownFile">
                                         <EuiCode>.{component.ext}</EuiCode>
                                     </EuiTableRowCell>
                                     <EuiTableRowCell>
@@ -85,9 +93,6 @@ export function ComponentBreakdownTable({
                                             </EuiCode>
                                             <span className="vectorSizingCalc__formulaDetail">
                                                 {component.detail}
-                                            </span>
-                                            <span className="vectorSizingCalc__formulaSource">
-                                                {component.source}
                                             </span>
                                         </span>
                                     </EuiTableRowCell>

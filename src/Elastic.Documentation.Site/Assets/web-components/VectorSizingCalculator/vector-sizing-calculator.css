@@ -589,100 +589,6 @@ vector-sizing-calculator:not(:defined) {
 	text-decoration: none !important;
 }
 
-.vectorSizingCalc__formulasPanel {
-	background: #2b394f;
-	border: 1px solid #2b394f;
-	border-radius: 8px;
-	overflow: hidden;
-	margin-top: 16px;
-}
-
-.vectorSizingCalc__formulasHeader {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
-	width: 100%;
-	padding: 16px 24px;
-	border: 0;
-	background: transparent;
-	cursor: pointer;
-	text-align: left;
-}
-
-.vectorSizingCalc__formulasHeader:hover,
-.vectorSizingCalc__formulasHeader:focus {
-	outline: none;
-}
-
-.vectorSizingCalc__formulasHeader:focus-visible {
-	outline: 2px solid #798eaf;
-	outline-offset: -2px;
-}
-
-.vectorSizingCalc__formulasTitle {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	color: #798eaf !important;
-	font-size: 12px !important;
-	line-height: 16px !important;
-	font-weight: 400 !important;
-}
-
-.vectorSizingCalc__formulasTitle .euiIcon {
-	color: #798eaf;
-	flex-shrink: 0;
-}
-
-.vectorSizingCalc__formulasToggle {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	flex-shrink: 0;
-	font-size: 12px !important;
-	line-height: 16px !important;
-	color: #798eaf !important;
-	text-decoration: none !important;
-}
-
-.vectorSizingCalc__formulasToggle .euiIcon {
-	color: #798eaf;
-}
-
-.vectorSizingCalc__formulasBody {
-	padding: 0 24px 24px;
-}
-
-.vectorSizingCalc__formulasSections {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
-.vectorSizingCalc__formulasPre {
-	margin: 0;
-	padding: 0;
-	max-width: 100%;
-	overflow-x: auto;
-	font-family: var(--euiCodeFontFamily, 'Menlo', 'Consolas', monospace);
-	font-size: 12px;
-	line-height: 16px;
-	color: #e3e8f2;
-	white-space: pre-wrap;
-	word-break: break-word;
-}
-
-.vectorSizingCalc__formulasLine {
-	display: block;
-	line-height: 16px;
-	color: #e3e8f2;
-}
-
-.vectorSizingCalc__formulasLine--total {
-	color: #b8d4ff;
-}
-
 @media (max-width: 1023px) {
 	.vectorSizingCalc__panel--right {
 		border-top: none;
@@ -727,25 +633,46 @@ vector-sizing-calculator:not(:defined) {
 
 .vectorSizingCalc__breakdownTable {
 	min-width: 760px;
+	table-layout: fixed;
+}
+
+/* EUI renders cell content as a flex row (align-items: center), which stops
+   long text from wrapping and lets it overrun the next column. Make it a normal
+   block so text wraps, and top-align every cell. */
+.vectorSizingCalc__breakdownTable .euiTableRowCell {
+	vertical-align: top;
+}
+
+.vectorSizingCalc__breakdownTable .euiTableCellContent {
+	display: block;
+	white-space: normal;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .vectorSizingCalc__breakdownName {
 	font-weight: 600;
 	color: #24334b;
+}
+
+.vectorSizingCalc__breakdownFile .euiTableCellContent,
+.vectorSizingCalc__breakdownNum .euiTableCellContent {
 	white-space: nowrap;
+	word-break: normal;
 }
 
 .vectorSizingCalc__breakdownNum {
 	font-variant-numeric: tabular-nums;
 	font-weight: 600;
-	white-space: nowrap;
 	color: #24334b;
+}
+
+.vectorSizingCalc__breakdownNum .euiTableCellContent {
+	text-align: right;
 }
 
 .vectorSizingCalc__breakdownDesc {
 	color: #516381;
-	max-width: 34ch;
-	font-size: 12px;
 }
 
 .vectorSizingCalc__formulaCell {
@@ -753,21 +680,21 @@ vector-sizing-calculator:not(:defined) {
 	flex-direction: column;
 	gap: 3px;
 	align-items: flex-start;
+	max-width: 100%;
+}
+
+.vectorSizingCalc__formulaCell .euiCode {
+	max-width: 100%;
+	white-space: normal;
+	overflow-wrap: break-word;
 }
 
 .vectorSizingCalc__formulaDetail {
 	color: #798eaf;
 	font-size: 11px;
 	font-family: var(--euiCodeFontFamily, 'Menlo', 'Consolas', monospace);
-}
-
-.vectorSizingCalc__formulaSource {
-	color: #94a3bd;
-	font-size: 10.5px;
-	font-family: var(--euiCodeFontFamily, 'Menlo', 'Consolas', monospace);
-	max-width: 42ch;
-	white-space: normal;
-	line-height: 1.4;
+	max-width: 100%;
+	overflow-wrap: break-word;
 }
 
 .vectorSizingCalc__breakdownTotalRow .euiTableCellContent {
@@ -787,21 +714,6 @@ vector-sizing-calculator:not(:defined) {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-}
-
-/* ---- JVM heap note (results panel) ---- */
-.vectorSizingCalc__heapNote {
-	display: flex;
-	gap: 6px;
-	margin-top: 12px;
-	color: #798eaf !important;
-	line-height: 1.5;
-}
-
-.vectorSizingCalc__heapNote .euiIcon {
-	flex-shrink: 0;
-	margin-top: 2px;
-	color: #798eaf;
 }
 
 /* ---- Explainers ("How it is computed") ---- */
@@ -841,6 +753,31 @@ vector-sizing-calculator:not(:defined) {
 	border-bottom: 1px solid #eef2f7;
 }
 
+.vectorSizingCalc__explainerSectionHeader {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 2px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.vectorSizingCalc__explainerSectionHeader:hover
+	.vectorSizingCalc__explainerSectionTitle {
+	color: #0b64dd;
+}
+
+.vectorSizingCalc__explainerSectionHeader:focus-visible {
+	outline: 2px solid #3d6ecc;
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+.vectorSizingCalc__explainerSectionHeader .euiIcon {
+	flex-shrink: 0;
+	color: #516381;
+}
+
 .vectorSizingCalc__explainerSectionTitle {
 	font-size: 13px;
 	font-weight: 600;
@@ -849,6 +786,7 @@ vector-sizing-calculator:not(:defined) {
 
 .vectorSizingCalc__explainerBody {
 	color: #43506a;
+	padding: 0 0 14px 24px;
 }
 
 .vectorSizingCalc__explainerBody p {

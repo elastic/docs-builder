@@ -3,7 +3,7 @@ import { ComponentBreakdownTable } from './components/ComponentBreakdownTable'
 import { ExplainersPanel } from './components/ExplainersPanel'
 import type { CalculatorInputs } from './types'
 import { EuiProvider } from '@elastic/eui'
-import { render } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 
 const inputs: CalculatorInputs = {
     numVectors: 1_000_000,
@@ -32,17 +32,21 @@ it('smoke: ComponentBreakdownTable renders rows + total + legend', () => {
     expect(container.textContent).toContain('Total on disk')
 })
 
-it('smoke: ExplainersPanel renders all accordion sections', () => {
-    const { getByText } = render(
+it('smoke: ExplainersPanel shows open sections and expands collapsed ones on click', () => {
+    const { container, getByText } = render(
         <EuiProvider colorMode="light">
             <ExplainersPanel />
         </EuiProvider>
     )
+    // header + section titles are always present
     expect(getByText('How it is computed')).toBeInTheDocument()
-    expect(
-        getByText('Heap vs off-heap — is the HNSW graph on heap?')
-    ).toBeInTheDocument()
-    expect(
-        getByText('Source references (verified against Elasticsearch code)')
-    ).toBeInTheDocument()
+    expect(getByText('How each size is calculated')).toBeInTheDocument()
+
+    // an initially-open section renders its body
+    expect(container.textContent).toContain('working set that must stay')
+
+    // a collapsed section's body is hidden until its header is clicked
+    expect(container.textContent).not.toContain('graph connections per node')
+    fireEvent.click(getByText('How each size is calculated'))
+    expect(container.textContent).toContain('graph connections per node')
 })

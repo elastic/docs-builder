@@ -40,7 +40,7 @@ export function ByteSizeValue({
     const primary =
         primaryLabel ??
         (isRange
-            ? `${formatBytesString(min)} – ${formatBytesString(max)}`
+            ? `${formatBytesString(min)} - ${formatBytesString(max)}`
             : formatBytesString(min))
 
     const tooltipContent = (
