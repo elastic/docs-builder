@@ -281,7 +281,7 @@ entries:
 When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
 
 To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`.
-For more details, go to [Hide features in bundles](../contribute/bundle-changelogs.md#changelog-bundle-hide-features).
+For more details, go to [Hide features in bundles](/data/release-notes/bundle.md#changelog-bundle-hide-features).
 
 ## Hiding private links [hide-links]
 
@@ -296,7 +296,7 @@ This is determined by checking the `assembler.yml` configuration:
 - In standalone builds without `assembler.yml`, all links are shown by default
 - When [`:cdn:`](#cdn) is set, `:link-visibility: auto` keeps links (CDN bundles are already scrubbed for public delivery). You do not need `:link-visibility: keep-links` on CDN pages for this reason alone.
 
-Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior. For local merged bundles where a private repo's entries were already sanitized at bundle time with [`link_allow_repos`](/contribute/configure-changelogs-ref.md#bundle-basic), use `:link-visibility: keep-links` so public constituents' links are not hidden with the private repo's.
+Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior. For local merged bundles where a private repo's entries were already sanitized at bundle time with [`link_allow_repos`](/data/release-notes/configure-ref.md#bundle-basic), use `:link-visibility: keep-links` so public constituents' links are not hidden with the private repo's.
 
 ## Bundle merging
 
@@ -439,7 +439,7 @@ The `{changelog}` directive is ideal for release notes pages that should always 
 
 ## Related
 
-- [Create and bundle changelogs](/contribute/changelog.md) — Overview, workflow, and links to detailed guides
+- [Create and bundle changelogs](/data/release-notes/overview.md) — Overview, workflow, and links to detailed guides
 - [`changelog add`](/cli/changelog/add.md) — CLI command to create changelog entries
 - [`changelog bundle`](/cli/changelog/bundle.md) — CLI command to bundle changelog entries
 - [`changelog remove`](/cli/changelog/remove.md) — CLI command to remove changelog files
