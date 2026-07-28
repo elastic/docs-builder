@@ -402,7 +402,7 @@
   }
   function fb(b){
     if(b===0)return{v:'0',u:'bytes'};
-    var u=['bytes','KB','MB','GB','TB','PB'],i=0,x=b;
+    var u=['bytes','KiB','MiB','GiB','TiB','PiB'],i=0,x=b;
     while(x>=1024&&i<u.length-1){x/=1024;i++;}
     return{v:x<10?x.toFixed(2):x<100?x.toFixed(1):x.toFixed(0),u:u[i]};
   }

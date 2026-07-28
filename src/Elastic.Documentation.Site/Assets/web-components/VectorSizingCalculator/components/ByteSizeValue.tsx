@@ -65,7 +65,7 @@ export function ByteSizeValue({
                 </EuiText>
             )}
             <EuiText size="xs" color="subdued">
-                Binary prefixes (1 GB = 1,024 MB)
+                Binary prefixes (1 GiB = 1,024 MiB)
             </EuiText>
         </>
     )

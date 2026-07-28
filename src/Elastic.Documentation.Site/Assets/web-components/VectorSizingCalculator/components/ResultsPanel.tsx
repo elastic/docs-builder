@@ -118,7 +118,7 @@ export function ResultsPanel({
                             >
                                 {showBody
                                     ? formatBytesString(result.totalDisk)
-                                    : '0 MB'}
+                                    : '0 MiB'}
                             </EuiText>
                             <EuiText
                                 size="s"
@@ -131,7 +131,7 @@ export function ResultsPanel({
                                               result.totalRamMax
                                           )
                                         : formatBytesString(result.totalRam)
-                                    : '0 MB'}
+                                    : '0 MiB'}
                             </EuiText>
                         </div>
                     </div>
@@ -142,7 +142,7 @@ export function ResultsPanel({
                         size="xs"
                         className="vectorSizingCalc__binaryPrefixNote"
                     >
-                        Sizes use binary units (1 GB = 1,024 MB).
+                        Sizes use binary units (1 GiB = 1,024 MiB).
                     </EuiText>
                 </div>
 

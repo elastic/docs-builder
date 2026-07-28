@@ -25,7 +25,7 @@ function rawBytesPerVector(elementType: string, D: number): number {
 /** Human-readable byte formatting. */
 export function formatBytes(bytes: number): { value: string; unit: string } {
   if (bytes === 0) return { value: '0', unit: 'bytes' };
-  const units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const units = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
   let idx = 0;
   let val = bytes;
   while (val >= 1024 && idx < units.length - 1) {

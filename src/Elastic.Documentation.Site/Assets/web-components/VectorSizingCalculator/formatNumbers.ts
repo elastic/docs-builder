@@ -5,7 +5,7 @@ export function formatGroupedInteger(value: number): string {
     return value.toLocaleString(NUMBER_LOCALE, { maximumFractionDigits: 0 })
 }
 
-/** Exact byte count for secondary display (e.g. under rounded GB/MB). */
+/** Exact byte count for secondary display (e.g. under rounded GiB/MiB). */
 export function formatExactBytes(bytes: number): string {
     return `${formatGroupedInteger(bytes)} bytes`
 }

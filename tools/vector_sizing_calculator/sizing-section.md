@@ -209,9 +209,9 @@ The cluster-wide RAM is spread across data nodes that hold the shard replicas. E
 
 ```{math}
 \begin{align*}
-\text{raw vectors} &= 1{,}000{,}000 \times 1{,}024 \times 4 = 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GB} \\
-\text{HNSW graph} &= 1{,}000{,}000 \times 4 \times 16 = 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MB} \\
-\text{total disk} &\approx 3.87 \text{ GB}
+\text{raw vectors} &= 1{,}000{,}000 \times 1{,}024 \times 4 = 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GiB} \\
+\text{HNSW graph} &= 1{,}000{,}000 \times 4 \times 16 = 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MiB} \\
+\text{total disk} &\approx 3.87 \text{ GiB}
 \end{align*}
 ```
 
@@ -219,13 +219,13 @@ The cluster-wide RAM is spread across data nodes that hold the shard replicas. E
 
 ```{math}
 \begin{align*}
-\text{vector RAM} &= 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GB} \\
-\text{HNSW graph RAM} &= 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MB} \\
-\text{total RAM} &\approx 3.87 \text{ GB}
+\text{vector RAM} &= 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GiB} \\
+\text{HNSW graph RAM} &= 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MiB} \\
+\text{total RAM} &\approx 3.87 \text{ GiB}
 \end{align*}
 ```
 
-**Cluster-wide (1 primary + 1 replica = 2 copies):** ~7.74 GB disk, ~7.74 GB RAM
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~7.74 GiB disk, ~7.74 GiB RAM
 ::::
 
 ::::{dropdown} Example: HNSW with float vectors and int8 quantization
@@ -235,10 +235,10 @@ The cluster-wide RAM is spread across data nodes that hold the shard replicas. E
 
 ```{math}
 \begin{align*}
-\text{raw vectors} &= 1{,}000{,}000 \times 1{,}024 \times 4 = 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GB} \\
-\text{int8 quantized} &= 1{,}000{,}000 \times (1{,}024 + 16) = 1{,}040{,}000{,}000 \text{ bytes} \approx 992 \text{ MB} \\
-\text{HNSW graph} &= 1{,}000{,}000 \times 64 = 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MB} \\
-\text{total disk} &\approx 4.84 \text{ GB}
+\text{raw vectors} &= 1{,}000{,}000 \times 1{,}024 \times 4 = 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GiB} \\
+\text{int8 quantized} &= 1{,}000{,}000 \times (1{,}024 + 16) = 1{,}040{,}000{,}000 \text{ bytes} \approx 992 \text{ MiB} \\
+\text{HNSW graph} &= 1{,}000{,}000 \times 64 = 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MiB} \\
+\text{total disk} &\approx 4.84 \text{ GiB}
 \end{align*}
 ```
 
@@ -246,17 +246,17 @@ The cluster-wide RAM is spread across data nodes that hold the shard replicas. E
 
 ```{math}
 \begin{align*}
-\text{int8 vector RAM} &= 1{,}040{,}000{,}000 \text{ bytes} \approx 992 \text{ MB} \\
-\text{HNSW graph RAM} &= 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MB} \\
-\text{total RAM} &\approx 1.03 \text{ GB}
+\text{int8 vector RAM} &= 1{,}040{,}000{,}000 \text{ bytes} \approx 992 \text{ MiB} \\
+\text{HNSW graph RAM} &= 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MiB} \\
+\text{total RAM} &\approx 1.03 \text{ GiB}
 \end{align*}
 ```
 
 :::{note}
-With `int8` quantization, disk increases by ~25% (both raw and quantized vectors are stored), but RAM drops from 3.87 GB to 1.03 GB — a **~4× reduction**.
+With `int8` quantization, disk increases by ~25% (both raw and quantized vectors are stored), but RAM drops from 3.87 GiB to 1.03 GiB — a **~4× reduction**.
 :::
 
-**Cluster-wide (1 primary + 1 replica = 2 copies):** ~9.69 GB disk, ~2.06 GB RAM
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~9.69 GiB disk, ~2.06 GiB RAM
 ::::
 
 ::::{dropdown} Example: HNSW with float vectors and BBQ quantization
@@ -266,10 +266,10 @@ With `int8` quantization, disk increases by ~25% (both raw and quantized vectors
 
 ```{math}
 \begin{align*}
-\text{raw vectors} &= 10{,}000{,}000 \times 768 \times 4 = 30{,}720{,}000{,}000 \text{ bytes} \approx 28.6 \text{ GB} \\
-\text{BBQ quantized} &= 10{,}000{,}000 \times (96 + 14) = 1{,}100{,}000{,}000 \text{ bytes} \approx 1.02 \text{ GB} \\
-\text{HNSW graph} &= 10{,}000{,}000 \times 64 = 640{,}000{,}000 \text{ bytes} \approx 596 \text{ MB} \\
-\text{total disk} &\approx 30.2 \text{ GB}
+\text{raw vectors} &= 10{,}000{,}000 \times 768 \times 4 = 30{,}720{,}000{,}000 \text{ bytes} \approx 28.6 \text{ GiB} \\
+\text{BBQ quantized} &= 10{,}000{,}000 \times (96 + 14) = 1{,}100{,}000{,}000 \text{ bytes} \approx 1.02 \text{ GiB} \\
+\text{HNSW graph} &= 10{,}000{,}000 \times 64 = 640{,}000{,}000 \text{ bytes} \approx 596 \text{ MiB} \\
+\text{total disk} &\approx 30.2 \text{ GiB}
 \end{align*}
 ```
 
@@ -277,17 +277,17 @@ With `int8` quantization, disk increases by ~25% (both raw and quantized vectors
 
 ```{math}
 \begin{align*}
-\text{BBQ vector RAM} &= 1{,}100{,}000{,}000 \text{ bytes} \approx 1.02 \text{ GB} \\
-\text{HNSW graph RAM} &= 640{,}000{,}000 \text{ bytes} \approx 596 \text{ MB} \\
-\text{total RAM} &\approx 1.62 \text{ GB}
+\text{BBQ vector RAM} &= 1{,}100{,}000{,}000 \text{ bytes} \approx 1.02 \text{ GiB} \\
+\text{HNSW graph RAM} &= 640{,}000{,}000 \text{ bytes} \approx 596 \text{ MiB} \\
+\text{total RAM} &\approx 1.62 \text{ GiB}
 \end{align*}
 ```
 
 :::{note}
-BBQ quantization reduces RAM from ~29.2 GB (unquantized) to ~1.62 GB — a **~18× reduction** for 768-dimensional vectors. This is ideal for large-scale vector workloads.
+BBQ quantization reduces RAM from ~29.2 GiB (unquantized) to ~1.62 GiB — a **~18× reduction** for 768-dimensional vectors. This is ideal for large-scale vector workloads.
 :::
 
-**Cluster-wide (1 primary + 1 replica = 2 copies):** ~60.4 GB disk, ~3.24 GB RAM
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~60.4 GiB disk, ~3.24 GiB RAM
 ::::
 
 ::::{dropdown} Example: DiskBBQ
@@ -297,11 +297,11 @@ BBQ quantization reduces RAM from ~29.2 GB (unquantized) to ~1.62 GB — a **~18
 
 ```{math}
 \begin{align*}
-\text{raw vectors} &= 10{,}000{,}000 \times 768 \times 4 = 30{,}720{,}000{,}000 \text{ bytes} \approx 28.6 \text{ GB} \\
+\text{raw vectors} &= 10{,}000{,}000 \times 768 \times 4 = 30{,}720{,}000{,}000 \text{ bytes} \approx 28.6 \text{ GiB} \\
 \text{num\_clusters} &= \lceil 10{,}000{,}000 / 384 \rceil = 26{,}042 \\
-\text{centroid bytes} &= 26{,}042 \times (768 + 16) = 20{,}416{,}928 \text{ bytes} \approx 19.5 \text{ MB} \\
-\text{quantized vectors} &= 10{,}000{,}000 \times 2 \times (96 + 16) = 2{,}240{,}000{,}000 \text{ bytes} \approx 2.09 \text{ GB} \\
-\text{total disk} &\approx 30.7 \text{ GB}
+\text{centroid bytes} &= 26{,}042 \times (768 + 16) = 20{,}416{,}928 \text{ bytes} \approx 19.5 \text{ MiB} \\
+\text{quantized vectors} &= 10{,}000{,}000 \times 2 \times (96 + 16) = 2{,}240{,}000{,}000 \text{ bytes} \approx 2.09 \text{ GiB} \\
+\text{total disk} &\approx 30.7 \text{ GiB}
 \end{align*}
 ```
 
@@ -309,17 +309,17 @@ BBQ quantization reduces RAM from ~29.2 GB (unquantized) to ~1.62 GB — a **~18
 
 ```{math}
 \begin{align*}
-\text{centroids (all)} &= 20{,}416{,}928 \text{ bytes} \approx 19.5 \text{ MB} \\
-\text{RAM at 5\%} &= 20{,}416{,}928 + 0.05 \times 2{,}240{,}000{,}000 \approx 126 \text{ MB} \\
-\text{RAM at 10\%} &= 20{,}416{,}928 + 0.10 \times 2{,}240{,}000{,}000 \approx 233 \text{ MB}
+\text{centroids (all)} &= 20{,}416{,}928 \text{ bytes} \approx 19.5 \text{ MiB} \\
+\text{RAM at 5\%} &= 20{,}416{,}928 + 0.05 \times 2{,}240{,}000{,}000 \approx 126 \text{ MiB} \\
+\text{RAM at 10\%} &= 20{,}416{,}928 + 0.10 \times 2{,}240{,}000{,}000 \approx 233 \text{ MiB}
 \end{align*}
 ```
 
 :::{note}
-DiskBBQ requires dramatically less RAM than HNSW — ~126–233 MB vs ~29.2 GB for the same 10M×768 unquantized HNSW setup. Trade-off: DiskBBQ has higher query latency since most data is read from disk.
+DiskBBQ requires dramatically less RAM than HNSW — ~126–233 MiB vs ~29.2 GiB for the same 10M×768 unquantized HNSW setup. Trade-off: DiskBBQ has higher query latency since most data is read from disk.
 :::
 
-**Cluster-wide (1 primary + 1 replica = 2 copies):** ~61.4 GB disk, ~253–466 MB RAM
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~61.4 GiB disk, ~253–466 MiB RAM
 ::::
 
 ### Quick-reference: RAM reduction from quantization [_quantization_ram_comparison]

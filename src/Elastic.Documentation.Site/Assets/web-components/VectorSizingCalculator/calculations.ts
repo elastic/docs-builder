@@ -47,7 +47,7 @@ function quantizedBytesPerVector(quantization: string, D: number): number {
 /** Human-readable byte formatting. */
 export function formatBytes(bytes: number): { value: string; unit: string } {
     if (bytes === 0) return { value: '0', unit: 'bytes' }
-    const units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
+    const units = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
     let idx = 0
     let val = bytes
     while (val >= 1024 && idx < units.length - 1) {
@@ -409,7 +409,7 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
 
 /** Hero-style RAM label; supports DiskBBQ min–max range. */
 export function formatRamHeroLabel(minBytes: number, maxBytes: number): string {
-    if (minBytes <= 0 && maxBytes <= 0) return '0 MB'
+    if (minBytes <= 0 && maxBytes <= 0) return '0 MiB'
     if (minBytes === maxBytes) return formatRamHeroSingle(minBytes)
 
     const minLabel = formatRamHeroSingle(minBytes)
@@ -451,13 +451,13 @@ export function formatHeroSizeParts(
 }
 
 function formatRamHeroSingle(bytes: number): string {
-    if (bytes <= 0) return '0 MB'
+    if (bytes <= 0) return '0 MiB'
     const gb = bytes / 1024 ** 3
     if (gb >= 1) {
-        return gb >= 10 ? `${Math.round(gb)} GB` : `${gb.toFixed(1)} GB`
+        return gb >= 10 ? `${Math.round(gb)} GiB` : `${gb.toFixed(1)} GiB`
     }
     const mb = bytes / 1024 ** 2
-    return mb >= 10 ? `${Math.round(mb)} MB` : `${mb.toFixed(1)} MB`
+    return mb >= 10 ? `${Math.round(mb)} MiB` : `${mb.toFixed(1)} MiB`
 }
 
 /** KV-row byte label for min–max RAM. */
