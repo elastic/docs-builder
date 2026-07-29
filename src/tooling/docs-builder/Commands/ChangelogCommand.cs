@@ -1389,7 +1389,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fileSystem = FileSystemFactory.RealReadForCI(environmentVariables);
+		var fileSystem = FileSystemFactory.RealReadForRunnerTemp(environmentVariables);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService, fileSystem);
 
