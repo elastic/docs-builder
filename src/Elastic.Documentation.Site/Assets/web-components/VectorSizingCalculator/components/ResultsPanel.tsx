@@ -1,4 +1,4 @@
-import { formatBytesRangeLabel, formatBytesString } from '../calculations'
+import { formatBytesString } from '../calculations'
 import { formatGroupedInteger } from '../formatNumbers'
 import type { SizingResult, ValidationResult } from '../types'
 import { HeroSizeLine } from './HeroSizeLine'
@@ -33,13 +33,10 @@ function formatRatio(value: number): string {
 }
 
 function diskToRamRatioLabel(result: SizingResult): string {
-    if (result.diskToRamRatioMin <= 0) {
+    if (result.diskToRamRatio <= 0) {
         return '-'
     }
-    if (result.diskToRamRatioMin === result.diskToRamRatioMax) {
-        return formatRatio(result.diskToRamRatioMin)
-    }
-    return `${formatRatio(result.diskToRamRatioMin)} - ${formatRatio(result.diskToRamRatioMax)}`
+    return formatRatio(result.diskToRamRatio)
 }
 
 export function ResultsPanel({
@@ -71,21 +68,7 @@ export function ResultsPanel({
                                 resourceLabel="Disk"
                             />
                             <HeroSizeLine
-                                bytes={
-                                    result.usesRamRange
-                                        ? undefined
-                                        : result.clusterRam
-                                }
-                                bytesMin={
-                                    result.usesRamRange
-                                        ? result.clusterRamMin
-                                        : undefined
-                                }
-                                bytesMax={
-                                    result.usesRamRange
-                                        ? result.clusterRamMax
-                                        : undefined
-                                }
+                                bytes={result.clusterRam}
                                 resourceLabel="RAM"
                             />
                         </div>
@@ -159,12 +142,7 @@ export function ResultsPanel({
                                 className="vectorSizingCalc__detailValue"
                             >
                                 {showBody
-                                    ? result.usesRamRange
-                                        ? formatBytesRangeLabel(
-                                              result.totalRamMin,
-                                              result.totalRamMax
-                                          )
-                                        : formatBytesString(result.totalRam)
+                                    ? formatBytesString(result.totalRam)
                                     : '0 MiB'}
                             </EuiText>
                             <EuiText

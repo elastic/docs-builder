@@ -66,12 +66,8 @@ export function formatBytesString(bytes: number): string {
 }
 
 /** DiskBBQ off-heap slider: % of posting lists (cluster vectors) to cache in RAM (centroids are always fully resident). */
-export const DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT = 5
+export const DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT = 0
 export const DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT = 10
-
-/** DiskBBQ RAM range endpoints for hero/detail (fraction of posting lists cached; centroids always fully resident). */
-const DISKBBQ_VECTOR_CACHE_MIN_FRACTION = 0.05
-const DISKBBQ_VECTOR_CACHE_MAX_FRACTION = 0.1
 
 /**
  * DiskBBQ cluster vectors use 1-bit codes at/above this dimension and 4-bit
@@ -388,8 +384,6 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     let ramVectorsLabel = ''
     let ramIndex = 0
     let ramIndexLabel = ''
-    let diskBbqRamMin = 0
-    let diskBbqRamMax = 0
 
     if (indexType === 'hnsw' || indexType === 'flat') {
         switch (quantization) {
@@ -415,23 +409,14 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
             ramIndexLabel = 'HNSW graph in RAM'
         }
     } else if (indexType === 'disk_bbq') {
+        // All centroids stay resident; the selected % of posting lists
+        // (cluster vectors) is cached in off-heap RAM.
         const pct = clampDiskBbqOffHeapPercent(offHeapRamPercent) / 100
-        diskBbqRamMin =
-            bbqCentroids +
-            Math.ceil(bbqVectors * DISKBBQ_VECTOR_CACHE_MIN_FRACTION)
-        diskBbqRamMax =
-            bbqCentroids +
-            Math.ceil(bbqVectors * DISKBBQ_VECTOR_CACHE_MAX_FRACTION)
         ramVectors = bbqCentroids + Math.ceil(bbqVectors * pct)
         ramVectorsLabel = 'DiskBBQ off-heap RAM'
     }
 
-    const usesRamRange = indexType === 'disk_bbq'
     const totalRam = ramVectors + ramIndex
-    const totalRamMin =
-        indexType === 'disk_bbq' ? diskBbqRamMin + ramIndex : totalRam
-    const totalRamMax =
-        indexType === 'disk_bbq' ? diskBbqRamMax + ramIndex : totalRam
 
     // Build RAM breakdown
     const ramBreakdown: BreakdownItem[] = []
@@ -451,13 +436,10 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     const totalCopies = 1 + replicas
     const clusterDisk = totalDisk * totalCopies
     const clusterRam = totalRam * totalCopies
-    const clusterRamMax = totalRamMax * totalCopies
-    const clusterRamMin = totalRamMin * totalCopies
 
     const components = buildComponents(inputs)
     const indexOptionsType = deriveIndexOptionsType(indexType, quantization)
-    const diskToRamRatioMin = totalRamMax > 0 ? totalDisk / totalRamMax : 0
-    const diskToRamRatioMax = totalRamMin > 0 ? totalDisk / totalRamMin : 0
+    const diskToRamRatio = totalRam > 0 ? totalDisk / totalRam : 0
 
     return {
         diskBreakdown,
@@ -466,79 +448,20 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         indexOptionsType,
         totalDisk,
         totalRam,
-        totalRamMin,
-        totalRamMax,
         clusterDisk,
         clusterRam,
-        clusterRamMin,
-        clusterRamMax,
-        usesRamRange,
-        diskToRamRatioMin,
-        diskToRamRatioMax,
+        diskToRamRatio,
         totalCopies,
     }
 }
 
-/** Hero-style RAM label; supports DiskBBQ min-max range. */
-export function formatRamHeroLabel(minBytes: number, maxBytes: number): string {
-    if (minBytes <= 0 && maxBytes <= 0) return '0 MiB'
-    if (minBytes === maxBytes) return formatRamHeroSingle(minBytes)
-
-    const minLabel = formatRamHeroSingle(minBytes)
-    const maxLabel = formatRamHeroSingle(maxBytes)
-    const minUnit = minLabel.split(' ').pop()
-    const maxUnit = maxLabel.split(' ').pop()
-    if (minUnit === maxUnit) {
-        const minValue = minLabel.slice(0, -(minUnit!.length + 1))
-        const maxValue = maxLabel.slice(0, -(maxUnit!.length + 1))
-        return `${minValue}-${maxValue} ${minUnit}`
-    }
-    return `${minLabel} - ${maxLabel}`
-}
-
-/** Split hero label into value + unit for DiskBBQ RAM ranges. */
-export function formatHeroSizeParts(
-    bytes: number,
-    bytesMin?: number,
-    bytesMax?: number
-): { value: string; unit: string } {
-    if (
-        bytesMin !== undefined &&
-        bytesMax !== undefined &&
-        bytesMin !== bytesMax
-    ) {
-        const label = formatRamHeroLabel(bytesMin, bytesMax)
-        const lastSpace = label.lastIndexOf(' ')
-        if (lastSpace > 0) {
-            return {
-                value: label.slice(0, lastSpace),
-                unit: label.slice(lastSpace + 1),
-            }
-        }
-        return { value: label, unit: '' }
-    }
-
+/** Split a hero byte total into value + unit. */
+export function formatHeroSizeParts(bytes: number): {
+    value: string
+    unit: string
+} {
     const { value, unit } = formatBytes(bytes)
     return { value, unit }
-}
-
-function formatRamHeroSingle(bytes: number): string {
-    if (bytes <= 0) return '0 MiB'
-    const gb = bytes / 1024 ** 3
-    if (gb >= 1) {
-        return gb >= 10 ? `${Math.round(gb)} GiB` : `${gb.toFixed(1)} GiB`
-    }
-    const mb = bytes / 1024 ** 2
-    return mb >= 10 ? `${Math.round(mb)} MiB` : `${mb.toFixed(1)} MiB`
-}
-
-/** KV-row byte label for min-max RAM. */
-export function formatBytesRangeLabel(
-    minBytes: number,
-    maxBytes: number
-): string {
-    if (minBytes === maxBytes) return formatBytesString(minBytes)
-    return `${formatBytesString(minBytes)} - ${formatBytesString(maxBytes)}`
 }
 
 /**

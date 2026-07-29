@@ -184,20 +184,22 @@ describe('DiskBBQ centroids and clusters', () => {
         expect(bytesFor(r.diskBreakdown, 'Raw vectors')).toBe(V * D * 4)
     })
 
-    it('off-heap RAM range = all centroids + (5%..10%) of posting lists', () => {
+    it('off-heap RAM = all centroids + the selected % of posting lists', () => {
         const D = 768
-        const r = calculate(
-            make({
-                indexType: 'disk_bbq',
-                quantization: 'bbq',
-                numDimensions: D,
-            })
-        )!
         const centroids = nc * (D + 16)
         const clusters = V * 2 * (96 + 16)
-        expect(r.usesRamRange).toBe(true)
-        expect(r.totalRamMin).toBe(centroids + Math.ceil(clusters * 0.05))
-        expect(r.totalRamMax).toBe(centroids + Math.ceil(clusters * 0.1))
+        const ramAt = (offHeapRamPercent: number) =>
+            calculate(
+                make({
+                    indexType: 'disk_bbq',
+                    quantization: 'bbq',
+                    numDimensions: D,
+                    offHeapRamPercent,
+                })
+            )!.totalRam
+        expect(ramAt(10)).toBe(centroids + Math.ceil(clusters * 0.1))
+        expect(ramAt(5)).toBe(centroids + Math.ceil(clusters * 0.05))
+        expect(ramAt(0)).toBe(centroids)
     })
 })
 
@@ -309,18 +311,15 @@ describe('component breakdown (per-structure rows)', () => {
 })
 
 describe('disk-to-RAM ratio', () => {
-    it('is a single value for non-DiskBBQ indexes', () => {
+    it('is totalDisk / totalRam for hnsw indexes', () => {
         const r = calculate(make({ indexType: 'hnsw', quantization: 'int8' }))!
-        expect(r.diskToRamRatioMin).toBeCloseTo(r.diskToRamRatioMax, 6)
-        expect(r.diskToRamRatioMin).toBeCloseTo(r.totalDisk / r.totalRam, 6)
+        expect(r.diskToRamRatio).toBeCloseTo(r.totalDisk / r.totalRam, 6)
     })
 
-    it('is a band for DiskBBQ (min uses max RAM, max uses min RAM)', () => {
+    it('is totalDisk / totalRam for DiskBBQ (single value at the selected %)', () => {
         const r = calculate(
             make({ indexType: 'disk_bbq', quantization: 'bbq' })
         )!
-        expect(r.diskToRamRatioMin).toBeLessThan(r.diskToRamRatioMax)
-        expect(r.diskToRamRatioMin).toBeCloseTo(r.totalDisk / r.totalRamMax, 6)
-        expect(r.diskToRamRatioMax).toBeCloseTo(r.totalDisk / r.totalRamMin, 6)
+        expect(r.diskToRamRatio).toBeCloseTo(r.totalDisk / r.totalRam, 6)
     })
 })

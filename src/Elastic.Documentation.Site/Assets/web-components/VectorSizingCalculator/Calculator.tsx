@@ -29,7 +29,7 @@ export function Calculator() {
     const [elementType, setElementType] = useState<ElementType>('float')
     const [indexType, setIndexType] = useState<IndexType>('hnsw')
     const [quantization, setQuantization] = useState<Quantization>('bbq')
-    const [replicas, setReplicas] = useState(1)
+    const [replicas, setReplicas] = useState(0)
     const [hnswM, setHnswM] = useState(16)
     const efConstruction = 100
     const [vectorsPerCluster, setVectorsPerCluster] = useState(384)

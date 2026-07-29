@@ -51,21 +51,12 @@ export interface SizingResult {
     /** Canonical `index_options.type` name, e.g. `bbq_hnsw`, `int8_flat`, `bbq_disk`. */
     indexOptionsType: string
     totalDisk: number
-    /** Per-replica RAM at the selected DiskBBQ allocation (or exact value for other index types). */
+    /** Per-replica off-heap RAM at the selected % (single value; centroids always resident for DiskBBQ). */
     totalRam: number
-    /** Per-replica RAM lower bound (DiskBBQ 0% vector cache). */
-    totalRamMin: number
-    /** Per-replica RAM upper bound (DiskBBQ 100% vector cache). */
-    totalRamMax: number
     clusterDisk: number
     clusterRam: number
-    clusterRamMin: number
-    clusterRamMax: number
-    /** DiskBBQ: hero and per-replica RAM show min-max (5%-10% posting-list cache). */
-    usesRamRange: boolean
-    /** Disk ÷ off-heap RAM ratio (per replica). For DiskBBQ this is the min-max band. */
-    diskToRamRatioMin: number
-    diskToRamRatioMax: number
+    /** Disk ÷ off-heap RAM ratio (per replica). */
+    diskToRamRatio: number
     /** Index copies = 1 primary + replicas. */
     totalCopies: number
 }
