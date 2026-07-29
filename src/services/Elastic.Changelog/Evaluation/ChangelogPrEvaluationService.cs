@@ -103,7 +103,9 @@ public class ChangelogPrEvaluationService(
 		if (string.IsNullOrWhiteSpace(title))
 		{
 			_logger.LogWarning("PR has no title after processing");
-			return await SetOutputs(PrEvaluationResult.NoTitle);
+			collector.EmitError(string.Empty, "PR has no title. Cannot generate a changelog entry.");
+			_ = await SetOutputs(PrEvaluationResult.NoTitle);
+			return false;
 		}
 
 		// Resolve type
@@ -144,13 +146,15 @@ public class ChangelogPrEvaluationService(
 		if (resolvedType == null)
 		{
 			_logger.LogInformation("No type label found on PR");
-			return await SetOutputs(
+			collector.EmitError(string.Empty, "No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label.");
+			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel, title,
 				resolvedDescription: description,
 				labelTable: BuildLabelTable(config.LabelToType),
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels
 			);
+			return false;
 		}
 
 		// Multiple products are configured via labels but none matched, and no defaults are
@@ -161,12 +165,14 @@ public class ChangelogPrEvaluationService(
 			&& (config.ProductsConfiguration?.Default is null or { Count: 0 }))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
-			return await SetOutputs(
+			collector.EmitError(string.Empty, "No matching product label found on this PR. Add a label from your changelog.yml pivot.products.");
+			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel, title,
 				resolvedDescription: description,
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels
 			);
+			return false;
 		}
 
 		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}", title, resolvedType, resolvedProducts, existingFilename);

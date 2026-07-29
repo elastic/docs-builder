@@ -114,7 +114,10 @@ public static class FileSystemFactory
 		var workingRoot = inner.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var externalRoots = extensionRoots
 			.Select(r => inner.DirectoryInfo.New(r))
-			.Where(d => !DirectoryInfoExtensions.IsSubPathOf(d, workingRoot))
+			// Drop descendants of the working root (already covered by the base scope).
+			// Also drop ancestors of the working root — they would subsume the working root,
+			// producing overlapping roots that ScopedFileSystem rejects with ArgumentException.
+			.Where(d => !DirectoryInfoExtensions.IsSubPathOf(d, workingRoot) && !DirectoryInfoExtensions.IsSubPathOf(workingRoot, d))
 			.Select(d => d.FullName)
 			.Distinct(StringComparer.OrdinalIgnoreCase)
 			.ToArray();
@@ -262,7 +265,7 @@ public static class FileSystemFactory
 	/// <summary>
 	/// Creates a read <see cref="ScopedFileSystem"/> for CI environments,
 	/// extending the default scope with <c>RUNNER_TEMP</c> when available.
-	/// Falls back to <see cref="RealRead"/> when <c>RUNNER_TEMP</c> is not set or not in CI.
+	/// Falls back to <see cref="RealRead"/> when <c>RUNNER_TEMP</c> is not set.
 	/// Use in CI commands that need to read temporary files staged in the GitHub Actions runner.
 	/// </summary>
 	public static ScopedFileSystem RealReadForRunnerTemp(IEnvironmentVariables? environmentVariables = null)
