@@ -4,7 +4,7 @@
 
 HNSW is a graph-based algorithm which only works efficiently when most vector data is held in memory. You should ensure that data nodes have at least enough RAM to hold the vector data and index structures.
 
-DiskBBQ is a clustering algorithm which can scale efficiently often on less memory than HNSW. Where HNSW typically performs poorly without sufficient memory to fit the entire structure in RAM, DiskBBQ scales linearly when using less available memory than the total index size. You can start with enough RAM to hold the vector data and index structures but, in most cases, you should be able to reduce your RAM allocation and still maintain good performance. In testing, keeping all centroids resident plus as little as 5–10% of the posting lists (cluster vectors) in off-heap RAM is sufficient for reasonable performance for each set of queries that accesses largely overlapping clusters.
+DiskBBQ is a clustering algorithm which can scale efficiently often on less memory than HNSW. Where HNSW typically performs poorly without sufficient memory to fit the entire structure in RAM, DiskBBQ scales linearly when using less available memory than the total index size. You can start with enough RAM to hold the vector data and index structures but, in most cases, you should be able to reduce your RAM allocation and still maintain good performance. In testing, keeping all centroids resident plus as little as 5-10% of the posting lists (cluster vectors) in off-heap RAM is sufficient for reasonable performance for each set of queries that accesses largely overlapping clusters.
 
 To check the size of the vector data, you can use the [Analyze index disk usage](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-disk-usage) API.
 
@@ -48,10 +48,6 @@ When quantization is enabled, {{es}} stores both the raw vectors and an addition
 ```{math}
 \text{quantized\_disk} = \text{num\_vectors} \times \text{quantized\_bytes\_per\_vector}
 ```
-
-:::{note}
-The `int8`/`int4` correction is 16 bytes per vector (3 floats + 1 int) in the current `OptimizedScalarQuantizer` codec — not the legacy 4 bytes still quoted in some references. `bbq` pads the bit payload up to a multiple of 64 bits (`⌈num_dimensions / 64⌉ × 8` bytes) and adds a 14-byte correction (3 floats + 1 short).
-:::
 
 #### Index structure on disk
 
@@ -117,11 +113,21 @@ Cluster vectors use 1-bit codes when `num_dimensions ≥ 384` (`⌈num_dimension
 
 ### Estimate off-heap RAM [_estimate_off_heap_ram]
 
-Off-heap RAM is used by the filesystem cache to hold vector data and index structures in memory for fast search. This is separate from the Java heap.
+Disk and off-heap RAM are two different numbers, and they can differ by a lot. Disk is every structure persisted for the field; off-heap RAM is the working set that must stay in the operating system's filesystem cache for fast, stable query latency. Vector data is memory-mapped, so it lives in the OS page cache, separate from the Java heap.
+
+Provision at least the off-heap RAM figure per copy, plus headroom. Once the working set no longer fits in cache, queries start reading from disk and latency climbs sharply. For quantized indexes the raw vectors stay on disk (read only for optional rescoring), so they count toward disk but not toward the required off-heap RAM.
+
+**What should stay in RAM, by index type:**
+
+- `flat`: the raw vectors.
+- `hnsw`: the raw vectors and the graph.
+- `int8_flat` / `int4_flat` / `bbq_flat`: the quantized codes only.
+- `int8_hnsw` / `int4_hnsw` / `bbq_hnsw`: the quantized codes and the graph.
+- `bbq_disk` (DiskBBQ): all centroids plus a small fraction (5-10%) of the posting lists; the rest of the postings and the raw vectors stay on disk. This is why DiskBBQ can serve far more vectors per GiB of RAM.
 
 #### Vector data in RAM
 
-The amount of vector data held in off-heap RAM depends on the `element_type` and `quantization`. When quantization is enabled, only the smaller quantized vectors need to be in RAM — the raw vectors are accessed from disk only during rescoring.
+The amount of vector data held in off-heap RAM depends on the `element_type` and `quantization`. When quantization is enabled, only the smaller quantized vectors need to be in RAM - the raw vectors are accessed from disk only during rescoring.
 
 | `element_type` | `quantization` | RAM per vector |
 | --- | --- | --- |
@@ -167,14 +173,14 @@ The flat index has no graph structure. Only vector data needs to be in RAM.
 :::::
 
 :::::{tab-item} DiskBBQ
-DiskBBQ keeps all centroids resident and needs only a fraction of the posting lists (cluster vectors) in off-heap RAM. In testing, all centroids plus 5–10% of the posting lists provides reasonable performance.
+DiskBBQ keeps all centroids resident and needs only a fraction of the posting lists (cluster vectors) in off-heap RAM. In testing, all centroids plus 5-10% of the posting lists provides reasonable performance.
 
 ```{math}
 \text{diskbbq\_ram} \approx \text{centroid\_bytes} + (0.05 \text{ to } 0.10) \times \text{quantized\_vector\_bytes}
 ```
 
 :::{tip}
-Start with all centroids plus ~5% of the posting lists in RAM and tune based on benchmark results. The required fraction depends on your query patterns — queries that access overlapping clusters benefit from caching more.
+Start with all centroids plus ~5% of the posting lists in RAM and tune based on benchmark results. The required fraction depends on your query patterns - queries that access overlapping clusters benefit from caching more.
 :::
 :::::
 
@@ -199,6 +205,17 @@ Each shard replica holds a full copy of the vector data and index structures. To
 :::{note}
 The cluster-wide RAM is spread across data nodes that hold the shard replicas. Each data node only needs enough RAM for the replicas assigned to it.
 :::
+
+### Assumptions and limitations [_sizing_assumptions]
+
+These estimates are a planning baseline, not a guarantee. Real usage depends on your data, indexing settings, query patterns, merges, deletes, and rescoring options.
+
+- The raw vectors are always kept on disk, even for quantized indexes, because they are used for rescoring. Disk therefore barely changes across quantization types while required RAM drops sharply.
+- The HNSW graph size (`num_vectors × 4 × m`) is a planning heuristic; the stored graph is delta-encoded and its exact size varies with segment size.
+- The DiskBBQ off-heap RAM band (all centroids plus 5-10% of the posting lists) is benchmark-based; validate it against your own workload.
+- The `× 2` on DiskBBQ cluster vectors is a conservative upper bound for SOAR overspill (a vector may be written to a second cluster); real usage is between 1× and 2×.
+- Sizes use binary units (1 GiB = 1,024 MiB).
+- Figures assume newly-indexed data on the current Elasticsearch codecs; upgraded segments may use different layouts.
 
 ### Worked examples [_sizing_worked_examples]
 
@@ -253,7 +270,7 @@ The cluster-wide RAM is spread across data nodes that hold the shard replicas. E
 ```
 
 :::{note}
-With `int8` quantization, disk increases by ~25% (both raw and quantized vectors are stored), but RAM drops from 3.87 GiB to 1.03 GiB — a **~4× reduction**.
+With `int8` quantization, disk increases by ~25% (both raw and quantized vectors are stored), but RAM drops from 3.87 GiB to 1.03 GiB - a **~4× reduction**.
 :::
 
 **Cluster-wide (1 primary + 1 replica = 2 copies):** ~9.69 GiB disk, ~2.06 GiB RAM
@@ -284,7 +301,7 @@ With `int8` quantization, disk increases by ~25% (both raw and quantized vectors
 ```
 
 :::{note}
-BBQ quantization reduces RAM from ~29.2 GiB (unquantized) to ~1.62 GiB — a **~18× reduction** for 768-dimensional vectors. This is ideal for large-scale vector workloads.
+BBQ quantization reduces RAM from ~29.2 GiB (unquantized) to ~1.62 GiB - a **~18× reduction** for 768-dimensional vectors. This is ideal for large-scale vector workloads.
 :::
 
 **Cluster-wide (1 primary + 1 replica = 2 copies):** ~60.4 GiB disk, ~3.24 GiB RAM
@@ -305,7 +322,7 @@ BBQ quantization reduces RAM from ~29.2 GiB (unquantized) to ~1.62 GiB — a **~
 \end{align*}
 ```
 
-**Off-heap RAM (per replica):** all centroids stay resident; cache 5–10% of the posting lists.
+**Off-heap RAM (per replica):** all centroids stay resident; cache 5-10% of the posting lists.
 
 ```{math}
 \begin{align*}
@@ -316,10 +333,10 @@ BBQ quantization reduces RAM from ~29.2 GiB (unquantized) to ~1.62 GiB — a **~
 ```
 
 :::{note}
-DiskBBQ requires dramatically less RAM than HNSW — ~126–233 MiB vs ~29.2 GiB for the same 10M×768 unquantized HNSW setup. Trade-off: DiskBBQ has higher query latency since most data is read from disk.
+DiskBBQ requires dramatically less RAM than HNSW - ~126-233 MiB vs ~29.2 GiB for the same 10M×768 unquantized HNSW setup. Trade-off: DiskBBQ has higher query latency since most data is read from disk.
 :::
 
-**Cluster-wide (1 primary + 1 replica = 2 copies):** ~61.4 GiB disk, ~253–466 MiB RAM
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~61.4 GiB disk, ~253-466 MiB RAM
 ::::
 
 ### Quick-reference: RAM reduction from quantization [_quantization_ram_comparison]
