@@ -410,7 +410,13 @@
   function fe(b){return b.toLocaleString('en-US')+' bytes';}
 
   function calc(){
-    var idx=$('vscIdxType').value, et=$('vscElType').value, qs=$('vscQuant');
+    var et=$('vscElType').value, is=$('vscIdxType'), qs=$('vscQuant');
+    // Mirror the React calculator: DiskBBQ is only available for float / bfloat16.
+    var allowDiskBbq=et==='float'||et==='bfloat16';
+    var dbo=is.querySelector('option[value="disk_bbq"]');
+    if(dbo)dbo.disabled=!allowDiskBbq;
+    if(!allowDiskBbq&&is.value==='disk_bbq')is.value='hnsw';
+    var idx=is.value;
     $('vscHnswAdv').style.display=idx==='hnsw'?'block':'none';
     $('vscBbqAdv').style.display=idx==='disk_bbq'?'block':'none';
     var pq=qs.value; qs.innerHTML='';
@@ -421,18 +427,20 @@
     }
 
     var V=pv($('vscNumVectors').value), D=parseInt($('vscNumDims').value,10);
-    var q=qs.value, m=parseInt($('vscM').value,10)||16, vpc=parseInt($('vscVpc').value,10)||384;
+    var q=qs.value, m=parseInt($('vscM').value,10)||16, vpc=Math.max(1,parseInt($('vscVpc').value,10)||384);
     var rep=parseInt($('vscReplicas').value,10)||0;
     var w=$('vscWarn'),wm=$('vscWarnMsg'); w.classList.remove('vsc-visible');
 
-    if(isNaN(V)||isNaN(D)||V<=0||D<=0){
-      $('vscTotalDisk').textContent='—';$('vscTotalRam').textContent='—';
+    function vscClearOut(){
+      $('vscTotalDisk').textContent='-';$('vscTotalRam').textContent='-';
       $('vscTotalDiskB').textContent='';$('vscTotalRamB').textContent='';
       $('vscDiskBD').innerHTML='';$('vscRamBD').innerHTML='';
       $('vscDiskChart').innerHTML='';$('vscRamChart').innerHTML='';
-      $('vscCluster').style.display='none';$('vscFormulas').textContent='';return;
+      $('vscCluster').style.display='none';$('vscFormulas').textContent='';
     }
+    if(isNaN(V)||isNaN(D)||V<=0||D<=0){ vscClearOut(); return; }
     if(D>4096){
+      vscClearOut();
       w.classList.add('vsc-visible');
       wm.innerHTML='Elasticsearch supports a maximum of 4,096 dimensions for dense_vector fields. <a href="https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/dense-vector#dense-vector-params" target="_blank" rel="noopener">See documentation</a>.';
       return;

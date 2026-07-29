@@ -570,9 +570,19 @@
   }
 
   function updateVisibility() {
-    const idx = $('indexType').value;
     const elType = $('elementType').value;
+    const idxSel = $('indexType');
     const quantSel = $('quantization');
+
+    // Mirror the React calculator: DiskBBQ is only available for float / bfloat16.
+    // Disable the option (and re-select a valid index) for byte / bit element types.
+    const allowDiskBbq = elType === 'float' || elType === 'bfloat16';
+    const diskBbqOpt = idxSel.querySelector('option[value="disk_bbq"]');
+    if (diskBbqOpt) diskBbqOpt.disabled = !allowDiskBbq;
+    if (!allowDiskBbq && idxSel.value === 'disk_bbq') {
+      idxSel.value = 'hnsw';
+    }
+    const idx = idxSel.value;
 
     // Show/hide advanced parameter sections
     $('hnswAdvanced').style.display = idx === 'hnsw' ? 'block' : 'none';
@@ -612,7 +622,7 @@
     const idxType = $('indexType').value;
     const quant = $('quantization').value;
     const m = parseInt($('hnswM').value, 10) || 16;
-    const vpc = parseInt($('bbqVpc').value, 10) || 384;
+    const vpc = Math.max(1, parseInt($('bbqVpc').value, 10) || 384);
     const replicas = parseInt($('numReplicas').value, 10) || 0;
 
     // Validation
@@ -620,9 +630,9 @@
     const warnMsg = $('warnMsg');
     warn.classList.remove('visible');
 
-    if (isNaN(V) || isNaN(D) || V <= 0 || D <= 0) {
-      $('totalDisk').textContent = '—';
-      $('totalRam').textContent = '—';
+    const clearOut = () => {
+      $('totalDisk').textContent = '-';
+      $('totalRam').textContent = '-';
       $('totalDiskBytes').textContent = '';
       $('totalRamBytes').textContent = '';
       $('diskBreakdown').innerHTML = '';
@@ -631,10 +641,15 @@
       $('ramChart').innerHTML = '';
       $('clusterCard').style.display = 'none';
       $('formulaText').textContent = '';
+    };
+
+    if (isNaN(V) || isNaN(D) || V <= 0 || D <= 0) {
+      clearOut();
       return;
     }
 
     if (D > 4096) {
+      clearOut();
       warn.classList.add('visible');
       warnMsg.innerHTML = `Elasticsearch supports a maximum of 4,096 dimensions for dense_vector fields. <a href="https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/dense-vector#dense-vector-params" target="_blank" rel="noopener">See documentation</a>.`;
       return;
