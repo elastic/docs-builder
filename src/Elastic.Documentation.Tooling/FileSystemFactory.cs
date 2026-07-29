@@ -258,4 +258,19 @@ public static class FileSystemFactory
 
 		return new ScopedFileSystem(plain, BuildWriteOptions(plain, [.. roots]));
 	}
+
+	/// <summary>
+	/// Creates a read <see cref="ScopedFileSystem"/> for CI environments,
+	/// extending the default scope with <c>RUNNER_TEMP</c> when available.
+	/// Falls back to <see cref="RealRead"/> when <c>RUNNER_TEMP</c> is not set or not in CI.
+	/// Use in CI commands that need to read temporary files staged in the GitHub Actions runner.
+	/// </summary>
+	public static ScopedFileSystem RealReadForRunnerTemp(IEnvironmentVariables? environmentVariables = null)
+	{
+		var runnerTemp = environmentVariables?.GetEnvironmentVariable("RUNNER_TEMP");
+		if (string.IsNullOrWhiteSpace(runnerTemp))
+			return RealRead;
+
+		return ScopeCurrentWorkingDirectory(new FileSystem(), [runnerTemp]);
+	}
 }
