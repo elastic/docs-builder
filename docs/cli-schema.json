@@ -2606,6 +2606,14 @@
                 },
                 {
                   "role": "flag",
+                  "name": "no-delete",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Only PUT the new entries without deleting any existing KVS keys.\nUse for per-docset isolated builds that should not remove other repos\u0027 redirects.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
                   "name": "log-level",
                   "shortName": "l",
                   "type": "enum",
