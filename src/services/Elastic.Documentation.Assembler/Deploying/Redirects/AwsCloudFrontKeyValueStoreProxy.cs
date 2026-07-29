@@ -22,7 +22,11 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 	/// <inheritdoc />
 	protected override ILogger Logger { get; } = logFactory.CreateLogger<AwsCloudFrontKeyValueStoreProxy>();
 
-	public void UpdateRedirects(string kvsName, IReadOnlyDictionary<string, string> sourcedRedirects)
+	/// <param name="noDelete">
+	/// When <c>true</c>, only PUT the new entries without deleting any existing KVS keys.
+	/// Use this for partial (isolated / per-docset) deploys that should not touch other repos' redirects.
+	/// </param>
+	public void UpdateRedirects(string kvsName, IReadOnlyDictionary<string, string> sourcedRedirects, bool noDelete = false)
 	{
 		var kvsArn = DescribeKeyValueStore(kvsName);
 		if (string.IsNullOrEmpty(kvsArn))
@@ -32,25 +36,39 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		if (string.IsNullOrEmpty(eTag))
 			return;
 
-		var listingSuccessful = TryListAllKeys(kvsArn, out var existingRedirects);
+		PutKeyRequestListItem[] toPut;
+		DeleteKeyRequestListItem[] toDelete;
 
-		if (!listingSuccessful)
-			return;
-
-		if (RedirectKvsDiff.WouldWipeAllExisting(sourcedRedirects, existingRedirects))
+		if (noDelete)
 		{
-			Collector.EmitError("", $"Refusing to update redirects: sourced redirects are empty but the KVS contains {existingRedirects.Count} entries. " +
-				"This would wipe every redirect. Verify the assembler produced a non-empty redirects.json before retrying.");
-			return;
+			toPut = sourcedRedirects
+				.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value })
+				.ToArray();
+			toDelete = [];
+		}
+		else
+		{
+			var listingSuccessful = TryListAllKeys(kvsArn, out var existingRedirects);
+			if (!listingSuccessful)
+				return;
+
+			if (RedirectKvsDiff.WouldWipeAllExisting(sourcedRedirects, existingRedirects))
+			{
+				Collector.EmitError("", $"Refusing to update redirects: sourced redirects are empty but the KVS contains {existingRedirects.Count} entries. " +
+					"This would wipe every redirect. Verify the assembler produced a non-empty redirects.json before retrying.");
+				return;
+			}
+
+			(toPut, toDelete) = RedirectKvsDiff.ComputeBatchUpdates(sourcedRedirects, existingRedirects);
 		}
 
-		var (toPut, toDelete) = RedirectKvsDiff.ComputeBatchUpdates(sourcedRedirects, existingRedirects);
+		Logger.LogInformation("Computed redirect KVS diff: {ToPut} to put, {ToDelete} to delete (noDelete={NoDelete})",
+			toPut.Length, toDelete.Length, noDelete);
 
-		Logger.LogInformation("Computed redirect KVS diff: {ToPut} to put, {ToDelete} to delete (from {Existing} existing, {Sourced} sourced)",
-			toPut.Length, toDelete.Length, existingRedirects.Count, sourcedRedirects.Count);
-
-		eTag = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
-		_ = ProcessBatchUpdates(kvsArn, eTag, toPut, KvsOperation.Puts);
+		if (toDelete.Length > 0)
+			eTag = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
+		if (toPut.Length > 0)
+			_ = ProcessBatchUpdates(kvsArn, eTag, toPut, KvsOperation.Puts);
 	}
 
 	private string DescribeKeyValueStore(string kvsName)
