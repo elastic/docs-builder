@@ -412,7 +412,7 @@ export function ConfigurationPanel({
                             <div className="vectorSizingCalc__graphConnectionsBlock">
                                 <div className="vectorSizingCalc__graphConnectionsLabel">
                                     <LabelWithTip tip={TOOLTIPS.offHeapRam}>
-                                        % allocated to off-heap RAM
+                                        Posting lists cached in off-heap RAM (%)
                                     </LabelWithTip>
                                 </div>
                                 <div className="vectorSizingCalc__graphConnectionsControlsRow">
@@ -442,7 +442,7 @@ export function ConfigurationPanel({
                                                     )
                                                 )
                                             }
-                                            aria-label="Percent allocated to off-heap RAM"
+                                            aria-label="Percent of posting lists cached in off-heap RAM"
                                         />
                                     </div>
                                     <div className="vectorSizingCalc__graphConnectionsValueCell">
@@ -456,7 +456,7 @@ export function ConfigurationPanel({
                                                 DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT
                                             }
                                             step={1}
-                                            aria-label="Percent allocated to off-heap RAM"
+                                            aria-label="Percent of posting lists cached in off-heap RAM"
                                             onChange={(e) => {
                                                 const next =
                                                     clampDiskBbqOffHeapPercent(
