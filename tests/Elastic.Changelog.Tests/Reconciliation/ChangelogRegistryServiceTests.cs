@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using AwesomeAssertions;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Tests.Reconciliation;
 
+[SuppressMessage("Usage", "CA1001:Types that own disposable fields should be disposable")]
 public class ChangelogRegistryServiceTests
 {
 	private const string PrivateBucket = "private-bucket";
