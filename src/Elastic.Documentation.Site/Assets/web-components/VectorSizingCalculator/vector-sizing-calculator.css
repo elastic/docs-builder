@@ -798,6 +798,10 @@ vector-sizing-calculator:not(:defined) {
 	padding-left: 18px;
 }
 
+.vectorSizingCalc__explainerBody ul ul {
+	margin: 6px 0 4px;
+}
+
 .vectorSizingCalc__explainerBody li {
 	margin: 4px 0;
 }

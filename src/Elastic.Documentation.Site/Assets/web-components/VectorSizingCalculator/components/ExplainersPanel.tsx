@@ -140,40 +140,63 @@ export function ExplainersPanel() {
                 </p>
                 <ul>
                     <li>
-                        <strong>Raw vectors</strong>:{' '}
-                        <EuiCode>V × D × f</EuiCode> (bit:{' '}
-                        <EuiCode>V × ⌈D/8⌉</EuiCode>).
+                        <strong>HNSW and flat indexes</strong> - total on disk =
+                        raw vectors + quantized codes (if any) + graph (HNSW
+                        only):
+                        <ul>
+                            <li>
+                                <strong>Raw vectors</strong> (always kept):{' '}
+                                <EuiCode>V × D × f</EuiCode> (bit:{' '}
+                                <EuiCode>V × ⌈D/8⌉</EuiCode>).
+                            </li>
+                            <li>
+                                <strong>Quantization: none</strong> - no extra
+                                codes; search uses the raw vectors.
+                            </li>
+                            <li>
+                                <strong>Quantization: int8</strong>:{' '}
+                                <EuiCode>V × (D + 16)</EuiCode> - 1 byte per
+                                dimension plus a small 16-byte correction.
+                            </li>
+                            <li>
+                                <strong>Quantization: int4</strong>:{' '}
+                                <EuiCode>V × (⌈D/2⌉ + 16)</EuiCode> - half a
+                                byte per dimension plus the 16-byte correction.
+                            </li>
+                            <li>
+                                <strong>Quantization: BBQ</strong>:{' '}
+                                <EuiCode>V × (⌈D/64⌉×8 + 14)</EuiCode> - 1 bit
+                                per dimension (padded up to a multiple of 64)
+                                plus a 14-byte correction.
+                            </li>
+                            <li>
+                                <strong>HNSW graph</strong> (hnsw only):{' '}
+                                <EuiCode>V × 4 × m</EuiCode> - the planning
+                                estimate from the docs; the real graph is
+                                compressed and varies.
+                            </li>
+                        </ul>
                     </li>
                     <li>
-                        <strong>int8</strong>: <EuiCode>V × (D + 16)</EuiCode> -
-                        1 byte per dimension plus a small 16-byte correction.
-                    </li>
-                    <li>
-                        <strong>int4</strong>:{' '}
-                        <EuiCode>V × (⌈D/2⌉ + 16)</EuiCode> - half a byte per
-                        dimension plus the 16-byte correction.
-                    </li>
-                    <li>
-                        <strong>BBQ</strong>:{' '}
-                        <EuiCode>V × (⌈D/64⌉×8 + 14)</EuiCode> - 1 bit per
-                        dimension (padded up to a multiple of 64) plus a 14-byte
-                        correction.
-                    </li>
-                    <li>
-                        <strong>HNSW graph</strong>:{' '}
-                        <EuiCode>V × 4 × m</EuiCode> - the planning estimate
-                        from the docs; the real graph is compressed and varies.
-                    </li>
-                    <li>
-                        <strong>DiskBBQ centroids</strong>:{' '}
-                        <EuiCode>(V / C) × (D + 16)</EuiCode>.
-                    </li>
-                    <li>
-                        <strong>DiskBBQ clusters</strong>:{' '}
-                        <EuiCode>V × 2 × (⌈D/8⌉ + 16)</EuiCode> - 1-bit codes
-                        when D ≥ 384, otherwise 4-bit (<EuiCode>⌈D/2⌉</EuiCode>
-                        ); the ×2 covers vectors that spill into a second
-                        cluster.
+                        <strong>DiskBBQ (bbq_disk)</strong> - total on disk =
+                        raw vectors + centroids + clusters:
+                        <ul>
+                            <li>
+                                <strong>Raw vectors</strong> (always kept):{' '}
+                                <EuiCode>V × D × f</EuiCode>.
+                            </li>
+                            <li>
+                                <strong>Centroids</strong>:{' '}
+                                <EuiCode>(V / C) × (D + 16)</EuiCode>.
+                            </li>
+                            <li>
+                                <strong>Clusters</strong>:{' '}
+                                <EuiCode>V × 2 × (⌈D/8⌉ + 16)</EuiCode> - 1-bit
+                                codes when D ≥ 384, otherwise 4-bit (
+                                <EuiCode>⌈D/2⌉</EuiCode>); the ×2 covers vectors
+                                that spill into a second cluster.
+                            </li>
+                        </ul>
                     </li>
                 </ul>
                 <p>
