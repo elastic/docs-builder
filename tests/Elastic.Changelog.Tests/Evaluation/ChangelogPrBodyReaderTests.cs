@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
@@ -26,16 +27,36 @@ public class ChangelogPrBodyReaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public async Task ReadAsync_PrBodyFileNotExists_ReturnsNull()
+	public async Task ReadAsync_PrBodyFileMissing_EmitsWarning()
 	{
 		var bodyPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "missing-pr-body.md");
-		var mockFs = CreateMockFileSystem();
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(CreateMockFileSystem());
 		var collector = new TestDiagnosticsCollector(output);
 
-		var result = await ChangelogPrBodyReader.ReadAsync(bodyPath, collector, mockFs, TestContext.Current.CancellationToken);
+		var result = await ChangelogPrBodyReader.ReadAsync(bodyPath, collector, scopedFs, TestContext.Current.CancellationToken);
 
 		result.Should().BeNull();
-		collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("points to a missing file", StringComparison.Ordinal));
+		collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("points to a missing file", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task ReadAsync_PrBodyFileOutsideScope_EmitsWarning()
+	{
+		var runnerTemp = Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar);
+		var bodyPath = Path.Join(runnerTemp, "changelog-pr-body.md");
+		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
+		mockFs.AddFile(bodyPath, new MockFileData("Release Notes: something important"));
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs);
+		var collector = new TestDiagnosticsCollector(output);
+
+		var result = await ChangelogPrBodyReader.ReadAsync(bodyPath, collector, scopedFs, TestContext.Current.CancellationToken);
+
+		result.Should().BeNull();
+		collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("PR_BODY_FILE", StringComparison.Ordinal));
 	}
 
 	[Fact]

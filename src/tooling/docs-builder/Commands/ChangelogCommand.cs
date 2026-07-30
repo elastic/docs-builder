@@ -5,6 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
 using Actions.Core.Services;
@@ -419,7 +420,7 @@ internal sealed partial class ChangelogCommands(
 							}
 						}
 					}
-					catch (IOException ex)
+					catch (Exception ex) when (ex is IOException or SecurityException)
 					{
 						collector.EmitError(string.Empty, $"Failed to read PRs from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
@@ -459,7 +460,7 @@ internal sealed partial class ChangelogCommands(
 								allIssues.Add(line.Trim());
 						}
 					}
-					catch (IOException ex)
+					catch (Exception ex) when (ex is IOException or SecurityException)
 					{
 						collector.EmitError(string.Empty, $"Failed to read issues from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
