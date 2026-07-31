@@ -1,13 +1,9 @@
-@using Elastic.Documentation
 @using Elastic.Documentation.Site.Navigation
-@inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationViewModel>
+@inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationRenderModel>
 
 <div class="pb-9 pl-3 md:pl-0 font-body">
-	@{
-		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
-	} 
 	<div class="sticky top-0 z-10 bg-white">
-		@if (Model.BuildType != BuildType.Codex && Model.Branding is null)
+		@if (Model.ShowSearch)
 		{
 			<navigation-search id="navigation-search" hx-preserve></navigation-search>
 		}
@@ -20,9 +16,9 @@
 							<div>
 								<a
 									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
-									href="@currentTopLevelItem.Url"
+									href="@Model.CurrentTopLevelUrl"
 									preload="mousedown">
-									@currentTopLevelItem.NavigationTitle
+									@Model.CurrentTopLevelNavigationTitle
 								</a>
 							</div>
 							<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
@@ -40,11 +36,11 @@
 					<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
 						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md"
 						preload="mouseover">
-				@foreach (var item in Model.TopLevelItems)
+				@foreach (var item in Model.DropdownItems)
 				{
 								<li class="block">
 									<a
-										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.IsActive ? "text-blue-elastic" : "")"
 										href="@item.Url">
 							@item.NavigationTitle
 						</a>
@@ -55,23 +51,13 @@
 				</div>
 			</div>
 		}
-		else
-		{
-			@* index page surfaces as the first nav item via _TocTreeNav *@
-		}
 		</div>
 	</div>
 
-	@* Group-scoped id: hx-preserve keeps the tree (and its expand/collapse state) across
-	   same-group navigations; a different group renders a different id, so no match and
-	   the new tree swaps in. *@
-	<ul class="block px-4" id="nav-tree-@(Model.Tree.Id)" hx-preserve>
-		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-		{
-			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
-			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
-			Level = 0,
-			SubTree = Model.Tree
-		}))
+	@* Content-hash id: hx-preserve keeps the tree (and its expand/collapse state) across
+	   navigations that render the exact same tree; any visible change produces a new id
+	   so the new tree swaps in. *@
+	<ul class="block px-4" id="nav-tree-@(Model.ContentHash)" hx-preserve>
+		@await RenderPartialAsync(_TocTreeNav.Create(Model.Tree))
 	</ul>
 </div>

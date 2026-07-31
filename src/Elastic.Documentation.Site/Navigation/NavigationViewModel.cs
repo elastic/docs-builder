@@ -10,8 +10,6 @@ namespace Elastic.Documentation.Site.Navigation;
 
 public class NavigationViewModel
 {
-	public required string Title { get; init; }
-	public required string TitleUrl { get; init; }
 	public required INodeNavigationItem<INavigationModel, INavigationItem> Tree { get; init; }
 	public required bool IsPrimaryNavEnabled { get; init; }
 	public required bool IsGlobalAssemblyBuild { get; init; }

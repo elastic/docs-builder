@@ -29,14 +29,15 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 		};
 
 	protected IReadOnlyDictionary<string, IDocumentationSetNavigation> CreateMockDocSetNavigations(
-		IEnumerable<string> repoNames)
+		IEnumerable<string> repoNames,
+		bool includeProject = true)
 	{
 		var result = new Dictionary<string, IDocumentationSetNavigation>();
 		var fileSystem = new MockFileSystem();
 
 		foreach (var repoName in repoNames)
 		{
-			var docSet = CreateMockDocumentationSet(fileSystem, repoName);
+			var docSet = CreateMockDocumentationSet(fileSystem, repoName, includeProject);
 			var context = new TestDocumentationSetContext(
 				fileSystem,
 				fileSystem.DirectoryInfo.New($"/{repoName}/docs"),
@@ -54,18 +55,16 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 		return result;
 	}
 
-	private static DocumentationSetFile CreateMockDocumentationSet(MockFileSystem fileSystem, string repoName)
+	private static DocumentationSetFile CreateMockDocumentationSet(MockFileSystem fileSystem, string repoName, bool includeProject)
 	{
 		var docsPath = $"/{repoName}/docs";
 		fileSystem.AddDirectory(docsPath);
 		fileSystem.AddFile($"{docsPath}/index.md", new MockFileData($"# {repoName}"));
 
 		// language=yaml
-		var yaml = $"""
-		            project: '{repoName}'
-		            toc:
-		              - file: index.md
-		            """;
+		var yaml = includeProject
+			? $"project: '{repoName}'\ntoc:\n  - file: index.md"
+			: "toc:\n  - file: index.md";
 
 		return DocumentationSetFile.LoadAndResolve(
 			new DiagnosticsCollector([]),

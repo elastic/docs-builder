@@ -15,10 +15,16 @@ public interface INavigationHtmlWriter
 		Cancel ctx = default
 	);
 
-	async Task<string> Render(NavigationViewModel model, Cancel ctx)
+	async Task<NavigationRenderResult> Render(NavigationViewModel model, Cancel ctx)
 	{
-		var slice = _TocTree.Create(model);
-		return await slice.RenderAsync(cancellationToken: ctx);
+		var renderModel = NavigationRenderModel.Create(model);
+		var slice = _TocTree.Create(renderModel);
+		var html = await slice.RenderAsync(cancellationToken: ctx);
+		return new NavigationRenderResult
+		{
+			Html = html,
+			Id = renderModel.ContentHash
+		};
 	}
 }
 public record NavigationRenderResult
@@ -26,7 +32,7 @@ public record NavigationRenderResult
 	public static NavigationRenderResult Empty { get; } = new()
 	{
 		Html = string.Empty,
-		Id = "empty-navigation" // random id
+		Id = "empty-navigation"
 	};
 
 	public required string Html { get; init; }
