@@ -154,6 +154,8 @@ function initializeControls() {
     document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return
 
+        if (document.querySelector('dialog[data-image-dialog][open]')) return
+
         const openDropdown = document.querySelector(
             '[data-pages-dropdown-toggle][aria-expanded="true"]'
         )

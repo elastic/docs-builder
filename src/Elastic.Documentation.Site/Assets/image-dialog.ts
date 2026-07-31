@@ -9,6 +9,22 @@ function initializeDelegatedListeners() {
     if (delegatedListenersInitialized) return
     delegatedListenersInitialized = true
 
+    document.addEventListener(
+        'keydown',
+        (event) => {
+            if (event.key !== 'Escape') return
+
+            const openDialog = document.querySelector(
+                'dialog[data-image-dialog][open]'
+            )
+            if (openDialog instanceof HTMLDialogElement) {
+                closeDialog(openDialog)
+                event.preventDefault()
+            }
+        },
+        { capture: true }
+    )
+
     document.addEventListener('click', (event) => {
         if (!(event.target instanceof Element)) return
 
