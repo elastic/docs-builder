@@ -155,7 +155,7 @@ type ``nested admonition in list`` () =
 </div>
 <div class="heading-wrapper" id="what">
 	<h2>
-		<a class="headerlink" href="#what">What</a>
+		<a class="headerlink" href="#what">What<span class="headerlink-marker" aria-hidden="true">#</span></a>
 	</h2>
 </div>"""
 
@@ -184,7 +184,7 @@ type ``nested admonition in list 2`` () =
         markdown |> convertsToHtml """
 <div class="heading-wrapper" id="heading">
 	<h1>
-		<a class="headerlink" href="#heading">heading</a>
+		<a class="headerlink" href="#heading">heading<span class="headerlink-marker" aria-hidden="true">#</span></a>
 	</h1>
 </div>
 <div class="admonition note">
@@ -208,7 +208,7 @@ type ``nested admonition in list 2`` () =
 </div>
 <div class="heading-wrapper" id="what">
 	<h2>
-		<a class="headerlink" href="#what">What</a>
+		<a class="headerlink" href="#what">What<span class="headerlink-marker" aria-hidden="true">#</span></a>
 	</h2>
 </div>
 """
@@ -236,7 +236,7 @@ type ``nested admonition in list 3`` () =
         markdown |> convertsToHtml """
 <div class="heading-wrapper" id="heading">
 	<h1>
-		<a class="headerlink" href="#heading">heading</a>
+		<a class="headerlink" href="#heading">heading<span class="headerlink-marker" aria-hidden="true">#</span></a>
 	</h1>
 </div>
 <div class="admonition note">
@@ -258,7 +258,7 @@ type ``nested admonition in list 3`` () =
 		</ul>
 		<div class="heading-wrapper" id="what">
 			<h2>
-				<a class="headerlink" href="#what">What</a>
+				<a class="headerlink" href="#what">What<span class="headerlink-marker" aria-hidden="true">#</span></a>
 			</h2>
 		</div>
 	</div>

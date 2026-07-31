@@ -161,23 +161,22 @@ body {
 	}
 
 	.nav-toggle-btn {
-		@apply hover:bg-grey-20 cursor-pointer rounded-sm p-1;
+		@apply hover:bg-grey-20 flex min-h-8 min-w-8 cursor-pointer items-center justify-center rounded-sm p-1;
 	}
 
 	.nav-chevron {
-		@apply w-3.5 shrink-0 -rotate-90 group-has-checked/label:rotate-0;
+		@apply w-3.5 shrink-0 -rotate-90;
 		fill: none;
 		stroke-width: 1.5;
 		stroke: currentColor;
 	}
 
-	.nav-subtree {
-		@apply relative ml-4 hidden w-full;
+	.nav-toggle-btn[aria-expanded='true'] .nav-chevron {
+		@apply rotate-0;
+	}
 
-		/* revealed when the sibling .peer div contains a checked checkbox */
-		.peer:has(:checked) ~ & {
-			display: block;
-		}
+	.nav-subtree {
+		@apply relative ml-4 w-full;
 
 		&::before {
 			content: '';
@@ -212,6 +211,12 @@ body {
 		height: 16px;
 		width: 16px;
 		fill: currentColor;
+	}
+}
+
+@media (width < 48rem) {
+	.pages-nav-panel[data-open='true'] {
+		left: 0;
 	}
 }
 
@@ -505,8 +510,7 @@ h6 {
 		text-decoration: none;
 	}
 
-	& .headerlink::after {
-		content: '#';
+	& .headerlink-marker {
 		position: absolute;
 		right: calc(100% + 0.4rem);
 		top: 50%;
@@ -519,8 +523,8 @@ h6 {
 		pointer-events: none;
 	}
 
-	&:hover .headerlink::after,
-	& .headerlink:focus::after {
+	&:hover .headerlink-marker,
+	& .headerlink:focus .headerlink-marker {
 		opacity: 1;
 	}
 }

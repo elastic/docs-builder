@@ -33,6 +33,7 @@
     <Compile Include="Framework\LlmMarkdownAssertions.fs" />
     <Compile Include="Framework\PlainTextAssertions.fs" />
     <Compile Include="Framework\CrossLinkResolverAssertions.fs" />
+    <Compile Include="Layout\GlobalLayoutShell.fs" />
     <Compile Include="Inline\Substitutions.fs"/>
     <Compile Include="Inline\SubstitutionMutations.fs" />
     <Compile Include="Inline\InlineAnchors.fs"/>

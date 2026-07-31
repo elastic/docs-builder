@@ -3,7 +3,7 @@
 @using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <aside class="sidebar md:block w-full lg:max-w-65 order-1 lg:order-2">
-	<nav id="toc-nav" class="sidebar-nav lg:h-full flex flex-row-reverse lg:block items-center justify-between md:justify-start gap-4 pb-3 md:pb-9 simple-scrollbar">
+	<nav id="toc-nav" aria-label="Page tools and contents" class="sidebar-nav lg:h-full flex flex-row-reverse lg:block items-center justify-between md:justify-start gap-4 pb-3 md:pb-9 simple-scrollbar">
 		@if (Model.Features.PrimaryNavEnabled && !Model.VersioningSystem.IsVersionless && Model.BuildType != BuildType.Codex && Model.Branding is null)
 		{
 			<div class="mt-4">
@@ -19,14 +19,18 @@
 
 		@if (Model.RenderHamburgerIcon)
 		{
-			@* ReSharper disable once Html.IdNotResolved *@
-			<label role="button" class="md:hidden cursor-pointer mt-3" for="pages-nav-hamburger">
+			<button type="button"
+				data-pages-nav-open
+				aria-controls="pages-nav"
+				aria-expanded="false"
+				aria-label="Open documentation navigation"
+				class="md:hidden cursor-pointer mt-3 p-2">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
 					stroke="currentColor" class="size-6">
 					<path stroke-linecap="round" stroke-linejoin="round"
 						d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
 				</svg>
-			</label>
+			</button>
 		}
 		
 		<ul class="mt-4 hidden md:flex items-center lg:block gap-4">

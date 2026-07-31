@@ -40,6 +40,18 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 		Block!.Found.Should().BeTrue();
 		Collector.Diagnostics.Count.Should().Be(0);
 	}
+
+	[Fact]
+	public void RendersAccessibleImageDialog()
+	{
+		Html.Should().Contain("class=\"reference internal image-reference image-dialog-trigger\"");
+		Html.Should().Contain("data-image-dialog-open");
+		Html.Should().Contain("""<dialog id="modal-""");
+		Html.Should().Contain("""data-image-dialog aria-label="Image preview: Elasticsearch">""");
+		Html.Should().Contain("""data-image-dialog-close aria-label="Close image preview">""");
+		Html.Should().NotContain("javascript:void(0)");
+		Html.Should().NotContain("onclick=");
+	}
 }
 
 public class AllowedExternalHostTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,

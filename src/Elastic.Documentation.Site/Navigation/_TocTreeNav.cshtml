@@ -51,7 +51,7 @@
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
 		var (folderBadge, folderLabel) = ParseNavTitle(g.NavigationTitle);
 		<li class="nav-folder @(isTopLevel ? "mt-6" : "mt-4")">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
+			<div class="grid grid-cols-[1fr_auto] w-full">
 				<a href="@(g.Url)" class="sidebar-link nav-folder-link@(isTopLevel ? " font-semibold" : "")">
 					<span>@folderLabel</span>
 					@if (folderBadge == "ns") { <span class="nav-badge nav-badge-ns">ns</span> }
@@ -60,21 +60,19 @@
 				</a>
 				@if (!allHidden)
 				{
-					<label for="@folder.Id" class="group/label flex mr-2 items-start">
-						<div class="nav-toggle-btn">
-							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
-						</div>
-						<input
-							id="@folder.Id"
-							type="checkbox"
-							class="hidden"
-							aria-hidden="true">
-					</label>
+					<button type="button"
+						class="nav-toggle-btn mr-2 self-start"
+						data-nav-toggle
+						aria-controls="nav-subtree-@folder.Id"
+						aria-expanded="false"
+						aria-label="Expand @folderLabel">
+						<svg class="nav-chevron" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+					</button>
 				}
 			</div>
 			@if (g.NavigationItems.Count > 0)
 			{
-				<ul class="nav-subtree">
+				<ul id="nav-subtree-@folder.Id" class="nav-subtree" hidden>
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
 						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,

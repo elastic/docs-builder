@@ -1,18 +1,24 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:order-1">
+<aside data-pages-nav-panel class="pages-nav-panel sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:order-1">
 	<nav
 		id="pages-nav"
+		aria-label="Documentation sections"
 		class="sidebar-nav h-full simple-scrollbar">
 		@(new HtmlString(Model.NavigationHtml))
 	</nav>
-	@* ReSharper disable once Html.IdNotResolved *@
-	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
+	<button type="button"
+		data-pages-nav-close
+		aria-controls="pages-nav"
+		aria-label="Close documentation navigation"
+		class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
 		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
 			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
 		</svg>
-	</label>
+	</button>
 </aside>
-@* ReSharper disable once Html.IdNotResolved *@
-<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
-	
-</label>
+<button type="button"
+	data-pages-nav-backdrop
+	hidden
+	aria-label="Close documentation navigation"
+	class="md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999]">
+</button>

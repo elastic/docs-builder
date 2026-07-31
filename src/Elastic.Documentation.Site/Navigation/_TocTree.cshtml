@@ -15,42 +15,44 @@
 		@if (Model.IsUsingNavigationDropdown)
 			{
 				<div class="py-4 bg-white border-grey-20 pr-4">
-					<div tabindex="0" id="pages-dropdown" class="block group border border-grey-20 rounded-sm font-sans relative">
-						<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
-							<div>
-								<a
-									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
-									href="@currentTopLevelItem.Url"
-									preload="mousedown">
-									@currentTopLevelItem.NavigationTitle
-								</a>
-							</div>
-							<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+					<div id="pages-dropdown" class="block border border-grey-20 rounded-sm font-sans relative">
+						<div class="grid grid-cols-[1fr_auto] font-semibold gap-1">
+							<a
+								class="pages-dropdown_active flex min-h-10 items-center pl-4 py-2 hover:underline text-blue-elastic hover:text-blue-elastic-100"
+								href="@currentTopLevelItem.Url"
+								preload="mousedown">
+								@currentTopLevelItem.NavigationTitle
+							</a>
+							<button type="button"
+								data-pages-dropdown-toggle
+								aria-controls="pages-dropdown-menu"
+								aria-expanded="false"
+								aria-label="Choose a documentation section"
+								class="flex items-center justify-center min-w-10 min-h-10 hover:bg-grey-20 rounded-sm cursor-pointer">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke-width="1.5"
 									stroke="currentColor"
-									class="w-4 group-open:rotate-180">
+									class="w-4">
 									<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 								</svg>
-							</div>
-						</button>
-					<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
-						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md"
-						preload="mouseover">
-				@foreach (var item in Model.TopLevelItems)
-				{
+							</button>
+						</div>
+					<div id="pages-dropdown-menu" hidden class="left-0 right-0 absolute top-full">
+						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md" preload="mouseover">
+							@foreach (var item in Model.TopLevelItems)
+							{
 								<li class="block">
 									<a
 										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 										href="@item.Url">
-							@item.NavigationTitle
-						</a>
-					</li>
-				}
-				</ul>
+										@item.NavigationTitle
+									</a>
+								</li>
+							}
+						</ul>
 					</div>
 				</div>
 			</div>
