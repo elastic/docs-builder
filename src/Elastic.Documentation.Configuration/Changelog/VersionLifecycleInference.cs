@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
+
 namespace Elastic.Documentation.Configuration.Changelog;
 
 /// <summary>
@@ -10,12 +12,15 @@ namespace Elastic.Documentation.Configuration.Changelog;
 public static class VersionLifecycleInference
 {
 	/// <summary>
-	/// Infers the lifecycle from a semantic version string.
+	/// Infers the lifecycle from a semantic version string or ISO date target.
 	/// </summary>
-	/// <param name="version">The version string (e.g., "1.0.0", "1.0.0-beta.1", "1.0.0-alpha")</param>
+	/// <param name="version">The version string (e.g., "1.0.0", "1.0.0-beta.1", "2026-07-21")</param>
 	/// <returns>The inferred lifecycle string: "ga", "beta", or "preview"</returns>
 	public static string InferLifecycle(string version)
 	{
+		if (DateOnly.TryParseExact(version, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+			return "ga";
+
 		// Parse semver prerelease
 		var dashIndex = version.IndexOf('-');
 		if (dashIndex < 0)

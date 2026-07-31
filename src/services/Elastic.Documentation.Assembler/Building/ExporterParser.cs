@@ -56,6 +56,9 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 				case "okf":
 					_ = set.Add(Exporter.Okf);
 					break;
+				case "pagefind":
+					_ = set.Add(Exporter.Pagefind);
+					break;
 				case "none":
 					break;
 				case "default":
@@ -68,7 +71,7 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 					break;
 				default:
 					throw new ArgumentException(
-						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, default, metadata, none.");
+						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, pagefind, default, metadata, none.");
 			}
 		}
 		result = set;

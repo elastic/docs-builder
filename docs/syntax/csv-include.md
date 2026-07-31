@@ -8,7 +8,7 @@ The `{csv-include}` directive allows you to include and render CSV files as form
 
 ::::{tab-item} Output
 
-:::{csv-include} ../_snippets/sample-data.csv
+:::{csv-include} /_snippets/sample-data.csv
 :caption: Sample user data from the database
 :::
 
@@ -57,7 +57,7 @@ CSV files with many columns are rendered as scrollable tables:
 
 ::::{tab-item} Output
 
-:::{csv-include} ../_snippets/sample-data-12-columns.csv
+:::{csv-include} /_snippets/sample-data-12-columns.csv
 :caption: Product inventory with 12 columns
 :::
 
@@ -93,7 +93,7 @@ Here is a complete example that uses multiple Markdown formats:
 
 ::::{tab-item} Output
 
-:::{csv-include} ../_snippets/sample-data-markdown.csv
+:::{csv-include} /_snippets/sample-data-markdown.csv
 :caption: Sample data with Markdown formatting
 :::
 

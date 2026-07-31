@@ -2,32 +2,28 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.ReleaseNotes;
-using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering;
 
 /// <summary>
-/// Service for resolving changelog entries from validated bundles
+/// Service for resolving changelog entries from validated bundles.
+/// Bundles are always self-contained, so entries convert directly from their inline content.
 /// </summary>
-public class BundleDataResolver(IFileSystem fileSystem)
+public class BundleDataResolver
 {
 	private const string DefaultRepo = "elastic";
 
 	/// <summary>
 	/// Resolves all entries from validated bundles
 	/// </summary>
-	public async Task<ResolvedEntriesResult> ResolveEntriesAsync(IReadOnlyList<ValidatedBundle> bundles, Cancel ctx)
+	public ResolvedEntriesResult ResolveEntries(IReadOnlyList<ValidatedBundle> bundles)
 	{
 		var allResolvedEntries = new List<ResolvedEntry>();
 		var allProducts = new HashSet<(string product, string target)>();
 
 		foreach (var bundle in bundles)
-		{
-			var resolvedFromBundle = await ResolveBundleEntriesAsync(bundle, allProducts, ctx);
-			allResolvedEntries.AddRange(resolvedFromBundle);
-		}
+			allResolvedEntries.AddRange(ResolveBundleEntries(bundle, allProducts));
 
 		return new ResolvedEntriesResult
 		{
@@ -37,13 +33,10 @@ public class BundleDataResolver(IFileSystem fileSystem)
 		};
 	}
 
-	private async Task<List<ResolvedEntry>> ResolveBundleEntriesAsync(
+	private static List<ResolvedEntry> ResolveBundleEntries(
 		ValidatedBundle bundle,
-		HashSet<(string product, string target)> allProducts,
-		Cancel ctx)
+		HashSet<(string product, string target)> allProducts)
 	{
-		var resolvedEntries = new List<ResolvedEntry>();
-
 		// Collect products from this bundle
 		var bundleProductIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var product in bundle.Data.Products)
@@ -59,39 +52,15 @@ public class BundleDataResolver(IFileSystem fileSystem)
 			? bundle.Data.Products[0].Owner!
 			: "elastic";
 
-		// Resolve entries
-		foreach (var entry in bundle.Data.Entries)
-		{
-			var entryData = await ResolveEntryAsync(entry, bundle.Directory, ctx);
-
-			resolvedEntries.Add(new ResolvedEntry
+		return bundle.Data.Entries
+			.Select(entry => new ResolvedEntry
 			{
-				Entry = entryData,
+				Entry = ReleaseNotesSerialization.ConvertBundledEntry(entry),
 				Repo = repo,
 				Owner = owner,
 				BundleProductIds = bundleProductIds,
 				HideLinks = bundle.Input.HideLinks
-			});
-		}
-
-		return resolvedEntries;
-	}
-
-	private async Task<ChangelogEntry> ResolveEntryAsync(
-		BundledEntry entry,
-		string bundleDirectory,
-		Cancel ctx)
-	{
-		// If entry has resolved data, convert to ChangelogEntry
-		if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-			return ReleaseNotesSerialization.ConvertBundledEntry(entry);
-
-		// Load from file (already validated to exist)
-		var filePath = fileSystem.Path.Join(bundleDirectory, entry.File!.Name);
-		var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
-
-		// Deserialize YAML
-		var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
-		return ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
+			})
+			.ToList();
 	}
 }

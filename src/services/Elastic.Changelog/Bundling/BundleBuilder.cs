@@ -14,12 +14,12 @@ namespace Elastic.Changelog.Bundling;
 public class BundleBuilder
 {
 	/// <summary>
-	/// Builds the bundled changelog data from matched entries.
+	/// Builds the bundled changelog data from matched entries. Entry contents are always
+	/// resolved (inlined) — reference-only bundles are not a supported format.
 	/// </summary>
 	/// <param name="collector">The diagnostics collector.</param>
 	/// <param name="entries">Matched changelog files to bundle.</param>
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
-	/// <param name="resolve">Whether to resolve changelog file contents into entries.</param>
 	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
 	/// <param name="owner">Optional GitHub owner to set on products for link generation.</param>
 	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
@@ -27,7 +27,6 @@ public class BundleBuilder
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
-		bool resolve,
 		string? repo = null,
 		string? owner = null,
 		HashSet<string>? hideFeatures = null)
@@ -36,9 +35,7 @@ public class BundleBuilder
 		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
 
 		// Build entries list
-		var bundledEntries = resolve
-			? BuildResolvedEntries(collector, entries)
-			: BuildFileOnlyEntries(entries);
+		var bundledEntries = BuildResolvedEntries(collector, entries);
 
 		if (bundledEntries == null)
 		{
@@ -210,18 +207,6 @@ public class BundleBuilder
 
 		return true;
 	}
-
-	private static List<BundledEntry> BuildFileOnlyEntries(IReadOnlyList<MatchedChangelogFile> entries) =>
-		entries
-			.Select(e => new BundledEntry
-			{
-				File = new BundledFile
-				{
-					Name = e.FileName,
-					Checksum = e.Checksum
-				}
-			})
-			.ToList();
 }
 
 /// <summary>

@@ -62,11 +62,15 @@ public class RepositoryBuildMatchingService(
 		if (string.IsNullOrEmpty(refName))
 			throw new ArgumentNullException(nameof(branchOrTag));
 
+		// the link registry uses short repository names (e.g. "kibana"), not full names (e.g. "elastic/kibana")
+		var repoTokens = repo.Split('/');
+		var repositoryName = repoTokens.Last();
+
 		// environment does not matter to check the configuration, defaulting to dev
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var linkRegistry = await GetRegistryWithRetry(linkIndexProvider, ctx);
-		var alreadyPublishing = linkRegistry.Repositories.ContainsKey(repo);
-		_logger.LogInformation("'{Repository}' publishing to link registry: {PublishState} ", repo, alreadyPublishing);
+		var alreadyPublishing = linkRegistry.Repositories.ContainsKey(repositoryName);
+		_logger.LogInformation("'{Repository}' (registry key: '{RepositoryName}') publishing to link registry: {PublishState} ", repo, repositoryName, alreadyPublishing);
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
 		var product = assembleContext.ProductsConfiguration.GetProductByRepositoryName(repo);
 		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product, alreadyPublishing);

@@ -51,6 +51,12 @@ public record ChangelogUploadArguments
 	/// CLI via the precedence <c>--branch</c> &gt; the current git branch.
 	/// </summary>
 	public string? Branch { get; init; }
+
+	/// <summary>
+	/// When true, upload every discovered file even when its content hash matches the remote object.
+	/// Useful to re-trigger downstream scrubbers without changing file content.
+	/// </summary>
+	public bool SkipEtagCheck { get; init; }
 }
 
 public class ChangelogUploadService(
@@ -108,7 +114,7 @@ public class ChangelogUploadService(
 		var client = s3Client ?? defaultClient!;
 		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
-		var result = await uploader.Upload(targets, ctx);
+		var result = await uploader.Upload(targets, args.SkipEtagCheck, ctx);
 
 		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed", result.Uploaded, result.Skipped, result.Failed);
 
@@ -227,6 +233,21 @@ public class ChangelogUploadService(
 			}
 
 			var products = ReadProductsFromBundle(filePath);
+
+			// Amends published before products were copied from the parent omit them; derive the
+			// destination from the parent bundle next to the amend so they are not silently skipped.
+			if (products.Count == 0 && BundleAmendMerger.IsAmendFile(filePath))
+			{
+				products = ReadProductsFromParentBundle(filePath);
+				if (products.Count == 0)
+				{
+					collector.EmitWarning(filePath,
+						"Amend bundle declares no products and its parent bundle is missing or has none; " +
+						"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products.");
+					continue;
+				}
+			}
+
 			if (products.Count == 0)
 			{
 				_logger.LogDebug("No products found in bundle {File}, skipping", filePath);
@@ -249,6 +270,14 @@ public class ChangelogUploadService(
 		}
 
 		return targets;
+	}
+
+	private List<string> ReadProductsFromParentBundle(string amendFilePath)
+	{
+		var parentPath = BundleAmendMerger.GetParentBundlePath(amendFilePath);
+		return parentPath != null && _fileSystem.File.Exists(parentPath)
+			? ReadProductsFromBundle(parentPath)
+			: [];
 	}
 
 	private List<string> ReadProductsFromBundle(string filePath)

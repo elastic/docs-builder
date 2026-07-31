@@ -12,6 +12,24 @@
 	}
 }
 
+/* Reserve the space used by elastic-nav.js before its asynchronous render.
+   These heights mirror the global nav's responsive navigation placeholder. */
+#elastic-nav-wrapper {
+	min-height: 102px;
+}
+
+@media screen and (min-width: 768px) {
+	#elastic-nav-wrapper {
+		min-height: 110px;
+	}
+}
+
+@media screen and (min-width: 1180px) {
+	#elastic-nav-wrapper {
+		min-height: 118px;
+	}
+}
+
 /* Air-gapped: uses elastic-docs-header web component instead of elastic nav */
 body.air-gapped {
 	--offset-top: 48px;
