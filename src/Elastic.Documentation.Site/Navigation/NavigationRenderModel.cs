@@ -42,7 +42,6 @@ public sealed record NavigationDropdownItem(string NavigationTitle, string Url, 
 /// </summary>
 public sealed record NavigationRenderModel
 {
-	public required bool ShowSearch { get; init; }
 	public required bool IsUsingNavigationDropdown { get; init; }
 	public required string CurrentTopLevelNavigationTitle { get; init; }
 	public required string CurrentTopLevelUrl { get; init; }
@@ -58,7 +57,6 @@ public sealed record NavigationRenderModel
 		var tree = CreateTree(model);
 		return new NavigationRenderModel
 		{
-			ShowSearch = model.BuildType != BuildType.Codex && model.Branding is null,
 			IsUsingNavigationDropdown = model.IsUsingNavigationDropdown,
 			CurrentTopLevelNavigationTitle = currentTopLevelItem.NavigationTitle,
 			CurrentTopLevelUrl = currentTopLevelItem.Url,

@@ -282,8 +282,11 @@ internal sealed record BundleConfigurationYaml
 	public bool? UseLocalChangelogs { get; set; }
 
 	/// <summary>
-	/// Whether to resolve (copy contents) by default.
+	/// Deprecated and ignored. Resolved bundles are now the only format. Retained solely so existing
+	/// changelog.yml files carrying <c>bundle.resolve</c> deserialize without a hard error; a
+	/// deprecation warning is emitted when it is present. Remove it from changelog.yml.
 	/// </summary>
+	[Obsolete("bundle.resolve is deprecated and ignored; resolved bundles are the only format. This field will be removed in a future version.")]
 	public bool? Resolve { get; set; }
 
 	/// <summary>
@@ -312,7 +315,7 @@ internal sealed record BundleConfigurationYaml
 	public bool? ReleaseDates { get; set; }
 
 	/// <summary>
-	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels (requires resolve).
+	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels.
 	/// </summary>
 	public YamlLenientList? LinkAllowRepos { get; set; }
 

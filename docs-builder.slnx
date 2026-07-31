@@ -100,6 +100,7 @@
     <Project Path="tests/Elastic.Documentation.Api.Tests/Elastic.Documentation.Api.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Build.Tests/Elastic.Documentation.Build.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Configuration.Tests/Elastic.Documentation.Configuration.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Tests/Elastic.Documentation.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Indexing.Tests/Elastic.Documentation.Indexing.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />

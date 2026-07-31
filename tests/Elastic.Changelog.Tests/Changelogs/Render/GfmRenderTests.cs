@@ -15,10 +15,6 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 	public async Task RenderChangelogs_WithGfmFileType_CreatesSingleGfmFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file
 		// language=yaml
 		var changelog =
 			"""
@@ -32,31 +28,25 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			description: This is a test feature
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: test-feature.yaml
-			      checksum: {ComputeSha1(changelog)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("test-feature.yaml", changelog));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.2.0",
 			FileType = ChangelogFileType.Gfm
@@ -94,10 +84,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 	public async Task RenderChangelogs_WithGfmFileType_IncludesAllSectionTypes()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog files for different types
+		// Create test changelog entries for different types
 		// language=yaml
 		var feature =
 			"""
@@ -148,52 +135,30 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			    target: 9.2.0
 			""";
 
-		var featureFile = FileSystem.Path.Join(changelogDir, "feature.yaml");
-		var breakingFile = FileSystem.Path.Join(changelogDir, "breaking.yaml");
-		var deprecationFile = FileSystem.Path.Join(changelogDir, "deprecation.yaml");
-		var bugFixFile = FileSystem.Path.Join(changelogDir, "bugfix.yaml");
-		var knownIssueFile = FileSystem.Path.Join(changelogDir, "known-issue.yaml");
-
-		await FileSystem.File.WriteAllTextAsync(featureFile, feature, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(breakingFile, breakingChange, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(deprecationFile, deprecation, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(bugFixFile, bugFix, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(knownIssueFile, knownIssue, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: feature.yaml
-			      checksum: {ComputeSha1(feature)}
-			  - file:
-			      name: breaking.yaml
-			      checksum: {ComputeSha1(breakingChange)}
-			  - file:
-			      name: deprecation.yaml
-			      checksum: {ComputeSha1(deprecation)}
-			  - file:
-			      name: bugfix.yaml
-			      checksum: {ComputeSha1(bugFix)}
-			  - file:
-			      name: known-issue.yaml
-			      checksum: {ComputeSha1(knownIssue)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader,
+			("feature.yaml", feature),
+			("breaking.yaml", breakingChange),
+			("deprecation.yaml", deprecation),
+			("bugfix.yaml", bugFix),
+			("known-issue.yaml", knownIssue));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.2.0",
 			FileType = ChangelogFileType.Gfm
@@ -240,9 +205,6 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 	public async Task RenderChangelogs_WithGfmFileType_HandlesHighlights()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create test changelog with highlight
 		// language=yaml
 		var highlightedFeature =
@@ -265,37 +227,27 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			    target: 9.2.0
 			""";
 
-		var highlightFile = FileSystem.Path.Join(changelogDir, "highlight.yaml");
-		var normalFile = FileSystem.Path.Join(changelogDir, "normal.yaml");
-
-		await FileSystem.File.WriteAllTextAsync(highlightFile, highlightedFeature, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(normalFile, normalFeature, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: highlight.yaml
-			      checksum: {ComputeSha1(highlightedFeature)}
-			  - file:
-			      name: normal.yaml
-			      checksum: {ComputeSha1(normalFeature)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader,
+			("highlight.yaml", highlightedFeature),
+			("normal.yaml", normalFeature));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.2.0",
 			FileType = ChangelogFileType.Gfm
@@ -329,9 +281,6 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 	public async Task RenderChangelogs_WithGfmFileType_HandlesDescriptionsAndHideDescriptions()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create test changelog with description
 		// language=yaml
 		var changelog =
@@ -346,24 +295,18 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			  It spans multiple lines.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: feature.yaml
-			      checksum: {ComputeSha1(changelog)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("feature.yaml", changelog));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -371,7 +314,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		// Test with descriptions shown (default)
 		var inputWithDescriptions = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.2.0",
 			FileType = ChangelogFileType.Gfm,
@@ -396,7 +339,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		var outputDir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		var inputWithoutDescriptions = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir2,
 			Title = "9.2.0",
 			FileType = ChangelogFileType.Gfm,
@@ -419,9 +362,6 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 	public async Task RenderChangelogs_WithGfmFileType_HandlesBundleDescriptionAndReleaseDate()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create simple changelog
 		// language=yaml
 		var changelog =
@@ -433,33 +373,27 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 			    target: 9.2.0
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		// Create bundle file with description and release date
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			description: "This is a major release with many improvements."
 			release-date: "2024-03-15"
-			entries:
-			  - file:
-			      name: feature.yaml
-			      checksum: {ComputeSha1(changelog)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("feature.yaml", changelog));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.2.0",
 			FileType = ChangelogFileType.Gfm

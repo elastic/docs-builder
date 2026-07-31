@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import '../../eui-icons-cache'
 import { ElasticAiAssistantButton } from '../AskAi/ElasticAiAssistantButton'
 import { InfoBanner } from '../AskAi/InfoBanner'
@@ -30,7 +31,7 @@ import {
     useEuiFontSize,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback } from 'react'
 
 const SEARCH_KEYBOARD_SHORTCUTS = [
     { keys: ['returnKey'], label: 'Select' },
@@ -209,7 +210,7 @@ const ModalSearchContent = ({
 
             {<EuiHorizontalRule margin="none" />}
 
-            {searchTerm && (
+            {config.buildType !== 'isolated' && searchTerm && (
                 <div
                     css={css`
                         padding-inline: ${euiTheme.size.base};
@@ -251,7 +252,7 @@ const ModalSearchContent = ({
                 </div>
             )}
 
-            <InfoBanner />
+            {config.buildType !== 'isolated' && <InfoBanner />}
             <KeyboardShortcutsFooter shortcuts={SEARCH_KEYBOARD_SHORTCUTS} />
         </div>
     )
@@ -311,6 +312,10 @@ const ModalSearchTrigger = ({
                 color: ${euiTheme.colors.textDisabled};
                 cursor: pointer;
 
+                @media (max-width: 768px) {
+                    padding-right: ${euiTheme.size.s};
+                }
+
                 &:hover {
                     border-color: ${euiTheme.colors.borderBasePlain};
                 }
@@ -344,6 +349,9 @@ const ModalSearchTrigger = ({
                     right: ${euiTheme.size.m};
                     color: ${euiTheme.colors.textDisabled};
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                    @media (max-width: 768px) {
+                        display: none;
+                    }
                 `}
             >
                 {isMac ? '⌘K' : 'Ctrl+K'}
@@ -389,8 +397,6 @@ export const ModalSearch = ({
             document.removeEventListener('modal-search:open', handleOpenEvent)
     }, [openModal, trackOpened])
 
-    const backdropRef = useRef<HTMLDivElement>(null)
-
     useEffect(() => {
         if (isOpen) {
             const scrollbarWidth =
@@ -413,19 +419,6 @@ export const ModalSearch = ({
         const handleBeforeSend = (event: CustomEvent) => {
             const trigger = event.detail?.elt as HTMLElement | undefined
             if (trigger?.hasAttribute('data-search-result-index')) {
-                if (backdropRef.current) {
-                    backdropRef.current.style.display = 'none'
-                }
-                document.body.style.overflow = ''
-                document.body.style.paddingRight = ''
-            }
-        }
-
-        const handleAfterSwap = (event: CustomEvent) => {
-            const trigger = event.detail?.requestConfig?.elt as
-                | HTMLElement
-                | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
                 closeModal()
             }
         }
@@ -434,18 +427,10 @@ export const ModalSearch = ({
             'htmx:beforeSend',
             handleBeforeSend as EventListener
         )
-        document.addEventListener(
-            'htmx:afterSwap',
-            handleAfterSwap as EventListener
-        )
         return () => {
             document.removeEventListener(
                 'htmx:beforeSend',
                 handleBeforeSend as EventListener
-            )
-            document.removeEventListener(
-                'htmx:afterSwap',
-                handleAfterSwap as EventListener
             )
         }
     }, [isOpen, closeModal])
@@ -469,7 +454,6 @@ export const ModalSearch = ({
             {isOpen && (
                 <EuiPortal>
                     <div
-                        ref={backdropRef}
                         onClick={handleBackdropClick}
                         css={css`
                             position: fixed;

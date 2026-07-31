@@ -4,6 +4,10 @@ navigation_title: Changelog bundle registry
 
 # Changelog bundle registry and CDN delivery
 
+:::{warning}
+Old development note — likely to be deleted or substantially rewritten.
+:::
+
 This page describes how changelog **bundles** are published to a public, CDN-fronted
 S3 bucket, how the per-product `registry.json` manifest is produced, and the
 `cdn:` mode for the [`{changelog}` directive](/syntax/changelog.md) that consumes
@@ -21,7 +25,7 @@ Today the `{changelog}` directive only renders bundles that live in a folder ins
 docset (default `changelog/bundles/`). That requires every consuming repository to vendor
 a copy of the bundle YAML it wants to render.
 
-The link service ([building block](/building-blocks/link-service.md)) already demonstrates
+The link service ([link infrastructure](/documentation/distributed-builds.md)) already demonstrates
 the pattern we want: an S3 bucket fronted by CloudFront, publicly readable, with a small
 JSON index at a well-known key. We apply the same approach to changelog bundles so a docset
 can render another product's release notes by pointing the directive at the CDN — no vendored
@@ -29,19 +33,13 @@ copies, no cross-repo file syncing.
 
 ## Architecture
 
-```
-┌──────────────┐   changelog upload    ┌────────────────────┐   s3:ObjectCreated   ┌───────────────────┐
-│  Client CI   │  --artifact-type      │  Private bundles   │ ───────────────────▶ │ Changelog scrubber │
-│ (docs-actions)│  bundle  ───────────▶ │  S3 bucket         │                       │ Lambda             │
-└──────────────┘                       │                    │                       └─────────┬─────────┘
-       │                               │  bundle/{product}/*.yaml                             │ scrub + copy
-       │ also refreshes                │  bundle/{product}/registry.json                 │ (pass-through for
-       └──────────────────────────────▶                    │                                  │  registry.json)
-                                       └────────────────────┘                                 ▼
-                                                                                   ┌───────────────────┐
-                                                  {changelog} directive (cdn:)     │  Public bundles    │
-                                                  reads via CDN  ◀───────────────  │  S3 bucket + CDN   │
-                                                                                   └───────────────────┘
+```mermaid
+flowchart LR
+    CI["Client CI<br/>(docs-actions)"] -->|"changelog upload<br/>--artifact-type bundle"| Private["Private S3 bucket<br/>bundle/{product}/*.yaml<br/>bundle/{product}/registry.json"]
+    CI -->|"refreshes registry"| Private
+    Private -->|"s3:ObjectCreated"| Scrubber["Changelog scrubber<br/>Lambda"]
+    Scrubber -->|"scrub + copy<br/>(pass-through for registry.json)"| Public["Public S3 bucket<br/>+ CloudFront CDN"]
+    Public -->|"reads via CDN"| Directive["{changelog} directive<br/>(cdn: mode)"]
 ```
 
 1. **Producer** — `changelog upload --artifact-type bundle --target s3` (invoked by the
@@ -87,7 +85,7 @@ Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{org}/{r
 | `product` | Grouping identifier — the product for a bundle index (`bundle/{product}/…`) or the `{org}/{repo}/{branch}` prefix for a changelog-entry index (`changelog/{org}/{repo}/{branch}/…`). |
 | `generated_at` | UTC timestamp of the last regeneration. |
 | `bundles[].file` | Bundle file name, resolved at `bundle/{product}/{file}` (or entry file at `changelog/{org}/{repo}/{branch}/{file}` for the entry index). |
-| `bundles[].target` | Target version/date from the bundle's declaration of **this** product (may be null). |
+| `bundles[].target` | Target version/date from the bundle's declaration of **this** product (may be null). For an amend sidecar (`{name}.amend-{N}.yaml`) that declares no products itself (created by older docs-builder versions), the parent bundle's target is recorded when the parent file is available in the same upload run. |
 | `bundles[].etag` | See the ETag caveat below. |
 
 Bundles are sorted by `target` descending (newest first) with a deterministic tiebreak on
@@ -280,7 +278,9 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
   `hide-features` apply identically to CDN-sourced bundles.
 - **Version selection.** `:version:` renders a single target and works in both modes (shared match
   on registry `target` or bundle file name, see `ChangelogVersionMatch`). In CDN mode it filters the
-  prefetched bundles at render time.
+  prefetched bundles at render time. When the fetcher itself is asked for a single version, an amend
+  sidecar is additionally downloaded when its parent bundle matches, so amends published without
+  `products` (null registry `target`) still reach version-filtered consumers.
 - **Security.** The base URL is trusted configuration; the product and registry-supplied bundle
   file names are validated to single path segments so neither can traverse outside
   `bundle/{product}/`.
@@ -309,5 +309,5 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
 ## Related
 
 - [Changelog directive](/syntax/changelog.md) — current (local-folder) behavior.
-- [Publish changelogs](/contribute/publish-changelogs.md) — the upload workflow.
-- [Link service](/building-blocks/link-service.md) — the S3 + CloudFront pattern this reuses.
+- [Publish changelogs](/data/release-notes/publish.md) — the upload workflow.
+- [Link infrastructure](/documentation/distributed-builds.md) — the S3 + CloudFront pattern this reuses.
