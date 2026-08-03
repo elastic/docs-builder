@@ -123,7 +123,7 @@ public class DiagnosticsCollectorDisposeTests
 		for (var i = 0; i < 100 && !drain.IsCompleted; i++)
 		{
 			timeProvider.Advance(TimeSpan.FromMilliseconds(500));
-			await Task.Delay(10); // real delay so the awaiting continuation observes the fired timer
+			await Task.Delay(10, TestContext.Current.CancellationToken); // real delay so the awaiting continuation observes the fired timer
 		}
 
 		drain.IsCompleted.Should().BeTrue("the 2s virtual deadline must trip long before 50s of virtual time");
