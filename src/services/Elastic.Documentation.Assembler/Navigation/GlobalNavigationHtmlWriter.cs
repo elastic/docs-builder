@@ -142,7 +142,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			var backArrowUrl = CombineWithSitePrefix(navV2, island.BackUrl, islandUrlForPrefix);
 
 			var wrapper = new SectionNavigationV2Wrapper(
-				new NavigationSection(island.Id, island.Label, "", false, island.NavigationItems),
+				new NavigationSection(island.Id, island.Label, "", false, false, island.NavigationItems),
 				navV2
 			);
 			var model = new NavigationViewModel

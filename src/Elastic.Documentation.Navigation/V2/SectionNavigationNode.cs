@@ -19,6 +19,7 @@ public class SectionNavigationNode : INodeNavigationItem<INavigationModel, INavi
 		string label,
 		string url,
 		bool isolated,
+		bool dropdown,
 		IReadOnlyCollection<INavigationItem> children,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent
 	)
@@ -27,6 +28,7 @@ public class SectionNavigationNode : INodeNavigationItem<INavigationModel, INavi
 		NavigationTitle = label;
 		Url = url;
 		Isolated = isolated;
+		Dropdown = dropdown;
 		NavigationItems = children;
 		Parent = parent;
 		NavigationRoot = parent?.NavigationRoot!;
@@ -35,6 +37,9 @@ public class SectionNavigationNode : INodeNavigationItem<INavigationModel, INavi
 
 	/// <summary>Whether this section is excluded from the top bar and renders with a back arrow.</summary>
 	public bool Isolated { get; }
+
+	/// <summary>Whether the top-bar entry should render as a dropdown listing the section's children.</summary>
+	public bool Dropdown { get; }
 
 	/// <inheritdoc />
 	public string Id { get; }

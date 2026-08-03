@@ -34,33 +34,34 @@ public static class ProductDescriptions
 
 	private static readonly Dictionary<VersioningSystemId, ProductInfo> Descriptions = new()
 	{
-		// Stack
+		// Stack -- {base} and {current} are interpolated by ApplicabilityRenderer
+		// from the Stack VersioningSystem so the tooltip surfaces the actual range.
 		[VersioningSystemId.Stack] = new ProductInfo(
-			Description: "The <strong>Elastic Stack</strong> includes Elastic's core products such as Elasticsearch, Kibana, Logstash, and Beats.",
+			Description: "This documentation applies to <strong>Elastic Stack</strong> {base} to {current}. To know if this functionality exists in versions prior to v{base-major}, refer to the corresponding version of the documentation.",
 			AdditionalAvailabilityInfo: "Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.",
 			IncludeVersionNote: true
 		),
 
 		// Serverless
 		[VersioningSystemId.Serverless] = new ProductInfo(
-			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.",
+			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud. Their UI and capabilities can differ from the traditionally versioned Elastic Stack.",
 			AdditionalAvailabilityInfo: "Serverless interfaces and procedures might differ from classic Elastic Stack deployments.",
 			IncludeVersionNote: false
 		),
 
 		// Serverless Project Types
 		[VersioningSystemId.ElasticsearchProject] = new ProductInfo(
-			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.",
+			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud. Their UI and capabilities can differ from the traditionally versioned Elastic Stack.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: false
 		),
 		[VersioningSystemId.ObservabilityProject] = new ProductInfo(
-			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.",
+			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud. Their UI and capabilities can differ from the traditionally versioned Elastic Stack.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: false
 		),
 		[VersioningSystemId.SecurityProject] = new ProductInfo(
-			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.",
+			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud. Their UI and capabilities can differ from the traditionally versioned Elastic Stack.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: false
 		),

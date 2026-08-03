@@ -1,0 +1,934 @@
+/*
+ * Hub-page styling. Models the gist prototypes in docs/hubs/. Class names
+ * mirror the directive output:
+ *
+ *   .hub-page         page wrapper (set by Layout/_Layout.cshtml's RenderHub)
+ *   .hub-content      article wrapper inside the content column
+ *   .hub-hero         hero section (light, divider below)
+ *   .hub-on-this-page inline TOC chip
+ *   .hub-get-started  onboarding funnel (intro, install, steps)
+ *   .hub-whats-new    What's new panel
+ *   .hub-zone         section heading
+ *   .hub-card-grid    card grid container
+ *   .hub-card         card item
+ *
+ * The hero / on-this-page / intro / whats-new / card-grid containers all
+ * use a shared inner rail of max-w-5xl + 24px horizontal padding.
+ */
+
+@layer components {
+	/* Page wrapper: full-width content. Stays white so the page reads
+	   consistently whether the user lands via full navigation or via an
+	   htmx-boosted swap from a regular docs page. */
+	.hub-page .hub-content {
+		@apply mb-20 w-full max-w-none p-0;
+	}
+
+	/* Hero ------------------------------------------------------------- */
+	/* Light hero on the page background, separated from the body by a rule
+	   (matches the redesign — no dark band). */
+	.hub-hero {
+		background-color: transparent;
+		color: var(--color-ink-dark);
+		padding: 40px 24px 28px;
+		margin-bottom: 44px;
+		border-bottom: 1px solid var(--color-grey-20);
+	}
+	.hub-hero .hub-hero-inner {
+		@apply mx-auto w-full max-w-5xl;
+	}
+	.hub-hero .hub-hero-eyebrow {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px 14px;
+		margin: 0 0 20px;
+		font-size: 0.8125rem;
+		letter-spacing: 0.02em;
+	}
+	.hub-hero .hub-hero-eyebrow-label {
+		font-weight: 600;
+		color: var(--color-ink-light);
+	}
+	.hub-hero .hub-hero-eyebrow-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 12px;
+		font-weight: 600;
+		color: var(--color-ink-dark);
+		text-decoration: none;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 999px;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.hub-hero .hub-hero-eyebrow-link:hover,
+	.hub-hero .hub-hero-eyebrow-link:focus-visible {
+		background: var(--color-grey-10);
+		border-color: var(--color-grey-30);
+	}
+	.hub-hero .hub-hero-eyebrow-arrow {
+		flex-shrink: 0;
+		transition: transform 0.15s ease;
+	}
+	.hub-hero .hub-hero-eyebrow-link:hover .hub-hero-eyebrow-arrow,
+	.hub-hero .hub-hero-eyebrow-link:focus-visible .hub-hero-eyebrow-arrow {
+		transform: translateX(2px);
+	}
+	.hub-hero .hub-hero-top {
+		display: flex;
+		align-items: center;
+		column-gap: 14px;
+		margin-bottom: 16px;
+	}
+	.hub-hero .hub-hero-icon {
+		@apply inline-flex h-13 w-13 shrink-0 items-center justify-center rounded-xl text-2xl font-bold;
+		width: 48px;
+		height: 48px;
+		background-color: var(--color-grey-10);
+		color: var(--color-ink-dark);
+	}
+	.hub-hero .hub-hero-icon-svg {
+		background-color: transparent;
+	}
+	.hub-hero .hub-hero-icon-svg svg {
+		width: 40px;
+		height: 40px;
+	}
+	.hub-hero .hub-hero-top h1 {
+		font-size: 2.285rem;
+		font-weight: 700;
+		line-height: 1.2;
+		letter-spacing: -0.5px;
+		color: var(--color-ink-dark);
+		margin: 0;
+	}
+	.hub-hero .hub-hero-top h1 a.headerlink {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-hero .hub-hero-desc {
+		font-size: 1.071rem;
+		color: var(--color-ink-light);
+		max-width: 760px;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.hub-hero .hub-hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin-top: 24px;
+	}
+	.hub-hero .hub-hero-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 18px;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		border-radius: 8px;
+		text-decoration: none;
+		color: var(--color-ink-dark);
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-30);
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease,
+			color 0.15s ease;
+	}
+	.hub-hero .hub-hero-action svg {
+		flex-shrink: 0;
+		color: var(--color-ink-light);
+	}
+	.hub-hero .hub-hero-action:hover,
+	.hub-hero .hub-hero-action:focus-visible {
+		background: var(--color-grey-10);
+		border-color: var(--color-grey-40);
+	}
+	.hub-hero .hub-hero-action-primary {
+		border-color: var(--color-ink-dark);
+	}
+	.hub-hero .hub-hero-action-primary:hover,
+	.hub-hero .hub-hero-action-primary:focus-visible {
+		border-color: var(--color-ink-dark);
+		background: var(--color-grey-10);
+	}
+
+	/* On this page ----------------------------------------------------- */
+	.hub-on-this-page {
+		@apply mx-auto w-full max-w-5xl;
+		position: sticky;
+		top: calc(var(--offset-top) + 8px);
+		z-index: 20;
+		margin-top: 40px;
+		margin-bottom: 36px;
+		padding: 20px 28px;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 16px;
+		box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+		font-size: 14px;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px 0;
+		line-height: 1.9;
+	}
+	.hub-on-this-page .hub-on-this-page-label {
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		margin-right: 14px;
+	}
+	.hub-on-this-page a {
+		font-weight: 500;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-on-this-page a:hover {
+		text-decoration: underline;
+	}
+	.hub-on-this-page .hub-on-this-page-sep {
+		color: var(--color-grey-30);
+		margin: 0 10px;
+		font-size: 12px;
+	}
+
+	/* Get started ------------------------------------------------------ */
+	.hub-get-started {
+		@apply mx-auto w-full max-w-5xl;
+		margin-bottom: 56px;
+		scroll-margin-top: 96px;
+	}
+	.hub-get-started .hub-get-started-title {
+		margin: 0 0 8px;
+		font-size: 1.375rem;
+		font-weight: 700;
+		color: var(--color-ink);
+	}
+	.hub-get-started .hub-get-started-intro {
+		margin: 0 0 20px;
+		font-size: 0.9375rem;
+		color: var(--color-ink-light, #4c4c4c);
+		line-height: 1.5;
+	}
+	.hub-get-started .hub-get-started-actions {
+		@apply flex flex-wrap items-center gap-4;
+		margin-bottom: 28px;
+	}
+	.hub-get-started .hub-get-started-install {
+		position: relative;
+		flex: 1 1 380px;
+		min-width: 0;
+		margin: 0;
+	}
+	.hub-get-started .hub-get-started-install pre {
+		margin: 0;
+		padding: 12px 16px;
+		overflow-x: auto;
+		background: var(--color-ink-navy);
+		border-radius: 10px;
+	}
+	.hub-get-started .hub-get-started-install code {
+		font-family: var(--font-mono, monospace);
+		font-size: 0.8125rem;
+		color: var(--color-white);
+		background: transparent;
+	}
+	.hub-get-started .hub-get-started-tutorial {
+		@apply inline-flex items-center gap-2;
+		flex-shrink: 0;
+		padding: 9px 16px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+		border: 1px solid var(--color-grey-20);
+		border-radius: 999px;
+		transition:
+			border-color 0.15s ease,
+			background 0.15s ease;
+	}
+	.hub-get-started .hub-get-started-tutorial:hover,
+	.hub-get-started .hub-get-started-tutorial:focus-visible {
+		background: var(--color-grey-10, #f5f7fa);
+		border-color: var(--color-grey-30);
+	}
+
+	.hub-get-started .hub-get-started-steps {
+		@apply grid gap-4;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.hub-get-started .hub-get-started-step {
+		@apply relative flex flex-col;
+		padding: 20px;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 14px;
+	}
+	.hub-get-started .hub-get-started-step-head {
+		@apply flex items-center;
+		gap: 12px;
+		margin-bottom: 10px;
+		padding-right: 34px;
+	}
+	.hub-get-started .hub-get-started-step-num {
+		position: absolute;
+		top: 20px;
+		right: 20px;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-grey-70, #98a2b3);
+		letter-spacing: 0.06em;
+	}
+	.hub-get-started .hub-get-started-step-title {
+		margin: 0;
+		font-size: 0.9375rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+	}
+	.hub-get-started .hub-get-started-step-desc {
+		margin: 0;
+		font-size: 0.8125rem;
+		color: var(--color-ink-light, #4c4c4c);
+		line-height: 1.45;
+	}
+
+	/* Step 01 with two equal start options spans the full row. */
+	.hub-get-started .hub-get-started-steps:has(.hub-get-started-step-wide) {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.hub-get-started .hub-get-started-step-wide {
+		grid-column: 1 / -1;
+		container-type: inline-size;
+	}
+	.hub-get-started .hub-get-started-options {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		margin-top: 16px;
+		padding-top: 16px;
+		border-top: 1px solid var(--color-grey-20);
+	}
+	.hub-get-started .hub-get-started-option {
+		@apply flex flex-col;
+		gap: 10px;
+		padding-right: 28px;
+	}
+	.hub-get-started .hub-get-started-option + .hub-get-started-option {
+		padding-right: 0;
+		padding-left: 28px;
+		border-left: 1px solid var(--color-grey-20);
+	}
+	.hub-get-started .hub-get-started-option-label {
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+	}
+	.hub-get-started .hub-get-started-option-desc {
+		margin: 0;
+		font-size: 0.8125rem;
+		color: var(--color-ink-light, #4c4c4c);
+		line-height: 1.45;
+	}
+	.hub-get-started .hub-get-started-option .hub-get-started-install {
+		flex: none;
+		width: 100%;
+		margin-top: auto;
+	}
+	.hub-get-started .hub-get-started-option-btn {
+		@apply inline-flex items-center justify-center;
+		gap: 8px;
+		width: 100%;
+		min-height: 48px;
+		margin-top: auto;
+		padding: 0 18px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-ink-dark);
+		background: var(--color-white);
+		border: 1px solid var(--color-ink-dark);
+		border-radius: 8px;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.hub-get-started .hub-get-started-option-btn:hover,
+	.hub-get-started .hub-get-started-option-btn:focus-visible {
+		background: var(--color-grey-10);
+		border-color: var(--color-ink-dark);
+		color: var(--color-ink-dark);
+	}
+	.hub-get-started .hub-get-started-option-link {
+		@apply inline-flex items-center gap-1;
+		align-self: flex-start;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-blue-elastic-100, #0b64dd);
+	}
+	.hub-get-started .hub-get-started-option-link:hover {
+		text-decoration: underline;
+	}
+	@container (max-width: 560px) {
+		.hub-get-started .hub-get-started-options {
+			grid-template-columns: 1fr;
+		}
+		.hub-get-started .hub-get-started-option {
+			padding-right: 0;
+		}
+		.hub-get-started .hub-get-started-option + .hub-get-started-option {
+			padding-left: 0;
+			padding-top: 16px;
+			margin-top: 4px;
+			border-left: 0;
+			border-top: 1px solid var(--color-grey-20);
+		}
+	}
+
+	/* Steps 02/03 are clickable link cards. */
+	.hub-get-started .hub-get-started-step-link {
+		padding: 0;
+		transition:
+			box-shadow 0.15s,
+			border-color 0.15s;
+	}
+	.hub-get-started .hub-get-started-step-link:hover {
+		border-color: var(--color-blue-elastic);
+		box-shadow: 0 1px 4px rgb(0 0 0 / 0.07);
+	}
+	.hub-get-started .hub-get-started-step-anchor {
+		@apply flex h-full flex-col;
+		padding: 20px;
+		color: inherit;
+		text-decoration: none;
+	}
+	.hub-get-started .hub-get-started-step-arrow {
+		@apply inline-flex items-center gap-1;
+		margin-top: auto;
+		padding-top: 14px;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-blue-elastic-100, #0b64dd);
+	}
+
+	/* What's new ------------------------------------------------------- */
+	.hub-whats-new {
+		@apply mx-auto w-full max-w-5xl;
+		margin-bottom: 56px;
+		scroll-margin-top: 120px;
+	}
+	.hub-whats-new .hub-wn-header {
+		@apply mb-6 flex flex-wrap items-end justify-between gap-4;
+	}
+	.hub-whats-new .hub-wn-title {
+		font-size: 1.571rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.2;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-intro {
+		color: var(--color-ink-light);
+		margin-top: 8px;
+		max-width: 60ch;
+	}
+	.hub-whats-new .hub-wn-rn {
+		@apply flex flex-shrink-0 flex-wrap items-center gap-x-2 gap-y-1;
+	}
+	.hub-whats-new .hub-wn-footer {
+		@apply mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1;
+	}
+	.hub-whats-new .hub-wn-footer-text {
+		font-size: 0.875rem;
+		color: var(--color-ink-light);
+	}
+	.hub-whats-new .hub-wn-upgrade {
+		@apply inline-flex items-center gap-1.5;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-whats-new .hub-wn-upgrade:hover {
+		text-decoration: underline;
+	}
+	.hub-whats-new .hub-wn-upgrade svg {
+		flex-shrink: 0;
+	}
+	.hub-whats-new .hub-wn-rn-label {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-ink-light);
+	}
+	.hub-whats-new .hub-wn-rn-list {
+		@apply m-0 flex flex-wrap items-center p-0;
+		list-style: none;
+	}
+	.hub-whats-new .hub-wn-rn-list li {
+		@apply inline-flex items-center;
+	}
+	.hub-whats-new .hub-wn-rn-list li:not(:last-child)::after {
+		content: '·';
+		color: var(--color-grey-40);
+		margin: 0 10px;
+		font-weight: 700;
+	}
+	.hub-whats-new .hub-wn-rn-link {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-whats-new .hub-wn-rn-link:hover {
+		text-decoration: underline;
+	}
+
+	/* What's new card grid */
+	.hub-whats-new .hub-wn-grid {
+		@apply m-0 grid list-none p-0;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 16px;
+	}
+	.hub-whats-new .hub-wn-card {
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-featured {
+		grid-column: span 2;
+	}
+	.hub-whats-new .hub-wn-card-link {
+		@apply flex h-full flex-col gap-2.5;
+		padding: 18px 20px;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 14px;
+		text-decoration: none;
+		color: inherit;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	.hub-whats-new a.hub-wn-card-link:hover {
+		border-color: var(--color-blue-elastic-60, #7db8e8);
+		box-shadow: 0 2px 10px rgb(0 0 0 / 0.06);
+	}
+	.hub-whats-new .hub-wn-card-meta {
+		@apply flex items-center justify-between gap-2;
+		font-size: 0.75rem;
+	}
+	.hub-whats-new .hub-wn-card-meta-left {
+		@apply inline-flex items-center gap-2;
+	}
+	.hub-whats-new .hub-wn-card-badge {
+		font-weight: 700;
+		color: var(--color-white);
+		background: #f04e98;
+		border-radius: 6px;
+		padding: 2px 8px;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+	.hub-whats-new .hub-wn-card-date {
+		font-weight: 600;
+		color: var(--color-ink-light);
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+	.hub-whats-new .hub-wn-card-tag {
+		color: var(--color-grey-80, #69707d);
+		font-weight: 500;
+	}
+	.hub-whats-new .hub-wn-card-title {
+		font-size: 0.9375rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.3;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-featured .hub-wn-card-title {
+		font-size: 1.125rem;
+	}
+	.hub-whats-new .hub-wn-card-desc {
+		font-size: 0.8125rem;
+		color: var(--color-ink-light);
+		line-height: 1.45;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-more {
+		@apply mt-auto inline-flex items-center gap-1.5;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+	}
+	@media (max-width: 900px) {
+		.hub-whats-new .hub-wn-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.hub-whats-new .hub-wn-grid {
+			grid-template-columns: 1fr;
+		}
+		.hub-whats-new .hub-wn-card-featured {
+			grid-column: span 1;
+		}
+	}
+
+	/* Zone (section heading) ------------------------------------------ */
+	.hub-zone {
+		@apply mx-auto w-full max-w-5xl;
+		margin-top: 56px;
+		margin-bottom: 24px;
+		scroll-margin-top: 120px;
+	}
+	.hub-zone:first-of-type {
+		margin-top: 0;
+	}
+	.hub-zone .hub-zone-title {
+		font-size: 1.571rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.2;
+		margin: 0;
+	}
+	.hub-zone .hub-zone-intro {
+		color: var(--color-ink-light);
+		margin-top: 8px;
+	}
+
+	/* Card grid -------------------------------------------------------- */
+	.hub-card-grid {
+		@apply m-0 mx-auto w-full max-w-5xl list-none p-0;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+		gap: 24px;
+	}
+
+	/* Solutions variant: lock to a 3-up layout that tolerates a future 4th card
+	   (it wraps to the next row rather than shrinking into a 4th narrow column). */
+	.hub-card-grid-solutions {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	/* Card ------------------------------------------------------------- */
+	.hub-card {
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 14px;
+		padding: 22px 22px 20px;
+		transition:
+			box-shadow 0.15s,
+			border-color 0.15s;
+		margin: 0;
+		list-style: none;
+	}
+	.hub-card:hover {
+		border-color: var(--color-grey-30);
+		box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+	}
+
+	.hub-card .hub-card-head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-bottom: 6px;
+	}
+	.hub-card .hub-card-icon svg {
+		width: 28px;
+		height: 28px;
+		display: block;
+	}
+	.hub-card .hub-card-title {
+		font-size: 1.0625rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		margin: 0;
+	}
+	.hub-card .hub-card-title a {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-card .hub-card-title a:hover {
+		color: var(--color-blue-elastic);
+		text-decoration: none;
+	}
+
+	.hub-card .hub-card-desc {
+		font-size: 14px;
+		color: var(--color-ink-light);
+		margin-bottom: 14px;
+		line-height: 1.5;
+	}
+
+	.hub-card .hub-card-links {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin: 0;
+		padding: 0;
+	}
+	.hub-card .hub-card-links li {
+		margin: 0;
+		padding: 0;
+	}
+	.hub-card .hub-card-links li a {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		padding: 3px 0;
+		display: inline-flex;
+		align-items: baseline;
+		gap: 6px;
+		text-decoration: none;
+	}
+	.hub-card .hub-card-links li a:hover {
+		color: var(--color-blue-elastic-110);
+		text-decoration: underline;
+	}
+	.hub-card .hub-card-links li a::before {
+		content: '\203A';
+		color: var(--color-grey-40);
+		font-weight: 700;
+		font-size: 15px;
+	}
+
+	/* Card aside (Panel types, Chart types, Key features...) */
+	.hub-card .hub-card-aside {
+		margin-top: 14px;
+		padding-top: 12px;
+		border-top: 1px solid var(--color-grey-20);
+	}
+	.hub-card .hub-card-aside-label {
+		font-size: 12px;
+		color: var(--color-grey-80);
+		margin-bottom: 6px;
+		font-weight: 600;
+		letter-spacing: 0.3px;
+	}
+	.hub-card .hub-card-aside-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0;
+		font-size: 13px;
+		line-height: 1.9;
+	}
+	.hub-card .hub-card-aside-links a {
+		color: var(--color-blue-elastic-100);
+		font-weight: 500;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		text-decoration-thickness: 1px;
+	}
+	.hub-card .hub-card-aside-links a:hover {
+		color: var(--color-blue-elastic-110);
+	}
+	.hub-card .hub-card-aside-sep {
+		color: var(--color-grey-30);
+		margin: 0 6px;
+	}
+
+	/* Explore {product} — accordion stack ------------------------------ */
+	.hub-explore {
+		@apply mx-auto w-full max-w-5xl;
+		border-top: 1px solid var(--color-grey-20);
+	}
+
+	.hub-accordion {
+		border-bottom: 1px solid var(--color-grey-20);
+	}
+	.hub-accordion-summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 18px 4px;
+		cursor: pointer;
+		list-style: none;
+		user-select: none;
+	}
+	/* Hide the native disclosure triangle across browsers. */
+	.hub-accordion-summary::-webkit-details-marker {
+		display: none;
+	}
+	.hub-accordion-summary::marker {
+		content: '';
+	}
+	.hub-accordion-title {
+		font-size: 1.143rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.3;
+	}
+	.hub-accordion-icon {
+		flex: none;
+		color: var(--color-ink-light);
+	}
+	/* Plus when collapsed, minus when open: drop the vertical stroke on [open]. */
+	.hub-accordion-icon-v {
+		transition: opacity 0.15s ease;
+	}
+	.hub-accordion[open] > .hub-accordion-summary .hub-accordion-icon-v {
+		opacity: 0;
+	}
+	.hub-accordion-summary:hover .hub-accordion-title {
+		color: var(--color-blue-elastic);
+	}
+	.hub-accordion-body {
+		padding: 4px 4px 28px;
+		container-type: inline-size;
+	}
+	.hub-accordion-intro {
+		color: var(--color-ink-light);
+		margin: 0 0 20px;
+	}
+
+	/* Columns inside an accordion -------------------------------------- */
+	/* Column count follows the accordion body's own width (container query), not the
+	   viewport — the hub's left nav narrows the body, so a viewport query would
+	   under-count. Targets a 4-up layout like the design when there's room. */
+	.hub-explore-cols {
+		@apply m-0 list-none p-0;
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 28px 24px;
+		align-items: start;
+	}
+	@container (min-width: 420px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@container (min-width: 620px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+	@container (min-width: 820px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+	.hub-col {
+		margin: 0;
+		list-style: none;
+		min-width: 0;
+	}
+	.hub-col-title {
+		font-size: 0.929rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		margin: 0 0 4px;
+		line-height: 1.3;
+	}
+	.hub-col-title a {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-col-title a:hover {
+		color: var(--color-blue-elastic);
+		text-decoration: underline;
+	}
+	.hub-col-desc {
+		font-size: 0.786rem;
+		color: var(--color-ink-light);
+		margin: 0 0 10px;
+		line-height: 1.4;
+	}
+	.hub-col-links {
+		@apply m-0 list-none p-0;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.hub-col-links li {
+		margin: 0;
+		list-style: none;
+	}
+	.hub-col-links a {
+		font-size: 0.857rem;
+		color: var(--color-ink-dark);
+		text-decoration: none;
+		line-height: 1.35;
+	}
+	.hub-col-links a:hover {
+		color: var(--color-blue-elastic);
+		text-decoration: underline;
+	}
+
+	/* "Even more" badge cluster under a column ------------------------- */
+	.hub-explore-more {
+		margin-top: 14px;
+	}
+	.hub-explore-more-label {
+		font-size: 0.714rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--color-ink-light);
+		margin-bottom: 8px;
+	}
+	.hub-explore-more-badges {
+		@apply m-0 list-none p-0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.hub-explore-more-badges li {
+		margin: 0;
+		list-style: none;
+	}
+	.hub-explore-more-badges a {
+		display: inline-block;
+		font-size: 0.75rem;
+		line-height: 1.4;
+		padding: 2px 8px;
+		border-radius: 4px;
+		background: var(--color-grey-10, #f5f7fa);
+		border: 1px solid var(--color-grey-20);
+		color: var(--color-ink-dark);
+		text-decoration: none;
+		transition:
+			background 0.15s,
+			border-color 0.15s;
+	}
+	.hub-explore-more-badges a:hover {
+		background: var(--color-white);
+		border-color: var(--color-grey-30);
+		color: var(--color-blue-elastic);
+	}
+
+	@media (max-width: 768px) {
+		.hub-hero h1 {
+			font-size: 2rem;
+		}
+		.hub-card-grid {
+			grid-template-columns: 1fr;
+		}
+		.hub-on-this-page {
+			position: static;
+			flex-direction: column;
+		}
+		.hub-card {
+			padding: 20px;
+		}
+	}
+
+	/* Solutions grid steps down gracefully; declared after the base mobile rule
+	   so it wins over .hub-card-grid on shared elements. */
+	@media (max-width: 980px) {
+		.hub-card-grid-solutions {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.hub-card-grid-solutions {
+			grid-template-columns: 1fr;
+		}
+	}
+}

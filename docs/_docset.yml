@@ -144,6 +144,7 @@ toc:
       - file: applies-switch.md
       - file: automated_settings.md
       - file: buttons.md
+      - file: card-group.md
       - file: changelog.md
       - file: code.md
       - file: comments.md
@@ -153,13 +154,18 @@ toc:
       - file: dropdowns.md
       - file: definition-lists.md
       - file: example_blocks.md
+      - file: explore.md
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
+      - file: hero.md
+      - file: hub-pages.md
       - file: icons.md
+      - file: get-started.md
       - file: images.md
       - file: videos.md
       - file: kbd.md
+      - file: link-card.md
       - file: math.md
       - file: diagrams.md
       - file: lists.md
@@ -168,6 +174,7 @@ toc:
       - file: storybook.md
       - file: links.md
       - file: list-sub-pages.md
+      - file: on-this-page.md
       - file: page-card.md
       - file: passthrough.md
       - file: sidebars.md
@@ -179,6 +186,7 @@ toc:
       - file: tabs.md
       - file: tagged_regions.md
       - file: titles.md
+      - file: whats-new.md
   - cli: cli-schema.json
     folder: cli
     children:
@@ -213,6 +221,14 @@ toc:
   - folder: testing
     children:
       - file: index.md
+      - folder: products
+        children:
+          - folder: elasticsearch
+            children:
+              - file: v9.md
+          - folder: kibana
+            children:
+              - file: v9.md
       - file: kibana-settings-yaml-samples.md
       - file: security-settings.md
       - file: req.md

@@ -13,6 +13,7 @@ public record NavigationSection(
 	string Label,
 	string Url,
 	bool Isolated,
+	bool Dropdown,
 	IReadOnlyList<INavigationItem> NavigationItems
 );
 

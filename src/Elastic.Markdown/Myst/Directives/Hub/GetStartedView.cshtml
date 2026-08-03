@@ -1,0 +1,136 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.GetStartedViewModel>
+
+<section class="hub-get-started" id="get-started">
+	<div class="hub-get-started-lead">
+		@if (!string.IsNullOrWhiteSpace(Model.Title))
+		{
+			<h2 class="hub-get-started-title">@Model.Title</h2>
+		}
+		@if (!string.IsNullOrWhiteSpace(Model.IntroHtml))
+		{
+			<p class="hub-get-started-intro">@(new HtmlString(Model.IntroHtml))</p>
+		}
+		@if (!string.IsNullOrWhiteSpace(Model.InstallCode) || !string.IsNullOrWhiteSpace(Model.TutorialUrl))
+		{
+			<div class="hub-get-started-actions">
+				@if (!string.IsNullOrWhiteSpace(Model.InstallCode))
+				{
+					<div class="hub-get-started-install highlight">
+						<pre><code class="language-@(Model.InstallLanguage ?? "text")">@Model.InstallCode</code></pre>
+					</div>
+				}
+				@if (!string.IsNullOrWhiteSpace(Model.TutorialUrl))
+				{
+					<a class="hub-get-started-tutorial" href="@Model.PrefixUrl(Model.TutorialUrl)" hx-boost="false">
+						<span>@(string.IsNullOrWhiteSpace(Model.TutorialLabel) ? "Tutorial" : Model.TutorialLabel)</span>
+						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+							<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+					</a>
+				}
+			</div>
+		}
+	</div>
+
+	@if (Model.Steps.Count > 0)
+	{
+		<ol class="hub-get-started-steps">
+			@foreach (var step in Model.Steps)
+			{
+				@if (step.Options.Count > 0)
+				{
+					<li class="hub-get-started-step hub-get-started-step-wide">
+						<div class="hub-get-started-step-head">
+							<span class="hub-get-started-step-num" aria-hidden="true">@step.Number.ToString("D2")</span>
+							@if (!string.IsNullOrWhiteSpace(step.Title))
+							{
+								<h3 class="hub-get-started-step-title">@step.Title</h3>
+							}
+						</div>
+						@if (!string.IsNullOrWhiteSpace(step.DescriptionHtml))
+						{
+							<p class="hub-get-started-step-desc">@(new HtmlString(step.DescriptionHtml))</p>
+						}
+						<div class="hub-get-started-options">
+							@foreach (var option in step.Options)
+							{
+								<div class="hub-get-started-option">
+									@if (!string.IsNullOrWhiteSpace(option.Label))
+									{
+										<span class="hub-get-started-option-label">@option.Label</span>
+									}
+									@if (!string.IsNullOrWhiteSpace(option.DescriptionHtml))
+									{
+										<p class="hub-get-started-option-desc">@(new HtmlString(option.DescriptionHtml))</p>
+									}
+									@if (!string.IsNullOrWhiteSpace(option.Code))
+									{
+										<div class="hub-get-started-install highlight">
+											<pre><code class="language-@(option.Language ?? "text")">@option.Code</code></pre>
+										</div>
+									}
+									@if (!string.IsNullOrWhiteSpace(option.Url))
+									{
+										@if (!string.IsNullOrWhiteSpace(option.Code))
+										{
+											<a class="hub-get-started-option-link" href="@Model.PrefixUrl(option.Url)" hx-boost="false">
+												<span>@(string.IsNullOrWhiteSpace(option.UrlLabel) ? "Learn more" : option.UrlLabel)</span>
+												<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+													<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+												</svg>
+											</a>
+										}
+										else
+										{
+											<a class="hub-get-started-option-btn" href="@Model.PrefixUrl(option.Url)" hx-boost="false">@(string.IsNullOrWhiteSpace(option.UrlLabel) ? "Get started" : option.UrlLabel)</a>
+										}
+									}
+								</div>
+							}
+						</div>
+					</li>
+				}
+				else if (!string.IsNullOrWhiteSpace(step.Link))
+				{
+					<li class="hub-get-started-step hub-get-started-step-link">
+						<a class="hub-get-started-step-anchor" href="@Model.PrefixUrl(step.Link)" hx-boost="false">
+							<div class="hub-get-started-step-head">
+								<span class="hub-get-started-step-num" aria-hidden="true">@step.Number.ToString("D2")</span>
+								@if (!string.IsNullOrWhiteSpace(step.Title))
+								{
+									<h3 class="hub-get-started-step-title">@step.Title</h3>
+								}
+							</div>
+							@if (!string.IsNullOrWhiteSpace(step.DescriptionHtml))
+							{
+								<p class="hub-get-started-step-desc">@(new HtmlString(step.DescriptionHtml))</p>
+							}
+							<span class="hub-get-started-step-arrow" aria-hidden="true">
+								<span>@(string.IsNullOrWhiteSpace(step.LinkLabel) ? "Open" : step.LinkLabel)</span>
+								<svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+									<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+							</span>
+						</a>
+					</li>
+				}
+				else
+				{
+					<li class="hub-get-started-step">
+						<div class="hub-get-started-step-head">
+							<span class="hub-get-started-step-num" aria-hidden="true">@step.Number.ToString("D2")</span>
+							@if (!string.IsNullOrWhiteSpace(step.Title))
+							{
+								<h3 class="hub-get-started-step-title">@step.Title</h3>
+							}
+						</div>
+						@if (!string.IsNullOrWhiteSpace(step.DescriptionHtml))
+						{
+							<p class="hub-get-started-step-desc">@(new HtmlString(step.DescriptionHtml))</p>
+						}
+					</li>
+				}
+			}
+		</ol>
+	}
+</section>

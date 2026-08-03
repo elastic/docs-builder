@@ -4266,6 +4266,17 @@ nav:
         - page: docs-content://solutions/security/apis.md
           title: APIs
 
+  - section: Products
+    url: /products/
+    dropdown: true
+    children:
+    - label: Stack products
+      children:
+      - page: docs-content://products/elasticsearch/v9.md
+        title: Elasticsearch
+      - page: docs-content://products/kibana/v9.md
+        title: Kibana
+
   - section: APIs
     url: https://www.elastic.co/docs/api
 

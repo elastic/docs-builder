@@ -15,6 +15,8 @@ public class PageCrossLinkLeaf(
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent
 ) : ILeafNavigationItem<INavigationModel>, INavigationModel
 {
+	public Uri Page { get; } = page;
+
 	/// <inheritdoc />
 	public INavigationModel Model => this;
 
