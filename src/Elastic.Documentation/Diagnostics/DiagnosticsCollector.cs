@@ -7,10 +7,12 @@ using System.IO.Abstractions;
 
 namespace Elastic.Documentation.Diagnostics;
 
-public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs)
+public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs, TimeProvider? timeProvider = null)
 	: IDiagnosticsCollector
 {
 	public DiagnosticsChannel Channel { get; } = new();
+
+	public TimeProvider TimeProvider { get; } = timeProvider ?? TimeProvider.System;
 
 	private int _errors;
 	private int _warnings;
