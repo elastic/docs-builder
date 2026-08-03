@@ -36,9 +36,10 @@ public sealed record ChangelogRegistryBundle
 
 	/// <summary>
 	/// Best-effort change hint from the private bucket (pre-scrub). Not valid for public-object
-	/// integrity or HTTP cache validation; see the producer's documentation. Unused by the directive
-	/// today but retained for fidelity and future cache-keying.
+	/// integrity or HTTP cache validation; see the producer's documentation.
+	/// Used as the local disk-cache key so unchanged bundles are not re-downloaded.
 	/// </summary>
+	[JsonPropertyName("etag")]
 	public string? ETag { get; init; }
 }
 

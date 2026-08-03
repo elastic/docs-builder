@@ -4,6 +4,10 @@ navigation_title: essc — sourcing CLI
 
 # essc — sourcing CLI
 
+:::{warning}
+Old development note — likely to be deleted or substantially rewritten.
+:::
+
 `essc` is an AOT-compiled .NET CLI for indexing elastic.co content into
 Elasticsearch. It lives in `src/tooling/essc/` and shares the search document
 contract (`Elastic.Documentation.Search.Contract`) with the docs indexing

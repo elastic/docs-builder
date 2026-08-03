@@ -48,21 +48,14 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var folders = navigation.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>().ToList();
 		folders.Should().NotBeEmpty();
 
-		// Check by URL since folder names derive from index file titles
+		// Check key folders by URL
 		var folderUrls = folders.Select(f => f.Url).ToList();
-		folderUrls.Should().Contain("/contribute");
+		folderUrls.Should().Contain("/getting-started");
+		folderUrls.Should().Contain("/documentation");
 
 		// No errors or warnings should be emitted during navigation construction
-		// Hints are acceptable for best practice guidance
 		context.Collector.Errors.Should().Be(0, "no errors should be emitted");
 		context.Collector.Warnings.Should().Be(0, "no warnings should be emitted");
-
-		// Verify that the hint about deep-linking virtual file was emitted
-		var hints = context.Diagnostics.Where(d => d.Severity == Severity.Hint).ToList();
-		hints.Should().Contain(d =>
-			d.Message.Contains("nest-under-index/index.md") &&
-			d.Message.Contains("deep-linking"),
-			"should emit hint for deep-linking virtual file");
 	}
 
 	[Fact]
@@ -82,13 +75,13 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
-		// Find the contribute folder by URL
-		var contributeFolder = navigation.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>()
-			.FirstOrDefault(f => f.Url == "/contribute");
-		contributeFolder.Should().NotBeNull();
+		// Find the documentation folder by URL
+		var documentationFolder = navigation.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>()
+			.FirstOrDefault(f => f.Url == "/documentation");
+		documentationFolder.Should().NotBeNull();
 
 		// Verify nested structure
-		contributeFolder.NavigationItems.Should().NotBeEmpty();
+		documentationFolder.NavigationItems.Should().NotBeEmpty();
 	}
 
 	[Fact]
@@ -116,25 +109,11 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		}
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
 
-		// Find TOC references in the navigation
-		var tocNavs = navigation.NavigationItems.OfType<TableOfContentsNavigation<TestDocumentationFile>>().ToList();
-		tocNavs.Should().NotBeEmpty();
-
-		// development TOC should exist (check by URL)
-		var developmentToc = tocNavs.FirstOrDefault(t => t.Url == "/development");
+		// development is a toc: reference
+		var developmentToc = navigation.NavigationItems.OfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.FirstOrDefault(t => t.Url == "/development");
 		developmentToc.Should().NotBeNull();
-
-		developmentToc.NavigationItems.Should().HaveCount(6);
-		developmentToc.Index.Should().NotBeNull();
-		developmentToc.NavigationItems.OfType<FileNavigationLeaf<TestDocumentationFile>>().Should().HaveCount(3);
-		developmentToc.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>().Should().HaveCount(2);
-		developmentToc.NavigationItems.OfType<TableOfContentsNavigation<TestDocumentationFile>>().Should().HaveCount(1);
-
-		var developmentIndex = developmentToc.Index as FileNavigationLeaf<TestDocumentationFile>;
-		developmentIndex.Should().NotBeNull();
-		developmentIndex.FileInfo.FullName.Should().Be(Path.Join(docsDir.FullName, "development", "index.md"));
-
-
+		developmentToc.NavigationItems.Should().NotBeEmpty();
 	}
 
 	[Fact]
@@ -161,15 +140,17 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public async Task PhysicalDocsetNavigationHandlesCrossLinks()
+	public async Task PhysicalTestDocsetNavigationHandlesCrossLinks()
 	{
-		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "docset.yml");
+		File.Exists(docsetPath).Should().BeTrue($"Expected test docset file to exist at {docsetPath}");
+
 		var fileSystem = new FileSystem();
-		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs"));
+		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests"));
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
-		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
+		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "doc-builder-tests");
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 

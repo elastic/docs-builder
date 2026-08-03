@@ -147,6 +147,11 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 			if (fileInfo.Exists)
 				continue;
 
+			// Already created during the main scan via a supplemental cmd-*.md interception —
+			// CreateMarkdownFile cached the CliCommandFile under this clean synthetic path.
+			if (_createdFiles.ContainsKey(fileInfo.FullName))
+				continue;
+
 			// defaultFileHandling calls extension.CreateDocumentationFile(file, markdownParser)
 			// which routes back to our CreateDocumentationFile above — now with the MarkdownParser available
 			var doc = defaultFileHandling(fileInfo, Build.DocumentationSourceDirectory);

@@ -19,24 +19,24 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 
 		Configuration.Redirects.Should()
 			.NotBeNullOrEmpty()
-			.And.ContainKey("testing/redirects/first-page-old.md")
-			.And.ContainKey("testing/redirects/second-page-old.md")
-			.And.ContainKey("testing/redirects/4th-page.md")
-			.And.ContainKey("testing/redirects/third-page.md");
+			.And.ContainKey("redirects/first-page-old.md")
+			.And.ContainKey("redirects/second-page-old.md")
+			.And.ContainKey("redirects/4th-page.md")
+			.And.ContainKey("redirects/third-page.md");
 
-		var redirect1 = Configuration.Redirects["testing/redirects/first-page-old.md"];
-		redirect1.To.Should().Be("testing/redirects/second-page.md");
+		var redirect1 = Configuration.Redirects["redirects/first-page-old.md"];
+		redirect1.To.Should().Be("redirects/second-page.md");
 
-		var redirect2 = Configuration.Redirects["testing/redirects/second-page-old.md"];
+		var redirect2 = Configuration.Redirects["redirects/second-page-old.md"];
 		redirect2.Many.Should().NotBeNullOrEmpty().And.HaveCount(2);
-		redirect2.Many[0].To.Should().Be("testing/redirects/second-page.md");
-		redirect2.Many[1].To.Should().Be("testing/redirects/third-page.md");
+		redirect2.Many[0].To.Should().Be("redirects/second-page.md");
+		redirect2.Many[1].To.Should().Be("redirects/third-page.md");
 		redirect2.To.Should().BeNullOrEmpty();
 
-		var redirect3 = Configuration.Redirects["testing/redirects/third-page.md"];
-		redirect3.To.Should().Be("testing/redirects/third-page.md");
+		var redirect3 = Configuration.Redirects["redirects/third-page.md"];
+		redirect3.To.Should().Be("redirects/third-page.md");
 
-		var redirect4 = Configuration.Redirects["testing/redirects/4th-page.md"];
-		redirect4.To.Should().Be("testing/redirects/5th-page.md");
+		var redirect4 = Configuration.Redirects["redirects/4th-page.md"];
+		redirect4.To.Should().Be("redirects/5th-page.md");
 	}
 }

@@ -66,6 +66,7 @@ public class DocumentationWebHost
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.Routing.EndpointMiddleware", LogLevel.Warning)
 			.AddFilter("Microsoft.AspNetCore.Http.Result.ContentResult", LogLevel.Warning)
+			.AddFilter("Microsoft.AspNetCore.Http.Result.FileContentResult", LogLevel.Warning)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 
 		var collector = new LiveModeDiagnosticsCollector(logFactory);
@@ -163,8 +164,9 @@ public class DocumentationWebHost
 				{
 					FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
 					RequestPath = "/_static"
-				})
-			.UseRouting();
+				});
+
+		_ = _webApplication.UseRouting();
 
 		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, "index", _writeFileSystem, ctx));
@@ -217,8 +219,38 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/_api/diagnostics/state", (InMemoryBuildState buildState) =>
 			Results.Json(buildState.GetCurrentState(), DiagnosticsJsonContext.Default.BuildEvent));
 
+		_ = _webApplication.MapGet("/_static/pagefind/{**path}", (string path, InMemoryBuildState buildState, ReloadableGeneratorState holder) =>
+			ServePagefindFile(path, buildState, holder));
+
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeDocumentationFile(holder, slug, _writeFileSystem, ctx));
+	}
+
+	private static IResult ServePagefindFile(string path, InMemoryBuildState buildState, ReloadableGeneratorState holder)
+	{
+		var writeFs = buildState.WriteFileSystem;
+		if (writeFs is null)
+			return Results.NotFound();
+
+		var outputDir = holder.Generator.DocumentationSet.Context.OutputDirectory.FullName;
+		var filePath = Path.Combine(outputDir, "_static", "pagefind", path);
+		var fileInfo = writeFs.FileInfo.New(filePath);
+		if (!fileInfo.Exists)
+			return Results.NotFound();
+
+		var mimeType = Path.GetExtension(path) switch
+		{
+			".js" => "application/javascript",
+			".json" => "application/json",
+			".pagefind" => "application/wasm",
+			".pf_meta" => "application/octet-stream",
+			".pf_index" => "application/octet-stream",
+			".pf_fragment" => "application/octet-stream",
+			_ => "application/octet-stream"
+		};
+
+		var bytes = writeFs.File.ReadAllBytes(filePath);
+		return Results.Bytes(bytes, mimeType);
 	}
 
 	private static async Task WriteSSEEvent(HttpResponse response, string eventType, BuildEvent data, Cancel ct)

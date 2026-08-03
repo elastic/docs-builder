@@ -19,6 +19,7 @@
     "synthetics:test:staging": "DOCS_ENV=staging npm run synthetics:test",
     "synthetics:test:edge": "DOCS_ENV=edge npm run synthetics:test",
     "synthetics:test:local": "DOCS_ENV=local npm run synthetics:test",
+    "synthetics:test:accessibility": "npx @elastic/synthetics ./synthetics/ci/accessibility.ci.ts --config=./synthetics/synthetics.config.ts",
     "synthetics:test:mcp": "npx @elastic/synthetics ./synthetics/journeys/mcp-server.journey.ts --config=./synthetics/synthetics.config.ts",
     "synthetics:test:mcp:prod": "DOCS_ENV=prod npm run synthetics:test:mcp",
     "synthetics:test:mcp:staging": "DOCS_ENV=staging npm run synthetics:test:mcp",
@@ -59,6 +60,7 @@
   },
   "private": true,
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@babel/core": "7.29.6",
     "@babel/preset-env": "7.29.0",
     "@babel/preset-react": "7.28.5",

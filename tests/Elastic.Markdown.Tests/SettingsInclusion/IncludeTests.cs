@@ -268,10 +268,11 @@ $$"""
 )
 {
 	private static readonly string GeneralSettingsPath = "docs/testing/kibana-general-settings.yml";
+	private static readonly string GeneralSettingsRealPath = "docs-tests/kibana-general-settings.yml";
 
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
-		var fullPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, GeneralSettingsPath);
+		var fullPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, GeneralSettingsRealPath);
 		fileSystem.AddFile(GeneralSettingsPath, System.IO.File.ReadAllText(fullPath));
 	}
 
@@ -340,10 +341,11 @@ $$"""
 )
 {
 	private static readonly string GeneralSettingsPath = "docs/testing/kibana-general-settings.yml";
+	private static readonly string GeneralSettingsRealPath = "docs-tests/kibana-general-settings.yml";
 
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
-		var fullPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, GeneralSettingsPath);
+		var fullPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, GeneralSettingsRealPath);
 		fileSystem.AddFile(GeneralSettingsPath, System.IO.File.ReadAllText(fullPath));
 	}
 
