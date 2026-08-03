@@ -37,6 +37,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public bool IsStarted => _readerStarted;
 
+	public bool IsStartRequested => _started is not null;
+
 	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
 		_ = EnsureStarted(ctx);

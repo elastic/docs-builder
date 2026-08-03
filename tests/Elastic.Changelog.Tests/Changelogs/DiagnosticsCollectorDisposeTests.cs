@@ -80,4 +80,27 @@ public class DiagnosticsCollectorDisposeTests
 		Func<Task> act = () => ((IDiagnosticsCollector)collector).WaitForDrain();
 		_ = await act.Should().ThrowAsync<InvalidOperationException>();
 	}
+
+	// Regression: ServiceInvoker calls StartAsync fire-and-forget from its field initializer.
+	// If the service command completes before the thread pool picks up the Task.Run delegate,
+	// _readerStarted is still false when WaitForDrain runs. Previously this threw; now it
+	// waits briefly for the reader to start and then drains successfully.
+	[Fact]
+	public async Task WaitForDrain_AfterStartAsync_WaitsForReaderEvenIfNotStartedYet()
+	{
+		var output = new RecordingOutput();
+		var collector = new DiagnosticsCollector([output]);
+		IDiagnosticsCollector iface = collector;
+
+		// StartAsync is called but we don't await — simulates the fire-and-forget in ServiceInvoker.
+		_ = iface.StartAsync(CancellationToken.None);
+		iface.EmitWarning(string.Empty, "should be drained");
+
+		// WaitForDrain must not throw even though IsStarted may still be false here.
+		await ShouldComplete(iface.WaitForDrain(), TimeSpan.FromSeconds(5),
+			"WaitForDrain must not throw when StartAsync was called but reader hasn't started yet");
+
+		collector.Warnings.Should().Be(1);
+		output.Items.Should().HaveCount(1, "the item must be drained once the reader starts");
+	}
 }
