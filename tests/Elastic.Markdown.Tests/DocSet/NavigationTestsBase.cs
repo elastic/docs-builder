@@ -27,7 +27,8 @@ public class NavigationTestsBase : IAsyncLifetime
 		WriteFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockWriteFs);
 		var collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(ReadFileSystem);
-		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem, configurationContext, ExportOptions.Default)
+		var docsTestsPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests");
+		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem, configurationContext, ExportOptions.Default, source: docsTestsPath)
 		{
 			Force = false,
 			UrlPathPrefix = null

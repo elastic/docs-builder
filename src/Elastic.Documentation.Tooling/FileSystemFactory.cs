@@ -21,7 +21,7 @@ public static class FileSystemFactory
 		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 	};
 
 	// Write options: same scope roots but no .git — nothing in the build output
@@ -31,7 +31,7 @@ public static class FileSystemFactory
 		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
-		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" },
+		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state", ".pagefind-net-frontend-version" },
 		AllowedSpecialFolders = AllowedSpecialFolder.Temp
 	};
 
@@ -87,7 +87,7 @@ public static class FileSystemFactory
 			[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName, root])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
 	}
 
@@ -114,7 +114,10 @@ public static class FileSystemFactory
 		var workingRoot = inner.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var externalRoots = extensionRoots
 			.Select(r => inner.DirectoryInfo.New(r))
-			.Where(d => !DirectoryInfoExtensions.IsSubPathOf(d, workingRoot))
+			// Drop descendants of the working root (already covered by the base scope).
+			// Also drop ancestors of the working root — they would subsume the working root,
+			// producing overlapping roots that ScopedFileSystem rejects with ArgumentException.
+			.Where(d => !DirectoryInfoExtensions.IsSubPathOf(d, workingRoot) && !DirectoryInfoExtensions.IsSubPathOf(workingRoot, d))
 			.Select(d => d.FullName)
 			.Distinct(StringComparer.OrdinalIgnoreCase)
 			.ToArray();
@@ -129,7 +132,7 @@ public static class FileSystemFactory
 		return new ScopedFileSystem(inner, new ScopedFileSystemOptions(roots)
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
 	}
 
@@ -160,7 +163,7 @@ public static class FileSystemFactory
 		return new ScopedFileSystemOptions([.. allRoots])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state", ".pagefind-net-frontend-version" },
 			AllowedSpecialFolders = AllowedSpecialFolder.Temp
 		};
 	}
@@ -184,7 +187,7 @@ public static class FileSystemFactory
 		new(inner, new ScopedFileSystemOptions([sourceRoot, Paths.ApplicationData.FullName])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
 
 	/// <summary>
@@ -230,7 +233,7 @@ public static class FileSystemFactory
 		return new ScopedFileSystem(new FileSystem(), new ScopedFileSystemOptions([.. roots])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
 	}
 
@@ -257,5 +260,20 @@ public static class FileSystemFactory
 		}
 
 		return new ScopedFileSystem(plain, BuildWriteOptions(plain, [.. roots]));
+	}
+
+	/// <summary>
+	/// Creates a read <see cref="ScopedFileSystem"/> for CI environments,
+	/// extending the default scope with <c>RUNNER_TEMP</c> when available.
+	/// Falls back to <see cref="RealRead"/> when <c>RUNNER_TEMP</c> is not set.
+	/// Use in CI commands that need to read temporary files staged in the GitHub Actions runner.
+	/// </summary>
+	public static ScopedFileSystem RealReadForRunnerTemp(IEnvironmentVariables? environmentVariables = null)
+	{
+		var runnerTemp = environmentVariables?.GetEnvironmentVariable("RUNNER_TEMP");
+		if (string.IsNullOrWhiteSpace(runnerTemp))
+			return RealRead;
+
+		return ScopeCurrentWorkingDirectory(new FileSystem(), [runnerTemp]);
 	}
 }

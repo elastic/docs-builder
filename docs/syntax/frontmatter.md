@@ -97,4 +97,4 @@ Use the `sub` field to define local substitutions. Refer to [Substitutions](subs
 
 ## CTA
 
-See [CTA](../configure/content-set/cta.md).
+See [CTA](../documentation/isolated/cta.md).

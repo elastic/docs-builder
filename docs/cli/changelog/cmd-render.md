@@ -3,7 +3,7 @@
 Generate markdown or asciidoc files from changelog bundle files.
 
 To create bundle files, use [](/cli/changelog/bundle.md).
-For details and examples, go to [](/contribute/publish-changelogs.md).
+For details and examples, go to [](/data/release-notes/publish.md).
 
 The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information, go to [](bundle-amend.md).
 

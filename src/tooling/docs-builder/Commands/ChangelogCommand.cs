@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Buffers;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
 using Actions.Core.Services;
@@ -420,7 +420,7 @@ internal sealed partial class ChangelogCommands(
 							}
 						}
 					}
-					catch (IOException ex)
+					catch (Exception ex) when (ex is IOException or SecurityException)
 					{
 						collector.EmitError(string.Empty, $"Failed to read PRs from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
@@ -460,7 +460,7 @@ internal sealed partial class ChangelogCommands(
 								allIssues.Add(line.Trim());
 						}
 					}
-					catch (IOException ex)
+					catch (Exception ex) when (ex is IOException or SecurityException)
 					{
 						collector.EmitError(string.Empty, $"Failed to read issues from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
@@ -1390,10 +1390,14 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
+		var fileSystem = FileSystemFactory.RealReadForRunnerTemp(environmentVariables);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
-		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService);
+		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService, fileSystem);
 
-		var prBody = await ReadPrBodyFromEnvironmentAsync(ctx);
+		var prBodyFile = environmentVariables.GetEnvironmentVariable("PR_BODY_FILE");
+		var prBody = !string.IsNullOrWhiteSpace(prBodyFile)
+			? await ChangelogPrBodyReader.ReadAsync(prBodyFile, collector, fileSystem, ctx)
+			: environmentVariables.GetEnvironmentVariable("PR_BODY");
 
 		var args = new EvaluatePrArguments
 		{
@@ -1558,45 +1562,6 @@ internal sealed partial class ChangelogCommands(
 				result.Add(value);
 		}
 		return result;
-	}
-
-	// PR_BODY can hit GitHub's 65,536-char limit and exceed runner env-var
-	// budgets when passed inline. PR_BODY_FILE lets callers stage the body
-	// in a file under RUNNER_TEMP and pass the path instead, which keeps
-	// the body off the env block entirely. Cap reads at 256 KiB to bound
-	// memory if a caller hands us a hostile path.
-	private const int MaxPrBodyFileBytes = 256 * 1024;
-
-	private async Task<string?> ReadPrBodyFromEnvironmentAsync(CancellationToken ct)
-	{
-		var prBodyFile = environmentVariables.GetEnvironmentVariable("PR_BODY_FILE");
-		if (string.IsNullOrWhiteSpace(prBodyFile))
-			return environmentVariables.GetEnvironmentVariable("PR_BODY");
-
-		var info = _fileSystem.FileInfo.New(prBodyFile);
-		if (!info.Exists)
-		{
-			collector.EmitWarning(string.Empty, $"PR_BODY_FILE points to a missing file: {prBodyFile}");
-			return null;
-		}
-
-		if (info.Length <= MaxPrBodyFileBytes)
-			return await _fileSystem.File.ReadAllTextAsync(prBodyFile, ct);
-
-		collector.EmitHint(string.Empty, $"PR_BODY_FILE exceeds {MaxPrBodyFileBytes} bytes ({info.Length}); truncating.");
-
-		var buffer = ArrayPool<byte>.Shared.Rent(MaxPrBodyFileBytes);
-		try
-		{
-			await using var stream = info.OpenRead();
-			var slice = buffer.AsMemory(0, MaxPrBodyFileBytes);
-			await stream.ReadExactlyAsync(slice, ct);
-			return Encoding.UTF8.GetString(slice.Span);
-		}
-		finally
-		{
-			ArrayPool<byte>.Shared.Return(buffer);
-		}
 	}
 
 	private static string GetPathForConfig(string repoPath, string targetPath)
@@ -1784,4 +1749,3 @@ internal sealed partial class ChangelogCommands(
 	}
 
 }
-

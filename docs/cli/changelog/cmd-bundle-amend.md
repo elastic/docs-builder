@@ -6,7 +6,7 @@ Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{
 Specify at least one of `--add` or `--remove`.
 
 To create a bundle, use [](/cli/changelog/bundle.md).
-For details and examples, go to [](/contribute/bundle-changelogs.md).
+For details and examples, go to [](/data/release-notes/bundle.md).
 
 ## Output
 
