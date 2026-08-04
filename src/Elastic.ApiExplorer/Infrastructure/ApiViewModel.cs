@@ -23,6 +23,9 @@ public record ApiTocItem(string Heading, string Slug, int Level = 2);
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
+
+	/// <summary>When set, operation pages render examples in the right rail instead of the in-page TOC.</summary>
+	public OperationExamplesPanelModel? ExamplesPanel { get; init; }
 }
 
 public abstract class ApiViewModel(ApiRenderContext context)

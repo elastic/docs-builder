@@ -35,7 +35,7 @@ public class CodeSampleTests
 	{
 		var samples = new JsonArray(
 			new JsonObject { ["lang"] = "Console", ["source"] = "GET /_search" },
-			new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET ..." }
+			new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET \"$ELASTICSEARCH_URL/_search\"" }
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
@@ -45,7 +45,8 @@ public class CodeSampleTests
 		result[0].Language.Should().Be("Console");
 		result[0].Source.Should().Be("GET /_search");
 		result[1].Language.Should().Be("curl");
-		result[1].Source.Should().Be("curl -X GET ...");
+		result[1].Source.Should().Be("curl -X GET \"$ELASTICSEARCH_URL/_search\"");
+		result[1].HighlightClass.Should().Be("language-curl");
 	}
 
 	[Fact]
@@ -126,7 +127,7 @@ public class CodeSampleTests
 
 	[Theory]
 	[InlineData("Console", "language-console")]
-	[InlineData("curl", "language-bash")]
+	[InlineData("curl", "language-curl")]
 	[InlineData("Python", "language-python")]
 	[InlineData("JavaScript", "language-javascript")]
 	[InlineData("Ruby", "language-ruby")]
@@ -139,17 +140,59 @@ public class CodeSampleTests
 		CodeSample.GetHighlightClass(language).Should().Be(expected);
 	}
 
+	[Theory]
+	[InlineData("""{"ok":true}""", "language-json")]
+	[InlineData("""[{"id":1}]""", "language-json")]
+	[InlineData("  \n{ \"a\": 1 }", "language-json")]
+	[InlineData("event: message\ndata: [DONE]", "language-plaintext")]
+	[InlineData("", "language-plaintext")]
+	[InlineData(null, "language-plaintext")]
+	public void HighlightClassForExampleBody_DetectsJsonVsOther(string? source, string expected)
+	{
+		CodeSample.HighlightClassForExampleBody(source).Should().Be(expected);
+	}
+
 	[Fact]
 	public void CodeSamples_SetsCorrectHighlightClass()
 	{
 		var samples = new JsonArray(
-			new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET ..." }
+			new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET \"$ELASTICSEARCH_URL/_search\"" }
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
 		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
-		result[0].HighlightClass.Should().Be("language-bash");
+		result[0].HighlightClass.Should().Be("language-curl");
+	}
+
+	[Fact]
+	public void CodeSamples_FormatsSingleLineCurl()
+	{
+		const string source =
+			"curl -X PUT -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -H \"Content-Type: application/json\" -d '{\"service\":\"cohere\"}' \"$ELASTICSEARCH_URL/_inference/rerank/my-rerank-model\"";
+		var samples = new JsonArray(
+			new JsonObject
+			{
+				["lang"] = "curl",
+				["source"] = source
+			}
+		);
+		var operation = CreateOperationWithCodeSamples(samples);
+
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
+
+		result[0].Source.Should().StartWith("curl -X PUT \"$ELASTICSEARCH_URL/_inference/rerank/my-rerank-model\" \\");
+		result[0].Source.Should().Contain("\n  -H \"Authorization: ApiKey $ELASTIC_API_KEY\" \\");
+		result[0].Source.Should().Contain("\n  -H \"Content-Type: application/json\" \\");
+		result[0].Source.Should().Contain("\n  -d ");
+		result[0].Source.Should().Contain("\"service\"");
+	}
+
+	[Fact]
+	public void CurlSourceFormatter_LeavesMultilineUnchanged()
+	{
+		var source = "curl -X GET \\\n  \"$ELASTICSEARCH_URL/_search\"";
+		CurlSourceFormatter.Format(source).Should().Be(source);
 	}
 
 	[Theory]

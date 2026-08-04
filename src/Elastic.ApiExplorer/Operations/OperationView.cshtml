@@ -9,23 +9,21 @@
 	var pageModel = Model.Page;
 }
 
-<section id="elastic-api-v3">
-	<h1>
-		@operation.Summary
-		@if (operation.Deprecated)
-		{
-			<span class="deprecated-badge">deprecated</span>
-		}
-		@if (pageModel.IsBeta)
-		{
-			<span class="beta-badge">Beta</span>
-		}
-	</h1>
-	@if (pageModel.Availability is not null)
+@* Intro spans both columns (title + paths); reference column starts below. *@
+<header class="api-page-intro">
+	<h1>@operation.Summary</h1>
+	@if (operation.Deprecated || pageModel.IsBeta)
 	{
-		<p class="applies applies-block">
-			@(await RenderPartialAsync<_AppliesToBadge, AppliesToBadgeDisplay>(new AppliesToBadgeDisplay(pageModel.Availability, IsInline: false)))
-		</p>
+		<div class="api-title-badges">
+			@if (operation.Deprecated)
+			{
+				<span class="deprecated-badge">deprecated</span>
+			}
+			@if (pageModel.IsBeta)
+			{
+				<span class="beta-badge">Beta</span>
+			}
+		</div>
 	}
 	@if (pageModel.Servers is { Count: > 0 })
 	{
@@ -44,31 +42,70 @@
 		</div>
 	}
 
-	@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Paths", "paths", Model.Operation.Route)))
-	<ul class="api-url-listing">
-		@foreach (var overload in pageModel.Overloads)
-		{
-			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
-			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
-			var isDeprecated = overload.Model.Operation?.Deprecated == true;
-			<li class="api-url-list-item @(isDeprecated ? "deprecated" : "")">
-				<a href="@overload.Url" class="@current" @LayoutModel.Htmx.GetHxAttributes(hasSameTopLevelGroup: true)>
-					 <span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
-					 <span class="api-url @(isDeprecated ? "deprecated-path" : "")">@overload.Model.Route</span>
-					 @if (isDeprecated)
-					 {
-						 <span class="deprecated-badge">deprecated</span>
-					 }
-				</a>
-			</li>
-		}
-	</ul>
+	@{
+		var overloads = pageModel.Overloads;
+		var currentOverload = overloads.FirstOrDefault(o =>
+			o.Model.Route == Model.Operation.Route
+			&& o.Model.OperationType == Model.Operation.OperationType)
+			?? overloads.FirstOrDefault();
+		var variantOverloads = currentOverload is null
+			? []
+			: overloads
+				.Where(o =>
+					o.Model.Route != currentOverload.Model.Route
+					|| o.Model.OperationType != currentOverload.Model.OperationType)
+				.ToArray();
+		var currentMethod = currentOverload?.Model.OperationType.ToString().ToLowerInvariant() ?? "";
+	}
+	@if (currentOverload is not null)
+	{
+		<div id="paths" class="api-path-bar">
+			<div class="api-path-current">
+				<span class="api-method api-method-@currentMethod">@currentMethod.ToUpperInvariant()</span>
+				<span class="api-url">@currentOverload.Model.Route</span>
+			</div>
+			@if (variantOverloads.Length > 0)
+			{
+				<select
+					class="api-path-overload-select"
+					aria-label="Other paths"
+					data-hx-select-oob="@LayoutModel.Htmx.GetHxSelectOob(true)">
+					<option value="" selected disabled>Other paths (@variantOverloads.Length)</option>
+					@foreach (var overload in variantOverloads)
+					{
+						var method = overload.Model.OperationType.ToString().ToUpperInvariant();
+						<option value="@overload.Url">@method @overload.Model.Route</option>
+					}
+				</select>
+			}
+		</div>
+	}
+</header>
+<section id="elastic-api-v3" class="api-page-reference">
 	@{
 		var prerequisiteLines = Model.RequiredAuthItems;
 	}
+	@if (!string.IsNullOrWhiteSpace(operation.Description))
+	{
+		<div class="api-operation-description">
+			@(Model.RenderMarkdown(operation.Description))
+			@if (pageModel.ExternalDocs is not null)
+			{
+				<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+					@pageModel.ExternalDocs.LinkText
+				</a>
+			}
+		</div>
+	}
+	else if (pageModel.ExternalDocs is not null)
+	{
+		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+			@pageModel.ExternalDocs.LinkText
+		</a>
+	}
 	@if (prerequisiteLines is { Count: > 0 })
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Prerequisites", "prerequisites", Model.Operation.Route)))
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Prerequisites", "prerequisites")))
 		<ul class="prerequisite-list">
 		@foreach (var line in prerequisiteLines)
 		{
@@ -78,7 +115,7 @@
 	}
 	@if (pageModel.PathParameters.Count > 0)
 	{
-		<h4>Path Parameters</h4>
+		<h4>Parameters</h4>
 		<dl class="property-list">
 		@foreach (var path in pageModel.PathParameters)
 		{
@@ -96,26 +133,6 @@
 			</div>
 		}
 		</dl>
-	}
-
-	@if (!string.IsNullOrWhiteSpace(operation.Description))
-	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Description", "description", Model.Operation.Route)))
-		<p>
-			@(Model.RenderMarkdown(operation.Description))
-		</p>
-		@if (pageModel.ExternalDocs is not null)
-		{
-			<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
-				@pageModel.ExternalDocs.LinkText
-			</a>
-		}
-	}
-	else if (pageModel.ExternalDocs is not null)
-	{
-		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
-			@pageModel.ExternalDocs.LinkText
-		</a>
 	}
 
 	@if (operation.Security is { Count: > 0 })
@@ -140,7 +157,7 @@
 
 	@if (pageModel.QueryParameters.Count > 0)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Query String Parameters", "query-params", Model.Operation.Route)))
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Query Parameters", "query-params")))
 		<dl class="property-list">
 			@foreach (var qp in pageModel.QueryParameters)
 			{
@@ -195,7 +212,7 @@
 	}
 	@if (operation.RequestBody is not null)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Request Body", "request-body", Model.Operation.Route, pageModel.RequestContentType)))
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Request", "request-body", pageModel.RequestContentType)))
 		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
@@ -216,7 +233,7 @@
 		var isSingleResponse = pageModel.Responses.Count == 1;
 		var singleContentType = isSingleResponse ? pageModel.Responses[0].FirstContentType : null;
 
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(isSingleResponse ? "Response" : "Responses", "responses", Model.Operation.Route, singleContentType)))
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(isSingleResponse ? "Response" : "Responses", "responses", singleContentType)))
 		@foreach (var response in pageModel.Responses)
 		{
 			<div class="response-section">
@@ -291,47 +308,5 @@
 				}
 			</div>
 		}
-	}
-	@{
-		var codeSamples = pageModel.CodeSamples;
-	}
-	@if (codeSamples.Count == 1)
-	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Code Examples", "code-examples", Model.Operation.Route)))
-		<div class="example-block">
-			<h4>@codeSamples[0].Language</h4>
-			@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(codeSamples[0].HighlightClass, codeSamples[0].Source)))
-		</div>
-	}
-	else if (codeSamples.Count > 1)
-	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Code Examples", "code-examples", Model.Operation.Route)))
-		<div class="tabs">
-			@for (var i = 0; i < codeSamples.Count; i++)
-			{
-				var sample = codeSamples[i];
-				var tabId = $"code-sample-{i}";
-				<input class="tabs-input" checked="@(i == 0 ? "checked" : "")" id="@tabId" name="code-samples" type="radio" tabindex="0">
-				<label class="tabs-label" data-sync-id="@sample.Language" data-sync-group="api-language" for="@tabId">@sample.Language</label>
-				<div class="tabs-content" tabindex="0">
-					@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source)))
-				</div>
-			}
-		</div>
-	}
-	@if (pageModel.ShowRequestExamples)
-	{
-		@(await RenderPartialAsync<_ExamplesSection, ExamplesSection>(new ExamplesSection(new SectionHeader("Request Examples", "request-examples", Model.Operation.Route), pageModel.RequestExamples)))
-	}
-	@if (pageModel.ShowResponseExamples)
-	{
-		@(await RenderPartialAsync<_ExamplesSection, ExamplesSection>(new ExamplesSection(new SectionHeader("Response Examples", "response-examples", Model.Operation.Route), pageModel.ResponseExamples)))
-	}
-	@if (pageModel.ExamplesAnchor != null)
-	{
-		<a href="#@pageModel.ExamplesAnchor" class="examples-jump-btn" id="examples-jump-btn">
-			<span class="icon">&#x2193;</span>
-			<span>Examples</span>
-		</a>
 	}
 </section>

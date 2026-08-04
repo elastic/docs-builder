@@ -1,0 +1,68 @@
+@using Elastic.ApiExplorer.Model
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<ExampleScenario>
+@* Example OpenAPI descriptions are omitted from the rail — they often restate the call
+   or narrate the sample; the code blocks carry the useful content. *@
+
+@* Two independently styleable blocks in the rail:
+   1. .api-code-sample — multi-language x-codeSamples, or fallback request JSON
+   2. .example-block--response — response JSON (status-code tabs) *@
+@if (Model.CodeSamples.Count > 0)
+{
+	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}", Model.CodeSamples)))
+}
+else if (Model.ShowRequest && Model.RequestJson is not null)
+{
+	var requestSamples = new[]
+	{
+		new CodeSample("JSON", Model.RequestJson, "language-json")
+	};
+	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples)))
+}
+
+@if (Model.ShowRequest && !string.IsNullOrEmpty(Model.RequestExternalValue))
+{
+	<p class="external-example">External example: <a href="@Model.RequestExternalValue">@Model.RequestExternalValue</a></p>
+}
+
+@if (Model.ShowResponse)
+{
+	var responses = Model.Responses;
+	<div class="example-block example-block--response" data-api-response-samples>
+		<div class="example-block-header">
+			<div class="example-response-tabs" role="tablist" aria-label="Response status">
+				@for (var i = 0; i < responses.Count; i++)
+				{
+					var response = responses[i];
+					var selected = i == 0;
+					<button
+						type="button"
+						role="tab"
+						class="example-response-tab@(selected ? " is-active" : "")"
+						data-status="@response.StatusCode"
+						aria-selected="@(selected ? "true" : "false")"
+						tabindex="@(selected ? "0" : "-1")">
+						@response.StatusCode
+					</button>
+				}
+			</div>
+			<div class="example-block-actions"></div>
+		</div>
+		<div class="example-block-body">
+			@for (var i = 0; i < responses.Count; i++)
+			{
+				var response = responses[i];
+				<div class="example-response-panel" data-status="@response.StatusCode" role="tabpanel" hidden="@(i == 0 ? null : "hidden")">
+					@if (response.JsonValue is not null)
+					{
+						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(CodeSample.HighlightClassForExampleBody(response.JsonValue), response.JsonValue)))
+					}
+					@if (!string.IsNullOrEmpty(response.ExternalValue))
+					{
+						<p class="external-example">External example: <a href="@response.ExternalValue">@response.ExternalValue</a></p>
+					}
+				</div>
+			}
+		</div>
+	</div>
+}

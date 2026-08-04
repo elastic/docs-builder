@@ -12,10 +12,14 @@ else
 	@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 }
 <div id="main-container" class="relative">
-	<div class="min-h-screen w-full max-w-(--max-layout-width) mx-auto md:px-4">
+	<div class="min-h-screen w-full mx-auto md:px-4 api-page-shell">
 		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
-			<div class="min-w-0 lg:grid lg:grid-cols-[1fr_var(--max-sidebar-width)] md:order-2 gap-4">
-				<div class="min-w-0 pt-6">
+			@* Two-column mode is driven by CSS :has(#api-examples-panel.api-examples-panel) so
+			   htmx oob swaps of the panel (without remounting this wrapper) still update the grid. *@
+			<div class="min-w-0 flex flex-col lg:grid md:order-2 gap-y-4 gap-x-8 api-content-grid">
+				@* When examples exist, wrappers use display:contents so .api-page-intro can
+				   span both columns while .api-page-reference stays in the left column. *@
+				<div class="api-page-main min-w-0 pt-6">
 					<main id="content-container" class="w-full flex flex-col relative pb-12 overflow-x-hidden">
 						<article id="markdown-content" class="content-container markdown-content md:px-4 min-w-0">
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
@@ -23,7 +27,16 @@ else
 						</article>
 					</main>
 				</div>
-				@await RenderPartialAsync(_ApiToc.Create(Model.TocItems.ToArray()))
+				@* API pages never show "On this page"; right rail is examples-only. Keep both IDs for htmx oob swaps. *@
+				@if (Model.ExamplesPanel is not null)
+				{
+					@await RenderPartialAsync(_OperationExamplesPanel.Create(Model.ExamplesPanel))
+				}
+				else
+				{
+					<aside id="api-examples-panel" class="hidden" aria-hidden="true"></aside>
+				}
+				<aside id="toc-nav" class="hidden" aria-hidden="true"></aside>
 			</div>
 			@await RenderPartialAsync(_PagesNav.Create(Model))
 		</div>
