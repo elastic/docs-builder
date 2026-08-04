@@ -4303,6 +4303,100 @@
           "path": [
             "changelog"
           ],
+          "name": "scrubber-allowlist",
+          "summary": "Resolve the link allowlist identity of the deployed changelog scrubber.",
+          "notes": "The scrubber Lambda embeds its link allowlist from config/assembler.yml at build time, so the\ndeployed allowlist can differ from any local checkout. The release pipeline attaches a\nchangelog-scrubber-allowlist.json asset to the GitHub release after each successful scrubber\ndeploy; this command resolves the identity from that asset. Without a --tag, the newest release\ncarrying the asset wins \u2014 the most recent deploy that passed the gated pipeline. Exits non-zero when\nno identity can be resolved: backfill plans must pin this identity and cannot be approved without it.",
+          "usage": "docs-builder changelog scrubber-allowlist [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "tag",
+              "type": "string",
+              "required": false,
+              "summary": "Release tag to resolve the identity from (e.g., \u0022v5.7.0\u0022). Defaults to the newest release carrying the identity asset."
+            },
+            {
+              "role": "flag",
+              "name": "assembler",
+              "type": "string",
+              "required": false,
+              "summary": "Path to a local assembler.yml to compare against the deployed allowlist. Defaults to config/assembler.yml when it exists; a mismatch is reported as a warning, not an error.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub owner of the repository whose releases carry the identity asset.",
+              "defaultValue": "elastic"
+            },
+            {
+              "role": "flag",
+              "name": "repo",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub repository whose releases carry the identity asset.",
+              "defaultValue": "docs-builder"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
           "name": "upload",
           "summary": "Upload changelog entries or bundle artifacts to S3 or Elasticsearch.",
           "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{org}/{repo}/{branch}/{file}, keyed by the\nauthoring owner (--owner \u003E bundle.owner \u003E git remote), repository (--repo\n\u003E bundle.repo \u003E git remote), and branch (--branch \u003E the current checkout\u0027s\nbranch). The branch is stored verbatim, so a branch\u0027s / become real key separators. Bundles\nare uploaded under bundle/{product}/{file}, product-scoped from the bundle YAML, and do not\nrequire an owner/repo/branch.",

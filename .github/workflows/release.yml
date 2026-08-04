@@ -208,6 +208,11 @@ jobs:
         with:
           name: changelog-scrubber-lambda-binary
 
+      - name: Download allowlist identity
+        uses: actions/download-artifact@v8
+        with:
+          name: changelog-scrubber-allowlist-identity
+
       - name: Create zip
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
@@ -223,12 +228,16 @@ jobs:
             --function-name elastic-docs-v3-changelog-scrubber \
             --zip-file "fileb://${ZIP_FILE}"
 
+      # The allowlist identity is attached only after update-function-code succeeded, so the
+      # presence of this asset on a release attests that the release's allowlist was deployed.
+      # Consumers resolve the deployed identity from the newest release carrying the asset
+      # (`docs-builder changelog scrubber-allowlist`, docs-eng-team#671).
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}" changelog-scrubber-allowlist.json
 
   release:
     needs: 
