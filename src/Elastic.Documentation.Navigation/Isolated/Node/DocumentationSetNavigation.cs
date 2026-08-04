@@ -196,14 +196,18 @@ public class DocumentationSetNavigation<TModel>
 	private TModel? CreateDocumentationFile(
 		IFileInfo fileInfo,
 		IFileSystem fileSystem,
-		IDocumentationSetContext context,
-		string fullPath
+		IDocumentationSetContext context
 	)
 	{
 		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, fileInfo.FullName);
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fileSystem);
 		if (documentationFile == null)
-			context.EmitError(context.ConfigurationPath, $"File navigation '{relativePath}' could not be created. {fullPath}");
+		{
+			var reason = fileInfo.Exists
+				? "the file exists but is not a valid Markdown document"
+				: "the file does not exist on disk";
+			context.EmitError(context.ConfigurationPath, $"Table of contents references '{relativePath}' but {reason}.");
+		}
 
 		return documentationFile;
 	}
@@ -248,7 +252,7 @@ public class DocumentationSetNavigation<TModel>
 			DetectionRuleRef ruleRef => ruleRef.FileInfo,
 			_ => ResolveFileInfo(context, fullPath)
 		};
-		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);
+		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
 		if (documentationFile == null)
 			return null;
 

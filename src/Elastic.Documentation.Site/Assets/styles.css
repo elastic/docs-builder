@@ -18,7 +18,6 @@
 @import './markdown/definition-list.css';
 @import './markdown/footnotes.css';
 @import './markdown/images.css';
-@import './markdown/math.css';
 @import './markdown/mermaid.css';
 @import './markdown/image-carousel.css';
 @import './markdown/hr.css';
@@ -29,6 +28,7 @@
 @import './markdown/agent-skill.css';
 @import './markdown/cli-modifiers.css';
 @import './markdown/contributors.css';
+@import './markdown/storybook.css';
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
 
@@ -83,7 +83,7 @@ body {
 	}
 }
 
-#toc-nav a.current {
+#toc-nav a.toc-current {
 	color: var(--color-blue-elastic);
 	&:hover {
 		color: var(--color-blue-elastic);
@@ -238,7 +238,9 @@ body {
 .htmx-request .htmx-indicator,
 .htmx-request.htmx-indicator {
 	display: block;
-	z-index: 9999;
+	/* Elastic's global nav (elastic-nav.js) also sits at z-index 9999 and comes
+	   later in the DOM, so a tie here would let it paint over the indicator. */
+	z-index: 10000;
 }
 
 .progress {
@@ -462,25 +464,6 @@ body {
 
 math {
 	margin-top: 1.5rem;
-}
-
-/* Adjust look and feel of the navigation-search in the landing page hero */
-#hero navigation-search {
-	& > div > .euiHorizontalRule {
-		display: none;
-	}
-
-	& > div {
-		padding-right: 0;
-	}
-
-	& .euiPopover {
-		max-inline-size: 100%;
-
-		@media screen and (min-width: 1180px) {
-			max-inline-size: 500px;
-		}
-	}
 }
 
 * {

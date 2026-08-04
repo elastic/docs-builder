@@ -158,9 +158,9 @@ const SearchResultRow = ({
             return result.parents.map((p) => p.title)
         }
 
-        const typePrefix = result.type === 'api' ? 'API' : 'Docs'
+        const typePrefix = 'Docs'
         return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
-    }, [result.type, result.parents])
+    }, [result.parents])
 
     return (
         <a

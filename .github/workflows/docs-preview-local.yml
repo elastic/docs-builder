@@ -93,7 +93,7 @@ jobs:
     steps:
       - name: Checkout
         if: github.event_name == 'push'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -211,7 +211,7 @@ jobs:
         if: >
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false

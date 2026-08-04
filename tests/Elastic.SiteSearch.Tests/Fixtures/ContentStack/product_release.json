@@ -1,0 +1,40 @@
+{
+  "title": "Elasticsearch 8.12.0",
+  "url": "/downloads/past-releases/elasticsearch-8-12-0",
+  "uid": "blt000000000000005e",
+  "_version": 1,
+  "locale": "en-us",
+  "ACL": {},
+  "created_at": "2024-01-10T12:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2024-01-10T12:00:00.000Z",
+  "updated_by": "bltuser00000000001a",
+  "tags": [],
+  "date": "2024-01-10",
+  "version_number": "8.12.0",
+  "product": ["bltproduct000000001"],
+  "release_candidate": false,
+  "no_index": false,
+  "package": [
+    {
+      "platform": "Linux x86_64",
+      "download_url": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.12.0-linux-x86_64.tar.gz",
+      "sha_url": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.12.0-linux-x86_64.tar.gz.sha512"
+    }
+  ],
+  "license": "<p>Elastic License 2.0</p>",
+  "release_notes": "<p>See the <a href=\"/guide/en/elasticsearch/reference/8.12/release-notes-8.12.0.html\">release notes</a> for details.</p>",
+  "v5_release_notes": "",
+  "seo": {
+    "seo_title": "Download Elasticsearch 8.12.0",
+    "seo_description": "Download Elasticsearch 8.12.0 for your platform.",
+    "seo_keywords": "elasticsearch, download, 8.12.0",
+    "seo_image": null
+  },
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2024-01-10T13:00:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}

@@ -2,7 +2,7 @@
 
 @if (Model.Branding is null)
 {
-	<footer class="py-8 px-6 w-full mx-auto bg-ink-dark">
+	<footer hx-disable="true" class="py-8 px-6 w-full mx-auto bg-ink-dark">
 		<div class="max-w-(--max-layout-width) w-full mx-auto text-grey-20 text-[12px]">
 			<a href="https://www.elastic.co/">
 				<img class="block" loading="lazy" alt="Elastic logo" src="@Model.Static("logo-elastic-horizontal-white.svg")" width="120" height="41"/>
@@ -28,7 +28,7 @@
 }
 else
 {
-	<footer>
+	<footer hx-disable="true">
 		@if (Model.Features.DiagnosticsPanelEnabled)
 		{
 			<div class="h-10"></div>

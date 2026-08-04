@@ -1700,4 +1700,79 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'invalid-product' is not in the list of available products"));
 	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_UseLocalChangelogs_DefaultsToFalse()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: docs/changelog
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.UseLocalChangelogs.Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_BundleResolve_Deprecated_IgnoredAndWarningEmitted()
+	{
+		// Arrange — bundle.resolve was removed; a config still carrying it must load (no hard parse error) but warn.
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: docs/changelog
+			  resolve: true
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle.Should().NotBeNull();
+		Collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("bundle.resolve is deprecated and ignored"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_UseLocalChangelogs_True_Parses()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: docs/changelog
+			  use_local_changelogs: true
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.UseLocalChangelogs.Should().BeTrue();
+	}
 }

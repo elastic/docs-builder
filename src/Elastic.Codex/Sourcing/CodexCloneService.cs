@@ -183,7 +183,17 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var git = new CodexGitRepository(logFactory, context.Collector, repoDir);
 
 			if (assumeCloned && git.IsInitialized())
+			{
+				if (!git.HasHead())
+				{
+					// A failed prior clone leaves an initialized-but-empty .git dir. Treat this
+					// identically to a clone failure: warn and skip rather than error.
+					context.Collector.EmitWarning(context.ConfigurationPath,
+						$"Could not clone repository '{repoName}' (HEAD unresolvable); skipping");
+					return null;
+				}
 				_logger.LogInformation("Assuming {Name} is already cloned", repoName);
+			}
 			else if (git.IsInitialized() && !fetchLatest)
 				_logger.LogInformation("{Name} already cloned, skipping (use --fetch-latest to update)", repoName);
 			else

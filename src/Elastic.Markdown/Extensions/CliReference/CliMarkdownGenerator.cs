@@ -10,10 +10,12 @@ namespace Elastic.Markdown.Extensions.CliReference;
 
 internal static partial class CliMarkdownGenerator
 {
-	public static string RootPage(CliSchema schema, CliSupplementalDoc? supplemental)
+	public static string RootPage(CliSchema schema, CliSupplementalDoc? supplemental, string? title = null)
 	{
 		var sb = new StringBuilder();
-		_ = sb.AppendLine($"# {schema.Name}");
+		AppendFrontMatter(sb, supplemental);
+		var pageTitle = string.IsNullOrWhiteSpace(title) ? schema.Name : title.Trim();
+		_ = sb.AppendLine($"# {pageTitle}");
 		_ = sb.AppendLine();
 
 		var description = supplemental?.Description ?? schema.Description?.Trim();
@@ -44,7 +46,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Namespaces");
 			_ = sb.AppendLine();
 			foreach (var ns in schema.Namespaces)
-				AppendPageCard(sb, ns.Segment, $"./{ns.Segment}/index.md", ns.Summary);
+				AppendPageCard(sb, ns.Segment, $"./{ns.Segment}", ns.Summary);
 		}
 
 		if (schema.Environment?.Variables is { Count: > 0 } envVars)
@@ -108,6 +110,7 @@ internal static partial class CliMarkdownGenerator
 		List<CliShortcutSchema>? shortcuts = null)
 	{
 		var sb = new StringBuilder();
+		AppendFrontMatter(sb, supplemental);
 		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : ns.Segment;
 		_ = sb.AppendLine($"# {heading} <span class=\"cli-badge-ns\">cli namespace</span>");
 		_ = sb.AppendLine();
@@ -126,7 +129,7 @@ internal static partial class CliMarkdownGenerator
 		{
 			var depth = fullPath?.Length ?? 1;
 			var upPrefix = string.Concat(Enumerable.Repeat("../", depth));
-			var links = nsAliases.Select(a => $"[`{binaryName ?? a} {a}`]({upPrefix}{a}/index.md)");
+			var links = nsAliases.Select(a => $"[`{binaryName ?? a} {a}`]({upPrefix}{a})");
 			_ = sb.AppendLine($"Also accessible as {string.Join(", ", links)}.");
 			_ = sb.AppendLine();
 		}
@@ -156,7 +159,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Sub-namespaces");
 			_ = sb.AppendLine();
 			foreach (var sub in subNamespaces)
-				AppendPageCard(sb, sub.Segment, $"./{sub.Segment}/index.md", sub.Summary);
+				AppendPageCard(sb, sub.Segment, $"./{sub.Segment}", sub.Summary);
 		}
 
 		var options = ns.Options ?? [];
@@ -198,6 +201,7 @@ internal static partial class CliMarkdownGenerator
 		List<CliShortcutSchema>? shortcuts = null)
 	{
 		var sb = new StringBuilder();
+		AppendFrontMatter(sb, supplemental);
 		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : cmd.Name;
 		_ = sb.AppendLine($"# {heading} <span class=\"cli-badge-cmd\">cli command</span>");
 		_ = sb.AppendLine();
@@ -320,6 +324,15 @@ internal static partial class CliMarkdownGenerator
 		}
 
 		return sb.ToString();
+	}
+
+	private static void AppendFrontMatter(StringBuilder sb, CliSupplementalDoc? supplemental)
+	{
+		if (string.IsNullOrWhiteSpace(supplemental?.FrontMatter))
+			return;
+
+		_ = sb.AppendLine(supplemental.FrontMatter);
+		_ = sb.AppendLine();
 	}
 
 	private static void AppendCommandModifiers(StringBuilder sb, CliCommandSchema cmd)

@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
+using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -14,6 +16,8 @@ using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
+using Mermaider;
+using Mermaider.Models;
 using Microsoft.AspNetCore.Html;
 using RazorSlices;
 
@@ -134,7 +138,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			return;
 		}
 
-		// Render Mermaid diagrams as pre.mermaid for client-side rendering
 		if (block.Language == "mermaid")
 		{
 			RenderMermaidBlock(renderer, block);
@@ -310,32 +313,154 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		RenderRazorSlice(slice, renderer);
 	}
 
-	/// <summary>
-	/// Renders a Mermaid code block as a pre.mermaid element for client-side rendering by Mermaid.js.
-	/// </summary>
+	// Semantic styling classes sourced from Assets/markdown/admonition.css ramps (bg=ramp-10, border=ramp-40, text=ramp-110/120).
+	// Authors reference these via :::classname or `class Node classname` syntax.
+	private static readonly IReadOnlyList<DiagramClass> MermaidAllowedClasses =
+	[
+		new DiagramClass { Name = "note",      Fill = "#e8f1ff", Stroke = "#a3cbff", Color = "#154399" }, // blue-elastic ramp-10/40/120
+		new DiagramClass { Name = "tip",       Fill = "#e2f9f7", Stroke = "#77e5e0", Color = "#065b58" }, // teal ramp-10/40/120
+		new DiagramClass { Name = "warning",   Fill = "#fdf3d8", Stroke = "#facb3d", Color = "#6a4906" }, // yellow ramp-10/40/110
+		new DiagramClass { Name = "important", Fill = "#f3ecfe", Stroke = "#d1bafc", Color = "#52357e" }, // purple ramp-10/40/110
+		new DiagramClass { Name = "caution",   Fill = "#ffefe9", Stroke = "#ffc1aa", Color = "#8a3825" }, // poppy ramp-10/40/120
+		new DiagramClass { Name = "error",     Fill = "#ffe8e5", Stroke = "#ffb5ad", Color = "#7f1f27" }, // red ramp-10/40/120
+		new DiagramClass { Name = "success",   Fill = "#e2f8f0", Stroke = "#88e3c3", Color = "#0c5a3f" }, // green ramp-10/40/110
+		new DiagramClass { Name = "plain",     Fill = "#f6f9fc", Stroke = "#bdc2ca", Color = "#464c56" }, // grey ramp-10/40/110
+		new DiagramClass { Name = "highlight", Fill = "#d9e8ff", Stroke = "#3788ff", Color = "#123778" }, // blue-elastic ramp-20/70/130 — active/selected
+	];
+
+	// Categorical data palette for pie/sankey/timeline etc. One vivid, distinct step per theme.css hue.
+	private static readonly string[] MermaidDataPalette =
+	[
+		"#3788ff", // blue-elastic-70
+		"#ee4c48", // red-70
+		"#04ae7e", // green-70
+		"#a36def", // purple-70
+		"#eaae01", // yellow-60
+		"#16c5c0", // teal-60
+		"#e54a91", // pink-70
+		"#ff8659", // poppy-70
+		"#36b9ff", // blue-sky
+	];
+
+	/// <summary>Renders a Mermaid code block as an external SVG file referenced via an img element.</summary>
 	private static void RenderMermaidBlock(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
-		_ = renderer.Write("<pre class=\"mermaid\">");
+		var mermaidText = ExtractMermaidText(block);
+		var options = new RenderOptions
+		{
+			Bg = "#FFFFFF",
+			Fg = "#000000",
+			// Tailwind font-mono default stack (theme.css has no --font-mono custom property)
+			MonoFont = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+			DataPalette = MermaidDataPalette,
+			Strict = new StrictStylingOptions
+			{
+				AllowedClasses = MermaidAllowedClasses,
+				// Strip mode: stray styling is dropped and the diagram still renders; fires once per diagram.
+				OnStripped = violations => block.EmitHint(
+					$"Mermaid strict mode stripped {violations.Count} item(s): " +
+					string.Join(", ", violations.Select(v => $"{v.Kind} (line {v.Line})"))),
+			},
+			// Logged as errors for now so SVG sanitizer removals cause build failures — downgrade to warnings
+			// once we're confident the sanitizer isn't stripping legitimate content.
+			OnSanitized = violations => block.EmitError(
+				$"Mermaid SVG sanitizer removed {violations.Count} item(s): " +
+				string.Join(", ", violations.Select(v => $"{v.Kind} '{v.Name}'"))),
+		};
 
+		string svg;
+		try
+		{
+			svg = MermaidRenderer.RenderSvg(mermaidText, options);
+		}
+		catch (MermaidResourceLimitException e)
+		{
+			block.EmitError($"Mermaid diagram exceeded resource limits: {e.Message}");
+			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
+			_ = renderer.WriteEscape(mermaidText);
+			_ = renderer.Write("</code></pre>");
+			return;
+		}
+		catch (MermaidParseException e)
+		{
+			block.EmitWarning($"Mermaid diagram has a syntax error: {e.Message}");
+			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
+			_ = renderer.WriteEscape(mermaidText);
+			_ = renderer.Write("</code></pre>");
+			return;
+		}
+		catch (SystemException e)
+		{
+			block.EmitError($"Failed to render Mermaid diagram: {e.Message}");
+			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
+			_ = renderer.WriteEscape(mermaidText);
+			_ = renderer.Write("</code></pre>");
+			return;
+		}
+
+		var svgFileName = WriteSvgFile(block, svg);
+
+		_ = renderer.Write("<div class=\"mermaid-container\">");
+		_ = renderer.Write("<div class=\"mermaid-viewport\">");
+		_ = renderer.Write($"<div class=\"mermaid-rendered\" data-src=\"{svgFileName}\">");
+		_ = renderer.Write($"<img src=\"{svgFileName}\" alt=\"Mermaid diagram\">");
+		_ = renderer.Write("</div></div></div>");
+	}
+
+	/// <summary>
+	/// Writes the SVG to a file next to the page's output HTML and returns the filename.
+	/// The filename is a content hash so identical diagrams on multiple pages share one file.
+	/// </summary>
+	private static string WriteSvgFile(EnhancedCodeBlock block, string svg)
+	{
+		var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(svg)))[..8].ToLowerInvariant();
+		var stem = Path.GetFileNameWithoutExtension(block.CurrentFile.Name);
+		var svgFileName = $"{stem}-{hash}.svg";
+
+		// Mirror HtmlWriter.WriteAsync path logic to find the output directory for this page.
+		var sourceRoot = block.Build.DocumentationSourceDirectory.FullName;
+		var relPath = Path.GetRelativePath(sourceRoot, block.CurrentFile.FullName);
+		var outputSubdir = Path.GetFileName(relPath) == "index.md"
+			? Path.GetDirectoryName(relPath) ?? "."
+			: Path.Combine(Path.GetDirectoryName(relPath) ?? ".", Path.GetFileNameWithoutExtension(relPath));
+
+		var svgPath = Path.Combine(block.Build.OutputDirectory.FullName, outputSubdir, svgFileName);
+		var svgFile = block.Build.WriteFileSystem.FileInfo.New(svgPath);
+
+		if (!svgFile.Exists)
+		{
+			svgFile.Directory?.Create();
+			block.Build.WriteFileSystem.File.WriteAllText(svgPath, svg);
+		}
+
+		// Use an absolute URL so the src resolves correctly regardless of whether the
+		// browser's current URL has a trailing slash (no-slash: relative would resolve
+		// one level too high and miss the page subdirectory).
+		var urlSubdir = outputSubdir.Replace(Path.DirectorySeparatorChar, '/').Trim('.');
+		return $"{block.Build.UrlPathPrefix}/{urlSubdir}/{svgFileName}".Replace("//", "/");
+	}
+
+	private static string ExtractMermaidText(EnhancedCodeBlock block)
+	{
 		var commonIndent = GetCommonIndent(block);
+		var sb = new StringBuilder();
+
 		for (var i = 0; i < block.Lines.Count; i++)
 		{
 			var line = block.Lines.Lines[i];
 			var slice = line.Slice;
 
-			// Skip empty lines at beginning and end
 			if ((i == 0 || i == block.Lines.Count - 1) && slice.IsEmptyOrWhitespace())
 				continue;
 
-			// Remove common indentation
 			var indent = CountIndentation(slice);
 			if (indent >= commonIndent)
 				slice.Start += commonIndent;
 
-			_ = renderer.WriteEscape(slice);
-			_ = renderer.WriteLine();
+			_ = sb.Append(slice.Text, slice.Start, slice.Length);
+			_ = sb.AppendLine();
 		}
 
-		_ = renderer.Write("</pre>");
+		return sb.ToString().TrimEnd();
 	}
 }

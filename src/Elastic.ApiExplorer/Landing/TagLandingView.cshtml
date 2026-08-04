@@ -1,0 +1,47 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Landing.TagLandingViewModel>
+@using Elastic.ApiExplorer.Landing
+@using Elastic.ApiExplorer.Operations
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
+@functions {
+	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+}
+<section id="elastic-api-v3">
+	<h1>@Model.Tag.DisplayName</h1>
+	@if (!string.Equals(Model.Tag.Name, Model.Tag.DisplayName, StringComparison.Ordinal))
+	{
+		<p class="api-tag-canonical"><code>@Model.Tag.Name</code></p>
+	}
+	@if (!string.IsNullOrEmpty(Model.Tag.Description))
+	{
+		<div class="api-tag-description">@Model.RenderMarkdown(Model.Tag.Description)</div>
+	}
+	@if (Model.ExternalDocsDisplay is not null)
+	{
+		var ed = Model.ExternalDocsDisplay;
+		<p class="api-tag-external-docs">
+			<a href="@ed.Url" class="docs-reference-btn" @(ed.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener noreferrer\"")>@ed.LinkText</a>
+		</p>
+	}
+	<div class="api-overview">
+		<table>
+			@foreach (var row in Model.OverviewRows)
+			{
+				switch (row.Kind)
+				{
+					case OverviewRowKind.Endpoint:
+						<tr>
+							<td class="api-name">@(row.Title)</td>
+							<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
+						</tr>
+						break;
+					case OverviewRowKind.Operation:
+					<tr>
+						<td class="api-name">@(row.Title)</td>
+						<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
+					</tr>
+						break;
+				}
+			}
+		</table>
+	</div>
+</section>

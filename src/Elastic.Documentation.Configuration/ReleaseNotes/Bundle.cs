@@ -30,6 +30,11 @@ public sealed record BundleDto
 	[YamlMember(Alias = "hide-features", ApplyNamingConventions = false)]
 	public List<string>? HideFeatures { get; set; }
 	public List<BundledEntryDto>? Entries { get; set; }
+	/// <summary>
+	/// Entries to exclude when this amend file is merged with its parent bundle.
+	/// </summary>
+	[YamlMember(Alias = "exclude-entries", ApplyNamingConventions = false)]
+	public List<BundledEntryDto>? ExcludeEntries { get; set; }
 }
 
 /// <summary>

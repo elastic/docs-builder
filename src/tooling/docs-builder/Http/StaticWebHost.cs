@@ -64,6 +64,10 @@ public class StaticWebHost
 			{
 				await next(context);
 			}
+			catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+			{
+				// Client disconnected or navigated away — normal, no need to log or rethrow.
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
@@ -86,8 +90,7 @@ public class StaticWebHost
 
 #if DEBUG
 		var apiV1 = WebApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
-		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(WebApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
+		apiV1.MapElasticDocsApiEndpoints();
 #endif
 
 	}

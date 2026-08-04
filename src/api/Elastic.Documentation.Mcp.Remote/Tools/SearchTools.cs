@@ -10,6 +10,7 @@ using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -95,6 +96,14 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 			outcome = "cancelled";
 			throw;
 		}
+		catch (SearchUnavailableException ex)
+		{
+			// Transient backend failure (timeout, 429, overload) — surface as McpException so the
+			// MCP client receives IsError=true with the message and knows to retry.
+			McpToolTelemetry.MarkFailure(activity, ex);
+			outcome = "unavailable";
+			throw new McpException(ex.Message, ex);
+		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
 			McpToolTelemetry.MarkFailure(activity, ex);
@@ -172,6 +181,14 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 			McpToolTelemetry.MarkCancelled(activity);
 			outcome = "cancelled";
 			throw;
+		}
+		catch (SearchUnavailableException ex)
+		{
+			// Transient backend failure (timeout, 429, overload) — surface as McpException so the
+			// MCP client receives IsError=true with the message and knows to retry.
+			McpToolTelemetry.MarkFailure(activity, ex);
+			outcome = "unavailable";
+			throw new McpException(ex.Message, ex);
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{

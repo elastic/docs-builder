@@ -41,70 +41,82 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(bundleFile);
 			var repo = GetRepoFromBundle(bundleData);
 			var owner = GetOwnerFromBundle(bundleData);
-
-			// Bundle directory is the directory containing the bundle file
-			var bundleDirectory = fileSystem.Path.GetDirectoryName(bundleFile) ?? bundlesFolderPath;
-			// Default changelog directory is parent of bundles folder
-			var changelogDirectory = fileSystem.Path.GetDirectoryName(bundleDirectory) ?? bundlesFolderPath;
-
-			var entries = ResolveEntries(bundleData, changelogDirectory, emitWarning);
+			var entries = ResolveEntries(bundleData, fileSystem.Path.GetFileName(bundleFile), emitWarning);
 
 			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, bundleFile, entries));
 		}
 
 		// Merge amend files with their parent bundles
-		loadedBundles = MergeAmendFiles(loadedBundles);
+		loadedBundles = MergeAmendFiles(loadedBundles, emitWarning);
 
 		return loadedBundles;
 	}
 
 	/// <summary>
-	/// Resolves entries from a bundle, loading from file references if needed.
+	/// Loads bundles from in-memory YAML content rather than a folder. Used by the <c>changelog</c>
+	/// directive in <c>cdn:</c> mode, where bundle files are fetched over HTTP.
+	/// Amend files are still merged by name.
 	/// </summary>
-	/// <param name="bundledData">The parsed bundle data.</param>
-	/// <param name="changelogDirectory">The changelog directory (parent of bundles folder).</param>
-	/// <param name="emitWarning">Callback to emit warnings during resolution.</param>
-	/// <returns>A list of resolved changelog entries.</returns>
-	public List<ChangelogEntry> ResolveEntries(
-		Bundle bundledData,
-		string changelogDirectory,
+	/// <param name="bundles">Bundle file name and raw YAML content pairs.</param>
+	/// <param name="emitWarning">Callback to emit warnings during loading.</param>
+	/// <returns>A list of successfully loaded bundles.</returns>
+	public IReadOnlyList<LoadedBundle> LoadBundlesFromContent(
+		IReadOnlyList<(string FileName, string Content)> bundles,
 		Action<string> emitWarning)
 	{
-		var entries = new List<ChangelogEntry>();
+		var loadedBundles = new List<LoadedBundle>(bundles.Count);
+
+		foreach (var (fileName, content) in bundles)
+		{
+			Bundle bundleData;
+			try
+			{
+				bundleData = ReleaseNotesSerialization.DeserializeBundle(content);
+			}
+			catch (YamlException e)
+			{
+				emitWarning($"Failed to parse changelog bundle '{fileName}': {e.Message}");
+				continue;
+			}
+
+			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(fileName);
+			var repo = GetRepoFromBundle(bundleData);
+			var owner = GetOwnerFromBundle(bundleData);
+			var entries = ResolveEntries(bundleData, fileName, emitWarning);
+
+			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, fileName, entries));
+		}
+
+		return MergeAmendFiles(loadedBundles, emitWarning);
+	}
+
+	/// <summary>
+	/// Resolves entries from a bundle. Bundles are always self-contained: an entry without inline
+	/// content (<c>title</c> + <c>type</c>) is invalid and is skipped with a warning — entry files
+	/// are never read from disk.
+	/// </summary>
+	/// <param name="bundledData">The parsed bundle data.</param>
+	/// <param name="bundleName">The bundle file name, used in diagnostics.</param>
+	/// <param name="emitWarning">Callback to emit warnings during resolution.</param>
+	/// <returns>A list of resolved changelog entries.</returns>
+	public static List<ChangelogEntry> ResolveEntries(
+		Bundle bundledData,
+		string bundleName,
+		Action<string> emitWarning)
+	{
+		var entries = new List<ChangelogEntry>(bundledData.Entries.Count);
 
 		foreach (var entry in bundledData.Entries)
 		{
-			ChangelogEntry? entryData = null;
-
-			// If entry has resolved/inline data, use it directly
 			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-				entryData = ReleaseNotesSerialization.ConvertBundledEntry(entry);
-			else if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
-				// Load from file reference - look in changelog directory (parent of bundles)
-				var filePath = fileSystem.Path.Join(changelogDirectory, entry.File.Name);
-
-				if (!fileSystem.File.Exists(filePath))
-				{
-					emitWarning($"Referenced changelog file '{entry.File.Name}' not found at '{filePath}'.");
-					continue;
-				}
-
-				try
-				{
-					var fileContent = fileSystem.File.ReadAllText(filePath);
-					var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
-					entryData = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
-				}
-				catch (YamlException e)
-				{
-					emitWarning($"Failed to parse changelog file '{entry.File.Name}': {e.Message}");
-					continue;
-				}
+				entries.Add(ReleaseNotesSerialization.ConvertBundledEntry(entry));
+				continue;
 			}
 
-			if (entryData != null)
-				entries.Add(entryData);
+			var entryName = !string.IsNullOrWhiteSpace(entry.File?.Name) ? entry.File.Name : entry.Title ?? "<unnamed>";
+			emitWarning(
+				$"Bundle '{bundleName}' entry '{entryName}' has no inline content (title and type are required); bundles must inline their entries. Skipping.");
 		}
 
 		return entries;
@@ -132,7 +144,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// </summary>
 	/// <param name="bundles">The sorted list of bundles to merge.</param>
 	/// <returns>A list of bundles where same-target bundles are merged.</returns>
-	public IReadOnlyList<LoadedBundle> MergeBundlesByTarget(IReadOnlyList<LoadedBundle> bundles)
+	public static IReadOnlyList<LoadedBundle> MergeBundlesByTarget(IReadOnlyList<LoadedBundle> bundles)
 	{
 		if (bundles.Count <= 1)
 			return bundles;
@@ -262,72 +274,63 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// Amend files follow the naming pattern: {baseName}.amend-{N}.yaml
 	/// </summary>
 	/// <param name="bundles">The list of loaded bundles including amend files.</param>
+	/// <param name="emitWarning">Callback to emit warnings during entry resolution.</param>
 	/// <returns>A list of bundles with amend file entries merged into their parent bundles.</returns>
-	private List<LoadedBundle> MergeAmendFiles(List<LoadedBundle> bundles)
+	private List<LoadedBundle> MergeAmendFiles(
+		List<LoadedBundle> bundles,
+		Action<string> emitWarning)
 	{
 		if (bundles.Count <= 1)
 			return bundles;
 
-		// Build a lookup of bundles by their file path for quick access
 		var bundlesByPath = bundles.ToDictionary(b => b.FilePath, StringComparer.OrdinalIgnoreCase);
-
-		// Identify amend files and their parent bundles
-		var amendBundles = bundles.Where(b => IsAmendFile(b.FilePath)).ToList();
+		var amendBundles = bundles.Where(b => BundleAmendMerger.IsAmendFile(b.FilePath)).ToList();
 
 		if (amendBundles.Count == 0)
 			return bundles;
 
-		// Track which bundles to remove (amend files that were merged)
 		var mergedAmendPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-		// Track parent bundles with their merged entries
 		var mergedParents = new Dictionary<string, LoadedBundle>(StringComparer.OrdinalIgnoreCase);
 
-		foreach (var amendBundle in amendBundles)
+		var amendsByParent = amendBundles
+			.GroupBy(a => GetParentBundlePath(a.FilePath))
+			.Where(group => group.Key != null);
+
+		foreach (var group in amendsByParent)
 		{
-			var parentPath = GetParentBundlePath(amendBundle.FilePath);
+			var parentPath = group.Key!;
+			if (!bundlesByPath.TryGetValue(parentPath, out var parentBundle))
+				continue;
 
-			if (parentPath == null || !bundlesByPath.TryGetValue(parentPath, out var parentBundle))
-				continue; // No parent found, amend file will remain standalone
+			var orderedAmendData = group
+				.OrderBy(a => BundleAmendMerger.GetAmendFileNumber(a.FilePath))
+				.Select(a => a.Data)
+				.ToList();
 
-			// Get or create the merged parent entry
-			if (!mergedParents.TryGetValue(parentPath, out var mergedParent))
-				mergedParent = parentBundle;
-
-			// Merge the amend entries into the parent
-			var combinedEntries = mergedParent.Entries.Concat(amendBundle.Entries).ToList();
+			var mergedEntryList = BundleAmendMerger.MergeEntries(parentBundle.Data.Entries, orderedAmendData);
+			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList };
+			var resolvedEntries = ResolveEntries(mergedBundleData, fileSystem.Path.GetFileName(parentPath), emitWarning);
 
 			mergedParents[parentPath] = new LoadedBundle(
-				mergedParent.Version,
-				mergedParent.Repo,
-				mergedParent.Owner,
-				mergedParent.Data,
-				mergedParent.FilePath,
-				combinedEntries
-			);
+				parentBundle.Version,
+				parentBundle.Repo,
+				parentBundle.Owner,
+				mergedBundleData,
+				parentPath,
+				resolvedEntries);
 
-			_ = mergedAmendPaths.Add(amendBundle.FilePath);
+			foreach (var amend in group)
+				_ = mergedAmendPaths.Add(amend.FilePath);
 		}
 
-		// Build the final result: replace parent bundles with merged versions, exclude merged amend files
-		var result = bundles
+		return bundles
 			.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
 			.Select(bundle =>
 				mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle)
 					? mergedBundle
 					: bundle)
 			.ToList();
-
-		return result;
 	}
-
-	/// <summary>
-	/// Determines if a file path represents an amend file.
-	/// </summary>
-	/// <param name="filePath">The file path to check.</param>
-	/// <returns>True if the file is an amend file.</returns>
-	private static bool IsAmendFile(string filePath) =>
-		AmendFileRegex().IsMatch(filePath);
 
 	/// <summary>
 	/// Gets the parent bundle path from an amend file path.
@@ -336,16 +339,12 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <returns>The parent bundle path, or null if not an amend file.</returns>
 	private string? GetParentBundlePath(string amendFilePath)
 	{
-		var match = AmendFileRegex().Match(amendFilePath);
-		if (!match.Success)
+		if (!BundleAmendMerger.IsAmendFile(amendFilePath))
 			return null;
 
-		// Replace the ".amend-N" part with just the extension
 		var directory = fileSystem.Path.GetDirectoryName(amendFilePath) ?? string.Empty;
 		var fileName = fileSystem.Path.GetFileName(amendFilePath);
 		var extension = fileSystem.Path.GetExtension(amendFilePath);
-
-		// Remove the .amend-N part from the filename
 		var parentFileName = AmendFileRegex().Replace(fileName, extension);
 
 		return fileSystem.Path.Join(directory, parentFileName);

@@ -14,12 +14,12 @@ namespace Elastic.Changelog.Bundling;
 public class BundleBuilder
 {
 	/// <summary>
-	/// Builds the bundled changelog data from matched entries.
+	/// Builds the bundled changelog data from matched entries. Entry contents are always
+	/// resolved (inlined) — reference-only bundles are not a supported format.
 	/// </summary>
 	/// <param name="collector">The diagnostics collector.</param>
 	/// <param name="entries">Matched changelog files to bundle.</param>
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
-	/// <param name="resolve">Whether to resolve changelog file contents into entries.</param>
 	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
 	/// <param name="owner">Optional GitHub owner to set on products for link generation.</param>
 	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
@@ -27,7 +27,6 @@ public class BundleBuilder
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
-		bool resolve,
 		string? repo = null,
 		string? owner = null,
 		HashSet<string>? hideFeatures = null)
@@ -36,9 +35,7 @@ public class BundleBuilder
 		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
 
 		// Build entries list
-		var bundledEntries = resolve
-			? BuildResolvedEntries(collector, entries)
-			: BuildFileOnlyEntries(entries);
+		var bundledEntries = BuildResolvedEntries(collector, entries);
 
 		if (bundledEntries == null)
 		{
@@ -152,39 +149,17 @@ public class BundleBuilder
 		IReadOnlyList<MatchedChangelogFile> entries)
 	{
 		var resolvedEntries = new List<BundledEntry>();
+		var hasInvalidEntries = false;
 
 		foreach (var entry in entries)
 		{
-			var data = entry.Data;
-
-			// Validate required fields
-			if (string.IsNullOrWhiteSpace(data.Title))
+			if (!IsResolvedEntryValid(collector, entry))
 			{
-				collector.EmitError(entry.FilePath, "Changelog file is missing required field: title");
-				return null;
+				hasInvalidEntries = true;
+				continue;
 			}
 
-			// Validate type is not Invalid (missing or unrecognized)
-			if (data.Type == ChangelogEntryType.Invalid)
-			{
-				collector.EmitError(entry.FilePath, "Changelog file is missing required field: type");
-				return null;
-			}
-
-			if (data.Products == null || data.Products.Count == 0)
-			{
-				collector.EmitError(entry.FilePath, "Changelog file is missing required field: products");
-				return null;
-			}
-
-			// Validate products have required fields
-			if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.ProductId)))
-			{
-				collector.EmitError(entry.FilePath, "Changelog file has product entry missing required field: product");
-				return null;
-			}
-
-			var bundledEntry = data.ToBundledEntry() with
+			var bundledEntry = entry.Data.ToBundledEntry() with
 			{
 				File = new BundledFile
 				{
@@ -195,20 +170,43 @@ public class BundleBuilder
 			resolvedEntries.Add(bundledEntry);
 		}
 
-		return resolvedEntries;
+		// Report every invalid entry in a single pass instead of aborting on the first,
+		// so a release with several broken changelogs surfaces them all at once.
+		return hasInvalidEntries ? null : resolvedEntries;
 	}
 
-	private static List<BundledEntry> BuildFileOnlyEntries(IReadOnlyList<MatchedChangelogFile> entries) =>
-		entries
-			.Select(e => new BundledEntry
-			{
-				File = new BundledFile
-				{
-					Name = e.FileName,
-					Checksum = e.Checksum
-				}
-			})
-			.ToList();
+	private static bool IsResolvedEntryValid(IDiagnosticsCollector collector, MatchedChangelogFile entry)
+	{
+		var data = entry.Data;
+
+		if (string.IsNullOrWhiteSpace(data.Title))
+		{
+			collector.EmitError(entry.FilePath, "Changelog file is missing required field: title");
+			return false;
+		}
+
+		// Validate type is not Invalid (missing or unrecognized)
+		if (data.Type == ChangelogEntryType.Invalid)
+		{
+			collector.EmitError(entry.FilePath, "Changelog file is missing required field: type");
+			return false;
+		}
+
+		if (data.Products == null || data.Products.Count == 0)
+		{
+			collector.EmitError(entry.FilePath, "Changelog file is missing required field: products");
+			return false;
+		}
+
+		// Validate products have required fields
+		if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.ProductId)))
+		{
+			collector.EmitError(entry.FilePath, "Changelog file has product entry missing required field: product");
+			return false;
+		}
+
+		return true;
+	}
 }
 
 /// <summary>

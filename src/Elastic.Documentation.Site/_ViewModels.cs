@@ -22,7 +22,14 @@ public static class GlobalSections
 }
 
 /// <summary>Configuration injected into the frontend for build-type-specific behavior (OTEL, HTMX).</summary>
-public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath, string ApiBasePath, bool AirGapped = false);
+public record FrontendConfig(
+	string BuildType,
+	string ServiceName,
+	bool TelemetryEnabled,
+	string RootPath,
+	string ApiBasePath,
+	bool AirGapped = false
+);
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
 public record CodexBreadcrumb(string Title, string? Url);
@@ -40,7 +47,6 @@ public record GlobalLayoutViewModel
 
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
-	public required IHtmxAttributeProvider Htmx { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
@@ -76,6 +82,10 @@ public record GlobalLayoutViewModel
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	public bool RenderHamburgerIcon { get; init; } = true;
+
+	/// <summary>Whether the git remote belongs to the <c>elastic</c> GitHub organization.</summary>
+	public bool IsElasticOrg =>
+		GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
 
 	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
 	public BrandingConfiguration? Branding { get; init; }

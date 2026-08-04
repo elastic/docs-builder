@@ -849,6 +849,110 @@ Step after h2 heading.
 }
 
 /// <summary>
+/// Tests that a heading at the same level as a step is auto-adjusted to one level deeper
+/// and that a hint diagnostic is emitted pointing to the heading.
+/// </summary>
+public class StepperWithInternalHeadingAtSameLevelTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(output,
+"""
+## Section
+
+:::::{stepper}
+
+::::{step} First Step
+### Internal Heading
+
+Some content under the internal heading.
+::::
+
+::::{step} Second Step
+This step should still be at the same level as First Step.
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void InternalHeadingIsAdjustedToOneLevelDeeper()
+	{
+		var toc = File.PageTableOfContent.Values.ToList();
+
+		// Should have: Section (2), First Step (3), Internal Heading (4, adjusted), Second Step (3)
+		// The step renders at h3. The ### inside it was also h3 (invalid — same level).
+		// It is auto-adjusted to h4.
+		toc.Should().HaveCount(4);
+
+		toc[0].Heading.Should().Be("Section");
+		toc[0].Level.Should().Be(2);
+
+		toc[1].Heading.Should().Be("First Step");
+		toc[1].Level.Should().Be(3, "step is one level deeper than the preceding h2");
+		toc[1].IsStepperStep.Should().BeTrue();
+
+		toc[2].Heading.Should().Be("Internal Heading");
+		toc[2].Level.Should().Be(4, "### inside an h3 step is adjusted to h4");
+		toc[2].IsStepperStep.Should().BeFalse();
+
+		toc[3].Heading.Should().Be("Second Step");
+		toc[3].Level.Should().Be(3);
+		toc[3].IsStepperStep.Should().BeTrue();
+	}
+
+	[Fact]
+	public void HintIsEmittedForAdjustedHeading() =>
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Documentation.Diagnostics.Severity.Hint &&
+			d.Message.Contains("h3") &&
+			d.Message.Contains("h4") &&
+			d.Message.Contains("####"));
+}
+
+/// <summary>
+/// Tests that a heading already deeper than the step level is left untouched (no adjustment, no hint).
+/// </summary>
+public class StepperWithDeepInternalHeadingTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(output,
+"""
+## Section
+
+:::::{stepper}
+
+::::{step} First Step
+#### Deep Heading
+
+Already deeper than the step.
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void DeepHeadingIsUntouched()
+	{
+		var toc = File.PageTableOfContent.Values.ToList();
+
+		// Step renders at h3. #### is h4 — already deeper, no adjustment needed.
+		toc.Should().HaveCount(3);
+
+		toc[1].Heading.Should().Be("First Step");
+		toc[1].Level.Should().Be(3);
+
+		toc[2].Heading.Should().Be("Deep Heading");
+		toc[2].Level.Should().Be(4, "h4 inside an h3 step is already valid — no adjustment");
+	}
+
+	[Fact]
+	public void NoHintEmittedForValidHeading() =>
+		Collector.Diagnostics.Should().BeEmpty();
+}
+
+/// <summary>
 /// Tests stepper steps at the beginning of a document (no preceding heading).
 /// </summary>
 public class StepperAtDocumentStartTests(ITestOutputHelper output) : DirectiveTest<StepperBlock>(output,

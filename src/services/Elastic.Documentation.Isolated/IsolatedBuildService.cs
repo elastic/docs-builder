@@ -9,6 +9,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
@@ -141,8 +142,11 @@ public class IsolatedBuildService(
 			crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		}
 
+		// Prefetch CDN-hosted release notes for products declared under `release_notes` in docset.yml.
+		var releaseNotesResolver = await ReleaseNotesFetcher.PrefetchAsync(context, logFactory, ctx);
+
 		// always delete output folder on CI
-		var set = new DocumentationSet(context, logFactory, crossLinkResolver);
+		var set = new DocumentationSet(context, logFactory, crossLinkResolver, releaseNotesResolver);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
@@ -170,6 +174,9 @@ public class IsolatedBuildService(
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
+
+		var finishTasks = markdownExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
+		_ = await Task.WhenAll(finishTasks);
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -230,6 +237,9 @@ public class IsolatedBuildService(
 
 		if (manageLifecycle)
 		{
+			var finishTasks = allExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
+			_ = await Task.WhenAll(finishTasks);
+
 			var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
 			await Task.WhenAll(stopTasks);
 		}

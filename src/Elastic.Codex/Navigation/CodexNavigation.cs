@@ -97,14 +97,13 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			if (docSetNav is not IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem)
 				return;
 
-			var pathPrefix = $"{codex.Url}/r/{repoName}";
 			var docSetInfo = CreateDocumentationSetInfo(docSetRef, rootNavItem, repoName);
 			_docSetInfos.Add(docSetInfo);
 
 			if (!string.IsNullOrEmpty(docSetRef.Group))
-				AttachToGroup(docSetRef, docSetNav, rootNavItem, pathPrefix, docSetInfo);
+				AttachToGroup(docSetRef, docSetNav, rootNavItem, docSetInfo.Url, docSetInfo);
 			else
-				AttachToCodexRoot(docSetNav, rootNavItem, pathPrefix);
+				AttachToCodexRoot(docSetNav, rootNavItem, docSetInfo.Url);
 		}
 
 		private CodexDocumentationSetInfo CreateDocumentationSetInfo(

@@ -48,6 +48,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			"""
 			bundle:
 			  directory: PLACEHOLDER
+			  use_local_changelogs: true
 			  owner: elastic
 			  profiles:
 			    es-gh-release:
@@ -137,6 +138,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			"""
 			bundle:
 			  directory: PLACEHOLDER
+			  use_local_changelogs: true
 			  owner: elastic
 			  profiles:
 			    es-gh-release:
@@ -209,6 +211,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			"""
 			bundle:
 			  directory: PLACEHOLDER
+			  use_local_changelogs: true
 			  owner: elastic
 			  profiles:
 			    es-gh-release:
@@ -289,6 +292,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			"""
 			bundle:
 			  directory: PLACEHOLDER
+			  use_local_changelogs: true
 			  owner: elastic
 			  profiles:
 			    es-gh-release:
@@ -468,6 +472,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			"""
 			bundle:
 			  directory: PLACEHOLDER
+			  use_local_changelogs: true
 			  owner: elastic
 			  profiles:
 			    es-gh-release:
@@ -537,6 +542,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			"""
 			bundle:
 			  directory: PLACEHOLDER
+			  use_local_changelogs: true
 			  owner: elastic
 			  profiles:
 			    es-gh-release:
@@ -605,6 +611,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			"""
 			bundle:
 			  directory: PLACEHOLDER
+			  use_local_changelogs: true
 			  repo: elasticsearch
 			  owner: elastic
 			  profiles:

@@ -1,5 +1,5 @@
 import { throttle } from 'lodash'
-import { $, $$ } from 'select-dom'
+import { $optional, $$optional } from 'select-dom'
 
 const NAV_STATE_KEY = 'nav-expanded'
 
@@ -8,7 +8,7 @@ function isDevMode() {
 }
 
 function saveNavState(nav: HTMLElement) {
-    const expanded = $$('input[type="checkbox"]:checked', nav)
+    const expanded = $$optional('input[type="checkbox"]:checked', nav)
         .map((el) => el.id)
         .filter(Boolean)
     sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify(expanded))
@@ -20,7 +20,7 @@ function restoreNavState(nav: HTMLElement) {
     try {
         const ids: string[] = JSON.parse(raw)
         for (const id of ids) {
-            const input = $(`#${CSS.escape(id)}`, nav)
+            const input = $optional(`#${CSS.escape(id)}`, nav)
             if (input instanceof HTMLInputElement) {
                 input.checked = true
             }
@@ -42,7 +42,7 @@ function expandAllParents(navItem: HTMLElement) {
 }
 
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
-    const currentNavItem = $('.current', nav)
+    const currentNavItem = $optional('.current', nav)
 
     if (!currentNavItem) {
         return
@@ -55,7 +55,7 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
 
     // Get the sticky element's height to account for content hidden under it
     // The sticky element contains the search and dropdown, staying fixed at top when scrolling
-    const stickyElement = $('.sticky', nav)
+    const stickyElement = $optional('.sticky', nav)
     const stickyHeight = stickyElement?.getBoundingClientRect().height ?? 0
 
     // The effective visible top of the nav is below the sticky element
@@ -112,12 +112,14 @@ function preventFocusLossOnLinkClick(anchor: HTMLAnchorElement) {
 }
 
 export function initNav() {
-    const pagesNav = $('#pages-nav')
+    const pagesNav = $optional('#pages-nav')
     if (!pagesNav) {
         return
     }
 
-    const dropdownActiveAnchor = $('#pages-dropdown a.pages-dropdown_active')
+    const dropdownActiveAnchor = $optional(
+        '#pages-dropdown a.pages-dropdown_active'
+    )
     if (dropdownActiveAnchor) {
         preventFocusLossOnLinkClick(dropdownActiveAnchor)
     }
@@ -127,7 +129,7 @@ export function initNav() {
     }
 
     // Remove current class from all nav items before marking new ones
-    const currentNavItems = $$('.current', pagesNav)
+    const currentNavItems = $$optional('.current', pagesNav)
     currentNavItems.forEach((el) => {
         el.classList.remove('current')
     })
@@ -142,7 +144,7 @@ export function initNav() {
     )
     const activePathname = navActiveMeta?.content ?? pathname
 
-    const navItems = $$(
+    const navItems = $$optional(
         'a[href="' + activePathname + '"], a[href="' + activePathname + '/"]',
         pagesNav
     )
@@ -153,7 +155,7 @@ export function initNav() {
 
     if (isDevMode()) {
         saveNavState(pagesNav)
-        for (const cb of $$('input[type="checkbox"]', pagesNav)) {
+        for (const cb of $$optional('input[type="checkbox"]', pagesNav)) {
             cb.addEventListener('change', () => saveNavState(pagesNav))
         }
     }

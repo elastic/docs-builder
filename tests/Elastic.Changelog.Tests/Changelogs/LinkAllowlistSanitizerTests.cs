@@ -372,7 +372,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	// --- BuildAllowReposFromAssembler ---
 
 	[Fact]
-	public void BuildAllowReposFromAssembler_SkipsPrivateAndSkipped()
+	public void BuildAllowReposFromAssembler_ExcludesOnlyPrivateRepos()
 	{
 		var yaml =
 			"""
@@ -392,7 +392,29 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		allow.Should().Contain("elastic/elasticsearch");
 		allow.Should().Contain("elastic/kibana");
 		allow.Should().NotContain("elastic/secret-team");
-		allow.Should().NotContain("elastic/old-repo");
+		allow.Should().Contain("elastic/old-repo");
+	}
+
+	[Fact]
+	public void BuildAllowReposFromAssembler_PublicSkipRepo_IsAllowed()
+	{
+		// Mirrors elastic/roadmap in assembler.yml: a public repo that publishes no docs
+		// (skip: true) but is a valid link target for changelog entries.
+		var yaml =
+			"""
+			references:
+			  roadmap:
+			    private: false
+			    skip: true
+			  kibana-team:
+			    private: true
+			    skip: true
+			""";
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
+
+		allow.Should().Contain("elastic/roadmap");
+		allow.Should().NotContain("elastic/kibana-team");
 	}
 
 	[Fact]
@@ -534,7 +556,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	public void TryApplyChangelogEntry_BarePrNumberWithoutDefaultRepo_KeptWithWarning()
 	{
 		// The scrubber Lambda calls TryApplyChangelogEntry with defaultRepo=null because per-entry
-		// YAMLs uploaded under {product}/changelog/*.yaml carry no embedded repo context. A bare
+		// YAMLs uploaded under changelog/{org}/{repo}/{branch}/*.yaml carry no embedded repo context. A bare
 		// numeric PR ref ("155500") must be tolerated rather than failing the whole entry — the
 		// reference carries no repo identity so it cannot leak a private link, and downstream
 		// rendering supplies the owner/repo from runtime context.

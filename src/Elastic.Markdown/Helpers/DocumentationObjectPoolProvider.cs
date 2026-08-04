@@ -23,11 +23,19 @@ internal static class DocumentationObjectPoolProvider
 	private static readonly ObjectPool<LlmMarkdownRenderSubscription> LlmMarkdownRendererPool = PoolProvider.Create(new LlmMarkdownRendererPooledObjectPolicy());
 	private static readonly ObjectPool<PlainTextRenderSubscription> PlainTextRendererPool = PoolProvider.Create(new PlainTextRendererPooledObjectPolicy());
 
-	public static string UseLlmMarkdownRenderer<TContext>(IDocumentationConfigurationContext buildContext, TContext context, Action<LlmMarkdownRenderer, TContext> action)
+	public static string UseLlmMarkdownRenderer<TContext>(IDocumentationConfigurationContext buildContext, TContext context, Action<LlmMarkdownRenderer, TContext> action) =>
+		UseLlmMarkdownRenderer(buildContext, linkUrlRewriter: null, context, action);
+
+	/// <summary>
+	/// Same as <see cref="UseLlmMarkdownRenderer{TContext}(IDocumentationConfigurationContext,TContext,Action{LlmMarkdownRenderer,TContext})"/>
+	/// but allows overriding link URL resolution (e.g. for the OKF exporter's bundle-relative links).
+	/// </summary>
+	public static string UseLlmMarkdownRenderer<TContext>(IDocumentationConfigurationContext buildContext, Func<string?, string?>? linkUrlRewriter, TContext context, Action<LlmMarkdownRenderer, TContext> action)
 	{
 		var subscription = LlmMarkdownRendererPool.Get();
 		subscription.SetBuildContext(buildContext);
 		subscription.LlmMarkdownRenderer.Reset();
+		subscription.LlmMarkdownRenderer.LinkUrlRewriter = linkUrlRewriter;
 		try
 		{
 			action(subscription.LlmMarkdownRenderer, context);
