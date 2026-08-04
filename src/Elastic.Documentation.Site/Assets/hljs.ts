@@ -211,16 +211,91 @@ hljs.registerLanguage('kuery', function () {
 })
 hljs.registerAliases(['kql'], { languageName: 'kuery' })
 
+// Elasticsearch Console samples: METHOD path + optional JSON body
+hljs.registerLanguage('console', function () {
+    return {
+        name: 'console',
+        aliases: ['es-console'],
+        contains: [
+            {
+                className: 'meta',
+                begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
+                end: /$/,
+                contains: [
+                    {
+                        className: 'keyword',
+                        begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)/,
+                    },
+                    {
+                        className: 'string',
+                        begin: /\S+/,
+                    },
+                ],
+            },
+            {
+                begin: /\{/,
+                end: /(?=\n(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b)|$/,
+                subLanguage: 'json',
+                relevance: 0,
+            },
+        ],
+    }
+})
+
+// cURL samples: command, flags, HTTP methods, strings, line continuations
+hljs.registerLanguage('curl', function () {
+    return {
+        name: 'curl',
+        contains: [
+            {
+                className: 'built_in',
+                begin: /\bcurl\b/,
+            },
+            {
+                className: 'params',
+                begin: /--?[A-Za-z][\w-]*/,
+            },
+            {
+                className: 'keyword',
+                begin: /\b(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
+            },
+            {
+                className: 'symbol',
+                begin: /\\$/,
+            },
+            {
+                className: 'string',
+                begin: /"/,
+                end: /"/,
+                contains: [{ begin: /\\./ }],
+                relevance: 0,
+            },
+            {
+                className: 'string',
+                begin: /'/,
+                end: /'/,
+                contains: [{ begin: /\\./ }],
+                relevance: 0,
+            },
+            {
+                className: 'variable',
+                begin: /\$[A-Za-z_][\w]*/,
+            },
+        ],
+    }
+})
+
 hljs.addPlugin(mergeHTMLPlugin)
 
 // The unescaped HTML warning is caused by the mergeHTMLPlugin which we are using
 // for code callouts
 hljs.configure({ ignoreUnescapedHTML: true })
 
+const highlightSelector =
+    '#markdown-content pre code:not([data-highlighted]), #api-examples-panel pre code:not([data-highlighted])'
+
 export function initHighlight() {
-    $$optional('#markdown-content pre code:not([data-highlighted])').forEach(
-        hljs.highlightElement
-    )
+    $$optional(highlightSelector).forEach(hljs.highlightElement)
 }
 
 // Export the configured hljs instance for reuse

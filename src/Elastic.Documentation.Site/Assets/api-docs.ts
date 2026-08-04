@@ -177,39 +177,6 @@ function initOperationView(section: HTMLElement): void {
             })
     }
 
-    // Scroll detection for section-path visibility
-    let triggerElement: Element | null = null
-
-    // First check for Path Parameters header
-    const pathParamsHeader = section.querySelector('h4')
-    if (
-        pathParamsHeader &&
-        pathParamsHeader.textContent?.includes('Path Parameters')
-    ) {
-        triggerElement = pathParamsHeader
-    } else {
-        // Fall back to the paths section URL listing
-        const pathsHeader = section.querySelector('h3[data-section="paths"]')
-        if (pathsHeader) {
-            triggerElement = pathsHeader.nextElementSibling
-        }
-    }
-
-    function updateScrollState(): void {
-        if (!triggerElement) return
-
-        const triggerBottom = triggerElement.getBoundingClientRect().bottom
-        const isScrolled = triggerBottom < 100 // 100px from top of viewport
-
-        section.querySelectorAll('h3.section-header').forEach((header) => {
-            if (isScrolled) {
-                header.classList.add('scrolled')
-            } else {
-                header.classList.remove('scrolled')
-            }
-        })
-    }
-
     // Examples jump button visibility
     const examplesBtn = document.getElementById('examples-jump-btn')
     const examplesSection = section.querySelector(
@@ -235,7 +202,6 @@ function initOperationView(section: HTMLElement): void {
     window.addEventListener('scroll', function () {
         if (!ticking) {
             window.requestAnimationFrame(function () {
-                updateScrollState()
                 updateExamplesButtonVisibility()
                 ticking = false
             })
@@ -244,7 +210,6 @@ function initOperationView(section: HTMLElement): void {
     })
 
     // Initial check
-    updateScrollState()
     updateExamplesButtonVisibility()
 
     // Click handler for OperationView-specific elements
@@ -291,42 +256,6 @@ function initOperationView(section: HTMLElement): void {
                 if (variantsContent) {
                     variantsContent.removeAttribute('hidden')
                 }
-            }
-            return
-        }
-
-        // Handle section navigation buttons
-        const navBtn = target.closest<HTMLButtonElement>('.section-nav-btn')
-        if (navBtn) {
-            e.preventDefault()
-            e.stopPropagation()
-
-            const direction = navBtn.getAttribute('data-dir')
-            const headers = Array.from(
-                section.querySelectorAll('h3.section-header')
-            )
-            const currentHeader = navBtn.closest('h3')
-            const currentIndex = headers.indexOf(currentHeader as HTMLElement)
-
-            if (currentIndex === -1) return
-
-            let targetIndex: number
-            if (direction === 'up') {
-                targetIndex =
-                    currentIndex > 0 ? currentIndex - 1 : headers.length - 1
-            } else {
-                targetIndex =
-                    currentIndex < headers.length - 1 ? currentIndex + 1 : 0
-            }
-
-            const targetHeader = headers[targetIndex]
-            if (targetHeader) {
-                const offset = 80
-                const targetPosition =
-                    targetHeader.getBoundingClientRect().top +
-                    window.scrollY -
-                    offset
-                window.scrollTo({ top: targetPosition, behavior: 'smooth' })
             }
             return
         }
@@ -533,6 +462,265 @@ function initGlobalClickHandlers(): void {
     })
 }
 
+const apiLanguageStorageKey = 'tab-id-api-language'
+
+function applyApiCodeLanguage(
+    root: ParentNode,
+    language: string,
+    persist: boolean
+): void {
+    root.querySelectorAll<HTMLElement>('[data-api-code-sample]').forEach(
+        (widget) => {
+            const select = widget.querySelector<HTMLSelectElement>(
+                '.api-code-sample-lang'
+            )
+            let effectiveLanguage = language
+            if (select) {
+                const hasOption = Array.from(select.options).some(
+                    (option) => option.value === language
+                )
+                if (hasOption) select.value = language
+                effectiveLanguage = select.value
+            }
+
+            const label = widget.querySelector('.api-code-sample-label')
+            if (label) label.textContent = effectiveLanguage
+
+            widget
+                .querySelectorAll<HTMLElement>('.api-code-sample-panel')
+                .forEach((panel) => {
+                    const match = panel.dataset.lang === effectiveLanguage
+                    panel.toggleAttribute('hidden', !match)
+                })
+
+            widget
+                .querySelectorAll<HTMLButtonElement>(
+                    '.api-code-sample-actions .copybtn--in-header'
+                )
+                .forEach((button) => {
+                    button.hidden = button.dataset.lang !== effectiveLanguage
+                })
+        }
+    )
+
+    if (persist) {
+        window.sessionStorage.setItem(apiLanguageStorageKey, language)
+    }
+}
+
+let apiCodeLanguageSelectDelegated = false
+
+/**
+ * Language <select> in API code-sample headers. Persists via sessionStorage.
+ */
+function initApiCodeLanguageSelects(): void {
+    const selects = document.querySelectorAll<HTMLSelectElement>(
+        '.api-code-sample-lang'
+    )
+    if (selects.length === 0) return
+
+    const saved = window.sessionStorage.getItem(apiLanguageStorageKey)
+    if (saved) {
+        applyApiCodeLanguage(document, saved, false)
+    }
+
+    if (apiCodeLanguageSelectDelegated) return
+    apiCodeLanguageSelectDelegated = true
+    document.addEventListener('change', (event) => {
+        const select = (event.target as HTMLElement | null)?.closest(
+            '.api-code-sample-lang'
+        )
+        if (select instanceof HTMLSelectElement) {
+            applyApiCodeLanguage(document, select.value, true)
+        }
+    })
+}
+
+function applyApiResponseStatus(
+    widget: HTMLElement,
+    statusCode: string
+): void {
+    const tabs = Array.from(
+        widget.querySelectorAll<HTMLElement>('.example-response-tab[data-status]')
+    )
+    const hasStatus = tabs.some((tab) => tab.dataset.status === statusCode)
+    const effective = hasStatus
+        ? statusCode
+        : (tabs[0]?.dataset.status ?? statusCode)
+
+    tabs.forEach((tab) => {
+        const match = tab.dataset.status === effective
+        tab.classList.toggle('is-active', match)
+        tab.setAttribute('aria-selected', match ? 'true' : 'false')
+        tab.tabIndex = match ? 0 : -1
+    })
+
+    widget
+        .querySelectorAll<HTMLElement>('.example-response-panel')
+        .forEach((panel) => {
+            panel.toggleAttribute('hidden', panel.dataset.status !== effective)
+        })
+
+    widget
+        .querySelectorAll<HTMLButtonElement>(
+            '.example-block-actions .copybtn--in-header'
+        )
+        .forEach((button) => {
+            button.hidden = button.dataset.status !== effective
+        })
+}
+
+let apiResponseStatusTabsDelegated = false
+
+/** Status-code tabs on response example cards in the examples rail. */
+function initApiResponseStatusTabs(): void {
+    if (apiResponseStatusTabsDelegated) return
+    apiResponseStatusTabsDelegated = true
+    document.addEventListener('click', (event) => {
+        const tab = (event.target as HTMLElement | null)?.closest(
+            '.example-response-tab[data-status]'
+        )
+        if (!(tab instanceof HTMLElement) || !tab.dataset.status) return
+        const widget = tab.closest<HTMLElement>('[data-api-response-samples]')
+        if (widget) applyApiResponseStatus(widget, tab.dataset.status)
+    })
+}
+
+function applyApiScenario(widget: HTMLElement, scenarioId: string): void {
+    const select = widget.querySelector<HTMLSelectElement>(
+        '.api-examples-scenario-select'
+    )
+    if (select) {
+        const hasOption = Array.from(select.options).some(
+            (option) => option.value === scenarioId
+        )
+        if (hasOption) select.value = scenarioId
+    }
+
+    widget.querySelectorAll<HTMLElement>('[data-scenario]').forEach((panel) => {
+        const match = panel.dataset.scenario === scenarioId
+        panel.toggleAttribute('hidden', !match)
+    })
+}
+
+let apiScenarioSelectDelegated = false
+
+/**
+ * Scenario <select> in the examples rail. Switches which example panel is visible.
+ * Not persisted — scenario ids/titles differ per operation.
+ */
+function initApiScenarioSelects(): void {
+    // Always register delegation once — selects may appear after HTMX navigation.
+    if (apiScenarioSelectDelegated) return
+    apiScenarioSelectDelegated = true
+    document.addEventListener('change', (event) => {
+        const select = (event.target as HTMLElement | null)?.closest(
+            '.api-examples-scenario-select'
+        )
+        if (!(select instanceof HTMLSelectElement)) return
+        const widget = select.closest<HTMLElement>('[data-api-scenarios]')
+        if (widget) applyApiScenario(widget, select.value)
+    })
+}
+
+let apiPathOverloadSelectDelegated = false
+
+/**
+ * Path-overload <select>: navigate to a sibling route via the same HTMX oob swap
+ * used by in-page API links, then reset to the "Other paths (N)" placeholder.
+ */
+function initApiPathOverloadSelect(): void {
+    if (apiPathOverloadSelectDelegated) return
+    apiPathOverloadSelectDelegated = true
+    document.addEventListener('change', (event) => {
+        const select = (event.target as HTMLElement | null)?.closest(
+            '.api-path-overload-select'
+        )
+        if (!(select instanceof HTMLSelectElement) || !select.value) return
+
+        const url = select.value
+        const oob =
+            select.dataset.hxSelectOob ??
+            '#content-container,#toc-nav,#api-examples-panel'
+        const htmxApi = (
+            window as Window & {
+                htmx?: {
+                    ajax: (
+                        method: string,
+                        path: string,
+                        context?: Record<string, unknown>
+                    ) => void
+                    process?: (el: Element) => void
+                }
+            }
+        ).htmx
+
+        if (htmxApi?.ajax) {
+            htmxApi.ajax('GET', url, {
+                source: select,
+                swap: 'none',
+                selectOOB: oob,
+                push: url,
+            })
+        } else {
+            window.location.assign(url)
+        }
+
+        select.selectedIndex = 0
+    })
+}
+
+function countApiCodeLines(text: string): number {
+    if (!text) return 1
+    const parts = text.split(/\r?\n/)
+    if (parts.at(-1) === '') parts.pop()
+    return Math.max(1, parts.length)
+}
+
+/**
+ * Add a non-selectable line-number gutter beside request/response code in the
+ * examples rail. Uses a sibling <pre> (same font metrics as the code) so numbers
+ * stay aligned and mouse selection / copy omit them.
+ */
+function initApiCodeLineNumbers(): void {
+    const panel = document.getElementById('api-examples-panel')
+    if (!panel) return
+
+    panel
+        .querySelectorAll<HTMLElement>(
+            '.api-code-sample pre code, .example-block--response pre code'
+        )
+        .forEach((code) => {
+            const pre = code.parentElement
+            if (!(pre instanceof HTMLPreElement)) return
+            if (pre.parentElement?.classList.contains('api-code-lines')) return
+            if (pre.classList.contains('api-code-line-gutter')) return
+
+            const lineCount = countApiCodeLines(code.textContent ?? '')
+            const wrapper = document.createElement('div')
+            wrapper.className = 'api-code-lines'
+            const gutter = document.createElement('pre')
+            gutter.className = 'api-code-line-gutter'
+            gutter.setAttribute('aria-hidden', 'true')
+            gutter.textContent = Array.from(
+                { length: lineCount },
+                (_, index) => String(index + 1)
+            ).join('\n')
+
+            // Match code metrics so gutter rows stay 1:1 with content rows
+            const codeStyle = getComputedStyle(code)
+            gutter.style.fontFamily = codeStyle.fontFamily
+            gutter.style.fontSize = codeStyle.fontSize
+            gutter.style.lineHeight = codeStyle.lineHeight
+            gutter.style.fontWeight = codeStyle.fontWeight
+            gutter.style.paddingTop = codeStyle.paddingTop
+            gutter.style.paddingBottom = codeStyle.paddingBottom
+
+            pre.replaceWith(wrapper)
+            wrapper.append(gutter, pre)
+        })
+}
+
 /**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
@@ -540,6 +728,12 @@ function initGlobalClickHandlers(): void {
 export function initApiDocs(): void {
     // Initialize global click handlers once (uses event delegation)
     initGlobalClickHandlers()
+    initApiCodeLanguageSelects()
+    initApiResponseStatusTabs()
+    initApiScenarioSelects()
+    initApiPathOverloadSelect()
+    // After initHighlight — gutters need final textContent line counts
+    initApiCodeLineNumbers()
 
     // Check for OperationView page - initialize view-specific features
     const operationSection = document.getElementById('elastic-api-v3')
