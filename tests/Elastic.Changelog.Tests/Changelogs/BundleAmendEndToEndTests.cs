@@ -3,24 +3,23 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
-using Amazon.S3;
-using Amazon.S3.Model;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Reconciliation;
+using Elastic.Changelog.Tests.Reconciliation;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
-using Elastic.Documentation.Integrations.S3;
-using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
 /// <summary>
 /// The full amend acceptance chain: <c>bundle-amend</c> materializes a self-contained amend
-/// (parent products copied) → upload destination discovery includes the amend → the registry
-/// records the amend's target → a <c>:version:</c>-filtered CDN fetch returns the amend and the
-/// <c>exclude-entries</c> retraction (matched by <c>file</c> identity) applies.
+/// (parent products copied) → upload destination discovery includes the amend → the scrubber-side
+/// reconciler records the amend's target in the public registry → a <c>:version:</c>-filtered CDN
+/// fetch returns the amend and the <c>exclude-entries</c> retraction (matched by <c>file</c>
+/// identity) applies.
 /// </summary>
 public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
@@ -104,9 +103,9 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 		amend.Products[0].Owner.Should().Be("elastic");
 
 		// -- 2. upload destination discovery includes the amend ------------------------------
-		var s3Client = A.Fake<IAmazonS3>();
+		var s3 = new FakeS3("public-bucket");
 		var uploadCollector = new TestDiagnosticsCollector(Output);
-		var uploadService = new ChangelogUploadService(NullLoggerFactory.Instance, fileSystem: FileSystem, s3Client: s3Client);
+		var uploadService = new ChangelogUploadService(NullLoggerFactory.Instance, fileSystem: FileSystem, s3Client: s3.Client);
 		var targets = uploadService.DiscoverBundleUploadTargets(uploadCollector, bundleDir);
 
 		targets.Select(t => t.S3Key).Should().BeEquivalentTo(
@@ -115,29 +114,28 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 		uploadCollector.Errors.Should().Be(0);
 		uploadCollector.Warnings.Should().Be(0);
 
-		// -- 3. the registry records the amend's target --------------------------------------
-		var puts = new List<PutObjectRequest>();
-		A.CallTo(() => s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
-			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
-		A.CallTo(() => s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
-			.Invokes((PutObjectRequest r, CancellationToken _) => puts.Add(r))
-			.Returns(new PutObjectResponse());
+		// -- 3. the scrubber-side reconciler records the amend's target -----------------------
+		// Uploads only emit S3 events; the scrubber Lambda copies the scrubbed YAMLs to the
+		// public bucket and reconciles the group's registry from the public listing
+		// (elastic/docs-eng-team#688). Seed the public bucket with the scrubbed copies (this
+		// content has no private references, so the scrub is a no-op).
+		foreach (var target in targets)
+			_ = s3.Seed("public-bucket", target.S3Key, await FileSystem.File.ReadAllTextAsync(target.LocalPath, ct));
 
-		var registryCollector = new TestDiagnosticsCollector(Output);
-		var etagCalculator = new S3EtagCalculator(NullLoggerFactory.Instance, FileSystem);
-		var builder = new RegistryBuilder(NullLoggerFactory.Instance, FileSystem, s3Client, etagCalculator, "test-bucket");
-		var refresh = await builder.RefreshAsync(registryCollector, targets, ct);
+		ChangelogScope.TryCreateBundle("elasticsearch", out var scope).Should().BeTrue();
+		var reconciler = new BundleRegistryReconciler(NullLoggerFactory.Instance, s3.Client, "public-bucket");
+		var outcome = await reconciler.ReconcileGroupAsync(scope!, ct);
 
-		refresh.Updated.Should().Be(1);
-		var registryPut = puts.Single(p => p.Key == "bundle/elasticsearch/registry.json");
-		registryPut.ContentBody.Should().Contain("elasticsearch-9.3.0.amend-1.yaml");
+		outcome.Should().Be(GroupReconcileOutcome.Written);
+		var registryContent = s3.ContentOf("public-bucket", "bundle/elasticsearch/registry.json");
+		registryContent.Should().Contain("elasticsearch-9.3.0.amend-1.yaml");
 
 		// -- 4. :version:-filtered CDN fetch returns the amend and applies the retraction ----
 		using var handler = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-				return Response(registryPut.ContentBody, "application/json");
+				return Response(registryContent, "application/json");
 
 			var fileName = path[(path.LastIndexOf('/') + 1)..];
 			var localPath = FileSystem.Path.Join(bundleDir, fileName);
