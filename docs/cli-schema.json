@@ -4433,7 +4433,96 @@
           ]
         }
       ],
-      "namespaces": []
+      "namespaces": [
+        {
+          "segment": "backfill",
+          "summary": "Backfill historical release-note bundles (docs-eng-team#656): census, planning, and guarded publication.",
+          "options": [],
+          "commands": [
+            {
+              "path": [
+                "changelog",
+                "backfill"
+              ],
+              "name": "inventory",
+              "summary": "Build the backfill census: an inventory document covering every release-notes product.",
+              "notes": "Enumerates every product in products.yml that participates in release notes (the\nrelease-notes feature defaults to enabled, so products.yml alone cannot say which\nproducts have release-note surfaces), merges in the hand-maintained census seed, and writes the\nversioned inventory document that backfill planning consumes. Products the seed does not cover\nstay visible as source-unresolved entries with a warning \u2014 an unresolved scope must never\nsilently produce empty bundles. Attributed repositories are checked against the link allowlist in\nthe local assembler.yml; planning re-validates against the deployed scrubber allowlist\nbefore any upload. This command only reads configuration and writes a local file: no S3 access,\nno writes to any remote system.",
+              "usage": "docs-builder changelog backfill inventory [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "sources",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Path to the census seed YAML mapping products to their release-note sources. Without it, every release-notes product is reported as source-unresolved.",
+                  "validations": [
+                    {
+                      "kind": "rejectSymbolicLinks"
+                    },
+                    {
+                      "kind": "existing"
+                    },
+                    {
+                      "kind": "fileExtensions",
+                      "values": [
+                        "yml",
+                        "yaml"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "output",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Where to write the inventory document JSON.",
+                  "defaultValue": "backfill-inventory.json"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ]
+            }
+          ],
+          "namespaces": []
+        }
+      ]
     },
     {
       "segment": "codex",

@@ -136,11 +136,11 @@ public sealed record AttributedRepository
 /// </summary>
 public sealed record InventorySource
 {
-	/// <summary>The repository the release-note content lives in.</summary>
-	public required GitRepository SourceRepository { get; init; }
+	/// <summary>The repository the release-note content lives in. Null only while the source is unresolved — every other classification implies we know where we looked.</summary>
+	public GitRepository? SourceRepository { get; init; }
 
-	/// <summary>The git ref (branch, tag, or commit) the census read the content at.</summary>
-	public required string GitRef { get; init; }
+	/// <summary>The git ref (branch, tag, or commit) the census read the content at. Null only while the source is unresolved.</summary>
+	public string? GitRef { get; init; }
 
 	/// <summary>The docset the content belongs to, when the repository hosts more than one.</summary>
 	public string? Docset { get; init; }
@@ -187,9 +187,14 @@ public sealed record InventorySource
 	/// <summary>Adds a plain-English description of every problem in this source to <paramref name="problems"/>.</summary>
 	public void Validate(IList<string> problems)
 	{
-		SourceRepository.Validate(problems);
-		if (string.IsNullOrWhiteSpace(GitRef))
-			problems.Add("An inventory source needs a non-empty git ref.");
+		SourceRepository?.Validate(problems);
+		if (Classification != SourceClassification.SourceUnresolved)
+		{
+			if (SourceRepository is null)
+				problems.Add("An inventory source needs a repository unless its classification is source-unresolved.");
+			if (string.IsNullOrWhiteSpace(GitRef))
+				problems.Add("An inventory source needs a non-empty git ref unless its classification is source-unresolved.");
+		}
 		if (ProductIds.Count == 0)
 			problems.Add("An inventory source needs at least one product ID.");
 		if (ProductIds.Any(string.IsNullOrWhiteSpace))

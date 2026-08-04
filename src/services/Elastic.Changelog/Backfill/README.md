@@ -18,7 +18,7 @@ reviewing a run — reads and writes the same shapes.
 
 ## How they flow
 
-1. The inventory stage takes the census and writes an **inventory**; a human adds **overrides** where the census got something wrong.
+1. The inventory stage takes the census and writes an **inventory** (`docs-builder changelog backfill inventory`, implemented by `Inventory/InventoryCensusService`); a human adds **overrides** where the census got something wrong.
 2. The parser turns release-note sources into a **semantic-model** (plus **provenance** for every recovered fact).
 3. Planning combines inventory + overrides + semantic model + the current S3 state into a **plan**.
 4. A human approves the plan; the apply stage executes it and writes a **ledger** of what really happened.
