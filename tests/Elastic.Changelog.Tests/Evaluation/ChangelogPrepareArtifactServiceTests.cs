@@ -149,6 +149,34 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.MaintainerCanModify.Should().BeFalse();
 	}
 
+	// Regression for the docs-actions / docs-builder fork-PR detached-HEAD failure
+	// (see elastic/docs-actions#172). The bool? CLI parameters mean an *omitted*
+	// --can-commit flag arrives at the service as null. The service must coerce
+	// that to false in the persisted metadata so the downstream apply step does
+	// NOT attempt a commit+push. Failing closed on "unspecified" is the whole
+	// point of moving these flags to nullable bool.
+	[Fact]
+	public async Task PrepareArtifact_NullableBoolsUnspecified_CoerceToFalseInMetadata()
+	{
+		await SetupStagingYaml();
+		await SetupConfig();
+		var service = CreateService();
+		var args = DefaultArgs() with
+		{
+			IsFork = null,
+			CanCommit = null,
+			MaintainerCanModify = null,
+			HeadRepo = null
+		};
+
+		await service.PrepareArtifact(Collector, args, CancellationToken.None);
+
+		var metadata = ReadMetadata();
+		metadata.IsFork.Should().BeFalse("an omitted --is-fork flag must not be treated as 'fork'");
+		metadata.CanCommit.Should().BeFalse("an omitted --can-commit flag must never grant commit permission to the apply step");
+		metadata.MaintainerCanModify.Should().BeFalse("an omitted --maintainer-can-modify flag must not be treated as granted");
+	}
+
 	[Fact]
 	public async Task PrepareArtifact_ProductLabelTableAndSkipLabels_PersistedInMetadata()
 	{
@@ -230,6 +258,26 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		FileSystem.File.Exists(Path.Join(OutputDir, "1735700000-new-title.yaml")).Should().BeFalse();
 		var metadata = ReadMetadata();
 		metadata.ChangelogFilename.Should().Be("1735689600-old-title.yaml");
+	}
+
+	[Fact]
+	public async Task PrepareArtifact_EmptyExistingFilename_FallsBackToStagingFilename()
+	{
+		// Regression: CLI parsers (Argh) forward `--existing-changelog-filename ""`
+		// as the empty string instead of null. An empty filename used to make
+		// Path.Combine(OutputDir, "") collapse to OutputDir itself and write the
+		// artifact YAML at the directory path → EACCES on Linux.
+		await SetupStagingYaml("1735700000-new-title.yaml");
+		await SetupConfig();
+		var service = CreateService();
+		var args = DefaultArgs() with { ExistingChangelogFilename = string.Empty };
+
+		var result = await service.PrepareArtifact(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		FileSystem.File.Exists(Path.Join(OutputDir, "1735700000-new-title.yaml")).Should().BeTrue();
+		var metadata = ReadMetadata();
+		metadata.ChangelogFilename.Should().Be("1735700000-new-title.yaml");
 	}
 
 	[Fact]

@@ -11,65 +11,62 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class PhysicalDocsetTests
 {
 	[Fact]
+	public void CliReferenceRefReadsTitleOverrides()
+	{
+		const string yaml = """
+			project: test
+			toc:
+			  - cli: cli/schema.json
+			    folder: cli
+			    title: Elastic CLI reference
+			    navigation_title: CLI reference
+			""";
+
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().Single();
+
+		cliRef.Title.Should().Be("Elastic CLI reference");
+		cliRef.NavigationTitle.Should().Be("CLI reference");
+	}
+
+	[Fact]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
-		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		// Assert basic properties
 		docSet.Project.Should().Be("doc-builder");
 		docSet.MaxTocDepth.Should().Be(2);
 		docSet.DevDocs.Should().BeTrue();
 		docSet.Features.PrimaryNav.Should().BeFalse();
 
-		// Assert cross links
 		docSet.CrossLinks.Should().ContainSingle().Which.Should().Be("docs-content");
-
-		// Assert exclude patterns
-		docSet.Exclude.Should().HaveCount(2).And.Subject.First().Should().Be("_*.md");
-
-		// Assert substitutions
+		docSet.Exclude.Should().ContainSingle().Which.Should().Be("_*.md");
 		docSet.Subs.Should().NotBeEmpty();
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
-		// Assert API configuration
 		docSet.Api.Should().HaveCount(3);
-		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.GetSpecPaths().Should().Contain("elasticsearch-openapi.json");
+		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.GetSpecPaths().Should().Contain("elasticsearch-openapi-docs.json");
 		docSet.Api.Should().ContainKey("kibana").WhoseValue.GetSpecPaths().Should().Contain("kibana-openapi.json");
 		docSet.Api.Should().ContainKey("dashboard").WhoseValue.GetSpecPaths().Should().Contain("dashboard-openapi.json");
 
-		// Assert TOC structure
 		docSet.TableOfContents.Should().NotBeEmpty();
 
-		// First item should be index.md
 		var firstItem = docSet.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
 		firstItem.PathRelativeToDocumentationSet.Should().Be("index.md");
 		firstItem.Hidden.Should().BeFalse();
 
-		// Should have hidden files (404.md, developer-notes.md)
 		var hiddenFiles = docSet.TableOfContents.OfType<FileRef>().Where(f => f.Hidden).ToList();
 		hiddenFiles.Should().Contain(f => f.PathRelativeToDocumentationSet == "404.md");
 		hiddenFiles.Should().Contain(f => f.PathRelativeToDocumentationSet == "developer-notes.md");
 
-		// Should have folders
 		docSet.TableOfContents.OfType<FolderRef>().Should().NotBeEmpty();
-		var contributeFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.PathRelativeToDocumentationSet == "contribute");
-		contributeFolder.Should().NotBeNull();
-		contributeFolder.Children.Should().NotBeEmpty();
 
-		// Should have TOC references
-		var tocRefs = docSet.TableOfContents.OfType<IsolatedTableOfContentsRef>().ToList();
-		tocRefs.Should().NotBeEmpty();
-		tocRefs.Should().Contain(toc => toc.PathRelativeToDocumentationSet == "development");
-
-		// Should have deeply nested structures
-		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().FirstOrDefault(f => f.PathRelativeToDocumentationSet == "testing");
-		testingFolder.Should().NotBeNull();
-		testingFolder.Children.Should().NotBeEmpty();
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
+		cliRef.Should().NotBeNull();
 	}
 
 	[Fact]
@@ -77,20 +74,20 @@ public class PhysicalDocsetTests
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
 		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
 
-		// Assert expected folders exist
-		folderNames.Should().Contain("contribute");
-		folderNames.Should().Contain("building-blocks");
-		folderNames.Should().Contain("configure");
+		folderNames.Should().Contain("getting-started");
 		folderNames.Should().Contain("syntax");
-		folderNames.Should().Contain("migration");
-		folderNames.Should().Contain("testing");
+		folderNames.Should().Contain("documentation");
+		folderNames.Should().Contain("data");
+		folderNames.Should().Contain("integrations");
 
-		// cli is a CliReferenceRef (schema-driven), not a FolderRef
+		// development is a toc: reference, not a folder
+		var tocRefs = docSet.TableOfContents.OfType<IsolatedTableOfContentsRef>().Select(t => t.PathRelativeToDocumentationSet).ToList();
+		tocRefs.Should().Contain("development");
+
 		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
 		cliRef.Should().NotBeNull();
 	}
@@ -100,36 +97,31 @@ public class PhysicalDocsetTests
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		// Test the configure folder has nested folders
-		var configureFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "configure");
-		configureFolder.Children.Should().NotBeEmpty();
+		var documentationFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "documentation");
+		documentationFolder.Children.Should().NotBeEmpty();
 
-		// Should have site and content-set folders
-		var nestedFolders = configureFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
-		nestedFolders.Should().Contain("site");
-		nestedFolders.Should().Contain("content-set");
+		var nestedFolders = documentationFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
+		nestedFolders.Should().Contain("isolated");
+		nestedFolders.Should().Contain("assembler");
+		nestedFolders.Should().Contain("codex");
+		nestedFolders.Should().Contain("catalog");
 
-		// cli is a CliReferenceRef (schema-driven), not a FolderRef — verify it has children
 		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().First();
-		cliRef.Children.Should().NotBeEmpty();
+		cliRef.Children.Should().BeEmpty();
 	}
 
 	[Fact]
-	public void PhysicalDocsetContainsFileReferencesWithChildren()
+	public void PhysicalTestDocsetContainsFileReferencesWithChildren()
 	{
-		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "docset.yml");
+		File.Exists(docsetPath).Should().BeTrue($"Expected test docset file to exist at {docsetPath}");
+
 		var yaml = File.ReadAllText(docsetPath);
-		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		// Find testing folder
-		var testingFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "testing");
-
-		// Look for file with children (cross-links.md with crosslink children)
-		var fileWithChildren = testingFolder.Children.OfType<FileRef>()
+		var fileWithChildren = docSet.TableOfContents.OfType<FileRef>()
 			.FirstOrDefault(f => f.PathRelativeToDocumentationSet == "cross-links.md" && f.Children.Count > 0);
 
 		fileWithChildren.Should().NotBeNull();

@@ -13,6 +13,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Markdown.Tests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>
@@ -20,8 +27,7 @@
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Nullean.Argh.Interfaces" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
-    <PackageReference Include="Samboy063.Tomlet" />
+    <PackageReference Include="Tomlyn" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

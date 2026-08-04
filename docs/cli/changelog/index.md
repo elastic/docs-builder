@@ -9,4 +9,4 @@ The `changelog` commands manage a file-per-change workflow that produces release
 
 When working in CI, `docs-builder changelog evaluate-pr` inspects an open pull request and decides whether it needs a changelog file, then sets GitHub Actions outputs so your workflow can gate on the result.
 
-See [Create release notes from changelogs](/contribute/changelog.md) for the end-to-end guide.
+See [Create release notes from changelogs](/data/release-notes/overview.md) for the end-to-end guide.

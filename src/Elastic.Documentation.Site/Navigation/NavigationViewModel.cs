@@ -5,7 +5,6 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Site;
 
 namespace Elastic.Documentation.Site.Navigation;
 
@@ -20,8 +19,6 @@ public class NavigationViewModel
 
 	/// <summary>Controls whether to split the navigation tree automatically.</summary>
 	public required bool IsUsingNavigationDropdown { get; init; }
-
-	public required IHtmxAttributeProvider Htmx { get; init; }
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 

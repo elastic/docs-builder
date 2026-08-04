@@ -6,6 +6,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 
@@ -304,6 +305,22 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Deployment.Should().NotBeNull();
 		deserialized.Deployment.Ess.Should().NotBeNull();
 		deserialized.Deployment.Ess.First().Lifecycle.Should().Be(ProductLifecycle.Beta);
+	}
+
+	[Fact]
+	public void DeserializeExperimentalLifecycle()
+	{
+		var json = """
+			[
+				{ "type": "stack", "sub_type": "stack", "lifecycle": "experimental", "version": "9.1.0" }
+			]
+			""";
+
+		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
+
+		deserialized.Should().NotBeNull();
+		deserialized.Stack.Should().NotBeNull();
+		deserialized.Stack.First().Lifecycle.Should().Be(ProductLifecycle.Experimental);
 	}
 
 	[Fact]

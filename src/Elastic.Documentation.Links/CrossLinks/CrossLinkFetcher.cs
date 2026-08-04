@@ -7,6 +7,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;

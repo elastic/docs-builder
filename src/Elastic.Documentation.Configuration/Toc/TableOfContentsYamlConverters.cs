@@ -73,7 +73,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 					}
 					value = childrenList;
 				}
-				else if (key.Value is "detection_rules" or "exclude")
+				else if (key.Value is "detection_rules" or "exclude" or "deprecated_detection_rules")
 				{
 					// Parse the children list manually
 					var childrenList = new List<string>();
@@ -117,7 +117,9 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		if (dictionary.TryGetValue("cli", out var cliSchemaPath) && cliSchemaPath is string cliSchema)
 		{
 			var supplementalFolder = dictionary.TryGetValue("folder", out var f) && f is string fStr ? fStr : null;
-			return new CliReferenceRef(cliSchema, supplementalFolder, cliSchema, cliSchema, placeholderContext, children);
+			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var nt) && nt is string navigationTitleStr ? navigationTitleStr : null;
+			return new CliReferenceRef(cliSchema, supplementalFolder, title, navigationTitle, cliSchema, cliSchema, placeholderContext, children);
 		}
 
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
@@ -144,11 +146,8 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		if (dictionary.TryGetValue("detection_rules", out var detectionRulesObj) && detectionRulesObj is string[] detectionRulesFolders &&
 			dictionary.TryGetValue("file", out var detectionRulesFilePath) && detectionRulesFilePath is string detectionRulesFile)
 		{
-			// Create the index file reference (FolderIndexFileRef to mark it as the folder's index)
-			// Store ONLY the file name - the folder path will be prepended during resolution
-			// This allows validation to check if the file itself has deep paths
-			// PathRelativeToContainer will be set during resolution
-			return new DetectionRuleOverviewRef(detectionRulesFile, detectionRulesFile, detectionRulesFolders, children, placeholderContext);
+			var deprecatedFile = dictionary.TryGetValue("deprecated_file", out var deprecatedFileObj) && deprecatedFileObj is string df ? df : null;
+			return new DetectionRuleOverviewRef(detectionRulesFile, detectionRulesFile, detectionRulesFolders, children, placeholderContext, deprecatedFile);
 		}
 
 		// Check for file reference (file: or hidden:)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -45,7 +46,8 @@ public record ChangelogConfiguration
 	[
 		Lifecycle.Preview,
 		Lifecycle.Beta,
-		Lifecycle.Ga
+		Lifecycle.Ga,
+		Lifecycle.Experimental
 	];
 
 	/// <summary>

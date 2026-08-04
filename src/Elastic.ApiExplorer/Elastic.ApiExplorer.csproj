@@ -10,6 +10,7 @@
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
     <StartupHookSupport Condition="'$(Configuration)' == 'Debug'">true</StartupHookSupport>
+    <EnableDefaultRazorSlices>false</EnableDefaultRazorSlices>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,12 +20,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <RazorSlice Include="**/*.cshtml" Exclude="**/_ViewImports.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation.Site\Elastic.Documentation.Site.csproj"/>
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Elasticsearch\" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.ApiExplorer.Tests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

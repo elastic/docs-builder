@@ -49,21 +49,24 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly ILoggerFactory _loggerFactory = loggerFactory;
 	private readonly IConfigurationContext _configurationContext = configurationContext;
 	private readonly ILogger<InMemoryBuildState> _logger = loggerFactory.CreateLogger<InMemoryBuildState>();
-	private readonly SemaphoreSlim _buildSemaphore = new(1, 1);
+	// Capacity-1 bounded channel: a new trigger while a build is running queues one more run;
+	// additional triggers drop the queued one (DropOldest) so only the latest matters.
+	// The build loop (RunAsync) is the sole reader and never cancels a running build on file events.
+	private readonly Channel<string> _buildChannel = Channel.CreateBounded<string>(
+		new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true });
+
 	private readonly Lock _diagnosticsLock = new();
 	private readonly List<DiagnosticDto> _diagnostics = [];
 
 	// Reuse MockFileSystem across builds to benefit from caching.
 	// Initialized lazily on first ExecuteBuildAsync so we can scope it to the source path.
-	private ScopedFileSystem? _writeFs;
+	// Exposed so the serve host can read pagefind index files written by the background build.
 	private string? _writeFsPath;
+	public ScopedFileSystem? WriteFileSystem { get; private set; }
 
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();
 	private readonly List<Channel<BuildEvent>> _clientChannels = [];
-
-	private CancellationTokenSource? _currentBuildCts;
-	private Task? _currentBuildTask;
 
 	private int _errorCount;
 	private int _warningCount;
@@ -112,47 +115,37 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		_logger.LogDebug("Client unsubscribed from diagnostics stream. Total clients: {Count}", _clientChannels.Count);
 	}
 
-	public async Task StartBuildAsync(string sourcePath, Cancel externalCt)
+	/// <summary>
+	/// Enqueues a validation build request. If a build is already queued but not yet started,
+	/// it is replaced by this one (DropOldest). A running build is never cancelled; instead the
+	/// new request waits in the single-slot queue and runs as soon as the current build finishes.
+	/// </summary>
+	public void ScheduleBuild(string sourcePath) =>
+		_ = _buildChannel.Writer.TryWrite(sourcePath);
+
+	/// <summary>
+	/// Runs the build loop until <paramref name="shutdownCt"/> is cancelled. Only <paramref name="shutdownCt"/>
+	/// can cancel a running build — file-edit triggers enqueue via <see cref="ScheduleBuild"/> and never
+	/// interrupt the current build.
+	/// </summary>
+	public async Task RunAsync(Cancel shutdownCt)
 	{
-		// Cancel any existing build
-		if (_currentBuildCts != null)
+		try
 		{
-			_logger.LogDebug("Cancelling previous in-memory build");
-			await _currentBuildCts.CancelAsync();
-
-			// Wait for the previous build to complete (with timeout)
-			if (_currentBuildTask != null)
-			{
-				try
-				{
-					await _currentBuildTask.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None);
-				}
-				catch (TimeoutException)
-				{
-					_logger.LogWarning("Previous build did not complete within timeout");
-				}
-				catch (OperationCanceledException)
-				{
-					// Expected
-				}
-			}
+			await foreach (var sourcePath in _buildChannel.Reader.ReadAllAsync(shutdownCt))
+				await ExecuteBuildAsync(sourcePath, shutdownCt);
 		}
-
-		// Create a new CTS linked to the external token
-		_currentBuildCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
-		var buildCt = _currentBuildCts.Token;
-
-		// Start the new build
-		_currentBuildTask = ExecuteBuildAsync(sourcePath, buildCt);
-		await _currentBuildTask;
+		catch (OperationCanceledException)
+		{
+			_logger.LogDebug("Background build loop stopped");
+		}
 	}
 
 	private async Task ExecuteBuildAsync(string sourcePath, Cancel ct)
 	{
-		await _buildSemaphore.WaitAsync(ct);
+		Status = BuildStatus.Building;
 		try
 		{
-			Status = BuildStatus.Building;
 			_ = Interlocked.Exchange(ref _errorCount, 0);
 			_ = Interlocked.Exchange(ref _warningCount, 0);
 			_ = Interlocked.Exchange(ref _hintCount, 0);
@@ -172,9 +165,9 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
 			var readFs = FileSystemFactory.RealGitRootForPath(sourcePath);
-			if (_writeFs is null || _writeFsPath != sourcePath)
+			if (WriteFileSystem is null || _writeFsPath != sourcePath)
 			{
-				_writeFs = FileSystemFactory.InMemoryForPath(sourcePath);
+				WriteFileSystem = FileSystemFactory.InMemoryForPath(sourcePath);
 				_writeFsPath = sourcePath;
 			}
 			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
@@ -191,11 +184,13 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 					Strict = false,
 					AllowIndexing = false,
 					MetadataOnly = false,
-					Exporters = ExportOptions.Default,
+					// Validation-only: parse + emit diagnostics without LLM export, config copy,
+					// link-index, or redirect generation — none make sense for an in-memory build.
+					Exporters = ExportOptions.Validation,
 					SkipApi = true,
 					SkipCrossLinks = false
 				},
-				_writeFs, // reuse MockFileSystem across builds for caching; initialized above
+				WriteFileSystem, // reuse MockFileSystem across builds for caching; initialized above
 				ct
 			);
 
@@ -237,10 +232,6 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 				Warnings: WarningCount,
 				Hints: HintCount
 			));
-		}
-		finally
-		{
-			_ = _buildSemaphore.Release();
 		}
 	}
 
@@ -305,6 +296,21 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		}
 	}
 
+	/// <summary>
+	/// Completes all subscribed SSE client channels so their <c>ReadAllAsync</c> loops exit
+	/// promptly. Call from <c>IHostApplicationLifetime.ApplicationStopping</c> to unblock
+	/// in-flight SSE requests before the graceful-shutdown timeout fires.
+	/// </summary>
+	public void CompleteAllClients()
+	{
+		lock (_clientsLock)
+		{
+			foreach (var channel in _clientChannels)
+				_ = channel.Writer.TryComplete();
+			_clientChannels.Clear();
+		}
+	}
+
 	public BuildEvent GetCurrentState() => new(
 		"state",
 		DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -315,19 +321,16 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		Diagnostics: GetStoredDiagnostics()
 	);
 
+
 	public void Dispose()
 	{
-		_currentBuildCts?.Cancel();
-		_currentBuildCts?.Dispose();
-		_buildSemaphore.Dispose();
+		_ = _buildChannel.Writer.TryComplete();
 
 		// Close all client channels
 		lock (_clientsLock)
 		{
 			foreach (var channel in _clientChannels)
-			{
 				_ = channel.Writer.TryComplete();
-			}
 			_clientChannels.Clear();
 		}
 

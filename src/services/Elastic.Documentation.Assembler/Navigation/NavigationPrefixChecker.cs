@@ -99,7 +99,6 @@ public class NavigationPrefixChecker
 		if (!string.IsNullOrEmpty(updateRepository) && updateReference is not null)
 			crossLinks = crossLinkResolver.UpdateLinkReference(updateRepository, updateReference);
 
-		var skippedPhantoms = 0;
 		foreach (var (repository, linkReference) in crossLinks.LinkReferences)
 		{
 			if (!_repositories.Contains(repository))
@@ -117,14 +116,9 @@ public class NavigationPrefixChecker
 					var path = relativeLink.Split('/').SkipLast(1);
 					var pathUri = new Uri($"{repository}://{string.Join('/', path)}");
 
-					var baseOfAPhantom = _phantoms.Any(p => p == pathUri);
+					var baseOfAPhantom = _phantoms.Any(p => IsPhantomOrDescendant(p, pathUri));
 					if (baseOfAPhantom)
-					{
-						skippedPhantoms++;
-						if (skippedPhantoms > _phantoms.Count * 3)
-							collector.EmitError(repository, $"Too many items are being marked as part of a phantom this looks like a bug. ({skippedPhantoms})");
 						continue;
-					}
 					collector.EmitError(repository, $"'Can not validate '{crossLink}' it's not declared in any link reference nor is it a phantom");
 					continue;
 				}
@@ -156,6 +150,12 @@ public class NavigationPrefixChecker
 			}
 		}
 	}
+
+	private static bool IsPhantomOrDescendant(Uri phantom, Uri candidate) =>
+		candidate.Scheme == phantom.Scheme &&
+		candidate.Host == phantom.Host &&
+		(candidate.AbsolutePath == phantom.AbsolutePath ||
+		 candidate.AbsolutePath.StartsWith(phantom.AbsolutePath.TrimEnd('/') + '/', StringComparison.Ordinal));
 
 	private async Task<RepositoryLinks> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
 	{

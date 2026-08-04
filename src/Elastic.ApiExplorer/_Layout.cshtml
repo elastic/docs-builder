@@ -1,23 +1,22 @@
-@inherits RazorLayoutSlice<ApiLayoutViewModel>
+@inherits RazorLayoutSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
 }
 @if (Model.BuildType == BuildType.Assembler)
 {
-	@(await RenderPartialAsync(_AssemblerHeader.Create<GlobalLayoutViewModel>(Model)))
+	@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))
 }
 else
 {
-	@(await RenderPartialAsync(_IsolatedHeader.Create<GlobalLayoutViewModel>(Model)))
+	@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 }
 <div id="main-container" class="flex flex-col items-center">
 	<div class="max-w-(--max-layout-width) w-full h-full grid
 			grid-cols-1
 			md:grid-cols-[var(--max-sidebar-width)_1fr]
 		">
-		@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
-		<div class="lg:grid lg:grid-cols-[1fr_var(--max-sidebar-width)]">
+		<div class="lg:grid lg:grid-cols-[1fr_var(--max-sidebar-width)] md:order-2">
 			<div class="justify-center px-6 lg:px-0">
 				<main id="content-container" class="w-full flex flex-col relative pb-12 overflow-x-hidden">
 					<article id="markdown-content" class="content-container markdown-content md:px-4">
@@ -28,13 +27,14 @@ else
 			</div>
 			@await RenderPartialAsync(_ApiToc.Create(Model.TocItems.ToArray()))
 		</div>
+		@await RenderPartialAsync(_PagesNav.Create(Model))
 	</div>
 </div>
 @if (Model.BuildType == BuildType.Assembler)
 {
-	@(await RenderPartialAsync(_AssemblerFooter.Create<GlobalLayoutViewModel>(Model)))
+	@(await RenderPartialAsync(_AssemblerFooter.Create(Model)))
 }
 else
 {
-	@(await RenderPartialAsync(_IsolatedFooter.Create<GlobalLayoutViewModel>(Model)))
+	@(await RenderPartialAsync(_IsolatedFooter.Create(Model)))
 }

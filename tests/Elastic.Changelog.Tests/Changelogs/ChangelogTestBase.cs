@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
@@ -111,6 +112,19 @@ public abstract class ChangelogTestBase : IDisposable
 		};
 	}
 
+	/// <summary>
+	/// Seeds a minimal docset.yml at the working-directory root declaring the given products under
+	/// <c>release_notes</c>. The <c>changelog bundle</c> declared-gate sources a product's entries from
+	/// the CDN only when it is declared here.
+	/// </summary>
+	protected void DeclareReleaseNotesProducts(params string[] productIds)
+	{
+		var lines = new List<string> { "release_notes:" };
+		lines.AddRange(productIds.Select(id => $"  - product: {id}"));
+		var path = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "docset.yml");
+		FileSystem.File.WriteAllText(path, string.Join("\n", lines) + "\n");
+	}
+
 	public void Dispose()
 	{
 		LoggerFactory.Dispose();
@@ -125,5 +139,22 @@ public abstract class ChangelogTestBase : IDisposable
 		var bytes = System.Text.Encoding.UTF8.GetBytes(normalized);
 		var hash = System.Security.Cryptography.SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
+	}
+
+	/// <summary>
+	/// Builds resolved-bundle YAML the same way <c>changelog bundle</c> does: each changelog entry
+	/// is inlined into the bundle with file provenance (name + checksum). The header YAML carries
+	/// bundle-level fields (products, description, hide_features, ...) and must not declare entries.
+	/// </summary>
+	protected static string CreateResolvedBundleContent(string bundleHeaderYaml, params (string FileName, string Changelog)[] changelogs)
+	{
+		var bundle = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeBundle(bundleHeaderYaml);
+		var entries = changelogs
+			.Select(c => Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(c.Changelog).ToBundledEntry() with
+			{
+				File = new Documentation.ReleaseNotes.BundledFile { Name = c.FileName, Checksum = ComputeSha1(c.Changelog) }
+			})
+			.ToList();
+		return Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.SerializeBundle(bundle with { Entries = entries });
 	}
 }

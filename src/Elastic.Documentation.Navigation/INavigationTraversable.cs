@@ -105,7 +105,10 @@ public interface INavigationTraversable
 
 	INavigationItem GetNavigationFor(IDocumentationFile file) =>
 		NavigationDocumentationFileLookup.TryGetValue(file, out var navigation)
-			? navigation : throw new InvalidOperationException($"Could not find {file.NavigationTitle} in navigation");
+			? navigation : throw new InvalidOperationException(
+				file.SourcePath is { } path
+					? $"'{file.NavigationTitle}' ({path}) is not listed in the table of contents. Add it to the toc.yml for this documentation set."
+					: $"'{file.NavigationTitle}' is not listed in the table of contents.");
 
 	INavigationItem[] GetParents(INavigationItem current) => current.GetParents();
 

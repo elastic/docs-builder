@@ -42,7 +42,7 @@ runs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"result=arn:aws:iam::{aws_account_id}:role/{prefix}{hash}")
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+      uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
       with:
         role-to-assume: ${{ steps.role_arn.outputs.result }}
         aws-region: us-east-1
@@ -50,5 +50,6 @@ runs:
       shell: bash
       env:
         LINK_REFERENCE_FILE: ${{ inputs.link_reference_file }}
+        INPUTS_AWS_S3_BUCKET_NAME: ${{ inputs.aws_s3_bucket_name }}
       run: |
-        aws s3 cp --checksum-algorithm "SHA256" "${LINK_REFERENCE_FILE}" "s3://${{ inputs.aws_s3_bucket_name }}/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/links.json"
+        aws s3 cp --checksum-algorithm "SHA256" "${LINK_REFERENCE_FILE}" "s3://${INPUTS_AWS_S3_BUCKET_NAME}/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/links.json"

@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using Actions.Core.Services;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;

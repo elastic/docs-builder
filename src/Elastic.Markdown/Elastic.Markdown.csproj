@@ -20,6 +20,7 @@
     <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Generator.Equals" />
     <PackageReference Include="Markdig" />
+    <PackageReference Include="Mermaider" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
     <PackageReference Include="Sep" />
@@ -29,6 +30,8 @@
     <PackageReference Include="YamlDotNet" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
+    <PackageReference Include="Pagefind.Net" />
+    <PackageReference Include="Pagefind.Net.Frontend" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,12 +41,18 @@
     <ProjectReference Include="..\Elastic.Documentation.Site\Elastic.Documentation.Site.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.LinkIndex\Elastic.Documentation.LinkIndex.csproj" />
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation.Svg\Elastic.Documentation.Svg.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Elastic.Markdown.Tests"/>
   </ItemGroup>
 
   <ItemGroup>

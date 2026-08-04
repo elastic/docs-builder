@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 

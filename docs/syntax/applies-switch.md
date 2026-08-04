@@ -13,6 +13,10 @@ The applies-switch directive creates tabbed content where each tab displays an a
 Content for Stack
 :::
 
+:::{applies-item} stack: experimental 9.1+
+Content for experimental Stack features
+:::
+
 :::{applies-item} serverless: ga
 Content for Serverless
 :::
@@ -27,6 +31,10 @@ Content for Serverless
 
 :::{applies-item} stack: ga 9.0+
 Content for Stack
+:::
+
+:::{applies-item} stack: experimental 9.1+
+Content for experimental Stack features
 :::
 
 :::{applies-item} serverless: ga

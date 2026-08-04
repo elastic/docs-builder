@@ -36,6 +36,14 @@ public record ElasticsearchIndexOptions
 	/// <summary>Enable AI enrichment of documents using LLM-generated metadata (enabled by default).</summary>
 	public bool? AiEnrichment { get; init; }
 
+	/// <summary>Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.</summary>
+	[Range(1, int.MaxValue)]
+	public int? MaxAiDocs { get; init; }
+
+	/// <summary>Optional wall-clock limit for the post-index AI phase (e.g. <c>5m</c>, <c>1h</c>); minimum 1 minute when set.</summary>
+	[TimeSpanRange("1m", "24h")]
+	public TimeSpan? MaxAiTime { get; init; }
+
 	/// <summary>Number of search threads for the inference endpoint.</summary>
 	[Range(1, 128)]
 	public int? SearchNumThreads { get; init; }
@@ -157,6 +165,10 @@ public static class ElasticsearchEndpointConfigurator
 			cfg.BootstrapTimeout = options.BootstrapTimeout.Value;
 		if (options.AiEnrichment.HasValue)
 			cfg.EnableAiEnrichment = options.AiEnrichment.Value;
+		if (options.MaxAiDocs.HasValue)
+			cfg.MaxAiDocs = options.MaxAiDocs.Value;
+		if (options.MaxAiTime.HasValue)
+			cfg.MaxAiTime = options.MaxAiTime.Value;
 		if (options.ForceReindex.HasValue)
 			cfg.ForceReindex = options.ForceReindex.Value;
 	}

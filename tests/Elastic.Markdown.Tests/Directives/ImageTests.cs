@@ -42,6 +42,25 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 	}
 }
 
+public class AllowedExternalHostTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
+"""
+:::{image} https://images.contentstack.io/v3/assets/bltefdd0b53724fa2ce/blt/example.gif
+:alt: An animated screenshot hosted on the Elastic Contentstack CDN
+:::
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void AllowedHostDoesNotWarn()
+	{
+		Block!.Found.Should().BeTrue();
+		Collector.Diagnostics.Count.Should().Be(0);
+	}
+}
+
 public class FigureTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
 """
 :::{figure} https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true

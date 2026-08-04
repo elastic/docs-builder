@@ -15,7 +15,7 @@ public enum PrEvaluationResult
 	[Display(Name = "success")]
 	Success,
 
-	/// <summary>No label matching a changelog type was found on the PR.</summary>
+	/// <summary>A required label (type or product) is missing from the PR.</summary>
 	[Display(Name = "no-label")]
 	NoLabel,
 

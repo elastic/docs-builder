@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Build.Tests;
@@ -13,7 +14,7 @@ namespace Elastic.Documentation.Build.Tests;
 /// </summary>
 public class MockEnvironmentVariables : IEnvironmentVariables
 {
-	private readonly Dictionary<string, string> _variables = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, string> _variables = [with(StringComparer.OrdinalIgnoreCase)];
 
 	/// <summary>
 	/// Sets an environment variable value for testing.

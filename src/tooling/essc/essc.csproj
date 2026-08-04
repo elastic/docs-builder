@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>essc</AssemblyName>
+    <UserSecretsId>docs-builder</UserSecretsId>
+    <RootNamespace>Elastic.SiteSearch.Cli</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <IsPublishable>true</IsPublishable>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101;IL3050;CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Elastic.SiteSearch.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nullean.Argh.Hosting" />
+    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
+    <PackageReference Include="Elastic.Mapping" />
+    <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
+    <PackageReference Include="AngleSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\services\search\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
+  </ItemGroup>
+
+</Project>

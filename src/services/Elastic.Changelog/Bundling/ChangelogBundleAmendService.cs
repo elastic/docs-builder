@@ -6,7 +6,6 @@ using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -34,13 +33,22 @@ public record AmendBundleArguments
 	/// <summary>
 	/// Paths to changelog YAML files to add to the bundle
 	/// </summary>
-	public required IReadOnlyList<string> AddFiles { get; init; }
+	public IReadOnlyList<string> AddFiles { get; init; } = [];
 
 	/// <summary>
-	/// Whether to resolve (copy contents) the added entries.
-	/// When null, inferred from the original bundle.
+	/// Paths to changelog YAML files to remove from the effective bundle
 	/// </summary>
-	public bool? Resolve { get; init; }
+	public IReadOnlyList<string> RemoveFiles { get; init; } = [];
+
+	/// <summary>
+	/// Remove by file name when the bundle checksum does not match the file on disk.
+	/// </summary>
+	public bool Force { get; init; }
+
+	/// <summary>
+	/// Preview changes without writing an amend file.
+	/// </summary>
+	public bool DryRun { get; init; }
 }
 
 /// <summary>
@@ -66,13 +74,12 @@ public partial class ChangelogBundleAmendService(
 	private static partial Regex AmendFileRegex();
 
 	/// <summary>
-	/// Amends a bundle with additional changelog entries, creating a new immutable amend file.
+	/// Amends a bundle with additional or excluded changelog entries, creating a new immutable amend file.
 	/// </summary>
 	public async Task<bool> AmendBundle(IDiagnosticsCollector collector, AmendBundleArguments input, Cancel ctx)
 	{
 		try
 		{
-			// Validate bundle file exists
 			if (!_fileSystem.File.Exists(input.BundlePath))
 			{
 				var currentDir = _fileSystem.Directory.GetCurrentDirectory();
@@ -83,153 +90,148 @@ public partial class ChangelogBundleAmendService(
 				return false;
 			}
 
-			// Validate add files
-			if (input.AddFiles.Count == 0)
+			if (input.AddFiles.Count == 0 && input.RemoveFiles.Count == 0)
 			{
-				collector.EmitError(string.Empty, "At least one file must be specified with --add");
+				collector.EmitError(string.Empty, "At least one file must be specified with --add or --remove");
 				return false;
 			}
 
-			// Validate all add files exist
-			var addFilePaths = new List<string>();
-			foreach (var addFile in input.AddFiles)
-			{
-				if (!_fileSystem.File.Exists(addFile))
-				{
-					var currentDir = _fileSystem.Directory.GetCurrentDirectory();
-					collector.EmitError(
-						addFile,
-						$"File does not exist. Current directory: {currentDir}. " +
-						"Tip: Specify multiple files as comma-separated values (e.g., --add \"file1.yaml,file2.yaml\"). " +
-						"Paths support tilde (~) expansion and can be relative or absolute."
-					);
-					return false;
-				}
-				addFilePaths.Add(addFile);
-			}
+			var addFilePaths = ValidateInputFiles(collector, input.AddFiles, "--add");
+			if (addFilePaths == null)
+				return false;
 
-			// Resolve flag: explicit CLI wins; otherwise infer from parent bundle (single read + deserialize).
-			Bundle? parentBundleFromInfer = null;
-			bool shouldResolve;
-			if (input.Resolve.HasValue)
-				shouldResolve = input.Resolve.Value;
-			else
+			var removeFilePaths = ValidateInputFiles(collector, input.RemoveFiles, "--remove");
+			if (removeFilePaths == null)
+				return false;
+
+			var (parentOk, parentBundle) = await TryDeserializeParentBundleAsync(
+				input.BundlePath,
+				collector,
+				ctx);
+			if (!parentOk || parentBundle == null)
+				return false;
+
+			var (amendsOk, existingAmendBundles) = await LoadExistingAmendBundlesAsync(
+				input.BundlePath,
+				collector,
+				ctx);
+			if (!amendsOk)
+				return false;
+
+			var effectiveEntries = BundleAmendMerger.MergeEntries(parentBundle.Entries, existingAmendBundles);
+			var appliedExclusionKeys = BundleAmendMerger.CollectAppliedExclusionKeys(existingAmendBundles);
+
+			var excludeEntries = new List<BundledEntry>();
+			foreach (var removeFilePath in removeFilePaths!)
 			{
-				var (ok, inferredBundle) = await TryDeserializeParentBundleAsync(
-					input.BundlePath,
+				var exclusion = await BuildExclusionEntryAsync(
 					collector,
-					emitParseErrorToCollector: false,
+					removeFilePath,
+					effectiveEntries,
+					appliedExclusionKeys,
+					input.Force,
 					ctx);
-				if (!ok)
-					shouldResolve = false;
-				else
+				if (exclusion == null)
+					return false;
+				if (exclusion is RemoveExclusionResult.Skip)
+					continue;
+
+				var entry = ((RemoveExclusionResult.Add)exclusion).Entry;
+				excludeEntries.Add(entry);
+				_ = appliedExclusionKeys.Add(BundleAmendMerger.BuildExclusionKey(entry));
+			}
+
+			ChangelogConfiguration? changelogConfig = null;
+			IReadOnlyList<string>? linkAllowRepos = null;
+			var linkAllowlistActive = false;
+			if (_configLoader != null && addFilePaths!.Count > 0)
+			{
+				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
+				linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
+				linkAllowlistActive = linkAllowRepos != null;
+			}
+
+			var entries = new List<BundledEntry>();
+			if (addFilePaths!.Count > 0)
+			{
+				if (linkAllowlistActive)
 				{
-					parentBundleFromInfer = inferredBundle;
-					shouldResolve = inferredBundle!.IsResolved;
-					_logger.LogInformation("Inferred resolve={Resolve} from original bundle", shouldResolve);
+					var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
+					var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
+					if (!LinkAllowlistSanitizer.TryApplyBundle(
+						collector,
+						parentBundle,
+						linkAllowRepos!,
+						owner,
+						repo,
+						out _,
+						out var parentHadAllowlistChanges))
+						return false;
+
+					if (parentHadAllowlistChanges)
+					{
+						collector.EmitError(
+							string.Empty,
+							"bundle.link_allow_repos requires the parent bundle to already reflect filtered PR/issue references. " +
+							"Re-create the parent bundle with the same bundle.link_allow_repos, " +
+							"or remove bundle.link_allow_repos for amend.");
+						return false;
+					}
+				}
+
+				foreach (var filePath in addFilePaths)
+				{
+					var entry = await LoadChangelogFileAsync(collector, filePath, ctx);
+					if (entry == null)
+						return false;
+					entries.Add(entry);
 				}
 			}
 
-			// Determine the next amend file number
+			if (excludeEntries.Count == 0 && entries.Count == 0)
+			{
+				collector.EmitWarning(string.Empty, "No changes to apply; amend file was not created.");
+				return true;
+			}
+
+			if (input.DryRun)
+			{
+				_logger.LogInformation(
+					"Dry run: would exclude {ExcludeCount} and add {AddCount} entries",
+					excludeEntries.Count,
+					entries.Count);
+				return true;
+			}
+
 			var nextAmendNumber = GetNextAmendNumber(input.BundlePath);
 			var amendFilePath = GenerateAmendFilePath(input.BundlePath, nextAmendNumber);
 
-			_logger.LogInformation("Creating amend file: {AmendFilePath} (resolve={Resolve})", amendFilePath, shouldResolve);
+			_logger.LogInformation(
+				"Creating amend file: {AmendFilePath} (exclude={ExcludeCount}, add={AddCount})",
+				amendFilePath,
+				excludeEntries.Count,
+				entries.Count);
 
-			ChangelogConfiguration? changelogConfig = null;
-			if (_configLoader != null)
-				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
-
-			var linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
-			var linkAllowlistActive = linkAllowRepos != null;
-			Bundle? parentBundleForAllowlist = null;
-
-			if (linkAllowlistActive)
-			{
-				if (parentBundleFromInfer != null)
-					parentBundleForAllowlist = parentBundleFromInfer;
-				else
-				{
-					var (ok, loaded) = await TryDeserializeParentBundleAsync(
-						input.BundlePath,
-						collector,
-						emitParseErrorToCollector: true,
-						ctx);
-					if (!ok)
-						return false;
-					ArgumentNullException.ThrowIfNull(loaded);
-					parentBundleForAllowlist = loaded;
-				}
-
-				ArgumentNullException.ThrowIfNull(parentBundleForAllowlist);
-				if (!parentBundleForAllowlist.IsResolved)
-				{
-					collector.EmitError(
-						string.Empty,
-						"bundle.link_allow_repos requires the parent bundle to be resolved (inline entry content). " +
-						"Re-create the bundle with resolve enabled, or remove bundle.link_allow_repos.");
-					return false;
-				}
-
-				var owner = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Owner ?? "elastic" : "elastic";
-				var repo = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Repo : null;
-				if (!LinkAllowlistSanitizer.TryApplyBundle(
-					collector,
-					parentBundleForAllowlist,
-					linkAllowRepos!,
-					owner,
-					repo,
-					out _,
-					out var parentHadAllowlistChanges))
-					return false;
-
-				if (parentHadAllowlistChanges)
-				{
-					collector.EmitError(
-						string.Empty,
-						"bundle.link_allow_repos requires the parent bundle to already reflect filtered PR/issue references. " +
-						"Re-create the parent bundle with the same bundle.link_allow_repos and resolve enabled, " +
-						"or remove bundle.link_allow_repos for amend.");
-					return false;
-				}
-			}
-
-			if (linkAllowlistActive && !shouldResolve)
-			{
-				collector.EmitError(
-					string.Empty,
-					"bundle.link_allow_repos requires resolved amend content. Use --resolve or ensure the original bundle is resolved, or remove bundle.link_allow_repos.");
-				return false;
-			}
-
-			// Load and process the files to add
-			var entries = new List<BundledEntry>();
-			foreach (var filePath in addFilePaths)
-			{
-				var entry = await LoadChangelogFileAsync(collector, filePath, shouldResolve, ctx);
-				if (entry == null)
-					return false;
-				entries.Add(entry);
-			}
-
-			// Create the amend bundle
+			// Copy the parent's complete products (target, repo, owner) so the amend is self-contained:
+			// upload destination discovery, the registry's per-product target, and :version:-filtered
+			// CDN fetches all derive from a bundle file's own products.
 			var amendBundle = new Bundle
 			{
-				Products = [], // Amend files don't have products, they inherit from the original bundle
+				Products = parentBundle.Products,
+				ExcludeEntries = excludeEntries,
 				Entries = entries
 			};
 
 			var bundleForWrite = amendBundle;
-			if (linkAllowlistActive && shouldResolve)
+			if (entries.Count > 0 && linkAllowRepos != null)
 			{
-				ArgumentNullException.ThrowIfNull(parentBundleForAllowlist);
-				var owner = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Owner ?? "elastic" : "elastic";
-				var repo = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Repo : null;
+				var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
 
 				if (!LinkAllowlistSanitizer.TryApplyBundle(
 					collector,
 					amendBundle,
-					linkAllowRepos!,
+					linkAllowRepos,
 					owner,
 					repo,
 					out var sanitized,
@@ -237,13 +239,13 @@ public partial class ChangelogBundleAmendService(
 					return false;
 				bundleForWrite = sanitized;
 
-				if (configurationContext != null && linkAllowRepos!.Count > 0)
+				if (configurationContext != null && linkAllowRepos.Count > 0)
 				{
 					try
 					{
 						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
 						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, linkAllowRepos!, assembly);
+						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, linkAllowRepos, assembly);
 					}
 					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
 					{
@@ -254,18 +256,19 @@ public partial class ChangelogBundleAmendService(
 				}
 			}
 
-			// Serialize and write the amend file
 			var yaml = ReleaseNotesSerialization.SerializeBundle(bundleForWrite);
 
-			// Ensure output directory exists
 			var outputDir = _fileSystem.Path.GetDirectoryName(amendFilePath);
 			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
-			// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
 			var normalizedYaml = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yaml);
 			await _fileSystem.File.WriteAllTextAsync(amendFilePath, normalizedYaml, Utf8NoBom, ctx);
-			_logger.LogInformation("Created amend file: {AmendFilePath} with {Count} entries", amendFilePath, entries.Count);
+			_logger.LogInformation(
+				"Created amend file: {AmendFilePath} with {ExcludeCount} exclusions and {AddCount} additions",
+				amendFilePath,
+				excludeEntries.Count,
+				entries.Count);
 
 			return true;
 		}
@@ -281,10 +284,155 @@ public partial class ChangelogBundleAmendService(
 		}
 	}
 
+	private List<string>? ValidateInputFiles(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<string> files,
+		string optionName)
+	{
+		if (files.Count == 0)
+			return [];
+
+		var validatedPaths = new List<string>();
+		foreach (var file in files)
+		{
+			if (!_fileSystem.File.Exists(file))
+			{
+				var currentDir = _fileSystem.Directory.GetCurrentDirectory();
+				collector.EmitError(
+					file,
+					$"File does not exist. Current directory: {currentDir}. " +
+					$"Tip: Repeat {optionName} for each file, or use comma-separated values (e.g., {optionName} \"file1.yaml,file2.yaml\"). " +
+					"Paths support tilde (~) expansion and can be relative or absolute."
+				);
+				return null;
+			}
+			validatedPaths.Add(file);
+		}
+
+		return validatedPaths;
+	}
+
+	private async Task<(bool Ok, List<Bundle> Bundles)> LoadExistingAmendBundlesAsync(
+		string bundlePath,
+		IDiagnosticsCollector collector,
+		Cancel ctx)
+	{
+		var amendPaths = DiscoverAmendFiles(_fileSystem, bundlePath);
+		var amendBundles = new List<Bundle>();
+		foreach (var amendPath in amendPaths)
+		{
+			try
+			{
+				var content = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
+				amendBundles.Add(ReleaseNotesSerialization.DeserializeBundle(content));
+			}
+			catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
+			{
+				collector.EmitError(
+					amendPath,
+					$"Failed to deserialize amend file: {ex.Message}",
+					ex);
+				return (false, []);
+			}
+		}
+		return (true, amendBundles);
+	}
+
+	private async Task<RemoveExclusionResult?> BuildExclusionEntryAsync(
+		IDiagnosticsCollector collector,
+		string removeFilePath,
+		IReadOnlyList<BundledEntry> effectiveEntries,
+		HashSet<string> appliedExclusionKeys,
+		bool force,
+		Cancel ctx)
+	{
+		var fileName = _fileSystem.Path.GetFileName(removeFilePath);
+		var content = await _fileSystem.File.ReadAllTextAsync(removeFilePath, ctx);
+		var fileChecksum = ChangelogBundlingService.ComputeSha1(content);
+
+		var strictExclusion = new BundledEntry
+		{
+			File = new BundledFile
+			{
+				Name = fileName,
+				Checksum = fileChecksum
+			}
+		};
+
+		var exclusionKey = BundleAmendMerger.BuildExclusionKey(strictExclusion);
+		if (appliedExclusionKeys.Contains(exclusionKey))
+		{
+			collector.EmitWarning(
+				removeFilePath,
+				$"Changelog '{fileName}' is already excluded by a prior amend file; skipping.");
+			return RemoveExclusionResult.Skip.Instance;
+		}
+
+		var strictMatches = effectiveEntries
+			.Where(entry => BundleAmendMerger.EntryMatchesExclusion(entry, strictExclusion))
+			.ToList();
+
+		var matchedEntry = strictMatches.Count > 0 ? strictMatches[0] : null;
+
+		if (matchedEntry == null)
+		{
+			var nameOnlyExclusion = new BundledEntry
+			{
+				File = new BundledFile
+				{
+					Name = fileName,
+					Checksum = string.Empty
+				}
+			};
+
+			var nameMatches = effectiveEntries
+				.Where(entry => BundleAmendMerger.EntryMatchesExclusion(entry, nameOnlyExclusion))
+				.ToList();
+
+			if (nameMatches.Count == 0)
+			{
+				collector.EmitError(
+					removeFilePath,
+					$"Changelog '{fileName}' was not found in the effective bundle (parent plus existing amend files).");
+				return null;
+			}
+
+			if (!force)
+			{
+				collector.EmitError(
+					removeFilePath,
+					$"Bundle contains '{fileName}' but with a different checksum than the file on disk. " +
+					"Re-create the bundle or use --force to remove by file name only.");
+				return null;
+			}
+
+			matchedEntry = nameMatches[0];
+		}
+
+		var exclusionChecksum = matchedEntry.File?.Checksum ?? fileChecksum;
+		return new RemoveExclusionResult.Add(new BundledEntry
+		{
+			File = new BundledFile
+			{
+				Name = fileName,
+				Checksum = exclusionChecksum
+			}
+		});
+	}
+
+	private abstract record RemoveExclusionResult
+	{
+		public sealed record Add(BundledEntry Entry) : RemoveExclusionResult;
+		public sealed record Skip : RemoveExclusionResult
+		{
+			public static readonly Skip Instance = new();
+			private Skip() { }
+		}
+	}
+
 	private async Task<(bool Ok, Bundle? Bundle)> TryDeserializeParentBundleAsync(
 		string bundlePath,
 		IDiagnosticsCollector collector,
-		bool emitParseErrorToCollector,
 		Cancel ctx)
 	{
 		try
@@ -295,16 +443,10 @@ public partial class ChangelogBundleAmendService(
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
 		{
-			if (emitParseErrorToCollector)
-			{
-				collector.EmitError(
-					bundlePath,
-					$"Failed to parse parent bundle YAML: {ex.Message}",
-					ex);
-			}
-			else
-				_logger.LogWarning(ex, "Could not read original bundle to infer resolve; defaulting to false");
-
+			collector.EmitError(
+				bundlePath,
+				$"Failed to parse parent bundle YAML: {ex.Message}",
+				ex);
 			return (false, null);
 		}
 	}
@@ -314,7 +456,6 @@ public partial class ChangelogBundleAmendService(
 		var directory = _fileSystem.Path.GetDirectoryName(bundlePath) ?? string.Empty;
 		var baseName = _fileSystem.Path.GetFileNameWithoutExtension(bundlePath);
 
-		// Find existing amend files
 		var existingAmendFiles = _fileSystem.Directory.GetFiles(directory, $"{baseName}.amend-*.y*ml");
 
 		var maxNumber = existingAmendFiles
@@ -339,7 +480,6 @@ public partial class ChangelogBundleAmendService(
 	private async Task<BundledEntry?> LoadChangelogFileAsync(
 		IDiagnosticsCollector collector,
 		string filePath,
-		bool resolve,
 		Cancel ctx)
 	{
 		try
@@ -347,23 +487,8 @@ public partial class ChangelogBundleAmendService(
 			var fileName = _fileSystem.Path.GetFileName(filePath);
 			var content = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
 
-			// Compute checksum
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
 
-			if (!resolve)
-			{
-				// Just return file reference
-				return new BundledEntry
-				{
-					File = new BundledFile
-					{
-						Name = fileName,
-						Checksum = checksum
-					}
-				};
-			}
-
-			// Parse the changelog file and include full entry data
 			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(content);
 			var entry = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 
@@ -407,7 +532,7 @@ public partial class ChangelogBundleAmendService(
 			return [];
 
 		var amendFiles = fileSystem.Directory.GetFiles(directory, $"{baseName}.amend-*.y*ml")
-			.OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+			.OrderBy(BundleAmendMerger.GetAmendFileNumber)
 			.ToList();
 
 		return amendFiles;

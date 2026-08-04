@@ -1,0 +1,46 @@
+@layer components {
+	.cli-modifiers {
+		@apply mt-4 mb-4 flex flex-wrap gap-2;
+
+		.cli-modifier {
+			@apply relative inline-flex cursor-help items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium;
+
+			svg {
+				@apply size-3.5 shrink-0;
+			}
+
+			/* CSS tooltip via data-tooltip attribute */
+			&[data-tooltip]::after {
+				content: attr(data-tooltip);
+				@apply pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-64 -translate-x-1/2 rounded px-2 py-1 text-xs text-white opacity-0 transition-opacity;
+				background: #1e293b;
+			}
+			&[data-tooltip]:hover::after,
+			&[data-tooltip]:focus-visible::after {
+				@apply opacity-100;
+			}
+		}
+
+		.cli-modifier--destructive {
+			@apply border-red-20 bg-red-10 text-red-90;
+		}
+
+		.cli-modifier--confirmation {
+			@apply border-yellow-20 bg-yellow-10 text-yellow-90;
+		}
+
+		.cli-modifier--auth {
+			@apply border-blue-elastic-20 bg-blue-elastic-10 text-blue-elastic;
+		}
+
+		.cli-modifier--idempotent {
+			@apply border-green-20 bg-green-10 text-green-90;
+		}
+
+		.cli-modifier--scope,
+		.cli-modifier--streaming,
+		.cli-modifier--long-running {
+			@apply border-grey-20 bg-grey-10 text-grey-90;
+		}
+	}
+}

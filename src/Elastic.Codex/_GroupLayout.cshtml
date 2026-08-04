@@ -13,12 +13,12 @@
 				md:px-4
 	">
 		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
-			@await RenderPartialAsync(_PagesNav.Create(Model))
-			<main id="content-container" class="min-w-0 lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-center mx-4 gap-4">
+			<main id="content-container" class="min-w-0 lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-center mx-4 gap-4 md:col-start-2 md:row-start-1">
 				<div class="min-w-0">
 					@await RenderBodyAsync()
 				</div>
 			</main>
+			@await RenderPartialAsync(_PagesNav.Create(Model))
 		</div>
 	</div>
 </div>

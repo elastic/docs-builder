@@ -597,4 +597,69 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		yamlContents.Should().Contain(c => c.Contains("prs:") && c.Contains("https://github.com/elastic/elasticsearch/pull/1111"));
 		yamlContents.Should().Contain(c => c.Contains("prs:") && c.Contains("https://github.com/elastic/elasticsearch/pull/2222"));
 	}
+
+	[Fact]
+	public async Task CreateChangelog_WithBareNumberPrAndOwnerRepo_WritesFullUrlIntoYaml()
+	{
+		// Mirrors the upload action's fork-PR re-derivation invocation:
+		//   docs-builder changelog add --concise --use-pr-number --owner elastic --repo cloud --prs 155500
+		// The previous bare-number-in YAML was unparseable by the scrubber Lambda (which has no per-entry
+		// repo context), so the writer must normalize bare numbers to full URLs when owner+repo are known.
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Fix upload failures for extensions with >5GiB",
+			Labels = ["type:bug"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				"155500",
+				"elastic",
+				"cloud",
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
+			    breaking-change:
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["155500"],
+			Owner = "elastic",
+			Repo = "cloud",
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			UsePrNumber = true,
+			Concise = true
+		};
+
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().Contain("https://github.com/elastic/cloud/pull/155500");
+		yamlContent.Should().NotMatch("*prs:*\n- '155500'*");
+		yamlContent.Should().NotMatch("*prs:*\n- 155500*");
+	}
 }

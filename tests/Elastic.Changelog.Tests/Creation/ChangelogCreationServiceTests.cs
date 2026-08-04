@@ -9,6 +9,7 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Utilities;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
 

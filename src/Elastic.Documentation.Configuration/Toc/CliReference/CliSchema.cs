@@ -22,7 +22,8 @@ public record CliSchema(
 	string[]? Tags = null,
 	bool? RequiresAuth = null,
 	string[]? AuthCommands = null,
-	CliEnvironmentSchema? Environment = null
+	CliEnvironmentSchema? Environment = null,
+	List<CliShortcutSchema>? Shortcuts = null
 )
 {
 	public static CliSchema Load(IFileInfo schemaFile)
@@ -32,6 +33,8 @@ public record CliSchema(
 			?? throw new InvalidOperationException($"Failed to deserialize CLI schema from {schemaFile.FullName}");
 	}
 }
+
+public record CliShortcutSchema(string From, string[] To);
 
 public record CliCommandSchema(
 	string[] Path,
@@ -55,10 +58,10 @@ public record CliNamespaceSchema(
 	string Segment,
 	string? Summary,
 	string? Notes,
-	List<CliParamSchema> Options,
+	List<CliParamSchema>? Options,
 	CliDefaultSchema? DefaultCommand,
-	List<CliCommandSchema> Commands,
-	List<CliNamespaceSchema> Namespaces
+	List<CliCommandSchema>? Commands,
+	List<CliNamespaceSchema>? Namespaces
 );
 
 public record CliParamSchema(

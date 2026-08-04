@@ -15,8 +15,11 @@ public record CliCommandFile : IO.MarkdownFile
 	private readonly CliCommandSchema _command;
 	private readonly IFileInfo? _supplementalDoc;
 	private readonly string? _binaryName;
-
 	private readonly string[] _fullPath;
+	private readonly string[]? _reservedMetaCommands;
+	private readonly IReadOnlyList<(string Segment, List<CliParamSchema>? Options)>? _ancestorNamespaceOptions;
+	private readonly List<CliParamSchema>? _globalOptions;
+	private readonly List<CliShortcutSchema>? _shortcuts;
 
 	public CliCommandFile(
 		IFileInfo sourceFile,
@@ -26,13 +29,21 @@ public record CliCommandFile : IO.MarkdownFile
 		CliCommandSchema command,
 		IFileInfo? supplementalDoc,
 		string[]? fullPath = null,
-		string? binaryName = null
+		string? binaryName = null,
+		string[]? reservedMetaCommands = null,
+		IReadOnlyList<(string Segment, List<CliParamSchema>? Options)>? ancestorNamespaceOptions = null,
+		List<CliParamSchema>? globalOptions = null,
+		List<CliShortcutSchema>? shortcuts = null
 	) : base(sourceFile, rootPath, parser, build)
 	{
 		_command = command;
 		_supplementalDoc = supplementalDoc;
 		_fullPath = fullPath ?? [command.Name];
 		_binaryName = binaryName;
+		_reservedMetaCommands = reservedMetaCommands;
+		_ancestorNamespaceOptions = ancestorNamespaceOptions;
+		_globalOptions = globalOptions;
+		_shortcuts = shortcuts;
 		Title = command.Name;
 	}
 
@@ -53,9 +64,12 @@ public record CliCommandFile : IO.MarkdownFile
 
 	private string BuildMarkdown()
 	{
-		var supplemental = _supplementalDoc?.Exists == true
+		var rawSupplemental = _supplementalDoc?.Exists == true
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
-		return CliMarkdownGenerator.CommandPage(_command, supplemental, _fullPath, _binaryName);
+		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
+		return CliMarkdownGenerator.CommandPage(_command, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
+			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error),
+			_ancestorNamespaceOptions, _globalOptions, _shortcuts);
 	}
 }

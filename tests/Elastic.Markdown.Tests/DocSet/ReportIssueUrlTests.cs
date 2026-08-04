@@ -36,7 +36,7 @@ public class ReportIssueUrlTests : IAsyncLifetime
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		var readFileSystem = FileSystemFactory.RealRead;
+		var readFileSystem = FileSystemFactory.RealGitRootForPath(null);
 		var writeFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockWriteFs);
 		var collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(readFileSystem);
