@@ -247,6 +247,9 @@ products:
   serverless-security:
     display: 'Elastic Security Serverless'
     versioning: 'all'
+  serverless-vector-database:
+    display: 'Elasticsearch Vector Database Serverless'
+    versioning: 'serverless'
   transport-go:
     display: 'Elastic Transport Go'
     repository: 'elastic-transport-go'
