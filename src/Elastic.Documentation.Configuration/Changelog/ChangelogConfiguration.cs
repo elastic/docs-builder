@@ -99,6 +99,13 @@ public record ChangelogConfiguration
 	public IReadOnlyDictionary<string, string>? LabelToProducts { get; init; }
 
 	/// <summary>
+	/// Mapping from GitHub label names to feature-id values (computed from Pivot.Features).
+	/// Each label maps to a feature-id string (e.g., "feature:new-search-api").
+	/// When a PR has labels matching multiple distinct feature-ids, the first match is used.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? LabelToFeatures { get; init; }
+
+	/// <summary>
 	/// Rules configuration for create and publish blockers
 	/// </summary>
 	public RulesConfiguration? Rules { get; init; }

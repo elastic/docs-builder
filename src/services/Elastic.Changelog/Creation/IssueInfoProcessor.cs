@@ -191,6 +191,19 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 		else if (input.Products.Count > 0)
 			logger.LogDebug("Using explicitly provided products, ignoring issue labels");
 
+		// Map labels to feature-id if not explicitly provided
+		if (string.IsNullOrWhiteSpace(input.FeatureId) && config.LabelToFeatures != null)
+		{
+			var mappedFeatureId = PrInfoProcessor.MapLabelsToFeatureId(issueInfo.Labels.ToArray(), config.LabelToFeatures, collector);
+			if (mappedFeatureId != null)
+			{
+				derived.FeatureId = mappedFeatureId;
+				logger.LogInformation("Mapped issue labels to feature-id: {FeatureId}", mappedFeatureId);
+			}
+		}
+		else if (!string.IsNullOrWhiteSpace(input.FeatureId))
+			logger.LogDebug("Using explicitly provided feature-id, ignoring issue labels");
+
 		// Extract linked PRs from issue body
 		if ((input.ExtractIssues ?? false) && issueInfo.LinkedPrs.Count > 0)
 		{

@@ -223,6 +223,13 @@ internal sealed record PivotConfigurationYaml
 	public Dictionary<string, YamlLenientList?>? Products { get; set; }
 
 	/// <summary>
+	/// Feature ID definitions with labels (string or list per value).
+	/// Keys are feature-id strings (e.g., "feature:new-search-api").
+	/// Values are label strings that trigger setting that feature-id.
+	/// </summary>
+	public Dictionary<string, YamlLenientList?>? Features { get; set; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
 	public YamlLenientList? Highlight { get; set; }
