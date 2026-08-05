@@ -41,6 +41,13 @@ public static class PageChunker
 	{
 		foreach (var child in children)
 		{
+			// Recurse transparently into open blocks — they may contain sections or anchored blocks
+			if (child is OpenBlockNode open)
+			{
+				CollectAnchors(open.Children, chunkLevel, map);
+				continue;
+			}
+
 			if (child is not SectionNode section)
 				continue;
 
@@ -89,6 +96,16 @@ public static class PageChunker
 
 		foreach (var child in children)
 		{
+			// Recurse transparently into open blocks so nested sections are chunked correctly
+			if (child is OpenBlockNode open)
+			{
+				var (innerPages, innerRemaining) = ExtractPages(open.Children, chunkLevel, emitter);
+				pages.AddRange(innerPages);
+				if (innerRemaining.Count > 0)
+					remaining.Add(open with { Children = innerRemaining.ToList() });
+				continue;
+			}
+
 			if (child is not SectionNode section)
 			{
 				remaining.Add(child);

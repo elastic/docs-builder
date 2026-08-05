@@ -13,6 +13,7 @@ public record AsciidocParserOptions
 	public Dictionary<string, string> Attributes { get; init; } = [];
 	public int MaxIncludeDepth { get; init; } = 64;
 	public Func<string, string?>? FileReader { get; init; }
+	public Action<string>? OnDiagnostic { get; init; }
 }
 
 public partial class AsciidocParser(AsciidocParserOptions options)
@@ -30,9 +31,37 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		return Parse(content, Path.GetDirectoryName(filePath) ?? "");
 	}
 
-	public AsciidocDocument Parse(string content, string basePath)
+	/// <summary>
+	/// Sets an attribute with eager expansion of its value (Asciidoctor semantics).
+	/// Product-name keys defined in <see cref="SharedAttributes.ProductNames"/> are intentionally
+	/// kept unresolved so the emitter can emit them as docs-builder {{sub}} placeholders.
+	/// </summary>
+	private void SetAttribute(string name, string? value)
+	{
+		if (value is null)
+		{
+			_ = _attributes.Remove(name);
+			return;
+		}
+		// Product name subs stay unresolved so the emitter emits {{name}} for docs-builder substitution
+		if (SharedAttributes.ProductNames.ContainsKey(name))
+			return;
+		// Eagerly expand attribute values at definition time (Asciidoctor semantics)
+		_attributes[name] = SubstituteAttributes(value);
+	}
+
+	/// <summary>
+	/// Sets the base path and updates the <c>docdir</c> attribute, which is per-file in Asciidoctor.
+	/// </summary>
+	private void SetBasePath(string basePath)
 	{
 		_basePath = basePath;
+		_attributes["docdir"] = basePath;
+	}
+
+	public AsciidocDocument Parse(string content, string basePath)
+	{
+		SetBasePath(basePath);
 		var rawTokens = AsciidocLexer.Tokenize(content);
 		var processed = ConditionalProcessor.Process(rawTokens, _attributes);
 		_tokens = processed;
@@ -50,7 +79,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			switch (token.Type)
 			{
 				case TokenType.AttributeEntry:
-					_attributes[token.Metadata!.AttributeName!] = token.Metadata.AttributeValue ?? "";
+					SetAttribute(token.Metadata!.AttributeName!, token.Metadata.AttributeValue);
 					_pos++;
 					break;
 
@@ -81,7 +110,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 						{
 							Title = SubstituteAttributes(token.Metadata.Title!),
 							Id = pendingId,
-							Attributes = new Dictionary<string, string>(_attributes)
+							Attributes = new(_attributes, StringComparer.OrdinalIgnoreCase)
 						};
 						pendingId = null;
 						pendingTitle = null;
@@ -123,7 +152,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			}
 		}
 
-		return doc with { Attributes = new Dictionary<string, string>(_attributes) };
+		return doc with { Attributes = new(_attributes, StringComparer.OrdinalIgnoreCase) };
 	}
 
 	private Token Current => _tokens[_pos];
@@ -155,7 +184,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			switch (cur.Type)
 			{
 				case TokenType.AttributeEntry:
-					_attributes[cur.Metadata!.AttributeName!] = cur.Metadata.AttributeValue ?? "";
+					SetAttribute(cur.Metadata!.AttributeName!, cur.Metadata.AttributeValue);
 					_pos++;
 					pendingStart = _pos;
 					break;
@@ -240,6 +269,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			TokenType.PageBreak => ParsePageBreak(),
 			TokenType.ThematicBreak => ParseThematicBreak(),
 			TokenType.Text => ParseParagraph(),
+			TokenType.IncludeDirective => ParseIncludeBlock(),
 			TokenType.ConditionalStart or TokenType.ConditionalEnd => SkipConditional(),
 			_ => SkipToken()
 		};
@@ -259,7 +289,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		var contentLines = new List<string>();
 		var children = new List<IAsciidocNode>();
 
-		if (IsVerbatimDelimiter(delimChar))
+		if (IsVerbatimDelimiter(delimChar, openingDelim))
 		{
 			while (_pos < _tokens.Count)
 			{
@@ -272,6 +302,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 				contentLines.Add(cur.Raw);
 				_pos++;
 			}
+
+			// Resolve include-tagged:: directives embedded inside verbatim blocks
+			contentLines = ResolveVerbatimIncludes(contentLines);
 		}
 		else
 		{
@@ -279,12 +312,32 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			children = ParseTokensAsBlocks(innerTokens);
 		}
 
+		// Collect callout annotations that follow a code block (e.g. <1> First step)
+		var callouts = new List<string>();
+		if (delimChar is "-" && openingDelim.Length >= 4)
+		{
+			while (_pos < _tokens.Count && Current.Type == TokenType.Text)
+			{
+				var calloutMatch = CalloutItemRegex().Match(Current.Raw);
+				if (!calloutMatch.Success)
+					break;
+				if (int.TryParse(calloutMatch.Groups[1].Value, out var idx) && idx >= 1)
+				{
+					while (callouts.Count < idx)
+						callouts.Add("");
+					callouts[idx - 1] = calloutMatch.Groups[2].Value;
+				}
+				_pos++;
+			}
+		}
+
 		return delimChar switch
 		{
 			"-" when openingDelim.Length >= 4 || style == "source" => new CodeBlockNode
 			{
 				Language = blockAttr?.Language,
-				Source = string.Join('\n', contentLines)
+				Source = string.Join('\n', contentLines),
+				Callouts = callouts
 			},
 			"." => new LiteralBlockNode(string.Join('\n', contentLines)),
 			"=" when IsAdmonitionStyle(style) => new AdmonitionNode
@@ -298,6 +351,11 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			"-" when openingDelim == "--" => style switch
 			{
 				"source" => new CodeBlockNode { Language = blockAttr?.Language, Source = string.Join('\n', contentLines) },
+				_ when IsAdmonitionStyle(style) => new AdmonitionNode
+				{
+					Type = ParseAdmonitionType(style!),
+					Children = children.Count > 0 ? children : WrapAsBlocks(contentLines)
+				},
 				_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
 			},
 			"/" => null,
@@ -305,8 +363,96 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		};
 	}
 
-	private static bool IsVerbatimDelimiter(string delimChar) =>
-		delimChar is "-" or "." or "+" or "/";
+	[GeneratedRegex(@"^<(\d+)>\s+(.+)$")]
+	private static partial Regex CalloutItemRegex();
+
+	[GeneratedRegex(@"^include-tagged::(.+?)\[([^\]]*)\]\s*$")]
+	private static partial Regex IncludeTaggedInVerbatimRegex();
+
+	/// <summary>
+	/// Resolves <c>include-tagged::path[tag]</c> directives inside verbatim (listing/code) blocks.
+	/// These are an Elastic Asciidoctor extension that includes the lines between
+	/// <c>tag::name[]</c> and <c>end::name[]</c> markers, dedented to the start line's indent.
+	/// </summary>
+	private List<string> ResolveVerbatimIncludes(List<string> lines)
+	{
+		// Fast path: no include-tagged:: in the block
+		if (!lines.Any(l => l.Contains("include-tagged::", StringComparison.Ordinal)))
+			return lines;
+
+		var result = new List<string>(lines.Count);
+		foreach (var line in lines)
+		{
+			var trimmed = line.TrimStart();
+			var taggedMatch = IncludeTaggedInVerbatimRegex().Match(trimmed);
+			if (!taggedMatch.Success)
+			{
+				result.Add(line);
+				continue;
+			}
+
+			var rawPath = SubstituteAttributes(taggedMatch.Groups[1].Value);
+			var tag = taggedMatch.Groups[2].Value.Trim();
+			var resolvedPath = Path.IsPathRooted(rawPath)
+				? Path.GetFullPath(rawPath)
+				: Path.GetFullPath(Path.Combine(_basePath, rawPath));
+
+			var fileContent = ReadFile(resolvedPath);
+			if (fileContent is null)
+			{
+				options.OnDiagnostic?.Invoke($"include-tagged not resolved: {rawPath} (resolved to {resolvedPath})");
+				result.Add(line);
+				continue;
+			}
+
+			var extracted = ExtractTaggedLines(fileContent, tag);
+			result.AddRange(extracted);
+		}
+		return result;
+	}
+
+	private static List<string> ExtractTaggedLines(string content, string tag)
+	{
+		var lines = content.Split('\n');
+		var result = new List<string>();
+		var inTag = false;
+		int? dedentWidth = null;
+
+		var escapedTag = Regex.Escape(tag);
+		var startPattern = new Regex($@"tag::{escapedTag}\[\]");
+		var endPattern = new Regex($@"end::{escapedTag}\[\]");
+
+		foreach (var line in lines)
+		{
+			var trimmed = line.TrimStart();
+			if (!inTag && startPattern.IsMatch(trimmed))
+			{
+				inTag = true;
+				dedentWidth = line.Length - trimmed.Length;
+				continue;
+			}
+			if (inTag && endPattern.IsMatch(trimmed))
+			{
+				inTag = false;
+				continue;
+			}
+			if (!inTag)
+				continue;
+
+			// Dedent by the leading whitespace of the tag:: line
+			result.Add(dedentWidth is > 0 && line.Length >= dedentWidth
+				? line[dedentWidth.Value..]
+				: line);
+		}
+		return result;
+	}
+
+	/// <summary>
+	/// Returns true when the opening delimiter's content should be collected verbatim (raw text lines).
+	/// Open blocks (<c>--</c>) are structural, not verbatim, even though their delimChar is <c>-</c>.
+	/// </summary>
+	private static bool IsVerbatimDelimiter(string delimChar, string openingDelim) =>
+		delimChar is "-" or "." or "+" or "/" && openingDelim.Length >= 4;
 
 	private static bool IsMatchingClose(string line, string openingDelim)
 	{
@@ -314,7 +460,8 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			return false;
 
 		var delimChar = openingDelim[0];
-		return line.Length >= openingDelim.Length && line.All(c => c == delimChar);
+		// Require exact length so `--------` does not close a `----` block
+		return line.Length == openingDelim.Length && line.All(c => c == delimChar);
 	}
 
 	private List<Token> CollectDelimitedTokens(string openingDelim)
@@ -368,7 +515,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					_pos++;
 					break;
 				case TokenType.AttributeEntry:
-					_attributes[t.Metadata!.AttributeName!] = t.Metadata.AttributeValue ?? "";
+					SetAttribute(t.Metadata!.AttributeName!, t.Metadata.AttributeValue);
 					_pos++;
 					break;
 				case TokenType.AttributeUnset:
@@ -763,9 +910,17 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	{
 		var token = Current;
 		var type = ParseAdmonitionType(token.Metadata!.BlockStyle!);
-		var content = token.Metadata.Content!;
+		var contentParts = new List<string> { token.Metadata.Content! };
 		_pos++;
 
+		// Collect continuation lines (non-blank Text tokens that follow the admonition header)
+		while (_pos < _tokens.Count && Current.Type == TokenType.Text)
+		{
+			contentParts.Add(Current.Raw);
+			_pos++;
+		}
+
+		var content = string.Join('\n', contentParts);
 		var paragraph = new ParagraphNode { Inlines = ParseInlines(SubstituteAttributes(content)) };
 		return new AdmonitionNode { Type = type, Children = [paragraph] };
 	}
@@ -819,6 +974,18 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		return null;
 	}
 
+	private IAsciidocNode? ParseIncludeBlock()
+	{
+		var token = Current;
+		_pos++;
+		var included = ProcessInclude(token);
+		if (included is null or { Count: 0 })
+			return null;
+		if (included.Count == 1)
+			return included[0];
+		return new OpenBlockNode { Children = included };
+	}
+
 	private static bool IsAdmonitionStyle(string? style) =>
 		style is "note" or "tip" or "warning" or "important" or "caution" or
 			"NOTE" or "TIP" or "WARNING" or "IMPORTANT" or "CAUTION";
@@ -850,10 +1017,15 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			throw new InvalidOperationException($"Include depth exceeded maximum of {options.MaxIncludeDepth}");
 
 		var rawPath = SubstituteAttributes(token.Metadata!.Path!);
-		var resolvedPath = Path.IsPathRooted(rawPath) ? rawPath : Path.Combine(_basePath, rawPath);
+		var resolvedPath = Path.IsPathRooted(rawPath)
+			? Path.GetFullPath(rawPath)
+			: Path.GetFullPath(Path.Combine(_basePath, rawPath));
 		var content = ReadFile(resolvedPath);
 		if (content is null)
+		{
+			options.OnDiagnostic?.Invoke($"Include not resolved: {rawPath} (resolved to {resolvedPath})");
 			return null;
+		}
 
 		var attrs = token.Metadata.NamedAttributes ?? [];
 
@@ -866,8 +1038,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		var savedTokens = _tokens;
 		var savedPos = _pos;
 		var savedBase = _basePath;
+		_ = _attributes.TryGetValue("docdir", out var savedDocDir);
 
-		_basePath = Path.GetDirectoryName(resolvedPath) ?? _basePath;
+		SetBasePath(Path.GetDirectoryName(resolvedPath) ?? _basePath);
 		var includeTokens = AsciidocLexer.Tokenize(content);
 		var processed = ConditionalProcessor.Process(includeTokens, _attributes);
 		_tokens = processed;
@@ -884,7 +1057,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			switch (cur.Type)
 			{
 				case TokenType.AttributeEntry:
-					_attributes[cur.Metadata!.AttributeName!] = cur.Metadata.AttributeValue ?? "";
+					SetAttribute(cur.Metadata!.AttributeName!, cur.Metadata.AttributeValue);
 					_pos++;
 					break;
 				case TokenType.AttributeUnset:
@@ -937,6 +1110,10 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		_tokens = savedTokens;
 		_pos = savedPos;
 		_basePath = savedBase;
+		if (savedDocDir is not null)
+			_attributes["docdir"] = savedDocDir;
+		else
+			_ = _attributes.Remove("docdir");
 		_includeDepth--;
 
 		return result;
@@ -1040,10 +1217,11 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	[GeneratedRegex(@"^(={1,6})\s+(.+)$")]
 	private static partial Regex LevelOffsetRegex();
 
-	[GeneratedRegex(@"//\s*tag::(\w+)\[\]")]
+	// Allow hyphens in tag names (e.g. tag::my-tag[]) and any comment prefix (// # --)
+	[GeneratedRegex(@"tag::([\w-]+)\[\]")]
 	private static partial Regex TagStartRegex();
 
-	[GeneratedRegex(@"//\s*end::(\w+)\[\]")]
+	[GeneratedRegex(@"end::([\w-]+)\[\]")]
 	private static partial Regex TagEndRegex();
 
 	private string? ReadFile(string path)
@@ -1055,9 +1233,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	}
 
 	[GeneratedRegex(
-		@"link:([^\[]+)\[([^\]]*)\]|" +           // groups 1,2: link
-		@"<<([^,>]+)(?:,([^>]+))?>>>|" +           // groups 3,4: triple-xref
-		@"<<([^,>]+)(?:,([^>]+))?>>|" +            // groups 5,6: xref
+		@"link:([^\[]+)\[([^\]]*)\]|" +            // groups 1,2: link
+		@"<<([^,>]+)(?:,(.+?))?>>>|" +             // groups 3,4: triple-xref (non-greedy text allows >)
+		@"<<([^,>]+)(?:,(.+?))?>>|" +              // groups 5,6: xref (non-greedy text allows >)
 		@"image:([^\[]+)\[([^\]]*)\]|" +           // groups 7,8: image
 		@"footnote:\[([^\]]*)\]|" +                // group 9: footnote
 		@"pass:\[([^\]]*)\]|" +                    // group 10: pass:[] passthrough

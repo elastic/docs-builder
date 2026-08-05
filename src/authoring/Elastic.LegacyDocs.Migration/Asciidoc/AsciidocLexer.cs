@@ -193,7 +193,15 @@ public static partial class AsciidocLexer
 
 				if (delimChar is "-" or "." or "/" or "+")
 				{
-					if (delimChar == "/" && delim.Length >= 4)
+					// `--` (length 2) is an open block delimiter, not verbatim.
+					// Only `----`, `....`, `++++`, `////` (length >= 4) are verbatim.
+					if (delim.Length < 4)
+					{
+						tokens.Add(new Token(TokenType.BlockDelimiter, line, lineNumber, new TokenMetadata { DelimiterChar = delimChar }));
+						continue;
+					}
+
+					if (delimChar == "/")
 					{
 						inCommentBlock = true;
 						continue;
@@ -208,12 +216,6 @@ public static partial class AsciidocLexer
 				if (delimChar is "=" or "*")
 				{
 					tokens.Add(new Token(TokenType.BlockDelimiter, line, lineNumber, new TokenMetadata { DelimiterChar = delimChar }));
-					continue;
-				}
-
-				if (delim == "--")
-				{
-					tokens.Add(new Token(TokenType.BlockDelimiter, line, lineNumber, new TokenMetadata { DelimiterChar = "-" }));
 					continue;
 				}
 			}
@@ -290,10 +292,8 @@ public static partial class AsciidocLexer
 			return false;
 
 		var delimChar = openDelimiter[0];
-		if (line.Length < openDelimiter.Length)
-			return false;
-
-		return line.All(c => c == delimChar) && line.Length >= openDelimiter.Length;
+		// Require exact length so e.g. `--------` does not close a `----` block
+		return line.Length == openDelimiter.Length && line.All(c => c == delimChar);
 	}
 
 	private static bool TryMatchToken(string line, int lineNumber, out Token token)

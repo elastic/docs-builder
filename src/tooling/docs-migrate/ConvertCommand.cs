@@ -73,7 +73,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 				var versionLabel = version.VersionLabel;
 				try
 				{
-					var pages = await ProcessBookVersion(b, version, repoManager, ct);
+					var pages = await ProcessBookVersion(b, version, repoManager, dir, ct);
 					if (pages.Count == 0)
 						continue;
 
@@ -119,7 +119,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 	}
 
 	private async Task<IReadOnlyList<PageOutput>> ProcessBookVersion(
-		LegacyBook book, BranchRef version, SourceRepoManager repoManager, CancellationToken ct)
+		LegacyBook book, BranchRef version, SourceRepoManager repoManager, string workDir, CancellationToken ct)
 	{
 		var versionLabel = version.VersionLabel;
 		var sources = await repoManager.ResolveSourcesAsync(book, version, ct);
@@ -139,17 +139,27 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 		var content = await File.ReadAllTextAsync(indexPath, ct);
 		var basePath = Path.GetDirectoryName(indexPath) ?? primarySource.LocalPath;
+
+		// Seed branch-aware attributes first, then path attributes that may reference {branch}
+		var docsRoot = Path.Combine(workDir, "docs-repo");
 		var attributes = new Dictionary<string, string>
 		{
 			["branch"] = versionLabel,
 			["source_branch"] = versionLabel,
-			["doc-tests-src"] = primarySource.LocalPath
+			["doc-tests-src"] = primarySource.LocalPath,
+			// Path-based attributes used in include:: directives across the guide
+			["docs-root"] = docsRoot,
+			["asciidoc-dir"] = docsRoot,
 		};
 
 		foreach (var source in sources)
 			attributes[$"{source.RepoName}-root"] = source.LocalPath;
 
-		var parserOptions = new AsciidocParserOptions { Attributes = attributes };
+		var parserOptions = new AsciidocParserOptions
+		{
+			Attributes = attributes,
+			OnDiagnostic = msg => _logger.LogDebug("Parser: {Message}", msg)
+		};
 		var parser = new AsciidocParser(parserOptions);
 		var document = parser.Parse(content, basePath);
 
