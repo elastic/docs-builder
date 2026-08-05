@@ -72,6 +72,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "."
 				? "."
 				: docsPath.Replace('\\', '/');
+			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
 
 			string currentCommit;
 			try
@@ -235,6 +236,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "."
 				? "."
 				: docsPath.Replace('\\', '/');
+			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
 			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
 
 			return new CodexCheckout(docSetRef, repoDir, docsDirectory, docsetFile, currentCommit);
@@ -319,6 +321,24 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		}
 
 		return null;
+	}
+
+	/// <summary>
+	/// Warns when the docset chosen for a repository does not declare the codex environment as its
+	/// <c>registry</c> (including when <c>registry</c> is absent entirely). This only ever happens via
+	/// the fallback search order in <see cref="FindDocsetFile"/>, since a matching docset is always
+	/// preferred when one exists — so a mismatch usually means the repository has not opted in yet.
+	/// Kept as a warning rather than a hard error so existing repositories are not broken outright.
+	/// </summary>
+	private static void WarnIfRegistryMismatch(CodexContext context, string repoName, DocumentationSetFile docSet, string docsPath)
+	{
+		if (string.Equals(docSet.Registry, context.EnvironmentName, StringComparison.OrdinalIgnoreCase))
+			return;
+
+		var registryDescription = string.IsNullOrEmpty(docSet.Registry) ? "no registry" : $"registry: {docSet.Registry}";
+		context.Collector.EmitWarning(context.ConfigurationPath,
+			$"Repository '{repoName}' docset '{docsPath}' declares {registryDescription}, not registry: {context.EnvironmentName}; " +
+			"using it via fallback discovery. Set 'registry' in its docset.yml to opt in explicitly.");
 	}
 
 	internal static CodexDocumentationSetReference CreateDocumentationSetReference(
