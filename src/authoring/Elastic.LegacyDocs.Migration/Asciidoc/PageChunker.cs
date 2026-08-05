@@ -71,6 +71,10 @@ public static class PageChunker
 				map[sub.Id] = parentSlug;
 				CollectChildAnchors(sub.Children, parentSlug, map);
 			}
+			else if (child is AnchoredBlock anchored)
+			{
+				map[anchored.Id] = parentSlug;
+			}
 		}
 	}
 

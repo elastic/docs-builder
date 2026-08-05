@@ -79,7 +79,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					{
 						doc = doc with
 						{
-							Title = token.Metadata.Title,
+							Title = SubstituteAttributes(token.Metadata.Title!),
 							Id = pendingId,
 							Attributes = new Dictionary<string, string>(_attributes)
 						};
@@ -132,7 +132,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	{
 		var token = Current;
 		var level = token.Metadata!.Level!.Value;
-		var sectionTitle = title ?? token.Metadata.Title!;
+		var sectionTitle = SubstituteAttributes(title ?? token.Metadata.Title!);
 		var sectionId = id ?? ExtractInlineAnchor(sectionTitle);
 		_pos++;
 
@@ -140,24 +140,30 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		string? pendingId = null;
 		string? pendingTitle = null;
 		TokenMetadata? pendingBlockAttr = null;
+		var pendingStart = _pos;
 
 		while (_pos < _tokens.Count)
 		{
 			var cur = Current;
 
 			if (cur.Type == TokenType.SectionTitle && cur.Metadata!.Level!.Value <= level)
+			{
+				_pos = pendingStart;
 				break;
+			}
 
 			switch (cur.Type)
 			{
 				case TokenType.AttributeEntry:
 					_attributes[cur.Metadata!.AttributeName!] = cur.Metadata.AttributeValue ?? "";
 					_pos++;
+					pendingStart = _pos;
 					break;
 
 				case TokenType.AttributeUnset:
 					_ = _attributes.Remove(cur.Metadata!.AttributeName!);
 					_pos++;
+					pendingStart = _pos;
 					break;
 
 				case TokenType.BlockAnchor:
@@ -181,6 +187,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					pendingId = null;
 					pendingTitle = null;
 					pendingBlockAttr = null;
+					pendingStart = _pos;
 					break;
 
 				case TokenType.Blank:
@@ -196,6 +203,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					pendingTitle = null;
 					pendingBlockAttr = null;
 					_pos++;
+					pendingStart = _pos;
 					break;
 
 				default:
@@ -205,6 +213,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					pendingId = null;
 					pendingTitle = null;
 					pendingBlockAttr = null;
+					pendingStart = _pos;
 					break;
 			}
 		}
@@ -432,9 +441,41 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			if (cur.Type == TokenType.ListContinuation)
 			{
 				_pos++;
+				string? contId = null;
+				string? contTitle = null;
+				TokenMetadata? contBlockAttr = null;
+
+				while (_pos < _tokens.Count)
+				{
+					var peek = Current;
+					if (peek.Type == TokenType.BlockAnchor)
+					{
+						contId = peek.Metadata!.Id;
+						_pos++;
+					}
+					else if (peek.Type == TokenType.BlockTitle)
+					{
+						contTitle = peek.Metadata!.Title;
+						_pos++;
+					}
+					else if (peek.Type == TokenType.BlockAttribute)
+					{
+						contBlockAttr = peek.Metadata;
+						_pos++;
+					}
+					else if (peek.Type == TokenType.Blank)
+					{
+						_pos++;
+					}
+					else
+					{
+						break;
+					}
+				}
+
 				if (_pos < _tokens.Count)
 				{
-					var continued = ParseBlock(null, null, null);
+					var continued = ParseBlock(contId, contTitle, contBlockAttr);
 					if (continued != null)
 						children.Add(continued);
 				}
@@ -733,10 +774,11 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	{
 		var token = Current;
 		var path = SubstituteAttributes(token.Metadata!.Path!);
-		var alt = token.Metadata.Title;
+		var alt = token.Metadata.Title is not null ? SubstituteAttributes(token.Metadata.Title) : null;
+		var resolvedTitle = title is not null ? SubstituteAttributes(title) : null;
 		_pos++;
 
-		return new ImageNode { Path = path, Alt = alt, Title = title };
+		return new ImageNode { Path = path, Alt = alt, Title = resolvedTitle };
 	}
 
 	private IAsciidocNode ParsePageBreak()
