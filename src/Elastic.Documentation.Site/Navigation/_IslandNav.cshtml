@@ -1,3 +1,4 @@
+@using Elastic.Documentation.Configuration.Toc
 @using Elastic.Documentation.Site.Navigation
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.IslandNavViewModel>
 <div class="pb-9 pl-3 md:pl-0 font-body">
@@ -20,7 +21,7 @@
 				<div class="w-full">
 					<a href="@group.Url" class="sidebar-link nav-folder-link font-semibold">@group.Title</a>
 				</div>
-				@if (group.Pages.Count > 0)
+				@if (Model.Visual == ListingVisual.All && group.Pages.Count > 0)
 				{
 					<ul class="nav-subtree" style="display:block">
 						@foreach (var navPage in group.Pages)

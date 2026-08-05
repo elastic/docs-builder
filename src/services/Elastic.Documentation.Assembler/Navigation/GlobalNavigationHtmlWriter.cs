@@ -90,7 +90,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			BackLinkTitle = backTarget.NavigationTitle,
 			ListingRootUrl = islandRoot.Url,
 			ListingRootTitle = islandRoot.NavigationTitle,
-			Groups = groups
+			Groups = groups,
+			Visual = islandRoot.IslandVisual
 		};
 	}
 
