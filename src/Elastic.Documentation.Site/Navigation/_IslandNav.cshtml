@@ -17,22 +17,18 @@
 		</li>
 		@foreach (var group in Model.Groups)
 		{
-			<li class="nav-folder mt-6">
-				<div class="w-full">
-					<a href="@group.Url" class="sidebar-link nav-folder-link font-semibold">@group.Title</a>
-				</div>
-				@if (Model.Visual == ListingVisual.All && group.Pages.Count > 0)
-				{
-					<ul class="nav-subtree" style="display:block">
-						@foreach (var navPage in group.Pages)
-						{
-							<li class="flex group/li pr-8 mt-4">
-								<a href="@navPage.Url" class="sidebar-link nav-link">@navPage.Title</a>
-							</li>
-						}
-					</ul>
-				}
+			<li class="flex group/li pr-8 mt-6">
+				<a href="@group.Url" class="sidebar-link nav-link font-semibold">@group.Title</a>
 			</li>
+			@if (Model.Visual == ListingVisual.All && group.Pages.Count > 0)
+			{
+				@foreach (var navPage in group.Pages)
+				{
+					<li class="flex group/li pr-8 mt-4 ml-4">
+						<a href="@navPage.Url" class="sidebar-link nav-link">@navPage.Title</a>
+					</li>
+				}
+			}
 		}
 	</ul>
 </div>
