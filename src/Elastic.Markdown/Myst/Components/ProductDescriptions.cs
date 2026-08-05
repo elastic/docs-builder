@@ -141,7 +141,7 @@ public static class ProductDescriptions
 			IncludeVersionNote: true
 		),
 
-		// Elastic OTel Products
+		// Elastic OpenTelemetry Products
 		[VersioningSystemId.EdotCollector] = new ProductInfo(
 			Description: "<strong>Elastic Agent</strong> can run in OpenTelemetry mode to retrieve traces, metrics, and logs from your infrastructure and applications, and forward them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
