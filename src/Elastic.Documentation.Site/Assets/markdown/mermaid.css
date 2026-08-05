@@ -26,7 +26,7 @@
 	transition: transform 0.1s ease-out;
 }
 
-.mermaid-rendered svg {
+.mermaid-rendered img {
 	height: auto;
 	max-width: 100%;
 }

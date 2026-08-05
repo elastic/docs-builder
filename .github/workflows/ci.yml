@@ -71,6 +71,10 @@ jobs:
         working-directory: src/Elastic.Documentation.Site
         run: npm run synthetics:test
 
+      - name: Run accessibility synthetics
+        working-directory: src/Elastic.Documentation.Site
+        run: npm run synthetics:test:accessibility
+
   npm:
     runs-on: ubuntu-latest
     defaults: 

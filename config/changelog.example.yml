@@ -279,7 +279,9 @@ bundle:
     # Example: Serverless release profile (filter by promotion report, PR, or issue list)
     # serverless-release:
     #   output: "serverless-{version}.yaml"
-    #   output_products: "cloud-serverless {version}"
+    #   output_products: "cloud-serverless {version}"           # omit lifecycle
+    #   # output_products: "cloud-serverless {version} {lifecycle}"  # derive (ga for ISO dates)
+    #   # output_products: "cloud-serverless {version} preview"      # hardcode for exceptional releases
     #   # Optional: profile-specific GitHub repo name (overrides bundle.repo if set).
     #   # Only needed when this profile's product ID differs from the repository name.
     #     repo: elasticsearch
