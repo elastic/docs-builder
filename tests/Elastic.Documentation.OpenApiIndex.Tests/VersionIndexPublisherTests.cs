@@ -14,6 +14,10 @@ namespace Elastic.Documentation.OpenApiIndex.Tests;
 public class VersionIndexPublisherTests
 {
 	private const string BucketName = "test-bucket";
+
+	/// <summary>The exact serialized index for a bucket holding only <c>elastic/elasticsearch/8.16/openapi.json</c>.</summary>
+	private const string Index816Json = /*lang=json,strict*/ """{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""";
+
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly List<PutObjectRequest> _puts = [];
 
@@ -53,14 +57,14 @@ public class VersionIndexPublisherTests
 		put.Key.Should().Be(VersionIndexPublisher.IndexKey);
 		put.IfNoneMatch.Should().Be("*");
 		put.IfMatch.Should().BeNull();
-		put.ContentBody.Should().Be("""{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""");
+		put.ContentBody.Should().Be(Index816Json);
 	}
 
 	[Fact]
 	public async Task RefreshAsync_PublishedIndexIsStale_UpdatesWithIfMatch()
 	{
 		GivenBucketContains("elastic/elasticsearch/8.17/openapi.json");
-		GivenPublishedIndex("""{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""", "\"stale-etag\"");
+		GivenPublishedIndex(Index816Json, "\"stale-etag\"");
 
 		await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
 
@@ -74,7 +78,7 @@ public class VersionIndexPublisherTests
 	public async Task RefreshAsync_RebuildMatchesPublishedIndexByteForByte_SkipsWrite()
 	{
 		GivenBucketContains("elastic/elasticsearch/8.16/openapi.json");
-		GivenPublishedIndex("""{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""");
+		GivenPublishedIndex(Index816Json);
 
 		await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
 
