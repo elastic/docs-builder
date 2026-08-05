@@ -40,6 +40,18 @@ public interface INavigationItem
 	/// </summary>
 	bool ExcludeFromIndexing => Hidden;
 
+	/// <summary>
+	/// When non-null, this item is part of an island listing and this is its listing root node.
+	/// Island pages render a dedicated sidebar nav instead of the full tree.
+	/// </summary>
+	INodeNavigationItem<INavigationModel, INavigationItem>? IslandListingRoot => null;
+
+	/// <summary>
+	/// When true, this node IS the island listing root (the listing index page).
+	/// Used to render the island nav when viewing the listing overview page.
+	/// </summary>
+	bool IsIslandListing => false;
+
 	int NavigationIndex { get; set; }
 }
 

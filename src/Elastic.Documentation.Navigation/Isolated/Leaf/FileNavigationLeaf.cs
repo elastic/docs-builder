@@ -69,6 +69,9 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 	public bool ExcludeFromIndexing { get; } = args.ExcludeFromIndexing ?? args.Hidden;
 
 	/// <inheritdoc />
+	public INodeNavigationItem<INavigationModel, INavigationItem>? IslandListingRoot => args.IslandListingRoot;
+
+	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => args.HomeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
