@@ -71,4 +71,16 @@ describe('ModalSearch', () => {
             screen.queryByRole('button', { name: 'Close search modal' })
         ).not.toBeInTheDocument()
     })
+
+    it('does not offer Ask AI in an isolated build', () => {
+        renderModalSearch()
+
+        act(() => {
+            modalSearchStore.getState().actions.openModal()
+            modalSearchStore.getState().actions.setSearchTerm('logging')
+        })
+
+        expect(screen.queryByText('Ask AI Assistant')).not.toBeInTheDocument()
+        expect(screen.queryByText('Tell me more about')).not.toBeInTheDocument()
+    })
 })

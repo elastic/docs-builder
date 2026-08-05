@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using System.Net;
 using System.Text.Json;
@@ -18,9 +19,9 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This is a pure async fetch engine: it owns no caching. Memoization is the caller's concern (see
-/// <see cref="ReleaseNotesFetcher"/>, which fetches all declared products once at startup and stores
-/// the result in an immutable <see cref="FetchedReleaseNotes"/>).
+/// Individual bundle files are cached locally keyed by <c>{product}-{fileName}-{etag}</c> so that
+/// repeated builds (and dev-server reloads) do not re-download unchanged content from the CDN.
+/// The registry itself is always fetched (it's small and provides fresh ETags).
 /// </para>
 /// <para>
 /// Resilience follows the manifest's consistency model: a registry that cannot be fetched or parsed
@@ -56,6 +57,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 	private readonly ILogger _logger;
 	private readonly HttpClient _httpClient;
 	private readonly BundleLoader _bundleLoader;
+	private readonly IFileSystem _fileSystem;
+	private readonly ConcurrentDictionary<string, string> _memoryCache = new(StringComparer.Ordinal);
 
 	/// <summary>
 	/// Non-null only when a caller injects its own <see cref="HttpMessageHandler"/> (tests): in that case we
@@ -67,6 +70,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 	public CdnChangelogFetcher(ILoggerFactory logFactory, IFileSystem fileSystem, HttpMessageHandler? handler = null)
 	{
 		_logger = logFactory.CreateLogger<CdnChangelogFetcher>();
+		_fileSystem = fileSystem;
 		_bundleLoader = new BundleLoader(fileSystem);
 
 		if (handler is null)
@@ -158,11 +162,9 @@ public sealed class CdnChangelogFetcher : IDisposable
 		Cancel ctx)
 	{
 		var selected = SelectBundles(version, registry.Bundles);
-		var contents = new List<(string FileName, string Content)>(selected.Count);
+		var tasks = new List<Task<(string FileName, string Content)?>>(selected.Count);
 		foreach (var bundle in selected)
 		{
-			ctx.ThrowIfCancellationRequested();
-
 			var fileName = bundle.File;
 			if (!ChangelogKeys.IsSafeFileName(fileName))
 			{
@@ -170,19 +172,40 @@ public sealed class CdnChangelogFetcher : IDisposable
 				continue;
 			}
 
-			var bundleUri = Combine(baseUri, [.. ChangelogKeys.BundleSegments(product), fileName]);
-			try
-			{
-				contents.Add((fileName, await FetchTextAsync(bundleUri, ctx).ConfigureAwait(false)));
-			}
-			catch (Exception ex) when (ex is not OperationCanceledException)
-			{
-				// The registry can reference a bundle whose scrubbed copy is not yet public; skip + warn.
-				emitWarning($"Could not fetch changelog bundle '{fileName}' for '{product}' from {bundleUri}: {ex.Message}");
-			}
+			tasks.Add(DownloadOrCacheBundleAsync(baseUri, product, fileName, bundle.ETag, emitWarning, ctx));
 		}
 
-		return contents;
+		var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+		return results.Where(r => r is not null).Select(r => r!.Value).ToList();
+	}
+
+	private async Task<(string FileName, string Content)?> DownloadOrCacheBundleAsync(
+		Uri baseUri,
+		string product,
+		string fileName,
+		string? etag,
+		Action<string> emitWarning,
+		Cancel ctx)
+	{
+		var cached = TryGetCachedBundle(product, fileName, etag);
+		if (cached is not null)
+		{
+			_logger.LogInformation("Using locally cached bundle '{FileName}' for '{Product}'", fileName, product);
+			return (fileName, cached);
+		}
+
+		var bundleUri = Combine(baseUri, [.. ChangelogKeys.BundleSegments(product), fileName]);
+		try
+		{
+			var content = await FetchTextAsync(bundleUri, ctx).ConfigureAwait(false);
+			WriteCachedBundle(product, fileName, etag, content);
+			return (fileName, content);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			emitWarning($"Could not fetch changelog bundle '{fileName}' for '{product}' from {bundleUri}: {ex.Message}");
+			return null;
+		}
 	}
 
 	/// <summary>
@@ -233,6 +256,61 @@ public sealed class CdnChangelogFetcher : IDisposable
 		var suffix = string.Join('/', segments.Select(Uri.EscapeDataString));
 		return new Uri($"{basePath}/{suffix}");
 	}
+
+	private string? TryGetCachedBundle(string product, string fileName, string? etag)
+	{
+		if (string.IsNullOrWhiteSpace(etag))
+			return null;
+
+		var cacheKey = CacheKey(product, fileName, etag);
+		if (_memoryCache.TryGetValue(cacheKey, out var cached))
+			return cached;
+
+		var cachePath = CachePath(cacheKey);
+		if (!_fileSystem.File.Exists(cachePath))
+			return null;
+
+		try
+		{
+			var content = _fileSystem.File.ReadAllText(cachePath);
+			_ = _memoryCache.TryAdd(cacheKey, content);
+			return content;
+		}
+		catch (Exception e)
+		{
+			_logger.LogError(e, "Failed to read cached changelog bundle {CachePath}", cachePath);
+			return null;
+		}
+	}
+
+	private void WriteCachedBundle(string product, string fileName, string? etag, string content)
+	{
+		if (string.IsNullOrWhiteSpace(etag))
+			return;
+
+		var cacheKey = CacheKey(product, fileName, etag);
+		_ = _memoryCache.TryAdd(cacheKey, content);
+
+		var cachePath = CachePath(cacheKey);
+		if (_fileSystem.File.Exists(cachePath))
+			return;
+
+		try
+		{
+			_ = _fileSystem.Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+			_fileSystem.File.WriteAllText(cachePath, content);
+		}
+		catch (Exception e)
+		{
+			_logger.LogError(e, "Failed to write cached changelog bundle {CachePath}", cachePath);
+		}
+	}
+
+	private static string CacheKey(string product, string fileName, string etag) =>
+		$"changelog-{product}-{fileName}-{etag}";
+
+	private static string CachePath(string cacheKey) =>
+		Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", cacheKey);
 
 	/// <summary>
 	/// Disposes the per-instance <see cref="HttpClient"/> created for an injected handler. The shared

@@ -30,14 +30,18 @@ B --> C[End]
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+	public void RendersImgElement() => Html.Should().Contain("<img");
 
 	[Fact]
-	public void ContainsNodeLabels()
+	public void EmitsExternalSvgFile() => ReadMermaidSvgs().Should().NotBeEmpty();
+
+	[Fact]
+	public void SvgContainsNodeLabels()
 	{
-		Html.Should().Contain("Start");
-		Html.Should().Contain("Process");
-		Html.Should().Contain("End");
+		var svg = ReadMermaidSvgs()[0];
+		svg.Should().Contain("Start");
+		svg.Should().Contain("Process");
+		svg.Should().Contain("End");
 	}
 }
 
@@ -62,13 +66,14 @@ sequenceDiagram
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+	public void RendersImgElement() => Html.Should().Contain("<img");
 
 	[Fact]
-	public void ContainsParticipantLabels()
+	public void SvgContainsParticipantLabels()
 	{
-		Html.Should().Contain("Alice");
-		Html.Should().Contain("Bob");
+		var svg = ReadMermaidSvgs()[0];
+		svg.Should().Contain("Alice");
+		svg.Should().Contain("Bob");
 	}
 }
 
@@ -93,14 +98,15 @@ stateDiagram-v2
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+	public void RendersImgElement() => Html.Should().Contain("<img");
 
 	[Fact]
-	public void ContainsStateLabels()
+	public void SvgContainsStateLabels()
 	{
-		Html.Should().Contain("Idle");
-		Html.Should().Contain("Processing");
-		Html.Should().Contain("Complete");
+		var svg = ReadMermaidSvgs()[0];
+		svg.Should().Contain("Idle");
+		svg.Should().Contain("Processing");
+		svg.Should().Contain("Complete");
 	}
 }
 
@@ -124,14 +130,15 @@ classDiagram
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+	public void RendersImgElement() => Html.Should().Contain("<img");
 
 	[Fact]
-	public void ContainsClassLabels()
+	public void SvgContainsClassLabels()
 	{
-		Html.Should().Contain("Animal");
-		Html.Should().Contain("Duck");
-		Html.Should().Contain("Fish");
+		var svg = ReadMermaidSvgs()[0];
+		svg.Should().Contain("Animal");
+		svg.Should().Contain("Duck");
+		svg.Should().Contain("Fish");
 	}
 }
 
@@ -154,14 +161,15 @@ erDiagram
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+	public void RendersImgElement() => Html.Should().Contain("<img");
 
 	[Fact]
-	public void ContainsEntityLabels()
+	public void SvgContainsEntityLabels()
 	{
-		Html.Should().Contain("CUSTOMER");
-		Html.Should().Contain("ORDER");
-		Html.Should().Contain("LINE_ITEM");
+		var svg = ReadMermaidSvgs()[0];
+		svg.Should().Contain("CUSTOMER");
+		svg.Should().Contain("ORDER");
+		svg.Should().Contain("LINE_ITEM");
 	}
 }
 
@@ -183,7 +191,7 @@ style B fill:#0A52B3,color:#fff
 	public void EmitsHints() => Collector.Diagnostics.Should().NotBeEmpty();
 
 	[Fact]
-	public void RendersAsSvg() => Html.Should().Contain("<svg");
+	public void EmitsSvgFile() => ReadMermaidSvgs().Should().NotBeEmpty();
 
 	[Fact]
 	public void DoesNotFallBackToRawSource() => Html.Should().NotContain("<pre class=\"mermaid-error\">");
@@ -203,13 +211,13 @@ A[Start]:::warning --> B[End]
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
 	[Fact]
-	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+	public void RendersImgElement() => Html.Should().Contain("<img");
 
 	[Fact]
 	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
 
 	[Fact]
-	public void SvgContainsWarningFillColor() => Html.Should().Contain("#fdf3d8");
+	public void SvgContainsWarningFillColor() => ReadMermaidSvgs()[0].Should().Contain("#fdf3d8");
 }
 
 // DataPalette: pie chart SVG should use our theme palette, not the Tableau CB10 default.
@@ -225,14 +233,14 @@ pie
 )
 {
 	[Fact]
-	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+	public void RendersImgElement() => Html.Should().Contain("<img");
 
 	[Fact]
 	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
 
 	[Fact]
-	public void UsesThemePalette() => Html.Should().Contain("#3788ff"); // blue-elastic-70
+	public void UsesThemePalette() => ReadMermaidSvgs()[0].Should().Contain("#3788ff"); // blue-elastic-70
 
 	[Fact]
-	public void DoesNotUseTableauDefault() => Html.Should().NotContain("#4e79a7"); // Tableau Blue
+	public void DoesNotUseTableauDefault() => ReadMermaidSvgs()[0].Should().NotContain("#4e79a7"); // Tableau Blue
 }

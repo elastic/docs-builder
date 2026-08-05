@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -282,6 +284,116 @@ public class CdnChangelogFetcherTests
 		bundles.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("Invalid changelog product");
 		handler.RequestedPaths.Should().BeEmpty("validation must happen before any CDN request");
+	}
+
+	[Fact]
+	public async Task FetchAsync_WithETag_UsesCachedBundleOnSecondCall()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0", "etag": "abc123" } ] }""")
+				: Yaml(SampleBundle));
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+		var fs = new MockFileSystem();
+
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, fs, handler);
+
+		// First call — should fetch from CDN
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		bundles.Should().ContainSingle();
+		handler.CallCount.Should().Be(2, "registry + bundle");
+
+		// Second call — bundle should come from cache (only registry re-fetched)
+		var bundles2 = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		bundles2.Should().ContainSingle();
+		handler.CallCount.Should().Be(3, "only registry fetched again; bundle served from memory cache");
+		errors.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task FetchAsync_WithETag_WritesCacheToDisk()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0", "etag": "deadbeef" } ] }""")
+				: Yaml(SampleBundle));
+		var (errors, _, emitError, emitWarning) = Diagnostics();
+		var fs = new MockFileSystem();
+
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, fs, handler);
+		_ = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		var expectedPath = Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", "changelog-elasticsearch-9.3.0.yaml-deadbeef");
+		fs.File.Exists(expectedPath).Should().BeTrue("bundle should be written to disk cache");
+		errors.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task FetchAsync_WithETag_ReadsCacheFromDisk()
+	{
+		// Pre-populate the disk cache
+		var fs = new MockFileSystem();
+		var cachePath = Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", "changelog-elasticsearch-9.3.0.yaml-cached1");
+		fs.Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+		fs.File.WriteAllText(cachePath, SampleBundle);
+
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0", "etag": "cached1" } ] }""")
+				: throw new InvalidOperationException("Should not fetch bundle from CDN"));
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, fs, handler);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		bundles.Should().ContainSingle();
+		handler.CallCount.Should().Be(1, "only registry should be fetched; bundle served from disk");
+		errors.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task FetchAsync_NullETag_AlwaysFetchesFromCdn()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0", "etag": null } ] }""")
+				: Yaml(SampleBundle));
+		var (errors, _, emitError, emitWarning) = Diagnostics();
+		var fs = new MockFileSystem();
+
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, fs, handler);
+
+		// First call
+		_ = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		handler.CallCount.Should().Be(2);
+
+		// Second call — no caching, so bundle is fetched again
+		_ = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		handler.CallCount.Should().Be(4, "without ETag, both registry and bundle are fetched each time");
+		errors.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task FetchAsync_ChangedETag_FetchesNewBundle()
+	{
+		var etag = "v1";
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json($$"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0", "etag": "{{etag}}" } ] }""")
+				: Yaml(SampleBundle));
+		var (errors, _, emitError, emitWarning) = Diagnostics();
+		var fs = new MockFileSystem();
+
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, fs, handler);
+
+		_ = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		handler.CallCount.Should().Be(2);
+
+		// Simulate a new etag by creating a new fetcher (in real usage the registry returns a different etag)
+		etag = "v2";
+		_ = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		handler.CallCount.Should().Be(4, "new ETag means cache miss, bundle re-downloaded");
+		errors.Should().BeEmpty();
 	}
 
 	private static HttpResponseMessage Json(string body) =>
