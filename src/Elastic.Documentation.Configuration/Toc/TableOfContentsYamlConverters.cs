@@ -122,8 +122,10 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			var listingVisual = ListingVisual.None;
 			if (dictionary.TryGetValue("visual", out var visualObj) && visualObj is string visualStr)
 				_ = ListingVisualExtensions.TryParse(visualStr, out listingVisual);
+			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
 			// Reuse the already-captured sort and exclude variables from the outer scope
-			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension);
+			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension, island);
 			return new ListingRef(listing, listing, children, placeholderContext, options);
 		}
 

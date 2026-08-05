@@ -610,7 +610,12 @@ public class DocumentationSetNavigation<TModel>
 	{
 		var visual = listingRef.Options.Visual;
 		var listingPath = listingRef.PathRelativeToDocumentationSet;
-		var isIsland = visual == ListingVisual.Island;
+		var isIsland = listingRef.Options.Island;
+		if (isIsland && visual == ListingVisual.None)
+		{
+			context.Collector.EmitError(listingRef.Context, $"Listing '{listingPath}' sets island: true with visual: none. Set visual: groups or visual: all so the listing is reachable from the main nav.");
+			return null;
+		}
 
 		// Root folder node for the listing
 		var folderNavigation = new FolderNavigation<TModel>(listingPath, parent, homeAccessor) { NavigationIndex = index };
@@ -637,7 +642,7 @@ public class DocumentationSetNavigation<TModel>
 						// Group node visibility depends on `visual:`.
 						// FolderNavigation.Hidden is derived from its index page's Hidden flag,
 						// so we control group node visibility by setting Hidden on the index leaf.
-						var groupHidden = visual is ListingVisual.None or ListingVisual.Island;
+						var groupHidden = visual is ListingVisual.None;
 						// Derive the group folder path from the first child's parent dir so URL generation works
 						var groupFolderPath = groupRef.PathRelativeToDocumentationSet + "/" + groupRef.GroupKey;
 						var groupFolderNav = new FolderNavigation<TModel>(groupFolderPath, folderNavigation, homeAccessor) { NavigationIndex = childIndex++ };

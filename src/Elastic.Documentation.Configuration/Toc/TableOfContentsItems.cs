@@ -161,9 +161,6 @@ public enum ListingVisual
 
 	/// <summary>Full depth — group nodes and all their pages are visible.</summary>
 	All,
-
-	/// <summary>Hidden from main nav; listing pages get their own island sidebar nav.</summary>
-	Island
 }
 
 /// <summary>Parsing helpers for <see cref="ListingVisual"/>.</summary>
@@ -178,7 +175,6 @@ public static class ListingVisualExtensions
 			"none" => (ListingVisual.None, true),
 			"groups" => (ListingVisual.Groups, true),
 			"all" => (ListingVisual.All, true),
-			"island" => (ListingVisual.Island, true),
 			_ => (ListingVisual.None, false)
 		};
 		return valid;
@@ -192,7 +188,8 @@ public record ListingOptions(
 	IReadOnlyCollection<string>? Exclude = null,
 	ListingVisual Visual = ListingVisual.None,
 	IReadOnlyCollection<string>? Groups = null,
-	string? Extension = null
+	string? Extension = null,
+	bool Island = false
 );
 
 /// <summary>
