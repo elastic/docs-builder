@@ -184,6 +184,9 @@ public class CodexBuildService(
 			// Repository clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
 			// discovers .git inside that ceiling (#3115). Using DocsDirectory alone would cap the ceiling
 			// at the docs subtree and return null above repo/.git, breaking GithubEditUrl generation.
+			// The docset file itself is passed explicitly so build reuses the docset clone discovery already
+			// selected (which may prefer a non-default path such as `docs-dev/`), rather than rediscovering
+			// one from the repository root and always landing on `docs/`.
 			var buildContext = new BuildContext(
 				context.Collector,
 				fileSystem,
@@ -192,7 +195,8 @@ public class CodexBuildService(
 				ExportOptions.Default,
 				checkout.RepositoryDirectory.FullName,
 				outputPath,
-				git)
+				git,
+				configurationFile: checkout.DocsetFile)
 			{
 				UrlPathPrefix = pathPrefix,
 				SiteRootPath = siteRootPath,
