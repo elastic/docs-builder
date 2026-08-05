@@ -52,7 +52,8 @@
     }
   },
   "alias": {
-    "@opentelemetry/otlp-exporter-base/browser-http": "@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js"
+    "@opentelemetry/otlp-exporter-base/browser-http": "@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js",
+    "uuid": "./node_modules/uuid/dist/index.js"
   },
   "repository": {
     "type": "git",
