@@ -113,6 +113,7 @@
     <Project Path="tests/Elastic.Documentation.Integrations.Tests/Elastic.Documentation.Integrations.Tests.csproj" />
     <Project Path="tests/Elastic.SiteSearch.Tests/Elastic.SiteSearch.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.OpenApiIndex.Tests/Elastic.Documentation.OpenApiIndex.Tests.csproj" />
+    <Project Path="tests/Elastic.LegacyDocs.Migration.Tests/Elastic.LegacyDocs.Migration.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />

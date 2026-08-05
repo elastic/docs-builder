@@ -40,7 +40,7 @@ public class SourceRepoManager(SourceRepoOptions options, ILogger logger)
 			{
 				if (!result.TryGetValue(source.Repo, out var paths))
 				{
-					paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+					paths = [with(StringComparer.OrdinalIgnoreCase)];
 					result[source.Repo] = paths;
 				}
 

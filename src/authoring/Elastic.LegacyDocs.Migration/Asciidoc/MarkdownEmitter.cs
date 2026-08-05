@@ -452,7 +452,11 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 				Write($"`{mono.Text}`");
 				break;
 			case AttributeRefInline attrRef:
-				Write($"{{{{{attrRef.Name}}}}}");
+				// Product-name subs are intentional docs-builder {{sub}} placeholders (defined in docset.yml)
+				if (SharedAttributes.ProductNames.ContainsKey(attrRef.Name))
+					Write($"{{{{{attrRef.Name}}}}}");
+				else
+					Write($"{{{attrRef.Name}}}");
 				break;
 			case InlineLinkNode link:
 				EmitLink(link);
