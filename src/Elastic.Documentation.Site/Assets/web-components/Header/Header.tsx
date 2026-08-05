@@ -209,8 +209,9 @@ export const Header = ({
                                                         ${headerButtonCss(
                                                             euiTheme
                                                         )};
-                                                        margin-inline: ${euiTheme
-                                                            .size.s};
+                                                        margin-inline: ${
+                                                            euiTheme.size.s
+                                                        };
                                                     `}
                                                 >
                                                     <EuiIcon
