@@ -95,8 +95,7 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		Output.WriteLine($"sourceUrl: {response!.SourceUrl ?? "(null — document predates indexing of this field)"}");
 
 		// sourceUrl is null for docs indexed before this field was added; when present it must be a GitHub blob URL
-		if (response.SourceUrl is not null)
-			response.SourceUrl.Should().StartWith("https://github.com/").And.Contain("/blob/");
+		response.SourceUrl?.Should().StartWith("https://github.com/").And.Contain("/blob/");
 	}
 
 	[Fact]
