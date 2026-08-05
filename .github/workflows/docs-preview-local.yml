@@ -111,7 +111,7 @@ jobs:
       - name: Get modified file detail
         if: github.event_name == 'pull_request'
         id: check-modified-file-detail
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           IGNORE_PATTERNS: |
             .github/**
@@ -226,7 +226,7 @@ jobs:
             github.event_name == 'push'
             || github.event_name == 'pull_request'
           )
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: deployment
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -363,7 +363,7 @@ jobs:
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         # disabled: deployments are not enabled on this branch
         if: >
           false
