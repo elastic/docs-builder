@@ -52,7 +52,8 @@
     }
   },
   "alias": {
-    "@opentelemetry/otlp-exporter-base/browser-http": "@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js"
+    "@opentelemetry/otlp-exporter-base/browser-http": "@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js",
+    "uuid": "./node_modules/uuid/dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -103,7 +104,7 @@
     "defaults"
   ],
   "dependencies": {
-    "@elastic/eui": "115.0.0",
+    "@elastic/eui": "117.0.0",
     "@elastic/highlightjs-esql": "1.2.3",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
