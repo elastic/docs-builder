@@ -56,7 +56,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
@@ -247,7 +247,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
