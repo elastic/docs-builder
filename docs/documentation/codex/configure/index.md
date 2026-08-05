@@ -67,3 +67,15 @@ codex:
 toc:
   - file: index.md
 ```
+
+### Repositories with multiple docsets
+
+A repository can publish both a public docset (for elastic.co/docs) and a separate codex docset,
+colocated in the same repository. For example, `docs/docset.yml` with no `registry` (public) and
+`docs-dev/docset.yml` with `registry: my-environment`.
+
+When discovering a repository's docset, codex prefers the docset whose `registry` matches the
+codex `environment`, and only falls back to the default search order (`docs/docset.yml`,
+`docs/_docset.yml`, `docset.yml`, `_docset.yml`, then a recursive search) when no docset declares
+that registry. This lets a repository keep its internal documentation next to its code instead of
+moving it to a separate repository.
