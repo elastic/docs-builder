@@ -48,6 +48,7 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 			.Write('>')
 			.Write($"""<a class="headerlink" href="#{slug}">""")
 			.WriteLeafInline(obj)
+			.Write("""<span class="headerlink-marker" aria-hidden="true">#</span>""")
 			.Write("</a>")
 			.Write("</")
 			.Write(headingText)

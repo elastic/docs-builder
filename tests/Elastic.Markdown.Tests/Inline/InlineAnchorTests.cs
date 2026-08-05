@@ -112,7 +112,7 @@ public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<Heading
 		// language=html
 		Html.ShouldBeHtml(
 			"""
-			<div class="heading-wrapper" id="hello-world"><h2><a class="headerlink" href="#hello-world">Hello world <a id="my-anchor"></a></a></h2>
+			<div class="heading-wrapper" id="hello-world"><h2><a class="headerlink" href="#hello-world">Hello world <a id="my-anchor"></a><span class="headerlink-marker" aria-hidden="true">#</span></a></h2>
 			</div>
 			"""
 		);
@@ -130,7 +130,7 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 		Html.ShouldBeHtml(
 			"""
 			<div class="heading-wrapper" id="my-anchor">
-				<h2><a class="headerlink" href="#my-anchor">Hello world</a></h2>
+				<h2><a class="headerlink" href="#my-anchor">Hello world<span class="headerlink-marker" aria-hidden="true">#</span></a></h2>
 			</div>
 			"""
 		);

@@ -70,6 +70,39 @@ journey('navigation test', ({ page, params }) => {
         })
     })
 
+    step('Use accessible page navigation and image dialog', async () => {
+        const skipLink = page.getByRole('link', {
+            name: 'Skip to main content',
+        })
+        await skipLink.focus()
+        await skipLink.press('Enter')
+        await expect(page.locator('#main-container')).toBeFocused()
+
+        await expect(
+            page.getByRole('navigation', { name: 'Documentation sections' })
+        ).toBeAttached()
+        await expect(
+            page.getByRole('navigation', {
+                name: 'Page tools and contents',
+            })
+        ).toBeAttached()
+
+        const imageTrigger = page.getByRole('button', {
+            name: 'Image preview: The Elastic platform',
+        })
+        await imageTrigger.click()
+        const dialog = page.getByRole('dialog', {
+            name: 'Image preview: The Elastic platform',
+        })
+        await expect(dialog).toBeVisible()
+        await expect(
+            dialog.getByRole('button', { name: 'Close image preview' })
+        ).toBeFocused()
+        await page.keyboard.press('Escape')
+        await expect(dialog).toBeHidden()
+        await expect(imageTrigger).toBeFocused()
+    })
+
     step(
         'Main content keeps its column while pages nav is absent',
         async () => {
@@ -109,11 +142,11 @@ journey('navigation test', ({ page, params }) => {
     step('Click on "deployment options" in nav', async () => {
         // Expand a collapsed nav section so we can assert its state survives
         const expandedId = await page.evaluate(() => {
-            const checkbox = document.querySelector<HTMLInputElement>(
-                '[id^="nav-tree"] input[type="checkbox"]:not(:checked)'
+            const button = document.querySelector<HTMLButtonElement>(
+                '[id^="nav-tree"] button[data-nav-toggle][aria-expanded="false"]'
             )
-            if (checkbox) checkbox.checked = true
-            return checkbox?.id ?? null
+            button?.click()
+            return button?.getAttribute('aria-controls') ?? null
         })
 
         await page
@@ -134,14 +167,18 @@ journey('navigation test', ({ page, params }) => {
             return {
                 noReload: window['__synthNoReload'] === true,
                 navTreePreserved: navTree?.['__synthOriginal'] === true,
-                checkboxStillChecked: id
-                    ? (document.getElementById(id) as HTMLInputElement)?.checked
+                sectionStillExpanded: id
+                    ? document
+                          .querySelector(
+                              `button[data-nav-toggle][aria-controls="${CSS.escape(id)}"]`
+                          )
+                          ?.getAttribute('aria-expanded') === 'true'
                     : null,
             }
         }, expandedId)
         expect(state.noReload).toBe(true)
         expect(state.navTreePreserved).toBe(true)
-        if (expandedId) expect(state.checkboxStillChecked).toBe(true)
+        if (expandedId) expect(state.sectionStillExpanded).toBe(true)
     })
 
     step('Click on "Elastic Cloud" in markdown content', async () => {
@@ -178,8 +215,15 @@ journey('navigation test', ({ page, params }) => {
 
     step('Use dropdown to navigate to reference', async () => {
         const pagesDropdown = page.locator('#pages-dropdown')
-        const svg = pagesDropdown.locator('svg')
-        await svg.click()
+        const dropdownButton = pagesDropdown.getByRole('button', {
+            name: 'Choose a documentation section',
+        })
+        await dropdownButton.click()
+        await expect(page.locator('#pages-dropdown-menu')).toBeVisible()
+        await page.locator('#markdown-content').click()
+        await expect(page.locator('#pages-dropdown-menu')).toBeHidden()
+
+        await dropdownButton.click()
         await pagesDropdown
             .getByRole('link', { name: 'Reference', exact: true })
             .click()

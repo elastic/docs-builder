@@ -39,7 +39,6 @@
 						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 							<article id="markdown-content" class="markdown-content min-w-0" data-pagefind-body>
-								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 								@await RenderBodyAsync()
 							</article>
 							@await RenderPartialAsync(_PrevNextNav.Create(Model))
@@ -72,7 +71,7 @@
 		@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 	}
 }
-<div id="main-container">
+<div id="main-container" tabindex="-1">
 @switch (Model.Layout)
 {
 	case MarkdownPageLayout.NotFound:

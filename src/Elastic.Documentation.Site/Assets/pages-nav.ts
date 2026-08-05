@@ -2,16 +2,32 @@ import { throttle } from 'lodash'
 import { $optional, $$optional } from 'select-dom'
 
 const NAV_STATE_KEY = 'nav-expanded'
+let controlsInitialized = false
+let pagesNavTrigger: HTMLButtonElement | null = null
 
 function isDevMode() {
     return !!document.querySelector('diagnostics-panel')
 }
 
 function saveNavState(nav: HTMLElement) {
-    const expanded = $$optional('input[type="checkbox"]:checked', nav)
-        .map((el) => el.id)
+    const expanded = $$optional<HTMLButtonElement>(
+        'button[data-nav-toggle][aria-expanded="true"]',
+        nav
+    )
+        .map((el) => el.getAttribute('aria-controls'))
         .filter(Boolean)
     sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify(expanded))
+}
+
+function setExpanded(button: HTMLButtonElement, expanded: boolean) {
+    const controlledId = button.getAttribute('aria-controls')
+    if (!controlledId) return
+
+    const controlled = document.getElementById(controlledId)
+    if (!controlled) return
+
+    button.setAttribute('aria-expanded', expanded.toString())
+    controlled.hidden = !expanded
 }
 
 function restoreNavState(nav: HTMLElement) {
@@ -20,10 +36,16 @@ function restoreNavState(nav: HTMLElement) {
     try {
         const ids: string[] = JSON.parse(raw)
         for (const id of ids) {
-            const input = $optional(`#${CSS.escape(id)}`, nav)
-            if (input instanceof HTMLInputElement) {
-                input.checked = true
-            }
+            const button =
+                $optional(
+                    `button[data-nav-toggle][aria-controls="${CSS.escape(id)}"]`,
+                    nav
+                ) ??
+                $optional(
+                    `button[data-nav-toggle][aria-controls="${CSS.escape(`nav-subtree-${id}`)}"]`,
+                    nav
+                )
+            if (button instanceof HTMLButtonElement) setExpanded(button, true)
         }
     } catch {
         /* ignore corrupt storage */
@@ -33,12 +55,121 @@ function restoreNavState(nav: HTMLElement) {
 function expandAllParents(navItem: HTMLElement) {
     let parent: HTMLLIElement | null | undefined = navItem?.closest('li')
     while (parent) {
-        const input = parent.querySelector('input')
-        if (input instanceof HTMLInputElement) {
-            input.checked = true
-        }
+        const button = parent.querySelector(
+            ':scope > div > button[data-nav-toggle]'
+        )
+        if (button instanceof HTMLButtonElement) setExpanded(button, true)
         parent = parent.parentElement?.closest('li')
     }
+}
+
+function setPagesNavOpen(open: boolean, restoreFocus = false) {
+    const panel = document.querySelector('[data-pages-nav-panel]')
+    const backdrop = document.querySelector('[data-pages-nav-backdrop]')
+    if (!(panel instanceof HTMLElement)) return
+
+    panel.dataset.open = open.toString()
+    if (backdrop instanceof HTMLButtonElement) backdrop.hidden = !open
+    document.body.classList.toggle('overflow-hidden', open)
+    $$optional<HTMLButtonElement>('[data-pages-nav-open]').forEach((button) =>
+        button.setAttribute('aria-expanded', open.toString())
+    )
+
+    if (open) {
+        const closeButton = panel.querySelector('[data-pages-nav-close]')
+        if (closeButton instanceof HTMLButtonElement) closeButton.focus()
+    } else if (restoreFocus) {
+        pagesNavTrigger?.focus()
+    }
+}
+
+function initializeControls() {
+    if (controlsInitialized) return
+    controlsInitialized = true
+
+    document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return
+
+        const openDropdown = document.querySelector(
+            '[data-pages-dropdown-toggle][aria-expanded="true"]'
+        )
+        if (
+            openDropdown instanceof HTMLButtonElement &&
+            !event.target.closest('#pages-dropdown')
+        ) {
+            setExpanded(openDropdown, false)
+        }
+
+        const openButton = event.target.closest('[data-pages-nav-open]')
+        if (openButton instanceof HTMLButtonElement) {
+            pagesNavTrigger = openButton
+            setPagesNavOpen(true)
+            return
+        }
+
+        if (
+            event.target.closest('[data-pages-nav-close]') ||
+            event.target.closest('[data-pages-nav-backdrop]')
+        ) {
+            setPagesNavOpen(false, true)
+            return
+        }
+
+        const navToggle = event.target.closest('[data-nav-toggle]')
+        if (navToggle instanceof HTMLButtonElement) {
+            setExpanded(
+                navToggle,
+                navToggle.getAttribute('aria-expanded') !== 'true'
+            )
+            const pagesNav = $optional('#pages-nav')
+            if (isDevMode() && pagesNav) saveNavState(pagesNav)
+            return
+        }
+
+        const dropdownToggle = event.target.closest(
+            '[data-pages-dropdown-toggle]'
+        )
+        if (dropdownToggle instanceof HTMLButtonElement) {
+            setExpanded(
+                dropdownToggle,
+                dropdownToggle.getAttribute('aria-expanded') !== 'true'
+            )
+        }
+    })
+
+    document.addEventListener('focusin', (event) => {
+        if (
+            event.target instanceof Element &&
+            !event.target.closest('#pages-dropdown')
+        ) {
+            const openDropdown = document.querySelector(
+                '[data-pages-dropdown-toggle][aria-expanded="true"]'
+            )
+            if (openDropdown instanceof HTMLButtonElement) {
+                setExpanded(openDropdown, false)
+            }
+        }
+    })
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return
+
+        if (document.querySelector('dialog[data-image-dialog][open]')) return
+
+        const openDropdown = document.querySelector(
+            '[data-pages-dropdown-toggle][aria-expanded="true"]'
+        )
+        if (openDropdown instanceof HTMLButtonElement) {
+            setExpanded(openDropdown, false)
+            openDropdown.focus()
+            return
+        }
+
+        const panel = document.querySelector('[data-pages-nav-panel]')
+        if (panel instanceof HTMLElement && panel.dataset.open === 'true') {
+            setPagesNavOpen(false, true)
+        }
+    })
 }
 
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
@@ -94,34 +225,12 @@ export const scrollCurrentNaviItemIntoView = throttle(
     { leading: false, trailing: true }
 )
 
-/**
- * Prevents focus-based dropdowns from closing before link navigation completes.
- * Without this, clicking a link inside the dropdown would transfer focus away,
- * causing the dropdown to close via CSS :focus-within before navigation happens.
- */
-function preventFocusLossOnLinkClick(anchor: HTMLAnchorElement) {
-    anchor.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-    })
-    // Close dropdown after click completes
-    anchor.addEventListener('mouseup', () => {
-        if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur()
-        }
-    })
-}
-
 export function initNav() {
+    initializeControls()
+
     const pagesNav = $optional('#pages-nav')
     if (!pagesNav) {
         return
-    }
-
-    const dropdownActiveAnchor = $optional(
-        '#pages-dropdown a.pages-dropdown_active'
-    )
-    if (dropdownActiveAnchor) {
-        preventFocusLossOnLinkClick(dropdownActiveAnchor)
     }
 
     if (isDevMode()) {
@@ -155,8 +264,5 @@ export function initNav() {
 
     if (isDevMode()) {
         saveNavState(pagesNav)
-        for (const cb of $$optional('input[type="checkbox"]', pagesNav)) {
-            cb.addEventListener('change', () => saveNavState(pagesNav))
-        }
     }
 }
