@@ -141,14 +141,17 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 		var content = await File.ReadAllTextAsync(indexPath, ct);
 		var basePath = Path.GetDirectoryName(indexPath) ?? primarySource.LocalPath;
-		var parserOptions = new AsciidocParserOptions
+		var attributes = new Dictionary<string, string>
 		{
-			Attributes = new Dictionary<string, string>
-			{
-				["branch"] = versionLabel,
-				["doc-tests-src"] = primarySource.LocalPath
-			}
+			["branch"] = versionLabel,
+			["source_branch"] = versionLabel,
+			["doc-tests-src"] = primarySource.LocalPath
 		};
+
+		foreach (var source in sources)
+			attributes[$"{source.RepoName}-root"] = source.LocalPath;
+
+		var parserOptions = new AsciidocParserOptions { Attributes = attributes };
 		var parser = new AsciidocParser(parserOptions);
 		var document = parser.Parse(content, basePath);
 
@@ -212,7 +215,10 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 			foreach (var b in categoryBooks)
 			{
-				var current = !string.IsNullOrEmpty(b.Current) ? b.Current : convertedBooks[b.Prefix][0];
+				var versions = convertedBooks[b.Prefix];
+				var current = !string.IsNullOrEmpty(b.Current) && versions.Contains(b.Current)
+					? b.Current
+					: versions[0];
 				_ = sb.Append("- [").Append(b.Title).Append(" [").Append(current).Append("]](")
 					.Append(b.Prefix).Append('/').Append(current).Append("/index.md) — [other versions](")
 					.Append(b.Prefix).AppendLine("/index.md)");

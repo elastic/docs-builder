@@ -111,7 +111,7 @@ public static partial class AsciidocLexer
 	[GeneratedRegex(@"^(.+?)(:{2,4})\s*(.*)$")]
 	private static partial Regex GetDescriptionListRegex();
 
-	[GeneratedRegex(@"^\|===\s*$")]
+	[GeneratedRegex(@"^\|={3,}\s*$")]
 	private static partial Regex GetTableDelimiterRegex();
 
 	[GeneratedRegex(@"^include::(.+?)\[(.*?)?\]$")]
@@ -230,6 +230,28 @@ public static partial class AsciidocLexer
 				if (BlankRegex.IsMatch(line))
 				{
 					tokens.Add(new Token(TokenType.Blank, line, lineNumber));
+					continue;
+				}
+
+				var condStart = ConditionalStartRegex.Match(line);
+				if (condStart.Success)
+				{
+					tokens.Add(new Token(TokenType.ConditionalStart, line, lineNumber, new TokenMetadata
+					{
+						Condition = condStart.Groups[2].Value,
+						Content = condStart.Groups[3].Value,
+						BlockStyle = condStart.Groups[1].Value
+					}));
+					continue;
+				}
+
+				var condEnd = ConditionalEndRegex.Match(line);
+				if (condEnd.Success)
+				{
+					tokens.Add(new Token(TokenType.ConditionalEnd, line, lineNumber, new TokenMetadata
+					{
+						Condition = condEnd.Groups[1].Value
+					}));
 					continue;
 				}
 
