@@ -26,7 +26,19 @@ public interface INavigationItem
 	/// Gets or sets the parent navigation item.
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
+	/// <summary>
+	/// Whether this item is hidden from the rendered navigation tree.
+	/// Used by <c>_TocTreeNav.cshtml</c> to skip rendering.
+	/// </summary>
 	bool Hidden { get; }
+
+	/// <summary>
+	/// Whether this item should be excluded from search indexing and the HTML <c>noindex</c> directive.
+	/// Defaults to <see cref="Hidden"/> so existing behavior is preserved.
+	/// Listing pages override this to <c>false</c> — they are hidden from the nav tree but should remain
+	/// indexed and searchable.
+	/// </summary>
+	bool ExcludeFromIndexing => Hidden;
 
 	int NavigationIndex { get; set; }
 }
