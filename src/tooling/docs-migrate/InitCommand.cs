@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
 using Elastic.LegacyDocs.Migration;
 using ProcNet;
 
@@ -13,9 +12,8 @@ internal sealed class InitCommand
 	/// <summary>Clone the legacy docs repo and extract conf.yaml.</summary>
 	/// <param name="workDir">Working directory for migration artifacts</param>
 	/// <param name="force">Re-clone even if conf.yaml already exists</param>
-	/// <param name="ctx">Cancellation token</param>
-	[Command("")]
-	public async Task<int> Init(string? workDir = null, bool force = false, Cancel ctx = default)
+	/// <param name="ct">Cancellation token</param>
+	public async Task<int> Init(string? workDir = null, bool force = false, CancellationToken ct = default)
 	{
 		var dir = SharedOptions.ResolveWorkDir(workDir);
 		var confPath = Path.Combine(dir, "conf.yaml");
@@ -34,7 +32,7 @@ internal sealed class InitCommand
 
 		Console.WriteLine("Cloning elastic/docs (shallow)...");
 		var arguments = new ExecArguments("git", ["clone", "--depth", "1", "https://github.com/elastic/docs.git", docsRepoDir]);
-		var exitCode = await Proc.ExecAsync(arguments, ctx);
+		var exitCode = await Proc.ExecAsync(arguments, ct);
 		if (exitCode != 0)
 		{
 			Console.Error.WriteLine($"git clone failed with exit code {exitCode}");
@@ -51,7 +49,7 @@ internal sealed class InitCommand
 		File.Copy(sourceConf, confPath, overwrite: true);
 		Console.WriteLine($"Copied conf.yaml to {confPath}");
 
-		var yaml = await File.ReadAllTextAsync(confPath, ctx);
+		var yaml = await File.ReadAllTextAsync(confPath, ct);
 		var conf = LegacyConfParser.Parse(yaml);
 		var bookCount = conf.Contents.SelectMany(c => c.Sections).Count();
 		Console.WriteLine($"Parsed conf.yaml: {bookCount} books across {conf.Contents.Count} categories");

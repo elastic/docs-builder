@@ -2,20 +2,17 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
-
 namespace Documentation.Migrate;
 
 internal sealed class ListCommand
 {
 	/// <summary>List all books from conf.yaml grouped by category.</summary>
 	/// <param name="workDir">Working directory for migration artifacts</param>
-	/// <param name="ctx">Cancellation token</param>
-	[Command("")]
-	public async Task<int> List(string? workDir = null, Cancel ctx = default)
+	/// <param name="ct">Cancellation token</param>
+	public async Task<int> List(string? workDir = null, CancellationToken ct = default)
 	{
 		var dir = SharedOptions.ResolveWorkDir(workDir);
-		var conf = await SharedOptions.LoadConfAsync(dir, ctx);
+		var conf = await SharedOptions.LoadConfAsync(dir, ct);
 
 		foreach (var category in conf.Contents)
 		{

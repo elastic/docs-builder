@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
 using ProcNet;
 
 namespace Documentation.Migrate;
@@ -11,9 +10,8 @@ internal sealed class ServeCommand
 {
 	/// <summary>Serve the converted output using docs-builder.</summary>
 	/// <param name="port">Port to serve on (default 3000)</param>
-	/// <param name="ctx">Cancellation token</param>
-	[Command("")]
-	public async Task<int> Serve(int port = 3000, Cancel ctx = default)
+	/// <param name="ct">Cancellation token</param>
+	public async Task<int> Serve(int port = 3000, CancellationToken ct = default)
 	{
 		var outputDir = Path.Combine(Directory.GetCurrentDirectory(), ".artifacts", "migrated");
 
@@ -27,7 +25,6 @@ internal sealed class ServeCommand
 		Console.WriteLine($"dotnet {string.Join(' ', args)}");
 
 		var arguments = new ExecArguments("dotnet", args);
-		var exitCode = await Proc.ExecAsync(arguments, ctx);
-		return exitCode;
+		return await Proc.ExecAsync(arguments, ct);
 	}
 }
