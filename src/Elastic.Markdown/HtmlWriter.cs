@@ -84,7 +84,10 @@ public class HtmlWriter(
 
 		// For hidden nav items (e.g. individual detection rule pages) there is no rendered nav link,
 		// so JS can't mark anything as current. Point it at the nearest visible ancestor instead.
-		var navActiveUrl = current.Hidden ? parents.FirstOrDefault(p => !p.Hidden)?.Url : null;
+		// Island pages have their own sidebar nav so JS uses window.location directly — skip the parent lookup.
+		var navActiveUrl = current.Hidden && current.IslandListingRoot is null
+			? parents.FirstOrDefault(p => !p.Hidden)?.Url
+			: null;
 		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;

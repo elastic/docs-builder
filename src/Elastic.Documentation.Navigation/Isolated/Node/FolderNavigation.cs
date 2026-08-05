@@ -32,6 +32,12 @@ public class FolderNavigation<TModel>(
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
 
 	/// <inheritdoc />
+	public INodeNavigationItem<INavigationModel, INavigationItem>? IslandListingRoot { get; internal set; }
+
+	/// <inheritdoc />
+	public bool IsIslandListing { get; internal set; }
+
+	/// <inheritdoc />
 	public bool Hidden { get; private set; }
 
 	/// <inheritdoc />

@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
+using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
 
@@ -20,6 +21,11 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		INavigationItem currentNavigationItem,
 		Cancel ctx = default)
 	{
+		if (currentNavigationItem.IslandListingRoot is { } islandRoot)
+			return await RenderIslandNavigation(islandRoot, ctx);
+		if (currentNavigationItem is INodeNavigationItem<INavigationModel, INavigationItem> { IsIslandListing: true } listingRoot)
+			return await RenderIslandNavigation(listingRoot, ctx);
+
 		var navigation = SelectNavigationRoot(currentRootNavigation);
 		var id = ShortId.Create($"{navigation.Id.GetHashCode()}");
 		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
@@ -37,6 +43,46 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		{
 			Html = value,
 			Id = id
+		};
+	}
+
+	private async Task<NavigationRenderResult> RenderIslandNavigation(
+		INodeNavigationItem<INavigationModel, INavigationItem> islandRoot, Cancel ctx)
+	{
+		var cacheKey = $"island:{islandRoot.Id}";
+		if (_renderedNavigationCache.TryGetValue(cacheKey, out var html))
+			return new NavigationRenderResult { Html = html, Id = islandRoot.Id };
+
+		var model = CreateIslandNavModel(islandRoot);
+		var slice = _IslandNav.Create(model);
+		html = await slice.RenderAsync(cancellationToken: ctx);
+		_renderedNavigationCache[cacheKey] = html;
+		return new NavigationRenderResult { Html = html, Id = islandRoot.Id };
+	}
+
+	private static IslandNavViewModel CreateIslandNavModel(
+		INodeNavigationItem<INavigationModel, INavigationItem> islandRoot)
+	{
+		var groups = islandRoot.NavigationItems
+			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
+			.Select(group =>
+			{
+				var pages = group.NavigationItems
+					.OfType<ILeafNavigationItem<INavigationModel>>()
+					.Select(p => new IslandNavPage(p.NavigationTitle, p.Url))
+					.ToList();
+				return new IslandNavGroup(group.NavigationTitle, group.Url, pages);
+			})
+			.ToList();
+
+		var backTarget = islandRoot.Parent ?? (INavigationItem)islandRoot;
+		return new IslandNavViewModel
+		{
+			BackLinkUrl = backTarget.Url,
+			BackLinkTitle = backTarget.NavigationTitle,
+			ListingRootUrl = islandRoot.Url,
+			ListingRootTitle = islandRoot.NavigationTitle,
+			Groups = groups
 		};
 	}
 
