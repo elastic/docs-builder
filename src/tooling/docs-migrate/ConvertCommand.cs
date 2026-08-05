@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
-using ConsoleAppFramework;
 using Elastic.LegacyDocs.Migration;
 using Elastic.LegacyDocs.Migration.Asciidoc;
 using Microsoft.Extensions.Logging;
@@ -20,19 +19,18 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 	/// <param name="all">Override: process all versions</param>
 	/// <param name="minVersion">Override: minimum major version to process</param>
 	/// <param name="book">Override: filter to books whose prefix starts with this value</param>
-	/// <param name="ctx">Cancellation token</param>
-	[Command("")]
+	/// <param name="ct">Cancellation token</param>
 	public async Task<int> Convert(
 		string? workDir = null,
 		int? majors = null,
 		bool? all = null,
 		int? minVersion = null,
 		string? book = null,
-		Cancel ctx = default
+		CancellationToken ct = default
 	)
 	{
 		var dir = SharedOptions.ResolveWorkDir(workDir);
-		var conf = await SharedOptions.LoadConfAsync(dir, ctx);
+		var conf = await SharedOptions.LoadConfAsync(dir, ct);
 
 		var opts = SharedOptions.ResolveFilterOptions(dir, majors, all, minVersion, book);
 		_logger.LogInformation(
@@ -53,7 +51,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 		foreach (var b in books)
 		{
-			ctx.ThrowIfCancellationRequested();
+			ct.ThrowIfCancellationRequested();
 
 			var versions = SharedOptions.FilterVersions(b, opts.Majors, opts.All, opts.MinVersion);
 			if (versions.Count == 0)
@@ -70,19 +68,19 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 			foreach (var version in versions)
 			{
-				ctx.ThrowIfCancellationRequested();
+				ct.ThrowIfCancellationRequested();
 
 				var versionLabel = version.VersionLabel;
 				try
 				{
-					var pages = await ProcessBookVersion(b, version, repoManager, ctx);
+					var pages = await ProcessBookVersion(b, version, repoManager, ct);
 					if (pages.Count == 0)
 						continue;
 
 					var versionDir = Path.Combine(prefixDir, versionLabel);
 					_ = Directory.CreateDirectory(versionDir);
 
-					var fileEntries = await WritePages(pages, versionDir, ctx);
+					var fileEntries = await WritePages(pages, versionDir, ct);
 					YamlWriter.WriteTocYaml(Path.Combine(versionDir, "toc.yml"), fileEntries);
 					versionEntries.Add(new TocEntry { Folder = versionLabel });
 					convertedVersions.Add(versionLabel);

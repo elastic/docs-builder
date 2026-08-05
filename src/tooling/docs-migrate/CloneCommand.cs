@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
 using Elastic.LegacyDocs.Migration;
 using Microsoft.Extensions.Logging;
 
@@ -19,8 +18,7 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 	/// <param name="minVersion">Minimum major version to process</param>
 	/// <param name="book">Filter to books whose prefix starts with this value</param>
 	/// <param name="clean">Delete all cloned repos and start fresh</param>
-	/// <param name="ctx">Cancellation token</param>
-	[Command("")]
+	/// <param name="ct">Cancellation token</param>
 	public async Task<int> Clone(
 		string? workDir = null,
 		int majors = 1,
@@ -28,11 +26,11 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 		int? minVersion = null,
 		string? book = null,
 		bool clean = false,
-		Cancel ctx = default
+		CancellationToken ct = default
 	)
 	{
 		var dir = SharedOptions.ResolveWorkDir(workDir);
-		var conf = await SharedOptions.LoadConfAsync(dir, ctx);
+		var conf = await SharedOptions.LoadConfAsync(dir, ct);
 
 		var opts = new FilterOptions(majors, all, minVersion, book);
 		SharedOptions.SaveFilterOptions(dir, opts);
@@ -59,11 +57,11 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 			var versions = SharedOptions.FilterVersions(b, opts.Majors, opts.All, opts.MinVersion);
 			foreach (var version in versions)
 			{
-				ctx.ThrowIfCancellationRequested();
+				ct.ThrowIfCancellationRequested();
 
 				try
 				{
-					var sources = await repoManager.ResolveSourcesAsync(b, version, ctx);
+					var sources = await repoManager.ResolveSourcesAsync(b, version, ct);
 					foreach (var source in sources)
 					{
 						_ = clonedRepos.Add(source.RepoName);
