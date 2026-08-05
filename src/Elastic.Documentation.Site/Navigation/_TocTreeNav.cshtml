@@ -58,7 +58,15 @@
 					else if (folderBadge == "cmd") { <span class="nav-badge nav-badge-cmd">cmd</span> }
 					else if (folderBadge == "alias") { <span class="nav-badge nav-badge-alias">alias</span> }
 				</a>
-				@if (!allHidden)
+				@if (folder.IsIslandListing)
+				{
+					<a href="@folder.Url" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" style="transform:rotate(-90deg)" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+					</a>
+				}
+				else if (!allHidden)
 				{
 					<label for="@folder.Id" class="group/label flex mr-2 items-start">
 						<div class="nav-toggle-btn">
@@ -72,7 +80,7 @@
 					</label>
 				}
 			</div>
-			@if (g.NavigationItems.Count > 0)
+			@if (!folder.IsIslandListing && g.NavigationItems.Count > 0)
 			{
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem

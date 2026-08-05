@@ -642,7 +642,9 @@ public class DocumentationSetNavigation<TModel>
 						// Group node visibility depends on `visual:`.
 						// FolderNavigation.Hidden is derived from its index page's Hidden flag,
 						// so we control group node visibility by setting Hidden on the index leaf.
-						var groupHidden = visual is ListingVisual.None;
+						// For island listings visual controls what the island sidebar renders, not the parent nav.
+						// Island groups are always hidden from the parent nav tree.
+						var groupHidden = isIsland || visual is ListingVisual.None;
 						// Derive the group folder path from the first child's parent dir so URL generation works
 						var groupFolderPath = groupRef.PathRelativeToDocumentationSet + "/" + groupRef.GroupKey;
 						var groupFolderNav = new FolderNavigation<TModel>(groupFolderPath, folderNavigation, homeAccessor) { NavigationIndex = childIndex++ };
@@ -719,7 +721,10 @@ public class DocumentationSetNavigation<TModel>
 
 		folderNavigation.SetNavigationItems(children);
 		if (isIsland)
+		{
 			folderNavigation.IsIslandListing = true;
+			folderNavigation.IslandVisual = visual;
+		}
 		return folderNavigation;
 	}
 

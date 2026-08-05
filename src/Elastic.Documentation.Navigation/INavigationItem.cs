@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Toc;
+
 namespace Elastic.Documentation.Navigation;
 
 /// Represents navigation model data for documentation elements.
@@ -51,6 +53,13 @@ public interface INavigationItem
 	/// Used to render the island nav when viewing the listing overview page.
 	/// </summary>
 	bool IsIslandListing => false;
+
+	/// <summary>
+	/// For island listing roots, controls what depth the island sidebar nav renders.
+	/// <see cref="ListingVisual.Groups"/> shows group headings only;
+	/// <see cref="ListingVisual.All"/> shows groups with their pages.
+	/// </summary>
+	ListingVisual IslandVisual => ListingVisual.None;
 
 	int NavigationIndex { get; set; }
 }
