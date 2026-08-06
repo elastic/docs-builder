@@ -143,4 +143,56 @@ public class EmitterTests
 		var md = Emit("= T\n\nSee <<setup,version > 7.0>>\n");
 		md.Should().Contain("[version > 7.0]");
 	}
+
+	// ── Passthrough inline (constrained +..+) ─────────────────────────────────
+
+	[Fact]
+	public void PassthroughInline_BasicCase_EmitsCodeSpan()
+	{
+		var md = Emit("= T\n\nDefaults to +max(1, 10)+.\n");
+		md.Should().Contain("`max(1, 10)`");
+	}
+
+	[Fact]
+	public void PassthroughInline_VersionSuffix_NotTreatedAsPassthrough()
+	{
+		// "8.0+" is a version indicator, NOT a passthrough delimiter — must not swallow following text
+		var md = Emit("= T\n\nES 8.0+ does not (see <<removal-of-types>>). ES 8.0+ returns error.\n");
+		md.Should().NotContain("<<removal-of-types>>");
+		md.Should().Contain("[removal-of-types](#removal-of-types)");
+		md.Should().Contain("8.0+");
+	}
+
+	// ── Verbatim include resolution (Step 6) ──────────────────────────────────
+
+	[Fact]
+	public void VerbatimBlock_StandardTaggedInclude_IsResolved()
+	{
+		// include::path[tag=name] inside a code block should be expanded
+		var fileSystem = new Dictionary<string, string>
+		{
+			["/specs/string.csv-spec"] = "# tag::my-example[]\nrow1\nrow2\n# end::my-example[]\n"
+		};
+		var parser = new AsciidocParser(new AsciidocParserOptions
+		{
+			Attributes = new Dictionary<string, string> { ["specs"] = "/specs" },
+			FileReader = p => fileSystem.TryGetValue(p, out var c) ? c : null
+		});
+		var doc = parser.Parse("= T\n\n[source,esql]\n----\ninclude::{specs}/string.csv-spec[tag=my-example]\n----\n", "");
+		var md = new MarkdownEmitter(new MarkdownEmitterOptions()).Emit(doc);
+		md.Should().Contain("row1");
+		md.Should().Contain("row2");
+		md.Should().NotContain("include::");
+	}
+
+	[Fact]
+	public void VerbatimBlock_IfevalConditionMarkers_AreStripped()
+	{
+		// ifeval/endif markers inside verbatim blocks should be stripped; content is kept
+		var adoc = "= T\n\n----\n{\nifeval::[\"{trust}\"==\"api-key\"]\n  \"credentials\": \"secret\",\nendif::[]\n}\n----\n";
+		var md = Emit(adoc);
+		md.Should().NotContain("ifeval::");
+		md.Should().NotContain("endif::");
+		md.Should().Contain("\"credentials\": \"secret\",");
+	}
 }
