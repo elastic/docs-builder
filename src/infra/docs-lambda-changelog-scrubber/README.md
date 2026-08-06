@@ -8,6 +8,13 @@ The public repo allowlist is derived from `config/assembler.yml` (baked into the
 Lambda image as an embedded resource at build time). Changes to `assembler.yml`
 trigger a Lambda redeploy via CI.
 
+The deployed allowlist's identity (SHA-256 of the embedded `assembler.yml`, plus the
+build commit) is published as a `changelog-scrubber-allowlist.json` asset on the GitHub
+release, attached only after a successful deploy. Resolve it with
+`docs-builder changelog scrubber-allowlist` — backfill planning and verification pin
+this identity so link decisions are checked against the deployed allowlist, not a
+local checkout (docs-eng-team#671).
+
 ## Build
 
 From a linux `x86_64` machine (or Docker):

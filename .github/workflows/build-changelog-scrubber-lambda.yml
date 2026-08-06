@@ -44,3 +44,31 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: ${{ env.BINARY_PATH }}
+      # The scrubber's link allowlist is embedded from config/assembler.yml at this ref, so this
+      # hash identifies exactly which allowlist the deployed Lambda runs with. The release workflow
+      # attaches the document to the GitHub release after a successful deploy, making the deployed
+      # identity observable (docs-eng-team#671).
+      - name: Compute allowlist identity
+        env:
+          GIT_REF: ${{ inputs.ref || github.ref }}
+        # language=bash
+        run: |
+          set -euo pipefail
+          sha="sha256:$(sha256sum config/assembler.yml | awk '{print $1}')"
+          commit="$(git rev-parse HEAD)"
+          built_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          jq -n \
+            --arg sha "$sha" \
+            --arg commit "$commit" \
+            --arg ref "$GIT_REF" \
+            --arg built_at "$built_at" \
+            '{schema_version: 1, artifact: "scrubber-allowlist-identity", allowlist_sha256: $sha, deployment_commit: $commit, git_ref: $ref, built_at: $built_at}' \
+            > changelog-scrubber-allowlist.json
+          cat changelog-scrubber-allowlist.json
+      - name: Archive allowlist identity
+        uses: actions/upload-artifact@v7
+        with:
+          name: changelog-scrubber-allowlist-identity
+          retention-days: 1
+          if-no-files-found: error
+          path: changelog-scrubber-allowlist.json
