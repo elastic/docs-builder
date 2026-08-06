@@ -173,7 +173,9 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		};
 		var emitter = new MarkdownEmitter(emitterOptions);
 
-		return PageChunker.Chunk(document, book.Chunk, emitter);
+		// conf.yaml chunk: N means "N levels below each included file's root section";
+		// our chunkLevel counts from the document root, so add 1 to align.
+		return PageChunker.Chunk(document, book.Chunk + 1, emitter);
 	}
 
 	private static async Task<List<TocEntry>> WritePages(
