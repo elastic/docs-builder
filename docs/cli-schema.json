@@ -3819,6 +3819,108 @@
           "path": [
             "changelog"
           ],
+          "name": "migrate-from-web",
+          "summary": "TEMPORARY: One-off migration of published release notes into the S3 bundle store; removed after elastic/docs-eng-team#683.",
+          "notes": "Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the\nchecked-in scope config), maps it to the existing bundle YAML shape, and uploads to\nbundle/{product}/ with create-only semantics (If-None-Match: *) \u2014 existing keys are\nskipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and\nobject ETag) suitable for pasting into the tracking issue.\n\nScope is always explicit: the product must have an entry in config/migrate-from-web.yml\n(product id \u2192 source repo, release-notes path, pinned ref, version cutoff). Nothing runs implicitly\nfor all products. Tracked by elastic/docs-eng-team#736.",
+          "usage": "docs-builder changelog migrate-from-web \u003Cproduct\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "positional",
+              "name": "product",
+              "type": "string",
+              "required": true,
+              "summary": "Product id to migrate (e.g. \u0022edot-java\u0022). Must have an entry in the checked-in scope config."
+            },
+            {
+              "role": "flag",
+              "name": "s3-bucket-name",
+              "type": "string",
+              "required": false,
+              "summary": "Destination S3 bucket. Required unless --dry-run; when provided with --dry-run, existing keys are still inspected so the report distinguishes would-create from skipped."
+            },
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": false,
+              "summary": "Path to the scope config. Defaults to config/migrate-from-web.yml in the current directory (the copy checked into the docs-builder repository).",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "versions",
+              "type": "array",
+              "required": false,
+              "summary": "Optional: restrict the run to specific versions (comma-separated or repeated). Versions above the configured cutoff are always skipped.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "dryRun",
+              "name": "dry-run",
+              "type": "boolean",
+              "required": false,
+              "summary": "Do everything except the S3 writes and report what would be created.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
           "name": "prepare-artifact",
           "summary": "(CI) Package changelog artifact for cross-workflow transfer.",
           "notes": "Resolves final status from evaluate-pr \u002B changelog add outcomes, copies generated YAML,\nwrites metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.\n\n\nThe isFork, canCommit and maintainerCanModify parameters are declared\nas bool? so the generated CLI emits both --flag and --no-flag pairs\n(Argh convention). A plain bool would expose presence-only switches: passing\n--can-commit \u0022false\u0022 would set canCommit = true (the flag is present) and\nsilently discard the literal \u0022false\u0022 as a stray positional. Callers that forward a\ndynamic value (--can-commit \u0022$VAR\u0022) would then misroute fork PRs into the\ncommit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172\nfor the workflow-side fix.",
