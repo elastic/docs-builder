@@ -117,13 +117,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		var withIndexRow = CreateRenderModel(yaml);
 		var withoutIndexRow = CreateRenderModel(yaml, isPrimaryNavEnabled: true);
 
-		withIndexRow.Tree[0].Kind.Should().Be(NavigationRenderNodeKind.IndexLink);
-		withoutIndexRow.Tree.Should().NotContain(n => n.Kind == NavigationRenderNodeKind.IndexLink);
+		withIndexRow.RootIndex.Should().NotBeNull();
+		withIndexRow.RootIndex.Url.Should().Be("/");
+		withoutIndexRow.RootIndex.Should().BeNull();
 		withoutIndexRow.ContentHash.Should().NotBe(withIndexRow.ContentHash);
 	}
 
 	[Fact]
-	public void Folders_CarryToggleStateAndNavigationItems()
+	public void Nodes_CarryToggleStateAndNavigationItems()
 	{
 		// language=yaml
 		var model = CreateRenderModel("""
@@ -136,11 +137,11 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		                                    - file: install.md
 		                              """);
 
-		var folder = model.Tree.Should().ContainSingle(n => n.Kind == NavigationRenderNodeKind.Folder).Subject;
-		folder.Url.Should().Be("/setup");
-		folder.Id.Should().NotBeNullOrEmpty();
-		folder.ShowToggle.Should().BeTrue();
-		folder.NavigationItems.Should().ContainSingle(n => n.Url == "/setup/install");
+		var node = model.Tree.Should().ContainSingle(n => n.Kind == NavigationRenderNodeKind.Node).Subject;
+		node.Url.Should().Be("/setup");
+		node.Id.Should().NotBeNullOrEmpty();
+		node.ShowToggle.Should().BeTrue();
+		node.NavigationItems.Should().ContainSingle(n => n.Url == "/setup/install");
 	}
 
 	private NavigationRenderModel CreateRenderModel(string yaml, bool isPrimaryNavEnabled = false)
@@ -150,14 +151,11 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
-		return NavigationRenderModel.Create(new NavigationViewModel
-		{
-			Tree = navigation,
-			IsPrimaryNavEnabled = isPrimaryNavEnabled,
-			IsGlobalAssemblyBuild = false,
-			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			IsUsingNavigationDropdown = false,
-			BuildType = BuildType.Isolated
-		});
+		return NavigationRenderModel.Create(
+			tree: navigation,
+			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: isPrimaryNavEnabled,
+			isGlobalAssemblyBuild: false);
 	}
 }

@@ -54,6 +54,12 @@
 	   navigations that render the exact same tree; any visible change produces a new id
 	   so the new tree swaps in. *@
 	<ul class="block px-4" id="nav-tree-@(Model.ContentHash)" hx-preserve>
+		@if (Model.RootIndex is { } rootIndex)
+		{
+			<li class="flex group/li pr-8 mt-6">
+				<a href="@rootIndex.Url" class="sidebar-link nav-link">@rootIndex.NavigationTitle</a>
+			</li>
+		}
 		@await RenderPartialAsync(_TocTreeNav.Create(Model.Tree))
 	</ul>
 </div>

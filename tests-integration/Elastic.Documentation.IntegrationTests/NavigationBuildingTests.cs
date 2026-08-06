@@ -77,14 +77,12 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			root.Parent.Should().BeOfType<SiteNavigation>();
 		}*/
 
-		var slice = _TocTree.Create(NavigationRenderModel.Create(new NavigationViewModel
-		{
-			IsGlobalAssemblyBuild = true,
-			IsPrimaryNavEnabled = true,
-			Tree = navigation,
-			TopLevelItems = navigation.TopLevelItems,
-			IsUsingNavigationDropdown = true
-		}));
+		var slice = _TocTree.Create(NavigationRenderModel.Create(
+			tree: navigation,
+			topLevelItems: navigation.TopLevelItems,
+			isUsingNavigationDropdown: true,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: true));
 		var html = await slice.RenderAsync(cancellationToken: ctx);
 		var context = BrowsingContext.New();
 		var document = await context.OpenAsync(req => req.Content(html), ctx);

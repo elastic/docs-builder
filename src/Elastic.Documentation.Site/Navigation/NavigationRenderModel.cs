@@ -11,10 +11,8 @@ namespace Elastic.Documentation.Site.Navigation;
 
 public enum NavigationRenderNodeKind
 {
-	/// <summary>The root index page, surfaced as the first item only when primary nav is off.</summary>
-	IndexLink,
-	Link,
-	Folder
+	Leaf,
+	Node
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -26,7 +24,7 @@ public sealed record NavigationRenderNode
 	public required string Url { get; init; }
 	/// <summary>Badge parsed from a <c>[ns]</c>/<c>[cmd]</c>/<c>[alias]</c> title prefix; doubles as its CSS class suffix.</summary>
 	public string? Badge { get; init; }
-	/// <summary>Only projected for folders, where it drives the expand/collapse checkbox and its persisted state.</summary>
+	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
 	public IReadOnlyList<NavigationRenderNode> NavigationItems { get; init; } = [];
@@ -46,43 +44,55 @@ public sealed record NavigationRenderModel
 	public required string CurrentTopLevelNavigationTitle { get; init; }
 	public required string CurrentTopLevelUrl { get; init; }
 	public required IReadOnlyList<NavigationDropdownItem> DropdownItems { get; init; }
+	/// <summary>
+	/// Root index link as the first sidebar row when primary nav is off.
+	/// Null when primary nav / global assembly already covers that role.
+	/// </summary>
+	public NavigationRenderNode? RootIndex { get; init; }
 	public required IReadOnlyList<NavigationRenderNode> Tree { get; init; }
 	/// <summary>Hash of the preserved tree content only; the dropdown and search live outside the preserved element.</summary>
 	public required string ContentHash { get; init; }
 
-	public static NavigationRenderModel Create(NavigationViewModel model)
+	public static NavigationRenderModel Create(
+		INodeNavigationItem<INavigationModel, INavigationItem> tree,
+		IEnumerable<INodeNavigationItem<INavigationModel, INavigationItem>> topLevelItems,
+		bool isUsingNavigationDropdown,
+		bool isPrimaryNavEnabled,
+		bool isGlobalAssemblyBuild)
 	{
-		var topLevelItems = model.TopLevelItems.ToArray();
-		var currentTopLevelItem = topLevelItems.FirstOrDefault(i => i.Id == model.Tree.Id) ?? model.Tree;
-		var tree = CreateTree(model);
+		var topLevel = topLevelItems.ToArray();
+		var currentTopLevelItem = topLevel.FirstOrDefault(i => i.Id == tree.Id) ?? tree;
+		var rootIndex = CreateRootIndex(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild);
+		var nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
 		return new NavigationRenderModel
 		{
-			IsUsingNavigationDropdown = model.IsUsingNavigationDropdown,
+			IsUsingNavigationDropdown = isUsingNavigationDropdown,
 			CurrentTopLevelNavigationTitle = currentTopLevelItem.NavigationTitle,
 			CurrentTopLevelUrl = currentTopLevelItem.Url,
-			DropdownItems = model.IsUsingNavigationDropdown
-				? [.. topLevelItems.Select(i => new NavigationDropdownItem(i.NavigationTitle, i.Url, i.NavigationRoot.Id == model.Tree.Id))]
+			DropdownItems = isUsingNavigationDropdown
+				? [.. topLevel.Select(i => new NavigationDropdownItem(i.NavigationTitle, i.Url, i.NavigationRoot.Id == tree.Id))]
 				: [],
-			Tree = tree,
-			ContentHash = HashTree(tree)
+			RootIndex = rootIndex,
+			Tree = nodes,
+			ContentHash = HashContent(rootIndex, nodes)
 		};
 	}
 
-	private static List<NavigationRenderNode> CreateTree(NavigationViewModel model)
+	private static NavigationRenderNode? CreateRootIndex(
+		INodeNavigationItem<INavigationModel, INavigationItem> tree,
+		bool isPrimaryNavEnabled,
+		bool isGlobalAssemblyBuild)
 	{
-		var nodes = new List<NavigationRenderNode>();
-		if (!model.IsGlobalAssemblyBuild && !model.IsPrimaryNavEnabled && !model.Tree.Index.Hidden)
+		if (isGlobalAssemblyBuild || isPrimaryNavEnabled || tree.Index.Hidden)
+			return null;
+
+		return new NavigationRenderNode
 		{
-			nodes.Add(new NavigationRenderNode
-			{
-				Kind = NavigationRenderNodeKind.IndexLink,
-				IsTopLevel = true,
-				NavigationTitle = model.Tree.Index.NavigationTitle,
-				Url = model.Tree.Index.Url
-			});
-		}
-		nodes.AddRange(CreateNavigationItems(model.Tree, isTopLevel: true));
-		return nodes;
+			Kind = NavigationRenderNodeKind.Leaf,
+			IsTopLevel = true,
+			NavigationTitle = tree.Index.NavigationTitle,
+			Url = tree.Index.Url
+		};
 	}
 
 	private static IEnumerable<NavigationRenderNode> CreateNavigationItems(
@@ -96,35 +106,35 @@ public sealed record NavigationRenderModel
 			if (item.Parent is not null && item.Parent.Index == item)
 				continue;
 
-			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } folder)
-				yield return CreateFolder(folder, isTopLevel);
+			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
+				yield return CreateNode(node, isTopLevel);
 			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> or ILeafNavigationItem<INavigationModel>)
-				yield return CreateLink(item, isTopLevel);
+				yield return CreateLeaf(item, isTopLevel);
 		}
 	}
 
-	private static NavigationRenderNode CreateFolder(INodeNavigationItem<INavigationModel, INavigationItem> folder, bool isTopLevel)
+	private static NavigationRenderNode CreateNode(INodeNavigationItem<INavigationModel, INavigationItem> node, bool isTopLevel)
 	{
-		var (badge, navigationTitle) = ParseNavTitle(folder.NavigationTitle);
+		var (badge, navigationTitle) = ParseNavTitle(node.NavigationTitle);
 		return new NavigationRenderNode
 		{
-			Kind = NavigationRenderNodeKind.Folder,
+			Kind = NavigationRenderNodeKind.Node,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			Url = folder.Url,
-			Id = folder.Id,
-			ShowToggle = !folder.NavigationItems.All(n => n.Hidden),
-			NavigationItems = [.. CreateNavigationItems(folder, isTopLevel: false)]
+			Url = node.Url,
+			Id = node.Id,
+			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
+			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
 		};
 	}
 
-	private static NavigationRenderNode CreateLink(INavigationItem item, bool isTopLevel)
+	private static NavigationRenderNode CreateLeaf(INavigationItem item, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(item.NavigationTitle);
 		return new NavigationRenderNode
 		{
-			Kind = NavigationRenderNodeKind.Link,
+			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
@@ -143,10 +153,13 @@ public sealed record NavigationRenderModel
 		return (null, raw);
 	}
 
-	private static string HashTree(IReadOnlyList<NavigationRenderNode> tree)
+	private static string HashContent(NavigationRenderNode? rootIndex, IReadOnlyList<NavigationRenderNode> tree)
 	{
 		using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-		Append(hash, "navigation-tree-v1");
+		Append(hash, "navigation-tree-v2");
+		AppendInt(hash, rootIndex is null ? 0 : 1);
+		if (rootIndex is not null)
+			AppendNode(hash, rootIndex);
 		AppendNodes(hash, tree);
 		return Convert.ToHexStringLower(hash.GetHashAndReset().AsSpan(0, 8));
 	}
@@ -155,16 +168,19 @@ public sealed record NavigationRenderModel
 	{
 		AppendInt(hash, nodes.Count);
 		foreach (var node in nodes)
-		{
-			AppendInt(hash, (int)node.Kind);
-			AppendInt(hash, node.IsTopLevel ? 1 : 0);
-			Append(hash, node.NavigationTitle);
-			Append(hash, node.Badge ?? string.Empty);
-			Append(hash, node.Url);
-			Append(hash, node.Id ?? string.Empty);
-			AppendInt(hash, node.ShowToggle ? 1 : 0);
-			AppendNodes(hash, node.NavigationItems);
-		}
+			AppendNode(hash, node);
+	}
+
+	private static void AppendNode(IncrementalHash hash, NavigationRenderNode node)
+	{
+		AppendInt(hash, (int)node.Kind);
+		AppendInt(hash, node.IsTopLevel ? 1 : 0);
+		Append(hash, node.NavigationTitle);
+		Append(hash, node.Badge ?? string.Empty);
+		Append(hash, node.Url);
+		Append(hash, node.Id ?? string.Empty);
+		AppendInt(hash, node.ShowToggle ? 1 : 0);
+		AppendNodes(hash, node.NavigationItems);
 	}
 
 	// Length-prefixed fields make the byte stream unambiguous without separator escaping
