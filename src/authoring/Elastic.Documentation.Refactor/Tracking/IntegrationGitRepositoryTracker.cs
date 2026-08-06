@@ -2,25 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using static System.StringComparison;
+using System.IO.Abstractions;
+using Elastic.Documentation.Extensions;
 using static System.StringSplitOptions;
 
 namespace Elastic.Documentation.Refactor.Tracking;
 
-public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTracker
+public class IntegrationGitRepositoryTracker(IDirectoryInfo gitRoot, IDirectoryInfo documentationSourceDirectory) : IRepositoryTracker
 {
-	// When the docset lives at the repository root, lookupPath is "." (or empty after trimming).
-	// In that case there is no prefix to match against, so we use an empty string which makes
-	// StartsWith("") true for every path. Otherwise we anchor with a trailing slash to avoid
-	// false-positive prefix matches (e.g. "docs/" should not match "docs-extra/foo.md").
-	private string LookupPath { get; } = NormalizeLookupPath(lookupPath);
-
-	private static string NormalizeLookupPath(string lookupPath)
-	{
-		var trimmed = lookupPath.Trim(['/', '\\']);
-		return trimmed is "" or "." ? "" : $"{trimmed}/";
-	}
-
 	public IReadOnlyCollection<GitChange> GetChangedFiles()
 	{
 		return GetChanges().ToArray();
@@ -30,35 +19,43 @@ public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTra
 			var deletedFiles = Environment.GetEnvironmentVariable("DELETED_FILES") ?? string.Empty;
 			if (!string.IsNullOrEmpty(deletedFiles))
 			{
-				foreach (var file in deletedFiles.Split(' ', RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath, OrdinalIgnoreCase)))
+				foreach (var file in deletedFiles.Split(' ', RemoveEmptyEntries).Where(IsUnderDocset))
 					yield return new GitChange(file, GitChangeType.Deleted);
 			}
 
 			var addedFiles = Environment.GetEnvironmentVariable("ADDED_FILES");
 			if (!string.IsNullOrEmpty(addedFiles))
 			{
-				foreach (var file in addedFiles.Split(' ', RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath, OrdinalIgnoreCase)))
+				foreach (var file in addedFiles.Split(' ', RemoveEmptyEntries).Where(IsUnderDocset))
 					yield return new GitChange(file, GitChangeType.Added);
 			}
 
 			var modifiedFiles = Environment.GetEnvironmentVariable("MODIFIED_FILES");
 			if (!string.IsNullOrEmpty(modifiedFiles))
 			{
-				foreach (var file in modifiedFiles.Split(' ', RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath, OrdinalIgnoreCase)))
+				foreach (var file in modifiedFiles.Split(' ', RemoveEmptyEntries).Where(IsUnderDocset))
 					yield return new GitChange(file, GitChangeType.Modified);
 			}
 
 			var renamedFiles = Environment.GetEnvironmentVariable("RENAMED_FILES");
 			if (!string.IsNullOrEmpty(renamedFiles))
 			{
-				foreach (var pair in renamedFiles.Split(' ', RemoveEmptyEntries).Where(f => f.StartsWith(LookupPath, OrdinalIgnoreCase)))
+				foreach (var pair in renamedFiles.Split(' ', RemoveEmptyEntries))
 				{
 					var parts = pair.Split(':');
-					if (parts.Length == 2)
-						yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
+					if (parts.Length != 2 || !IsUnderDocset(parts[0]))
+						continue;
+					yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
 				}
 			}
-
 		}
+	}
+
+	private bool IsUnderDocset(string relativePath)
+	{
+		var fs = gitRoot.FileSystem;
+		var normalized = relativePath.Replace('/', fs.Path.DirectorySeparatorChar);
+		var file = fs.FileInfo.New(fs.Path.Join(gitRoot.FullName, normalized));
+		return file.IsSubPathOf(documentationSourceDirectory);
 	}
 }

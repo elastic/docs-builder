@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Refactor.Tracking;
 
@@ -33,12 +35,23 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 			Environment.SetEnvironmentVariable(name, null);
 	}
 
+	private static (IDirectoryInfo GitRoot, IDirectoryInfo Docset) CreateDirs(string? docsetRelative = "docs")
+	{
+		var fs = new MockFileSystem();
+		var gitRoot = fs.DirectoryInfo.New("/repo");
+		var docset = docsetRelative is null or "" or "."
+			? gitRoot
+			: fs.DirectoryInfo.New(fs.Path.Join(gitRoot.FullName, docsetRelative));
+		return (gitRoot, docset);
+	}
+
 	[Fact]
 	public void DocsetUnderSubfolder_FiltersPathsByPrefix()
 	{
 		Environment.SetEnvironmentVariable("DELETED_FILES", "docs/foo.md docs-extra/bar.md other/baz.md");
 
-		var tracker = new IntegrationGitRepositoryTracker("docs");
+		var (gitRoot, docset) = CreateDirs("docs");
+		var tracker = new IntegrationGitRepositoryTracker(gitRoot, docset);
 
 		var changes = tracker.GetChangedFiles();
 
@@ -50,13 +63,14 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 	public void DocsetAtRepoRoot_DotLookupPath_ReturnsAllChanges()
 	{
 		// Regression test for https://github.com/elastic/docs-content/pull/6479:
-		// when the docset lives at the repo root (e.g. docs-content), the relative
-		// path resolves to ".", which previously turned the prefix filter into "./"
-		// and silently dropped every file from the env vars.
+		// when the docset lives at the repo root (e.g. docs-content), every path
+		// under the git root must be included — previously a "./" string prefix
+		// silently dropped every file from the env vars.
 		Environment.SetEnvironmentVariable("DELETED_FILES", "troubleshoot/deployments/serverless.md");
 		Environment.SetEnvironmentVariable("MODIFIED_FILES", "troubleshoot/toc.yml");
 
-		var tracker = new IntegrationGitRepositoryTracker(".");
+		var (gitRoot, docset) = CreateDirs(".");
+		var tracker = new IntegrationGitRepositoryTracker(gitRoot, docset);
 
 		var changes = tracker.GetChangedFiles();
 
@@ -72,7 +86,8 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 	{
 		Environment.SetEnvironmentVariable("ADDED_FILES", "a.md b.md");
 
-		var tracker = new IntegrationGitRepositoryTracker("");
+		var (gitRoot, docset) = CreateDirs("");
+		var tracker = new IntegrationGitRepositoryTracker(gitRoot, docset);
 
 		var changes = tracker.GetChangedFiles();
 
@@ -84,11 +99,12 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 	}
 
 	[Fact]
-	public void LookupPath_NormalizesSurroundingSlashes()
+	public void DocsetUnderSubfolder_DoesNotMatchSiblingPrefix()
 	{
 		Environment.SetEnvironmentVariable("MODIFIED_FILES", "docs/foo.md docs-extra/bar.md");
 
-		var tracker = new IntegrationGitRepositoryTracker("/docs/");
+		var (gitRoot, docset) = CreateDirs("docs");
+		var tracker = new IntegrationGitRepositoryTracker(gitRoot, docset);
 
 		var changes = tracker.GetChangedFiles();
 
@@ -101,7 +117,8 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 	{
 		Environment.SetEnvironmentVariable("RENAMED_FILES", "docs/old.md:docs/new.md");
 
-		var tracker = new IntegrationGitRepositoryTracker("docs");
+		var (gitRoot, docset) = CreateDirs("docs");
+		var tracker = new IntegrationGitRepositoryTracker(gitRoot, docset);
 
 		var changes = tracker.GetChangedFiles();
 
