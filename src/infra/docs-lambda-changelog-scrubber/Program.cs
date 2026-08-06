@@ -17,6 +17,10 @@ using Elastic.Documentation.Lambda.ChangelogScrubber;
 var publicBucketName = Environment.GetEnvironmentVariable("PUBLIC_BUCKET_NAME")
 	?? throw new InvalidOperationException("PUBLIC_BUCKET_NAME environment variable is required");
 
+// Optional: only explicit reconcile messages (full group heals) need to list the private bucket
+// by name — S3 events carry their source bucket. Without it, reconcile messages are rejected.
+var privateBucketName = Environment.GetEnvironmentVariable("PRIVATE_BUCKET_NAME");
+
 var allowRepos = BuildAllowlist();
 
 await LambdaBootstrapBuilder
@@ -55,7 +59,7 @@ async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	var metrics = new ReconcileMetrics();
 	var scrubber = new ChangelogContentScrubber(logFactory, allowRepos);
 	var reconciler = new RegistryReconciler(logFactory, s3Client, publicBucketName, metrics: metrics);
-	var processor = new ScrubberProcessor(logFactory, s3Client, publicBucketName, scrubber, reconciler, metrics);
+	var processor = new ScrubberProcessor(logFactory, s3Client, publicBucketName, scrubber, reconciler, metrics, privateBucketName);
 
 	var messages = ev.Records.Select(r => new ScrubberQueueMessage(r.MessageId, r.Body)).ToList();
 	var failedIds = await processor.ProcessAsync(messages, CancellationToken.None);

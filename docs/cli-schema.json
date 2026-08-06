@@ -4433,7 +4433,230 @@
           ]
         }
       ],
-      "namespaces": []
+      "namespaces": [
+        {
+          "segment": "registry",
+          "summary": "Operate on the scrubber-owned public changelog registries.",
+          "options": [],
+          "commands": [
+            {
+              "path": [
+                "changelog",
+                "registry"
+              ],
+              "name": "reconcile",
+              "summary": "Send explicit reconcile messages to the scrubber queue so the Lambda performs a full group heal (object-level reconcile over the union of both buckets, then a registry rebuild from public state) for every planned group. This command never mutates S3 itself \u2014 the scrubber Lambda stays the public bucket\u0027s single writer. Convergent: re-running re-plans against current state. Enqueuing is not reconciling \u2014 gate on \u0060changelog registry verify\u0060 after the queue drains and the DLQ is empty.",
+              "usage": "docs-builder changelog registry reconcile --s3-bucket-name \u003Cstring\u003E --public-s3-bucket-name \u003Cstring\u003E --queue-url \u003Cstring\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Private changelog bundles bucket to plan from."
+                },
+                {
+                  "role": "flag",
+                  "name": "public-s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Public (CDN) changelog bundles bucket to plan from."
+                },
+                {
+                  "role": "flag",
+                  "name": "queue-url",
+                  "type": "string",
+                  "required": true,
+                  "summary": "URL of the scrubber SQS queue to send reconcile messages to."
+                },
+                {
+                  "role": "flag",
+                  "name": "product",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Only reconcile this bundle group (bundle/{product}/). Mutually exclusive with --owner/--repo/--branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "owner",
+                  "type": "string",
+                  "required": false,
+                  "summary": "GitHub owner of a single changelog-pool group to reconcile."
+                },
+                {
+                  "role": "flag",
+                  "name": "repo",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Repository of a single changelog-pool group to reconcile."
+                },
+                {
+                  "role": "flag",
+                  "name": "branch",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Branch of a single changelog-pool group to reconcile (verbatim; slashes allowed)."
+                },
+                {
+                  "role": "dryRun",
+                  "name": "dry-run",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Print the group plan without sending anything.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
+                  "name": "yes",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip the interactive confirmation (required when stdin is not a terminal).",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "intent": {
+                "destructive": true,
+                "idempotent": true,
+                "scope": "global",
+                "requiresAuth": true
+              }
+            },
+            {
+              "path": [
+                "changelog",
+                "registry"
+              ],
+              "name": "verify",
+              "summary": "Compare each planned group\u0027s public registry.json against what a reconcile of the current public listing would write, and report divergence (missing, stale, corrupt, object-divergent; unsupported schema reported distinctly). Strictly read-only. Zero divergence across the plan is the cutover completion gate \u2014 and the standing drift-diagnosis tool afterwards.",
+              "usage": "docs-builder changelog registry verify --s3-bucket-name \u003Cstring\u003E --public-s3-bucket-name \u003Cstring\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Private changelog bundles bucket to plan from."
+                },
+                {
+                  "role": "flag",
+                  "name": "public-s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Public (CDN) changelog bundles bucket to verify."
+                },
+                {
+                  "role": "flag",
+                  "name": "product",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Only verify this bundle group (bundle/{product}/). Mutually exclusive with --owner/--repo/--branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "owner",
+                  "type": "string",
+                  "required": false,
+                  "summary": "GitHub owner of a single changelog-pool group to verify."
+                },
+                {
+                  "role": "flag",
+                  "name": "repo",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Repository of a single changelog-pool group to verify."
+                },
+                {
+                  "role": "flag",
+                  "name": "branch",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Branch of a single changelog-pool group to verify (verbatim; slashes allowed)."
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "intent": {
+                "requiresAuth": true
+              }
+            }
+          ],
+          "namespaces": []
+        }
+      ]
     },
     {
       "segment": "codex",

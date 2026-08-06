@@ -83,6 +83,9 @@ public sealed record RegistryBundle
 	/// for integrity checks or HTTP cache validation against the public bucket; use the CDN response's
 	/// own ETag for that. It is safe to use to detect whether a bundle changed between manifest reads.
 	/// </remarks>
+	// The snake_case policy would emit "e_tag"; the documented manifest format — and what the
+	// consumer-side ChangelogRegistryBundle reads — is "etag".
+	[JsonPropertyName("etag")]
 	public required string ETag { get; init; }
 }
 

@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.SQS" />
     <PackageReference Include="GitHub.Actions.Core" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
