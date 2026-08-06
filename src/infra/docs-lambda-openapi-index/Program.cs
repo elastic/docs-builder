@@ -2,12 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Amazon.CloudFront;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
-using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.S3Events;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.SQSEvents;
-using Amazon.CloudFront;
 using Amazon.S3;
 using Amazon.S3.Util;
 using Elastic.Documentation.Lambda.OpenApiIndex;
@@ -68,7 +68,7 @@ static IReadOnlyList<string> ExtractObjectKeys(SQSEvent ev)
 	{
 		var s3Event = S3EventNotification.ParseJson(message.Body);
 		foreach (var record in s3Event.Records)
-			keys.Add(Uri.UnescapeDataString(record.S3.Object.Key));
+			_ = keys.Add(Uri.UnescapeDataString(record.S3.Object.Key));
 	}
 
 	return [.. keys];
