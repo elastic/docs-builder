@@ -11,6 +11,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
@@ -36,7 +37,7 @@ public class KibanaApiMarkdownNavigationTests
 	private static (LandingNavigationItem navigation, SimpleMarkdownNavigationItem introNav) SetupKibanaNavigation()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
-		var introPath = Path.Combine(root, "docs", "kibana-api-overview.md");
+		var introPath = Path.Combine(root, "docs", "api", "kibana", "kibana-api-overview.md");
 		var specPath = Path.Combine(root, "docs", "kibana-openapi.json");
 		var fs = new FileSystem();
 		var introFile = fs.FileInfo.New(introPath);
@@ -45,8 +46,10 @@ public class KibanaApiMarkdownNavigationTests
 		var apiConfig = new ResolvedApiConfiguration
 		{
 			ProductKey = "kibana",
-			IntroMarkdownFiles = [introFile],
-			SpecFiles = [specFile]
+			Product = new Product { Id = "kibana", DisplayName = "Kibana" },
+			SpecFileName = "kibana-openapi.json",
+			LocalSpecFile = specFile,
+			Children = [introFile]
 		};
 
 		var collector = new DiagnosticsCollector([]);

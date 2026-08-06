@@ -53,11 +53,17 @@ suppress:
   - DeepLinkingVirtualFile
 
 api:
-  elasticsearch: elasticsearch-openapi-docs.json
+  elasticsearch:
+    - spec: elasticsearch-openapi-docs.json
+      product: elasticsearch
   kibana:
-    - file: kibana-api-overview.md
     - spec: kibana-openapi.json
-  dashboard: dashboard-openapi.json
+      product: kibana
+      children:
+        - file: kibana-api-overview.md
+  dashboard:
+    - spec: dashboard-openapi.json
+      product: kibana
 
 toc:
   - file: index.md

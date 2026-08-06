@@ -49,9 +49,13 @@ public class PhysicalDocsetTests
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
 		docSet.Api.Should().HaveCount(3);
-		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.GetSpecPaths().Should().Contain("elasticsearch-openapi-docs.json");
-		docSet.Api.Should().ContainKey("kibana").WhoseValue.GetSpecPaths().Should().Contain("kibana-openapi.json");
-		docSet.Api.Should().ContainKey("dashboard").WhoseValue.GetSpecPaths().Should().Contain("dashboard-openapi.json");
+		docSet.Api["elasticsearch"].SingleEntry!.Spec.Should().Be("elasticsearch-openapi-docs.json");
+		docSet.Api["elasticsearch"].SingleEntry!.Product.Should().Be("elasticsearch");
+		docSet.Api["kibana"].SingleEntry!.Spec.Should().Be("kibana-openapi.json");
+		docSet.Api["kibana"].SingleEntry!.Product.Should().Be("kibana");
+		docSet.Api["kibana"].SingleEntry!.Children.Should().ContainSingle(c => c.File == "kibana-api-overview.md");
+		docSet.Api["dashboard"].SingleEntry!.Spec.Should().Be("dashboard-openapi.json");
+		docSet.Api["dashboard"].SingleEntry!.Product.Should().Be("kibana");
 
 		docSet.TableOfContents.Should().NotBeEmpty();
 

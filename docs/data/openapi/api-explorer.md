@@ -12,90 +12,75 @@ This feature is still under development and the functionality described on this 
 
 ## Configure the API Explorer
 
-Add the `api` key to your `docset.yml` file to enable the API Explorer. The key maps product names to OpenAPI JSON specification files.
-Paths are relative to the folder that contains `docset.yml`.
-
-### Basic configuration
+Add the `api` key to your `docset.yml` file to enable the API Explorer. Each product key takes a
+single-entry sequence with a required `spec:` and `product:`, and optional `repository:` and
+`children:`:
 
 ```yaml
 api:
-  elasticsearch: elasticsearch-openapi.json
-  kibana: kibana-openapi.json
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+  kibana:
+    - spec: kibana-openapi.json
+      product: kibana
 ```
 
 Each product key produces its own section of API documentation. For example, `elasticsearch` generates pages under `/api/elasticsearch/` and `kibana` generates pages under `/api/kibana/`.
 
 The `api` key is only valid in `docset.yml`. You can't use it in `toc.yml` files.
 
-### Advanced configuration with intro and outro pages
+### `spec:` (required)
 
-You can add custom Markdown content before and after the auto-generated API documentation using a sequence format:
+A path to an OpenAPI spec file, relative to the folder that contains `docset.yml`. `spec:` serves
+two purposes at once:
+
+- If a file exists at that path, {{dbuild}} renders it directly. This is the common setup for a
+  docset that carries its own spec file.
+- Its basename (for example `elasticsearch-openapi.json`) is always used to look up this API's
+  entry in the remote version index, whether or not the file exists locally. See
+  [Remote spec resolution](#remote-spec-resolution).
+
+### `product:` (required)
+
+A product id defined in `products.yml`. This binds the API to that product's versioning system
+and display name. The build fails with a suggestion if `product:` doesn't match a known product id.
+
+### `repository:` (optional)
+
+An `org/repo` override (for example `elastic/elasticsearch-specification`) used to look up this
+API in the remote version index, instead of the current checkout's own GitHub remote. Set this
+whenever the repository that publishes the OpenAPI spec differs from the repository the docset
+itself builds from:
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+```
+
+Most docsets omit `repository:` — it's only needed for this cross-repo case. When omitted,
+{{dbuild}} derives the repository from the current checkout's GitHub remote.
+
+### `children:` (optional)
+
+Explicit hand-written pages rendered under `api/<key>/`, in the declared order:
 
 ```yaml
 api:
   kibana:
-    - file: kibana-intro.md
     - spec: kibana-openapi.json
-    - file: kibana-additional-notes.md
+      product: kibana
+      children:
+        - file: kibana-api-overview.md
 ```
 
-This configuration creates a navigation structure where:
+`children:` is the only way to inject hand-written content into an API reference section:
 
-1. **Intro pages** (before the first `spec`) appear at the top of the sidebar
-2. **Generated API content** (operations, tags, types) appears in the middle
-3. **Outro pages** (after the spec) appear at the bottom
-
-#### Intro and outro page features:
-
-- **Full Myst support**: Intro/outro pages support the full range of Myst Markdown features including cross-links, substitutions, and directives
-- **Automatic exclusion**: No need to add intro/outro files to the `exclude:` list - they're automatically excluded from normal HTML generation
-- **URL collision detection**: Build fails if intro/outro page names conflict with reserved API Explorer segments (`types/`, `tags/`) or operation names
-
-#### Multiple intro/outro pages
-
-You can include multiple intro and outro pages:
-
-```yaml
-api:
-  kibana:
-    - file: introduction.md
-    - file: getting-started.md
-    - spec: kibana-openapi.json
-    - file: examples.md
-    - file: troubleshooting.md
-```
-
-#### Sample intro page
-
-Here's a sample intro page (`kibana-intro.md`):
-
-```markdown
-# Kibana APIs
-
-Welcome to the Kibana API documentation. These APIs allow you to manage Kibana programmatically.
-
-## Before you begin
-
-Make sure you have:
-
-- A running Kibana instance
-- Valid authentication credentials
-- Understanding of RESTful API principles
-```
-
-:::{important}
-Intro and outro Markdown files must not use a slug that would collide with the reserved API Explorer segments like `types` and `tags`.
-:::
-
-## What you can extend (and what you can't)
-
-`file:` entries in the `api:` sequence add standalone pages to the API navigation. They are the
-only way to inject hand-written content into an API reference section:
-
-- **Intro pages** (before the spec) and **outro pages** (after the spec) are fully rendered
-  Markdown pages with access to all MyST directives, substitutions, and cross-links.
-- Intro/outro files are automatically excluded from normal HTML generation — you do not need to
-  add them to the `exclude:` list.
+- Child pages are fully rendered Markdown with access to all MyST directives, substitutions, and cross-links.
+- Child files are automatically excluded from normal HTML generation — you do not need to add them to the `exclude:` list.
 
 **What you cannot do today:** there is no way to override or augment an individual operation,
 tag, schema, or parameter description using a local Markdown file. Every description for generated
@@ -104,13 +89,13 @@ per-parameter enrichment see the [CLI reference](../cli-schema/index.md), which 
 fine-grained supplemental mechanism as a reference model for what future API augmentation could
 look like.
 
-### Intro/outro file naming and validation
+#### Child file naming and validation
 
 A file's URL slug is derived from its filename: lowercase, with spaces and underscores replaced by
 hyphens, and the `.md` extension removed. For example, `Getting-Started.md` becomes the slug
 `getting-started`.
 
-The following slugs are reserved and cannot be used as intro/outro file names:
+The following slugs are reserved and cannot be used as child file names:
 
 | Reserved slug | Reason |
 |---|---|
@@ -121,18 +106,73 @@ Additionally, the slug must not match any operation moniker already generated by
 build fails with a descriptive error if either collision occurs, naming the conflicting file and
 the reserved or operation segment.
 
-If the same slug is produced by two different intro/outro files in the same product, the build
+If the same slug is produced by two different child files in the same product, the build
 also fails with a duplicate-slug error.
 
 ### One spec per product
 
-Each product key in the `api:` block must have **exactly one** `spec:` entry. The build fails
-if a product sequence contains zero or more than one spec. Multiple specs per product are not
-currently supported.
+Each product key in the `api:` block must have **exactly one** entry, with **exactly one**
+`spec:`. The build fails if a product sequence is empty or has more than one entry. Multiple
+specs per product are not currently supported.
+
+## Remote spec resolution
+
+:::{note}
+Remote spec resolution through the shared version index is tracked in
+[docs-eng-team#719](https://github.com/elastic/docs-eng-team/issues/719). Until that ships, every
+docset must carry a local spec file at the declared `spec:` path. When no local file exists,
+{{dbuild}} skips that API and emits a warning.
+:::
+
+A docset will not need to carry its OpenAPI spec file locally once #719 ships. When `spec:` does
+not resolve to a file on disk, {{dbuild}} will resolve the current (`main`) version of that spec
+remotely, through a CloudFront-backed version index shared by every Elastic repository that
+publishes OpenAPI specs.
+
+### How specs are published
+
+Each repository publishes its OpenAPI spec under a stable object key in a shared bucket:
+
+```
+<org>/<repo>/<branch>/<spec-name>.<ext>
+```
+
+For example, Elasticsearch's spec is published from a separate specification repository, at keys
+like `elastic/elasticsearch-specification/main/elasticsearch.json` and
+`elastic/elasticsearch-specification/8.19/elasticsearch.json`.
+
+### The version index
+
+A single root `index.json` manifest maps every published spec to its highest-minor branch per
+major. It is keyed by `org/repo`, then by spec basename (matching `spec:`'s basename), then by
+version moniker (`main`, `9`, `8`, ...):
+
+```json
+{
+  "elastic/elasticsearch-specification": {
+    "elasticsearch.json": {
+      "main": { "version": "main" },
+      "9": { "version": "9.5" },
+      "8": { "version": "8.19" }
+    }
+  }
+}
+```
+
+{{dbuild}} will fetch this manifest once per build from
+`https://d29hkgsdo66d1n.cloudfront.net/index.json`, then look up the `org/repo` (from
+`repository:`, falling back to the current checkout's GitHub remote) and the `spec:` basename to
+find this API's versions. Spec objects are fetched at
+`{base}/{org}/{repo}/{version}/{spec-basename}`.
+
+Today only the `main` moniker is rendered — there is no version-prefixed output or version
+switcher yet.
 
 ## Place your spec files
 
-OpenAPI specification files must be in JSON format and located in the same folder as your `docset.yml` (or in a subfolder of it). The path you specify in `api` is resolved relative to the `docset.yml` location.
+To carry a spec locally, place the OpenAPI specification file in the same folder as your
+`docset.yml` (or in a subfolder of it). The path you specify in `spec:` is resolved relative to
+the `docset.yml` location.
 
 For example, if your content set is structured like this:
 
@@ -149,8 +189,12 @@ Your `docset.yml` references the specs as follows:
 
 ```yaml
 api:
-  elasticsearch: elasticsearch-openapi.json
-  kibana: kibana-openapi.json
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+  kibana:
+    - spec: kibana-openapi.json
+      product: kibana
 ```
 
 ## When the API Explorer runs
