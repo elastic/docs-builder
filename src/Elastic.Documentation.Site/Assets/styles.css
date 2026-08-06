@@ -327,7 +327,9 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 	padding: 0 12px 8px;
 }
 
-.docs-sidebar-nav-v2__main-group ~ .docs-sidebar-nav-v2__main-group > .docs-sidebar-nav-v2__title {
+.docs-sidebar-nav-v2__main-group
+	~ .docs-sidebar-nav-v2__main-group
+	> .docs-sidebar-nav-v2__title {
 	padding-top: 16px;
 }
 
@@ -411,7 +413,9 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
  */
 #pages-nav
 	nav[data-nav-v2]
-	li.group-navigation:not(:has(> .nav-folder-peer input[type='checkbox']:checked))
+	li.group-navigation:not(
+		:has(> .nav-folder-peer input[type='checkbox']:checked)
+	)
 	> .docs-sidebar-nav-v2__folder-clip {
 	display: none;
 }
@@ -481,8 +485,14 @@ nav.docs-sidebar-nav-v2 {
 }
 
 #pages-nav
-	nav.docs-sidebar-nav-v2:has(> ul > .docs-sidebar-nav-v2__main-group:first-child):not(
-		:has(> ul > .docs-sidebar-nav-v2__main-group:first-child > .docs-sidebar-nav-v2__title)
+	nav.docs-sidebar-nav-v2:has(
+		> ul > .docs-sidebar-nav-v2__main-group:first-child
+	):not(
+		:has(
+			> ul
+				> .docs-sidebar-nav-v2__main-group:first-child
+				> .docs-sidebar-nav-v2__title
+		)
 	) {
 	padding: 0 0 22px 0;
 }

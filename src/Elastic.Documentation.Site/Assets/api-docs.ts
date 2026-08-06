@@ -536,12 +536,11 @@ function initApiCodeLanguageSelects(): void {
     })
 }
 
-function applyApiResponseStatus(
-    widget: HTMLElement,
-    statusCode: string
-): void {
+function applyApiResponseStatus(widget: HTMLElement, statusCode: string): void {
     const tabs = Array.from(
-        widget.querySelectorAll<HTMLElement>('.example-response-tab[data-status]')
+        widget.querySelectorAll<HTMLElement>(
+            '.example-response-tab[data-status]'
+        )
     )
     const hasStatus = tabs.some((tab) => tab.dataset.status === statusCode)
     const effective = hasStatus
@@ -655,9 +654,8 @@ function initApiCodeLineNumbers(): void {
             const gutter = document.createElement('pre')
             gutter.className = 'api-code-line-gutter'
             gutter.setAttribute('aria-hidden', 'true')
-            gutter.textContent = Array.from(
-                { length: lineCount },
-                (_, index) => String(index + 1)
+            gutter.textContent = Array.from({ length: lineCount }, (_, index) =>
+                String(index + 1)
             ).join('\n')
 
             // Match code metrics so gutter rows stay 1:1 with content rows

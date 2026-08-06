@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
-using AwesomeAssertions;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -14,8 +14,8 @@ public class ExampleScenarioTests
 	[Fact]
 	public void BuildExampleScenarios_MergesRequestAndResponseByTitle()
 	{
-		var request = new ExampleDisplay("Multimodal", null, """{"input":[{"type":"image"}]}""", null);
-		var response = new ExampleDisplay("Multimodal", null, """{"embeddings":[]}""", null);
+		var request = new ExampleDisplay("Multimodal", null, /*lang=json,strict*/ """{"input":[{"type":"image"}]}""", null);
+		var response = new ExampleDisplay("Multimodal", null, /*lang=json,strict*/ """{"embeddings":[]}""", null);
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([request], [response], []);
 
@@ -29,8 +29,8 @@ public class ExampleScenarioTests
 	[Fact]
 	public void BuildExampleScenarios_GroupsResponsesByStatusCode()
 	{
-		var ok = new ExampleDisplay("Create", null, """{"ok":true}""", null, "200");
-		var bad = new ExampleDisplay("Create", null, """{"error":"bad"}""", null, "400");
+		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/ """{"ok":true}""", null, "200");
+		var bad = new ExampleDisplay("Create", null, /*lang=json,strict*/ """{"error":"bad"}""", null, "400");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([], [ok, bad], []);
 
@@ -43,12 +43,12 @@ public class ExampleScenarioTests
 	[Fact]
 	public void BuildExampleScenarios_SharesUnmatchedErrorResponsesAcrossRequestScenarios()
 	{
-		var ipRequest = new ExampleDisplay("ip", null, """{"type":"ip"}""", null);
-		var keywordRequest = new ExampleDisplay("keyword", null, """{"type":"keyword"}""", null);
-		var ipOk = new ExampleDisplay("ip", null, """{"id":"1"}""", null, "200");
-		var keywordOk = new ExampleDisplay("keyword", null, """{"id":"2"}""", null, "200");
-		var badRequest = new ExampleDisplay("badRequest", null, """{"error":"bad"}""", null, "400");
-		var unauthorized = new ExampleDisplay("unauthorized", null, """{"error":"auth"}""", null, "401");
+		var ipRequest = new ExampleDisplay("ip", null, /*lang=json,strict*/ """{"type":"ip"}""", null);
+		var keywordRequest = new ExampleDisplay("keyword", null, /*lang=json,strict*/ """{"type":"keyword"}""", null);
+		var ipOk = new ExampleDisplay("ip", null, /*lang=json,strict*/ """{"id":"1"}""", null, "200");
+		var keywordOk = new ExampleDisplay("keyword", null, /*lang=json,strict*/ """{"id":"2"}""", null, "200");
+		var badRequest = new ExampleDisplay("badRequest", null, /*lang=json,strict*/ """{"error":"bad"}""", null, "400");
+		var unauthorized = new ExampleDisplay("unauthorized", null, /*lang=json,strict*/ """{"error":"auth"}""", null, "401");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios(
 			[ipRequest, keywordRequest],
@@ -68,9 +68,9 @@ public class ExampleScenarioTests
 	[Fact]
 	public void BuildExampleScenarios_SharedResponseDoesNotOverwriteScenarioStatus()
 	{
-		var request = new ExampleDisplay("ip", null, """{"type":"ip"}""", null);
-		var ok = new ExampleDisplay("ip", null, """{"id":"scenario"}""", null, "200");
-		var sharedOk = new ExampleDisplay("genericOk", null, """{"id":"shared"}""", null, "200");
+		var request = new ExampleDisplay("ip", null, /*lang=json,strict*/ """{"type":"ip"}""", null);
+		var ok = new ExampleDisplay("ip", null, /*lang=json,strict*/ """{"id":"scenario"}""", null, "200");
+		var sharedOk = new ExampleDisplay("genericOk", null, /*lang=json,strict*/ """{"id":"shared"}""", null, "200");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([request], [ok, sharedOk], []);
 
@@ -82,8 +82,8 @@ public class ExampleScenarioTests
 	[Fact]
 	public void BuildExampleScenarios_CollapsesResponseOnlyNamedStatusesIntoOneScenario()
 	{
-		var bad = new ExampleDisplay("badRequest", null, """{"error":"bad"}""", null, "400");
-		var unauthorized = new ExampleDisplay("unauthorized", null, """{"error":"auth"}""", null, "401");
+		var bad = new ExampleDisplay("badRequest", null, /*lang=json,strict*/ """{"error":"bad"}""", null, "400");
+		var unauthorized = new ExampleDisplay("unauthorized", null, /*lang=json,strict*/ """{"error":"auth"}""", null, "401");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([], [bad, unauthorized], []);
 
@@ -97,12 +97,14 @@ public class ExampleScenarioTests
 		var multimodal = new ExampleDisplay(
 			"Multimodal embedding task",
 			null,
-			"""{"input":[{"content":{"type":"image"}}]}""",
+								 /*lang=json,strict*/
+								 """{"input":[{"content":{"type":"image"}}]}""",
 			null);
 		var textOnly = new ExampleDisplay(
 			"Text-only embedding task",
 			null,
-			"""{"input":["The first text","The second text"]}""",
+								 /*lang=json,strict*/
+								 """{"input":["The first text","The second text"]}""",
 			null);
 		var console = new CodeSample(
 			"Console",

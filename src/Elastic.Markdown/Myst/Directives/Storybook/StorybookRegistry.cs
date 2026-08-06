@@ -22,7 +22,7 @@ public sealed class StorybookRegistry
 	public Dictionary<string, JsonElement>? Build { get; init; }
 
 	[JsonPropertyName("stories")]
-	public Dictionary<string, StorybookRegistryStory> Stories { get; init; } = new(StringComparer.Ordinal);
+	public Dictionary<string, StorybookRegistryStory> Stories { get; init; } = [with(StringComparer.Ordinal)];
 }
 
 public sealed class StorybookRegistryStory

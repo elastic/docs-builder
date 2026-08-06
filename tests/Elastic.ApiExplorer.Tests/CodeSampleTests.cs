@@ -141,9 +141,9 @@ public class CodeSampleTests
 	}
 
 	[Theory]
-	[InlineData("""{"ok":true}""", "language-json")]
-	[InlineData("""[{"id":1}]""", "language-json")]
-	[InlineData("  \n{ \"a\": 1 }", "language-json")]
+	[InlineData(/*lang=json,strict*/ """{"ok":true}""", "language-json")]
+	[InlineData(/*lang=json,strict*/ """[{"id":1}]""", "language-json")]
+	[InlineData(/*lang=json*/ "  \n{ \"a\": 1 }", "language-json")]
 	[InlineData("event: message\ndata: [DONE]", "language-plaintext")]
 	[InlineData("", "language-plaintext")]
 	[InlineData(null, "language-plaintext")]

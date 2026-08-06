@@ -1130,22 +1130,31 @@ button.example-response-tab:focus-visible {
 	border-radius: 0;
 }
 
-.example-block--response .example-block-actions .copybtn.copybtn--in-header:hover {
+.example-block--response
+	.example-block-actions
+	.copybtn.copybtn--in-header:hover {
 	color: #1d2a3e;
 }
 
-.example-block--response .example-block-actions .copybtn.copybtn--in-header.success {
+.example-block--response
+	.example-block-actions
+	.copybtn.copybtn--in-header.success {
 	background-color: transparent;
 	color: #22863a;
 }
 
-.example-block--response .example-block-actions .copybtn.copybtn--in-header svg {
+.example-block--response
+	.example-block-actions
+	.copybtn.copybtn--in-header
+	svg {
 	width: 16px;
 	height: 16px;
 	padding: 0;
 }
 
-.example-block--response .example-block-actions .copybtn.copybtn--in-header.o-tooltip--left:after {
+.example-block--response
+	.example-block-actions
+	.copybtn.copybtn--in-header.o-tooltip--left:after {
 	background-color: #1d2a3e;
 	color: #f6f9fc;
 	transform: translateX(-102%) translateY(0);
@@ -1162,7 +1171,9 @@ button.example-response-tab:focus-visible {
 #api-examples-panel .example-block--response pre code {
 	background-color: transparent !important;
 	color: var(--api-response-text) !important;
-	font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
 	font-size: 14px;
 	line-height: 20px;
 	font-weight: 400;
@@ -1218,8 +1229,11 @@ button.example-response-tab:focus-visible {
 	}
 
 	/* Flatten wrappers so intro/reference become grid items next to the examples rail */
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) > .api-page-main,
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) > .api-page-main > #content-container,
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		> .api-page-main,
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		> .api-page-main
+		> #content-container,
 	.api-content-grid:has(#api-examples-panel.api-examples-panel)
 		> .api-page-main
 		> #content-container
@@ -1227,16 +1241,22 @@ button.example-response-tab:focus-visible {
 		display: contents;
 	}
 
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) .api-page-intro {
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		.api-page-intro {
 		grid-column: 1 / -1;
 		grid-row: 1;
 		min-width: 0;
-		padding-top: calc(var(--spacing) * 6); /* replaces .api-page-main pt-6 lost to contents */
-		padding-left: calc(var(--spacing) * 4); /* replaces article md:px-4 (left only) */
+		padding-top: calc(
+			var(--spacing) * 6
+		); /* replaces .api-page-main pt-6 lost to contents */
+		padding-left: calc(
+			var(--spacing) * 4
+		); /* replaces article md:px-4 (left only) */
 		padding-right: 0;
 	}
 
-	.api-content-grid:has(#api-examples-panel.api-examples-panel) .api-page-reference {
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		.api-page-reference {
 		grid-column: 1;
 		grid-row: 2;
 		min-width: 0;
@@ -1246,7 +1266,9 @@ button.example-response-tab:focus-visible {
 
 	/* Viewport-locked examples rail: full browser height under the intro */
 	#api-examples-panel {
-		--api-examples-rail-padding: calc(var(--spacing) * 6); /* match content pt-6 */
+		--api-examples-rail-padding: calc(
+			var(--spacing) * 6
+		); /* match content pt-6 */
 		grid-column: 2;
 		grid-row: 2;
 		max-width: var(--max-examples-width);
@@ -1383,7 +1405,9 @@ button.example-response-tab:focus-visible {
 }
 
 #api-examples-panel .example-block--response .api-code-line-gutter {
-	font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-family:
+		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		monospace;
 	font-size: 14px;
 	line-height: 20px;
 }
