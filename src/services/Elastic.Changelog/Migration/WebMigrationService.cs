@@ -10,12 +10,10 @@ using System.Security.Cryptography;
 using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Elastic.Changelog.Uploading;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
@@ -100,7 +98,7 @@ public class WebMigrationService(
 		if (collector.Errors > 0)
 			return false;
 
-		var uploadResults = await UploadCreateOnly(collector, args, staged, ctx);
+		var uploadResults = await UploadCreateOnly(args, staged, ctx);
 		results.AddRange(uploadResults);
 		LastResults = results;
 
@@ -178,8 +176,8 @@ public class WebMigrationService(
 	private sealed record StagedBundle(string Key, string LocalPath, string LocalETag);
 
 	/// <summary>
-	/// Serializes each in-scope release to bundle YAML and stages it in a temp directory so the
-	/// existing registry-refresh machinery (which reads local files) can be reused as-is.
+	/// Serializes each in-scope release to bundle YAML and stages it in a temp directory, computing
+	/// the local single-part ETag used to distinguish identical from divergent remote content.
 	/// </summary>
 	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms", Justification = "MD5 matches the S3 single-part ETag, used for content comparison only")]
 	private List<StagedBundle> StageBundles(IDiagnosticsCollector collector, MigrateFromWebScope scope, IReadOnlyList<MigratedRelease> releases)
@@ -210,7 +208,6 @@ public class WebMigrationService(
 	}
 
 	private async Task<List<MigrationKeyResult>> UploadCreateOnly(
-		IDiagnosticsCollector collector,
 		MigrateFromWebArguments args,
 		IReadOnlyList<StagedBundle> staged,
 		Cancel ctx)
@@ -223,20 +220,17 @@ public class WebMigrationService(
 		using var defaultClient = s3Client is null ? new AmazonS3Client() : null;
 		var client = s3Client ?? defaultClient!;
 
+		// No registry write, by design: the scrubber Lambda owns the public bundle/{product}/
+		// registry.json manifests and the shallow per-tree maps, reconciling them from the S3
+		// events these creates emit (elastic/docs-builder#3738); the client-side refresh is
+		// retired (elastic/docs-builder#3760).
 		var results = new List<MigrationKeyResult>(staged.Count);
-		var uploadedTargets = new List<UploadTarget>();
 		foreach (var bundle in staged)
 		{
 			ctx.ThrowIfCancellationRequested();
 			var result = await MigrateKey(client, args, bundle, ctx);
 			results.Add(result);
-			if (result.Outcome is OutcomeCreated || (result.Outcome is OutcomeSkipped && result.ETag == bundle.LocalETag))
-				uploadedTargets.Add(new UploadTarget(bundle.LocalPath, bundle.Key));
 		}
-
-		var created = results.Count(r => r.Outcome == OutcomeCreated);
-		if (!args.DryRun && created > 0)
-			await RefreshRegistry(collector, client, args.S3BucketName, uploadedTargets, ctx);
 
 		return results;
 	}
@@ -303,33 +297,6 @@ public class WebMigrationService(
 			IfNoneMatch = "*"
 		};
 		return await client.PutObjectAsync(request, ctx);
-	}
-
-	/// <summary>
-	/// Refreshes <c>bundle/{product}/registry.json</c> with the keys this run created (plus keys that
-	/// already existed with identical content), reusing the live pipeline's registry machinery.
-	/// Best-effort, matching live uploads: the bundles themselves are already in S3.
-	/// </summary>
-	private async Task RefreshRegistry(
-		IDiagnosticsCollector collector,
-		IAmazonS3 client,
-		string bucketName,
-		IReadOnlyList<UploadTarget> targets,
-		Cancel ctx)
-	{
-		try
-		{
-			var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
-			var builder = new RegistryBuilder(logFactory, _fileSystem, client, etagCalculator, bucketName);
-			var result = await builder.RefreshAsync(collector, targets, ctx, RegistryScope.Bundle);
-			_logger.LogInformation("Registry refresh: {Updated} updated, {Unchanged} unchanged, {Failed} failed",
-				result.Updated, result.Unchanged, result.Failed);
-		}
-		catch (Exception ex) when (ex is not OperationCanceledException)
-		{
-			_logger.LogWarning(ex, "Registry refresh failed; migrated bundles are in S3 but the manifest may be stale");
-			collector.EmitWarning(string.Empty, $"Failed to refresh registry manifest: {ex.Message}");
-		}
 	}
 
 	/// <summary>Formats the run report — one line per key — in a form that can be pasted into the tracking issue.</summary>

@@ -44,7 +44,7 @@ The report lists one line per key with its outcome:
 | `skipped` | The key already exists (identical or different content — never overwritten), was created concurrently by another writer, is beyond the cutoff, or is not in the `--versions` selection. |
 | `failed` | The write failed; the reason is included and the command exits non-zero. |
 
-After a run that created keys, the command refreshes `bundle/{product}/registry.json` (best-effort, like `changelog upload`).
+The command writes YAML bundle objects only — never a `registry.json`. The scrubber Lambda owns the public `bundle/{product}/registry.json` manifests and the shallow per-tree maps, reconciling them from the S3 events these creates emit ([#3738](https://github.com/elastic/docs-builder/pull/3738), [#3760](https://github.com/elastic/docs-builder/pull/3760)).
 
 ## Examples
 
