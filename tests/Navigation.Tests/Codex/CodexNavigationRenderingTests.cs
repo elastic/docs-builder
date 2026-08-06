@@ -4,8 +4,11 @@
 
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Site.Navigation;
+using RazorSlices;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -17,6 +20,25 @@ namespace Elastic.Documentation.Navigation.Tests.Codex;
 /// </summary>
 public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavigationTestBase(output)
 {
+	[Fact]
+	public async Task ProjectlessRepositories_DifferentTrees_ProduceDifferentContentHashes()
+	{
+		var docSetNavigations = CreateMockDocSetNavigations(["codex-environments", "ml-team"], includeProject: false);
+		var first = docSetNavigations["codex-environments"]
+			.Should().BeAssignableTo<IRootNavigationItem<INavigationModel, INavigationItem>>().Subject;
+		var second = docSetNavigations["ml-team"]
+			.Should().BeAssignableTo<IRootNavigationItem<INavigationModel, INavigationItem>>().Subject;
+
+		first.Id.Should().Be(second.Id);
+
+		var firstResult = await RenderNavigation(first);
+		var secondResult = await RenderNavigation(second);
+
+		firstResult.Id.Should().NotBe(secondResult.Id);
+		firstResult.Html.Should().Contain("codex-environments");
+		secondResult.Html.Should().Contain("ml-team");
+	}
+
 	[Fact]
 	public void GroupNavigation_TopLevelItems_ContainsAllGroupMembers()
 	{
@@ -211,5 +233,26 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		// And the index page should be the group landing
 		groupNav.Index.Url.Should().Be("/g/tools");
 		groupNav.Index.NavigationTitle.Should().Be("Tools");
+	}
+
+	private static async Task<NavigationRenderResult> RenderNavigation(
+		IRootNavigationItem<INavigationModel, INavigationItem> navigation)
+	{
+		var model = new NavigationViewModel
+		{
+			Tree = navigation,
+			IsPrimaryNavEnabled = false,
+			IsGlobalAssemblyBuild = false,
+			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>(),
+			IsUsingNavigationDropdown = false,
+			BuildType = BuildType.Codex
+		};
+		var renderModel = NavigationRenderModel.Create(model);
+		var html = await _TocTree.Create(renderModel).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return new NavigationRenderResult
+		{
+			Html = html,
+			Id = renderModel.ContentHash
+		};
 	}
 }
