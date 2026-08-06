@@ -66,7 +66,7 @@ var x = 1; // this uses `formatting` and a [link](testing/req.md)
 		Html.ShouldContainHtml(
 			"""
 			<ol class="code-callouts">
-				<li>this uses <code>formatting</code> and a <a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">link</a></li>
+				<li>this uses <code>formatting</code> and a <a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav,#api-examples-panel" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">link</a></li>
 			</ol>
 			"""
 		);
