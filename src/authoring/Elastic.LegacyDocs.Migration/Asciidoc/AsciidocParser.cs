@@ -366,6 +366,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	[GeneratedRegex(@"^<(\d+)>\s+(.+)$")]
 	private static partial Regex CalloutItemRegex();
 
+	[GeneratedRegex(@"^include::([^\[]+)\[([^\]]*)\]\s*$")]
+	private static partial Regex TableIncludeRegex();
+
 	[GeneratedRegex(@"^include-tagged::(.+?)\[([^\]]*)\]\s*$")]
 	private static partial Regex IncludeTaggedInVerbatimRegex();
 
@@ -776,10 +779,40 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 				continue;
 			}
 
-			if (cur.Type == TokenType.Text)
+			if (cur.Type is TokenType.Text or TokenType.IncludeDirective)
 			{
-				if (currentCells.Count > 0)
+				// Inside tables the lexer produces Text tokens for include:: directives
+				var includeMatch = TableIncludeRegex().Match(cur.Raw);
+				if (includeMatch.Success)
+				{
+					// Flush any accumulated row, then inline the included table rows
+					if (currentCells.Count > 0)
+					{
+						allRows.Add(BuildTableRow(currentCells));
+						currentCells = [];
+					}
+					var rawPath = includeMatch.Groups[1].Value;
+					var resolvedPath = rawPath.StartsWith("{docdir}", StringComparison.Ordinal)
+						? rawPath.Replace("{docdir}", _basePath)
+						: Path.GetFullPath(Path.Combine(_basePath, rawPath));
+					if (File.Exists(resolvedPath))
+					{
+						foreach (var fileLine in File.ReadAllLines(resolvedPath))
+						{
+							var trimmedLine = fileLine.Trim();
+							if (trimmedLine.StartsWith('|'))
+							{
+								var cells = SplitTableCells(trimmedLine[1..]);
+								if (cells.Count > 0)
+									allRows.Add(BuildTableRow(cells));
+							}
+						}
+					}
+				}
+				else if (currentCells.Count > 0)
+				{
 					currentCells[^1] += " " + cur.Raw.Trim();
+				}
 				_pos++;
 				continue;
 			}
