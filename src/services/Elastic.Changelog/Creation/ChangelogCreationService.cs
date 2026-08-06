@@ -446,6 +446,7 @@ IEnvironmentVariables? env = null
 			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas,
 			Products = derived.Products is { Count: > 0 } && input.Products.Count == 0 ? derived.Products : input.Products,
 			Highlight = derived.Highlight ?? input.Highlight,
+			FeatureId = derived.FeatureId != null && string.IsNullOrWhiteSpace(input.FeatureId) ? derived.FeatureId : input.FeatureId,
 			Issues = derived.Issues != null && (input.Issues == null || input.Issues.Length == 0) ? derived.Issues : input.Issues,
 			Prs = derived.Prs != null && (input.Prs == null || input.Prs.Length == 0) ? derived.Prs : input.Prs
 		};
