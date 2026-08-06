@@ -220,6 +220,29 @@ public class SiteNavigationFileTests
 		SiteNavigationFile.Deserialize(yaml).TopNav.Should().BeEmpty();
 	}
 
+	/// <summary>
+	/// The shipped <c>config/navigation.yml</c> drives the top nav on every assembled page,
+	/// so a typo there breaks the whole site rather than one doc.
+	/// </summary>
+	[Fact]
+	public void ShippedNavigationYmlHasAUsableTopNav()
+	{
+		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("Solution directory not found.");
+		var path = Path.Combine(root.FullName, "config", "navigation.yml");
+		File.Exists(path).Should().BeTrue();
+
+		var siteNav = SiteNavigationFile.Deserialize(File.ReadAllText(path));
+
+		siteNav.TopNav.Should().NotBeEmpty();
+		foreach (var item in siteNav.TopNav)
+		{
+			item.Title.Should().NotBeNullOrWhiteSpace();
+			var hasTarget = item.Url is not null || item.Page is not null || item.Children.Count > 0;
+			hasTarget.Should().BeTrue($"top_nav entry '{item.Title}' needs a url, page or children");
+			(item.Url is not null && item.Page is not null).Should().BeFalse($"top_nav entry '{item.Title}' sets both url and page");
+		}
+	}
+
 	[Fact]
 	public void ThrowsExceptionForInvalidTopNavPageReference()
 	{

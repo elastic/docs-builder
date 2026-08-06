@@ -184,6 +184,28 @@ public class TopNavResolverTests
 		model.ActiveUrl(null).Should().BeNull();
 	}
 
+	[Fact]
+	public void RootUrlResolvesToThePrefixAndActsAsTheCatchAllEntry()
+	{
+		var model = Resolve("""
+		                    top_nav:
+		                      - title: Guides
+		                        url: /
+		                      - title: Reference
+		                        url: /reference/
+		                    """, out var collector);
+
+		collector.Errors.Should().Be(0);
+		var guides = model!.Items[0].Should().BeOfType<TopNavLinkItem>().Subject;
+		guides.Url.Should().Be("/docs/");
+
+		// anything not claimed by a more specific entry falls to Guides
+		model.ActiveUrl("/docs/solutions/search").Should().Be("/docs/");
+		model.ActiveUrl("/docs/").Should().Be("/docs/");
+		// but a more specific entry still wins
+		model.ActiveUrl("/docs/reference/apis").Should().Be("/docs/reference/");
+	}
+
 	private static TopNavRenderModel? Resolve(string yaml, out DiagnosticsCollector collector)
 	{
 		collector = new TestDiagnosticsCollector();

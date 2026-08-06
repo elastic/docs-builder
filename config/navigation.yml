@@ -24,6 +24,12 @@
 #
 # Remove this key entirely to fall back to the links built into the layout.
 top_nav:
+  # `/` is the docs home. It prefix-matches every page, so Guides is the
+  # highlighted entry on any page no later entry claims.
+  - title: Guides
+    url: /
+  - title: APIs
+    url: https://www.elastic.co/docs/api
   - title: Release notes
     url: /release-notes/
   - title: Troubleshoot
