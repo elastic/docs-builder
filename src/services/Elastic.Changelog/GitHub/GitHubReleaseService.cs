@@ -69,14 +69,86 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 		}
 	}
 
-	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
+	/// <inheritdoc />
+	public async Task<IReadOnlyList<GitHubReleaseInfo>> FetchReleasesAsync(
+		string owner,
+		string repo,
+		int count,
+		CancellationToken ctx = default)
+	{
+		try
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/releases?per_page={count}";
+			using var request = CreateRequest(url);
+			_logger.LogDebug("Fetching releases from: {ApiUrl}", url);
+
+			var response = await HttpClient.SendAsync(request, ctx);
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogDebug("Failed to fetch releases. Status: {StatusCode}, Reason: {ReasonPhrase}",
+					response.StatusCode, response.ReasonPhrase);
+				return [];
+			}
+
+			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
+			var releases = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray);
+			return releases == null ? [] : releases.Select(ToReleaseInfo).ToArray();
+		}
+		catch (HttpRequestException ex)
+		{
+			_logger.LogWarning(ex, "HTTP error fetching releases from GitHub");
+			return [];
+		}
+		catch (TaskCanceledException)
+		{
+			_logger.LogWarning("Request timeout fetching releases from GitHub");
+			return [];
+		}
+	}
+
+	/// <inheritdoc />
+	public async Task<string?> DownloadAssetTextAsync(GitHubReleaseAsset asset, CancellationToken ctx = default)
+	{
+		try
+		{
+			using var request = CreateRequest(asset.BrowserDownloadUrl);
+			_logger.LogDebug("Downloading release asset: {AssetUrl}", asset.BrowserDownloadUrl);
+
+			var response = await HttpClient.SendAsync(request, ctx);
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogDebug("Failed to download asset {AssetName}. Status: {StatusCode}, Reason: {ReasonPhrase}",
+					asset.Name, response.StatusCode, response.ReasonPhrase);
+				return null;
+			}
+
+			return await response.Content.ReadAsStringAsync(ctx);
+		}
+		catch (HttpRequestException ex)
+		{
+			_logger.LogWarning(ex, "HTTP error downloading release asset {AssetName}", asset.Name);
+			return null;
+		}
+		catch (TaskCanceledException)
+		{
+			_logger.LogWarning("Request timeout downloading release asset {AssetName}", asset.Name);
+			return null;
+		}
+	}
+
+	private static HttpRequestMessage CreateRequest(string url)
 	{
 		// Add GitHub token if available (for rate limiting and private repos)
 		var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-		using var request = new HttpRequestMessage(HttpMethod.Get, url);
+		var request = new HttpRequestMessage(HttpMethod.Get, url);
 		if (!string.IsNullOrEmpty(githubToken))
 			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
+		return request;
+	}
 
+	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
+	{
+		using var request = CreateRequest(url);
 		_logger.LogDebug("Fetching release info from: {ApiUrl}", url);
 
 		var response = await HttpClient.SendAsync(request, ctx);
@@ -96,16 +168,33 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 			return null;
 		}
 
-		return new GitHubReleaseInfo
-		{
-			TagName = releaseData.TagName ?? string.Empty,
-			Name = releaseData.Name ?? string.Empty,
-			Body = releaseData.Body ?? string.Empty,
-			Prerelease = releaseData.Prerelease,
-			Draft = releaseData.Draft,
-			HtmlUrl = releaseData.HtmlUrl ?? string.Empty,
-			PublishedAt = releaseData.PublishedAt
-		};
+		return ToReleaseInfo(releaseData);
+	}
+
+	private static GitHubReleaseInfo ToReleaseInfo(GitHubReleaseResponse releaseData) => new()
+	{
+		TagName = releaseData.TagName ?? string.Empty,
+		Name = releaseData.Name ?? string.Empty,
+		Body = releaseData.Body ?? string.Empty,
+		Prerelease = releaseData.Prerelease,
+		Draft = releaseData.Draft,
+		HtmlUrl = releaseData.HtmlUrl ?? string.Empty,
+		PublishedAt = releaseData.PublishedAt,
+		Assets = releaseData.Assets is { Count: > 0 }
+			? releaseData.Assets
+				.Where(a => a is { Name: not null, BrowserDownloadUrl: not null })
+				.Select(a => new GitHubReleaseAsset { Name = a.Name!, BrowserDownloadUrl = a.BrowserDownloadUrl! })
+				.ToArray()
+			: []
+	};
+
+	private sealed class GitHubReleaseAssetResponse
+	{
+		[JsonPropertyName("name")]
+		public string? Name { get; set; }
+
+		[JsonPropertyName("browser_download_url")]
+		public string? BrowserDownloadUrl { get; set; }
 	}
 
 	private sealed class GitHubReleaseResponse
@@ -130,8 +219,12 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 
 		[JsonPropertyName("published_at")]
 		public DateTimeOffset? PublishedAt { get; set; }
+
+		[JsonPropertyName("assets")]
+		public List<GitHubReleaseAssetResponse>? Assets { get; set; }
 	}
 
 	[JsonSerializable(typeof(GitHubReleaseResponse))]
+	[JsonSerializable(typeof(GitHubReleaseResponse[]))]
 	private sealed partial class GitHubReleaseJsonContext : JsonSerializerContext;
 }

@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using Actions.Core.Services;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
+using Elastic.Changelog.AllowlistIdentity;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
@@ -1671,6 +1672,55 @@ internal sealed partial class ChangelogCommands(
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>Resolve the link allowlist identity of the deployed changelog scrubber.</summary>
+	/// <remarks>
+	/// The scrubber Lambda embeds its link allowlist from <c>config/assembler.yml</c> at build time, so the
+	/// deployed allowlist can differ from any local checkout. The release pipeline attaches a
+	/// <c>changelog-scrubber-allowlist.json</c> asset to the GitHub release after each successful scrubber
+	/// deploy; this command resolves the identity from that asset. Without a <c>--tag</c>, the newest release
+	/// carrying the asset wins — the most recent deploy that passed the gated pipeline. Exits non-zero when
+	/// no identity can be resolved: backfill plans must pin this identity and cannot be approved without it.
+	/// </remarks>
+	/// <param name="tag">Release tag to resolve the identity from (e.g., "v5.7.0"). Defaults to the newest release carrying the identity asset.</param>
+	/// <param name="assembler">Path to a local assembler.yml to compare against the deployed allowlist. Defaults to <c>config/assembler.yml</c> when it exists; a mismatch is reported as a warning, not an error.</param>
+	/// <param name="owner">GitHub owner of the repository whose releases carry the identity asset.</param>
+	/// <param name="repo">GitHub repository whose releases carry the identity asset.</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> ScrubberAllowlist(
+		string? tag = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? assembler = null,
+		string owner = "elastic",
+		string repo = "docs-builder",
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		// Default the local comparison to config/assembler.yml relative to cwd when present.
+		var assemblerPath = assembler?.FullName;
+		if (assemblerPath is null)
+		{
+			var candidate = _fileSystem.Path.Join(Directory.GetCurrentDirectory(), "config", "assembler.yml");
+			if (_fileSystem.File.Exists(candidate))
+				assemblerPath = candidate;
+		}
+
+		var service = new ScrubberAllowlistIdentityService(logFactory, new GitHubReleaseService(logFactory), _fileSystem);
+		var args = new ResolveScrubberAllowlistArguments
+		{
+			Owner = owner,
+			Repo = repo,
+			Tag = tag,
+			AssemblerPath = assemblerPath
+		};
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.ResolveDeployedAsync(c, state, ct) is not null
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
