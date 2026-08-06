@@ -117,8 +117,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		var withIndexRow = CreateRenderModel(yaml);
 		var withoutIndexRow = CreateRenderModel(yaml, isPrimaryNavEnabled: true);
 
-		withIndexRow.RootIndex.Should().NotBeNull();
-		withIndexRow.RootIndex!.Url.Should().Be("/");
+		var rootIndex = withIndexRow.RootIndex.Should().NotBeNull().Subject;
+		rootIndex.Url.Should().Be("/");
 		withoutIndexRow.RootIndex.Should().BeNull();
 		withoutIndexRow.ContentHash.Should().NotBe(withIndexRow.ContentHash);
 	}
