@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using Elastic.LegacyDocs.Migration.Asciidoc.Ast;
 using Slugify;
 
@@ -9,9 +10,12 @@ namespace Elastic.LegacyDocs.Migration.Asciidoc;
 
 public record PageOutput(string Slug, string Title, string MarkdownContent);
 
-public static class PageChunker
+public static partial class PageChunker
 {
 	private static readonly SlugHelper SlugHelper = new();
+
+	[GeneratedRegex(@"^<titleabbrev>(.*)</titleabbrev>\s*$", RegexOptions.Singleline)]
+	private static partial Regex TitleAbbrevRegex();
 
 	public static IReadOnlyList<PageOutput> Chunk(AsciidocDocument document, int chunkLevel, MarkdownEmitter emitter)
 	{
@@ -21,8 +25,8 @@ public static class PageChunker
 			return [new PageOutput("index", document.Title ?? "Index", emitter.Emit(document))];
 		}
 
-		var anchorMap = BuildAnchorMap(document.Children, chunkLevel);
-		emitter.UpdateAnchorMap(anchorMap);
+		var (slugMap, titleMap) = BuildAnchorMaps(document.Children, chunkLevel);
+		emitter.UpdateAnchorMap(slugMap, titleMap);
 
 		var (pages, remaining) = ExtractPages(document.Children, chunkLevel, emitter);
 
@@ -34,21 +38,25 @@ public static class PageChunker
 		return [indexPage, .. pages];
 	}
 
-	private static Dictionary<string, string> BuildAnchorMap(IReadOnlyList<IAsciidocNode> children, int chunkLevel)
+	private static (Dictionary<string, string> SlugMap, Dictionary<string, string> TitleMap) BuildAnchorMaps(
+		IReadOnlyList<IAsciidocNode> children, int chunkLevel)
 	{
-		var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-		CollectAnchors(children, chunkLevel, map);
-		return map;
+		var slugMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var titleMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		CollectAnchors(children, chunkLevel, slugMap, titleMap);
+		return (slugMap, titleMap);
 	}
 
-	private static void CollectAnchors(IReadOnlyList<IAsciidocNode> children, int chunkLevel, Dictionary<string, string> map)
+	private static void CollectAnchors(
+		IReadOnlyList<IAsciidocNode> children, int chunkLevel,
+		Dictionary<string, string> slugMap, Dictionary<string, string> titleMap)
 	{
 		foreach (var child in children)
 		{
 			// Recurse transparently into open blocks — they may contain sections or anchored blocks
 			if (child is OpenBlockNode open)
 			{
-				CollectAnchors(open.Children, chunkLevel, map);
+				CollectAnchors(open.Children, chunkLevel, slugMap, titleMap);
 				continue;
 			}
 
@@ -57,7 +65,7 @@ public static class PageChunker
 
 			if (section.Level == 0)
 			{
-				CollectAnchors(section.Children, chunkLevel, map);
+				CollectAnchors(section.Children, chunkLevel, slugMap, titleMap);
 				continue;
 			}
 
@@ -65,26 +73,46 @@ public static class PageChunker
 			{
 				var slug = section.Id ?? GenerateSlug(section.Title);
 				if (section.Id is not null)
-					map[section.Id] = slug;
+				{
+					slugMap[section.Id] = slug;
+					titleMap[section.Id] = ExtractDisplayTitle(section);
+				}
 
-				CollectChildAnchors(section.Children, slug, map);
-				CollectAnchors(section.Children, chunkLevel, map);
+				CollectChildAnchors(section.Children, slug, slugMap, titleMap);
+				CollectAnchors(section.Children, chunkLevel, slugMap, titleMap);
 			}
 		}
 	}
 
-	private static void CollectChildAnchors(IReadOnlyList<IAsciidocNode> children, string parentSlug, Dictionary<string, string> map)
+	// Extracts the display title for a section: uses <titleabbrev> if present, otherwise the section title.
+	private static string ExtractDisplayTitle(SectionNode section)
+	{
+		foreach (var child in section.Children)
+		{
+			if (child is not PassthroughNode passthrough)
+				continue;
+			var m = TitleAbbrevRegex().Match(passthrough.Content.Trim());
+			if (m.Success)
+				return m.Groups[1].Value;
+		}
+		return section.Title;
+	}
+
+	private static void CollectChildAnchors(
+		IReadOnlyList<IAsciidocNode> children, string parentSlug,
+		Dictionary<string, string> slugMap, Dictionary<string, string> titleMap)
 	{
 		foreach (var child in children)
 		{
 			if (child is SectionNode sub && sub.Id is not null)
 			{
-				map[sub.Id] = parentSlug;
-				CollectChildAnchors(sub.Children, parentSlug, map);
+				slugMap[sub.Id] = parentSlug;
+				titleMap[sub.Id] = ExtractDisplayTitle(sub);
+				CollectChildAnchors(sub.Children, parentSlug, slugMap, titleMap);
 			}
 			else if (child is AnchoredBlock anchored)
 			{
-				map[anchored.Id] = parentSlug;
+				slugMap[anchored.Id] = parentSlug;
 			}
 		}
 	}

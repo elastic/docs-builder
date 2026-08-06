@@ -14,6 +14,7 @@ public record MarkdownEmitterOptions
 	public string? BookPrefix { get; init; }
 	public string? Version { get; init; }
 	public Dictionary<string, string> AnchorToSlugMap { get; init; } = [];
+	public Dictionary<string, string> AnchorToTitleMap { get; init; } = [];
 	public string? PageSlug { get; init; }
 }
 
@@ -49,8 +50,8 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 	private int _footnoteCounter;
 	private readonly List<(int Index, string Content)> _footnotes = [];
 
-	public void UpdateAnchorMap(Dictionary<string, string> anchorMap) =>
-		options = options with { AnchorToSlugMap = anchorMap };
+	public void UpdateAnchorMap(Dictionary<string, string> slugMap, Dictionary<string, string> titleMap) =>
+		options = options with { AnchorToSlugMap = slugMap, AnchorToTitleMap = titleMap };
 
 	public void UpdatePageSlug(string slug) =>
 		options = options with { PageSlug = slug };
@@ -524,14 +525,17 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 		var url = rewritten ?? link.Url;
 
 		if (link.Text is not null)
-			Write($"[{link.Text}]({url})");
+			Write($"[{SubstituteTitleAttrs(link.Text)}]({url})");
 		else
 			Write($"<{url}>");
 	}
 
 	private void EmitCrossRef(InlineCrossRefNode xref)
 	{
-		var text = SubstituteTitleAttrs(xref.Text ?? xref.Target);
+		var displayText = xref.Text is not null
+			? SubstituteTitleAttrs(xref.Text)
+			: options.AnchorToTitleMap.TryGetValue(xref.Target, out var title) ? SubstituteTitleAttrs(title) : xref.Target;
+		var text = displayText;
 
 		if (!xref.Target.Contains('/') && !xref.Target.Contains("::"))
 		{
