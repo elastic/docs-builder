@@ -321,7 +321,7 @@ public partial class ChangelogBundlingService(
 				var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
 				if (contents == null)
 					return false;
-				if (requestedEntryNames != null)
+				if (requestedEntryNames is not null)
 				{
 					var poolLabel = $"{authoringOwner}/{authoringRepo}/{authoringBranch}";
 					var selected = SelectRequestedCdnEntries(collector, contents, requestedEntryNames, poolLabel);
