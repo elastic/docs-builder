@@ -14,6 +14,7 @@ public record MarkdownEmitterOptions
 	public string? BookPrefix { get; init; }
 	public string? Version { get; init; }
 	public Dictionary<string, string> AnchorToSlugMap { get; init; } = [];
+	public string? PageSlug { get; init; }
 }
 
 public static partial class GuideUrlRewriter
@@ -42,7 +43,7 @@ public static partial class GuideUrlRewriter
 	}
 }
 
-public class MarkdownEmitter(MarkdownEmitterOptions options)
+public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 {
 	private StringBuilder _sb = new();
 	private int _footnoteCounter;
@@ -51,6 +52,9 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 	public void UpdateAnchorMap(Dictionary<string, string> anchorMap) =>
 		options = options with { AnchorToSlugMap = anchorMap };
 
+	public void UpdatePageSlug(string slug) =>
+		options = options with { PageSlug = slug };
+
 	public string Emit(AsciidocDocument document)
 	{
 		Reset();
@@ -58,7 +62,7 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 		if (document.Title is not null)
 		{
 			var anchor = document.Id is not null ? $" [{document.Id}]" : "";
-			WriteLine($"# {document.Title}{anchor}");
+			WriteLine($"# {SubstituteTitleAttrs(document.Title)}{anchor}");
 			WriteLine();
 		}
 
@@ -163,11 +167,16 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 				EmitChildren(open.Children);
 				break;
 			case PassthroughNode passthrough:
-				WriteLine(passthrough.Content);
-				WriteLine();
+				// <titleabbrev> is an Elastic AsciiDoc extension for abbreviated nav titles — discard.
+				if (!TitleAbbrevRegex().IsMatch(passthrough.Content.Trim()))
+				{
+					WriteLine(passthrough.Content);
+					WriteLine();
+				}
 				break;
 			case AnchoredBlock anchored:
 				WriteLine($"$$${anchored.Id}$$$");
+				WriteLine();
 				EmitNode(anchored.Inner);
 				break;
 			case ThematicBreakNode:
@@ -182,14 +191,21 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 	{
 		var hashes = new string('#', section.Level + 1);
 		var anchor = section.Id is not null ? $" [{section.Id}]" : "";
-		WriteLine($"{hashes} {section.Title}{anchor}");
+		WriteLine($"{hashes} {SubstituteTitleAttrs(section.Title)}{anchor}");
 		WriteLine();
 
 		EmitChildren(section.Children);
 	}
 
+	[GeneratedRegex(@"^<titleabbrev>.*</titleabbrev>\s*$", RegexOptions.Singleline)]
+	private static partial Regex TitleAbbrevRegex();
+
 	private void EmitParagraph(ParagraphNode paragraph)
 	{
+		// <titleabbrev> is an Elastic AsciiDoc extension for abbreviated nav titles — discard.
+		if (paragraph.Inlines is [TextInline { Text: var raw }] && TitleAbbrevRegex().IsMatch(raw))
+			return;
+
 		foreach (var inline in paragraph.Inlines)
 			EmitInline(inline);
 		WriteLine();
@@ -515,13 +531,17 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 
 	private void EmitCrossRef(InlineCrossRefNode xref)
 	{
-		var text = xref.Text ?? xref.Target;
+		var text = SubstituteTitleAttrs(xref.Text ?? xref.Target);
 
 		if (!xref.Target.Contains('/') && !xref.Target.Contains("::"))
 		{
 			if (options.AnchorToSlugMap.TryGetValue(xref.Target, out var slug))
 			{
-				Write($"[{text}]({slug}.md)");
+				// Same-page anchor: link to fragment only
+				if (slug == options.PageSlug)
+					Write($"[{text}](#{xref.Target})");
+				else
+					Write($"[{text}]({slug}.md#{xref.Target})");
 				return;
 			}
 
@@ -559,4 +579,15 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 		foreach (var (index, content) in _footnotes)
 			WriteLine($"[^{index}]: {content}");
 	}
+
+	[GeneratedRegex(@"\{([a-z][a-z0-9_-]*)\}")]
+	private static partial Regex AttrRefRegex();
+
+	// Replaces {name} → {{name}} for product-name subs in raw title strings (which
+	// bypass ParseInlines and never hit the AttributeRefInline emission path).
+	private static string SubstituteTitleAttrs(string title) =>
+		AttrRefRegex().Replace(title, m =>
+			SharedAttributes.ProductNames.ContainsKey(m.Groups[1].Value)
+				? $"{{{{{m.Groups[1].Value}}}}}"
+				: m.Value);
 }
