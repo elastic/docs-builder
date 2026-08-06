@@ -28,6 +28,9 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	// never runs. StopAsync uses this to decide whether awaiting _started is
 	// meaningful or whether the channel is guaranteed to have no drainer.
 	private volatile bool _readerStarted;
+	// True while a Drain() pass is executing. Set before TryRead, cleared after the
+	// while loop exits, so WaitForDrain knows items dequeued but not yet output-written.
+	private volatile bool _draining;
 
 	public HashSet<string> OffendingFiles { get; } = [];
 
@@ -40,6 +43,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public bool IsStarted => _readerStarted;
 
 	public bool IsStartRequested => _started is not null;
+
+	public bool IsDraining => _draining;
 
 	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
@@ -77,6 +82,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	private void Drain()
 	{
+		_draining = true;
 		while (Channel.Reader.TryRead(out var item))
 		{
 			if (item.Severity == Severity.Hint && NoHints)
@@ -86,6 +92,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			foreach (var output in outputs)
 				output.Write(item);
 		}
+		_draining = false;
 	}
 
 	protected void IncrementSeverityCount(Diagnostic item)

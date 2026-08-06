@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Navigation.Isolated.Node;
@@ -30,6 +31,15 @@ public class FolderNavigation<TModel>(
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
+
+	/// <inheritdoc />
+	public INodeNavigationItem<INavigationModel, INavigationItem>? IslandListingRoot { get; internal set; }
+
+	/// <inheritdoc />
+	public bool IsIslandListing { get; internal set; }
+
+	/// <inheritdoc />
+	public ListingVisual IslandVisual { get; internal set; }
 
 	/// <inheritdoc />
 	public bool Hidden { get; private set; }

@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Toc;
+
 namespace Elastic.Documentation.Navigation;
 
 /// Represents navigation model data for documentation elements.
@@ -26,7 +28,38 @@ public interface INavigationItem
 	/// Gets or sets the parent navigation item.
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
+	/// <summary>
+	/// Whether this item is hidden from the rendered navigation tree.
+	/// Used by <c>_TocTreeNav.cshtml</c> to skip rendering.
+	/// </summary>
 	bool Hidden { get; }
+
+	/// <summary>
+	/// Whether this item should be excluded from search indexing and the HTML <c>noindex</c> directive.
+	/// Defaults to <see cref="Hidden"/> so existing behavior is preserved.
+	/// Listing pages override this to <c>false</c> — they are hidden from the nav tree but should remain
+	/// indexed and searchable.
+	/// </summary>
+	bool ExcludeFromIndexing => Hidden;
+
+	/// <summary>
+	/// When non-null, this item is part of an island listing and this is its listing root node.
+	/// Island pages render a dedicated sidebar nav instead of the full tree.
+	/// </summary>
+	INodeNavigationItem<INavigationModel, INavigationItem>? IslandListingRoot => null;
+
+	/// <summary>
+	/// When true, this node IS the island listing root (the listing index page).
+	/// Used to render the island nav when viewing the listing overview page.
+	/// </summary>
+	bool IsIslandListing => false;
+
+	/// <summary>
+	/// For island listing roots, controls what depth the island sidebar nav renders.
+	/// <see cref="ListingVisual.Groups"/> shows group headings only;
+	/// <see cref="ListingVisual.All"/> shows groups with their pages.
+	/// </summary>
+	ListingVisual IslandVisual => ListingVisual.None;
 
 	int NavigationIndex { get; set; }
 }
