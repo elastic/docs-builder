@@ -37,13 +37,20 @@ public enum GroupReconcileOutcome
 public sealed class ReconcileConflictException(string message) : Exception(message);
 
 /// <summary>
-/// Rebuilds one group's public <c>registry.json</c> from the <em>current public bucket state</em>
-/// (<c>registry = f(state)</c>, never <c>f(event)</c> — see elastic/docs-eng-team#688). Lists the
-/// group's prefix, reuses entries whose recorded ETag still matches, recomputes the rest from the
-/// scrubbed public YAMLs, and writes the manifest back with optimistic concurrency. Any successful
-/// reconcile therefore repairs <em>all</em> accumulated drift in the group, not just the change
-/// that triggered it.
+/// Rebuilds one bundle group's public <c>registry.json</c> from the <em>current public bucket
+/// state</em> (<c>registry = f(state)</c>, never <c>f(event)</c> — see elastic/docs-eng-team#688).
+/// Lists the group's prefix, reuses entries whose recorded ETag still matches, recomputes the rest
+/// from the scrubbed public YAMLs, and writes the manifest back with optimistic concurrency. Any
+/// successful reconcile therefore repairs <em>all</em> accumulated drift in the group, not just
+/// the change that triggered it.
 /// </summary>
+/// <remarks>
+/// Scoped to the <c>bundle/{product}/</c> tree only: the <c>{changelog}</c> directive and external
+/// CDN consumers need to enumerate bundles, and dates (serverless) are not derivable client-side.
+/// The <c>changelog/…</c> pool manifests are deliberately <em>not</em> reconciled — release-note
+/// discovery starts from PR lists, so those manifests stay client-authored pass-through until
+/// Phase 3 retires them entirely.
+/// </remarks>
 public sealed class RegistryReconciler(
 	ILoggerFactory logFactory,
 	IAmazonS3 s3Client,
@@ -78,6 +85,9 @@ public sealed class RegistryReconciler(
 	/// </summary>
 	public async Task<GroupReconcileOutcome> ReconcileGroupAsync(ChangelogScope scope, Cancel ctx)
 	{
+		if (scope.Kind != ChangelogScopeKind.Bundle)
+			throw new ArgumentException($"Group reconcile applies to the bundle tree only; got '{scope}'.", nameof(scope));
+
 		_metrics.IncrementGroupReconciles();
 
 		for (var attempt = 1; attempt <= MaxWriteAttempts; attempt++)
@@ -230,19 +240,6 @@ public sealed class RegistryReconciler(
 		IReadOnlyList<RegistryBundle> reusable,
 		Cancel ctx)
 	{
-		// The entry index is listing-only by design (target is null; consumers re-read each entry),
-		// so the whole build is zero GETs.
-		if (scope.Kind == ChangelogScopeKind.Changelog)
-		{
-			var entries = Sort(listing.Select(obj => new RegistryBundle
-			{
-				File = obj.Key[scope.Prefix.Length..],
-				Target = null,
-				ETag = NormalizeETag(obj.ETag)
-			}));
-			return (entries, entries.Count);
-		}
-
 		var byFile = reusable.ToDictionary(b => b.File, b => b, StringComparer.Ordinal);
 		var built = new RegistryBundle?[listing.Count];
 		var reused = 0;

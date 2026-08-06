@@ -55,7 +55,8 @@ async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	var metrics = new ReconcileMetrics();
 	var scrubber = new ChangelogContentScrubber(logFactory, allowRepos);
 	var reconciler = new RegistryReconciler(logFactory, s3Client, publicBucketName, metrics: metrics);
-	var processor = new ScrubberProcessor(logFactory, s3Client, publicBucketName, scrubber, reconciler, metrics);
+	var shallowReconciler = new ShallowRegistryReconciler(logFactory, s3Client, publicBucketName, metrics: metrics);
+	var processor = new ScrubberProcessor(logFactory, s3Client, publicBucketName, scrubber, reconciler, shallowReconciler, metrics);
 
 	var messages = ev.Records.Select(r => new ScrubberQueueMessage(r.MessageId, r.Body)).ToList();
 	var failedIds = await processor.ProcessAsync(messages, CancellationToken.None);
