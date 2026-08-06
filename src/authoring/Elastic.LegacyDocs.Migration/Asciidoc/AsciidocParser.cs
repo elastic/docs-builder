@@ -335,7 +335,16 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 				{
 					while (callouts.Count < idx)
 						callouts.Add("");
-					callouts[idx - 1] = calloutMatch.Groups[2].Value;
+					var text = calloutMatch.Groups[2].Value;
+					_pos++;
+					// Collect any continuation lines (Text tokens without <n> prefix)
+					while (_pos < _tokens.Count && Current.Type == TokenType.Text && !CalloutItemRegex().IsMatch(Current.Raw))
+					{
+						text += " " + Current.Raw.Trim();
+						_pos++;
+					}
+					callouts[idx - 1] = text;
+					continue;
 				}
 				_pos++;
 			}
@@ -701,7 +710,19 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 			var description = new List<IAsciidocNode>();
 			if (!string.IsNullOrWhiteSpace(descText))
+			{
+				// If the inline description contains an unclosed <<, the xref spans to the next
+				// line(s) — join with continuation Text tokens until the xref is closed.
+				var openCount = descText.Split("<<").Length - 1;
+				var closeCount = descText.Split(">>").Length - 1;
+				while (openCount > closeCount && _pos < _tokens.Count && Current.Type == TokenType.Text)
+				{
+					descText += "\n" + Current.Raw;
+					closeCount = descText.Split(">>").Length - 1;
+					_pos++;
+				}
 				description.Add(new ParagraphNode { Inlines = ParseInlines(SubstituteAttributes(descText)) });
+			}
 
 			while (_pos < _tokens.Count)
 			{
@@ -724,6 +745,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					_pos++;
 					while (_pos < _tokens.Count && Current.Type == TokenType.Text)
 					{
+						// Stop before a callout marker so ParseCalloutList can handle the <n> run
+						if (CalloutItemRegex().IsMatch(Current.Raw))
+							break;
 						lines.Add(Current.Raw);
 						_pos++;
 					}
@@ -1049,6 +1073,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		var lines = new List<string>();
 		while (_pos < _tokens.Count && Current.Type == TokenType.Text)
 		{
+			// Stop before a callout marker so ParseCalloutList can handle the <n> run
+			if (CalloutItemRegex().IsMatch(Current.Raw))
+				break;
 			lines.Add(Current.Raw);
 			_pos++;
 		}
