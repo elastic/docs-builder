@@ -128,7 +128,11 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
-		Git = gitCheckoutInformation ?? GitCheckoutInformationFactory.Create(DocumentationCheckoutDirectory, ReadFileSystem);
+		// When DocumentationCheckoutDirectory is null (source is the docs subfolder, not the repo root),
+		// try the parent directory as the git root so branch/commit info is still available locally.
+		var gitRoot = DocumentationCheckoutDirectory
+			?? (DocumentationSourceDirectory.Parent is { } p ? Paths.FindGitRoot(p) : null);
+		Git = gitCheckoutInformation ?? GitCheckoutInformationFactory.Create(gitRoot, ReadFileSystem);
 
 		// Load and resolve the docset file, or create an empty one if it doesn't exist
 		ConfigurationYaml = ConfigurationPath.Exists
