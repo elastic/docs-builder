@@ -196,4 +196,164 @@ public class ParserTests
 		admonition.Should().NotBeNull();
 		admonition.Children.Should().HaveCountGreaterThan(0);
 	}
+
+	[Fact]
+	public void Parse_file_starting_with_level1_section_promotes_it_to_doc_title()
+	{
+		// When a file starts with a == section (Level 1 in AST), Parse() treats it as doc.Title.
+		// The === subsections become top-level doc.Children (not nested under a SectionNode).
+		// ProcessInclude uses a different loop that does NOT promote == to doc.Title — it creates
+		// a SectionNode — so included files behave correctly during chunking.
+		const string source = """
+			== The search API
+
+			Some intro text.
+
+			[discrete]
+			[[run-an-es-search]]
+			=== Run a search
+
+			Run search content.
+
+			[discrete]
+			[[common-search-options]]
+			=== Common search options
+
+			Common options content.
+			""";
+
+		var parser = new AsciidocParser(new AsciidocParserOptions());
+		var doc = parser.Parse(source, ".");
+
+		// The == section becomes the document title, not a SectionNode child
+		doc.Title.Should().Be("The search API");
+
+		// The === subsections appear at the top level (they're children of the document, not the == section)
+		var sectionChildren = doc.Children.OfType<SectionNode>().ToList();
+		sectionChildren.Should().HaveCount(2);
+		sectionChildren[0].Level.Should().Be(2);
+		sectionChildren[0].Title.Should().Be("Run a search");
+		sectionChildren[1].Level.Should().Be(2);
+		sectionChildren[1].Title.Should().Be("Common search options");
+	}
+
+	[Fact]
+	public void ChunkLevel2_keeps_level3_within_level2_page()
+	{
+		const string source = """
+            = Book Title
+
+            [[search-your-data]]
+            == The search API
+
+            Some intro text.
+
+            [discrete]
+            [[run-an-es-search]]
+            === Run a search
+
+            Run search content.
+
+            [discrete]
+            [[common-search-options]]
+            === Common search options
+
+            Common options content.
+            """;
+
+		var parser = new AsciidocParser(new AsciidocParserOptions());
+		var doc = parser.Parse(source, ".");
+
+		var emitter = new MarkdownEmitter(new MarkdownEmitterOptions { BookPrefix = "test", Version = "1.0" });
+		// chunkLevel=1 matches conf.yaml chunk:1 — extracts == (Level 1) sections, keeps === within them
+		var pages = PageChunker.Chunk(doc, chunkLevel: 1, emitter);
+
+		// Should produce: index + 1 page for "The search API"
+		pages.Should().HaveCount(2);
+		var searchApiPage = pages.First(p => p.Slug == "search-your-data");
+		searchApiPage.MarkdownContent.Should().Contain("Run a search");
+		searchApiPage.MarkdownContent.Should().Contain("Common search options");
+	}
+
+	[Fact]
+	public void IncludeChain_EachIncludedFile_BecomesASeparatePage()
+	{
+		// Mirrors the elastic.co search-your-data structure:
+		// - index.adoc includes search-your-data.adoc (= level, chunk boundary)
+		// - search-your-data.adoc has inline discrete === section (stays in its page)
+		// - search-your-data.adoc includes search-api.adoc (== level, chunk boundary)
+		// - search-api.adoc includes sort-results.adoc (=== level, still chunk boundary)
+		var files = new Dictionary<string, string>
+		{
+			["/base/index.adoc"] = """
+				= Elasticsearch Guide
+
+				include::search-your-data.adoc[]
+				""",
+			["/base/search-your-data.adoc"] = """
+				[[search-with-elasticsearch]]
+				= Search your data
+
+				Intro paragraph.
+
+				[discrete]
+				=== Run a search
+
+				Inline section content.
+
+				include::search-api.adoc[]
+				""",
+			["/base/search-api.adoc"] = """
+				[[search-your-data-api]]
+				== The search API
+
+				API intro.
+
+				[discrete]
+				=== API Run a search
+
+				Inline API section.
+
+				include::sort-results.adoc[]
+				""",
+			["/base/sort-results.adoc"] = """
+				[[sort-results]]
+				=== Sort search results
+
+				Sort content.
+				""",
+		};
+
+		var parser = new AsciidocParser(new AsciidocParserOptions
+		{
+			FileReader = path => files.TryGetValue(path, out var c) ? c : null
+		});
+		var doc = parser.Parse(files["/base/index.adoc"], "/base");
+		var emitter = new MarkdownEmitter(new MarkdownEmitterOptions { BookPrefix = "test", Version = "1.0" });
+		var pages = PageChunker.Chunk(doc, chunkLevel: 1, emitter);
+
+		var slugs = pages.Select(p => p.Slug).ToList();
+
+		// index (from = Elasticsearch Guide root)
+		slugs.Should().Contain("index");
+
+		// = Search your data → its own page
+		slugs.Should().Contain("search-with-elasticsearch");
+		var searchYourData = pages.First(p => p.Slug == "search-with-elasticsearch");
+		searchYourData.MarkdownContent.Should().Contain("Intro paragraph");
+		searchYourData.MarkdownContent.Should().Contain("Run a search");        // inline section stays
+		searchYourData.MarkdownContent.Should().NotContain("The search API");   // NOT merged into this page
+
+		// == The search API → its own page
+		slugs.Should().Contain("search-your-data-api");
+		var theSearchApi = pages.First(p => p.Slug == "search-your-data-api");
+		theSearchApi.MarkdownContent.Should().Contain("API intro");
+		theSearchApi.MarkdownContent.Should().Contain("API Run a search");      // inline stays
+		theSearchApi.MarkdownContent.Should().NotContain("Sort search results"); // NOT merged
+
+		// === Sort search results → its own page (included file, even though === level)
+		slugs.Should().Contain("sort-results");
+		var sortResults = pages.First(p => p.Slug == "sort-results");
+		sortResults.MarkdownContent.Should().Contain("Sort content");
+	}
 }

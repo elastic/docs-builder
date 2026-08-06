@@ -10,4 +10,6 @@ public record SectionNode : IBlockNode
 	public required string Title { get; init; }
 	public string? Id { get; init; }
 	public List<IAsciidocNode> Children { get; init; } = [];
+	/// <summary>True when this section was produced as the top-level result of a ProcessInclude call.</summary>
+	public bool IsIncludeRoot { get; init; }
 }
