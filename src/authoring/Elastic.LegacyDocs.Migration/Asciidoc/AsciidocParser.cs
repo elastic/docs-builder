@@ -20,6 +20,26 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 {
 	private readonly Dictionary<string, string> _attributes = new(options.Attributes, StringComparer.OrdinalIgnoreCase);
 
+	/// <summary>
+	/// Returns the resolved attributes after parsing. Useful for extracting attribute definitions
+	/// from a shared attributes file to seed into subsequent parsers.
+	/// </summary>
+	public IReadOnlyDictionary<string, string> ResolvedAttributes => _attributes;
+
+	/// <summary>
+	/// Parses a shared AsciiDoc attributes file (`:name: value` definitions) with the given
+	/// seed attributes and returns the fully-resolved attribute map, excluding ProductNames keys.
+	/// </summary>
+	public static Dictionary<string, string> LoadAttributeFile(string path, Dictionary<string, string> seedAttributes)
+	{
+		if (!File.Exists(path))
+			return [];
+		var content = File.ReadAllText(path);
+		var parser = new AsciidocParser(new AsciidocParserOptions { Attributes = seedAttributes });
+		_ = parser.Parse(content, Path.GetDirectoryName(path) ?? "");
+		return new Dictionary<string, string>(parser._attributes, StringComparer.OrdinalIgnoreCase);
+	}
+
 	private IReadOnlyList<Token> _tokens = [];
 	private int _pos;
 	private int _includeDepth;
