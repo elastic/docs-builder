@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions.TestingHelpers;
+using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
@@ -11,6 +13,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Integrations.S3;
@@ -275,12 +278,13 @@ public class DocsSyncTests
 			{
 				HttpStatusCode = System.Net.HttpStatusCode.OK
 			});
-		var transferredFiles = Array.Empty<string>();
-		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
-			.Invokes((TransferUtilityUploadDirectoryRequest request, Cancel _) =>
+		var uploadRequests = new ConcurrentBag<TransferUtilityUploadRequest>();
+		A.CallTo(() => moxTransferUtility.UploadAsync(A<TransferUtilityUploadRequest>._, A<Cancel>._))
+			.Invokes((TransferUtilityUploadRequest request, Cancel _) =>
 			{
-				transferredFiles = fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
-			});
+				uploadRequests.Add(request);
+			})
+			.Returns(Task.CompletedTask);
 
 		// Configure OpenTelemetry to capture telemetry
 		var exportedActivities = new List<Activity>();
@@ -295,14 +299,20 @@ public class DocsSyncTests
 		await applier.Apply(plan, Cancel.None);
 
 		// Assert - File operations
-		transferredFiles.Length.Should().Be(4); // 3 add requests + 1 update request
-		transferredFiles.Should().NotContain("docs/skip.md");
+		uploadRequests.Count.Should().Be(4); // 3 add requests + 1 update request
+		uploadRequests.Should().OnlyContain(r => r.BucketName == "fake");
+		uploadRequests.Should().OnlyContain(r => r.PartSize == S3EtagCalculator.PartSize);
+		uploadRequests.Select(r => r.Key).Should()
+			.BeEquivalentTo(["docs/add1.md", "docs/add2.md", "docs/add3.md", "docs/update.md"]);
+		uploadRequests.Select(r => r.FilePath).Should().NotContain("docs/skip.md");
 
 		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
 			.MustHaveHappenedOnceExactly();
 
+		A.CallTo(() => moxTransferUtility.UploadAsync(A<TransferUtilityUploadRequest>._, A<Cancel>._))
+			.MustHaveHappened();
 		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+			.MustNotHaveHappened();
 
 		// Assert - Telemetry spans are created
 		exportedActivities.Should().Contain(a => a.DisplayName == "sync apply");
@@ -317,5 +327,108 @@ public class DocsSyncTests
 		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.deleted" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
 		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.skipped" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
 		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 6);
+	}
+
+	[Fact]
+	public async Task TestApply_DeleteRequests_ChunksDeletesAtS3Limit()
+	{
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var moxS3Client = A.Fake<IAmazonS3>();
+		var moxTransferUtility = A.Fake<ITransferUtility>();
+		var fileSystem = new MockFileSystem(new MockFileSystemOptions
+		{
+			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
+		});
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var checkoutDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedWriteFs, null, checkoutDirectory);
+		var plan = new SyncPlan
+		{
+			RemoteListingCompleted = true,
+			DeleteThresholdDefault = null,
+			ExcludePatterns = [],
+			TotalRemoteFiles = 1001,
+			TotalSourceFiles = 1,
+			TotalSyncRequests = 1001,
+			AddRequests = [],
+			UpdateRequests = [],
+			SkipRequests = [],
+			DeleteRequests = Enumerable.Range(0, 1001)
+				.Select(i => new DeleteRequest { DestinationPath = $"docs/delete-{i}.md" })
+				.ToArray()
+		};
+		var deleteBatches = new ConcurrentBag<DeleteObjectsRequest>();
+		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
+			.Invokes((DeleteObjectsRequest request, Cancel _) =>
+			{
+				deleteBatches.Add(request);
+			})
+			.Returns(new DeleteObjectsResponse
+			{
+				HttpStatusCode = System.Net.HttpStatusCode.OK
+			});
+
+		var applier = new AwsS3SyncApplyStrategy(new LoggerFactory(), moxS3Client, moxTransferUtility, "fake", context, collector);
+
+		await applier.Apply(plan, Cancel.None);
+
+		deleteBatches.Count.Should().Be(2);
+		deleteBatches.Should().OnlyContain(r => r.Objects.Count <= 1000);
+	}
+
+	[Fact]
+	public async Task Apply_UploadFailure_ReturnsFalse()
+	{
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var mockS3Client = A.Fake<IAmazonS3>();
+		var mockTransferUtility = A.Fake<ITransferUtility>();
+		var githubActionsService = A.Fake<ICoreService>();
+		var outputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			{ Path.Join(outputDirectory, "docs/add1.md"), new MockFileData("# New Document 1") }
+		}, new MockFileSystemOptions
+		{
+			CurrentDirectory = outputDirectory,
+		});
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedWriteFs, null, outputDirectory);
+		var plan = new SyncPlan
+		{
+			RemoteListingCompleted = true,
+			DeleteThresholdDefault = null,
+			ExcludePatterns = [],
+			TotalRemoteFiles = 0,
+			TotalSourceFiles = 1,
+			TotalSyncRequests = 1,
+			AddRequests = [
+				new AddRequest
+				{
+					LocalPath = Path.Join(outputDirectory, "docs/add1.md"),
+					DestinationPath = "docs/add1.md"
+				}
+			],
+			UpdateRequests = [],
+			SkipRequests = [],
+			DeleteRequests = []
+		};
+		var planPath = Path.Join(outputDirectory, "sync-plan.json");
+		await fileSystem.File.WriteAllTextAsync(planPath, SyncPlan.Serialize(plan), TestContext.Current.CancellationToken);
+		A.CallTo(() => mockTransferUtility.UploadAsync(A<TransferUtilityUploadRequest>._, A<Cancel>._))
+			.Throws(new AmazonS3Exception("Access denied"));
+		var service = new IncrementalDeployService(new LoggerFactory(), githubActionsService, mockS3Client, mockTransferUtility);
+
+		var applyOk = await service.Apply(collector, context, "fake", planPath, Cancel.None);
+
+		applyOk.Should().BeFalse();
+		collector.Errors.Should().Be(1);
 	}
 }
