@@ -16,7 +16,10 @@ public static class PageChunker
 	public static IReadOnlyList<PageOutput> Chunk(AsciidocDocument document, int chunkLevel, MarkdownEmitter emitter)
 	{
 		if (chunkLevel <= 0)
+		{
+			emitter.UpdatePageSlug("index");
 			return [new PageOutput("index", document.Title ?? "Index", emitter.Emit(document))];
+		}
 
 		var anchorMap = BuildAnchorMap(document.Children, chunkLevel);
 		emitter.UpdateAnchorMap(anchorMap);
@@ -24,6 +27,7 @@ public static class PageChunker
 		var (pages, remaining) = ExtractPages(document.Children, chunkLevel, emitter);
 
 		var indexDoc = document with { Children = remaining.ToList() };
+		emitter.UpdatePageSlug("index");
 		var indexContent = emitter.Emit(indexDoc);
 		var indexPage = new PageOutput("index", document.Title ?? "Index", indexContent);
 
@@ -130,6 +134,7 @@ public static class PageChunker
 
 			var trimmedSection = section with { Children = sectionRemaining.ToList(), Level = 0 };
 			var slug = section.Id ?? GenerateSlug(section.Title);
+			emitter.UpdatePageSlug(slug);
 			var content = emitter.Emit(trimmedSection);
 
 			pages.Add(new PageOutput(slug, section.Title, content));
