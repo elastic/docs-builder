@@ -7,6 +7,10 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.CodeBlocks;
+using Elastic.Markdown.Myst.Comments;
+using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 
 namespace Elastic.Markdown.Myst.Directives.AppliesSwitch;
 
@@ -16,9 +20,51 @@ public class AppliesSwitchBlock(DirectiveBlockParser parser, ParserContext conte
 	public override string Directive => "applies-switch";
 
 	public int Index { get; set; }
+	public bool IsDropdown { get; private set; }
 	public string GetGroupKey() => Prop("group") ?? "applies-switches";
 
-	public override void FinalizeAndValidate(ParserContext context) => Index = FindIndex();
+	public override void FinalizeAndValidate(ParserContext context)
+	{
+		Index = FindIndex();
+		IsDropdown = ParseAppearance() && ValidateDropdownItems();
+		if (this.OfType<AppliesItemBlock>().Count(i => i.Selected) > 1)
+			this.EmitWarning("{applies-switch} has multiple items marked :selected:, only the first one is selected.");
+	}
+
+	private bool ParseAppearance()
+	{
+		var appearance = Prop("appearance");
+		switch (appearance)
+		{
+			case null or "" or "tabs":
+				return false;
+			case "dropdown":
+				return true;
+			default:
+				this.EmitWarning($"{{applies-switch}} appearance '{appearance}' is not supported. Valid appearances are: tabs, dropdown. Defaulting to 'tabs'.");
+				return false;
+		}
+	}
+
+	/// The dropdown appearance attaches the selector chip to the top edge of a
+	/// code block; other leading content has no edge to attach to and renders
+	/// poorly, so it falls back to tabs with a warning.
+	private bool ValidateDropdownItems()
+	{
+		foreach (var item in this.OfType<AppliesItemBlock>())
+		{
+			var first = item.FirstOrDefault(c => c is not CommentBlock);
+			if (first is EnhancedCodeBlock { Language: not "mermaid" } and not AppliesToDirective and not ContributorsBlock)
+				continue;
+
+			this.EmitWarning(
+				$"{{applies-switch}} dropdown appearance requires every {{applies-item}} to start with a code block. " +
+				$"Item '{item.AppliesToDefinition}' does not, falling back to tabs.");
+			return false;
+		}
+
+		return true;
+	}
 
 	private int _index = -1;
 

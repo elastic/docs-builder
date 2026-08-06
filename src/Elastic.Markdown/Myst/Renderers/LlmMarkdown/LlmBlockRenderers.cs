@@ -297,6 +297,10 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 
 	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
 	{
+		// A fence with no content lines never allocates the Lines array
+		if (obj.Lines.Lines is null)
+			return -1;
+
 		var lastNonEmptyIndex = obj.Lines.Lines.Length - 1;
 		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
 			lastNonEmptyIndex--;

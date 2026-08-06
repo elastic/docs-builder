@@ -64,6 +64,9 @@ function ready() {
             }
         }
     })
+
+    // Reflect the (possibly restored) selection in dropdown content panes
+    $$optional('.applies-switch--dropdown').forEach(updateDropdownContents)
 }
 
 /**
@@ -72,19 +75,115 @@ function ready() {
  * @this {HTMLElement} - The element that was clicked.
  */
 function onAppliesSwitchLabelClick(this: HTMLLabelElement) {
-    const data = create_key(this)
+    syncSelection(this)
+}
+
+/**
+ * Activate the same applies_to selection in all other switches on the page
+ * and persist it. `label` is the trigger label of the newly selected option.
+ */
+function syncSelection(label: HTMLElement) {
+    const data = create_key(label)
     if (!data) return
     const [group, id, key] = data
-    for (const label of as_id_to_elements[key]) {
-        if (label === this) {
+    for (const other of as_id_to_elements[key] ?? []) {
+        if (other === label) {
             continue
         }
-        if (label.previousElementSibling instanceof HTMLInputElement) {
-            label.previousElementSibling.checked = true
+        if (other.previousElementSibling instanceof HTMLInputElement) {
+            other.previousElementSibling.checked = true
+            // Setting .checked programmatically fires no change event, so
+            // synced dropdowns need their content panes updated explicitly
+            const dropdown = other.closest('.applies-switch--dropdown')
+            if (dropdown) updateDropdownContents(dropdown)
         }
     }
     window.sessionStorage.setItem(storageKeyPrefix + group, id)
 }
+
+/**
+ * Reflect the checked input of a dropdown switch: show the matching content
+ * pane and hide the matching panel row (the current selection is already
+ * visible in the chip, the panel only lists the alternatives).
+ *
+ * Dropdown switches group their inputs and labels in a selector overlay, so
+ * the pure-CSS sibling selector used by the tabs appearance cannot reach the
+ * content panes.
+ */
+function updateDropdownContents(dropdown: Element) {
+    const checked = dropdown.querySelector('.applies-switch-input:checked')
+    if (!checked) return
+    const index = checked.getAttribute('data-index')
+    dropdown.querySelectorAll('.applies-switch-content').forEach((content) => {
+        content.classList.toggle(
+            'applies-switch-content--active',
+            content.getAttribute('data-index') === index
+        )
+    })
+    dropdown.querySelectorAll('.applies-switch-panel-row').forEach((row) => {
+        row.classList.toggle(
+            'applies-switch-panel-row--current',
+            row.getAttribute('data-index') === index
+        )
+    })
+}
+
+/**
+ * Open/close behavior for switches with the dropdown appearance.
+ *
+ * Delegated document-level listeners registered once at module scope so they
+ * survive htmx swaps (initAppliesSwitch re-runs on every htmx:load).
+ */
+function closeDropdowns(except?: Element | null) {
+    document
+        .querySelectorAll('.applies-switch--dropdown.open')
+        .forEach((dropdown) => {
+            if (dropdown !== except) dropdown.classList.remove('open')
+        })
+}
+
+document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement
+    // A click on a label also fires a synthetic click on its radio input;
+    // ignore it so it doesn't immediately close the dropdown we just opened.
+    if (target.closest('.applies-switch--dropdown .applies-switch-input')) {
+        return
+    }
+    // Selecting a panel row checks its radio natively (label for=); the
+    // change listener below does the rest, so only close the menu here.
+    if (target.closest('.applies-switch-panel-row')) {
+        closeDropdowns()
+        return
+    }
+    const label = target.closest(
+        '.applies-switch--dropdown .applies-switch-label'
+    )
+    if (!label) {
+        closeDropdowns()
+        return
+    }
+    const dropdown = label.closest('.applies-switch--dropdown')
+    if (!dropdown) return
+    dropdown.classList.toggle('open')
+    closeDropdowns(dropdown)
+})
+
+document.addEventListener('change', (event) => {
+    const input = (event.target as HTMLElement).closest(
+        '.applies-switch--dropdown .applies-switch-input'
+    )
+    const dropdown = input?.closest('.applies-switch--dropdown')
+    if (!input || !dropdown) return
+    updateDropdownContents(dropdown)
+    // Panel-row and keyboard selections bypass the trigger-label click
+    // handler, so propagate the sync from here.
+    const label = input.nextElementSibling
+    if (label instanceof HTMLElement) syncSelection(label)
+})
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeDropdowns()
+})
 
 export function initAppliesSwitch() {
     ready()

@@ -1,5 +1,20 @@
+@using Elastic.Markdown.Myst.Directives.AppliesSwitch
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.AppliesSwitch.AppliesSwitchViewModel>
-<div class="applies-switch">
+<div class="applies-switch@(Model.IsDropdown ? " applies-switch--dropdown" : "")">
+	@if (Model.IsDropdown)
+	{
+		<div class="applies-switch-select" title="Select another version">
+			@foreach (var item in Model.Items)
+			{
+				@await RenderPartialAsync(AppliesItemLabelView.Create(item))
+			}
+		</div>
+		<div class="applies-switch-panel">
+			@foreach (var item in Model.Items)
+			{
+				<label class="applies-switch-panel-row" for="applies-switch-item-@item.AppliesSwitchIndex-@item.Index" data-index="@item.Index">@item.ShortLabel()</label>
+			}
+		</div>
+	}
 	@Model.RenderBlock()
 </div>
-
