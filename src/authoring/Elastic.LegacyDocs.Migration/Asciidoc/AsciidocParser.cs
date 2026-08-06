@@ -411,46 +411,103 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	[GeneratedRegex(@"^include-tagged::(.+?)\[([^\]]*)\]\s*$")]
 	private static partial Regex IncludeTaggedInVerbatimRegex();
 
+	// Standard AsciiDoc tagged include inside a verbatim block: include::path[tag=name]
+	[GeneratedRegex(@"^include::(.+?)\[tag=([^\]]+)\]\s*$")]
+	private static partial Regex IncludeTaggedStandardInVerbatimRegex();
+
+	// Full-file include inside a verbatim block: include::path[] or include::path[indent=0] etc.
+	[GeneratedRegex(@"^include::(.+?)\[[^\]]*\]\s*$")]
+	private static partial Regex IncludeFullFileInVerbatimRegex();
+
+	// Conditional markers that can appear inside verbatim blocks (e.g. ifeval::[...]/endif::[])
+	[GeneratedRegex(@"^(?:ifdef|ifndef|ifeval|endif)::[^\[]*\[.*?\]\s*$")]
+	private static partial Regex VerbatimConditionalRegex();
+
 	/// <summary>
-	/// Resolves <c>include-tagged::path[tag]</c> directives inside verbatim (listing/code) blocks.
-	/// These are an Elastic Asciidoctor extension that includes the lines between
-	/// <c>tag::name[]</c> and <c>end::name[]</c> markers, dedented to the start line's indent.
+	/// Resolves include directives and strips stray conditional markers inside verbatim blocks.
+	/// Handles both the Elastic <c>include-tagged::path[tag]</c> extension and the standard
+	/// AsciiDoc <c>include::path[tag=name]</c> syntax with a tag qualifier.
 	/// </summary>
 	private List<string> ResolveVerbatimIncludes(List<string> lines)
 	{
-		// Fast path: no include-tagged:: in the block
-		if (!lines.Any(l => l.Contains("include-tagged::", StringComparison.Ordinal)))
+		// Fast path: nothing to do
+		if (!lines.Any(l =>
+			l.Contains("include-tagged::", StringComparison.Ordinal) ||
+			l.Contains("include::", StringComparison.Ordinal) ||
+			l.Contains("ifeval::", StringComparison.Ordinal) ||
+			l.Contains("ifdef::", StringComparison.Ordinal) ||
+			l.Contains("ifndef::", StringComparison.Ordinal) ||
+			l.Contains("endif::", StringComparison.Ordinal)))
 			return lines;
 
 		var result = new List<string>(lines.Count);
 		foreach (var line in lines)
 		{
 			var trimmed = line.TrimStart();
+
+			// Strip stray conditional markers (ifeval/ifdef/ifndef/endif) from verbatim content.
+			// The surrounding content is always kept since we can't evaluate conditions here.
+			if (VerbatimConditionalRegex().IsMatch(trimmed))
+				continue;
+
 			var taggedMatch = IncludeTaggedInVerbatimRegex().Match(trimmed);
-			if (!taggedMatch.Success)
+			if (taggedMatch.Success)
 			{
-				result.Add(line);
+				result.AddRange(ResolveTaggedInclude(taggedMatch.Groups[1].Value, taggedMatch.Groups[2].Value.Trim(), line));
 				continue;
 			}
 
-			var rawPath = SubstituteAttributes(taggedMatch.Groups[1].Value);
-			var tag = taggedMatch.Groups[2].Value.Trim();
-			var resolvedPath = Path.IsPathRooted(rawPath)
-				? Path.GetFullPath(rawPath)
-				: Path.GetFullPath(Path.Combine(_basePath, rawPath));
-
-			var fileContent = ReadFile(resolvedPath);
-			if (fileContent is null)
+			var standardMatch = IncludeTaggedStandardInVerbatimRegex().Match(trimmed);
+			if (standardMatch.Success)
 			{
-				options.OnDiagnostic?.Invoke($"include-tagged not resolved: {rawPath} (resolved to {resolvedPath})");
-				result.Add(line);
+				result.AddRange(ResolveTaggedInclude(standardMatch.Groups[1].Value, standardMatch.Groups[2].Value.Trim(), line));
 				continue;
 			}
 
-			var extracted = ExtractTaggedLines(fileContent, tag);
-			result.AddRange(extracted);
+			var fullFileMatch = IncludeFullFileInVerbatimRegex().Match(trimmed);
+			if (fullFileMatch.Success)
+			{
+				result.AddRange(ResolveFullFileInclude(fullFileMatch.Groups[1].Value, line));
+				continue;
+			}
+
+			result.Add(line);
 		}
 		return result;
+	}
+
+	private IEnumerable<string> ResolveTaggedInclude(string rawPathToken, string tag, string originalLine)
+	{
+		var rawPath = SubstituteAttributes(rawPathToken);
+		var resolvedPath = Path.IsPathRooted(rawPath)
+			? Path.GetFullPath(rawPath)
+			: Path.GetFullPath(Path.Combine(_basePath, rawPath));
+
+		var fileContent = ReadFile(resolvedPath);
+		if (fileContent is null)
+		{
+			options.OnDiagnostic?.Invoke($"include not resolved: {rawPath} (resolved to {resolvedPath})");
+			return [originalLine];
+		}
+
+		return ExtractTaggedLines(fileContent, tag);
+	}
+
+	private IEnumerable<string> ResolveFullFileInclude(string rawPathToken, string originalLine)
+	{
+		var rawPath = SubstituteAttributes(rawPathToken);
+		var resolvedPath = Path.IsPathRooted(rawPath)
+			? Path.GetFullPath(rawPath)
+			: Path.GetFullPath(Path.Combine(_basePath, rawPath));
+
+		var fileContent = ReadFile(resolvedPath);
+		if (fileContent is null)
+		{
+			options.OnDiagnostic?.Invoke($"include not resolved: {rawPath} (resolved to {resolvedPath})");
+			return [originalLine];
+		}
+
+		return fileContent.TrimEnd('\n', '\r').Split('\n');
 	}
 
 	private static List<string> ExtractTaggedLines(string content, string tag)
@@ -1391,7 +1448,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		@"~([^~]+)~|" +                            // group 18: subscript
 		@"\{([a-zA-Z0-9_-]+)\}|" +                // group 19: attr-ref
 		@"(https?://[^\[\s]+)\[([^\]]*)\]|" +      // groups 20,21: url
-		@"\+([^\+]+)\+|" +                         // group 22: +inline+ passthrough
+		@"(?<![a-zA-Z0-9.])\+([^\+]+)\+" + "|" +  // group 22: +inline+ passthrough (constrained: not after alphanum)
 		@"``([^`']+)''|" +                         // group 23: AsciiDoc typographic quotes -> "text"
 		@"\s*\+\s*$"                               // line-break (no capture)
 	)]
