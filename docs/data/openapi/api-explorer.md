@@ -117,17 +117,9 @@ specs per product are not currently supported.
 
 ## Remote spec resolution
 
-:::{note}
-Remote spec resolution through the shared version index is tracked in
-[docs-eng-team#719](https://github.com/elastic/docs-eng-team/issues/719). Until that ships, every
-docset must carry a local spec file at the declared `spec:` path. When no local file exists,
-{{dbuild}} skips that API and emits a warning.
-:::
-
-A docset will not need to carry its OpenAPI spec file locally once #719 ships. When `spec:` does
-not resolve to a file on disk, {{dbuild}} will resolve the current (`main`) version of that spec
-remotely, through a CloudFront-backed version index shared by every Elastic repository that
-publishes OpenAPI specs.
+When `spec:` does not resolve to a file on disk, {{dbuild}} resolves the current (`main`) version
+of that spec remotely through a CloudFront-backed version index shared by every Elastic repository
+that publishes OpenAPI specs.
 
 ### How specs are published
 
@@ -159,11 +151,16 @@ version moniker (`main`, `9`, `8`, ...):
 }
 ```
 
-{{dbuild}} will fetch this manifest once per build from
-`https://d29hkgsdo66d1n.cloudfront.net/index.json`, then look up the `org/repo` (from
+{{dbuild}} fetches this manifest once per build from
+`https://d29hkgsdo66d1n.cloudfront.net/index.json`, then looks up the `org/repo` (from
 `repository:`, falling back to the current checkout's GitHub remote) and the `spec:` basename to
 find this API's versions. Spec objects are fetched at
 `{base}/{org}/{repo}/{version}/{spec-basename}`.
+
+If the API has no local spec file and the `org/repo` or spec basename does not have a matching
+entry in the index, the build fails with an error naming the API and what was missing. If a local
+spec file is also configured, that error becomes a warning instead, and the build falls back to
+rendering the local file.
 
 Today only the `main` moniker is rendered — there is no version-prefixed output or version
 switcher yet.

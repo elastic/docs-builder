@@ -17,12 +17,21 @@ public static class OpenApiReader
 			return null;
 
 		await using var fs = openApiSpecification.OpenRead();
+		return await CreateFromStream(fs);
+	}
+
+	/// <summary>
+	/// Parses an OpenAPI document from an already-open stream, e.g. one fetched remotely through
+	/// <see cref="VersionIndexClient.FetchSpecStreamAsync"/>. Closes <paramref name="stream"/> when done.
+	/// </summary>
+	public static async Task<OpenApiDocument?> CreateFromStream(Stream stream)
+	{
 		var settings = new OpenApiReaderSettings
 		{
 			LeaveStreamOpen = false,
 			RuleSet = ValidationRuleSet.GetEmptyRuleSet()
 		};
-		var openApiDocument = await OpenApiDocument.LoadAsync(fs, settings: settings);
+		var openApiDocument = await OpenApiDocument.LoadAsync(stream, settings: settings);
 		return openApiDocument.Document;
 	}
 }

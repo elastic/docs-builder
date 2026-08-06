@@ -24,11 +24,21 @@ namespace Elastic.ApiExplorer;
 /// Renders API explorer pages for every configured OpenAPI specification: builds the navigation
 /// tree via <see cref="ApiNavigationBuilder"/> and writes each page to the output directory.
 /// </summary>
-public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, IMarkdownStringRenderer markdownStringRenderer)
+/// <remarks>
+/// Only renders the current tree for each API: a local override file when the docset carries one,
+/// otherwise the <c>main</c> moniker resolved remotely through <see cref="VersionIndexClient"/>. There
+/// is no version-prefixed output or switcher yet — see issue #721 for multi-version generation.
+/// </remarks>
+public class OpenApiGenerator(
+	ILoggerFactory logFactory,
+	BuildContext context,
+	IMarkdownStringRenderer markdownStringRenderer,
+	VersionIndexClient? versionIndexClient = null)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
+	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 
 	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null) =>
 		new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig);
@@ -40,20 +50,41 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 		foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 		{
-			if (apiConfig.LocalSpecFile is not { } localSpecFile)
-			{
-				context.Collector.EmitGlobalWarning(
-					$"API '{prefix}' has no local spec file at the declared 'spec:' path. " +
-					"Skipping API generation until remote version-index resolution ships in #719.");
-				continue;
-			}
-
-			var openApiDocument = await OpenApiReader.Create(localSpecFile);
+			var openApiDocument = await ResolveCurrentDocument(prefix, apiConfig, ctx).ConfigureAwait(false);
 			if (openApiDocument is null)
 				continue;
 
 			await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
 		}
+	}
+
+	/// <summary>
+	/// Resolves the document to render for the current tree: the local override file when present,
+	/// otherwise the <c>main</c> moniker fetched remotely through the version index. Returns null when
+	/// nothing could be resolved; <see cref="VersionIndexClient"/> has already emitted the diagnostic.
+	/// </summary>
+	internal async Task<OpenApiDocument?> ResolveCurrentDocument(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
+	{
+		if (apiConfig.LocalSpecFile is { } localFile)
+			return await OpenApiReader.Create(localFile);
+
+		var versions = await _versionIndexClient.ResolveVersionsAsync(context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
+		var current = versions.FirstOrDefault(v => v.Moniker == "main");
+		if (current is null)
+		{
+			if (versions.Count > 0)
+			{
+				context.Collector.EmitGlobalWarning(
+					$"Version index for API '{apiKey}' has no 'main' entry; this API will not be rendered.");
+			}
+			return null;
+		}
+
+		if (current.IsLocal)
+			return await OpenApiReader.Create(current.LocalFile!);
+
+		var stream = await _versionIndexClient.FetchSpecStreamAsync(apiKey, current, context.Collector, ctx).ConfigureAwait(false);
+		return stream is null ? null : await OpenApiReader.CreateFromStream(stream).ConfigureAwait(false);
 	}
 
 	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)

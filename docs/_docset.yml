@@ -64,6 +64,34 @@ api:
   dashboard:
     - spec: dashboard-openapi.json
       product: kibana
+  remote-elasticsearch:
+    - spec: elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+  remote-elasticsearch-serverless:
+    - spec: elasticsearch-serverless.json
+      product: serverless-elasticsearch
+      repository: elastic/elasticsearch-specification
+  remote-kibana:
+    - spec: kibana.yaml
+      product: kibana
+      repository: elastic/kibana
+  remote-kibana-serverless:
+    - spec: kibana-serverless.yaml
+      product: kibana
+      repository: elastic/kibana
+  remote-cloud-billing:
+    - spec: cloud-billing.yaml
+      product: ess
+      repository: elastic/cloud
+  remote-cloud-connect:
+    - spec: cloud-connect.yml
+      product: ess
+      repository: elastic/cloud-connected-api
+  remote-cloud-serverless:
+    - spec: elastic-cloud-serverless.yml
+      product: cloud-serverless
+      repository: elastic/serverless-api-specification
 
 toc:
   - file: index.md
