@@ -18,10 +18,21 @@ namespace Elastic.Changelog.Uploading;
 /// </remarks>
 public sealed record Registry
 {
+	/// <summary>The schema version written by this producer; consumers refuse newer versions.</summary>
+	public const int CurrentSchemaVersion = 1;
+
 	/// <summary>
 	/// Manifest schema version. Incremented when consumers must change their parser.
 	/// </summary>
-	public int SchemaVersion { get; init; } = 1;
+	public int SchemaVersion { get; init; } = CurrentSchemaVersion;
+
+	/// <summary>
+	/// Identifies the algorithm (and its version) that produced this manifest. The registry
+	/// reconciler recomputes every entry — and rewrites the manifest even when the entries are
+	/// unchanged — whenever this differs from its own value, so metadata-logic changes roll out
+	/// deterministically. Null on manifests written by the legacy client-side refresh.
+	/// </summary>
+	public string? Producer { get; init; }
 
 	/// <summary>
 	/// Grouping identifier: the product for a bundle index (<c>bundle/{product}/…</c>) or the
