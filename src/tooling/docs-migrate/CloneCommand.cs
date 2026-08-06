@@ -14,6 +14,7 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 	/// <summary>Clone source repos needed for the selected books and versions.</summary>
 	/// <param name="workDir">Working directory for migration artifacts</param>
 	/// <param name="majors">Number of top major versions to include (default 1)</param>
+	/// <param name="minors">Max minor versions per major to include (default all)</param>
 	/// <param name="all">Process all versions</param>
 	/// <param name="minVersion">Minimum major version to process</param>
 	/// <param name="book">Filter to books whose prefix starts with this value</param>
@@ -22,6 +23,7 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 	public async Task<int> Clone(
 		string? workDir = null,
 		int majors = 1,
+		int? minors = null,
 		bool all = false,
 		int? minVersion = null,
 		string? book = null,
@@ -32,7 +34,7 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 		var dir = SharedOptions.ResolveWorkDir(workDir);
 		var conf = await SharedOptions.LoadConfAsync(dir, ct);
 
-		var opts = new FilterOptions(majors, all, minVersion, book);
+		var opts = new FilterOptions(majors, all, minVersion, book, minors);
 		SharedOptions.SaveFilterOptions(dir, opts);
 
 		var books = SharedOptions.FilterBooks(conf, opts.Book);
@@ -54,7 +56,7 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 
 		foreach (var b in books)
 		{
-			var versions = SharedOptions.FilterVersions(b, opts.Majors, opts.All, opts.MinVersion);
+			var versions = SharedOptions.FilterVersions(b, opts.Majors, opts.All, opts.MinVersion, opts.Minors);
 			foreach (var version in versions)
 			{
 				ct.ThrowIfCancellationRequested();
