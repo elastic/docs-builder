@@ -145,7 +145,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 		// Seed branch-aware attributes first, then path attributes that may reference {branch}
 		var docsRoot = Path.Combine(workDir, "docs-repo");
-		var attributes = new Dictionary<string, string>
+		var seedAttributes = new Dictionary<string, string>
 		{
 			["branch"] = versionLabel,
 			["source_branch"] = versionLabel,
@@ -156,7 +156,16 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		};
 
 		foreach (var source in sources)
-			attributes[$"{source.RepoName}-root"] = source.LocalPath;
+			seedAttributes[$"{source.RepoName}-root"] = source.LocalPath;
+
+		// Pre-load shared/attributes.asciidoc so feature/product name attributes like
+		// {transform}, {ilm-init}, {anomaly-detect} etc. are resolved during conversion.
+		var sharedAttrsPath = Path.Combine(docsRoot, "shared", "attributes.asciidoc");
+		var attributes = AsciidocParser.LoadAttributeFile(sharedAttrsPath, seedAttributes);
+
+		// Merge seed attributes back (they take precedence over shared attrs)
+		foreach (var (k, v) in seedAttributes)
+			attributes[k] = v;
 
 		var parserOptions = new AsciidocParserOptions
 		{
