@@ -26,7 +26,8 @@ export function initSecondaryNav() {
         const target = event.target as HTMLElement | null
         // A click on a summary toggles its own dropdown; only the siblings close here,
         // otherwise we would fight the native toggle.
-        const clicked = target?.closest<HTMLDetailsElement>(DROPDOWN) ?? undefined
+        const clicked =
+            target?.closest<HTMLDetailsElement>(DROPDOWN) ?? undefined
         closeAllExcept(clicked)
     })
 
