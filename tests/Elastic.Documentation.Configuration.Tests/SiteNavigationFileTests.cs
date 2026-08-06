@@ -142,4 +142,98 @@ public class SiteNavigationFileTests
 			.WithInnerException<InvalidOperationException>()
 			.WithMessage("Invalid TOC source: '://invalid' could not be parsed as a URI");
 	}
+
+	[Fact]
+	public void DeserializesTopNavLinks()
+	{
+		// language=yaml
+		var yaml = """
+		           top_nav:
+		             - title: Release notes
+		               url: /release-notes/
+		             - title: APIs
+		               url: https://www.elastic.co/docs/api/
+		           toc:
+		             - toc: serverless/search
+		               path_prefix: /serverless/search
+		           """;
+
+		var siteNav = SiteNavigationFile.Deserialize(yaml);
+
+		siteNav.TopNav.Should().HaveCount(2);
+		siteNav.TopNav[0].Title.Should().Be("Release notes");
+		siteNav.TopNav[0].Url.Should().Be("/release-notes/");
+		siteNav.TopNav[0].Page.Should().BeNull();
+		siteNav.TopNav[0].Children.Should().BeEmpty();
+		siteNav.TopNav[1].Url.Should().Be("https://www.elastic.co/docs/api/");
+
+		// the new key must not disturb the existing ones
+		siteNav.TableOfContents.Should().HaveCount(1);
+	}
+
+	[Fact]
+	public void DeserializesTopNavDropdownWithGroupsAndPageReferences()
+	{
+		// language=yaml
+		var yaml = """
+		           top_nav:
+		             - title: Products
+		               children:
+		                 - title: Stack products
+		                   children:
+		                     - title: Elasticsearch
+		                       page: docs-content://products/elasticsearch/v9.md
+		                     - title: Kibana
+		                       page: docs-content://products/kibana/v9.md
+		                 - title: All products
+		                   url: /products/
+		           """;
+
+		var siteNav = SiteNavigationFile.Deserialize(yaml);
+
+		siteNav.TopNav.Should().HaveCount(1);
+		var products = siteNav.TopNav[0];
+		products.Title.Should().Be("Products");
+		products.Children.Should().HaveCount(2);
+
+		var group = products.Children[0];
+		group.Title.Should().Be("Stack products");
+		group.Children.Should().HaveCount(2);
+		group.Children[0].Title.Should().Be("Elasticsearch");
+		group.Children[0].Page.Should().Be(new Uri("docs-content://products/elasticsearch/v9.md"));
+
+		var ungrouped = products.Children[1];
+		ungrouped.Url.Should().Be("/products/");
+		ungrouped.Children.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void TopNavDefaultsToEmptyWhenAbsent()
+	{
+		// language=yaml
+		var yaml = """
+		           toc:
+		             - toc: serverless/search
+		               path_prefix: /serverless/search
+		           """;
+
+		SiteNavigationFile.Deserialize(yaml).TopNav.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void ThrowsExceptionForInvalidTopNavPageReference()
+	{
+		// language=yaml
+		var yaml = """
+		           top_nav:
+		             - title: Broken
+		               page: ://invalid
+		           """;
+
+		var act = () => SiteNavigationFile.Deserialize(yaml);
+
+		act.Should().Throw<YamlDotNet.Core.YamlException>()
+			.WithInnerException<InvalidOperationException>()
+			.WithMessage("Invalid top_nav page reference: '://invalid' could not be parsed as a URI");
+	}
 }

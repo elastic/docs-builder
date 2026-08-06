@@ -28,6 +28,8 @@ public partial class ConfigurationFileProvider
 		.WithTypeConverter(new TocItemYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
+		.WithTypeConverter(new TopNavItemCollectionYamlConverter())
+		.WithTypeConverter(new TopNavItemConfigYamlConverter())
 		.WithTypeConverter(new ApiConfigurationConverter())
 		.Build();
 

@@ -27,6 +27,9 @@ public class SiteNavigationFile
 	[YamlMember(Alias = "toc")]
 	public SiteTableOfContents TableOfContents { get; set; } = [];
 
+	[YamlMember(Alias = "top_nav")]
+	public TopNavItemCollection TopNav { get; set; } = [];
+
 	public static SiteNavigationFile Deserialize(string yaml) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationFile>(yaml);
 

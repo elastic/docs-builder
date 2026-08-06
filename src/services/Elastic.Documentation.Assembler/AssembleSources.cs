@@ -32,6 +32,8 @@ public class AssembleSources
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
 
+	public ICrossLinkResolver CrossLinkResolver { get; }
+
 	public static async Task<AssembleSources> AssembleAsync(
 		ILoggerFactory logFactory,
 		AssembleContext context,
@@ -107,6 +109,7 @@ public class AssembleSources
 		NavigationTocMappings = navigationTocMappings;
 		LegacyUrlMappings = legacyUrlMappings;
 		UriResolver = uriResolver;
+		CrossLinkResolver = crossLinkResolver;
 		AssembleContext = assembleContext;
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })

@@ -53,6 +53,12 @@ public record GlobalLayoutViewModel
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
 
 	/// <summary>
+	/// The configured top navigation for assembler builds. When null the secondary nav renders
+	/// its built-in links instead.
+	/// </summary>
+	public TopNavRenderModel? TopNav { get; init; }
+
+	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
 	/// the URL of its nearest visible ancestor. The client uses this to highlight the correct
 	/// nav entry when the page has no rendered nav link of its own.
