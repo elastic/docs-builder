@@ -358,7 +358,7 @@ function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
     }
 
     const ul = li.querySelector<HTMLElement>(
-        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__folder-children'
+        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__items-list'
     )
     if (ul) {
         void ul.scrollHeight
@@ -367,7 +367,7 @@ function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
 
 function primeNavV2FolderLayoutsSync(nav: HTMLElement, maxCount: number) {
     const uls = nav.querySelectorAll<HTMLUListElement>(
-        'ul.docs-sidebar-nav-v2__folder-children'
+        'ul.docs-sidebar-nav-v2__items-list'
     )
     const n = Math.min(maxCount, uls.length)
     for (let i = 0; i < n; i++) {
@@ -391,7 +391,7 @@ function scheduleNavV2CollapsedFolderLayoutWarmup(
     startIndex: number
 ) {
     const uls = nav.querySelectorAll<HTMLUListElement>(
-        'ul.docs-sidebar-nav-v2__folder-children'
+        'ul.docs-sidebar-nav-v2__items-list'
     )
     let index = startIndex
     const chunkSize = 6
@@ -515,8 +515,8 @@ function deepestCurrentSidebarLink(nav: HTMLElement): HTMLAnchorElement | null {
 }
 
 /**
- * Apply #F1F6FF background per design: folder index → whole folder + visible children;
- * nested folder index → that folder + its children only; leaf → that row only.
+ * Apply subdued open-block background per design: folder index → whole open folder;
+ * nested folder index → that folder + its children only; leaf → blue border accent only.
  */
 function applyActiveSubtreeHighlight(nav: HTMLElement) {
     clearActiveSubtreeHighlight(nav)
@@ -537,7 +537,7 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
         ':scope > .nav-folder-peer > a.sidebar-link'
     )
     const childUl = hostLi.querySelector(
-        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__folder-children'
+        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__items-list'
     )
 
     if (

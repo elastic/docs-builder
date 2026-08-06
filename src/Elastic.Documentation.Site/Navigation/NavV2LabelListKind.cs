@@ -11,7 +11,7 @@ internal static class NavV2LabelListKind
 {
 	/// <summary>
 	/// True when every direct child under this label renders as a non-folder row (nested labels, plain links).
-	/// False when any child renders as <c>li.group-navigation</c> (accordion folder rows from _TocTreeNavV2).
+	/// False when any child renders as a folder row (<c>li.docs-sidebar-nav-v2__list-item.group-navigation</c>).
 	/// </summary>
 	public static bool IsSubsectionList(LabelNavigationNode label) =>
 		label.NavigationItems.Count > 0 && label.NavigationItems.All(i => !RendersAsGroupNavigationRow(i));
