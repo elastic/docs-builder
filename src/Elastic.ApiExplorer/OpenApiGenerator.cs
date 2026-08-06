@@ -65,7 +65,11 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		}
 	}
 
-	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
+	private async Task GenerateApiProduct(
+		string prefix,
+		OpenApiDocument openApiDocument,
+		ResolvedApiConfiguration? apiConfig,
+		Cancel ctx)
 	{
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
@@ -86,7 +90,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	private async Task RenderNavigationItems(
 		string prefix,
 		ApiRenderContext renderContext,
-		IsolatedBuildNavigationHtmlWriter navigationRenderer,
+		INavigationHtmlWriter navigationRenderer,
 		INavigationItem currentNavigation,
 		INavigationItem rootNavigation,
 		Cancel ctx)
@@ -94,7 +98,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
 			if (currentNavigation is not ClassificationNavigationItem)
-				_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
+				_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, rootNavigation, ctx);
 
 			foreach (var child in node.NavigationItems)
 				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, rootNavigation, ctx);
@@ -102,26 +106,33 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		else
 		{
 			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
-				? await Render(prefix, leaf, leaf.Model, renderContext, navigationRenderer, ctx)
+				? await Render(prefix, leaf, leaf.Model, renderContext, navigationRenderer, rootNavigation, ctx)
 				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
 		}
 	}
 
 #pragma warning disable IDE0060
-	private async Task<IFileInfo> Render<T>(string prefix, INavigationItem current, T page, ApiRenderContext renderContext,
-#pragma warning restore IDE0060
-		IsolatedBuildNavigationHtmlWriter navigationRenderer, Cancel ctx)
+	private async Task<IFileInfo> Render<T>(
+		string prefix,
+		INavigationItem current,
+		T page,
+		ApiRenderContext renderContext,
+		INavigationHtmlWriter navigationRenderer,
+		INavigationItem productRoot,
+		Cancel ctx)
 		where T : INavigationModel, IPageRenderer<ApiRenderContext>
+#pragma warning restore IDE0060
 	{
 		var outputFile = OutputFile(current);
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
+		var navigationRoot = (IRootNavigationItem<INavigationModel, INavigationItem>)productRoot;
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(navigationRoot, current, ctx);
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,
-			NavigationHtml = navigationRenderResult.Html
+			NavigationHtml = navigationRenderResult.Html,
 		};
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);
@@ -130,7 +141,8 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		IFileInfo OutputFile(INavigationItem currentNavigation)
 		{
 			const string indexHtml = "index.html";
-			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{context.UrlPathPrefix}", string.Empty);
+			var pathPrefix = context.UrlPathPrefix ?? string.Empty;
+			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{Regex.Escape(pathPrefix)}", string.Empty);
 			var fileInfo = _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, fileName.Trim('/')));
 			return fileInfo;
 		}

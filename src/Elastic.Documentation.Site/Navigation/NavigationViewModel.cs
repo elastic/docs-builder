@@ -34,6 +34,9 @@ public class NavigationViewModel
 	/// <summary>The section's own URL, used by JS to skip current-page highlighting on the section root.</summary>
 	public string? SectionUrl { get; init; }
 
+	/// <summary>Sidebar URL to highlight as the current page (see <see cref="NavigationActiveUrlResolver"/>).</summary>
+	public string? ActiveNavigationUrl { get; init; }
+
 	/// <summary>Back arrow URL for islands — points to the parent section's landing page.</summary>
 	public string? BackArrowUrl { get; init; }
 

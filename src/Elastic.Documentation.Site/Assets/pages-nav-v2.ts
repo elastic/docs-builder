@@ -51,6 +51,35 @@ function normalizeDocPathname(pathname: string) {
     return p === '' ? '/' : p
 }
 
+function getActiveNavigationPathname(): string {
+    const meta = document.querySelector<HTMLMetaElement>(
+        'meta[name="docs:nav-active"]'
+    )
+    if (meta?.content) {
+        try {
+            return normalizeDocPathname(
+                new URL(meta.content, window.location.href).pathname
+            )
+        } catch {
+            return normalizeDocPathname(meta.content)
+        }
+    }
+
+    const nav = document.querySelector<HTMLElement>('[data-nav-v2]')
+    const dataActive = nav?.dataset.navActiveUrl
+    if (dataActive) {
+        try {
+            return normalizeDocPathname(
+                new URL(dataActive, window.location.href).pathname
+            )
+        } catch {
+            return normalizeDocPathname(dataActive)
+        }
+    }
+
+    return normalizeDocPathname(window.location.pathname)
+}
+
 /**
  * True when the section tab URL is also a normal sidebar link (e.g. Reference index).
  */
@@ -329,7 +358,7 @@ function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
     }
 
     const ul = li.querySelector<HTMLElement>(
-        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__folder-children'
+        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__items-list'
     )
     if (ul) {
         void ul.scrollHeight
@@ -338,7 +367,7 @@ function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
 
 function primeNavV2FolderLayoutsSync(nav: HTMLElement, maxCount: number) {
     const uls = nav.querySelectorAll<HTMLUListElement>(
-        'ul.docs-sidebar-nav-v2__folder-children'
+        'ul.docs-sidebar-nav-v2__items-list'
     )
     const n = Math.min(maxCount, uls.length)
     for (let i = 0; i < n; i++) {
@@ -362,7 +391,7 @@ function scheduleNavV2CollapsedFolderLayoutWarmup(
     startIndex: number
 ) {
     const uls = nav.querySelectorAll<HTMLUListElement>(
-        'ul.docs-sidebar-nav-v2__folder-children'
+        'ul.docs-sidebar-nav-v2__items-list'
     )
     let index = startIndex
     const chunkSize = 6
@@ -486,8 +515,8 @@ function deepestCurrentSidebarLink(nav: HTMLElement): HTMLAnchorElement | null {
 }
 
 /**
- * Apply #F1F6FF background per design: folder index → whole folder + visible children;
- * nested folder index → that folder + its children only; leaf → that row only.
+ * Apply subdued open-block background per design: folder index → whole open folder;
+ * nested folder index → that folder + its children only; leaf → blue border accent only.
  */
 function applyActiveSubtreeHighlight(nav: HTMLElement) {
     clearActiveSubtreeHighlight(nav)
@@ -508,7 +537,7 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
         ':scope > .nav-folder-peer > a.sidebar-link'
     )
     const childUl = hostLi.querySelector(
-        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__folder-children'
+        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__items-list'
     )
 
     if (
@@ -567,7 +596,7 @@ function markCurrentPage(nav: HTMLElement) {
         $$('.current', nav).forEach((el) => el.classList.remove('current'))
         return
     }
-    markCurrentPageForPath(nav, window.location.pathname)
+    markCurrentPageForPath(nav, getActiveNavigationPathname())
 }
 
 function pickDeepestAnchorMatchingPath(
@@ -659,7 +688,44 @@ function expandToCurrentPage(nav: HTMLElement) {
         })
         return
     }
-    expandToCurrentPageForPath(nav, window.location.pathname)
+    expandToCurrentPageForPath(nav, getActiveNavigationPathname())
+}
+
+function scrollCurrentNavItemIntoView(nav: HTMLElement) {
+    const scrollContainer =
+        nav.closest<HTMLElement>('.pages-nav-menu') ??
+        nav.closest<HTMLElement>('#pages-nav')
+    if (!scrollContainer) {
+        return
+    }
+
+    const currentLink = deepestCurrentSidebarLink(nav)
+    if (!currentLink) {
+        return
+    }
+
+    const containerRect = scrollContainer.getBoundingClientRect()
+    const linkRect = currentLink.getBoundingClientRect()
+    const stickyElement = scrollContainer.querySelector<HTMLElement>('.sticky')
+    const stickyHeight = stickyElement?.getBoundingClientRect().height ?? 0
+    const effectiveTop = containerRect.top + stickyHeight
+
+    if (
+        linkRect.top >= effectiveTop &&
+        linkRect.bottom <= containerRect.bottom
+    ) {
+        return
+    }
+
+    const visibleHeight = containerRect.height - stickyHeight
+    const targetPosition =
+        stickyHeight + visibleHeight / 2 - linkRect.height / 2
+    const currentPositionInContainer = linkRect.top - containerRect.top
+    const scrollOffset = currentPositionInContainer - targetPosition
+    scrollContainer.scrollTop = Math.max(
+        0,
+        scrollContainer.scrollTop + scrollOffset
+    )
 }
 
 function destroyNavV2TruncationTooltips() {
@@ -739,6 +805,7 @@ export function initNavV2(nav: HTMLElement) {
     markCurrentPage(nav)
     expandToCurrentPage(nav)
     applyActiveSubtreeHighlight(nav)
+    scrollCurrentNavItemIntoView(nav)
     initNavV2FolderLayoutWarmup(nav)
     requestAnimationFrame(() => {
         requestAnimationFrame(() => initNavV2TruncationTooltips(nav))

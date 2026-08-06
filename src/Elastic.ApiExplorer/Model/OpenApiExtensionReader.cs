@@ -144,7 +144,10 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(lang) || string.IsNullOrEmpty(source))
 				continue;
 
-			samples.Add(new CodeSample(lang, source, CodeSample.GetHighlightClass(lang)));
+			var displaySource = string.Equals(lang, "curl", StringComparison.OrdinalIgnoreCase)
+				? CurlSourceFormatter.Format(source)
+				: source;
+			samples.Add(new CodeSample(lang, displaySource, CodeSample.GetHighlightClass(lang)));
 		}
 
 		// Console first when present, then preserve spec order

@@ -48,7 +48,7 @@ public class InlineLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 	[Fact]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
-			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Elasticsearch</a></p>"""
+			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#content-container,#toc-nav,#api-examples-panel" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Elasticsearch</a></p>"""
 		);
 
 	[Fact]
@@ -64,7 +64,7 @@ public class LinkToPageTests(ITestOutputHelper output) : LinkTestBase(output,
 	[Fact]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav,#api-examples-panel" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -83,7 +83,7 @@ public class InsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(outpu
 	[Fact]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav,#api-examples-panel" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements</a></p>"""
 		);
 
 	[Fact]
@@ -104,7 +104,7 @@ public class RepositoryLinksTest(ITestOutputHelper output) : LinkTestBase(output
 	[Fact]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">test</a></p>"""
+			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav,#api-examples-panel" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">test</a></p>"""
 		);
 
 	[Fact]

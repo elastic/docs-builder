@@ -262,7 +262,7 @@ public class ReloadableGeneratorState : IDisposable
 			ApiPath.Delete(true);
 		ApiPath.Create();
 		var generator = new OpenApiGenerator(_logFactory, _context, markdownStringRenderer);
-		await generator.Generate(ctx);
+		await generator.Generate(ctx: ctx);
 	}
 
 	public void Dispose()

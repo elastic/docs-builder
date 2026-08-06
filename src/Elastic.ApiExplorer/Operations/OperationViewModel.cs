@@ -31,27 +31,30 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (RequiredAuthItems is { Count: > 0 })
 			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
 
-		if (!string.IsNullOrWhiteSpace(operation.Description))
-			tocItems.Add(new ApiTocItem("Description", "description"));
-
 		if (Page.QueryParameters.Count > 0)
-			tocItems.Add(new ApiTocItem("Query String Parameters", "query-params"));
+			tocItems.Add(new ApiTocItem("Query Parameters", "query-params"));
 
 		if (operation.RequestBody is not null)
-			tocItems.Add(new ApiTocItem("Request Body", "request-body"));
+			tocItems.Add(new ApiTocItem("Request", "request-body"));
 
 		if (operation.Responses is { Count: > 0 })
 			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
 
-		if (Page.CodeSamples.Count > 0)
-			tocItems.Add(new ApiTocItem("Code Examples", "code-examples"));
-
-		if (Page.ShowRequestExamples)
-			tocItems.Add(new ApiTocItem("Request Examples", "request-examples"));
-
-		if (Page.ShowResponseExamples)
-			tocItems.Add(new ApiTocItem("Response Examples", "response-examples"));
-
 		return tocItems;
+	}
+
+	public new ApiLayoutViewModel CreateGlobalLayoutModel()
+	{
+		var layout = base.CreateGlobalLayoutModel();
+		if (Page.ExamplesAnchor is null)
+			return layout;
+
+		return layout with
+		{
+			ExamplesPanel = new OperationExamplesPanelModel
+			{
+				Scenarios = Page.Scenarios
+			}
+		};
 	}
 }

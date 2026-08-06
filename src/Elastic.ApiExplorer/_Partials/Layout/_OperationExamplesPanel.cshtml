@@ -1,0 +1,44 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<OperationExamplesPanelModel>
+<aside id="api-examples-panel" class="api-examples-panel sidebar hidden shrink-0 lg:block w-full px-6 lg:px-0">
+	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
+		@if (Model.Scenarios.Count > 0)
+		{
+			@if (Model.Scenarios.Count == 1)
+			{
+				<div class="api-examples-body">
+					@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(Model.Scenarios[0]))
+				</div>
+			}
+			else
+			{
+				<div class="api-examples-scenarios" data-api-scenarios>
+					<h4 class="section-header api-examples-heading">Examples</h4>
+					<div class="api-examples-scenario-header">
+						<select class="api-examples-scenario-select" aria-label="Example">
+							@for (var i = 0; i < Model.Scenarios.Count; i++)
+							{
+								var scenario = Model.Scenarios[i];
+								if (i == 0)
+								{
+									<option value="@scenario.TabId" selected>@scenario.Title</option>
+								}
+								else
+								{
+									<option value="@scenario.TabId">@scenario.Title</option>
+								}
+							}
+						</select>
+					</div>
+					@for (var i = 0; i < Model.Scenarios.Count; i++)
+					{
+						var scenario = Model.Scenarios[i];
+						<div class="api-examples-scenario-panel api-examples-body" data-scenario="@scenario.TabId" hidden="@(i == 0 ? null : "hidden")">
+							@(await RenderPartialAsync<_ExampleScenarioContent, ExampleScenario>(scenario))
+						</div>
+					}
+				</div>
+			}
+		}
+	</nav>
+</aside>
