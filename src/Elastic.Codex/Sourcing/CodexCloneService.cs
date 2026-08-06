@@ -21,6 +21,11 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 {
 	private const string LinkRegistrySnapshotFileName = "link-index.snapshot.json";
 	private static readonly string[] DocsetSearchPaths = ["docs/docset.yml", "docs/_docset.yml", "docset.yml", "_docset.yml"];
+
+	// A registry mismatch on a known-path docset now triggers a recursive walk (see FindDocsetFile), so
+	// this excludes common large generated/vendor directories in addition to .git and node_modules to
+	// keep that walk cheap.
+	private static readonly string[] RecursiveSearchExcludedDirectories = [".git", "node_modules", "vendor", "dist", "build", "target", ".yarn"];
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexCloneService>();
 
 	/// <summary>
@@ -57,7 +62,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			if (entry == null)
 				continue;
 
-			var docsetFile = FindDocsetFile(context.ReadFileSystem, subDir);
+			var docsetFile = FindDocsetFile(context.ReadFileSystem, subDir, context.EnvironmentName);
 			if (docsetFile == null)
 				continue;
 
@@ -67,6 +72,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "."
 				? "."
 				: docsPath.Replace('\\', '/');
+			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
 
 			string currentCommit;
 			try
@@ -85,7 +91,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			}
 
 			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
-			checkouts.Add(new CodexCheckout(docSetRef, subDir, docsDirectory, currentCommit));
+			checkouts.Add(new CodexCheckout(docSetRef, subDir, docsDirectory, docsetFile, currentCommit));
 		}
 
 		return new CodexCloneResult(checkouts, linkRegistry);
@@ -215,7 +221,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var currentCommit = git.GetCurrentCommit();
 
 			// Find docset.yml and read codex metadata
-			var docsetFile = FindDocsetFile(context.ReadFileSystem, repoDir);
+			var docsetFile = FindDocsetFile(context.ReadFileSystem, repoDir, context.EnvironmentName);
 			if (docsetFile == null)
 			{
 				context.Collector.EmitWarning(context.ConfigurationPath,
@@ -230,9 +236,10 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "."
 				? "."
 				: docsPath.Replace('\\', '/');
+			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
 			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
 
-			return new CodexCheckout(docSetRef, repoDir, docsDirectory, currentCommit);
+			return new CodexCheckout(docSetRef, repoDir, docsDirectory, docsetFile, currentCommit);
 		}
 		catch (Exception ex)
 		{
@@ -245,36 +252,65 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		}
 	}
 
-	internal static IFileInfo? FindDocsetFile(IFileSystem fileSystem, IDirectoryInfo repoDir)
+	/// <summary>
+	/// Finds the docset file to use for a repository. When multiple docsets exist (for example a public
+	/// <c>docs/</c> set alongside an internal <c>docs-dev/</c> set), prefers the one whose <c>registry</c>
+	/// matches <paramref name="environment"/>, falling back to the first hit in the historical search
+	/// order (known paths, then a recursive walk) when no docset declares that registry.
+	/// </summary>
+	internal static IFileInfo? FindDocsetFile(IFileSystem fileSystem, IDirectoryInfo repoDir, string environment)
 	{
+		// A known-path candidate is re-encountered by the recursive walk below (e.g. `docs/docset.yml`
+		// lives inside `docs/`), so metadata is cached per call to avoid parsing the same file twice.
+		var metadataCache = new Dictionary<string, DocumentationSetFile>();
+		bool MatchesEnvironment(IFileInfo file)
+		{
+			if (!metadataCache.TryGetValue(file.FullName, out var docSet))
+			{
+				docSet = DocumentationSetFile.LoadMetadata(file);
+				metadataCache[file.FullName] = docSet;
+			}
+			return string.Equals(docSet.Registry, environment, StringComparison.OrdinalIgnoreCase);
+		}
+
+		IFileInfo? firstKnownPathFile = null;
 		foreach (var candidate in DocsetSearchPaths)
 		{
 			var path = Path.Join(repoDir.FullName, candidate);
 			var file = fileSystem.FileInfo.New(path);
-			if (file.Exists)
+			if (!file.Exists)
+				continue;
+
+			firstKnownPathFile ??= file;
+			if (MatchesEnvironment(file))
 				return file;
 		}
 
-		// Recursive search
-		return SearchForDocsetRecursive(fileSystem, repoDir);
+		IFileInfo? firstRecursiveHit = null;
+		var recursiveMatch = SearchForDocsetRecursive(fileSystem, repoDir, MatchesEnvironment, ref firstRecursiveHit);
+		return recursiveMatch ?? firstKnownPathFile ?? firstRecursiveHit;
 	}
 
-	private static IFileInfo? SearchForDocsetRecursive(IFileSystem fileSystem, IDirectoryInfo directory)
+	private static IFileInfo? SearchForDocsetRecursive(IFileSystem fileSystem, IDirectoryInfo directory, Func<IFileInfo, bool> matchesEnvironment, ref IFileInfo? firstHit)
 	{
 		try
 		{
-			foreach (var file in directory.GetFiles())
+			foreach (var file in directory.EnumerateFiles())
 			{
-				if (file.Name is "docset.yml" or "_docset.yml")
+				if (file.Name is not ("docset.yml" or "_docset.yml"))
+					continue;
+
+				firstHit ??= file;
+				if (matchesEnvironment(file))
 					return file;
 			}
 
-			foreach (var subDir in directory.GetDirectories())
+			foreach (var subDir in directory.EnumerateDirectories())
 			{
-				if (subDir.Name is ".git" or "node_modules")
+				if (RecursiveSearchExcludedDirectories.Contains(subDir.Name))
 					continue;
 
-				var found = SearchForDocsetRecursive(fileSystem, subDir);
+				var found = SearchForDocsetRecursive(fileSystem, subDir, matchesEnvironment, ref firstHit);
 				if (found != null)
 					return found;
 			}
@@ -285,6 +321,24 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		}
 
 		return null;
+	}
+
+	/// <summary>
+	/// Warns when the docset chosen for a repository does not declare the codex environment as its
+	/// <c>registry</c> (including when <c>registry</c> is absent entirely). This only ever happens via
+	/// the fallback search order in <see cref="FindDocsetFile"/>, since a matching docset is always
+	/// preferred when one exists — so a mismatch usually means the repository has not opted in yet.
+	/// Kept as a warning rather than a hard error so existing repositories are not broken outright.
+	/// </summary>
+	private static void WarnIfRegistryMismatch(CodexContext context, string repoName, DocumentationSetFile docSet, string docsPath)
+	{
+		if (string.Equals(docSet.Registry, context.EnvironmentName, StringComparison.OrdinalIgnoreCase))
+			return;
+
+		var registryDescription = string.IsNullOrEmpty(docSet.Registry) ? "no registry" : $"registry: {docSet.Registry}";
+		context.Collector.EmitWarning(context.ConfigurationPath,
+			$"Repository '{repoName}' docset '{docsPath}' declares {registryDescription}, not registry: {context.EnvironmentName}; " +
+			"using it via fallback discovery. Set 'registry' in its docset.yml to opt in explicitly.");
 	}
 
 	internal static CodexDocumentationSetReference CreateDocumentationSetReference(
@@ -338,4 +392,5 @@ public record CodexCheckout(
 	CodexDocumentationSetReference Reference,
 	IDirectoryInfo RepositoryDirectory,
 	IDirectoryInfo DocsDirectory,
+	IFileInfo DocsetFile,
 	string CommitHash);

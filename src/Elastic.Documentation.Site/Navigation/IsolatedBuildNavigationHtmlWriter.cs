@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
 
@@ -14,7 +12,8 @@ namespace Elastic.Documentation.Site.Navigation;
 public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
 	: INavigationHtmlWriter
 {
-	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
+	private readonly NavigationRenderCache _renderedNavigationCache = new();
+	private readonly ConcurrentDictionary<string, string> _islandHtmlCache = [];
 
 	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
@@ -27,37 +26,23 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			return await RenderIslandNavigation(listingRoot, ctx);
 
 		var navigation = SelectNavigationRoot(currentRootNavigation);
-		var id = ShortId.Create($"{navigation.Id.GetHashCode()}");
-		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
-		{
-			return new NavigationRenderResult
-			{
-				Html = value,
-				Id = id
-			};
-		}
-		var model = CreateNavigationModel(navigation);
-		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[navigation.Id] = value;
-		return new NavigationRenderResult
-		{
-			Html = value,
-			Id = id
-		};
+		return await _renderedNavigationCache.GetOrRenderAsync(
+			navigation,
+			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(navigation), ctx));
 	}
 
 	private async Task<NavigationRenderResult> RenderIslandNavigation(
 		INodeNavigationItem<INavigationModel, INavigationItem> islandRoot, Cancel ctx)
 	{
-		var cacheKey = $"island:{islandRoot.Id}";
-		if (_renderedNavigationCache.TryGetValue(cacheKey, out var html))
-			return new NavigationRenderResult { Html = html, Id = islandRoot.Id };
+		var cacheKey = islandRoot.Id;
+		if (_islandHtmlCache.TryGetValue(cacheKey, out var html))
+			return new NavigationRenderResult { Html = html, Id = cacheKey };
 
 		var model = CreateIslandNavModel(islandRoot);
 		var slice = _IslandNav.Create(model);
 		html = await slice.RenderAsync(cancellationToken: ctx);
-		_renderedNavigationCache[cacheKey] = html;
-		return new NavigationRenderResult { Html = html, Id = islandRoot.Id };
+		_islandHtmlCache[cacheKey] = html;
+		return new NavigationRenderResult { Html = html, Id = cacheKey };
 	}
 
 	private static IslandNavViewModel CreateIslandNavModel(
@@ -102,17 +87,11 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		return useRequestedRoot ? requestedRoot : siteRoot;
 	}
 
-	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
-		new()
-		{
-			Title = navigation.NavigationTitle,
-			TitleUrl = navigation.Url,
-			Tree = navigation,
-			IsPrimaryNavEnabled = context.Configuration.Features.PrimaryNavEnabled,
-			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
-			IsGlobalAssemblyBuild = false,
-			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			BuildType = context.BuildType,
-			Branding = context.Configuration.Branding
-		};
+	private NavigationRenderModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
+		NavigationRenderModel.Create(
+			tree: navigation,
+			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
+			isUsingNavigationDropdown: context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
+			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
+			isGlobalAssemblyBuild: false);
 }
