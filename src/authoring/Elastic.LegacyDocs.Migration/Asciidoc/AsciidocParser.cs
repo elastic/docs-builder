@@ -1225,7 +1225,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					break;
 				case TokenType.SectionTitle:
 					var section = ParseSection(pendingId, null);
-					result.Add(section);
+					result.Add(section with { IsIncludeRoot = true });
 					pendingId = null;
 					pendingTitle = null;
 					pendingBlockAttr = null;

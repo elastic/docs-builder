@@ -182,9 +182,9 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		};
 		var emitter = new MarkdownEmitter(emitterOptions);
 
-		// conf.yaml chunk: N means "N levels below each included file's root section";
-		// our chunkLevel counts from the document root, so add 1 to align.
-		return PageChunker.Chunk(document, book.Chunk + 1, emitter);
+		// conf.yaml chunk: N means "chunk at N levels below the document root (= title)".
+		// The AST levels match directly: == is Level 1, === is Level 2, etc.
+		return PageChunker.Chunk(document, book.Chunk, emitter);
 	}
 
 	private static async Task<List<TocEntry>> WritePages(

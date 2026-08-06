@@ -63,13 +63,15 @@ public static partial class PageChunker
 			if (child is not SectionNode section)
 				continue;
 
-			if (section.Level == 0)
+			// Non-include-root Level-0 sections are transparent book-root wrappers
+			if (section.Level == 0 && !section.IsIncludeRoot)
 			{
 				CollectAnchors(section.Children, chunkLevel, slugMap, titleMap);
 				continue;
 			}
 
-			if (section.Level <= chunkLevel)
+			// Include roots and sections within chunk depth each become a page
+			if (section.IsIncludeRoot || section.Level <= chunkLevel)
 			{
 				var slug = section.Id ?? GenerateSlug(section.Title);
 				if (section.Id is not null)
@@ -79,6 +81,11 @@ public static partial class PageChunker
 				}
 
 				CollectChildAnchors(section.Children, slug, slugMap, titleMap);
+				CollectAnchors(section.Children, chunkLevel, slugMap, titleMap);
+			}
+			else
+			{
+				// Inline section deeper than chunkLevel — recurse for nested IsIncludeRoot sections
 				CollectAnchors(section.Children, chunkLevel, slugMap, titleMap);
 			}
 		}
@@ -144,7 +151,8 @@ public static partial class PageChunker
 				continue;
 			}
 
-			if (section.Level == 0)
+			// Non-include-root Level-0 sections are transparent book-root wrappers
+			if (section.Level == 0 && !section.IsIncludeRoot)
 			{
 				var (innerPages, innerRemaining) = ExtractPages(section.Children, chunkLevel, emitter);
 				pages.AddRange(innerPages);
@@ -152,9 +160,13 @@ public static partial class PageChunker
 				continue;
 			}
 
-			if (section.Level > chunkLevel)
+			// Inline sections above the chunk depth stay in the parent page, but their
+			// children may still contain IsIncludeRoot sections that must be extracted.
+			if (section.Level > chunkLevel && !section.IsIncludeRoot)
 			{
-				remaining.Add(child);
+				var (innerPages, innerRemaining) = ExtractPages(section.Children, chunkLevel, emitter);
+				pages.AddRange(innerPages);
+				remaining.Add(section with { Children = innerRemaining.ToList() });
 				continue;
 			}
 
