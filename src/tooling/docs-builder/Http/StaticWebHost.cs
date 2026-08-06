@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 #if DEBUG
 using Elastic.Documentation.Api;
+using Elastic.Documentation.Api.PageFeedback;
 #endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
@@ -12,6 +13,8 @@ using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -40,6 +43,7 @@ public class StaticWebHost
 		_ = builder.AddDocumentationServiceDefaults();
 #if DEBUG
 		builder.Services.AddElasticDocsApiServices("dev");
+		builder.Services.Replace(ServiceDescriptor.Singleton<IPageFeedbackService, DebugPageFeedbackService>());
 #endif
 
 		_ = builder.Logging

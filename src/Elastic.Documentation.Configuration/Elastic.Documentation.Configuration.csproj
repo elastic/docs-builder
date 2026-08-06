@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
+    <PackageReference Include="Elastic.Transport" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Nullean.Argh.Interfaces" />
     <PackageReference Include="Nullean.ScopedFileSystem" />

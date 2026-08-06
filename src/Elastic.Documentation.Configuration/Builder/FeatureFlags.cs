@@ -52,6 +52,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["diagnostics-panel"] = value;
 	}
 
+	public bool PageFeedbackEnabled
+	{
+		get => IsEnabled("page-feedback");
+		set => _featureFlags["page-feedback"] = value;
+	}
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";

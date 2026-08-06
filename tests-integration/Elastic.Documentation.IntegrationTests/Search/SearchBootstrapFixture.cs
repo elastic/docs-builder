@@ -8,6 +8,7 @@ using Aspire.Hosting.Testing;
 using AwesomeAssertions;
 using Documentation.Builder.Diagnostics.Console;
 using Elastic.Documentation.Aspire;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
@@ -167,7 +168,8 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			using var channel = new IngestChannel<DocumentationDocument>(options);
 
 			// Get the current hash from Elasticsearch index template
-			var currentSemanticHash = await channel.GetIndexTemplateHashAsync(TestContext.Current.CancellationToken) ?? string.Empty;
+			var currentSemanticHash =
+				(await channel.GetIndexTemplateMetaAsync(TestContext.Current.CancellationToken)).Hash ?? string.Empty;
 
 			// Get the expected channel hash
 			_ = await channel.BootstrapElasticsearchAsync(BootstrapMethod.Silent, TestContext.Current.CancellationToken);

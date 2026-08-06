@@ -34,6 +34,7 @@ export function createWebComponentLoader(componentLoaders: ComponentLoaders) {
 export const loadWebComponents = createWebComponentLoader({
     'version-dropdown': () => import('./VersionDropdown'),
     'applies-to-popover': () => import('./AppliesToPopover'),
+    'page-feedback': () => import('./PageFeedback'),
     'diagnostics-panel': () => import('./Diagnostics/DiagnosticsComponent'),
     'storybook-story': () => import('./StorybookStory/StorybookStoryComponent'),
 })
