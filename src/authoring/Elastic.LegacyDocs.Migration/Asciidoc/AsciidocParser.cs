@@ -538,7 +538,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		return blocks;
 	}
 
-	private static List<IAsciidocNode> WrapAsBlocks(List<string> lines)
+	private List<IAsciidocNode> WrapAsBlocks(List<string> lines)
 	{
 		if (lines.Count == 0)
 			return [];
@@ -547,7 +547,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		if (string.IsNullOrEmpty(text))
 			return [];
 
-		return [new ParagraphNode { Inlines = [new TextInline(text)] }];
+		return [new ParagraphNode { Inlines = ParseInlines(SubstituteAttributes(text)) }];
 	}
 
 	private IAsciidocNode ParseUnorderedList()
@@ -576,14 +576,32 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	{
 		var token = Current;
 		var level = token.Metadata!.Level!.Value;
-		var inlines = ParseInlines(SubstituteAttributes(token.Metadata.Content!));
+		// Collect the first line and any trailing Text tokens together before parsing,
+		// so that multi-line xrefs (<<anchor,text\nspanning lines>>) are matched correctly.
+		var firstLineText = token.Metadata.Content!;
 		_pos++;
 
 		var children = new List<IAsciidocNode>();
+		List<IInlineNode>? inlines = null;
 
 		while (_pos < _tokens.Count)
 		{
 			var cur = Current;
+
+			if (inlines is null && cur.Type == TokenType.Text)
+			{
+				// Collect the first line + consecutive continuation text lines, then parse once
+				var textLines = new List<string> { firstLineText };
+				while (_pos < _tokens.Count && Current.Type == TokenType.Text)
+				{
+					textLines.Add(Current.Raw);
+					_pos++;
+				}
+				inlines = ParseInlines(SubstituteAttributes(string.Join('\n', textLines)));
+				continue;
+			}
+
+			inlines ??= ParseInlines(SubstituteAttributes(firstLineText));
 
 			if (cur.Type == TokenType.ListContinuation)
 			{
@@ -640,15 +658,21 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 			if (cur.Type == TokenType.Text)
 			{
-				var textInlines = ParseInlines(SubstituteAttributes(cur.Raw));
-				inlines.AddRange(textInlines);
-				_pos++;
+				// Collect consecutive text lines and parse together so multi-line xrefs (<<anchor,text\nspanning lines>>) match
+				var textLines = new List<string>();
+				while (_pos < _tokens.Count && Current.Type == TokenType.Text)
+				{
+					textLines.Add(Current.Raw);
+					_pos++;
+				}
+				inlines.AddRange(ParseInlines(SubstituteAttributes(string.Join('\n', textLines))));
 				continue;
 			}
 
 			break;
 		}
 
+		inlines ??= ParseInlines(SubstituteAttributes(firstLineText));
 		return new ListItemNode { Inlines = inlines, Children = children };
 	}
 
@@ -683,8 +707,14 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 				if (cur.Type == TokenType.Text)
 				{
-					description.Add(new ParagraphNode { Inlines = ParseInlines(SubstituteAttributes(cur.Raw)) });
+					var lines = new List<string> { cur.Raw };
 					_pos++;
+					while (_pos < _tokens.Count && Current.Type == TokenType.Text)
+					{
+						lines.Add(Current.Raw);
+						_pos++;
+					}
+					description.Add(new ParagraphNode { Inlines = ParseInlines(SubstituteAttributes(string.Join('\n', lines))) });
 					continue;
 				}
 
@@ -1234,16 +1264,16 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 	[GeneratedRegex(
 		@"link:([^\[]+)\[([^\]]*)\]|" +            // groups 1,2: link
-		@"<<([^,>]+)(?:,(.+?))?>>>|" +             // groups 3,4: triple-xref (non-greedy text allows >)
-		@"<<([^,>]+)(?:,(.+?))?>>|" +              // groups 5,6: xref (non-greedy text allows >)
+		@"<<([^,>]+)(?:,([\s\S]+?))?>>>|" +         // groups 3,4: triple-xref (allow newlines in text)
+		@"<<([^,>]+)(?:,([\s\S]+?))?>>" + "|" +   // groups 5,6: xref (allow newlines in text)
 		@"image:([^\[]+)\[([^\]]*)\]|" +           // groups 7,8: image
 		@"footnote:\[([^\]]*)\]|" +                // group 9: footnote
 		@"pass:\[([^\]]*)\]|" +                    // group 10: pass:[] passthrough
 		@"\[([a-zA-Z][a-zA-Z0-9_-]*)\]#([^#]+)#|" + // groups 11,12: [role]#text#
-		@"\*\*([^\*]+)\*\*|" +                     // group 13: unconstrained bold
-		@"\*([^\*]+)\*|" +                         // group 14: constrained bold
-		@"_([^_]+)_|" +                            // group 15: italic
-		@"`([^`]+)`|" +                            // group 16: mono
+		@"\*\*([^\*<]+)\*\*|" +                    // group 13: unconstrained bold (no < prevents spanning xref markers)
+		@"\*([^\*<]+)\*|" +                        // group 14: constrained bold (no < prevents spanning xref markers)
+		@"_([^_<]+)_|" +                           // group 15: italic (no < prevents spanning xref markers)
+		@"(?<!`)`([^`]+)`|" +                      // group 16: mono (lookbehind prevents ``curly-quote'' from opening a code span)
 		@"\^([^\^]+)\^|" +                         // group 17: superscript
 		@"~([^~]+)~|" +                            // group 18: subscript
 		@"\{([a-zA-Z0-9_-]+)\}|" +                // group 19: attr-ref
@@ -1272,9 +1302,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			if (match.Groups[1].Success)
 				result.Add(new InlineLinkNode(match.Groups[1].Value, NullIfEmpty(match.Groups[2].Value)));
 			else if (match.Groups[5].Success)
-				result.Add(new InlineCrossRefNode(match.Groups[5].Value, NullIfEmpty(match.Groups[6].Value)));
+				result.Add(new InlineCrossRefNode(match.Groups[5].Value, NullIfEmpty(NormalizeWhitespace(match.Groups[6].Value))));
 			else if (match.Groups[3].Success)
-				result.Add(new InlineCrossRefNode(match.Groups[3].Value, NullIfEmpty(match.Groups[4].Value)));
+				result.Add(new InlineCrossRefNode(match.Groups[3].Value, NullIfEmpty(NormalizeWhitespace(match.Groups[4].Value))));
 			else if (match.Groups[7].Success)
 				result.Add(new InlineImageNode(match.Groups[7].Value, NullIfEmpty(match.Groups[8].Value)));
 			else if (match.Groups[9].Success)
@@ -1327,4 +1357,11 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 	private static string? NullIfEmpty(string value) =>
 		string.IsNullOrEmpty(value) ? null : value;
+
+	// Collapse newlines and surrounding whitespace in captured inline text to a single space.
+	private static string NormalizeWhitespace(string value) =>
+		string.IsNullOrEmpty(value) ? value : WhitespaceCollapseRegex().Replace(value.Trim(), " ");
+
+	[GeneratedRegex(@"\s*\n\s*")]
+	private static partial Regex WhitespaceCollapseRegex();
 }

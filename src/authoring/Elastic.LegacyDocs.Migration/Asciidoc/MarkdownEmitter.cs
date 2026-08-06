@@ -62,8 +62,8 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 
 		if (document.Title is not null)
 		{
-			var anchor = document.Id is not null ? $" [{document.Id}]" : "";
-			WriteLine($"# {SubstituteTitleAttrs(document.Title)}{anchor}");
+			var anchor = document.Id is not null ? $" [#{document.Id}]" : "";
+			WriteLine($"# {SubstituteTitleXrefs(SubstituteTitleAttrs(document.Title))}{anchor}");
 			WriteLine();
 		}
 
@@ -191,8 +191,8 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 	private void EmitSection(SectionNode section)
 	{
 		var hashes = new string('#', section.Level + 1);
-		var anchor = section.Id is not null ? $" [{section.Id}]" : "";
-		WriteLine($"{hashes} {SubstituteTitleAttrs(section.Title)}{anchor}");
+		var anchor = section.Id is not null ? $" [#{section.Id}]" : "";
+		WriteLine($"{hashes} {SubstituteTitleXrefs(SubstituteTitleAttrs(section.Title))}{anchor}");
 		WriteLine();
 
 		EmitChildren(section.Children);
@@ -226,7 +226,7 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 			return;
 
 		for (var i = 0; i < codeBlock.Callouts.Count; i++)
-			WriteLine($"{i + 1}. {codeBlock.Callouts[i]}");
+			WriteLine($"{i + 1}. {SubstituteTitleXrefs(SubstituteTitleAttrs(codeBlock.Callouts[i]))}");
 		WriteLine();
 	}
 
@@ -482,7 +482,7 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 				EmitCrossRef(xref);
 				break;
 			case InlineImageNode img:
-				Write($"![{img.Alt ?? ""}]({img.Path})");
+				Write($"![{SubstituteTitleAttrs(img.Alt ?? "")}]({img.Path})");
 				break;
 			case FootnoteInline footnote:
 				EmitFootnote(footnote);
@@ -587,6 +587,9 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 	[GeneratedRegex(@"\{([a-z][a-z0-9_-]*)\}")]
 	private static partial Regex AttrRefRegex();
 
+	[GeneratedRegex(@"<<([^,>\n]+)(?:,([^>\n]+))?>>")]
+	private static partial Regex TitleXrefRegex();
+
 	// Replaces {name} → {{name}} for product-name subs in raw title strings (which
 	// bypass ParseInlines and never hit the AttributeRefInline emission path).
 	private static string SubstituteTitleAttrs(string title) =>
@@ -594,4 +597,15 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 			SharedAttributes.ProductNames.ContainsKey(m.Groups[1].Value)
 				? $"{{{{{m.Groups[1].Value}}}}}"
 				: m.Value);
+
+	// Replaces <<anchor>> and <<anchor,text>> xrefs in raw title strings.
+	private string SubstituteTitleXrefs(string title) =>
+		TitleXrefRegex().Replace(title, m =>
+		{
+			var anchor = m.Groups[1].Value.Trim();
+			var text = m.Groups[2].Success ? m.Groups[2].Value.Trim() : anchor;
+			if (options.AnchorToSlugMap.TryGetValue(anchor, out var slug))
+				return slug == options.PageSlug ? $"[{text}](#{anchor})" : $"[{text}]({slug}.md#{anchor})";
+			return $"[{text}](#{anchor})";
+		});
 }
