@@ -128,10 +128,10 @@ Controls whether the **`description`** text on each **changelog record** appears
 
 | Value | Behavior |
 |-------|----------|
-| `auto` | When **every** constituent repository in the bundle’s resolved repo identity is **public** (same private-repo detection as `:link-visibility:` from `assembler.yml`, including `repo1+repo2` merged bundles), **omit** record `description` bodies. When **any** constituent is marked **private**, **show** those bodies. In standalone builds without `assembler.yml`, every repo is treated as public ⇒ record descriptions are omitted under `auto`. |
-| `keep-descriptions` | Always render record descriptions when present in the bundle source. Use this on pages such as deprecations or breaking changes when you still want full release-note prose alongside public repos. |
-| `keep-highlight-descriptions` | Show record descriptions **only** in the [`:highlights:`](#highlights) section. Hide them in every other section (Features, Fixes, and so on), including the type-section copy of a highlighted entry. When `:highlights:` is omitted, descriptions are hidden everywhere. |
-| `hide-descriptions` | Always omit record `description` bodies (titles, PR/issue links, Impact and Action sections, and bundle-level intros are unaffected). |
+| `auto` | When **every** constituent repository in the bundle’s resolved repo identity is **public** (same private-repo detection as `:link-visibility:` from `assembler.yml`, including `repo1+repo2` merged bundles), **omit** record `description` bodies. When **any** constituent is marked **private**, **show** those bodies. In standalone builds without `assembler.yml`, every repo is treated as public ⇒ changelog descriptions are omitted under `auto`. |
+| `keep-descriptions` | Always render changelog descriptions when present in the bundle source. Use this on pages such as deprecations or breaking changes when you still want full release-note prose alongside public repos. |
+| `keep-highlight-descriptions` | Show changelog descriptions **only** in the [`:highlights:`](#highlights) section. Hide them in every other section, including the type-section copy of a highlighted entry. When `:highlights:` is omitted, descriptions are hidden everywhere. |
+| `hide-descriptions` | Always omit changelog descriptions (titles, PR/issue links, impact, and action sections and bundle-level intros are unaffected). |
 
 **Contrast with `:link-visibility:`:** `:link-visibility: auto` hides **links** when a repo is **private**. `:description-visibility: auto` **shows** richer record **description** prose when **any** source repo is **private**, and hides that prose for bundles that resolve to **only public** repositories.
 
@@ -387,7 +387,7 @@ When a bundle includes a `release-date` field, the directive renders it as itali
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
-**Record descriptions:** Each changelog entry may have its own `description` field in YAML (shown as body text under list items or as the introductory paragraph inside dropdowns). Visibility of **these** descriptions is controlled with `:description-visibility:` (defaults to `auto`; see Option details section). Do not confuse bundle `description` (intro prose) with per-record `description` (entry bodies).
+Each changelog entry may have its own `description` field in YAML (shown as body text under list items or as the introductory paragraph inside dropdowns). The visibility of these descriptions is controlled with `:description-visibility:` (defaults to `auto`). Do not confuse bundle `description` (intro prose) with changelog `description` (entry bodies).
 
 ### Section types
 
