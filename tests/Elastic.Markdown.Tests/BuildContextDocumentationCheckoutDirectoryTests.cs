@@ -13,9 +13,17 @@ using Xunit;
 namespace Elastic.Markdown.Tests;
 
 /// <summary>
-/// Regression: Codex must pass the repository clone root as <see cref="BuildContext"/> <c>source</c>
-/// so <c>FindGitRoot(..., ceiling: rootFolder)</c> can see <c>.git</c> under the ceiling (#3115).
-/// Prior bug used <c>DocsDirectory</c> only, capping the ceiling at the docs subtree.
+/// Tests that <see cref="BuildContext.DocumentationCheckoutDirectory"/> resolves correctly
+/// for various <c>--path</c> / <c>source</c> combinations.
+/// <para>
+/// Key invariant: <c>--path repo/</c> and <c>--path repo/docs/</c> must resolve to the
+/// <em>same</em> <c>CheckoutDirectory</c> because the docset scan converges first (both land on
+/// <c>repo/docs/</c> as the anchor), and <c>FindGitRoot</c> then walks at most one parent.
+/// </para>
+/// <para>
+/// Regression guard (#3115): Codex passes the repository clone root as <c>source</c> so that
+/// <c>FindGitRoot</c> can see <c>.git</c> within the default <c>maxParents</c> range.
+/// </para>
 /// </summary>
 public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper output)
 {
@@ -47,7 +55,7 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 	}
 
 	[Fact]
-	public void SourceAsDocsSubtreeOnly_LeavesDocumentationCheckoutDirectoryNull()
+	public void SourceAsDocsSubtree_ResolvesCheckoutFromParent()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var repoPath = Path.Combine(root, "codex-docs-only-test");
@@ -70,6 +78,51 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 			source: docsPath,
 			output: Path.Combine(root, "codex-docs-only-test-out"));
 
-		context.DocumentationCheckoutDirectory.Should().BeNull();
+		// --path repo/docs/ now resolves the same checkout as --path repo/:
+		// the docset scan anchors at repo/docs/, FindGitRoot walks one parent to repo/.git
+		Assert.NotNull(context.DocumentationCheckoutDirectory);
+		context.DocumentationCheckoutDirectory.FullName.Should().Be(repoPath);
+	}
+
+	[Fact]
+	public void PathAndDocsSubfolder_ResolveIdenticalCheckout()
+	{
+		var root = Paths.WorkingDirectoryRoot.FullName;
+		var repoPath = Path.Combine(root, "codex-equiv-test");
+		var docsPath = Path.Combine(repoPath, "docs");
+		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = root });
+		fs.AddDirectory(Path.Combine(repoPath, ".git"));
+		fs.AddFile(Path.Combine(docsPath, "docset.yml"), new MockFileData("toc: []\n"));
+
+		var collector = new TestDiagnosticsCollector(output);
+		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
+
+		var contextFromRepoRoot = new BuildContext(
+			collector,
+			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
+			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
+			configurationContext,
+			ExportOptions.Default,
+			source: repoPath,
+			output: Path.Combine(root, "codex-equiv-test-out"));
+
+		var contextFromDocsFolder = new BuildContext(
+			collector,
+			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
+			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
+			configurationContext,
+			ExportOptions.Default,
+			source: docsPath,
+			output: Path.Combine(root, "codex-equiv-test-out"));
+
+		contextFromRepoRoot.DocumentationCheckoutDirectory.Should().NotBeNull();
+		contextFromDocsFolder.DocumentationCheckoutDirectory.Should().NotBeNull();
+		contextFromRepoRoot.DocumentationCheckoutDirectory.FullName
+			.Should().Be(contextFromDocsFolder.DocumentationCheckoutDirectory.FullName,
+				"--path repo/ and --path repo/docs/ must resolve to the same CheckoutDirectory");
+		contextFromRepoRoot.DocumentationSourceDirectory.FullName
+			.Should().Be(contextFromDocsFolder.DocumentationSourceDirectory.FullName,
+				"--path repo/ and --path repo/docs/ must resolve to the same SourceDirectory");
 	}
 }

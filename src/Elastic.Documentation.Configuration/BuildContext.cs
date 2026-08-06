@@ -119,7 +119,11 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			? (configurationFile.Directory!, configurationFile)
 			: Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
 
-		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory, ceiling: rootFolder);
+		// Walk at most one parent above the docset anchor so that both
+		//   --path repo/         (docset anchor = repo/docs, .git at repo — 1 parent)
+		//   --path repo/docs/    (docset anchor = repo/docs, .git at repo — 1 parent)
+		// resolve to the same CheckoutDirectory, without ever escaping the scope root.
+		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory, maxParents: 1);
 
 		OutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
@@ -128,11 +132,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
-		// When DocumentationCheckoutDirectory is null (source is the docs subfolder, not the repo root),
-		// try the parent directory as the git root so branch/commit info is still available locally.
-		var gitRoot = DocumentationCheckoutDirectory
-			?? (DocumentationSourceDirectory.Parent is { } p ? Paths.FindGitRoot(p) : null);
-		Git = gitCheckoutInformation ?? GitCheckoutInformationFactory.Create(gitRoot, ReadFileSystem);
+		Git = gitCheckoutInformation ?? GitCheckoutInformationFactory.Create(DocumentationCheckoutDirectory, ReadFileSystem);
 
 		// Load and resolve the docset file, or create an empty one if it doesn't exist
 		ConfigurationYaml = ConfigurationPath.Exists
