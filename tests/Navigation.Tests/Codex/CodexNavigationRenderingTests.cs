@@ -4,7 +4,6 @@
 
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
@@ -238,16 +237,12 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	private static async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> navigation)
 	{
-		var model = new NavigationViewModel
-		{
-			Tree = navigation,
-			IsPrimaryNavEnabled = false,
-			IsGlobalAssemblyBuild = false,
-			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>(),
-			IsUsingNavigationDropdown = false,
-			BuildType = BuildType.Codex
-		};
-		var renderModel = NavigationRenderModel.Create(model);
+		var renderModel = NavigationRenderModel.Create(
+			tree: navigation,
+			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>(),
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: false,
+			isGlobalAssemblyBuild: false);
 		var html = await _TocTree.Create(renderModel).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 		return new NavigationRenderResult
 		{

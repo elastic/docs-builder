@@ -15,15 +15,14 @@ public interface INavigationHtmlWriter
 		Cancel ctx = default
 	);
 
-	async Task<NavigationRenderResult> Render(NavigationViewModel model, Cancel ctx)
+	async Task<NavigationRenderResult> Render(NavigationRenderModel model, Cancel ctx)
 	{
-		var renderModel = NavigationRenderModel.Create(model);
-		var slice = _TocTree.Create(renderModel);
+		var slice = _TocTree.Create(model);
 		var html = await slice.RenderAsync(cancellationToken: ctx);
 		return new NavigationRenderResult
 		{
 			Html = html,
-			Id = renderModel.ContentHash
+			Id = model.ContentHash
 		};
 	}
 }

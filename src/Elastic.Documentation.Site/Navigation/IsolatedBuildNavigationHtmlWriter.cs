@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 
@@ -39,15 +38,11 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		return useRequestedRoot ? requestedRoot : siteRoot;
 	}
 
-	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
-		new()
-		{
-			Tree = navigation,
-			IsPrimaryNavEnabled = context.Configuration.Features.PrimaryNavEnabled,
-			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
-			IsGlobalAssemblyBuild = false,
-			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			BuildType = context.BuildType,
-			Branding = context.Configuration.Branding
-		};
+	private NavigationRenderModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
+		NavigationRenderModel.Create(
+			tree: navigation,
+			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
+			isUsingNavigationDropdown: context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
+			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
+			isGlobalAssemblyBuild: false);
 }

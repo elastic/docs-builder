@@ -2,13 +2,7 @@
 @inherits RazorSlice<IReadOnlyList<Elastic.Documentation.Site.Navigation.NavigationRenderNode>>
 @foreach (var item in Model)
 {
-	if (item.Kind == NavigationRenderNodeKind.IndexLink)
-	{
-		<li class="flex group/li pr-8 mt-6">
-			<a href="@item.Url" class="sidebar-link nav-link">@item.NavigationTitle</a>
-		</li>
-	}
-	else if (item.Kind == NavigationRenderNodeKind.Link)
+	if (item.Kind == NavigationRenderNodeKind.Leaf)
 	{
 		<li class="flex group/li pr-8 @(item.IsTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a href="@item.Url" class="sidebar-link nav-link">
