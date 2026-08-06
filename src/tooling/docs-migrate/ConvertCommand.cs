@@ -16,6 +16,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 	/// <summary>Convert AsciiDoc books to Markdown docsets.</summary>
 	/// <param name="workDir">Working directory for migration artifacts</param>
 	/// <param name="majors">Override: number of top major versions to include</param>
+	/// <param name="minors">Override: max minor versions per major to include</param>
 	/// <param name="all">Override: process all versions</param>
 	/// <param name="minVersion">Override: minimum major version to process</param>
 	/// <param name="book">Override: filter to books whose prefix starts with this value</param>
@@ -23,6 +24,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 	public async Task<int> Convert(
 		string? workDir = null,
 		int? majors = null,
+		int? minors = null,
 		bool? all = null,
 		int? minVersion = null,
 		string? book = null,
@@ -32,10 +34,11 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		var dir = SharedOptions.ResolveWorkDir(workDir);
 		var conf = await SharedOptions.LoadConfAsync(dir, ct);
 
-		var opts = SharedOptions.ResolveFilterOptions(dir, majors, all, minVersion, book);
+		var opts = SharedOptions.ResolveFilterOptions(dir, majors, all, minVersion, book, minors);
 		_logger.LogInformation(
-			"Filter: majors={Majors}, all={All}, minVersion={MinVersion}, book={Book}",
-			opts.Majors, opts.All, opts.MinVersion ?? (object)"any", opts.Book ?? "all");
+			"Filter: majors={Majors}, minors={Minors}, all={All}, minVersion={MinVersion}, book={Book}",
+			opts.Majors, opts.Minors.HasValue ? opts.Minors.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "all",
+			opts.All, opts.MinVersion ?? (object)"any", opts.Book ?? "all");
 
 		var books = SharedOptions.FilterBooks(conf, opts.Book);
 
@@ -53,7 +56,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		{
 			ct.ThrowIfCancellationRequested();
 
-			var versions = SharedOptions.FilterVersions(b, opts.Majors, opts.All, opts.MinVersion);
+			var versions = SharedOptions.FilterVersions(b, opts.Majors, opts.All, opts.MinVersion, opts.Minors);
 			if (versions.Count == 0)
 			{
 				_logger.LogWarning("No versions to process for {BookPrefix}", b.Prefix);
@@ -82,7 +85,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 					var fileEntries = await WritePages(pages, versionDir, ct);
 					YamlWriter.WriteTocYaml(Path.Combine(versionDir, "toc.yml"), fileEntries);
-					versionEntries.Add(new TocEntry { Folder = versionLabel });
+					versionEntries.Add(new TocEntry { Toc = versionLabel });
 					convertedVersions.Add(versionLabel);
 
 					_logger.LogInformation("Wrote {PageCount} pages for {Prefix}/{Version}",

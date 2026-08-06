@@ -7,7 +7,7 @@ using Elastic.LegacyDocs.Migration;
 
 namespace Documentation.Migrate;
 
-internal sealed record FilterOptions(int Majors = 1, bool All = false, int? MinVersion = null, string? Book = null);
+internal sealed record FilterOptions(int Majors = 1, bool All = false, int? MinVersion = null, string? Book = null, int? Minors = null);
 
 internal static class SharedOptions
 {
@@ -66,7 +66,7 @@ internal static class SharedOptions
 	}
 
 	public static FilterOptions ResolveFilterOptions(
-		string workDir, int? majors, bool? all, int? minVersion, string? book)
+		string workDir, int? majors, bool? all, int? minVersion, string? book, int? minors)
 	{
 		var saved = LoadFilterOptions(workDir);
 
@@ -74,7 +74,8 @@ internal static class SharedOptions
 			Majors: majors ?? saved.Majors,
 			All: all ?? saved.All,
 			MinVersion: minVersion ?? saved.MinVersion,
-			Book: book ?? saved.Book
+			Book: book ?? saved.Book,
+			Minors: minors ?? saved.Minors
 		);
 	}
 
@@ -84,7 +85,7 @@ internal static class SharedOptions
 			.Where(b => bookFilter is null || b.Prefix.StartsWith(bookFilter, StringComparison.OrdinalIgnoreCase))
 			.ToList();
 
-	public static List<BranchRef> FilterVersions(LegacyBook book, int majors, bool all, int? minVersion)
+	public static List<BranchRef> FilterVersions(LegacyBook book, int majors, bool all, int? minVersion, int? minors = null)
 	{
 		var branches = book.Branches.ToList();
 
@@ -107,7 +108,9 @@ internal static class SharedOptions
 
 		foreach (var group in grouped)
 		{
-			foreach (var (branch, _) in group.OrderByDescending(x => x.Parsed!.Value.Minor))
+			var minorsSorted = group.OrderByDescending(x => x.Parsed!.Value.Minor);
+			var limited = minors is not null ? minorsSorted.Take(minors.Value) : minorsSorted;
+			foreach (var (branch, _) in limited)
 				_ = selected.Add(branch.VersionLabel);
 		}
 

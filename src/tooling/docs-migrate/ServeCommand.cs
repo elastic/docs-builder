@@ -11,7 +11,7 @@ internal sealed class ServeCommand
 	/// <summary>Serve the converted output using docs-builder.</summary>
 	/// <param name="port">Port to serve on (default 3000)</param>
 	/// <param name="ct">Cancellation token</param>
-	public async Task<int> Serve(int port = 3000, CancellationToken ct = default)
+	public async Task<int> Serve(int port = 3001, CancellationToken ct = default)
 	{
 		var outputDir = Path.Combine(Directory.GetCurrentDirectory(), ".artifacts", "migrated");
 
