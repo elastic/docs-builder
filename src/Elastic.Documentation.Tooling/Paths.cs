@@ -17,45 +17,6 @@ public static class Paths
 	public static readonly DirectoryInfo ApplicationData = GetApplicationFolder();
 
 	/// <summary>
-	/// Walks up from <paramref name="startPath"/> until a <c>.git</c> directory or file
-	/// (worktree pointer) is found and returns that ancestor. Returns <paramref name="startPath"/>
-	/// itself when no git root is found within the allowed depth.
-	/// </summary>
-	/// <remarks>
-	/// Uses raw <see cref="System.IO"/> and is therefore only appropriate for the initial
-	/// scope-building bootstrap (before a <see cref="Nullean.ScopedFileSystem.ScopedFileSystem"/>
-	/// can be constructed). Callers that already have an <see cref="IFileSystem"/> should use
-	/// <see cref="FindGitRoot(IDirectoryInfo,int)"/> instead.
-	/// </remarks>
-	public static string FindGitRoot(string startPath)
-	{
-		var resolved = Path.IsPathRooted(startPath) ? startPath : Path.GetFullPath(startPath);
-		var dir = Directory.Exists(resolved)
-			? new DirectoryInfo(resolved)
-			: new DirectoryInfo(Path.GetDirectoryName(resolved) ?? resolved);
-		var startDir = dir.FullName;
-		var depth = 0;
-		while (dir != null)
-		{
-			var hasGit = dir.GetDirectories(".git").Length > 0 || dir.GetFiles(".git").Length > 0;
-			if (hasGit)
-			{
-#if DEBUG
-				if (depth <= 1 || dir.GetFiles("*.slnx").Length > 0)
-					return dir.FullName;
-#else
-				if (depth <= 1)
-					return dir.FullName;
-#endif
-				return startDir;
-			}
-			depth++;
-			dir = dir.Parent;
-		}
-		return startDir;
-	}
-
-	/// <summary>
 	/// Walks up from <paramref name="startDirectory"/> via <see cref="IFileSystem"/> until
 	/// a <c>.git</c> directory or file (worktree pointer) is found.
 	/// Returns <see langword="null"/> if no git root is found within the allowed depth.

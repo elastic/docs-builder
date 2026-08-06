@@ -58,7 +58,9 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
+		var plain = new FileSystem();
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
+			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
 		var writeFs = FileSystemFactory.RealGitRootForPathWrite(null, output?.FullName);
 
 		var configFile = readFs.FileInfo.New(config.FullName);
@@ -116,7 +118,9 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
+		var plain = new FileSystem();
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
+			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
 
 		var configFile = readFs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
@@ -150,7 +154,9 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
+		var plain = new FileSystem();
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
+			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
 		var writeFs = FileSystemFactory.RealGitRootForPathWrite(null, output?.FullName);
 
 		var configFile = readFs.FileInfo.New(config.FullName);

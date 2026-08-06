@@ -31,28 +31,15 @@ public static partial class GitCheckoutInformationFactory
 		if (result == GitCheckoutInformation.Unavailable)
 		{
 			var fsType = fileSystem is ScopedFileSystem sf ? sf.InnerType : fileSystem.GetType();
-			if (fsType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase))
+			if (fsType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase) && IsLegacyTestWithoutGitLayout(fileSystem, source))
 			{
-				// Fall back to canned data for mocks in two cases that are not "real layout" attempts:
-				//   - No .git entry at all (tests that don't model git)
-				//   - .git is a directory without a config (tests that seed .git only so FindGitRoot
-				//     can set DocumentationCheckoutDirectory but don't need real git info)
-				// Do NOT fall back when .git is a FILE (worktree pointer) — those tests are
-				// explicitly modeling a worktree layout and expect real or Unavailable results.
-				var gitPath = fileSystem.Path.Join(source.FullName, ".git");
-				var noGitEntry = !fileSystem.Directory.Exists(gitPath) && !fileSystem.File.Exists(gitPath);
-				var gitDirWithoutConfig = fileSystem.Directory.Exists(gitPath)
-					&& !fileSystem.File.Exists(fileSystem.Path.Join(gitPath, "config"));
-				if (noGitEntry || gitDirWithoutConfig)
+				return new GitCheckoutInformation
 				{
-					return new GitCheckoutInformation
-					{
-						Branch = "test-e35fcb27-5f60-4e",
-						Remote = "elastic/docs-builder",
-						Ref = "e35fcb27-5f60-4e",
-						RepositoryName = "docs-builder"
-					};
-				}
+					Branch = "test-e35fcb27-5f60-4e",
+					Remote = "elastic/docs-builder",
+					Ref = "e35fcb27-5f60-4e",
+					RepositoryName = "docs-builder"
+				};
 			}
 		}
 
@@ -160,6 +147,27 @@ public static partial class GitCheckoutInformationFactory
 		logger?.LogInformation("-> Remote Name: {GitRemote}", info.Remote);
 		logger?.LogInformation("-> Repository Name: {RepositoryName}", info.RepositoryName);
 		return info;
+	}
+
+	/// <summary>
+	/// Returns <see langword="true"/> for test setups that use a mock filesystem but do not seed a
+	/// real git layout — either no <c>.git</c> entry at all, or a bare <c>.git</c> directory without
+	/// a <c>config</c> file. Tests that only add <c>.git/</c> to make <c>FindGitRoot</c> succeed
+	/// intentionally fall into the second case; they do not need real git metadata.
+	/// <para>
+	/// These test setups pre-date testable git resolution and continue to receive the canned test
+	/// instance so they do not need to be updated. A <c>.git</c> <em>file</em> (worktree pointer) is
+	/// excluded: tests that seed a worktree pointer are explicitly modelling a worktree layout and
+	/// expect real resolution or <see cref="GitCheckoutInformation.Unavailable"/>.
+	/// </para>
+	/// </summary>
+	private static bool IsLegacyTestWithoutGitLayout(IFileSystem fileSystem, IDirectoryInfo source)
+	{
+		var gitPath = fileSystem.Path.Join(source.FullName, ".git");
+		var noGitEntry = !fileSystem.Directory.Exists(gitPath) && !fileSystem.File.Exists(gitPath);
+		var gitDirWithoutConfig = fileSystem.Directory.Exists(gitPath)
+			&& !fileSystem.File.Exists(fileSystem.Path.Join(gitPath, "config"));
+		return noGitEntry || gitDirWithoutConfig;
 	}
 
 	private static string BranchTrackingRemote(string branch, IniFile config)
