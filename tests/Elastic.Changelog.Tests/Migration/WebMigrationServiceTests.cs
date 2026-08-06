@@ -126,8 +126,11 @@ public class WebMigrationServiceTests
 	}
 
 	[Fact]
-	public async Task FirstRun_RefreshesTheProductRegistryManifest()
+	public async Task Run_NeverWritesARegistryManifest()
 	{
+		// The scrubber Lambda owns the public manifests and shallow maps (elastic/docs-builder#3738);
+		// the client-side refresh is retired (elastic/docs-builder#3760). Migration writes YAML
+		// bundle objects only — the S3 events those creates emit trigger the reconciliation.
 		_ = FakeEmptyBucket();
 		var ct = TestContext.Current.CancellationToken;
 
@@ -135,9 +138,9 @@ public class WebMigrationServiceTests
 
 		result.Should().BeTrue();
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/edot-java/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
-		)).MustHaveHappenedOnceExactly();
+		)).MustNotHaveHappened();
 	}
 
 	[Fact]
