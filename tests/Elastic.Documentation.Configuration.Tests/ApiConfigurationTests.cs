@@ -588,7 +588,7 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
 	}
 
-	private static readonly string[] first = ["elasticsearch", "kibana"];
+	private static readonly string[] DefaultProductIds = ["elasticsearch", "kibana"];
 
 	private static (ConfigurationFile Config, DiagnosticsCollector Collector) CreateConfiguration(
 		DocumentationSetFile docSet, string[]? extraProducts = null, bool withLocalSpecFile = true)
@@ -615,7 +615,7 @@ public class ConfigurationFileApiTests
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
 		};
 
-		var productIds = first.Concat(extraProducts ?? []);
+		var productIds = DefaultProductIds.Concat(extraProducts ?? []);
 		var products = productIds.ToDictionary(
 			id => id,
 			id => new Product { Id = id, DisplayName = id },
