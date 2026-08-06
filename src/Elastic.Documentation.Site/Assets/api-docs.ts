@@ -623,53 +623,6 @@ function initApiScenarioSelects(): void {
     })
 }
 
-let apiPathOverloadSelectDelegated = false
-
-/**
- * Path-overload <select>: navigate to a sibling route via the same HTMX oob swap
- * used by in-page API links, then reset to the "Other paths (N)" placeholder.
- */
-function initApiPathOverloadSelect(): void {
-    if (apiPathOverloadSelectDelegated) return
-    apiPathOverloadSelectDelegated = true
-    document.addEventListener('change', (event) => {
-        const select = (event.target as HTMLElement | null)?.closest(
-            '.api-path-overload-select'
-        )
-        if (!(select instanceof HTMLSelectElement) || !select.value) return
-
-        const url = select.value
-        const oob =
-            select.dataset.hxSelectOob ??
-            '#content-container,#toc-nav,#api-examples-panel'
-        const htmxApi = (
-            window as Window & {
-                htmx?: {
-                    ajax: (
-                        method: string,
-                        path: string,
-                        context?: Record<string, unknown>
-                    ) => void
-                    process?: (el: Element) => void
-                }
-            }
-        ).htmx
-
-        if (htmxApi?.ajax) {
-            htmxApi.ajax('GET', url, {
-                source: select,
-                swap: 'none',
-                selectOOB: oob,
-                push: url,
-            })
-        } else {
-            window.location.assign(url)
-        }
-
-        select.selectedIndex = 0
-    })
-}
-
 function countApiCodeLines(text: string): number {
     if (!text) return 1
     const parts = text.split(/\r?\n/)
@@ -731,7 +684,6 @@ export function initApiDocs(): void {
     initApiCodeLanguageSelects()
     initApiResponseStatusTabs()
     initApiScenarioSelects()
-    initApiPathOverloadSelect()
     // After initHighlight — gutters need final textContent line counts
     initApiCodeLineNumbers()
 

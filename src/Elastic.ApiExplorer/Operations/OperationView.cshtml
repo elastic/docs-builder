@@ -42,44 +42,24 @@
 		</div>
 	}
 
-	@{
-		var overloads = pageModel.Overloads;
-		var currentOverload = overloads.FirstOrDefault(o =>
-			o.Model.Route == Model.Operation.Route
-			&& o.Model.OperationType == Model.Operation.OperationType)
-			?? overloads.FirstOrDefault();
-		var variantOverloads = currentOverload is null
-			? []
-			: overloads
-				.Where(o =>
-					o.Model.Route != currentOverload.Model.Route
-					|| o.Model.OperationType != currentOverload.Model.OperationType)
-				.ToArray();
-		var currentMethod = currentOverload?.Model.OperationType.ToString().ToLowerInvariant() ?? "";
-	}
-	@if (currentOverload is not null)
-	{
-		<div id="paths" class="api-path-bar">
-			<div class="api-path-current">
-				<span class="api-method api-method-@currentMethod">@currentMethod.ToUpperInvariant()</span>
-				<span class="api-url">@currentOverload.Model.Route</span>
-			</div>
-			@if (variantOverloads.Length > 0)
-			{
-				<select
-					class="api-path-overload-select"
-					aria-label="Other paths"
-					data-hx-select-oob="@LayoutModel.Htmx.GetHxSelectOob(true)">
-					<option value="" selected disabled>Other paths (@variantOverloads.Length)</option>
-					@foreach (var overload in variantOverloads)
+	<ul id="paths" class="api-url-listing">
+		@foreach (var overload in pageModel.Overloads)
+		{
+			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
+			var isDeprecated = overload.Model.Operation?.Deprecated == true;
+			<li class="api-url-list-item @(isDeprecated ? "deprecated" : "")">
+				<a href="@overload.Url" class="@current" @LayoutModel.Htmx.GetHxAttributes(hasSameTopLevelGroup: true)>
+					<span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
+					<span class="api-url @(isDeprecated ? "deprecated-path" : "")">@overload.Model.Route</span>
+					@if (isDeprecated)
 					{
-						var method = overload.Model.OperationType.ToString().ToUpperInvariant();
-						<option value="@overload.Url">@method @overload.Model.Route</option>
+						<span class="deprecated-badge">deprecated</span>
 					}
-				</select>
-			}
-		</div>
-	}
+				</a>
+			</li>
+		}
+	</ul>
 </header>
 <section id="elastic-api-v3" class="api-page-reference">
 	@{
