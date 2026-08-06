@@ -62,8 +62,12 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 
 		if (document.Title is not null)
 		{
-			var anchor = document.Id is not null ? $" [#{document.Id}]" : "";
-			WriteLine($"# {SubstituteTitleXrefs(SubstituteTitleAttrs(document.Title))}{anchor}");
+			if (document.Id is not null)
+			{
+				WriteLine($"$$${document.Id}$$$");
+				WriteLine();
+			}
+			WriteLine($"# {SubstituteTitleXrefs(SubstituteTitleAttrs(document.Title))}");
 			WriteLine();
 		}
 
@@ -191,8 +195,17 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 	private void EmitSection(SectionNode section)
 	{
 		var hashes = new string('#', section.Level + 1);
-		var anchor = section.Id is not null ? $" [#{section.Id}]" : "";
-		WriteLine($"{hashes} {SubstituteTitleXrefs(SubstituteTitleAttrs(section.Title))}{anchor}");
+		if (section.Level == 0 && section.Id is not null)
+		{
+			WriteLine($"$$${section.Id}$$$");
+			WriteLine();
+			WriteLine($"# {SubstituteTitleXrefs(SubstituteTitleAttrs(section.Title))}");
+		}
+		else
+		{
+			var anchor = section.Id is not null ? $" [#{section.Id}]" : "";
+			WriteLine($"{hashes} {SubstituteTitleXrefs(SubstituteTitleAttrs(section.Title))}{anchor}");
+		}
 		WriteLine();
 
 		EmitChildren(section.Children);
