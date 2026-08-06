@@ -1,4 +1,4 @@
-@inherits RazorSliceHttpResult<Elastic.Codex.Group.GroupLandingViewModel>
+@inherits RazorSlice<Elastic.Codex.Group.GroupLandingViewModel>
 @using System.Linq
 @using Elastic.Codex.Group
 @using Elastic.Codex.Landing
@@ -19,14 +19,7 @@
 	<div id="codex-grid" class="pt-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 		@foreach (var docSet in Model.DocumentationSets.OrderBy(ds => ds.Title))
 		{
-			@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel
-			{
-				Url = docSet.Url,
-				Title = docSet.Title ?? docSet.Name,
-				Description = docSet.Description,
-				Icon = docSet.Icon,
-				PageCount = docSet.PageCount
-			})))
+			@(await RenderPartialAsync(_CodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
 		}
 	</div>
 </section>

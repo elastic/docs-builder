@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using Elastic.Documentation.Versions;
 using NetEscapades.EnumGenerators;
 using YamlDotNet.Serialization;
 

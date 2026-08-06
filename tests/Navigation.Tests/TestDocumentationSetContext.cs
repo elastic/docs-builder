@@ -108,6 +108,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public GitCheckoutInformation Git { get; }
 	public IFileInfo ConfigurationPath { get; }
+	public IEnvironmentVariables Environment { get; init; } = SystemEnvironmentVariables.Instance;
 
 	/// <inheritdoc />
 	public BuildType BuildType { get; set; }
@@ -167,6 +168,26 @@ public class CodexTestDocumentationFileFactory : IDocumentationFileFactory<TestD
 			if (inline != null)
 				title = inline.Trim(['#', ' ']);
 		}
+		return new TestDocumentationFile(title);
+	}
+}
+
+// Factory that mirrors production behaviour: returns null when the referenced file is not present on disk.
+// Used to reproduce the missing-toc-file scenario where navigation produces a null Index sentinel.
+public class MissingFileDocumentationFileFactory : IDocumentationFileFactory<IDocumentationFile>
+{
+	public static MissingFileDocumentationFileFactory Instance { get; } = new();
+
+	/// <inheritdoc />
+	public IDocumentationFile? TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
+	{
+		if (!path.Exists)
+			return null;
+
+		var fileName = path.Name;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			? fileName[..^3]
+			: fileName;
 		return new TestDocumentationFile(title);
 	}
 }

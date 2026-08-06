@@ -16,4 +16,7 @@ public interface IDocumentationFile : INavigationModel
 
 	/// Gets the title to display in navigation for this documentation file.
 	string NavigationTitle { get; }
+
+	/// Gets the source file path relative to the documentation root, or null for synthetic pages.
+	string? SourcePath => null;
 }

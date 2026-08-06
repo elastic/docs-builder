@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -45,7 +46,8 @@ public record ChangelogConfiguration
 	[
 		Lifecycle.Preview,
 		Lifecycle.Beta,
-		Lifecycle.Ga
+		Lifecycle.Ga,
+		Lifecycle.Experimental
 	];
 
 	/// <summary>
@@ -95,6 +97,13 @@ public record ChangelogConfiguration
 	/// When a PR has labels matching multiple entries, all matching products are collected.
 	/// </summary>
 	public IReadOnlyDictionary<string, string>? LabelToProducts { get; init; }
+
+	/// <summary>
+	/// Mapping from GitHub label names to feature-id values (computed from Pivot.Features).
+	/// Each label maps to a feature-id string (e.g., "feature:new-search-api").
+	/// When a PR has labels matching multiple distinct feature-ids, the first match is used.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? LabelToFeatures { get; init; }
 
 	/// <summary>
 	/// Rules configuration for create and publish blockers

@@ -1,5 +1,5 @@
 import { config } from '../../config'
-import { logInfo, logWarn } from '../../telemetry/logging'
+import { logError, logInfo, logWarn } from '../../telemetry/logging'
 import {
     ATTR_NAVIGATION_SEARCH_QUERY,
     ATTR_NAVIGATION_SEARCH_QUERY_LENGTH,
@@ -21,6 +21,7 @@ import {
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
 import { usePageNumber, useSearchTerm } from './modalSearch.store'
+import { searchPagefind } from './pagefind'
 import {
     keepPreviousData,
     useQuery,
@@ -36,7 +37,7 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
-    type: z.enum(['doc', 'api']),
+    type: z.enum(['docs']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
@@ -85,12 +86,14 @@ export const useModalSearchQuery = () => {
         !!trimmedSearchTerm &&
         trimmedSearchTerm.length >= 1 &&
         !isCooldownActive &&
-        !awaitingNewInput
+        !awaitingNewInput &&
+        true
 
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'modal-search',
             {
+                buildType: config.buildType,
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
             },
@@ -102,6 +105,20 @@ export const useModalSearchQuery = () => {
                     totalResults: 0,
                     pageCount: 0,
                     pageNumber: pageNumber,
+                    pageSize: 20,
+                })
+            }
+
+            if (config.buildType === 'isolated') {
+                const results = await searchPagefind(debouncedSearchTerm)
+                if (signal.aborted)
+                    throw new DOMException('Aborted', 'AbortError')
+
+                return SearchResponse.parse({
+                    results,
+                    totalResults: results.length,
+                    pageCount: results.length > 0 ? 1 : 0,
+                    pageNumber: 1,
                     pageSize: 20,
                 })
             }
@@ -167,6 +184,7 @@ export const useModalSearchQuery = () => {
             queryKey: [
                 'modal-search',
                 {
+                    buildType: config.buildType,
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,
                 },
@@ -189,6 +207,14 @@ export const useModalSearchQuery = () => {
                     'error.message': query.error.message,
                 })
             }
+        } else if (query.error) {
+            const err = query.error as Error
+            logError('modal_search_parse_error', {
+                [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                [ATTR_ERROR_TYPE]: err.name,
+                'error.message': err.message,
+            })
+            console.error('[modal-search] failed to parse search response', err)
         }
     }, [query.error, debouncedSearchTerm])
 

@@ -5,6 +5,7 @@
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Myst.Components;
 

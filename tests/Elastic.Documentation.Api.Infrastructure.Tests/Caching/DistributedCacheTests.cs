@@ -7,8 +7,8 @@ using System.Text.Json;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using AwesomeAssertions;
-using Elastic.Documentation.Api.Infrastructure.Caching;
-using Elastic.Documentation.Api.Infrastructure.Gcp;
+using Elastic.Documentation.Api.Caching;
+using Elastic.Documentation.Api.Gcp;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 

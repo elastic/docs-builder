@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 using Markdig;
@@ -18,6 +17,13 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 	{
 		if (renderer.EnableHtmlForInline && !link.IsImage)
 		{
+			// Avoid nested <a> tags when a URL inside link text was autolinked (elastic/docs-builder#3317).
+			if (IsNestedInsideLink(link))
+			{
+				renderer.WriteChildren(link);
+				return;
+			}
+
 			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string)
 			{
 				base.Write(renderer, link);
@@ -34,15 +40,10 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
 
-			if (link.Url?.StartsWith('/') == true || isCrossLink)
-			{
-				var currentRootNavigation = link.GetData("NavigationRoot") as INodeNavigationItem<INavigationModel, INavigationItem>;
-				var targetRootNavigation = link.GetData("TargetNavigationRoot") as INodeNavigationItem<INavigationModel, INavigationItem>;
-				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
-				var htmx = GetHtmxProvider(link) ?? new DefaultHtmxAttributeProvider("/");
-				_ = renderer.Write($" hx-select-oob=\"{htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
-				_ = renderer.Write($" preload=\"{DefaultHtmxAttributeProvider.Preload}\"");
-			}
+			// Internal links rely on body-level hx-boost for navigation (no hx-select-oob);
+			// preload stays per-link because the preload extension ignores ancestor attributes.
+			if (url?.StartsWith('/') == true || isCrossLink)
+				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
 			if (isHttpLink && !isCrossLink)
 			{
 				_ = renderer.Write(" target=\"_blank\"");
@@ -94,7 +95,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 		// Write any additional attributes (like width/height from styling instructions)
 		_ = renderer.WriteAttributes(link);
 
-		// Set title to alt text for inline images (after any substitutions are processed)
+		// Always use alt text as title for accessibility consistency
 		if (link.FirstChild != null)
 		{
 			_ = renderer.Write(" title=\"");
@@ -105,8 +106,17 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 		_ = renderer.Write(" />");
 	}
 
-	private static IHtmxAttributeProvider? GetHtmxProvider(LinkInline link) =>
-		link.GetData(nameof(IHtmxAttributeProvider)) as IHtmxAttributeProvider;
+	private static bool IsNestedInsideLink(LinkInline link)
+	{
+		var parent = link.Parent;
+		while (parent != null)
+		{
+			if (parent is LinkInline)
+				return true;
+			parent = parent.Parent;
+		}
+		return false;
+	}
 }
 
 public static class CustomLinkInlineRendererExtensions

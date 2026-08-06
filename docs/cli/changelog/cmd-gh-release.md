@@ -6,7 +6,7 @@ Create changelog files and a bundle from a GitHub release by parsing pull reques
 Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 :::
 
-For general information about changelogs, go to [](/contribute/changelog.md).
+For general information about changelogs, go to [](/data/release-notes/overview.md).
 
 ## Output
 
@@ -20,7 +20,7 @@ The product, target version, and lifecycle are inferred automatically from the r
 ## Configuration
 
 The `rules.bundle` section of your `changelog.yml` applies to bundles created by this command.
-For details, refer to [](/contribute/configure-changelogs-ref.md#rules-bundle).
+For details, refer to [](/data/release-notes/configure-ref.md#rules-bundle).
 
 ## Examples
 

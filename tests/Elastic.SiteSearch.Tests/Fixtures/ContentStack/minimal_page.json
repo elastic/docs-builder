@@ -1,0 +1,28 @@
+{
+  "uid": "blt00000000000000b0",
+  "_version": 50,
+  "locale": "en-us",
+  "ACL": {},
+  "created_at": "2021-01-10T10:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2024-06-01T12:00:00.000Z",
+  "updated_by": "bltuser00000000002b",
+  "tags": [],
+  "title": "Elastic Blog",
+  "url": "/blog",
+  "hero": ["blthero0000000003"],
+  "modular_blocks": [],
+  "footer_cta_reference": [],
+  "seo": {
+    "seo_title_l10n": "Elastic Blog | News, Updates & Technical Content",
+    "seo_description_l10n": "Read the latest from Elastic on search, observability, and security.",
+    "seo_keywords_l10n": "elastic blog, elasticsearch",
+    "seo_image": "https://images.contentstack.io/v3/assets/sample/blog-og.png"
+  },
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2024-06-01T13:00:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}

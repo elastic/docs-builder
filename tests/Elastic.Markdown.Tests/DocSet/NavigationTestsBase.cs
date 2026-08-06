@@ -23,11 +23,12 @@ public class NavigationTestsBase : IAsyncLifetime
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		ReadFileSystem = FileSystemFactory.RealRead;
+		ReadFileSystem = FileSystemFactory.RealGitRootForPath(null);
 		WriteFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockWriteFs);
 		var collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(ReadFileSystem);
-		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem, configurationContext, ExportOptions.Default)
+		var docsTestsPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests");
+		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem, configurationContext, ExportOptions.Default, source: docsTestsPath)
 		{
 			Force = false,
 			UrlPathPrefix = null

@@ -83,16 +83,25 @@ Should have these secrets
 
 > Parameters:LlmGatewayUrl = https://****
 > Parameters:LlmGatewayServiceAccountPath = <PATH_TO_GCP_SERVICE_CREDENTIALS_FILE>
-> Parameters:DocumentationElasticUrl = https://*.elastic.cloud:443
-> Parameters:DocumentationElasticApiKey = ****
+> Parameters:ElasticsearchUrl = https://*.elastic.cloud:443
+> Parameters:ElasticsearchApiKey = ****
 
 To set them:
   
 ```bash
-dotnet user-secrets --project aspire set Parameters:DocumentationElasticApiKey <VALUE>
+dotnet user-secrets --project aspire set Parameters:ElasticsearchApiKey <VALUE>
 ```
 
 Do note `dotnet user-secrets` should only be used on local development machines and not on CI.
+
+The store id is `docs-builder`. If you set up secrets before the rename from the old GUID id,
+migrate your existing store:
+
+```bash
+mv ~/.microsoft/usersecrets/72f50f33-6fb9-4d08-bff3-39568fe370b3 ~/.microsoft/usersecrets/docs-builder
+```
+
+(On Windows: `%APPDATA%\Microsoft\UserSecrets\`.)
 
 ## Integration Tests
 
@@ -110,8 +119,8 @@ The tests require a valid Elasticsearch instance. Choose one of these options:
 
 1. **External Elasticsearch** - Set up user secrets:
    ```bash
-   dotnet user-secrets --project aspire set Parameters:DocumentationElasticUrl <YOUR_ELASTICSEARCH_URL>
-   dotnet user-secrets --project aspire set Parameters:DocumentationElasticApiKey <YOUR_API_KEY>
+   dotnet user-secrets --project aspire set Parameters:ElasticsearchUrl <YOUR_ELASTICSEARCH_URL>
+   dotnet user-secrets --project aspire set Parameters:ElasticsearchApiKey <YOUR_API_KEY>
    ```
 
 2. **Local Elasticsearch** - The `--start-elasticsearch` flag will be automatically handled by the test fixture:

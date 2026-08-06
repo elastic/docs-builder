@@ -13,7 +13,7 @@ namespace Elastic.Documentation;
 [EnumExtensions]
 public enum Lifecycle
 {
-	/// <summary>A technical preview of a feature or enhancement.</summary>
+	/// <summary>Tech Previews are time-boxed evaluations to help us gather early feedback from customers on key upcoming features.</summary>
 	[Display(Name = "preview")]
 	Preview,
 
@@ -21,7 +21,11 @@ public enum Lifecycle
 	[Display(Name = "beta")]
 	Beta,
 
-	/// <summary>A generally available release of a feature or enhancement.</summary>
+	/// <summary>Generally available features are stable, scalable, and production-ready.</summary>
 	[Display(Name = "ga")]
-	Ga
+	Ga,
+
+	/// <summary>The experimental phase exists to enable rapid iteration on new features.</summary>
+	[Display(Name = "experimental")]
+	Experimental
 }

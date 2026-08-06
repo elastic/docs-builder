@@ -3,10 +3,8 @@ name: Release
 on:
   workflow_dispatch: 
     
-permissions:
-  contents: read
-  packages: write
-    
+permissions: {}
+
 concurrency:
   group: release-drafter
 
@@ -22,11 +20,11 @@ jobs:
     steps:
       - name: Verify branch
         run: |
-          if [[ "${{ github.ref }}" != refs/heads/main ]]; then
+          if [[ "${GITHUB_REF}" != refs/heads/main ]]; then
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@c2e2804cc59f45f57076a99af580d0fedb697927 # v7.3.0
+      - uses: release-drafter/release-drafter@eada3c96a64734dd381cfbda23511034e328ddb0 # v7.6.0
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -35,7 +33,7 @@ jobs:
       - name: Create tag
         uses: actions/github-script@v9
         with:
-          script: |
+          script: | # zizmor: ignore[template-injection] tag_name from release-drafter on main
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -47,20 +45,36 @@ jobs:
     needs: 
       - release-drafter
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # Required for `actions/attest-build-provenance`
+      id-token: write
+      attestations: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.0
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
-        
+
+      - name: Restore npm dependencies
+        working-directory: src/Elastic.Documentation.Site
+        run: npm ci
+
+      - name: Check shai-hulud supply-chain hashes
+        uses: ./.github/actions/check-shai-hulud
+        with:
+          path: src/Elastic.Documentation.Site
+
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -68,8 +82,57 @@ jobs:
 
       - name: Publish Containers
         run: ./build.sh publishcontainers
+
+      # Resolve the manifest digest of each pushed image so we can
+      # mint a signed attestation against the immutable digest. The
+      # release version tag (e.g., :v1.4.0) is the canonical reference
+      # but we attest against the digest because tags can be moved.
+      # Consumers verify with:
+      #   gh attestation verify oci://ghcr.io/elastic/docs-builder@<digest> \
+      #     -R elastic/docs-builder
+      - name: Resolve pushed image digests
+        id: digests
+        env:
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+        # language=bash
+        run: |
+          set -euo pipefail
+          for image in docs-builder docs-builder-mcp docs-builder-api; do
+            ref="ghcr.io/elastic/${image}:${TAG_NAME}"
+            digest=$(docker buildx imagetools inspect "$ref" 2>/dev/null \
+              | awk '/^Digest:/ {print $2; exit}')
+            if [ -z "$digest" ]; then
+              echo "::error::Could not resolve manifest digest for ${ref}"
+              exit 1
+            fi
+            echo "${image}=${digest}" >> "$GITHUB_OUTPUT"
+            echo "Resolved ${ref} -> ${digest}"
+          done
+
+      - name: Attest docs-builder image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder
+          subject-digest: ${{ steps.digests.outputs.docs-builder }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-mcp image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-mcp
+          subject-digest: ${{ steps.digests.outputs.docs-builder-mcp }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-api image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-api
+          subject-digest: ${{ steps.digests.outputs.docs-builder-api }}
+          push-to-registry: true
         
   build-link-index-lambda:
+    permissions: 
+      contents: read
     needs: 
       - release-drafter
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
@@ -77,11 +140,55 @@ jobs:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
   build-changelog-scrubber-lambda:
+    permissions:
+      contents: read
     needs:
       - release-drafter
     uses: ./.github/workflows/build-changelog-scrubber-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
+
+  build-openapi-index-lambda:
+    permissions:
+      contents: read
+    needs:
+      - release-drafter
+    uses: ./.github/workflows/build-openapi-index-lambda.yml
+    with:
+      ref: ${{ needs.release-drafter.outputs.tag_name }}
+
+  package-openapi-index-updater-lambda:
+    runs-on: ubuntu-latest
+    needs:
+      - build-openapi-index-lambda
+      - release-drafter
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    env:
+      ZIP_FILE: openapi-index-updater-lambda.zip
+    steps:
+      - name: Download bootstrap binary
+        uses: actions/download-artifact@v8
+        with:
+          name: openapi-index-updater-lambda-binary
+
+      - name: Create zip
+        run: |
+          zip -j "${ZIP_FILE}" ./bootstrap
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: openapi-index-updater-lambda.zip
+
+      - name: Attach distribution to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+          REPO: ${{ github.repository }}
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
 
   deploy-link-index-updater-lambda-prod:
     environment: 
@@ -106,7 +213,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+      - uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -143,11 +250,16 @@ jobs:
         with:
           name: changelog-scrubber-lambda-binary
 
+      - name: Download allowlist identity
+        uses: actions/download-artifact@v8
+        with:
+          name: changelog-scrubber-allowlist-identity
+
       - name: Create zip
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+      - uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-changelog-scrubber-deployer
           aws-region: us-east-1
@@ -158,12 +270,16 @@ jobs:
             --function-name elastic-docs-v3-changelog-scrubber \
             --zip-file "fileb://${ZIP_FILE}"
 
+      # The allowlist identity is attached only after update-function-code succeeded, so the
+      # presence of this asset on a release attests that the release's allowlist was deployed.
+      # Consumers resolve the deployed identity from the newest release carrying the asset
+      # (`docs-builder changelog scrubber-allowlist`, docs-eng-team#671).
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}" changelog-scrubber-allowlist.json
 
   release:
     needs: 
@@ -182,9 +298,10 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.0
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
       - name: 'Windows only, set TEMP to the same drive'
         if: ${{ matrix.os == 'windows-latest' }}
         #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
@@ -221,9 +338,11 @@ jobs:
       - release-drafter
       - deploy-link-index-updater-lambda-prod
       - deploy-changelog-scrubber-lambda-prod
+      - package-openapi-index-updater-lambda
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       contents: write
+      id-token: write
     steps:
       - name: Publish release
         env:
@@ -232,3 +351,42 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           gh release edit "$TAG_NAME" --draft=false --latest --repo "$REPO"
+
+      - name: Fetch ephemeral GitHub token
+        id: fetch-ephemeral-token
+        uses: elastic/ci-gh-actions/fetch-github-token@v1
+        with:
+          vault-instance: "ci-prod"
+
+      - name: Notify docs-internal-workflows
+        env:
+          GH_TOKEN: ${{ steps.fetch-ephemeral-token.outputs.token }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+        run: |
+          gh api repos/elastic/docs-internal-workflows/dispatches \
+            -f event_type=docs-builder-released \
+            -F client_payload[tag_name]="$TAG_NAME"
+
+  notify-failure:
+    needs:
+      - release-drafter
+      - containers
+      - build-link-index-lambda
+      - build-changelog-scrubber-lambda
+      - build-openapi-index-lambda
+      - package-openapi-index-updater-lambda
+      - deploy-link-index-updater-lambda-prod
+      - deploy-changelog-scrubber-lambda-prod
+      - release
+      - publish-release
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-slim
+    permissions:
+      id-token: write
+    steps:
+      - uses: elastic/docs-actions/slack/notify-status@v1
+        with:
+          channel: docs-alerts
+          status: failure
+          mention: S028C66K5EX
+          description: Release failed. Containers, binaries, Lambda deploys, or publish did not complete.

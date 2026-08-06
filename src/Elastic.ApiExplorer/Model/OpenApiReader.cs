@@ -1,0 +1,29 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.IO.Abstractions;
+using Elastic.ApiExplorer.Operations;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
+
+namespace Elastic.ApiExplorer.Model;
+
+public static class OpenApiReader
+{
+	public static async Task<OpenApiDocument?> Create(IFileInfo openApiSpecification)
+	{
+		if (!openApiSpecification.Exists)
+			return null;
+
+		var settings = new OpenApiReaderSettings
+		{
+			LeaveStreamOpen = false,
+			RuleSet = ValidationRuleSet.GetEmptyRuleSet()
+		};
+		await using var fs = openApiSpecification.OpenRead();
+		var openApiDocument = await OpenApiDocument.LoadAsync(fs, settings: settings);
+		return openApiDocument.Document;
+	}
+
+}

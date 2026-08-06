@@ -21,11 +21,15 @@
 		}
 
 		.agent-skill-button {
-			@apply bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-blue-elastic-50 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-sm px-6 py-2 font-sans text-sm font-semibold text-nowrap text-white! no-underline! select-none hover:text-white! focus:ring-4 focus:outline-none md:w-auto md:shrink-0;
+			@apply bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-blue-elastic-50 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-sm border-none px-6 py-2 font-sans text-sm font-semibold text-nowrap text-white! no-underline! select-none hover:text-white! focus:ring-4 focus:outline-none md:w-auto md:shrink-0;
 		}
 
 		.agent-skill-button::after {
 			content: none !important;
+		}
+
+		button.agent-skill-button.copied {
+			@apply bg-green-90 hover:bg-green-90;
 		}
 
 		.agent-skill-button-icon {

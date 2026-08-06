@@ -22,6 +22,9 @@ public interface IDocumentationSetContext : IDocumentationContext
 {
 	IDirectoryInfo DocumentationSourceDirectory { get; }
 	GitCheckoutInformation Git { get; }
+
+	/// <summary>Environment variables used to resolve env-dependent config values; injectable so tests are deterministic.</summary>
+	IEnvironmentVariables Environment { get; }
 }
 
 public static class DocumentationContextExtensions

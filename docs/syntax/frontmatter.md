@@ -17,6 +17,8 @@ products: <4>
   - id: edot-sdk
 sub: <5>
   key: value 
+cta: <6>
+  id: beta
 ---
 ```
 
@@ -25,6 +27,7 @@ sub: <5>
 3. [`applies_to`](#applies-to)
 4. [`products`](#products)
 5. [`sub`](#subs)
+6. [`cta`](#cta)
 
 ## Navigation Title
 
@@ -65,9 +68,9 @@ Only products with the `public-reference` feature enabled in [`products.yml`](ht
 | `cloud-terraform`                           | Elastic Cloud Terraform                       |
 | `ecs`                                       | Elastic Common Schema (ECS)                   |
 | `ecs-logging`                               | ECS Logging                                   |
-| `edot-cf`                                   | EDOT Cloud Forwarder                          |
+| `edot-cf`                                   | Elastic Cloud Forwarder                       |
 | `edot-sdk`                                  | Elastic Distribution of OpenTelemetry SDK     |
-| `edot-collector`                            | Elastic Distribution of OpenTelemetry Collector |
+| `edot-collector`                            | Elastic Agent                                 |
 | `elastic-agent`                             | Elastic Agent                                 |
 | `elastic-serverless-forwarder`              | Elastic Serverless Forwarder                  |
 | `elastic-stack`                             | Elastic Stack                                 |
@@ -91,3 +94,7 @@ Only products with the `public-reference` feature enabled in [`products.yml`](ht
 ## Subs
 
 Use the `sub` field to define local substitutions. Refer to [Substitutions](substitutions.md) for more information.
+
+## CTA
+
+See [CTA](../documentation/isolated/cta.md).

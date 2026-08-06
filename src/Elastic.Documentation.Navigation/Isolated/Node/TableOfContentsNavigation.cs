@@ -77,7 +77,7 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	public INavigationHomeProvider HomeProvider { get; set; }
 
 	/// <inheritdoc />
-	public bool Hidden { get; }
+	public bool Hidden { get; private set; }
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
@@ -104,6 +104,7 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{ParentPath}/index.md", out navigationItems);
 		Index = indexNavigation;
+		Hidden = Index.Hidden;
 		// Include NavigationRoot.Id to ensure uniqueness across docsets in assembler builds
 		Id = ShortId.Create(NavigationRoot.Id, Index.Url);
 		NavigationItems = navigationItems;

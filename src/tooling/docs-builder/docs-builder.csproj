@@ -32,8 +32,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <ProjectReference Include="..\..\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
-    <ProjectReference Include="..\..\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

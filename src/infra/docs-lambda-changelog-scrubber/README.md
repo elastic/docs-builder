@@ -8,6 +8,13 @@ The public repo allowlist is derived from `config/assembler.yml` (baked into the
 Lambda image as an embedded resource at build time). Changes to `assembler.yml`
 trigger a Lambda redeploy via CI.
 
+The deployed allowlist's identity (SHA-256 of the embedded `assembler.yml`, plus the
+build commit) is published as a `changelog-scrubber-allowlist.json` asset on the GitHub
+release, attached only after a successful deploy. Resolve it with
+`docs-builder changelog scrubber-allowlist` — backfill planning and verification pin
+this identity so link decisions are checked against the deployed allowlist, not a
+local checkout (docs-eng-team#671).
+
 ## Build
 
 From a linux `x86_64` machine (or Docker):
@@ -31,12 +38,12 @@ The `bootstrap` binary should be available under:
 ## Event handling
 
 - **`s3:ObjectCreated:*`** on `.yaml`/`.yml` files: read from private bucket, scrub private references, write to public bucket
-- **`s3:ObjectCreated:*`** on `.json` files: copy as-is (pass-through for `registry-index.json`)
+- **`s3:ObjectCreated:*`** on `.json` files: only registry manifests (keys matching `RegistryKey.IsRegistry`, i.e. `bundle/{product}/registry.json` or `changelog/{org}/{repo}/{branch}/registry.json`) are passed through as-is; any other `.json` key is skipped
 - **`s3:ObjectRemoved:*`**: delete the same key from the public bucket
 - Other keys are silently skipped
 
 ## Scrubbing logic
 
-- **Bundle files** (`{product}/bundles/*.yaml`): `LinkAllowlistSanitizer.TryApplyBundle` scrubs `prs`/`issues` lists
-- **Changelog entries** (`{product}/changelogs/*.yaml`): `LinkAllowlistSanitizer.TryApplyChangelogEntry` scrubs `prs`, `issues`, `description`, `impact`, `action`
-- The allowlist is built once at cold start from the embedded `assembler.yml` via `BuildAllowReposFromAssembler`
+- **Bundle files** (`bundle/{product}/*.yaml`, detected by the `bundle/` key prefix): `LinkAllowlistSanitizer.ScrubBundleForPublic` scrubs `prs`/`issues` lists and text fields, dropping disallowed references (no sentinels in public output)
+- **Changelog entries** (`changelog/{org}/{repo}/{branch}/*.yaml`): `LinkAllowlistSanitizer.TryApplyChangelogEntry` scrubs `prs`, `issues`, `description`, `impact`, `action`
+- The allowlist is built once at cold start from the embedded `assembler.yml` via `BuildAllowReposFromAssembler`: every reference repository **not** marked `private: true` is allowed. `skip: true` is ignored here — it only means the repo publishes no docs, so public link-only repos (e.g. `elastic/roadmap`) stay linkable

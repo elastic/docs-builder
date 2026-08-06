@@ -36,6 +36,9 @@ public record Bundle
 	/// <summary>Changelog entries in this bundle.</summary>
 	public IReadOnlyList<BundledEntry> Entries { get; init; } = [];
 
-	/// <summary>Whether entries in this bundle have their contents resolved (inlined).</summary>
-	public bool IsResolved => Entries.Any(e => e.Title != null);
+	/// <summary>
+	/// Entries to exclude when this amend file is merged with its parent bundle.
+	/// Matched by file name and optional checksum.
+	/// </summary>
+	public IReadOnlyList<BundledEntry> ExcludeEntries { get; init; } = [];
 }

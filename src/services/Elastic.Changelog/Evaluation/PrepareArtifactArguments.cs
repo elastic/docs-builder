@@ -14,10 +14,16 @@ public record PrepareArtifactArguments
 	public required int PrNumber { get; init; }
 	public required string HeadRef { get; init; }
 	public required string HeadSha { get; init; }
-	public bool IsFork { get; init; }
+	// Nullable bool mirrors the CLI surface: null = "flag not specified",
+	// normalized to false when serialized into ChangelogArtifactMetadata.
+	// Using non-nullable bool here would force every call site to choose
+	// between true/false and lose the "not specified" signal, which is what
+	// allowed --can-commit "false" to silently set CanCommit = true at the
+	// CLI before this change.
+	public bool? IsFork { get; init; }
 	public string? HeadRepo { get; init; }
-	public bool CanCommit { get; init; }
-	public bool MaintainerCanModify { get; init; }
+	public bool? CanCommit { get; init; }
+	public bool? MaintainerCanModify { get; init; }
 	public string? LabelTable { get; init; }
 	public string? ProductLabelTable { get; init; }
 	public string? SkipLabels { get; init; }

@@ -26,17 +26,19 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["disable-github-edit-link"] = value;
 	}
 
-	public bool SearchOrAskAiEnabled
-	{
-		get => IsEnabled("search-or-ask-ai");
-		set => _featureFlags["search-or-ask-ai"] = value;
-	}
-
 	public bool StagingElasticNavEnabled
 	{
 		get => IsEnabled("staging-elastic-nav");
 		set => _featureFlags["staging-elastic-nav"] = value;
 	}
+
+	public bool WebsiteSearchEnabled
+	{
+		get => IsEnabled("website-search");
+		set => _featureFlags["website-search"] = value;
+	}
+
+	public string? WebsiteSearchScriptUrl { get; set; }
 
 	public bool AirGappedEnabled
 	{

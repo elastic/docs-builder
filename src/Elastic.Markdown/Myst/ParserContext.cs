@@ -6,9 +6,9 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Site;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -31,6 +31,7 @@ public static class ParserContextExtensions
 public interface IParserResolvers
 {
 	ICrossLinkResolver CrossLinkResolver { get; }
+	IReleaseNotesResolver ReleaseNotesResolver { get; }
 	Func<IFileInfo, DocumentationFile?> TryFindDocument { get; }
 	Func<string, DocumentationFile?> TryFindDocumentByRelativePath { get; }
 	INavigationTraversable NavigationTraversable { get; }
@@ -39,6 +40,12 @@ public interface IParserResolvers
 public record ParserResolvers : IParserResolvers
 {
 	public required ICrossLinkResolver CrossLinkResolver { get; init; }
+
+	/// <summary>
+	/// Resolver for prefetched CDN changelog bundles. Defaults to a no-op so build paths that do not
+	/// source release notes from the CDN (tests, refactor tooling) don't have to set it.
+	/// </summary>
+	public IReleaseNotesResolver ReleaseNotesResolver { get; init; } = NoopReleaseNotesResolver.Instance;
 
 	public required Func<IFileInfo, DocumentationFile?> TryFindDocument { get; init; }
 
@@ -74,6 +81,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 {
 	public ConfigurationFile Configuration { get; }
 	public ICrossLinkResolver CrossLinkResolver { get; }
+	public IReleaseNotesResolver ReleaseNotesResolver { get; }
 	public IFileInfo MarkdownSourcePath { get; }
 	public IFileInfo? MarkdownParentPath { get; }
 	public string CurrentUrlPath { get; }
@@ -98,8 +106,6 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	/// </summary>
 	public IFileInfo? OriginalSourcePath { get; }
 
-	public IHtmxAttributeProvider Htmx { get; }
-
 	public ParserContext(ParserState state)
 	{
 		Build = state.Build;
@@ -111,6 +117,7 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 		OriginalSourcePath = state.OriginalSourcePath;
 
 		CrossLinkResolver = state.CrossLinkResolver;
+		ReleaseNotesResolver = state.ReleaseNotesResolver;
 		MarkdownSourcePath = state.MarkdownSourcePath;
 		TryFindDocument = state.TryFindDocument;
 		TryFindDocumentByRelativePath = state.TryFindDocumentByRelativePath;
@@ -151,16 +158,5 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 			contextSubs["context.page_title"] = title;
 
 		ContextSubstitutions = contextSubs;
-
-		var rootPath = Build.SiteRootPath ?? GetDefaultRootPath(Build.UrlPathPrefix);
-		Htmx = Build.BuildType == BuildType.Codex
-			? new CodexHtmxAttributeProvider(rootPath)
-			: new DefaultHtmxAttributeProvider(rootPath);
-	}
-
-	private static string GetDefaultRootPath(string? urlPathPrefix)
-	{
-		var prefix = urlPathPrefix?.Trim('/') ?? "";
-		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
 	}
 }

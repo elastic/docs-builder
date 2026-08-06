@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Microsoft.OpenApi;
@@ -11,26 +13,14 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
-public interface IApiProperty
-{
-
-}
-
-public record ApiObject
-{
-	public required string Name { get; init; }
-	public IReadOnlyCollection<IApiProperty> Properties { get; init; } = [];
-}
-
-
-
 public record ApiOperation(HttpMethod OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName) : IApiModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var viewModel = new OperationViewModel(context)
 		{
-			Operation = this
+			Operation = this,
+			Page = OperationPageModel.Create(this, context)
 		};
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -51,7 +41,7 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 		Model = apiOperation;
 		NavigationTitle = apiOperation.ApiName;
 		Parent = parent;
-		var moniker = apiOperation.Operation.OperationId ?? apiOperation.Route.Replace("}", "").Replace("{", "").Replace('/', '-');
+		var moniker = ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route);
 		Url = $"{urlPathPrefix?.TrimEnd('/')}/api/{apiUrlSuffix}/{moniker}";
 		Id = ShortId.Create(Url);
 	}

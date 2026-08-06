@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
 

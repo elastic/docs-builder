@@ -23,6 +23,12 @@ A regular paragraph.
 	public void SetsUrl() => Block!.Url.Should().Be("https://github.com/elastic/agent-skills@elasticsearch-esql");
 
 	[Fact]
+	public void SetsSkillName() => Block!.SkillName.Should().Be("elasticsearch-esql");
+
+	[Fact]
+	public void SetsInstallCommand() => Block!.InstallCommand.Should().Be("npx skills add elastic/agent-skills@elasticsearch-esql");
+
+	[Fact]
 	public void SetsDirective() => Block!.Directive.Should().Be("agent-skill");
 
 	[Fact]
@@ -45,18 +51,20 @@ A regular paragraph.
 	public void RendersLearnMoreLink()
 	{
 		Html.Should().Contain("Learn more about agent skills for Elastic");
-		Html.Should().Contain("href=\"/explore-analyze/ai-features/agent-skills\"");
+		Html.Should().Contain("href=\"/explore-analyze/ai-features/agent-skills#available-skills\"");
 	}
 
 	[Fact]
-	public void RendersButton()
+	public void RendersCopyButton()
 	{
 		Html.Should().Contain("class=\"agent-skill-button\"");
-		Html.Should().Contain("Get the skill");
-		Html.Should().Contain("href=\"https://github.com/elastic/agent-skills@elasticsearch-esql\"");
-		Html.Should().Contain("target=\"_blank\"");
-		Html.Should().Contain("rel=\"noopener noreferrer\"");
+		Html.Should().Contain("Copy install command");
+		Html.Should().Contain("data-copy-text=\"npx skills add elastic/agent-skills@elasticsearch-esql\"");
 	}
+
+	[Fact]
+	public void DoesNotRenderLinkButton() =>
+		Html.Should().NotContain("Get the skill");
 }
 
 public class AgentSkillWithBodyTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
@@ -83,8 +91,8 @@ A regular paragraph.
 		Html.Should().Contain("Learn more about agent skills for Elastic");
 
 	[Fact]
-	public void StillRendersButton() =>
-		Html.Should().Contain("Get the skill");
+	public void StillRendersCopyButton() =>
+		Html.Should().Contain("Copy install command");
 }
 
 public class AgentSkillMissingUrlTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
@@ -112,4 +120,28 @@ A regular paragraph.
 	[Fact]
 	public void EmitsError() =>
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("must be an absolute URL"));
+}
+
+public class AgentSkillNoSkillNameTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
+"""
+:::{agent-skill}
+:url: https://github.com/elastic/agent-skills
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void SkillNameIsNull() => Block!.SkillName.Should().BeNull();
+
+	[Fact]
+	public void InstallCommandIsNull() => Block!.InstallCommand.Should().BeNull();
+
+	[Fact]
+	public void FallsBackToLinkButton()
+	{
+		Html.Should().Contain("Get the skill");
+		Html.Should().Contain("href=\"https://github.com/elastic/agent-skills\"");
+		Html.Should().NotContain("data-copy-text");
+	}
 }

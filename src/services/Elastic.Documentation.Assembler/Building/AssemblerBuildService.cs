@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using Actions.Core.Services;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
@@ -115,7 +116,7 @@ public class AssemblerBuildService(
 			return false;
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
-		using var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
+		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageService(logFactory);
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
 

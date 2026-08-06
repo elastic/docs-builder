@@ -454,8 +454,8 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 }
 
 /// <summary>
-/// Tests that when ALL entries across ALL types in a bundle are filtered out by hide-features,
-/// the version header still appears in the TOC but no section headers do.
+/// Tests that when ALL entries across ALL types in a bundle are filtered out by hide-features
+/// and the bundle has no description, the version is omitted from the TOC and rendered output.
 /// </summary>
 public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 {
@@ -492,11 +492,16 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 			"""));
 
 	[Fact]
-	public void TocContainsVersionHeaderOnly()
+	public void OmitsVersionFromTocWhenNoRenderableEntries()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().ContainSingle(t => t.Level == 2 && t.Heading == "9.3.0");
-		tocItems.Should().NotContain(t => t.Level == 3);
+		tocItems.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void OmitsVersionFromRenderedOutput()
+	{
+		Html.Should().NotContain("9.3.0");
 	}
 
 	[Fact]

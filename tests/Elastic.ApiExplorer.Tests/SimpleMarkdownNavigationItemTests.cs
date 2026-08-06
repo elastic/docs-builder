@@ -4,6 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 
 namespace Elastic.ApiExplorer.Tests;
 

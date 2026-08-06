@@ -379,6 +379,7 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 			  - preview
 			  - beta
 			  - ga
+			  - experimental
 			"""));
 	}
 

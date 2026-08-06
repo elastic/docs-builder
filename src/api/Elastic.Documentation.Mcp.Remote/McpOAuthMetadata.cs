@@ -4,6 +4,7 @@
 
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

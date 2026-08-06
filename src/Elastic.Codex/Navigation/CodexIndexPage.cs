@@ -39,6 +39,11 @@ public record CodexDocumentationSetInfo
 	public required string Url { get; init; }
 
 	/// <summary>
+	/// The repo-scoped path segment (e.g. "/r/beacon"), derived from <see cref="Name"/>.
+	/// </summary>
+	public string RepoPath => $"/r/{Name}";
+
+	/// <summary>
 	/// The group id this documentation set belongs to, if any.
 	/// </summary>
 	public string? Group { get; init; }
