@@ -12,7 +12,8 @@ namespace Elastic.Documentation.Site.Navigation;
 public enum NavigationRenderNodeKind
 {
 	Leaf,
-	Node
+	Node,
+	Island
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -27,8 +28,6 @@ public sealed record NavigationRenderNode
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
-	/// <summary>True for listing nodes with <c>island: true</c>; the template renders a link chevron instead of the expand toggle.</summary>
-	public bool IsIslandListing { get; init; }
 	public IReadOnlyList<NavigationRenderNode> NavigationItems { get; init; } = [];
 }
 
@@ -118,7 +117,18 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode CreateNode(INodeNavigationItem<INavigationModel, INavigationItem> node, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(node.NavigationTitle);
-		var isIslandListing = node.IsIslandListing;
+		if (node.IsIslandListing)
+		{
+			return new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Island,
+				IsTopLevel = isTopLevel,
+				NavigationTitle = navigationTitle,
+				Badge = badge,
+				Url = node.Url,
+				Id = node.Id
+			};
+		}
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Node,
@@ -127,9 +137,8 @@ public sealed record NavigationRenderModel
 			Badge = badge,
 			Url = node.Url,
 			Id = node.Id,
-			IsIslandListing = isIslandListing,
-			ShowToggle = !isIslandListing && !node.NavigationItems.All(n => n.Hidden),
-			NavigationItems = isIslandListing ? [] : [.. CreateNavigationItems(node, isTopLevel: false)]
+			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
+			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
 		};
 	}
 
@@ -184,7 +193,6 @@ public sealed record NavigationRenderModel
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);
-		AppendInt(hash, node.IsIslandListing ? 1 : 0);
 		AppendNodes(hash, node.NavigationItems);
 	}
 
