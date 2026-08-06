@@ -1392,6 +1392,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		@"\{([a-zA-Z0-9_-]+)\}|" +                // group 19: attr-ref
 		@"(https?://[^\[\s]+)\[([^\]]*)\]|" +      // groups 20,21: url
 		@"\+([^\+]+)\+|" +                         // group 22: +inline+ passthrough
+		@"``([^`']+)''|" +                         // group 23: AsciiDoc typographic quotes -> "text"
 		@"\s*\+\s*$"                               // line-break (no capture)
 	)]
 	private static partial Regex InlineCombinedRegex();
@@ -1444,6 +1445,8 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 				result.Add(new InlineLinkNode(match.Groups[20].Value, NullIfEmpty(match.Groups[21].Value)));
 			else if (match.Groups[22].Success)
 				result.Add(new PassthroughInline(match.Groups[22].Value, Backticks: true));
+			else if (match.Groups[23].Success)
+				result.Add(new TextInline($"\"{match.Groups[23].Value}\""));
 			else if (match.Value.TrimEnd().EndsWith('+'))
 				result.Add(new LineBreakInline());
 
