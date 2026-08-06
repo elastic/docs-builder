@@ -17,6 +17,7 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
+using Elastic.Changelog.Migration;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
@@ -1721,6 +1722,61 @@ internal sealed partial class ChangelogCommands(
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.ResolveDeployedAsync(c, state, ct) is not null
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>TEMPORARY: One-off migration of published release notes into the S3 bundle store; removed after elastic/docs-eng-team#683.</summary>
+	/// <remarks>
+	/// <para>Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the
+	/// checked-in scope config), maps it to the existing bundle YAML shape, and uploads to
+	/// <c>bundle/{product}/</c> with create-only semantics (<c>If-None-Match: *</c>) — existing keys are
+	/// skipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and
+	/// object ETag) suitable for pasting into the tracking issue.</para>
+	/// <para>Scope is always explicit: the product must have an entry in <c>config/migrate-from-web.yml</c>
+	/// (product id → source repo, release-notes path, pinned ref, version cutoff). Nothing runs implicitly
+	/// for all products. Tracked by elastic/docs-eng-team#736.</para>
+	/// </remarks>
+	/// <param name="product">Product id to migrate (e.g. "edot-java"). Must have an entry in the checked-in scope config.</param>
+	/// <param name="s3BucketName">Destination S3 bucket. Required unless --dry-run; when provided with --dry-run, existing keys are still inspected so the report distinguishes would-create from skipped.</param>
+	/// <param name="config">Path to the scope config. Defaults to config/migrate-from-web.yml in the current directory (the copy checked into the docs-builder repository).</param>
+	/// <param name="versions">Optional: restrict the run to specific versions (comma-separated or repeated). Versions above the configured cutoff are always skipped.</param>
+	/// <param name="dryRun">Do everything except the S3 writes and report what would be created.</param>
+	/// <param name="ctx">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> MigrateFromWeb(
+		[Argument] string product,
+		string s3BucketName = "",
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		string[]? versions = null,
+		[DryRun] bool dryRun = false,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		if (!dryRun && string.IsNullOrWhiteSpace(s3BucketName))
+		{
+			collector.EmitError(string.Empty, "--s3-bucket-name is required unless --dry-run is specified.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		var service = new WebMigrationService(logFactory, FileSystemFactory.RealWrite);
+		var args = new MigrateFromWebArguments
+		{
+			Product = product,
+			S3BucketName = s3BucketName,
+			DryRun = dryRun,
+			Config = config?.FullName,
+			Versions = ExpandCommaSeparated(versions)
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.MigrateFromWeb(c, state, ct)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
