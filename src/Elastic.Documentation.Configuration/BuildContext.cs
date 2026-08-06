@@ -119,7 +119,13 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			? (configurationFile.Directory!, configurationFile)
 			: Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
 
-		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory, ceiling: rootFolder);
+		// When --path points directly to the docs folder, rootFolder == DocumentationSourceDirectory
+		// and the ceiling would prevent FindGitRoot from walking up to the .git directory one level above.
+		// Use null (depth-1 limit) in that case so the repo name is resolved correctly.
+		var gitCeiling = rootFolder.FullName.Equals(DocumentationSourceDirectory.FullName, StringComparison.OrdinalIgnoreCase)
+			? null
+			: rootFolder;
+		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory, ceiling: gitCeiling);
 
 		OutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
