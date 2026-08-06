@@ -12,12 +12,8 @@
 		<div class="
 					secondary-nav-scroll-container
 					w-full min-w-0 overflow-x-auto
-					max-w-(--max-layout-width) flex mx-auto justify-between items-center
+					max-w-(--max-layout-width) flex mx-auto justify-start items-center
 					px-4 py-6">
-			<div class="flex gap-2 flex-nowrap items-center font-sans font-semibold text-sm text-ink-light md:text-base">
-				<a href="@Model.Link("/")"
-				   class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
-			</div>
 			<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
 				@if (topNav is not null)
 				{

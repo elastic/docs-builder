@@ -53,6 +53,16 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
+	public async Task TheBarIsLeftAlignedAndCarriesNoBrandLink()
+	{
+		foreach (var html in new[] { await Render(TopNav, "/docs/"), await Render(null, "/docs/") })
+		{
+			html.Should().NotContain(">Docs<");
+			html.Should().Contain("justify-start").And.NotContain("justify-between");
+		}
+	}
+
+	[Fact]
 	public async Task ExternalLinksOpenInANewTab()
 	{
 		var html = await Render(TopNav, currentUrl: "/docs/");
