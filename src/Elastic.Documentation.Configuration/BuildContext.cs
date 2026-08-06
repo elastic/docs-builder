@@ -92,7 +92,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		string? source = null,
 		string? output = null,
 		GitCheckoutInformation? gitCheckoutInformation = null,
-		IEnvironmentVariables? environment = null
+		IEnvironmentVariables? environment = null,
+		IFileInfo? configurationFile = null
 	)
 	{
 		Collector = collector;
@@ -111,7 +112,12 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			? ReadFileSystem.DirectoryInfo.New(source)
 			: ReadFileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName));
 
-		(DocumentationSourceDirectory, ConfigurationPath) = Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
+		// When the caller already discovered the docset (e.g. Codex clone discovery, which may prefer
+		// a non-default docset such as `docs-dev/` over `docs/`), use it directly instead of letting
+		// Paths.FindDocsFolderFromRoot rediscover a different one from `source`.
+		(DocumentationSourceDirectory, ConfigurationPath) = configurationFile is not null
+			? (configurationFile.Directory!, configurationFile)
+			: Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
 
 		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory, ceiling: rootFolder);
 

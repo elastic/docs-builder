@@ -420,4 +420,37 @@ public class DocumentationDocumentSerializationTests
 		lifecycles.Should().Contain("beta");
 		lifecycles.Should().Contain("deprecated");
 	}
+
+	[Fact]
+	public void SerializeDocument_IncludesSourceUrlAsSnakeCaseKeyword()
+	{
+		var doc = new DocumentationDocument
+		{
+			Path = "/docs/some-page",
+			Title = "Some Page",
+			SearchTitle = "Some Page",
+			SourceUrl = "https://github.com/elastic/docs-content/blob/main/docs/some-page.md"
+		};
+
+		var json = JsonSerializer.Serialize(doc, _options);
+		using var jsonDoc = JsonDocument.Parse(json);
+		jsonDoc.RootElement.GetProperty("source_url").GetString()
+			.Should().Be("https://github.com/elastic/docs-content/blob/main/docs/some-page.md");
+	}
+
+	[Fact]
+	public void SerializeDocument_OmitsSourceUrlWhenNull()
+	{
+		var doc = new DocumentationDocument
+		{
+			Path = "/docs/some-page",
+			Title = "Some Page",
+			SearchTitle = "Some Page",
+			SourceUrl = null
+		};
+
+		var json = JsonSerializer.Serialize(doc, _options);
+		using var jsonDoc = JsonDocument.Parse(json);
+		jsonDoc.RootElement.TryGetProperty("source_url", out _).Should().BeFalse();
+	}
 }

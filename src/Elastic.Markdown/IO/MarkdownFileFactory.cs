@@ -97,7 +97,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 				".gif" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/gif")),
 				".svg" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/svg+xml")),
 				".png" => (file, CreateImageFile(file, sourceDirectory, build, relativePath)),
-				".md" => (file, CreateMarkDownFile(file, build)),
+				".md" => CreateMarkdownTuple(file, build),
 				_ => (file, DefaultFileHandling(file, sourceDirectory))
 			};
 		})];
@@ -108,6 +108,14 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		return new ImageFile(file, sourceDirectory, context.Git.RepositoryName, mimeType);
+	}
+
+	private (IFileInfo, DocumentationFile) CreateMarkdownTuple(IFileInfo file, BuildContext context)
+	{
+		var doc = CreateMarkDownFile(file, context);
+		// Extensions may create files with a canonical SourceFile different from the discovery path
+		// (e.g. CLI cmd-upload.md → upload.md). Register under SourceFile so navigation lookups work.
+		return (doc.SourceFile, doc);
 	}
 
 	private DocumentationFile CreateMarkDownFile(IFileInfo file, BuildContext context)

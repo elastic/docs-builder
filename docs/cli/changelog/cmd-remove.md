@@ -9,7 +9,7 @@ Two mutually exclusive modes are available:
 
 Bundles are self-contained (every entry is embedded inline), so removing changelog source files never affects existing bundles or the `{changelog}` directive. The command deletes matching files without any bundle dependency check.
 
-For more context, go to [](/contribute/bundle-changelogs.md#changelog-remove).
+For more context, go to [](/data/release-notes/bundle.md#changelog-remove).
 
 ## Directory resolution
 
@@ -60,4 +60,4 @@ When `changelog.yml` defines `bundle.profiles`, use those same profiles with `ch
 
 Profile-based commands discover the changelog configuration automatically: they look for `changelog.yml` in the current directory, then `docs/changelog.yml`.
 
-Refer to [](/contribute/bundle-changelogs.md#changelog-remove) for examples.
+Refer to [](/data/release-notes/bundle.md#changelog-remove) for examples.

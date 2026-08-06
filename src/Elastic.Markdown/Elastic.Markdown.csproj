@@ -30,6 +30,8 @@
     <PackageReference Include="YamlDotNet" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
+    <PackageReference Include="Pagefind.Net" />
+    <PackageReference Include="Pagefind.Net.Frontend" />
   </ItemGroup>
 
   <ItemGroup>

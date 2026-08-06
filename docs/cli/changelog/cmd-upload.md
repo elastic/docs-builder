@@ -3,7 +3,7 @@
 Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory and uploads only files whose content hash changed since the last run. Changelog entries are uploaded once under `changelog/{org}/{repo}/{branch}/{file}`, keyed by the authoring owner, repository, and branch; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
 
 To create bundles first, use [](/cli/changelog/bundle.md).
-For the end-to-end workflow, see [](/contribute/bundle-changelogs.md).
+For the end-to-end workflow, see [](/data/release-notes/bundle.md).
 
 ## Requirements
 

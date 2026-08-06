@@ -27,7 +27,7 @@ jobs:
     steps:
       - id: repo-basename
         run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
       - name: Setup Pages
@@ -59,7 +59,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
 
@@ -144,3 +144,17 @@ jobs:
           gh api repos/elastic/docs-internal-workflows/dispatches \
             -f event_type=docs-builder-prereleased \
             -F client_payload[sha]="$SHA"
+
+  notify-failure:
+    needs: [build, deploy]
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-slim
+    permissions:
+      id-token: write
+    steps:
+      - uses: elastic/docs-actions/slack/notify-status@v1
+        with:
+          channel: docs-alerts
+          status: failure
+          mention: S028C66K5EX
+          description: Pre-release failed. Edge containers, GitHub Pages, or edge deploy dispatch did not complete.

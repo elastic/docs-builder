@@ -177,6 +177,9 @@ const ModalSearchResultRow = ({
         if (config.buildType === 'codex') {
             return result.parents.map((p) => p.title)
         }
+        if (config.buildType === 'isolated') {
+            return result.parents.slice(1).map((p) => p.title)
+        }
 
         const typePrefix = 'Docs'
         return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
