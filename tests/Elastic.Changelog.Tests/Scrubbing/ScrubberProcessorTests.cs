@@ -32,8 +32,10 @@ public class ScrubberProcessorTests
 
 		var reconciler = new RegistryReconciler(
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
+		var shallowReconciler = new ShallowRegistryReconciler(
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
 		_processor = new ScrubberProcessor(
-			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, _metrics);
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, shallowReconciler, _metrics);
 	}
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;
@@ -52,6 +54,9 @@ public class ScrubberProcessorTests
 
 	private Registry PublicManifest(string registryKey) =>
 		JsonSerializer.Deserialize(_s3.ContentOf(PublicBucket, registryKey), RegistryJsonContext.Default.Registry)!;
+
+	private SortedDictionary<string, string> ShallowMap(string mapKey) =>
+		JsonSerializer.Deserialize(_s3.ContentOf(PublicBucket, mapKey), ShallowRegistryJsonContext.Default.SortedDictionaryStringString)!;
 
 	[Fact]
 	public async Task Process_CreatedEvent_ScrubsCopiesAndWritesTheGroupManifest()
@@ -97,11 +102,12 @@ public class ScrubberProcessorTests
 	}
 
 	[Fact]
-	public async Task Process_RegistryKeyEvents_NeverCopyOrDelete_OnlyTriggerAGroupReconcile()
+	public async Task Process_BundleRegistryKeyEvents_NeverCopyOrDelete_OnlyTriggerAGroupReconcile()
 	{
-		// Old CLI versions still write private manifests; Phase 3's cleanup will delete them.
-		// Neither event may touch the public registry object directly — but each schedules a
-		// reconcile that derives the public manifest from public state.
+		// The bundle manifest is reconciler-owned. Old CLI versions still write private bundle
+		// manifests (and Phase 3's cleanup will delete them) — those events may never touch the
+		// public registry object directly, only schedule a reconcile that derives the public
+		// manifest from public state.
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/registry.json", /*lang=json,strict*/ """{"private":"manifest"}""");
 		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml", BundleYaml());
 
@@ -112,7 +118,85 @@ public class ScrubberProcessorTests
 		var manifest = PublicManifest("bundle/elasticsearch/registry.json");
 		manifest.Producer.Should().Be(RegistryReconciler.Producer);
 		manifest.Bundles.Select(b => b.File).Should().Equal("es-9.1.0.yaml");
-		_s3.GetsFor(PrivateBucket).Should().BeEmpty("the private registry content must never be read for pass-through");
+		_s3.GetsFor(PrivateBucket).Should().BeEmpty("the private bundle registry content must never be read for pass-through");
+	}
+
+	[Fact]
+	public async Task Process_PoolRegistryKeyEvents_ArePassedThroughVerbatim()
+	{
+		// Pool manifests stay client-authored until Phase 3: `changelog bundle` still enumerates a
+		// pool through its manifest, so the private copy is mirrored verbatim — never scrubbed,
+		// never reconciled.
+		const string poolRegistry = "changelog/elastic/kibana/main/registry.json";
+		const string content = /*lang=json,strict*/ """{"schema_version":1,"bundles":[{"file":"100.yaml"}]}""";
+		_ = _s3.Seed(PrivateBucket, poolRegistry, content);
+
+		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", poolRegistry)], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.ContentOf(PublicBucket, poolRegistry).Should().Be(content, "pass-through must not transform the manifest");
+		_metrics.GroupReconciles.Should().Be(0, "pool manifests are not reconciled");
+		_s3.Puts.Single(p => p.Key == poolRegistry).ContentType.Should().Be("application/json");
+	}
+
+	[Fact]
+	public async Task Process_PoolRegistryKeyEvents_WithPrivateGone_DeleteThePublicCopy()
+	{
+		// State decides for pass-through keys too: Phase 3's private-manifest cleanup deletes will
+		// propagate and remove the public pool manifests with them.
+		const string poolRegistry = "changelog/elastic/kibana/main/registry.json";
+		_ = _s3.Seed(PublicBucket, poolRegistry, "{}");
+
+		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", poolRegistry)], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, poolRegistry).Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task Process_PoolYamlEvents_ScrubAndUpdateTheShallowMap_ButWriteNoPoolManifest()
+	{
+		_ = _s3.Seed(PrivateBucket, "changelog/elastic/kibana/main/100.yaml", "entry");
+
+		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "changelog/elastic/kibana/main/100.yaml")], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.ContentOf(PublicBucket, "changelog/elastic/kibana/main/100.yaml").Should().Be("scrubbed: entry");
+		_s3.Exists(PublicBucket, "changelog/elastic/kibana/main/registry.json")
+			.Should().BeFalse("the reconciler no longer produces pool manifests");
+		_metrics.GroupReconciles.Should().Be(0);
+
+		var map = ShallowMap("changelog/registry.json");
+		map.Should().ContainKey("elastic/kibana/main");
+	}
+
+	[Fact]
+	public async Task Process_BundleYamlEvents_UpdateTheShallowMapForTheProduct()
+	{
+		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "content");
+
+		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml")], Ctx);
+
+		failed.Should().BeEmpty();
+		var map = ShallowMap("bundle/registry.json");
+		map.Should().ContainKey("elasticsearch");
+	}
+
+	[Fact]
+	public async Task Process_MultiplePoolsInOneBatch_CoalesceIntoASingleShallowMapWrite()
+	{
+		_ = _s3.Seed(PrivateBucket, "changelog/elastic/kibana/main/100.yaml", "one");
+		_ = _s3.Seed(PrivateBucket, "changelog/elastic/elasticsearch/main/200.yaml", "two");
+
+		var failed = await _processor.ProcessAsync(
+		[
+			Message("ObjectCreated:Put", "changelog/elastic/kibana/main/100.yaml"),
+			Message("ObjectCreated:Put", "changelog/elastic/elasticsearch/main/200.yaml")
+		], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Puts.Where(p => p.Key == "changelog/registry.json").Should().ContainSingle("one tree gets one map write per batch");
+		ShallowMap("changelog/registry.json").Keys.Should().BeEquivalentTo("elastic/kibana/main", "elastic/elasticsearch/main");
 	}
 
 	[Fact]
@@ -254,8 +338,8 @@ public class ScrubberProcessorTests
 	[Fact]
 	public async Task Process_BatchMixingObjectAndRegistryEvents_MarksGroupContributionsAcrossBoth()
 	{
-		// A YAML event and a (retired pass-through) registry event for the same group coalesce
-		// into one group reconcile fed by both messages.
+		// A YAML event and a bundle-registry event for the same group coalesce into one group
+		// reconcile fed by both messages.
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/registry.json", "{}");
 

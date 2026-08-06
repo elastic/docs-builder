@@ -21,6 +21,8 @@ public sealed class ReconcileMetrics
 	private int _writeConflicts;
 	private int _objectsListed;
 	private int _entriesRecomputed;
+	private int _shallowRegistryWrites;
+	private int _shallowRegistryUnchanged;
 	private int _failedMessages;
 
 	/// <summary>Object-level reconciles run (one per distinct key in the batch).</summary>
@@ -50,6 +52,12 @@ public sealed class ReconcileMetrics
 	/// <summary>Entries whose metadata was recomputed from a public YAML read (vs. ETag-reused).</summary>
 	public int EntriesRecomputed => _entriesRecomputed;
 
+	/// <summary>Shallow per-tree maps written or deleted (<c>bundle/registry.json</c> / <c>changelog/registry.json</c>).</summary>
+	public int ShallowRegistryWrites => _shallowRegistryWrites;
+
+	/// <summary>Shallow-map reconciles that found the map already exact (steady state).</summary>
+	public int ShallowRegistryUnchanged => _shallowRegistryUnchanged;
+
 	/// <summary>SQS messages reported as batch-item failures.</summary>
 	public int FailedMessages => _failedMessages;
 
@@ -62,5 +70,7 @@ public sealed class ReconcileMetrics
 	internal void IncrementWriteConflicts() => Interlocked.Increment(ref _writeConflicts);
 	internal void IncrementObjectsListed() => Interlocked.Increment(ref _objectsListed);
 	internal void IncrementEntriesRecomputed() => Interlocked.Increment(ref _entriesRecomputed);
+	internal void IncrementShallowRegistryWrites() => Interlocked.Increment(ref _shallowRegistryWrites);
+	internal void IncrementShallowRegistryUnchanged() => Interlocked.Increment(ref _shallowRegistryUnchanged);
 	internal void AddFailedMessages(int count) => Interlocked.Add(ref _failedMessages, count);
 }

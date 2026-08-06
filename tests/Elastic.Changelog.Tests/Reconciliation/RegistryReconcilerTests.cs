@@ -268,37 +268,17 @@ public class RegistryReconcilerTests
 	}
 
 	[Fact]
-	public async Task ReconcileGroup_BranchWithSlash_DoesNotSweepNestedPools()
+	public async Task ReconcileGroup_ChangelogScope_IsRejected()
 	{
-		// The "main" pool must not swallow the "main/feature" pool: branches are stored verbatim,
-		// so the / delimiter is what keeps them apart.
-		var scope = ChangelogScopeFor("elastic", "repo", "main");
-		_ = _s3.Seed(PublicBucket, "changelog/elastic/repo/main/entry-a.yaml", "a: 1");
-		_ = _s3.Seed(PublicBucket, "changelog/elastic/repo/main/feature/entry-b.yaml", "b: 1");
-
-		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
-
-		outcome.Should().Be(GroupReconcileOutcome.Written);
-		var content = _s3.ContentOf(PublicBucket, scope.RegistryKey);
-		var manifest = JsonSerializer.Deserialize(content, RegistryJsonContext.Default.Registry)!;
-		manifest.Bundles.Select(b => b.File).Should().Equal("entry-a.yaml");
-	}
-
-	[Fact]
-	public async Task ReconcileGroup_ChangelogScope_IsListingOnly_ZeroObjectReads()
-	{
+		// Pool manifests are not reconciled: they stay client-authored pass-through until Phase 3
+		// retires them, so a changelog scope reaching the group reconciler is a programming error.
 		var scope = ChangelogScopeFor("elastic", "repo", "main");
 		_ = _s3.Seed(PublicBucket, scope.Prefix + "entry-a.yaml", "a: 1");
-		_ = _s3.Seed(PublicBucket, scope.Prefix + "entry-b.yaml", "b: 1");
 
-		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
+		var act = async () => await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
-		outcome.Should().Be(GroupReconcileOutcome.Written);
-		var content = _s3.ContentOf(PublicBucket, scope.RegistryKey);
-		var manifest = JsonSerializer.Deserialize(content, RegistryJsonContext.Default.Registry)!;
-		manifest.Bundles.Should().HaveCount(2);
-		manifest.Bundles.Should().OnlyContain(b => b.Target == null, "the entry index is listing-only by design");
-		_s3.GetsFor(PublicBucket).Should().Equal(scope.RegistryKey);
+		_ = await act.Should().ThrowAsync<ArgumentException>();
+		_s3.Puts.Should().BeEmpty();
 	}
 
 	[Fact]
