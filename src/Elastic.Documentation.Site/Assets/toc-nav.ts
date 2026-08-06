@@ -4,24 +4,37 @@ interface HeadingEntry {
     heading: Element
     link: HTMLAnchorElement | null
 }
-
+interface CachedHeadingEntry {
+    documentTop: number
+    link: HTMLAnchorElement | null
+}
+interface TocItemGeometry {
+    item: HTMLLIElement
+    top: number
+    bottom: number
+}
 interface TocElements {
     headings: HeadingEntry[]
     tocLinks: HTMLAnchorElement[]
+    contentRoot: Element | null
     tocContainer: HTMLDivElement | null
     progressIndicator: HTMLDivElement | null
 }
+interface TocGeometry {
+    headings: CachedHeadingEntry[]
+    items: Map<HTMLAnchorElement, TocItemGeometry>
+    viewportHeight: number
+    maximumScrollPosition: number
+}
 
-// 34 is the height of the header + some padding
-// 4 is the base spacing unit
 const HEADING_OFFSET = 34 * 4
 const VISIBLE_HEADING_OFFSET = HEADING_OFFSET - 64
+const BOTTOM_TOLERANCE = 10
 const ACTIVE_CLASS = 'toc-current'
-
 let initializationController: AbortController | null = null
 
 function initializeTocElements(): TocElements {
-    // Support both regular docs (#markdown-content) and API docs (#elastic-api-v3)
+    const contentRoot = $optional('#markdown-content, #elastic-api-v3') ?? null
     const headingElements = $$optional(
         '#markdown-content h2, #markdown-content h3, #elastic-api-v3 h3[data-section]'
     )
@@ -38,65 +51,90 @@ function initializeTocElements(): TocElements {
     )
     const headings = headingElements.map((heading) => {
         const anchorId = getHeadingAnchorId(heading)
-        const link = anchorId ? linksByAnchor.get(`#${anchorId}`) : null
         return {
             heading,
-            link: link ?? null,
+            link: anchorId ? (linksByAnchor.get(`#${anchorId}`) ?? null) : null,
         }
     })
-    return { headings, tocLinks, tocContainer, progressIndicator }
+    return { headings, tocLinks, contentRoot, tocContainer, progressIndicator }
 }
 
-// Get the anchor ID for a heading element
-// Supports regular docs, directive headings with their own id, and API docs
 function getHeadingAnchorId(heading: Element): string | null {
-    // For API docs: h3[data-section]
     const dataSection = heading.getAttribute('data-section')
-    if (dataSection) {
-        return dataSection
-    }
-    // For regular docs: .heading-wrapper parent with id
+    if (dataSection) return dataSection
     const wrapper = heading.closest('.heading-wrapper')
     return wrapper?.id || heading.id || null
 }
 
-function findCurrentHeadingIndex(
-    headings: HeadingEntry[],
-    currentIndex: number
-): number {
-    while (
-        currentIndex >= 0 &&
-        headings[currentIndex].heading.getBoundingClientRect().top >
-            HEADING_OFFSET
-    ) {
-        currentIndex--
+function cacheGeometry(elements: TocElements): TocGeometry {
+    const scrollY = window.scrollY
+    const headings = elements.headings
+        .map(({ heading, link }) => {
+            const rect = heading.getBoundingClientRect()
+            if (rect.width === 0 && rect.height === 0) return null
+            return { documentTop: rect.top + scrollY, link }
+        })
+        .filter((entry): entry is CachedHeadingEntry => entry !== null)
+        .sort((left, right) => left.documentTop - right.documentTop)
+    const items = new Map<HTMLAnchorElement, TocItemGeometry>()
+    const containerTop = elements.tocContainer?.getBoundingClientRect().top ?? 0
+    elements.tocLinks.forEach((link) => {
+        const item = link.closest('li')
+        if (!(item instanceof HTMLLIElement)) return
+        const rect = item.getBoundingClientRect()
+        items.set(link, {
+            item,
+            top: rect.top - containerTop,
+            bottom: rect.bottom - containerTop,
+        })
+    })
+    const viewportHeight = window.innerHeight
+    return {
+        headings,
+        items,
+        viewportHeight,
+        maximumScrollPosition: Math.max(
+            0,
+            document.documentElement.scrollHeight - viewportHeight
+        ),
     }
+}
 
-    while (
-        currentIndex + 1 < headings.length &&
-        headings[currentIndex + 1].heading.getBoundingClientRect().top <=
-            HEADING_OFFSET
-    ) {
-        currentIndex++
+function upperBound(headings: CachedHeadingEntry[], position: number): number {
+    let low = 0,
+        high = headings.length
+    while (low < high) {
+        const middle = Math.floor((low + high) / 2)
+        if (headings[middle].documentTop <= position) low = middle + 1
+        else high = middle
     }
-    return currentIndex
+    return low
+}
+
+function lowerBound(headings: CachedHeadingEntry[], position: number): number {
+    let low = 0,
+        high = headings.length
+    while (low < high) {
+        const middle = Math.floor((low + high) / 2)
+        if (headings[middle].documentTop < position) low = middle + 1
+        else high = middle
+    }
+    return low
 }
 
 function getCurrentLinks(
-    headings: HeadingEntry[],
-    currentIndex: number
+    headings: CachedHeadingEntry[],
+    scrollY: number
 ): HTMLAnchorElement[] {
+    const currentIndex = upperBound(headings, scrollY + HEADING_OFFSET) - 1
     if (currentIndex < 0) return []
-
-    const currentTop =
-        headings[currentIndex].heading.getBoundingClientRect().top
+    const currentTop = headings[currentIndex].documentTop
     let firstIndex = currentIndex
-    while (firstIndex > 0) {
-        const previousTop =
-            headings[firstIndex - 1].heading.getBoundingClientRect().top
-        if (Math.abs(previousTop - currentTop) > 1) break
+    while (
+        firstIndex > 0 &&
+        Math.abs(headings[firstIndex - 1].documentTop - currentTop) <= 1
+    )
         firstIndex--
-    }
     return headings
         .slice(firstIndex, currentIndex + 1)
         .map(({ link }) => link)
@@ -104,33 +142,18 @@ function getCurrentLinks(
 }
 
 function getBottomLinks(
-    headings: HeadingEntry[],
-    currentIndex: number
+    geometry: TocGeometry,
+    scrollY: number
 ): HTMLAnchorElement[] {
-    let firstIndex = Math.max(currentIndex, 0)
-    while (
-        firstIndex > 0 &&
-        headings[firstIndex - 1].heading.getBoundingClientRect().top >=
-            VISIBLE_HEADING_OFFSET
-    ) {
-        firstIndex--
-    }
-
-    let lastIndex = firstIndex
-    while (
-        lastIndex + 1 < headings.length &&
-        headings[lastIndex + 1].heading.getBoundingClientRect().top <=
-            window.innerHeight
-    ) {
-        lastIndex++
-    }
-
-    return headings
+    const firstIndex = lowerBound(
+        geometry.headings,
+        scrollY + VISIBLE_HEADING_OFFSET
+    )
+    const lastIndex =
+        upperBound(geometry.headings, scrollY + geometry.viewportHeight) - 1
+    if (lastIndex < firstIndex) return []
+    return geometry.headings
         .slice(firstIndex, lastIndex + 1)
-        .filter(({ heading }) => {
-            const top = heading.getBoundingClientRect().top
-            return top >= VISIBLE_HEADING_OFFSET && top <= window.innerHeight
-        })
         .map(({ link }) => link)
         .filter((link): link is HTMLAnchorElement => link !== null)
 }
@@ -145,45 +168,55 @@ function linksAreEqual(
     )
 }
 
+function updateIndicator(
+    elements: TocElements,
+    geometry: TocGeometry,
+    links: HTMLAnchorElement[]
+) {
+    if (!elements.progressIndicator) return
+    const activeItems = links
+        .map((link) => geometry.items.get(link))
+        .filter((item): item is TocItemGeometry => item !== undefined)
+    const first = activeItems[0],
+        last = activeItems[activeItems.length - 1]
+    if (!first || !last) {
+        if (elements.progressIndicator.style.height !== '0px')
+            elements.progressIndicator.style.height = '0px'
+        return
+    }
+    const transform = `translateY(${first.top}px)`
+    const height = `${last.bottom - first.top}px`
+    if (elements.progressIndicator.style.transform !== transform)
+        elements.progressIndicator.style.transform = transform
+    if (elements.progressIndicator.style.height !== height)
+        elements.progressIndicator.style.height = height
+}
+
 function updateActiveLinks(
     elements: TocElements,
+    geometry: TocGeometry,
     previousLinks: HTMLAnchorElement[],
-    currentLinks: HTMLAnchorElement[]
+    currentLinks: HTMLAnchorElement[],
+    refreshIndicator: boolean
 ) {
-    if (linksAreEqual(previousLinks, currentLinks)) return previousLinks
-
-    const linkElements = currentLinks
-        .map((link) => link.closest('li'))
-        .filter((item): item is HTMLLIElement => item !== null)
-    const firstLinkRect = linkElements[0]?.getBoundingClientRect()
-    const lastLinkRect =
-        linkElements[linkElements.length - 1]?.getBoundingClientRect()
-    const tocRect = elements.tocContainer?.getBoundingClientRect()
-
-    previousLinks.forEach((link) => link.classList.remove(ACTIVE_CLASS))
-    currentLinks.forEach((link) => link.classList.add(ACTIVE_CLASS))
-
-    if (
-        elements.progressIndicator &&
-        tocRect &&
-        firstLinkRect &&
-        lastLinkRect
-    ) {
-        const top = firstLinkRect.top - tocRect.top
-        const height =
-            lastLinkRect.top + lastLinkRect.height - firstLinkRect.top
-        const transform = `translateY(${top}px)`
-        const heightValue = `${height}px`
-        if (elements.progressIndicator.style.transform !== transform)
-            elements.progressIndicator.style.transform = transform
-        if (elements.progressIndicator.style.height !== heightValue)
-            elements.progressIndicator.style.height = heightValue
+    const changed = !linksAreEqual(previousLinks, currentLinks)
+    if (!changed && !refreshIndicator) return previousLinks
+    if (changed) {
+        previousLinks.forEach((link) => {
+            link.classList.remove(ACTIVE_CLASS)
+            geometry.items.get(link)?.item.classList.remove(ACTIVE_CLASS)
+        })
+        currentLinks.forEach((link) => {
+            link.classList.add(ACTIVE_CLASS)
+            geometry.items.get(link)?.item.classList.add(ACTIVE_CLASS)
+        })
     }
+    updateIndicator(elements, geometry, currentLinks)
     return currentLinks
 }
 
 function setupSmoothScrolling(elements: TocElements, signal: AbortSignal) {
-    elements.tocLinks.forEach((link) => {
+    elements.tocLinks.forEach((link) =>
         link.addEventListener(
             'click',
             (e) => {
@@ -199,7 +232,7 @@ function setupSmoothScrolling(elements: TocElements, signal: AbortSignal) {
             },
             { signal }
         )
-    })
+    )
 }
 
 export function initTocNav() {
@@ -208,46 +241,85 @@ export function initTocNav() {
     const { signal } = initializationController
     const elements = initializeTocElements()
     if (!elements.tocContainer || !elements.progressIndicator) return
-
     elements.progressIndicator.style.height = '0'
     elements.progressIndicator.style.top = '0'
-
-    let currentHeadingIndex = -1
+    let geometry = cacheGeometry(elements)
     let currentLinks = elements.tocLinks.filter((link) =>
         link.classList.contains(ACTIVE_CLASS)
     )
+    currentLinks.forEach((link) =>
+        geometry.items.get(link)?.item.classList.add(ACTIVE_CLASS)
+    )
     let animationFrame: number | null = null
-    const update = () => {
-        currentHeadingIndex = findCurrentHeadingIndex(
-            elements.headings,
-            currentHeadingIndex
+    let refreshPending = false,
+        updatePending = false
+    const update = (refreshIndicator: boolean) => {
+        const scrollY = window.scrollY
+        const nextLinks =
+            scrollY >= geometry.maximumScrollPosition - BOTTOM_TOLERANCE
+                ? getBottomLinks(geometry, scrollY)
+                : getCurrentLinks(geometry.headings, scrollY)
+        currentLinks = updateActiveLinks(
+            elements,
+            geometry,
+            currentLinks,
+            nextLinks,
+            refreshIndicator
         )
-        const isAtBottom =
-            window.innerHeight + window.scrollY >=
-            document.documentElement.scrollHeight - 10
-        const nextLinks = isAtBottom
-            ? getBottomLinks(elements.headings, currentHeadingIndex)
-            : getCurrentLinks(elements.headings, currentHeadingIndex)
-        currentLinks = updateActiveLinks(elements, currentLinks, nextLinks)
+    }
+    const runScheduledWork = () => {
+        animationFrame = null
+        const shouldRefresh = refreshPending,
+            shouldUpdate = updatePending
+        refreshPending = false
+        updatePending = false
+        if (shouldRefresh) geometry = cacheGeometry(elements)
+        if (shouldUpdate) update(shouldRefresh)
+    }
+    const scheduleFrame = () => {
+        if (animationFrame === null)
+            animationFrame = window.requestAnimationFrame(runScheduledWork)
     }
     const scheduleUpdate = () => {
-        if (animationFrame !== null) return
-        animationFrame = window.requestAnimationFrame(() => {
-            animationFrame = null
-            update()
-        })
+        updatePending = true
+        scheduleFrame()
     }
-
-    update()
-    window.addEventListener('scroll', scheduleUpdate, {
+    const scheduleRefresh = () => {
+        refreshPending = true
+        updatePending = true
+        scheduleFrame()
+    }
+    update(true)
+    window.addEventListener('scroll', scheduleUpdate, { passive: true, signal })
+    window.addEventListener('resize', scheduleRefresh, {
         passive: true,
         signal,
     })
-    window.addEventListener('resize', scheduleUpdate, {
-        passive: true,
+    document.addEventListener(
+        'click',
+        (event) => {
+            if ((event.target as Element | null)?.closest('.tabs-label'))
+                scheduleRefresh()
+        },
+        { signal }
+    )
+    document.addEventListener(
+        'change',
+        (event) => {
+            if ((event.target as Element | null)?.matches('.tabs-input'))
+                scheduleRefresh()
+        },
+        { signal }
+    )
+    document.addEventListener('toggle', scheduleRefresh, {
+        capture: true,
         signal,
     })
+    const resizeObserver = new ResizeObserver(scheduleRefresh)
+    if (elements.contentRoot) resizeObserver.observe(elements.contentRoot)
+    resizeObserver.observe(elements.tocContainer)
     signal.addEventListener('abort', () => {
+        resizeObserver.disconnect()
         if (animationFrame !== null) window.cancelAnimationFrame(animationFrame)
     })
     setupSmoothScrolling(elements, signal)
