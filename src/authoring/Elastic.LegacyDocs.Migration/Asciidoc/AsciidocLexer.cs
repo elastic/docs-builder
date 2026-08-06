@@ -93,7 +93,7 @@ public static partial class AsciidocLexer
 	[GeneratedRegex(@"^\.(\S.*)$")]
 	private static partial Regex GetBlockTitleRegex();
 
-	[GeneratedRegex(@"^\[(.+)\]$")]
+	[GeneratedRegex(@"^\[(.+)\]\s*$")]
 	private static partial Regex GetBlockAttributeRegex();
 
 	[GeneratedRegex(@"^(-{4,}|\.{4,}|={4,}|\*{4,}|\+{4,}|/{4,}|-{2})$")]
@@ -117,7 +117,7 @@ public static partial class AsciidocLexer
 	[GeneratedRegex(@"^include::(.+?)\[(.*?)?\]$")]
 	private static partial Regex GetIncludeRegex();
 
-	[GeneratedRegex(@"^(ifdef|ifndef|ifeval)::(.+?)\[(.*?)?\]$")]
+	[GeneratedRegex(@"^(ifdef|ifndef|ifeval)::(.*?)\[(.*?)?\]$")]
 	private static partial Regex GetConditionalStartRegex();
 
 	[GeneratedRegex(@"^endif::(.*?)?\[(.*?)?\]$")]

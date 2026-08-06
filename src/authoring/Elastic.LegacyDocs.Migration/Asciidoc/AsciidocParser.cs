@@ -268,6 +268,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			TokenType.ImageBlock => ParseImageBlock(title),
 			TokenType.PageBreak => ParsePageBreak(),
 			TokenType.ThematicBreak => ParseThematicBreak(),
+			TokenType.Text when CalloutItemRegex().IsMatch(token.Raw) => ParseCalloutList(),
 			TokenType.Text => ParseParagraph(),
 			TokenType.IncludeDirective => ParseIncludeBlock(),
 			TokenType.ConditionalStart or TokenType.ConditionalEnd => SkipConditional(),
@@ -312,10 +313,19 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			children = ParseTokensAsBlocks(innerTokens);
 		}
 
-		// Collect callout annotations that follow a code block (e.g. <1> First step)
+		// Collect callout annotations that follow a code block (e.g. <1> First step).
+		// Skip any trailing comment lines (// TEST[...]) and one optional blank line;
+		// restore position if what follows is not callout markers.
 		var callouts = new List<string>();
 		if (delimChar is "-" && openingDelim.Length >= 4)
 		{
+			var savedPos = _pos;
+			while (_pos < _tokens.Count && Current.Type == TokenType.Comment)
+				_pos++;
+			if (_pos < _tokens.Count && Current.Type == TokenType.Blank)
+				_pos++;
+			if (_pos >= _tokens.Count || Current.Type != TokenType.Text || !CalloutItemRegex().IsMatch(Current.Raw))
+				_pos = savedPos; // not callouts — restore so the normal token handling runs
 			while (_pos < _tokens.Count && Current.Type == TokenType.Text)
 			{
 				var calloutMatch = CalloutItemRegex().Match(Current.Raw);
@@ -967,6 +977,29 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			})
 			.ToList();
 		return new TableRowNode { Cells = cells };
+	}
+
+	// Collects a run of <n> callout description lines into an ordered list.
+	// Called when a Text token at block level matches the callout pattern.
+	private IAsciidocNode ParseCalloutList()
+	{
+		var items = new List<ListItemNode>();
+		while (_pos < _tokens.Count && Current.Type == TokenType.Text)
+		{
+			var calloutMatch = CalloutItemRegex().Match(Current.Raw);
+			if (!calloutMatch.Success)
+				break;
+			var text = calloutMatch.Groups[2].Value;
+			_pos++;
+			// Collect any continuation lines (Text tokens without <n> prefix)
+			while (_pos < _tokens.Count && Current.Type == TokenType.Text && !CalloutItemRegex().IsMatch(Current.Raw))
+			{
+				text += " " + Current.Raw.Trim();
+				_pos++;
+			}
+			items.Add(new ListItemNode { Inlines = ParseInlines(SubstituteAttributes(text)), Children = [] });
+		}
+		return new OrderedListNode { Items = items };
 	}
 
 	private IAsciidocNode ParseAdmonitionParagraph()
