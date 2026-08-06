@@ -115,6 +115,11 @@ public class AssemblerBuildService(
 		if (!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
 			return false;
 
+		var topNav = TopNavResolver.Resolve(siteNavigationFile, assembleSources.CrossLinkResolver,
+			assembleContext.Environment.PathPrefix, assembleContext.Collector, navigationFileInfo);
+		foreach (var set in assembleSources.AssembleSets.Values)
+			set.BuildContext.TopNav = topNav;
+
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageService(logFactory);

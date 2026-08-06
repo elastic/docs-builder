@@ -79,6 +79,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
+			TopNav = BuildContext.TopNav,
 			TocItems = GetTocItems(),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
