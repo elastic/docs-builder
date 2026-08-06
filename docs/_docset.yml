@@ -64,6 +64,8 @@ api:
   dashboard:
     - spec: dashboard-openapi.json
       product: kibana
+  # CloudFront smoke tests — mirror https://d29hkgsdo66d1n.cloudfront.net/index.json.
+  # No local spec files: each key fetches remotely on serve/build. Paths: /api/remote-<key>/
   remote-elasticsearch:
     - spec: elasticsearch.json
       product: elasticsearch
@@ -80,10 +82,6 @@ api:
     - spec: kibana-serverless.yaml
       product: kibana
       repository: elastic/kibana
-  remote-cloud-billing:
-    - spec: cloud-billing.yaml
-      product: ess
-      repository: elastic/cloud
   remote-cloud-connect:
     - spec: cloud-connect.yml
       product: ess

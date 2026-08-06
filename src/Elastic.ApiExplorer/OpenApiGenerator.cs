@@ -50,11 +50,19 @@ public class OpenApiGenerator(
 
 		foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 		{
-			var openApiDocument = await ResolveCurrentDocument(prefix, apiConfig, ctx).ConfigureAwait(false);
-			if (openApiDocument is null)
-				continue;
+			try
+			{
+				var openApiDocument = await ResolveCurrentDocument(prefix, apiConfig, ctx).ConfigureAwait(false);
+				if (openApiDocument is null)
+					continue;
 
-			await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
+				await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				context.Collector.EmitGlobalError(
+					$"API '{prefix}' could not be generated: {ex.Message}");
+			}
 		}
 	}
 
@@ -84,7 +92,10 @@ public class OpenApiGenerator(
 			return await OpenApiReader.Create(current.LocalFile!);
 
 		var stream = await _versionIndexClient.FetchSpecStreamAsync(apiKey, current, context.Collector, ctx).ConfigureAwait(false);
-		return stream is null ? null : await OpenApiReader.CreateFromStream(stream).ConfigureAwait(false);
+		if (stream is null)
+			return null;
+
+		return await OpenApiReader.CreateFromStream(stream, apiConfig.SpecFileName).ConfigureAwait(false);
 	}
 
 	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
