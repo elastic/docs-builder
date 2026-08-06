@@ -108,9 +108,9 @@ public class HtmlWriter(
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
-		// Resolve the right-gutter CTA: an explicit, known frontmatter id wins, then any `cta.<name>.paths`
-		// scope covering this page. Both are 'custom' and render in isolated builds too (so authors can
-		// preview them); the built-in default stays assembler-only to preserve today's behavior.
+		// Resolve the right-gutter CTA: an explicit, known frontmatter id wins, then any `default_cta`
+		// registered on the page's navigation file. Both are 'custom' and render in isolated builds too
+		// (so authors can preview them); the built-in default stays assembler-only to preserve today's behavior.
 		var cta = DocumentationSet.Configuration.ResolveCta(markdown.YamlFrontMatter?.Cta?.Id, markdown.RelativePath, out var ctaWarning);
 		if (ctaWarning is not null)
 			DocumentationSet.Context.Collector.EmitWarning(markdown.FilePath, ctaWarning);

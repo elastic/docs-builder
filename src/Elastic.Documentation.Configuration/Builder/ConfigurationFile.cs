@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
@@ -93,9 +94,8 @@ public record ConfigurationFile
 
 	private readonly Dictionary<string, Cta> _ctas = new(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
 
-	// Path scopes declared via `cta.<name>.paths`, as (normalized prefix, template name) pairs ordered
-	// longest-prefix-first so the most specific scope wins during resolution.
-	private readonly List<KeyValuePair<string, string>> _ctaPathScopes = [];
+	// Pages registered with a default CTA via `default_cta` on docset.yml or nested toc.yml files.
+	private readonly IReadOnlyDictionary<string, string> _tocDefaultCtas;
 
 	/// <summary>
 	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
@@ -124,6 +124,7 @@ public record ConfigurationFile
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
+		_tocDefaultCtas = FrozenDictionary<string, string>.Empty;
 		if (!context.ConfigurationPath.Exists)
 		{
 			Project = "unknown";
@@ -305,15 +306,23 @@ public record ConfigurationFile
 				Branding = ValidateBranding(docSetFile.Branding, context);
 
 			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
-			var ctaPathScopes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 			foreach (var (name, definition) in docSetFile.Cta)
 			{
 				if (ValidateCta(name, definition, context) is not { } cta)
 					continue;
 				_ctas[name] = cta;
-				CollectCtaPathScopes(name, definition.Paths, ctaPathScopes, context);
 			}
-			_ctaPathScopes = [.. ctaPathScopes.OrderByDescending(kv => kv.Key.Length)];
+
+			foreach (var (pagePath, ctaName) in docSetFile.TocDefaultCtas)
+			{
+				if (!_ctas.ContainsKey(ctaName))
+				{
+					context.EmitError(context.ConfigurationPath,
+						$"'default_cta: {ctaName}' on page '{pagePath}' does not match any 'cta' template in docset.yml.");
+				}
+			}
+
+			_tocDefaultCtas = docSetFile.TocDefaultCtas;
 
 			// Process features
 			_features = [with(StringComparer.OrdinalIgnoreCase)];
@@ -356,11 +365,11 @@ public record ConfigurationFile
 
 	/// <summary>
 	/// Resolves the right-gutter CTA for a page. An explicit, known <c>cta</c> frontmatter <paramref name="id"/>
-	/// always wins. Otherwise the template whose <c>paths</c> scope matches <paramref name="relativePath"/>
-	/// applies (most specific prefix first), falling back to <see cref="Cta.DefaultName"/>.
+	/// always wins. Otherwise the template registered via <c>default_cta</c> on the page's navigation file
+	/// applies, falling back to <see cref="Cta.DefaultName"/>.
 	/// </summary>
 	/// <param name="id">The page's <c>cta.id</c> frontmatter value, if any.</param>
-	/// <param name="relativePath">The page's docset-root-relative source path, used for path-scope matching.</param>
+	/// <param name="relativePath">The page's docset-root-relative source path, used for toc default lookup.</param>
 	/// <param name="warning">Set when <paramref name="id"/> is unknown, so the caller can report it.</param>
 	public Cta ResolveCta(string? id, string? relativePath, out string? warning)
 	{
@@ -372,39 +381,13 @@ public record ConfigurationFile
 			// Unknown id: warn, then resolve as if the page had no `cta` frontmatter.
 			warning = UnknownCtaWarning(id, Ctas.Keys);
 		}
-		if (relativePath is { Length: > 0 } && MatchCtaPathScope(relativePath) is { } scoped)
-			return scoped;
+		if (relativePath is { Length: > 0 })
+		{
+			var normalizedPath = DocumentationSetFile.NormalizeDocsetRelativePath(relativePath);
+			if (_tocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && Ctas.TryGetValue(tocDefault, out var scoped))
+				return scoped;
+		}
 		return Ctas[Cta.DefaultName];
-	}
-
-	private Cta? MatchCtaPathScope(string relativePath)
-	{
-		if (_ctaPathScopes.Count == 0)
-			return null;
-		var normalized = relativePath.Replace('\\', '/').TrimStart('/');
-		foreach (var (prefix, name) in _ctaPathScopes)
-		{
-			// Whole-segment prefix match: "solutions/observability" must not match "solutions/observability-labs/...".
-			if (normalized.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-				&& (normalized.Length == prefix.Length || normalized[prefix.Length] == '/'))
-				return Ctas[name];
-		}
-		return null;
-	}
-
-	private static void CollectCtaPathScopes(string name, List<string> paths, Dictionary<string, string> scopes, IDocumentationSetContext context)
-	{
-		foreach (var path in paths)
-		{
-			var prefix = path.Trim().Replace('\\', '/').Trim('/');
-			if (string.IsNullOrEmpty(prefix))
-			{
-				context.EmitError(context.ConfigurationPath, $"'cta.{name}.paths' contains an empty path.");
-				continue;
-			}
-			if (!scopes.TryAdd(prefix, name))
-				context.EmitError(context.ConfigurationPath, $"'cta.{name}.paths' declares '{prefix}' which is already claimed by 'cta.{scopes[prefix]}'. Each path can only map to one CTA template.");
-		}
 	}
 
 	private static string UnknownCtaWarning(string ctaName, IEnumerable<string> knownCtaNames)

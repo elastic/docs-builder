@@ -23,6 +23,14 @@ public class TableOfContentsFile
 	[YamlMember(Alias = "suppress")]
 	public HashSet<HintType> SuppressDiagnostics { get; set; } = [];
 
+	/// <summary>
+	/// Optional name of a <c>cta</c> template (declared in <c>docset.yml</c>) applied to every page
+	/// listed in this navigation file unless the page selects one explicitly via frontmatter.
+	/// Nested <c>toc.yml</c> files may override the value inherited from a parent navigation file.
+	/// </summary>
+	[YamlMember(Alias = "default_cta")]
+	public string? DefaultCta { get; set; }
+
 	public static TableOfContentsFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsFile>(json);
 }

@@ -18,12 +18,30 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class ConfigurationFileCtaTests
 {
 	[Fact]
-	public void ResolveCta_FrontmatterId_TakesPrecedenceOverPathScope()
+	public void ResolveCta_FrontmatterId_TakesPrecedenceOverTocDefault()
 	{
-		var config = CreateConfiguration(DocSetWith(
-			("observability", "solutions/observability"),
-			("monitor-kubernetes", null)));
+		var docSet = LoadDocSet("""
+			project: test
+			cta:
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			  monitor-kubernetes:
+			    button:
+			      label: Monitor Kubernetes
+			      url: https://example.com/kubernetes
+			toc:
+			  - toc: solutions/observability
+			""",
+			("""
+			default_cta: observability
+			toc:
+			  - file: get-started/quickstart.md
+			""", "solutions/observability/toc.yml"),
+			("# Quickstart", "solutions/observability/get-started/quickstart.md"));
 
+		var config = CreateConfiguration(docSet);
 		var cta = config.ResolveCta("monitor-kubernetes", "solutions/observability/get-started/quickstart.md", out var warning);
 
 		cta.Name.Should().Be("monitor-kubernetes");
@@ -31,10 +49,26 @@ public class ConfigurationFileCtaTests
 	}
 
 	[Fact]
-	public void ResolveCta_NoFrontmatter_UsesPathScope()
+	public void ResolveCta_NoFrontmatter_UsesTocDefault()
 	{
-		var config = CreateConfiguration(DocSetWith(("observability", "solutions/observability")));
+		var docSet = LoadDocSet("""
+			project: test
+			cta:
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			toc:
+			  - toc: solutions/observability
+			""",
+			("""
+			default_cta: observability
+			toc:
+			  - file: apps/apm.md
+			""", "solutions/observability/toc.yml"),
+			("# APM", "solutions/observability/apps/apm.md"));
 
+		var config = CreateConfiguration(docSet);
 		var cta = config.ResolveCta(null, "solutions/observability/apps/apm.md", out var warning);
 
 		cta.Name.Should().Be("observability");
@@ -42,10 +76,21 @@ public class ConfigurationFileCtaTests
 	}
 
 	[Fact]
-	public void ResolveCta_NoFrontmatterAndNoScopeMatch_FallsBackToDefault()
+	public void ResolveCta_NoFrontmatterAndNoTocDefault_FallsBackToDefault()
 	{
-		var config = CreateConfiguration(DocSetWith(("observability", "solutions/observability")));
+		var docSet = LoadDocSet("""
+			project: test
+			cta:
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			toc:
+			  - file: reference/query-languages/esql.md
+			""",
+			("# ES|QL", "reference/query-languages/esql.md"));
 
+		var config = CreateConfiguration(docSet);
 		var cta = config.ResolveCta(null, "reference/query-languages/esql.md", out var warning);
 
 		cta.Name.Should().Be(Cta.DefaultName);
@@ -53,21 +98,37 @@ public class ConfigurationFileCtaTests
 	}
 
 	[Fact]
-	public void ResolveCta_PathScope_MatchesWholeSegmentsOnly()
+	public void ResolveCta_NestedTocDefault_OverridesParentDefault()
 	{
-		var config = CreateConfiguration(DocSetWith(("observability", "solutions/observability")));
+		var docSet = LoadDocSet("""
+			project: test
+			cta:
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			  monitor-kubernetes:
+			    button:
+			      label: Monitor Kubernetes
+			      url: https://example.com/kubernetes
+			toc:
+			  - toc: solutions/observability
+			""",
+			("""
+			default_cta: observability
+			toc:
+			  - file: apps/apm.md
+			  - toc: get-started
+			""", "solutions/observability/toc.yml"),
+			("""
+			default_cta: monitor-kubernetes
+			toc:
+			  - file: quickstart.md
+			""", "solutions/observability/get-started/toc.yml"),
+			("# APM", "solutions/observability/apps/apm.md"),
+			("# Quickstart", "solutions/observability/get-started/quickstart.md"));
 
-		var cta = config.ResolveCta(null, "solutions/observability-labs/index.md", out _);
-
-		cta.Name.Should().Be(Cta.DefaultName);
-	}
-
-	[Fact]
-	public void ResolveCta_OverlappingScopes_MostSpecificPrefixWins()
-	{
-		var config = CreateConfiguration(DocSetWith(
-			("observability", "solutions/observability"),
-			("monitor-kubernetes", "solutions/observability/get-started")));
+		var config = CreateConfiguration(docSet);
 
 		config.ResolveCta(null, "solutions/observability/get-started/quickstart.md", out _)
 			.Name.Should().Be("monitor-kubernetes");
@@ -76,10 +137,26 @@ public class ConfigurationFileCtaTests
 	}
 
 	[Fact]
-	public void ResolveCta_UnknownFrontmatterId_WarnsAndFallsBackToPathScope()
+	public void ResolveCta_UnknownFrontmatterId_WarnsAndFallsBackToTocDefault()
 	{
-		var config = CreateConfiguration(DocSetWith(("observability", "solutions/observability")));
+		var docSet = LoadDocSet("""
+			project: test
+			cta:
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			toc:
+			  - toc: solutions/observability
+			""",
+			("""
+			default_cta: observability
+			toc:
+			  - file: apps/apm.md
+			""", "solutions/observability/toc.yml"),
+			("# APM", "solutions/observability/apps/apm.md"));
 
+		var config = CreateConfiguration(docSet);
 		var cta = config.ResolveCta("does-not-exist", "solutions/observability/apps/apm.md", out var warning);
 
 		cta.Name.Should().Be("observability");
@@ -87,56 +164,111 @@ public class ConfigurationFileCtaTests
 	}
 
 	[Fact]
-	public void ResolveCta_PathScope_NormalizesSeparatorsAndSlashes()
+	public void ResolveCta_DocsetDefaultCta_AppliesToRootLevelPages()
 	{
-		var config = CreateConfiguration(DocSetWith(("observability", "/solutions/observability/")));
+		var docSet = LoadDocSet("""
+			project: test
+			default_cta: observability
+			cta:
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			toc:
+			  - file: index.md
+			""",
+			("# Home", "index.md"));
 
-		var cta = config.ResolveCta(null, @"solutions\observability\apps\apm.md", out _);
+		var config = CreateConfiguration(docSet);
+		var cta = config.ResolveCta(null, "index.md", out _);
 
 		cta.Name.Should().Be("observability");
 	}
 
 	[Fact]
-	public async Task Constructor_PathClaimedByTwoTemplates_EmitsError()
+	public async Task LoadAndResolve_PageClaimedByTwoDefaults_EmitsError()
 	{
-		var docSet = DocSetWith(
-			("observability", "solutions/observability"),
-			("security", "solutions/observability"));
+		var recorder = new RecordingDiagnosticsOutput();
+		var collector = new DiagnosticsCollector([recorder]);
+		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var (_, diagnostics) = await CreateConfigurationWithDiagnostics(docSet);
+		_ = LoadDocSet(collector, """
+			project: test
+			cta:
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			  security:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=security
+			toc:
+			  - toc: section-a
+			  - toc: section-b
+			""",
+			("""
+			default_cta: observability
+			toc:
+			  - file: ../shared/page.md
+			""", "section-a/toc.yml"),
+			("""
+			default_cta: security
+			toc:
+			  - file: ../shared/page.md
+			""", "section-b/toc.yml"),
+			("# Shared", "shared/page.md"));
 
-		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error)
-			.Which.Message.Should().Contain("already claimed by 'cta.observability'");
+		await collector.StopAsync(TestContext.Current.CancellationToken);
+
+		recorder.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error
+			&& d.Message.Contains("observability")
+			&& d.Message.Contains("security"));
 	}
 
 	[Fact]
-	public async Task Constructor_EmptyPath_EmitsError()
+	public async Task Constructor_UnknownTocDefaultCta_EmitsError()
 	{
-		var docSet = DocSetWith(("observability", "  "));
+		var docSet = LoadDocSet("""
+			project: test
+			toc:
+			  - toc: solutions/observability
+			""",
+			("""
+			default_cta: does-not-exist
+			toc:
+			  - file: apps/apm.md
+			""", "solutions/observability/toc.yml"),
+			("# APM", "solutions/observability/apps/apm.md"));
 
 		var (_, diagnostics) = await CreateConfigurationWithDiagnostics(docSet);
 
 		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error)
-			.Which.Message.Should().Contain("empty path");
+			.Which.Message.Should().Contain("does-not-exist");
 	}
 
-	private static DocumentationSetFile DocSetWith(params (string Name, string? Path)[] templates)
+	private static DocumentationSetFile LoadDocSet(string docsetYaml, params (string Content, string Path)[] files)
 	{
-		var cta = new Dictionary<string, CtaDefinition>();
-		foreach (var (name, path) in templates)
+		var collector = new DiagnosticsCollector([]);
+		return LoadDocSet(collector, docsetYaml, files);
+	}
+
+	private static DocumentationSetFile LoadDocSet(DiagnosticsCollector collector, string docsetYaml, params (string Content, string Path)[] files)
+	{
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>(), "/docs");
+		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+
+		foreach (var (content, path) in files)
 		{
-			cta[name] = new CtaDefinition
-			{
-				Button = new CtaButton { Label = "Get started free", Url = $"https://cloud.elastic.co/serverless-registration?onboarding_token={name}" },
-				Paths = path is null ? [] : [path]
-			};
+			var fullPath = $"/docs/{path}";
+			var directory = fileSystem.Path.GetDirectoryName(fullPath);
+			if (directory is not null)
+				fileSystem.AddDirectory(directory);
+			fileSystem.AddFile(fullPath, new MockFileData(content));
 		}
-		return new DocumentationSetFile
-		{
-			Project = "test",
-			TableOfContents = [],
-			Cta = cta
-		};
+
+		return DocumentationSetFile.LoadAndResolve(collector, docsetYaml, fileSystem.DirectoryInfo.New("/docs"), new ScopedFileSystem(fileSystem, "/docs"));
 	}
 
 	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet)
@@ -157,15 +289,13 @@ public class ConfigurationFileCtaTests
 
 	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet, DiagnosticsCollector collector)
 	{
-		var root = Paths.WorkingDirectoryRoot.FullName;
-		var configFilePath = Path.Join(root, "docs", "_docset.yml");
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
-			{ configFilePath, new MockFileData("") }
-		}, root);
+			{ "/docs/docset.yml", new MockFileData("") }
+		}, "/docs");
 
-		var configPath = fileSystem.FileInfo.New(configFilePath);
-		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
+		var configPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var docsDir = fileSystem.DirectoryInfo.New("/docs");
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
 		var versionsConfig = new VersionsConfiguration
@@ -198,7 +328,7 @@ public class ConfigurationFileCtaTests
 		public IDiagnosticsCollector Collector => collector;
 		public ScopedFileSystem ReadFileSystem => WriteFileSystem;
 		public ScopedFileSystem WriteFileSystem { get; } = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
-		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
+		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New("/docs/.artifacts");
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;
 		public IDirectoryInfo DocumentationSourceDirectory => documentationSourceDirectory;

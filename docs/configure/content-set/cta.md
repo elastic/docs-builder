@@ -40,13 +40,22 @@ cta:
 ---
 ```
 
-If a page omits `cta`, the template scoped to its path (if any) applies; otherwise it falls back to the built-in `trial` CTA. An unknown `id` emits a build warning and is ignored.
+If a page omits `cta`, the template registered as the default for its navigation file (if any) applies; otherwise it falls back to the built-in `trial` CTA. An unknown `id` emits a build warning and is ignored.
 
-## Scope a CTA to a path
+## Register a default CTA on a navigation file
 
-To apply a template to every page under a directory without editing each file, list path prefixes under `paths`:
+To apply a template to every page listed in a `docset.yml` or nested `toc.yml` without editing each file, set `default_cta` to a template name declared in `docset.yml`:
 
 ```yaml
+# solutions/observability/toc.yml
+default_cta: observability
+toc:
+  - file: index.md
+  - file: apps/apm.md
+```
+
+```yaml
+# docset.yml
 cta:
   observability:
     button:
@@ -54,14 +63,12 @@ cta:
       url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
     benefits:
       - "14-day free trial"
-    paths:
-      - solutions/observability
 ```
 
-- Paths are relative to the docset root (the directory containing `docset.yml`) and match whole path segments: `solutions/observability` covers `solutions/observability/apps/apm.md` but not `solutions/observability-labs/index.md`.
-- When a page falls under more than one scoped path, the most specific (longest) prefix wins.
-- A page's `cta` frontmatter always takes precedence over a path scope.
-- Each path can only be claimed by one template; declaring the same path in two templates is a build error.
+- `default_cta` is available on both `docset.yml` and nested `toc.yml` files.
+- Pages inherit the nearest `default_cta` from their navigation file. A nested `toc.yml` can override the value from a parent navigation file.
+- A page's `cta` frontmatter always takes precedence over a navigation default.
+- Each page can only be registered with one default CTA; listing the same page twice with different defaults is a build error.
 
 ## Click and impression tracking
 

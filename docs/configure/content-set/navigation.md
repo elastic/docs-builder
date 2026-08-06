@@ -361,6 +361,12 @@ Defines named right-gutter call-to-action templates that pages can opt into via 
 
 See [CTA](cta.md) for full configuration details and examples.
 
+### `default_cta`
+
+Registers a named CTA template as the default for every page listed in this navigation file. Available on both `docset.yml` and nested `toc.yml` files. The template must be declared under the `cta` map in `docset.yml`.
+
+See [CTA](cta.md) for full configuration details and examples.
+
 ## Navigation configuration patterns
 
 ### Single file reference
