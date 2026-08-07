@@ -97,9 +97,14 @@ public class GitCheckoutResolutionTests
 
 		var result = GitCheckoutInformationFactory.Create(checkout, scoped);
 
+		// The production code reads GITHUB_PR_REF_NAME ?? GITHUB_REF_NAME ?? "detached/head".
+		// Mirror that lookup so the test passes both locally and on CI (where GITHUB_REF_NAME=3789/merge).
+		var expectedBranch = Environment.GetEnvironmentVariable("GITHUB_PR_REF_NAME")
+			?? Environment.GetEnvironmentVariable("GITHUB_REF_NAME")
+			?? "detached/head";
 		result.IsAvailable.Should().BeTrue();
 		result.Ref.Should().Be("cafebabe9876", "detached HEAD must use the actual SHA, never a random GUID");
-		result.Branch.Should().BeOneOf("detached/head");
+		result.Branch.Should().Be(expectedBranch);
 	}
 
 	[Fact]

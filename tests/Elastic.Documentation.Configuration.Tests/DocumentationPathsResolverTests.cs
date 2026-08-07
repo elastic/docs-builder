@@ -22,6 +22,13 @@ public class DocumentationPathsResolverTests
 	// -----------------------------------------------------------------------
 
 	/// <summary>
+	/// Normalises a Unix-style path through the mock filesystem so that assertions work on
+	/// Windows, where MockFileSystem converts <c>/repo</c> → <c>C:\repo</c>.
+	/// </summary>
+	private static string P(MockFileSystem fs, string unixPath) =>
+		fs.DirectoryInfo.New(unixPath).FullName;
+
+	/// <summary>
 	/// Builds a minimal regular-repo filesystem:
 	///   <c>/repo/.git/{HEAD,config,refs/...}</c> +
 	///   <c>/repo/docs/docset.yml</c>
@@ -101,8 +108,8 @@ public class DocumentationPathsResolverTests
 
 		var paths = DocumentationPathsResolver.Resolve(invocation, new DocumentationScopeOptions { Inner = fs }, fs);
 
-		paths.SourceDirectory.FullName.Should().Be("/repo/docs");
-		paths.CheckoutDirectory.FullName.Should().Be("/repo");
+		paths.SourceDirectory.FullName.Should().Be(P(fs, "/repo/docs"));
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"));
 	}
 
 	[Fact]
@@ -113,8 +120,8 @@ public class DocumentationPathsResolverTests
 
 		var paths = DocumentationPathsResolver.Resolve(invocation, new DocumentationScopeOptions { Inner = fs }, fs);
 
-		paths.SourceDirectory.FullName.Should().Be("/repo/docs");
-		paths.CheckoutDirectory.FullName.Should().Be("/repo");
+		paths.SourceDirectory.FullName.Should().Be(P(fs, "/repo/docs"));
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"));
 	}
 
 	[Fact]
@@ -144,8 +151,8 @@ public class DocumentationPathsResolverTests
 
 		var paths = DocumentationPathsResolver.Resolve(invocationDir, new DocumentationScopeOptions { Inner = fs }, fs);
 
-		paths.InvocationPath.FullName.Should().Be("/repo/docs");
-		paths.CheckoutDirectory.FullName.Should().Be("/repo");
+		paths.InvocationPath.FullName.Should().Be(P(fs, "/repo/docs"));
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"));
 	}
 
 	// -----------------------------------------------------------------------
@@ -162,7 +169,7 @@ public class DocumentationPathsResolverTests
 			new DocumentationScopeOptions { Inner = fs }, fs);
 
 		paths.GitDirectories.Should().ContainSingle()
-			.Which.Should().Be("/repo/.git");
+			.Which.Should().Be(P(fs, "/repo/.git"));
 	}
 
 	[Fact]
@@ -193,7 +200,7 @@ public class DocumentationPathsResolverTests
 			fs.DirectoryInfo.New("/worktree"),
 			new DocumentationScopeOptions { Inner = fs }, fs);
 
-		paths.CheckoutDirectory.FullName.Should().Be("/worktree");
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/worktree"));
 	}
 
 	[Fact]
@@ -206,9 +213,9 @@ public class DocumentationPathsResolverTests
 			new DocumentationScopeOptions { Inner = fs }, fs);
 
 		paths.GitDirectories.Should().HaveCount(2);
-		paths.GitDirectories.Should().Contain("/worktree/.git",
+		paths.GitDirectories.Should().Contain(P(fs, "/worktree/.git"),
 			"pointer file path must be in scope so the .git file is readable");
-		paths.GitDirectories.Should().Contain("/main/.git",
+		paths.GitDirectories.Should().Contain(P(fs, "/main/.git"),
 			"resolved commondir target must be included so config/HEAD are readable");
 	}
 
@@ -273,7 +280,7 @@ public class DocumentationPathsResolverTests
 
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/project/docs"), opts, fs);
 
-		paths.CheckoutDirectory.FullName.Should().Be("/repo",
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"),
 			"--git-dir /repo/.git → checkout = /repo/.git.Parent = /repo");
 	}
 
@@ -320,7 +327,7 @@ public class DocumentationPathsResolverTests
 		var opts = new DocumentationScopeOptions { Inner = fs, Git = GitCheckoutInformation.Unavailable };
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo/docs"), opts, fs);
 
-		paths.CheckoutDirectory.FullName.Should().Be("/repo/docs",
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo/docs"),
 			"mock FS fallback: no .git → checkout = source directory");
 		paths.GitDirectories.Should().BeEmpty();
 	}
@@ -351,7 +358,7 @@ public class DocumentationPathsResolverTests
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), opts, fs);
 
 		// Default output is checkout/.artifacts/docs/html — NOT the invocation path.
-		paths.OutputDirectory.FullName.Should().StartWith("/repo/.artifacts");
+		paths.OutputDirectory.FullName.Should().StartWith(P(fs, "/repo/.artifacts"));
 	}
 
 	[Fact]
@@ -381,7 +388,7 @@ public class DocumentationPathsResolverTests
 
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), opts, fs);
 
-		paths.OutputDirectory.FullName.Should().Be("/custom/output");
+		paths.OutputDirectory.FullName.Should().Be(P(fs, "/custom/output"));
 	}
 
 	// -----------------------------------------------------------------------
@@ -398,8 +405,8 @@ public class DocumentationPathsResolverTests
 		var opts = new DocumentationScopeOptions { Inner = fs, ConfigurationFile = docsetFile };
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/project"), opts, fs);
 
-		paths.SourceDirectory.FullName.Should().Be("/project/docs");
-		paths.ConfigurationPath.FullName.Should().Be("/project/docs/docset.yml");
+		paths.SourceDirectory.FullName.Should().Be(P(fs, "/project/docs"));
+		paths.ConfigurationPath.FullName.Should().Be(P(fs, "/project/docs/docset.yml"));
 	}
 
 	// -----------------------------------------------------------------------
@@ -433,8 +440,8 @@ public class DocumentationPathsResolverTests
 
 		var docFs = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { Inner = fs });
 
-		docFs.Paths.CheckoutDirectory.FullName.Should().Be("/repo");
-		docFs.Paths.SourceDirectory.FullName.Should().Be("/repo/docs");
+		docFs.Paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"));
+		docFs.Paths.SourceDirectory.FullName.Should().Be(P(fs, "/repo/docs"));
 		docFs.Paths.Git.Branch.Should().Be("feature");
 		docFs.Paths.Git.RepositoryName.Should().Be("docs-builder");
 	}
@@ -447,7 +454,7 @@ public class DocumentationPathsResolverTests
 
 		var docFs = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { Inner = fs });
 
-		docFs.Paths.CheckoutDirectory.FullName.Should().Be("/worktree");
+		docFs.Paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/worktree"));
 		docFs.Paths.Git.Branch.Should().Be("topic");
 		docFs.Paths.Git.Ref.Should().Be("99aabb");
 		docFs.Paths.Git.RepositoryName.Should().Be("worktree-test");
