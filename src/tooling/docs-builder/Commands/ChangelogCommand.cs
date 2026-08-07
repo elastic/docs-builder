@@ -1170,7 +1170,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="output">Optional: Output directory for rendered files. Defaults to current directory</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
 	/// <param name="dropdowns">Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false</param>
-	/// <param name="noDescriptions">Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false</param>
+	/// <param name="noDescriptions">Optional: Hide changelog descriptions from output. When enabled, entry titles, PR/issue links, impact, and action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false</param>
 	/// <param name="title">Optional: Title to use for section headers in output files. Defaults to version from first bundle</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]

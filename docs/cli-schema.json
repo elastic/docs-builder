@@ -4250,7 +4250,7 @@
               "name": "no-descriptions",
               "type": "boolean",
               "required": false,
-              "summary": "Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false",
+              "summary": "Optional: Hide changelog descriptions from output. When enabled, entry titles, PR/issue links, impact, and action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false",
               "defaultValue": "false"
             },
             {
