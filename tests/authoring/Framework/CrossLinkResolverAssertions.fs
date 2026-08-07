@@ -15,6 +15,7 @@ open Elastic.Documentation
 open Swensen.Unquote
 open Elastic.Documentation.Configuration
 open Elastic.Documentation.Configuration.Builder
+open Elastic.Documentation.FileSystems
 open authoring
 
 module CrossLinkResolverAssertions =
@@ -32,7 +33,7 @@ module CrossLinkResolverAssertions =
                 member _.DocumentationSourceDirectory = mockFileSystem.DirectoryInfo.New("/docs")
                 member _.Git = GitCheckoutInformation.Unavailable
                 member _.ReadFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFileSystem)
-                member _.WriteFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFileSystem)
+                member _.WriteFileSystem = DocumentationWriteFileSystem(mockFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, mockFileSystem)
                 member _.ConfigurationPath = mockFileSystem.FileInfo.New("mock_docset.yml")
                 member _.OutputDirectory = mockFileSystem.DirectoryInfo.New(".artifacts")
                 member _.BuildType = BuildType.Isolated

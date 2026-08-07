@@ -80,11 +80,14 @@ public static class FileSystemFactory
 	{
 		if (path is null)
 			return InMemory();
-		var root = Paths.FindGitRoot(path);
-		if (root == Paths.WorkingDirectoryRoot.FullName)
+		var plain = new FileSystem();
+		var startDir = plain.DirectoryInfo.New(
+			plain.Directory.Exists(path) ? path : plain.Path.GetDirectoryName(path) ?? path);
+		var gitRoot = Paths.FindGitRoot(startDir)?.FullName;
+		if (gitRoot is null || gitRoot == Paths.WorkingDirectoryRoot.FullName)
 			return InMemory();
 		return new(new MockFileSystem(), new ScopedFileSystemOptions(
-			[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName, root])
+			[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName, gitRoot])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
@@ -209,28 +212,35 @@ public static class FileSystemFactory
 	/// </summary>
 	public static ScopedFileSystem RealGitRootForPath(string? path)
 	{
-		var root = path is null ? Paths.WorkingDirectoryRoot.FullName : Paths.FindGitRoot(path);
+		var plain = new FileSystem();
+		string root;
+		if (path is null)
+			root = Paths.WorkingDirectoryRoot.FullName;
+		else
+		{
+			var startDir = plain.DirectoryInfo.New(
+				plain.Directory.Exists(path) ? path : plain.Path.GetDirectoryName(path) ?? path);
+			root = Paths.FindGitRoot(startDir)?.FullName ?? startDir.FullName;
+		}
+
 		var roots = new List<string> { root, Paths.ApplicationData.FullName };
 
-		// In a git worktree the local .git entry is a file pointing to the main repo's
-		// .git/worktrees/<name> directory. GitCheckoutInformation needs to read config and
-		// HEAD from the main repo's .git dir, which lives outside the worktree root.
-		// Add it as an explicit scope root so those reads are not rejected.
-		var worktreePointer = Path.Join(root, ".git");
-		if (File.Exists(worktreePointer))
+		// In a git worktree the local .git entry is a file pointing to the main repo's git dir.
+		// Resolve it via TryReadGitDirPointer (handles relative paths and commondir) and add the
+		// real .git directory to the scope so config/HEAD reads are not rejected.
+		var gitFilePath = plain.Path.Join(root, ".git");
+		if (plain.File.Exists(gitFilePath)
+			&& Paths.TryReadGitDirPointer(plain, plain.FileInfo.New(gitFilePath), out var resolvedGitDir)
+			&& resolvedGitDir is not null)
 		{
-			var gitdir = File.ReadAllText(worktreePointer).Replace("gitdir:", "").Trim();
-			// gitdir = /main/repo/.git/worktrees/<name> — go up two levels to reach .git
-			var mainGitDir = Path.GetFullPath(Path.Join(gitdir, "..", ".."));
-			if (Directory.Exists(mainGitDir))
-				roots.Add(mainGitDir);
+			roots.Add(resolvedGitDir.FullName);
 		}
 
 		// Fast path: no worktree detected and path was null — reuse the pre-built instance
 		if (roots.Count == 2 && path is null)
 			return RealRead;
 
-		return new ScopedFileSystem(new FileSystem(), new ScopedFileSystemOptions([.. roots])
+		return new ScopedFileSystem(plain, new ScopedFileSystemOptions([.. roots])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
@@ -248,10 +258,19 @@ public static class FileSystemFactory
 		if (path is null && output is null)
 			return RealWrite;
 
-		var gitRoot = path is not null ? Paths.FindGitRoot(path) : Paths.WorkingDirectoryRoot.FullName;
+		var plain = new FileSystem();
+		string gitRoot;
+		if (path is not null)
+		{
+			var startDir = plain.DirectoryInfo.New(
+				plain.Directory.Exists(path) ? path : plain.Path.GetDirectoryName(path) ?? path);
+			gitRoot = Paths.FindGitRoot(startDir)?.FullName ?? startDir.FullName;
+		}
+		else
+			gitRoot = Paths.WorkingDirectoryRoot.FullName;
+
 		var roots = new List<string> { gitRoot, Paths.ApplicationData.FullName };
 
-		var plain = new FileSystem();
 		if (output is not null)
 		{
 			var absOutput = Path.IsPathRooted(output) ? output : Path.GetFullPath(output);

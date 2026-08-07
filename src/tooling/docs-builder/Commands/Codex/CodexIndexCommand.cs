@@ -5,13 +5,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using Actions.Core.Services;
-
 using Elastic.Codex;
 using Elastic.Codex.Indexing;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -44,12 +44,17 @@ internal sealed class CodexIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
-		var configFile = readFs.FileInfo.New(config.FullName);
+		var plain = new FileSystem();
+		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
+		var fs = new CheckoutsFileSystem(
+			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			extraRoots: [gitRoot],
+			inner: plain);
+		var configFile = fs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, FileSystemFactory.RealWrite, null, null);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, null);
 
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
@@ -61,7 +66,7 @@ internal sealed class CodexIndexCommand(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var service = new CodexIndexService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(service, (codexContext, cloneResult, readFs, es),
+		serviceInvoker.AddCommand(service, (codexContext, cloneResult, readFs: fs.Read, es),
 			static async (s, col, state, c) =>
 				await s.Index(state.codexContext, state.cloneResult, state.readFs, state.es, c)
 		);

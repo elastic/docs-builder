@@ -8,6 +8,7 @@ using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
 using static Elastic.Documentation.Exporter;
@@ -28,7 +29,7 @@ public class AssemblerIndexService(
 	public async Task<bool> Index(
 		IDiagnosticsCollector collector,
 		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
+		DocumentationWriteFileSystem writeFs,
 		ElasticsearchIndexOptions es,
 		string? environment = null,
 		Cancel ctx = default

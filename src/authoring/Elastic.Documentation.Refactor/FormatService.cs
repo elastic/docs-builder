@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Refactor.Formatters;
 using Elastic.Documentation.Services;
@@ -40,7 +41,10 @@ public class FormatService(
 	)
 	{
 		// Create BuildContext to load the documentation set
-		var context = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
+		var plain = new FileSystem();
+		var invocation = path is not null ? plain.DirectoryInfo.New(path) : null;
+		var docFs = DocumentationFileSystem.Resolve(invocation);
+		var context = new BuildContext(collector, docFs, configurationContext) { AvailableExporters = ExportOptions.MetadataOnly };
 		var set = new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance);
 
 		var mode = checkOnly ? "Checking" : "Formatting";

@@ -18,7 +18,7 @@ public class BrandingCopyTests(ITestOutputHelper output)
 	{
 		var logger = new TestLoggerFactory(output);
 
-		var readFs = new MockFileSystem(new Dictionary<string, MockFileData>
+		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ "docs/docset.yml",
 				//language=yaml
@@ -36,16 +36,9 @@ branding:
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
 
-		var writeFs = new MockFileSystem(new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
-
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
-		var configurationContext = TestHelpers.CreateConfigurationContext(readFs);
-		var readScoped = FileSystemFactory.ScopeCurrentWorkingDirectory(readFs);
-		var writeScoped = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(writeFs);
-		var context = new BuildContext(collector, readScoped, writeScoped, configurationContext, ExportOptions.Default);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
+		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fs), configurationContext);
 
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);
@@ -55,6 +48,6 @@ branding:
 		await collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var outputStaticDir = Path.Join(set.OutputDirectory.FullName, "_static");
-		writeFs.File.Exists(Path.Join(outputStaticDir, "logo.svg")).Should().BeTrue();
+		fs.File.Exists(Path.Join(outputStaticDir, "logo.svg")).Should().BeTrue();
 	}
 }

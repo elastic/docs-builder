@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
@@ -24,7 +25,10 @@ public class LocalChangeTrackingService(
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 
-		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
+		var plain = new FileSystem();
+		var invocation = path is not null ? plain.DirectoryInfo.New(path) : null;
+		var docFs = DocumentationFileSystem.Resolve(invocation);
+		var buildContext = new BuildContext(collector, docFs, configurationContext) { AvailableExporters = ExportOptions.MetadataOnly };
 		var redirectFile = new RedirectFile(buildContext);
 		if (!redirectFile.Source.Exists)
 		{

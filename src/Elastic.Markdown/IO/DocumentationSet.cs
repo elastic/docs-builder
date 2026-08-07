@@ -91,7 +91,9 @@ public class DocumentationSet : INavigationTraversable
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
-			: Context.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Context.DocumentationSourceDirectory.Name}";
+			: Context.DocumentationCheckoutDirectory?.Name
+				?? Context.DocumentationSourceDirectory.Parent?.Name
+				?? Context.DocumentationSourceDirectory.Name;
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, "links.json"));
 

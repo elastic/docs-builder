@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using FakeItEasy;
@@ -47,7 +48,7 @@ public class DocsSyncTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var scopedWriteFs = new DocumentationWriteFileSystem(fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fileSystem);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedWriteFs, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
 			.Returns(new ListObjectsV2Response
@@ -190,7 +191,7 @@ public class DocsSyncTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var scopedFs2 = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var scopedWriteFs2 = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var scopedWriteFs2 = new DocumentationWriteFileSystem(fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fileSystem);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs2, scopedWriteFs2, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 
 		var s3Objects = new List<S3Object>();
@@ -242,7 +243,7 @@ public class DocsSyncTests
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var checkoutDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var scopedFs3 = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var scopedWriteFs3 = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var scopedWriteFs3 = new DocumentationWriteFileSystem(fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fileSystem);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs3, scopedWriteFs3, null, checkoutDirectory);
 		var plan = new SyncPlan
 		{

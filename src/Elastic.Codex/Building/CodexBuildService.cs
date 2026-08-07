@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
@@ -187,16 +188,13 @@ public class CodexBuildService(
 			// The docset file itself is passed explicitly so build reuses the docset clone discovery already
 			// selected (which may prefer a non-default path such as `docs-dev/`), rather than rediscovering
 			// one from the repository root and always landing on `docs/`.
-			var buildContext = new BuildContext(
-				context.Collector,
-				fileSystem,
-				fileSystem,
-				configurationContext,
-				ExportOptions.Default,
-				checkout.RepositoryDirectory.FullName,
-				outputPath,
-				git,
-				configurationFile: checkout.DocsetFile)
+			var docFs = DocumentationFileSystem.Resolve(checkout.RepositoryDirectory, new DocumentationScopeOptions
+			{
+				Output = fileSystem.DirectoryInfo.New(outputPath),
+				Git = git,
+				ConfigurationFile = checkout.DocsetFile,
+			});
+			var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
 			{
 				UrlPathPrefix = pathPrefix,
 				SiteRootPath = siteRootPath,
@@ -417,7 +415,7 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public ScopedFileSystem ReadFileSystem => codexContext.ReadFileSystem;
 
 	/// <inheritdoc />
-	public ScopedFileSystem WriteFileSystem => codexContext.WriteFileSystem;
+	public DocumentationWriteFileSystem WriteFileSystem => codexContext.WriteFileSystem;
 
 	/// <inheritdoc />
 	public IDirectoryInfo OutputDirectory => codexContext.OutputDirectory;

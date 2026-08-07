@@ -8,6 +8,7 @@ using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
 
@@ -30,7 +31,8 @@ public class PublicOnlyAssemblerConfigurationTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
+		var writeFs = new DocumentationWriteFileSystem(FileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, writeFs, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]
@@ -67,7 +69,8 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
+		var writeFs = new DocumentationWriteFileSystem(FileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, writeFs, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]

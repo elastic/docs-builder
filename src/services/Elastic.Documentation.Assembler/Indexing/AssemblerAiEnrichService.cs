@@ -6,6 +6,7 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Services;
 using Elastic.Ingest.Elasticsearch.Enrichment;
@@ -35,7 +36,7 @@ public class AssemblerAiEnrichService(
 	public async Task<bool> AiEnrich(
 		IDiagnosticsCollector collector,
 		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
+		DocumentationWriteFileSystem writeFs,
 		ElasticsearchIndexOptions es,
 		string? environment,
 		bool bootstrapOnly,

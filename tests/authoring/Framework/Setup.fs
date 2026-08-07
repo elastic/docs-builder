@@ -9,10 +9,12 @@ open System
 open System.Collections.Frozen
 open System.Collections.Generic
 open System.IO
+open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open YamlDotNet.RepresentationModel
 open Elastic.Documentation
+open Elastic.Documentation.FileSystems
 open Elastic.Documentation.Versions
 open Elastic.Documentation.Configuration
 open Elastic.Documentation.Configuration.LegacyUrlMappings
@@ -479,9 +481,18 @@ type Setup =
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
             SearchConfiguration = SearchConfiguration(Synonyms = Array.empty<string[]>, Rules = [], DiminishTerms = [])
         )
+        // A bare .git directory (no config) anchors FindGitRoot so checkout = WorkingDirectoryRoot,
+        // which makes OutputDirectory = WorkingDirectoryRoot/.artifacts/docs/html (not docs/.artifacts).
+        // The missing config triggers IsLegacyTestWithoutGitLayout → canned data, but we override that
+        // with Git = Unavailable because authoring tests exercise rendering, not real git metadata.
+        let gitPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".git")
+        if not (fileSystem.Directory.Exists gitPath) then
+            fileSystem.Directory.CreateDirectory gitPath |> ignore
+        let invocation = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"))
+        let docFs = DocumentationFileSystem.Resolve(invocation, DocumentationScopeOptions(Inner = (fileSystem :> IFileSystem), Git = GitCheckoutInformation.Unavailable))
         let context = BuildContext(
             collector,
-            FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem),
+            docFs,
             configurationContext,
             UrlPathPrefix = (options.UrlPathPrefix |> Option.defaultValue ""),
             CanonicalBaseUrl = Uri("https://www.elastic.co/")

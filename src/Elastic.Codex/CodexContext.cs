@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex;
@@ -17,7 +18,7 @@ namespace Elastic.Codex;
 public class CodexContext : IDocsSyncContext
 {
 	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
+	public DocumentationWriteFileSystem WriteFileSystem { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public CodexConfiguration Configuration { get; }
 	public IFileInfo ConfigurationPath { get; }
@@ -38,7 +39,7 @@ public class CodexContext : IDocsSyncContext
 		IFileInfo configurationPath,
 		IDiagnosticsCollector collector,
 		ScopedFileSystem readFileSystem,
-		ScopedFileSystem writeFileSystem,
+		DocumentationWriteFileSystem writeFileSystem,
 		string? checkoutDirectory,
 		string? outputDirectory)
 	{
@@ -52,8 +53,8 @@ public class CodexContext : IDocsSyncContext
 
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
 		CheckoutDirectory = checkoutDirectory is null
-			? FileSystemFactory.AppData.DirectoryInfo.New(defaultCheckoutDirectory)
-			: ReadFileSystem.DirectoryInfo.New(checkoutDirectory);
+			? readFileSystem.DirectoryInfo.New(defaultCheckoutDirectory)
+			: readFileSystem.DirectoryInfo.New(checkoutDirectory);
 
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
 		OutputDirectory = WriteFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);
