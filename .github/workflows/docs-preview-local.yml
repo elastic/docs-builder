@@ -94,7 +94,7 @@ jobs:
     steps:
       - name: Checkout
         if: github.event_name == 'push'
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -112,7 +112,7 @@ jobs:
       - name: Get modified file detail
         if: github.event_name == 'pull_request'
         id: check-modified-file-detail
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           IGNORE_PATTERNS: |
             .github/**
@@ -212,7 +212,7 @@ jobs:
         if: >
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -225,7 +225,7 @@ jobs:
             github.event_name == 'push'
             || github.event_name == 'pull_request'
           )
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: deployment
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -363,7 +363,7 @@ jobs:
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         if: >
           env.MATCH == 'true'
           && always()
