@@ -25,9 +25,12 @@ public class ReaderTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
 		var context = new BuildContext(collector, FileSystemFactory.RealGitRootForPath(null), configurationContext);
 
-		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
+		context.Configuration.ApiConfigurations.Should().NotBeNull().And.NotBeEmpty();
 
-		var x = await OpenApiReader.Create(context.Configuration.OpenApiSpecifications.First().Value);
+		var firstApiConfig = context.Configuration.ApiConfigurations.First().Value;
+		firstApiConfig.LocalSpecFile.Should().NotBeNull();
+
+		var x = await OpenApiReader.Create(firstApiConfig.LocalSpecFile);
 
 		x.Should().NotBeNull();
 		x.BaseUri.Should().NotBeNull();
@@ -40,12 +43,13 @@ public class ReaderTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
 		var context = new BuildContext(collector, FileSystemFactory.RealGitRootForPath(null), configurationContext);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
-		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
+		context.Configuration.ApiConfigurations.Should().NotBeNull().And.NotBeEmpty();
 
-		var (urlPathPrefix, fi) = context.Configuration.OpenApiSpecifications.First();
-		var openApiDocument = await OpenApiReader.Create(fi);
+		var (urlPathPrefix, apiConfig) = context.Configuration.ApiConfigurations.First();
+		apiConfig.LocalSpecFile.Should().NotBeNull();
+		var openApiDocument = await OpenApiReader.Create(apiConfig.LocalSpecFile);
 		openApiDocument.Should().NotBeNull();
-		var navigation = generator.CreateNavigation(urlPathPrefix, openApiDocument);
+		var navigation = generator.CreateNavigation(urlPathPrefix, openApiDocument, apiConfig);
 
 		navigation.Should().NotBeNull();
 	}

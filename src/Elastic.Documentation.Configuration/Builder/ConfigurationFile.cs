@@ -65,8 +65,6 @@ public record ConfigurationFile
 
 	public IDirectoryInfo ScopeDirectory { get; }
 
-	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
-
 	public string? StorybookRegistry { get; }
 
 	/// <summary>
@@ -176,100 +174,14 @@ public record ConfigurationFile
 			// Process API configurations
 			if (docSetFile.Api.Count > 0)
 			{
-				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
 				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
 
 				foreach (var (productKey, apiSequence) in docSetFile.Api)
 				{
-					if (!apiSequence.IsValid)
-					{
-						context.EmitError(
-							context.ConfigurationPath,
-							$"API configuration for '{productKey}' is invalid. Must have at least one spec and all entries must be valid."
-						);
-						continue;
-					}
-
-					// Resolve intro markdown files
-					var introMarkdownFiles = new List<IFileInfo>();
-					foreach (var introPath in apiSequence.GetIntroMarkdownFiles())
-					{
-						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, introPath);
-						var introFile = context.ReadFileSystem.FileInfo.New(fullPath);
-						if (!introFile.Exists)
-						{
-							context.EmitWarning(
-								context.ConfigurationPath,
-								$"Intro markdown file '{introPath}' for API '{productKey}' does not exist."
-							);
-						}
-						else
-						{
-							introMarkdownFiles.Add(introFile);
-						}
-					}
-
-					// Resolve outro markdown files
-					var outroMarkdownFiles = new List<IFileInfo>();
-					foreach (var outroPath in apiSequence.GetOutroMarkdownFiles())
-					{
-						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, outroPath);
-						var outroFile = context.ReadFileSystem.FileInfo.New(fullPath);
-						if (!outroFile.Exists)
-						{
-							context.EmitWarning(
-								context.ConfigurationPath,
-								$"Outro markdown file '{outroPath}' for API '{productKey}' does not exist."
-							);
-						}
-						else
-						{
-							outroMarkdownFiles.Add(outroFile);
-						}
-					}
-
-					// Resolve specification files
-					var specFiles = new List<IFileInfo>();
-					foreach (var specPath in apiSequence.GetSpecPaths())
-					{
-						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, specPath);
-						var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
-						if (!specFile.Exists)
-						{
-							context.EmitError(
-								context.ConfigurationPath,
-								$"API specification file '{specPath}' for product '{productKey}' does not exist."
-							);
-							continue;
-						}
-						specFiles.Add(specFile);
-					}
-
-					if (specFiles.Count == 0)
-					{
-						context.EmitError(
-							context.ConfigurationPath,
-							$"No valid specification files found for API product '{productKey}'."
-						);
-						continue;
-					}
-
-					// Create resolved configuration
-					var resolvedConfig = new ResolvedApiConfiguration
-					{
-						ProductKey = productKey,
-						IntroMarkdownFiles = introMarkdownFiles,
-						SpecFiles = specFiles,
-						OutroMarkdownFiles = outroMarkdownFiles
-					};
-
-					apiConfigs[productKey] = resolvedConfig;
-
-					// For backward compatibility, populate OpenApiSpecifications with primary spec
-					specs[productKey] = resolvedConfig.PrimarySpecFile;
+					if (ResolveApiEntry(productKey, apiSequence, productsConfig, context) is { } resolvedConfig)
+						apiConfigs[productKey] = resolvedConfig;
 				}
 
-				OpenApiSpecifications = specs.Count > 0 ? specs : null;
 				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
 			}
 
@@ -522,6 +434,195 @@ public record ConfigurationFile
 
 	private static bool IsValidProductId(string product) =>
 		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+
+	private static ResolvedApiConfiguration? ResolveApiEntry(
+		string productKey,
+		ApiProductSequence apiSequence,
+		ProductsConfiguration productsConfig,
+		IDocumentationSetContext context)
+	{
+		if (apiSequence.SingleEntry is not { } entry)
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"API configuration for '{productKey}' must have exactly one entry, found {apiSequence.Entries.Count}.");
+			return null;
+		}
+
+		if (!entry.HasProduct)
+		{
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.Line,
+				Column = entry.Column,
+				Message = $"API '{productKey}' is missing required 'product:'. It must match a product id defined in products.yml."
+			});
+			return null;
+		}
+
+		var normalizedProduct = entry.Product!.Trim().Replace('_', '-');
+		if (!productsConfig.Products.TryGetValue(normalizedProduct, out var product))
+		{
+			var hint = new Suggestion(productsConfig.Products.Keys.ToHashSet(), normalizedProduct).GetSuggestionQuestion();
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.ProductLine,
+				Column = entry.ProductColumn,
+				Message = $"Unknown 'product: {entry.Product}' for API '{productKey}'. It must be a product id defined in products.yml.{(string.IsNullOrEmpty(hint) ? "" : $" {hint}")}"
+			});
+			return null;
+		}
+
+		if (!entry.HasSpec)
+		{
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.Line,
+				Column = entry.Column,
+				Message = $"API '{productKey}' is missing required 'spec:'. Its basename is required to resolve " +
+					"the remote version index, even when the file is not present locally."
+			});
+			return null;
+		}
+
+		var specFileName = Path.GetFileName(entry.Spec!.Trim());
+		if (string.IsNullOrEmpty(specFileName))
+		{
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.SpecLine ?? entry.Line,
+				Column = entry.SpecColumn ?? entry.Column,
+				Message = $"'spec: {entry.Spec}' for API '{productKey}' does not resolve to a file name."
+			});
+			return null;
+		}
+
+		var fullSpecPath = Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, entry.Spec));
+		var specFile = context.ReadFileSystem.FileInfo.New(fullSpecPath);
+		if (!specFile.IsSubPathOf(context.DocumentationSourceDirectory))
+		{
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.SpecLine ?? entry.Line,
+				Column = entry.SpecColumn ?? entry.Column,
+				Message = $"'spec: {entry.Spec}' for API '{productKey}' escapes the documentation source directory."
+			});
+			return null;
+		}
+
+		// A missing local file is expected, not an error: docsets that don't carry the spec
+		// locally resolve the current version from S3 via the version index instead.
+		IFileInfo? localSpecFile = null;
+		if (specFile.Exists)
+		{
+			var symlinkError = ValidateFileAccess(specFile, context.DocumentationSourceDirectory);
+			if (symlinkError is not null)
+			{
+				context.Collector.Write(new Diagnostic
+				{
+					Severity = Severity.Error,
+					File = context.ConfigurationPath.FullName,
+					Line = entry.SpecLine ?? entry.Line,
+					Column = entry.SpecColumn ?? entry.Column,
+					Message = $"'spec: {entry.Spec}' for API '{productKey}' is unsafe: {symlinkError}"
+				});
+				return null;
+			}
+			localSpecFile = specFile;
+		}
+
+		string? repository = null;
+		if (!string.IsNullOrWhiteSpace(entry.Repository))
+		{
+			var candidate = entry.Repository.Trim();
+			var separator = candidate.IndexOf('/');
+			var isWellFormed = separator > 0 && separator < candidate.Length - 1;
+			if (!isWellFormed)
+			{
+				context.Collector.Write(new Diagnostic
+				{
+					Severity = Severity.Error,
+					File = context.ConfigurationPath.FullName,
+					Line = entry.RepositoryLine ?? entry.Line,
+					Column = entry.RepositoryColumn ?? entry.Column,
+					Message = $"'repository: {entry.Repository}' for API '{productKey}' must be in 'org/repo' form, e.g. 'elastic/elasticsearch-specification'."
+				});
+				return null;
+			}
+			repository = candidate;
+		}
+
+		var children = ResolveApiChildren(productKey, entry.Children, context);
+
+		return new ResolvedApiConfiguration
+		{
+			ProductKey = productKey,
+			Product = product,
+			SpecFileName = specFileName,
+			LocalSpecFile = localSpecFile,
+			Repository = repository,
+			Children = children
+		};
+	}
+
+	/// Children resolve only under 'api/&lt;key&gt;/'; escaping paths and symlinks are rejected the
+	/// same way branding image paths are (see <see cref="ValidateBrandingImage"/>).
+	private static List<IFileInfo> ResolveApiChildren(string productKey, List<ApiEntryChild> children, IDocumentationSetContext context)
+	{
+		if (children.Count == 0)
+			return [];
+
+		var childrenDirectory = context.ReadFileSystem.DirectoryInfo.New(
+			Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
+
+		var resolved = new List<IFileInfo>();
+		foreach (var child in children)
+		{
+			if (string.IsNullOrWhiteSpace(child.File))
+			{
+				context.EmitError(context.ConfigurationPath, $"A 'children' entry for API '{productKey}' is missing a 'file' value.");
+				continue;
+			}
+
+			var fullPath = Path.GetFullPath(Path.Join(childrenDirectory.FullName, child.File));
+			var childFile = context.ReadFileSystem.FileInfo.New(fullPath);
+
+			if (!childFile.IsSubPathOf(childrenDirectory))
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"Child page '{child.File}' for API '{productKey}' escapes 'api/{productKey}/'.");
+				continue;
+			}
+
+			var symlinkError = ValidateFileAccess(childFile, childrenDirectory);
+			if (symlinkError is not null)
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"Child page '{child.File}' for API '{productKey}' is unsafe: {symlinkError}");
+				continue;
+			}
+
+			if (!childFile.Exists)
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"Child page '{child.File}' for API '{productKey}' does not exist under 'api/{productKey}/'.");
+				continue;
+			}
+
+			resolved.Add(childFile);
+		}
+
+		return resolved;
+	}
 
 	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
 	{
