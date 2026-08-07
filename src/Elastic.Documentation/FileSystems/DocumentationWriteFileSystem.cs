@@ -58,7 +58,14 @@ public class DocumentationWriteFileSystem(
 		string? outputPath,
 		IFileSystem? inner)
 	{
-		var roots = new List<string> { checkoutPath, ApplicationDataPath };
+		var roots = new List<string> { checkoutPath };
+
+		// AppData is disjointness-filtered: on CI each docset checkout lives inside AppData
+		// (/home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>), so AppData would
+		// subsume checkoutPath and trigger ValidateRootsAreDisjoint.
+		var appData = ApplicationDataPath;
+		if (!IsSubPath(appData, checkoutPath) && !IsSubPath(checkoutPath, appData))
+			roots.Add(appData);
 
 		if (outputPath is not null)
 		{
@@ -92,5 +99,11 @@ public class DocumentationWriteFileSystem(
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state", ".pagefind-net-frontend-version" },
 			AllowedSpecialFolders = AllowedSpecialFolder.Temp
 		};
+	}
+
+	private static bool IsSubPath(string path, string parent)
+	{
+		var sep = System.IO.Path.DirectorySeparatorChar;
+		return (path.TrimEnd(sep) + sep).StartsWith(parent.TrimEnd(sep) + sep, StringComparison.OrdinalIgnoreCase);
 	}
 }
