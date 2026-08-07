@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
@@ -35,7 +36,7 @@ public class AssemblerBuildService(
 		IDiagnosticsCollector collector,
 		AssemblerBuildOptions options,
 		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
+		DocumentationWriteFileSystem writeFs,
 		Cancel ctx
 	)
 	{

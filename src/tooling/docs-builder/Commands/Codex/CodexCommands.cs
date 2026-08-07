@@ -12,6 +12,7 @@ using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
@@ -61,7 +62,10 @@ internal sealed class CodexCommands(
 		var plain = new FileSystem();
 		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
 			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
-		var writeFs = FileSystemFactory.RealGitRootForPathWrite(null, output?.FullName);
+		var writeFs = new DocumentationWriteFileSystem(
+			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			output is null ? null : plain.DirectoryInfo.New(output.FullName),
+			plain);
 
 		var configFile = readFs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
@@ -126,7 +130,9 @@ internal sealed class CodexCommands(
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, FileSystemFactory.RealWrite, null, null);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs,
+			new DocumentationWriteFileSystem(plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, plain),
+			null, null);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -157,7 +163,10 @@ internal sealed class CodexCommands(
 		var plain = new FileSystem();
 		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
 			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
-		var writeFs = FileSystemFactory.RealGitRootForPathWrite(null, output?.FullName);
+		var writeFs = new DocumentationWriteFileSystem(
+			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			output is null ? null : plain.DirectoryInfo.New(output.FullName),
+			plain);
 
 		var configFile = readFs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out _))

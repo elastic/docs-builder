@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
@@ -139,7 +140,7 @@ public class GroupNavigationTests
 		public System.IO.Abstractions.IFileInfo ConfigurationPath => _fs.FileInfo.New("/codex.yml");
 		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector => new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
 		public ScopedFileSystem ReadFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectory(_fs);
-		public ScopedFileSystem WriteFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(_fs);
+		public DocumentationWriteFileSystem WriteFileSystem => new(_fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, _fs);
 		public System.IO.Abstractions.IDirectoryInfo OutputDirectory => _fs.DirectoryInfo.New("/output");
 		public BuildType BuildType => BuildType.Codex;
 		public void EmitError(string message) { }

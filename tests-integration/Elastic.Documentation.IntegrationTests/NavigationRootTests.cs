@@ -13,6 +13,7 @@ using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
@@ -46,7 +47,10 @@ public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper
 		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fs), FileSystemFactory.ScopeCurrentWorkingDirectory(new MockFileSystem()), null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector,
+			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
+			new DocumentationWriteFileSystem(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fs),
+			null, null);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();

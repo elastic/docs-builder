@@ -16,6 +16,7 @@ using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
@@ -48,7 +49,7 @@ public class IncrementalDeployRoundTripTests
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new DiagnosticsCollector([]);
 		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
+		var scopedWriteFs = new DocumentationWriteFileSystem(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fs);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedWriteFs, null, outputDir);
 
 		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
@@ -61,7 +62,7 @@ public class IncrementalDeployRoundTripTests
 		var (fs, s3, xfer, gh, svc) = Arrange(outputDir);
 		var collector = new DiagnosticsCollector([]);
 		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
+		var scopedWriteFs = new DocumentationWriteFileSystem(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fs);
 		// CodexContext only stores configurationPath — it never reads from it —
 		// so we can point to any path without adding it to the mock FS.
 		var codexConfig = new CodexConfiguration { Environment = "dev" };
@@ -228,7 +229,7 @@ public class IncrementalDeployExcludeTests
 		var svc = new IncrementalDeployService(new LoggerFactory(), gh, s3, xfer, etagCalculator);
 		var collector = new DiagnosticsCollector([]);
 		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
+		var scopedWriteFs = new DocumentationWriteFileSystem(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fs);
 		var codexConfig = new CodexConfiguration { Environment = "dev" };
 		var configFile = fs.FileInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
 		var context = new CodexContext(codexConfig, configFile, collector, scopedFs, scopedWriteFs, null, outputDir);

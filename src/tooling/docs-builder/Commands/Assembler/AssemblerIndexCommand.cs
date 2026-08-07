@@ -9,6 +9,7 @@ using Elastic.Documentation.Assembler.Indexing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -42,8 +43,9 @@ internal sealed class AssemblerIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.RealRead;
-		var writeFs = FileSystemFactory.RealWrite;
+		var ifs = CheckoutsFileSystem.FromWorkingDirectory();
+		var readFs = ifs.Read;
+		var writeFs = ifs.Write;
 		var service = new AssemblerIndexService(logFactory, configuration, configurationContext, githubActionsService, environmentVariables);
 		serviceInvoker.AddCommand(service,
 			async (s, col, ctx) => await s.Index(col, readFs, writeFs, es, environment, ctx)

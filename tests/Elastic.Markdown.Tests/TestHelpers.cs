@@ -4,18 +4,39 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Tests;
 
 public static class TestHelpers
 {
+	/// <summary>
+	/// Resolves a <see cref="DocumentationFileSystem"/> over <paramref name="fileSystem"/> for tests
+	/// that only need a scoped FS without real git data. Ensures a stub <c>.git</c> directory exists
+	/// at the working-directory root (no <c>config</c> file) so
+	/// <c>GitCheckoutInformationFactory.IsLegacyTestWithoutGitLayout</c> returns the well-known
+	/// canned test instance instead of failing.
+	/// </summary>
+	public static DocumentationFileSystem CreateDocumentationFileSystem(
+		MockFileSystem fileSystem,
+		IDirectoryInfo? invocation = null,
+		GitCheckoutInformation? git = null)
+	{
+		var gitPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".git");
+		if (!fileSystem.Directory.Exists(gitPath))
+			fileSystem.Directory.CreateDirectory(gitPath);
+		invocation ??= fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs"));
+		return DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { Inner = fileSystem, Git = git });
+	}
+
 	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null)
 	{
 		versionsConfiguration ??= new VersionsConfiguration

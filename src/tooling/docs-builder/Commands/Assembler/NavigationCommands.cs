@@ -9,6 +9,7 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -28,7 +29,7 @@ internal sealed class NavigationCommands(
 	public async Task<int> Validate(CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, FileSystemFactory.RealRead);
+		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, CheckoutsFileSystem.FromWorkingDirectory());
 		serviceInvoker.AddCommand(service, static async (s, collector, ctx) => await s.Validate(collector, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -39,7 +40,7 @@ internal sealed class NavigationCommands(
 	public async Task<int> ValidateLinkReference([Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? file = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, FileSystemFactory.RealRead);
+		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, CheckoutsFileSystem.FromWorkingDirectory());
 		serviceInvoker.AddCommand(service, file, static async (s, collector, file, ctx) => await s.ValidateLocalLinkReference(collector, file?.FullName, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}

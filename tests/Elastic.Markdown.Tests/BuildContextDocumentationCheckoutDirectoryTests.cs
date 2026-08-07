@@ -7,7 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 using Xunit;
 
 namespace Elastic.Markdown.Tests;
@@ -36,19 +36,17 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(Path.Combine(repoPath, "docs", "docset.yml"), new MockFileData("toc: []\n"));
 
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var context = new BuildContext(
-			collector,
-			readFs,
-			writeFs,
-			configurationContext,
-			ExportOptions.Default,
-			source: repoPath,
-			output: Path.Combine(root, "codex-checkout-dir-test-out"));
+		var docFs = DocumentationFileSystem.Resolve(
+			fs.DirectoryInfo.New(repoPath),
+			new DocumentationScopeOptions
+			{
+				Inner = fs,
+				Output = fs.DirectoryInfo.New(Path.Combine(root, "codex-checkout-dir-test-out"))
+			});
+		var context = new BuildContext(collector, docFs, configurationContext);
 
 		Assert.NotNull(context.DocumentationCheckoutDirectory);
 		context.DocumentationCheckoutDirectory.FullName.Should().Be(repoPath);
@@ -64,19 +62,17 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(Path.Combine(docsPath, "docset.yml"), new MockFileData("toc: []\n"));
 
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var context = new BuildContext(
-			collector,
-			readFs,
-			writeFs,
-			configurationContext,
-			ExportOptions.Default,
-			source: docsPath,
-			output: Path.Combine(root, "codex-docs-only-test-out"));
+		var docFs = DocumentationFileSystem.Resolve(
+			fs.DirectoryInfo.New(docsPath),
+			new DocumentationScopeOptions
+			{
+				Inner = fs,
+				Output = fs.DirectoryInfo.New(Path.Combine(root, "codex-docs-only-test-out"))
+			});
+		var context = new BuildContext(collector, docFs, configurationContext);
 
 		// --path repo/docs/ now resolves the same checkout as --path repo/:
 		// the docset scan anchors at repo/docs/, FindGitRoot walks one parent to repo/.git
@@ -97,24 +93,16 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
+		var opts = new DocumentationScopeOptions
+		{
+			Inner = fs,
+			Output = fs.DirectoryInfo.New(Path.Combine(root, "codex-equiv-test-out"))
+		};
 
-		var contextFromRepoRoot = new BuildContext(
-			collector,
-			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
-			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
-			configurationContext,
-			ExportOptions.Default,
-			source: repoPath,
-			output: Path.Combine(root, "codex-equiv-test-out"));
-
-		var contextFromDocsFolder = new BuildContext(
-			collector,
-			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
-			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
-			configurationContext,
-			ExportOptions.Default,
-			source: docsPath,
-			output: Path.Combine(root, "codex-equiv-test-out"));
+		var fsFromRepoRoot = DocumentationFileSystem.Resolve(fs.DirectoryInfo.New(repoPath), opts);
+		var fsFromDocsFolder = DocumentationFileSystem.Resolve(fs.DirectoryInfo.New(docsPath), opts);
+		var contextFromRepoRoot = new BuildContext(collector, fsFromRepoRoot, configurationContext);
+		var contextFromDocsFolder = new BuildContext(collector, fsFromDocsFolder, configurationContext);
 
 		contextFromRepoRoot.DocumentationCheckoutDirectory.Should().NotBeNull();
 		contextFromDocsFolder.DocumentationCheckoutDirectory.Should().NotBeNull();

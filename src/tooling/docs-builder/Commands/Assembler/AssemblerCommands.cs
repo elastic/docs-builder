@@ -11,6 +11,7 @@ using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -62,8 +63,9 @@ internal sealed class AssembleOneShotCommand(
 			static async (s, col, opts, ctx) => await s.CloneAll(col, opts, ctx)
 		);
 
-		var readFs = FileSystemFactory.RealRead;
-		var writeFs = FileSystemFactory.RealWrite;
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
+		var readFs = fs.Read;
+		var writeFs = fs.Write;
 		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
 		serviceInvoker.AddCommand(buildService, (buildOptions, readFs, writeFs), buildOptions.Strict ?? false,
 			static async (s, col, state, ctx) => await s.BuildAll(col, state.buildOptions, state.readFs, state.writeFs, ctx)
@@ -146,8 +148,9 @@ internal sealed class AssemblerCommands(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.RealRead;
-		var writeFs = FileSystemFactory.RealWrite;
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
+		var readFs = fs.Read;
+		var writeFs = fs.Write;
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
 		serviceInvoker.AddCommand(service, (options, readFs, writeFs), options.Strict ?? false,
 			static async (s, col, state, ctx) => await s.BuildAll(col, state.options, state.readFs, state.writeFs, ctx)

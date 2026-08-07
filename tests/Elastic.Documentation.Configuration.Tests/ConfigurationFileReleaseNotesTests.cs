@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -157,7 +158,8 @@ public class ConfigurationFileReleaseNotesTests
 	{
 		public IDiagnosticsCollector Collector => collector;
 		public ScopedFileSystem ReadFileSystem => WriteFileSystem;
-		public ScopedFileSystem WriteFileSystem { get; } = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		public DocumentationWriteFileSystem WriteFileSystem { get; } = new DocumentationWriteFileSystem(
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: fileSystem);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

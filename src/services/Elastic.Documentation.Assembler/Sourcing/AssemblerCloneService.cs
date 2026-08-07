@@ -7,6 +7,7 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -25,8 +26,8 @@ public class AssemblerCloneService(
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		var environment = options.Environment ?? (!string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev");
 
-		var fs = FileSystemFactory.RealRead;
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
+		var cfs = CheckoutsFileSystem.FromWorkingDirectory();
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, cfs.Read, cfs.Write, null, null);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
 		_ = await cloner.CloneAll(options.FetchLatest ?? false, options.AssumeCloned ?? false, ctx);

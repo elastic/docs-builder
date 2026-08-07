@@ -8,6 +8,7 @@ using Elastic.Documentation.Assembler.Indexing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -43,8 +44,9 @@ internal sealed class AssemblerAiEnrichCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.RealRead;
-		var writeFs = FileSystemFactory.RealWrite;
+		var aifs = CheckoutsFileSystem.FromWorkingDirectory();
+		var readFs = aifs.Read;
+		var writeFs = aifs.Write;
 		var service = new AssemblerAiEnrichService(logFactory, configuration, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service,
 			async (s, col, ctx) => await s.AiEnrich(col, readFs, writeFs, es, environment, bootstrapOnly, ctx)

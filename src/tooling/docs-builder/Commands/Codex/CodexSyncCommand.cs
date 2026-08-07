@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -88,7 +89,9 @@ internal sealed class CodexSyncCommand(
 		var fs = FileSystemFactory.RealRead;
 		var configFile = fs.FileInfo.New(config.FullName);
 		var codexConfig = CodexConfiguration.Load(configFile);
-		return (new CodexContext(codexConfig, configFile, collector, fs, FileSystemFactory.RealWrite, null, null),
+		var writeFs = new DocumentationWriteFileSystem(
+			fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, null);
+		return (new CodexContext(codexConfig, configFile, collector, fs, writeFs, null, null),
 			new IncrementalDeployService(logFactory, githubActionsService));
 	}
 }
