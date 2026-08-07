@@ -352,6 +352,18 @@ jobs:
             --distribution-id EKT7LT5PM8RKS \
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
+      - name: Deploy redirects to CloudFront KVS
+        if: >
+          env.MATCH == 'true'
+          && !cancelled()
+          && needs.check.outputs.any_modified != 'false'
+          && github.event_name == 'push'
+          && steps.s3-upload.outcome == 'success'
+        run: |
+          if [ -f .artifacts/docs/html/redirects.json ]; then
+            dotnet run --project src/tooling/docs-builder -- assembler deploy update-redirects --no-delete preview --redirectsFile .artifacts/docs/html/redirects.json
+          fi
+
       - name: Update Link Index
         if: >
           env.MATCH == 'true'
