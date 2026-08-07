@@ -29,7 +29,7 @@ public record SchemaPageModel
 		var openApiSchema = schema.Schema;
 		var options = new PropertyDisplayOptions
 		{
-			RenderMarkdown = markdown => ApiMarkdown.Render(context.MarkdownRenderer, markdown),
+			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
 			ShowDeprecated = false,
 			ShowVersionInfo = false,

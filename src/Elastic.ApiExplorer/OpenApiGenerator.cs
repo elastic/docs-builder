@@ -24,11 +24,21 @@ namespace Elastic.ApiExplorer;
 /// Renders API explorer pages for every configured OpenAPI specification: builds the navigation
 /// tree via <see cref="ApiNavigationBuilder"/> and writes each page to the output directory.
 /// </summary>
-public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, IMarkdownStringRenderer markdownStringRenderer)
+/// <remarks>
+/// Only renders the current tree for each API: a local override file when the docset carries one,
+/// otherwise the <c>main</c> moniker resolved remotely through <see cref="VersionIndexClient"/>. There
+/// is no version-prefixed output or switcher yet — see issue #721 for multi-version generation.
+/// </remarks>
+public class OpenApiGenerator(
+	ILoggerFactory logFactory,
+	BuildContext context,
+	IMarkdownStringRenderer markdownStringRenderer,
+	VersionIndexClient? versionIndexClient = null)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
+	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 
 	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null) =>
 		new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig);
@@ -38,22 +48,87 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		if (context.Configuration.ApiConfigurations is null)
 			return;
 
+		var catalogEntries = new List<ApiCatalogEntry>();
+
 		foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 		{
-			if (apiConfig.LocalSpecFile is not { } localSpecFile)
+			try
+			{
+				var openApiDocument = await ResolveCurrentDocument(prefix, apiConfig, ctx).ConfigureAwait(false);
+				if (openApiDocument is null)
+					continue;
+
+				await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
+
+				var title = openApiDocument.Info?.Title
+					?? apiConfig.Product.DisplayName
+					?? prefix;
+				var url = $"{context.UrlPathPrefix}/api/{prefix}/";
+				catalogEntries.Add(new ApiCatalogEntry(prefix, title, url));
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				context.Collector.EmitGlobalError(
+					$"API '{prefix}' could not be generated: {ex.Message}");
+			}
+		}
+
+		if (catalogEntries.Count > 0)
+			await GenerateApiCatalog(catalogEntries, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>
+	/// Resolves the document to render for the current tree: the local override file when present,
+	/// otherwise the <c>main</c> moniker fetched remotely through the version index. Returns null when
+	/// nothing could be resolved; <see cref="VersionIndexClient"/> has already emitted the diagnostic.
+	/// </summary>
+	internal async Task<OpenApiDocument?> ResolveCurrentDocument(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
+	{
+		if (apiConfig.LocalSpecFile is { } localFile)
+			return await OpenApiReader.Create(localFile);
+
+		var versions = await _versionIndexClient.ResolveVersionsAsync(context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
+		var current = versions.FirstOrDefault(v => v.Moniker == "main");
+		if (current is null)
+		{
+			if (versions.Count > 0)
 			{
 				context.Collector.EmitGlobalWarning(
-					$"API '{prefix}' has no local spec file at the declared 'spec:' path. " +
-					"Skipping API generation until remote version-index resolution ships in #719.");
-				continue;
+					$"Version index for API '{apiKey}' has no 'main' entry; this API will not be rendered.");
 			}
-
-			var openApiDocument = await OpenApiReader.Create(localSpecFile);
-			if (openApiDocument is null)
-				continue;
-
-			await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
+			return null;
 		}
+
+		if (current.IsLocal)
+			return await OpenApiReader.Create(current.LocalFile!);
+
+		var stream = await _versionIndexClient.FetchSpecStreamAsync(apiKey, current, context.Collector, ctx).ConfigureAwait(false);
+		if (stream is null)
+			return null;
+
+		return await OpenApiReader.CreateFromStream(stream, apiConfig.SpecFileName).ConfigureAwait(false);
+	}
+
+	private static readonly OpenApiDocument CatalogDocument = new()
+	{
+		Info = new OpenApiInfo { Title = "API Explorer", Version = "1.0" }
+	};
+
+	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
+	{
+		var catalogUrl = $"{context.UrlPathPrefix}/api/";
+		var navigation = new ApiCatalogNavigationItem(catalogUrl, entries);
+		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+
+		var renderContext = new ApiRenderContext(context, CatalogDocument, _contentHashProvider)
+		{
+			NavigationHtml = string.Empty,
+			CurrentNavigation = navigation.Index,
+			MarkdownRenderer = markdownStringRenderer,
+			ApiExplorerLog = _logger
+		};
+
+		_ = await Render(navigation.Index, navigation.Index.Model, renderContext, navigationRenderer, ctx).ConfigureAwait(false);
 	}
 
 	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
@@ -71,36 +146,32 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			ApiExplorerLog = _logger
 		};
 
-		await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, navigation, ctx);
+		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx);
 	}
 
 	private async Task RenderNavigationItems(
-		string prefix,
 		ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer,
 		INavigationItem currentNavigation,
-		INavigationItem rootNavigation,
 		Cancel ctx)
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
 			if (currentNavigation is not ClassificationNavigationItem)
-				_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
+				_ = await Render(node, node.Index.Model, renderContext, navigationRenderer, ctx);
 
 			foreach (var child in node.NavigationItems)
-				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, rootNavigation, ctx);
+				await RenderNavigationItems(renderContext, navigationRenderer, child, ctx);
 		}
 		else
 		{
 			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
-				? await Render(prefix, leaf, leaf.Model, renderContext, navigationRenderer, ctx)
+				? await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx)
 				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
 		}
 	}
 
-#pragma warning disable IDE0060
-	private async Task<IFileInfo> Render<T>(string prefix, INavigationItem current, T page, ApiRenderContext renderContext,
-#pragma warning restore IDE0060
+	private async Task<IFileInfo> Render<T>(INavigationItem current, T page, ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer, Cancel ctx)
 		where T : INavigationModel, IPageRenderer<ApiRenderContext>
 	{
