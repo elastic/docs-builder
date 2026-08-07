@@ -9,6 +9,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -36,9 +37,12 @@ internal sealed class CodexUpdateRedirectsCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var plain = new FileSystem();
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
-			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
-		var configFile = readFs.FileInfo.New(config.FullName);
+		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
+		var fs = new CheckoutsFileSystem(
+			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			extraRoots: [gitRoot],
+			inner: plain);
+		var configFile = fs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig))
 			return 1;
 
@@ -47,7 +51,7 @@ internal sealed class CodexUpdateRedirectsCommand(
 			?? Environment.GetEnvironmentVariable("ENVIRONMENT")
 			?? "internal";
 
-		var service = new DeployUpdateRedirectsService(logFactory, readFs);
+		var service = new DeployUpdateRedirectsService(logFactory, fs.Read);
 		serviceInvoker.AddCommand(service, (environment: resolvedEnvironment, redirectsFile, kvsNamePrefix: "codex", defaultRedirectsFile: ".artifacts/codex/docs/redirects.json"),
 			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile?.FullName, state.kvsNamePrefix, state.defaultRedirectsFile, c)
 		);

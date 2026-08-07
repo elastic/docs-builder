@@ -60,18 +60,18 @@ internal sealed class CodexCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var plain = new FileSystem();
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
-			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
-		var writeFs = new DocumentationWriteFileSystem(
+		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
+		var fs = new CheckoutsFileSystem(
 			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
 			output is null ? null : plain.DirectoryInfo.New(output.FullName),
-			plain);
+			extraRoots: [gitRoot],
+			inner: plain);
 
-		var configFile = readFs.FileInfo.New(config.FullName);
+		var configFile = fs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, writeFs, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, output?.FullName);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -86,7 +86,7 @@ internal sealed class CodexCommands(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs), strict,
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs: fs.Read), strict,
 			async (s, col, state, c) =>
 			{
 				if (state.cloneResult == null)
@@ -123,16 +123,17 @@ internal sealed class CodexCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var plain = new FileSystem();
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
-			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
+		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
+		var fs = new CheckoutsFileSystem(
+			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			extraRoots: [gitRoot],
+			inner: plain);
 
-		var configFile = readFs.FileInfo.New(config.FullName);
+		var configFile = fs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs,
-			new DocumentationWriteFileSystem(plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, plain),
-			null, null);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, null);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -161,18 +162,18 @@ internal sealed class CodexCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var plain = new FileSystem();
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(plain,
-			[Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]);
-		var writeFs = new DocumentationWriteFileSystem(
+		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
+		var fs = new CheckoutsFileSystem(
 			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
 			output is null ? null : plain.DirectoryInfo.New(output.FullName),
-			plain);
+			extraRoots: [gitRoot],
+			inner: plain);
 
-		var configFile = readFs.FileInfo.New(config.FullName);
+		var configFile = fs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out _))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, writeFs, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, output?.FullName);
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
@@ -183,7 +184,7 @@ internal sealed class CodexCommands(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs), strict,
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs: fs.Read), strict,
 			async (s, col, state, c) =>
 			{
 				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.readFs, c);
@@ -201,8 +202,7 @@ internal sealed class CodexCommands(
 	[NoOptionsInjection]
 	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
 	{
-		var fs = FileSystemFactory.RealRead;
-		var servePath = path?.FullName ?? fs.Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
+		var servePath = path?.FullName ?? Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
 		var host = new StaticWebHost(port, servePath);
 		await host.RunAsync(ct);
