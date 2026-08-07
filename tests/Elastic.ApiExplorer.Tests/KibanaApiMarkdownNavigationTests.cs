@@ -37,7 +37,7 @@ public class KibanaApiMarkdownNavigationTests
 	private static (LandingNavigationItem navigation, SimpleMarkdownNavigationItem introNav) SetupKibanaNavigation()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
-		var introPath = Path.Combine(root, "docs", "api", "remote-kibana", "kibana-api-overview.md");
+		var introPath = Path.Combine(root, "docs", "api", "kibana", "kibana-api-overview.md");
 		var specPath = Path.Combine(root, "docs", "kibana-openapi.json");
 		var fs = new FileSystem();
 		var introFile = fs.FileInfo.New(introPath);
@@ -45,7 +45,7 @@ public class KibanaApiMarkdownNavigationTests
 
 		var apiConfig = new ResolvedApiConfiguration
 		{
-			ProductKey = "remote-kibana",
+			ProductKey = "kibana",
 			Product = new Product { Id = "kibana", DisplayName = "Kibana" },
 			SpecFileName = "kibana-openapi.json",
 			LocalSpecFile = specFile,
@@ -58,7 +58,7 @@ public class KibanaApiMarkdownNavigationTests
 		var doc = OpenApiReader.Create(specFile).GetAwaiter().GetResult();
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
-		var navigation = generator.CreateNavigation("remote-kibana", doc, apiConfig);
+		var navigation = generator.CreateNavigation("kibana", doc, apiConfig);
 		var introNav = navigation.NavigationItems.OfType<SimpleMarkdownNavigationItem>().First();
 
 		return (navigation, introNav);
@@ -89,7 +89,7 @@ public class KibanaApiMarkdownNavigationTests
 	{
 		var (_, introNav) = SetupKibanaNavigation();
 
-		introNav.Url.Should().Be("/api/remote-kibana/kibana-api-overview/");
+		introNav.Url.Should().Be("/api/kibana/kibana-api-overview/");
 	}
 
 	[Fact]

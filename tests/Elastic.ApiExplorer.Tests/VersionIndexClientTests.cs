@@ -244,7 +244,7 @@ public class VersionIndexClientTests
 
 		versions.Should().BeEmpty();
 		collector.ErrorMessages.Should().ContainSingle(m => m.Contains("could not be fetched"));
-		handler.RequestedPaths.Should().HaveCount(3, "the index fetch should exhaust the retry budget");
+		handler.RequestedPaths.Should().ContainSingle("a missing index is not a transient failure");
 	}
 
 	[Fact]
@@ -342,7 +342,7 @@ public class VersionIndexClientTests
 
 		stream.Should().BeNull();
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains('8') && m.Contains("Skipping this version"));
-		handler.RequestedPaths.Should().HaveCount(3, "the spec fetch should exhaust the retry budget");
+		handler.RequestedPaths.Should().ContainSingle("a missing spec is not a transient failure");
 	}
 
 	private static HttpResponseMessage IndexResponse(string body) =>

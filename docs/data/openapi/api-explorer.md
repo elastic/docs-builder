@@ -167,18 +167,18 @@ switcher yet.
 
 ### Smoke-test every CloudFront spec locally
 
-The docs-builder dev docset ships six `remote-*` API keys that mirror every spec currently listed
+The docs-builder dev docset ships six API keys that mirror every spec currently listed
 in the live version index. They have no local spec files, so `docs-builder serve` fetches each one
 from CloudFront:
 
 | URL path | Index entry |
 |---|---|
-| `/api/remote-elasticsearch/` | `elastic/elasticsearch-specification` → `elasticsearch.json` |
-| `/api/remote-elasticsearch-serverless/` | `elastic/elasticsearch-specification` → `elasticsearch-serverless.json` |
-| `/api/remote-kibana/` | `elastic/kibana` → `kibana.yaml` |
-| `/api/remote-kibana-serverless/` | `elastic/kibana` → `kibana-serverless.yaml` |
-| `/api/remote-cloud-connect/` | `elastic/cloud-connected-api` → `cloud-connect.yml` |
-| `/api/remote-cloud-serverless/` | `elastic/serverless-api-specification` → `elastic-cloud-serverless.yml` |
+| `/api/elasticsearch/` | `elastic/elasticsearch-specification` → `elasticsearch.json` |
+| `/api/elasticsearch-serverless/` | `elastic/elasticsearch-specification` → `elasticsearch-serverless.json` |
+| `/api/kibana/` | `elastic/kibana` → `kibana.yaml` |
+| `/api/kibana-serverless/` | `elastic/kibana` → `kibana-serverless.yaml` |
+| `/api/cloud-connect/` | `elastic/cloud-connected-api` → `cloud-connect.yml` |
+| `/api/cloud-serverless/` | `elastic/serverless-api-specification` → `elastic-cloud-serverless.yml` |
 
 Run `docs-builder serve` (without `--watch`) and open any path above.
 

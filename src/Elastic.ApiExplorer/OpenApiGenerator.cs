@@ -128,14 +128,7 @@ public class OpenApiGenerator(
 			ApiExplorerLog = _logger
 		};
 
-		var navigationRenderResult = await navigationRenderer.RenderNavigation(navigation, navigation.Index, ctx).ConfigureAwait(false);
-		renderContext = renderContext with { NavigationHtml = navigationRenderResult.Html };
-
-		var outputFile = _writeFileSystem.FileInfo.New(
-			Path.Join(context.OutputDirectory.FullName, "api", "index.html"));
-		outputFile.Directory!.Create();
-		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
-		await navigation.Index.Model.RenderAsync(stream, renderContext, ctx).ConfigureAwait(false);
+		_ = await Render(navigation.Index, navigation.Index.Model, renderContext, navigationRenderer, ctx).ConfigureAwait(false);
 	}
 
 	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
@@ -153,36 +146,32 @@ public class OpenApiGenerator(
 			ApiExplorerLog = _logger
 		};
 
-		await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, navigation, ctx);
+		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx);
 	}
 
 	private async Task RenderNavigationItems(
-		string prefix,
 		ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer,
 		INavigationItem currentNavigation,
-		INavigationItem rootNavigation,
 		Cancel ctx)
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
 			if (currentNavigation is not ClassificationNavigationItem)
-				_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
+				_ = await Render(node, node.Index.Model, renderContext, navigationRenderer, ctx);
 
 			foreach (var child in node.NavigationItems)
-				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, rootNavigation, ctx);
+				await RenderNavigationItems(renderContext, navigationRenderer, child, ctx);
 		}
 		else
 		{
 			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
-				? await Render(prefix, leaf, leaf.Model, renderContext, navigationRenderer, ctx)
+				? await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx)
 				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
 		}
 	}
 
-#pragma warning disable IDE0060
-	private async Task<IFileInfo> Render<T>(string prefix, INavigationItem current, T page, ApiRenderContext renderContext,
-#pragma warning restore IDE0060
+	private async Task<IFileInfo> Render<T>(INavigationItem current, T page, ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer, Cancel ctx)
 		where T : INavigationModel, IPageRenderer<ApiRenderContext>
 	{

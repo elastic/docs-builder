@@ -16,11 +16,6 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
-/// <summary>
-/// Covers issue #718 task 6: <see cref="OpenApiGenerator"/> renders the current tree from a local
-/// override when present, otherwise from the <c>main</c> moniker resolved through
-/// <see cref="VersionIndexClient"/>, with no version-prefixed output or switcher.
-/// </summary>
 public class OpenApiGeneratorCurrentSpecResolutionTests
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
@@ -45,10 +40,9 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var context = CreateContext(collector);
-		var apiConfigurations = context.Configuration.ApiConfigurations;
-		apiConfigurations.Should().NotBeNull().And.NotBeEmpty();
-		var localFile = apiConfigurations.First().Value.LocalSpecFile;
-		localFile.Should().NotBeNull("the sample docset ships a local spec for its first configured API");
+		var localFile = new FileSystem().FileInfo.New(
+			Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch-openapi-docs.json"));
+		localFile.Exists.Should().BeTrue();
 
 		var handler = new ThrowingHandler();
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler);
@@ -136,7 +130,6 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		}
 	}
 
-	/// <summary>Fails the test loudly if a local spec file did not short-circuit remote resolution as expected.</summary>
 	private sealed class ThrowingHandler : HttpMessageHandler
 	{
 		public int CallCount { get; private set; }

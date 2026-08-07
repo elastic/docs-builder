@@ -152,24 +152,26 @@ public sealed class VersionIndexClient : IDisposable
 
 		var uri = new Uri(_baseUri, objectKey);
 		string? lastError = null;
+		var attempts = 0;
 		for (var attempt = 1; attempt <= _maxAttempts; attempt++)
 		{
+			attempts = attempt;
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
 				return await FetchStreamAsync(uri, attempt, ctx).ConfigureAwait(false);
 			}
-			catch (Exception ex) when (ex is not OperationCanceledException)
+			catch (HttpRequestException ex)
 			{
 				lastError = ex.Message;
-				if (attempt >= _maxAttempts)
+				if (attempt >= _maxAttempts || !IsTransient(ex))
 					break;
 				await _sleep(RetryDelay(attempt), ctx).ConfigureAwait(false);
 			}
 		}
 
 		collector.EmitGlobalWarning(
-			$"Could not fetch spec '{objectKey}' for version '{version.Moniker}' of API '{apiKey}' from {uri} after {_maxAttempts} attempt(s): {lastError}. Skipping this version.");
+			$"Could not fetch spec '{objectKey}' for version '{version.Moniker}' of API '{apiKey}' from {uri} after {attempts} attempt(s): {lastError}. Skipping this version.");
 		return null;
 	}
 
@@ -217,7 +219,7 @@ public sealed class VersionIndexClient : IDisposable
 				_rootIndex = await FetchIndexAsync(ctx).ConfigureAwait(false);
 				_rootIndexFetchError = _rootIndex is null ? "the response was empty or could not be parsed" : null;
 			}
-			catch (Exception ex) when (ex is not OperationCanceledException)
+			catch (Exception ex) when (ex is HttpRequestException or JsonException or IOException)
 			{
 				_rootIndexFetchError = ex.Message;
 			}
@@ -248,10 +250,10 @@ public sealed class VersionIndexClient : IDisposable
 					VersionIndexJsonContext.Default.DictionaryStringDictionaryStringDictionaryStringVersionIndexEntry,
 					ctx).ConfigureAwait(false);
 			}
-			catch (Exception ex) when (ex is not OperationCanceledException)
+			catch (HttpRequestException ex)
 			{
 				lastError = ex;
-				if (attempt >= _maxAttempts)
+				if (attempt >= _maxAttempts || !IsTransient(ex))
 					break;
 				await _sleep(RetryDelay(attempt), ctx).ConfigureAwait(false);
 			}
@@ -262,14 +264,15 @@ public sealed class VersionIndexClient : IDisposable
 		return null;
 	}
 
-	private async Task<Stream> FetchStreamAsync(Uri uri, int attempt, Cancel ctx)
+	private Task<Stream> FetchStreamAsync(Uri uri, int attempt, Cancel ctx)
 	{
 		var requestUri = attempt > 1 ? WithCacheBuster(uri) : uri;
-		using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-		var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
-		_ = response.EnsureSuccessStatusCode();
-		return await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
+		return _httpClient.GetStreamAsync(requestUri, ctx);
 	}
+
+	private static bool IsTransient(HttpRequestException exception) =>
+		exception.StatusCode is null or HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests
+		|| (exception.StatusCode is { } statusCode && (int)statusCode >= 500);
 
 	private static TimeSpan RetryDelay(int attempt)
 	{

@@ -64,12 +64,12 @@ public static class OpenApiReader
 		var root = yaml.Documents[0].RootNode
 			?? throw new InvalidOperationException("OpenAPI spec document is empty.");
 
-		await using var jsonStream = new MemoryStream();
+		var jsonStream = new MemoryStream();
 		await using (var jsonWriter = new Utf8JsonWriter(jsonStream))
 			WriteYamlNode(jsonWriter, root);
 
 		jsonStream.Position = 0;
-		return new MemoryStream(jsonStream.ToArray());
+		return jsonStream;
 	}
 
 	private static void WriteYamlNode(Utf8JsonWriter writer, YamlNode node)
