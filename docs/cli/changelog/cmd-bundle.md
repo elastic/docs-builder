@@ -370,7 +370,7 @@ In profile mode, pass the same path list as a positional argument:
 docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelog_files.txt
 ```
 
-`--files` / path-list selection always reads the named files from disk (local entry sourcing). It does not fetch entries from the CDN. `rules.bundle` still applies after selection.
+`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN pool entries by file name and do not need to exist locally — useful for private repositories whose entries exist only in S3 and whose public copies have PR/issue references scrubbed, so PR-based filters cannot match. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
 
 ### Force local entry sourcing [changelog-bundle-force-local]
 
@@ -382,7 +382,7 @@ docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/prs.txt 
 ```
 
 `--force-local` is allowed in both option-based and profile-based commands.
-Path-list / `--files` filters already force local sourcing, so `--force-local` is optional in that case.
+Use it with path-list / `--files` filters when the listed files should be read from disk instead of matched against the CDN pool.
 
 ### Hide features [changelog-bundle-hide-features]
 

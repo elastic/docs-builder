@@ -40,7 +40,9 @@ public record BundleChangelogsArguments
 
 	/// <summary>
 	/// Explicit changelog YAML paths (or a path-list file) for the <c>--files</c> filter.
-	/// Mutually exclusive with other filter sources. Forces local entry sourcing.
+	/// Mutually exclusive with other filter sources. Follows the standard entry-sourcing gate:
+	/// when entries are sourced from the CDN the paths are matched to pool entries by file name,
+	/// otherwise they must exist on the local filesystem.
 	/// </summary>
 	public string[]? Files { get; init; }
 
@@ -231,11 +233,13 @@ public partial class ChangelogBundlingService(
 			// an org/repo/branch pool (changelog/{org}/{repo}/{branch}/...), so CDN sourcing keys off the
 			// resolvable authoring repo (bundle.repo / --repo), with org and branch defaulting when unset —
 			// not the bundle's target products. Fall back to the local folder when the user forces it
-			// (bundle.use_local_changelogs / --force-local / --files / --directory), the repo is unresolvable,
+			// (bundle.use_local_changelogs / --force-local / --directory), the repo is unresolvable,
 			// or no CDN base is configured. This stays in lockstep with PlanBundleAsync's needs_network decision.
+			// The --files / path-list filter follows the same gate: in CDN mode the requested paths are
+			// matched to pool entries by file name, so private repos whose entries exist only in S3 (with
+			// PR/issue references scrubbed from the public copies) can still bundle by explicit selection.
 			var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false)
-				|| input.ForceLocal
-				|| input.Files is { Length: > 0 };
+				|| input.ForceLocal;
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
 			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
 			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
@@ -253,14 +257,27 @@ public partial class ChangelogBundlingService(
 			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			var issuesToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			IReadOnlyList<string>? explicitFilePaths = null;
+			IReadOnlyList<string>? requestedEntryNames = null;
 
 			if (input.Files is { Length: > 0 })
 			{
 				var fileFilterLoader = new FileFilterLoader(_fileSystem);
-				var fileFilterResult = await fileFilterLoader.LoadFilesAsync(collector, input.Files, input.Directory, ctx);
-				if (!fileFilterResult.IsValid)
-					return false;
-				explicitFilePaths = fileFilterResult.FilePaths;
+				if (useCdn)
+				{
+					// CDN mode: reduce the requested paths to entry file names (the pool is flat); the
+					// entries do not need to exist locally.
+					var namesResult = await fileFilterLoader.LoadFileNamesAsync(collector, input.Files, ctx);
+					if (!namesResult.IsValid)
+						return false;
+					requestedEntryNames = namesResult.FilePaths;
+				}
+				else
+				{
+					var fileFilterResult = await fileFilterLoader.LoadFilesAsync(collector, input.Files, input.Directory, ctx);
+					if (!fileFilterResult.IsValid)
+						return false;
+					explicitFilePaths = fileFilterResult.FilePaths;
+				}
 			}
 			else if (input.Prs is { Length: > 0 })
 			{
@@ -289,7 +306,8 @@ public partial class ChangelogBundlingService(
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
 
 			// Source and match changelog entries — from the CDN (default) or the local folder.
-			// Explicit --files / path-list selection always loads the named local paths (IncludeAll).
+			// Explicit --files / path-list selection bypasses content filters (IncludeAll): locally it loads
+			// the named paths, in CDN mode it selects pool entries by file name.
 			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
@@ -303,7 +321,18 @@ public partial class ChangelogBundlingService(
 				var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
 				if (contents == null)
 					return false;
-				matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
+				if (requestedEntryNames is not null)
+				{
+					var poolLabel = $"{authoringOwner}/{authoringRepo}/{authoringBranch}";
+					var selected = SelectRequestedCdnEntries(collector, contents, requestedEntryNames, poolLabel);
+					if (selected == null)
+						return false;
+					_logger.LogInformation("Matching {Count} explicitly selected changelog entries from the CDN", selected.Count);
+					var filesCriteria = filterCriteria with { IncludeAll = true };
+					matchResult = entryMatcher.MatchChangelogContents(collector, selected, filesCriteria, ctx);
+				}
+				else
+					matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
 			}
 			else
 			{
@@ -684,9 +713,7 @@ public partial class ChangelogBundlingService(
 		// active when the authoring repo resolves (profile/config bundle.repo), the user has not forced
 		// local sourcing, and a CDN base is configured.
 		var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false)
-			|| input.ForceLocal
-			|| input.Files is { Length: > 0 }
-			|| await ProfileFilterForcesLocalAsync(input, ctx);
+			|| input.ForceLocal;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
 		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
@@ -824,7 +851,7 @@ public partial class ChangelogBundlingService(
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}
 
-	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--files</c>/<c>--directory</c>), and a CDN base is configured.</summary>
+	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--directory</c>), and a CDN base is configured.</summary>
 	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
 	{
 		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))
@@ -833,30 +860,46 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Detects whether a profile positional list file is a changelog path list (which forces local sourcing).
-	/// Used by <see cref="PlanBundleAsync"/> so <c>needs_network</c> matches run-mode without emitting filter diagnostics.
+	/// Selects the CDN-sourced entries whose file names were explicitly requested via <c>--files</c> / a
+	/// path list. Every requested name must exist in the pool: the registry is the source of truth for
+	/// what was uploaded, so a missing name means the entry never reached S3 (or the name is wrong) and
+	/// silently shipping an incomplete bundle is worse than failing the run. Returns <c>null</c> after
+	/// emitting an error when any requested name is missing.
 	/// </summary>
-	private async Task<bool> ProfileFilterForcesLocalAsync(BundleChangelogsArguments input, Cancel ctx)
+	private IReadOnlyList<(string FileName, string Content)>? SelectRequestedCdnEntries(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<(string FileName, string Content)> contents,
+		IReadOnlyList<string> requestedEntryNames,
+		string poolLabel)
 	{
-		if (string.IsNullOrWhiteSpace(input.Profile))
-			return false;
+		var byName = new Dictionary<string, string>(StringComparer.Ordinal);
+		foreach (var (fileName, content) in contents)
+			byName[fileName] = content;
 
-		var listPath = !string.IsNullOrWhiteSpace(input.ProfileReport)
-			? input.ProfileReport
-			: input.ProfileArgument;
-		if (string.IsNullOrWhiteSpace(listPath) || !_fileSystem.File.Exists(listPath))
-			return false;
+		var selected = new List<(string FileName, string Content)>();
+		var missing = new List<string>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var name in requestedEntryNames)
+		{
+			if (!seen.Add(name))
+				continue;
+			if (byName.TryGetValue(name, out var content))
+				selected.Add((name, content));
+			else
+				missing.Add(name);
+		}
 
-		if (_fileSystem.Path.GetExtension(listPath).ToLowerInvariant() is ".html" or ".htm")
-			return false;
+		if (missing.Count > 0)
+		{
+			collector.EmitError(string.Empty,
+				$"Changelog entr{(missing.Count == 1 ? "y" : "ies")} not found in the CDN pool '{poolLabel}': {string.Join(", ", missing)}. " +
+				"Ensure the entries were uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead.");
+			return null;
+		}
 
-		var content = await _fileSystem.File.ReadAllTextAsync(listPath, ctx);
-		var lines = content
-			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-			.Where(l => !string.IsNullOrWhiteSpace(l))
-			.ToArray();
-
-		return lines.Length > 0 && lines.All(FileFilterLoader.IsYamlExtension);
+		_logger.LogInformation("Selected {Selected} of {Total} CDN entries by requested file name for {Pool}",
+			selected.Count, contents.Count, poolLabel);
+		return selected;
 	}
 
 	private bool ValidateInput(IDiagnosticsCollector collector, BundleChangelogsArguments input, bool requireDirectoryExists)

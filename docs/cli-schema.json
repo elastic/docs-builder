@@ -3163,7 +3163,7 @@
               "name": "files",
               "type": "array",
               "required": false,
-              "summary": "Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. Forces local entry sourcing. This option is not supported in profile-based commands; pass a path list file as the second or third positional argument instead.",
+              "summary": "Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. When entries are sourced from the CDN, paths are matched to pool entries by file name and do not need to exist locally; with local sourcing (--force-local, --directory, or bundle.use_local_changelogs) the paths must exist on disk. This option is not supported in profile-based commands; pass a path list file as the second or third positional argument instead.",
               "repeatable": true,
               "elementType": "string"
             },
