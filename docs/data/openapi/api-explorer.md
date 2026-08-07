@@ -180,9 +180,7 @@ from CloudFront:
 | `/api/remote-cloud-connect/` | `elastic/cloud-connected-api` → `cloud-connect.yml` |
 | `/api/remote-cloud-serverless/` | `elastic/serverless-api-specification` → `elastic-cloud-serverless.yml` |
 
-Run `docs-builder serve` (without `--watch`) and open any path above. The three local-only APIs
-(`/api/elasticsearch/`, `/api/kibana/`, `/api/dashboard/`) use bundled JSON files in `docs/` and
-do not hit CloudFront.
+Run `docs-builder serve` (without `--watch`) and open any path above.
 
 ## Place your spec files
 

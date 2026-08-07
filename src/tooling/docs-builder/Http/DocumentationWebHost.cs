@@ -263,13 +263,15 @@ public class DocumentationWebHost
 		}
 		catch (OperationCanceledException) when (ctx.IsCancellationRequested)
 		{
-			// HTTP request was canceled - return 499 or appropriate status
-			return Results.Problem("Request canceled", statusCode: 499);
+			// Client disconnected — no ProblemDetails JSON; ApiJsonContext is AOT-only.
+			return Results.StatusCode(499);
 		}
 		catch (OperationCanceledException)
 		{
-			// API generation timed out - return 503 with retry info
-			return Results.Problem("API generation in progress, please retry", statusCode: 503);
+			return Results.Text(
+				"API generation in progress, please retry",
+				contentType: "text/plain",
+				statusCode: StatusCodes.Status503ServiceUnavailable);
 		}
 
 		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);

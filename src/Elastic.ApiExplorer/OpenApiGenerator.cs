@@ -48,6 +48,8 @@ public class OpenApiGenerator(
 		if (context.Configuration.ApiConfigurations is null)
 			return;
 
+		var catalogEntries = new List<ApiCatalogEntry>();
+
 		foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 		{
 			try
@@ -57,6 +59,12 @@ public class OpenApiGenerator(
 					continue;
 
 				await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
+
+				var title = openApiDocument.Info?.Title
+					?? apiConfig.Product.DisplayName
+					?? prefix;
+				var url = $"{context.UrlPathPrefix}/api/{prefix}/";
+				catalogEntries.Add(new ApiCatalogEntry(prefix, title, url));
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
@@ -64,6 +72,9 @@ public class OpenApiGenerator(
 					$"API '{prefix}' could not be generated: {ex.Message}");
 			}
 		}
+
+		if (catalogEntries.Count > 0)
+			await GenerateApiCatalog(catalogEntries, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -96,6 +107,35 @@ public class OpenApiGenerator(
 			return null;
 
 		return await OpenApiReader.CreateFromStream(stream, apiConfig.SpecFileName).ConfigureAwait(false);
+	}
+
+	private static readonly OpenApiDocument CatalogDocument = new()
+	{
+		Info = new OpenApiInfo { Title = "API Explorer", Version = "1.0" }
+	};
+
+	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
+	{
+		var catalogUrl = $"{context.UrlPathPrefix}/api/";
+		var navigation = new ApiCatalogNavigationItem(catalogUrl, entries);
+		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+
+		var renderContext = new ApiRenderContext(context, CatalogDocument, _contentHashProvider)
+		{
+			NavigationHtml = string.Empty,
+			CurrentNavigation = navigation.Index,
+			MarkdownRenderer = markdownStringRenderer,
+			ApiExplorerLog = _logger
+		};
+
+		var navigationRenderResult = await navigationRenderer.RenderNavigation(navigation, navigation.Index, ctx).ConfigureAwait(false);
+		renderContext = renderContext with { NavigationHtml = navigationRenderResult.Html };
+
+		var outputFile = _writeFileSystem.FileInfo.New(
+			Path.Join(context.OutputDirectory.FullName, "api", "index.html"));
+		outputFile.Directory!.Create();
+		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
+		await navigation.Index.Model.RenderAsync(stream, renderContext, ctx).ConfigureAwait(false);
 	}
 
 	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)

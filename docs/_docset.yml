@@ -53,19 +53,8 @@ suppress:
   - DeepLinkingVirtualFile
 
 api:
-  elasticsearch:
-    - spec: elasticsearch-openapi-docs.json
-      product: elasticsearch
-  kibana:
-    - spec: kibana-openapi.json
-      product: kibana
-      children:
-        - file: kibana-api-overview.md
-  dashboard:
-    - spec: dashboard-openapi.json
-      product: kibana
-  # CloudFront smoke tests — mirror https://d29hkgsdo66d1n.cloudfront.net/index.json.
-  # No local spec files: each key fetches remotely on serve/build. Paths: /api/remote-<key>/
+  # CloudFront remote specs — mirror https://d29hkgsdo66d1n.cloudfront.net/index.json.
+  # No local spec files: each key fetches remotely on serve/build. Paths: /api/<key>/
   remote-elasticsearch:
     - spec: elasticsearch.json
       product: elasticsearch
@@ -78,6 +67,8 @@ api:
     - spec: kibana.yaml
       product: kibana
       repository: elastic/kibana
+      children:
+        - file: kibana-api-overview.md
   remote-kibana-serverless:
     - spec: kibana-serverless.yaml
       product: kibana
