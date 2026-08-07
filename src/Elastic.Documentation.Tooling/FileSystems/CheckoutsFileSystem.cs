@@ -47,7 +47,14 @@ public class CheckoutsFileSystem : ScopedFileSystem
 		IEnumerable<string>? extraRoots)
 	{
 		var rootPath = root.FullName;
-		var roots = new List<string> { rootPath, Paths.ApplicationData.FullName };
+		var roots = new List<string> { rootPath };
+
+		// AppData is disjointness-filtered too: on CI the checkouts directory lives inside AppData
+		// (/home/runner/.local/share/elastic/docs-builder/checkouts/...), so AppData would subsume
+		// root and the ScopedFileSystem constructor would throw.
+		var appData = Paths.ApplicationData.FullName;
+		if (!IsSubPath(appData, rootPath) && !IsSubPath(rootPath, appData))
+			roots.Add(appData);
 
 		if (extraRoots is not null)
 		{
