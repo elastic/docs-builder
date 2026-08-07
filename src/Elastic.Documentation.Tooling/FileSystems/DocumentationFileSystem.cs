@@ -74,7 +74,14 @@ public class DocumentationFileSystem : ScopedFileSystem
 	private static ScopedFileSystemOptions BuildReadOptions(ResolvedDocumentationPaths paths)
 	{
 		var checkoutPath = paths.CheckoutDirectory.FullName;
-		var roots = new List<string> { checkoutPath, Configuration.Paths.ApplicationData.FullName };
+		var roots = new List<string> { checkoutPath };
+
+		// AppData is disjointness-filtered: on CI each individual docset checkout lives inside AppData
+		// (/home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>), so AppData would
+		// subsume checkoutPath and trigger ValidateRootsAreDisjoint.
+		var appData = Configuration.Paths.ApplicationData.FullName;
+		if (!IsSubPath(appData, checkoutPath) && !IsSubPath(checkoutPath, appData))
+			roots.Add(appData);
 
 		foreach (var gitDir in paths.GitDirectories)
 		{
