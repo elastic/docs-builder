@@ -144,7 +144,7 @@ Controls how the "separated" entry types (`breaking-change`, `deprecation`, `kno
 | (omitted, default) | Flattened: each entry renders as a bullet with its title, links, and (when present) `Impact:` / `Action:` lines as indented continuation. |
 | `:dropdowns:` | Dropdowns: each entry renders as an expandable `{dropdown}` with the title as the summary and description, links, `**Impact**`, and `**Action**` inside. |
 
-Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release-notes pages where the list itself is the primary content.
+Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release notes where the list itself is the primary content.
 
 Entry titles may contain inline markdown markers from changelog YAML (for example, `` `setting.name` ``). Dropdown titles are plain text; see [Plain-text titles](/syntax/dropdowns.md#plain-text-titles).
 
@@ -157,7 +157,7 @@ Controls whether entries with `highlight: true` get a dedicated **Highlights** s
 | (omitted, default) | Inline only: highlighted entries appear under their normal type sections (for example Features and enhancements). No `### Highlights` section. |
 | `:highlights:` | Section: emit a `### Highlights` section and keep those entries under their type sections. |
 
-Use `:highlights:` on general release-notes pages when you want a highlights section alongside features, enhancements, and bug fixes — without requiring `:type: all` (which also pulls in breaking changes, deprecations, and known issues).
+Use `:highlights:` on general release notes when you want a highlights section alongside features, enhancements, and bug fixes — without requiring `:type: all` (which also pulls in breaking changes, deprecations, and known issues).
 
 Changelog descriptions follow [`:description-visibility:`](#description-visibility). Use `keep-descriptions` to show prose in every section, or `keep-highlight-descriptions` to show prose only in the highlights section.
 
@@ -205,7 +205,7 @@ release_notes:
 :::
 ```
 
-The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). The value is **optional**: leave it blank to infer the product from the repository that holds the doc. The repository name is mapped to its canonical product id via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product).
+The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). The value is **optional**: leave it blank to infer the product from the repository that holds the doc. The repository name is mapped to its canonical product ID via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product).
 
 ```markdown
 :::{changelog}
@@ -223,7 +223,7 @@ Bundles are fetched **once at build startup** for every declared product, not pe
 
 ##### Declaring CDN-backed products [declaring-cdn-backed-products]
 
-List each CDN-sourced product under `release_notes` in `docset.yml`. Every entry must reference a product id from `products.yml` that participates in the release-notes system:
+List each CDN-sourced product under `release_notes` in `docset.yml`. Every entry must reference a product ID from `products.yml` that participates in the release notes system:
 
 ```yaml
 # docset.yml
@@ -410,7 +410,7 @@ Each changelog entry may have its own `description` field in YAML (shown as body
 - When `:highlights:` is omitted, flagged entries still appear under their type sections (inline only)
 - You can combine `:highlights:` with the default type filter (no `:type:`) to show highlights alongside features and fixes without including breaking changes, deprecations, or known issues
 
-Sections with no entries of that type are omitted from the output. Releases with no entries after the `:type:` filter are omitted entirely, except on general release-notes pages (`:type: all` or default) when the bundle has a `description`.
+Sections with no entries of that type are omitted from the output. Releases with no entries after the `:type:` filter are omitted entirely, except on general release notes (`:type: all` or default) when the bundle has a `description`.
 
 ## Error behavior for invalid entries [changelog-missing-files]
 
