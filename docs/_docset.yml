@@ -120,6 +120,8 @@ toc:
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
+      - file: hero.md
+      - file: hub-pages.md
       - file: icons.md
       - file: images.md
       - file: videos.md
@@ -140,6 +142,14 @@ toc:
       - file: tables.md
       - file: tabs.md
       - file: titles.md
+
+  # Examples
+  - folder: examples
+    children:
+      - file: index.md
+      - folder: products
+        children:
+          - file: elasticsearch.md
 
   # Documentation builds
   - folder: documentation

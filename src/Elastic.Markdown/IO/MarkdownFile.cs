@@ -12,6 +12,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
@@ -153,11 +154,26 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return allProperties;
 	}
 
+	// A page with no top-level H1 can still declare its title inside a directive, either as a
+	// nested H1 or as {hero}'s :title: option. Hub pages are composed purely from directives,
+	// so this is the only title source they have.
+	private static string? FindNestedTitle(MarkdownDocument document)
+	{
+		if (document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1)?.GetData("header") is string nestedHeading)
+			return nestedHeading;
+
+		var heroTitle = document.Descendants<HeroBlock>().FirstOrDefault()?.Title;
+		return string.IsNullOrWhiteSpace(heroTitle) ? null : heroTitle;
+	}
+
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
 		Title = document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string ?? Title;
+
+		if (Title == RelativePath)
+			Title = FindNestedTitle(document) ?? Title;
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;

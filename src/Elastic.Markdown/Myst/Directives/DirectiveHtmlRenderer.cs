@@ -16,6 +16,7 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -103,6 +104,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case MathBlock mathBlock:
 				WriteMathBlock(renderer, mathBlock);
 				return;
+			case HeroBlock heroBlock:
+				WriteHero(renderer, heroBlock);
+				return;
 			case PageCardBlock pageCardBlock:
 				WritePageCard(renderer, pageCardBlock);
 				return;
@@ -187,6 +191,42 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			MaxHeight = block.MaxHeight
 		});
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteHero(HtmlRenderer renderer, HeroBlock block)
+	{
+		var slice = HeroView.Create(new HeroViewModel
+		{
+			DirectiveBlock = block,
+			IconKey = block.Icon,
+			IconSvg = block.IconSvg,
+			Title = block.Title,
+			DescriptionHtml = RenderInlineMarkdown(block.Description),
+			PrimaryActionLabel = block.PrimaryActionLabel,
+			PrimaryActionUrl = block.PrimaryActionUrl,
+			SecondaryActionLabel = block.SecondaryActionLabel,
+			SecondaryActionUrl = block.SecondaryActionUrl,
+			TertiaryActionLabel = block.TertiaryActionLabel,
+			TertiaryActionUrl = block.TertiaryActionUrl,
+			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	// The hero description is a directive option, not a body block, so it never reaches
+	// the document pipeline. Render it with the default Markdig pipeline for basic inline
+	// markup. Substitutions, roles, and link validation do not apply inside this option.
+	private static string? RenderInlineMarkdown(string? source)
+	{
+		if (string.IsNullOrWhiteSpace(source))
+			return null;
+
+		var html = Markdig.Markdown.ToHtml(source).Trim();
+		const string open = "<p>";
+		const string close = "</p>";
+		if (html.StartsWith(open, StringComparison.Ordinal) && html.EndsWith(close, StringComparison.Ordinal))
+			html = html[open.Length..^close.Length];
+		return html;
 	}
 
 	private static void WritePageCard(HtmlRenderer renderer, PageCardBlock block)

@@ -1,0 +1,153 @@
+/*
+ * Hub-page styling. Class names mirror the directive output:
+ *
+ *   .hub-page    page wrapper, set by RenderHub in _Layout.cshtml
+ *   .hub-content article wrapper inside the content column
+ *   .hub-hero    hero section, light, with a divider below
+ *
+ * Later hub directives append their own sections to this file.
+ */
+
+@layer components {
+	/* Page wrapper: full-width content. Stays white so the page reads
+	   consistently whether the user lands via full navigation or via an
+	   htmx-boosted swap from a regular docs page. */
+	.hub-page .hub-content {
+		@apply mb-20 w-full max-w-none p-0;
+	}
+
+	/* Hero ------------------------------------------------------------- */
+	/* Light hero on the page background, separated from the body by a rule
+	   (matches the redesign — no dark band). */
+	.hub-hero {
+		background-color: transparent;
+		color: var(--color-ink-dark);
+		padding: 40px 24px 28px;
+		margin-bottom: 44px;
+		border-bottom: 1px solid var(--color-grey-20);
+	}
+	.hub-hero .hub-hero-inner {
+		@apply mx-auto w-full max-w-5xl;
+	}
+	.hub-hero .hub-hero-eyebrow {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px 14px;
+		margin: 0 0 20px;
+		font-size: 0.8125rem;
+		letter-spacing: 0.02em;
+	}
+	.hub-hero .hub-hero-eyebrow-label {
+		font-weight: 600;
+		color: var(--color-ink-light);
+	}
+	.hub-hero .hub-hero-eyebrow-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 12px;
+		font-weight: 600;
+		color: var(--color-ink-dark);
+		text-decoration: none;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 999px;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.hub-hero .hub-hero-eyebrow-link:hover,
+	.hub-hero .hub-hero-eyebrow-link:focus-visible {
+		background: var(--color-grey-10);
+		border-color: var(--color-grey-30);
+	}
+	.hub-hero .hub-hero-eyebrow-arrow {
+		flex-shrink: 0;
+		transition: transform 0.15s ease;
+	}
+	.hub-hero .hub-hero-eyebrow-link:hover .hub-hero-eyebrow-arrow,
+	.hub-hero .hub-hero-eyebrow-link:focus-visible .hub-hero-eyebrow-arrow {
+		transform: translateX(2px);
+	}
+	.hub-hero .hub-hero-top {
+		display: flex;
+		align-items: center;
+		column-gap: 14px;
+		margin-bottom: 16px;
+	}
+	.hub-hero .hub-hero-icon {
+		@apply inline-flex h-13 w-13 shrink-0 items-center justify-center rounded-xl text-2xl font-bold;
+		width: 48px;
+		height: 48px;
+		background-color: var(--color-grey-10);
+		color: var(--color-ink-dark);
+	}
+	.hub-hero .hub-hero-icon-svg {
+		background-color: transparent;
+	}
+	.hub-hero .hub-hero-icon-svg svg {
+		width: 40px;
+		height: 40px;
+	}
+	.hub-hero .hub-hero-top h1 {
+		font-size: 2.285rem;
+		font-weight: 700;
+		line-height: 1.2;
+		letter-spacing: -0.5px;
+		color: var(--color-ink-dark);
+		margin: 0;
+	}
+	.hub-hero .hub-hero-top h1 a.headerlink {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-hero .hub-hero-desc {
+		font-size: 1.071rem;
+		color: var(--color-ink-light);
+		max-width: 760px;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.hub-hero .hub-hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin-top: 24px;
+	}
+	.hub-hero .hub-hero-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 18px;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		border-radius: 8px;
+		text-decoration: none;
+		color: var(--color-ink-dark);
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-30);
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease,
+			color 0.15s ease;
+	}
+	.hub-hero .hub-hero-action svg {
+		flex-shrink: 0;
+		color: var(--color-ink-light);
+	}
+	.hub-hero .hub-hero-action:hover,
+	.hub-hero .hub-hero-action:focus-visible {
+		background: var(--color-grey-10);
+		border-color: var(--color-grey-40);
+	}
+	.hub-hero .hub-hero-action-primary {
+		border-color: var(--color-ink-dark);
+	}
+	.hub-hero .hub-hero-action-primary:hover,
+	.hub-hero .hub-hero-action-primary:focus-visible {
+		border-color: var(--color-ink-dark);
+		background: var(--color-grey-10);
+	}
+}
