@@ -83,4 +83,7 @@ internal class ListingFrontMatterConverter : IYamlTypeConverter
 [YamlSerializable(typeof(ListingFrontMatter))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardData))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardLink))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedData))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedStep))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedStepOption))]
 public partial class DocsBuilderYamlStaticContext;

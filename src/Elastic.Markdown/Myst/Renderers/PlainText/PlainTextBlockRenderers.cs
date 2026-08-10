@@ -291,6 +291,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			case ExploreBlock:
 			case CardGroupBlock:
 			case LinkCardBlock:
+			case GetStartedBlock:
 				return;
 
 			case AgentSkillBlock agentSkillBlock:

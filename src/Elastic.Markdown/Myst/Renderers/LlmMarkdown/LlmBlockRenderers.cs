@@ -514,6 +514,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case LinkCardBlock linkCardBlock:
 				WriteLinkCardBlock(renderer, linkCardBlock);
 				return;
+			case GetStartedBlock getStartedBlock:
+				WriteGetStartedBlock(renderer, getStartedBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -578,6 +581,51 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		WriteHeroAction(renderer, heroBlock.SecondaryActionLabel, heroBlock.SecondaryActionUrl);
 		WriteHeroAction(renderer, heroBlock.TertiaryActionLabel, heroBlock.TertiaryActionUrl);
 		renderer.EnsureLine();
+	}
+
+	// The onboarding path is a sequence, so it exports as an ordered list. Options under a step
+	// become sub-items, each with its command or its link.
+	private static void WriteGetStartedBlock(LlmMarkdownRenderer renderer, GetStartedBlock block)
+	{
+		var data = block.Data;
+		renderer.EnsureBlockSpacing();
+
+		if (!string.IsNullOrEmpty(data.Title))
+		{
+			renderer.WriteLine($"## {data.Title}");
+			renderer.EnsureLine();
+		}
+		if (!string.IsNullOrEmpty(data.Intro))
+		{
+			renderer.WriteLine(data.Intro);
+			renderer.EnsureLine();
+		}
+
+		for (var i = 0; i < data.Steps.Length; i++)
+			WriteGetStartedStep(renderer, data.Steps[i], i + 1);
+
+		renderer.EnsureLine();
+	}
+
+	private static void WriteGetStartedStep(LlmMarkdownRenderer renderer, GetStartedStep step, int number)
+	{
+		renderer.EnsureLine();
+		var title = string.IsNullOrEmpty(step.Link)
+			? step.Title
+			: $"[{step.Title}]({HubLinkForLlm(renderer, step.Link)})";
+		renderer.WriteLine($"{number}. {title}");
+
+		if (!string.IsNullOrEmpty(step.Description))
+			renderer.WriteLine($"   {step.Description}");
+
+		foreach (var option in step.Options)
+		{
+			renderer.WriteLine($"   - {option.Label}: {option.Description}");
+			if (!string.IsNullOrEmpty(option.Code))
+				renderer.WriteLine($"     `{option.Code}`");
+			if (!string.IsNullOrEmpty(option.Url))
+				renderer.WriteLine($"     [{option.UrlLabel ?? "Get started"}]({HubLinkForLlm(renderer, option.Url)})");
+		}
 	}
 
 	// The curated grouping of links is what a hub page is for, so the export keeps the whole
