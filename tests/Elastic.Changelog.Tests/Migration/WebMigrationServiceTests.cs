@@ -28,7 +28,6 @@ public class WebMigrationServiceTests
 	private readonly ScopedFileSystem _fileSystem;
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly TestDiagnosticsCollector _collector;
-	private readonly string _configPath;
 	private readonly StubHandler _httpHandler;
 
 	public WebMigrationServiceTests(ITestOutputHelper output)
@@ -43,29 +42,16 @@ public class WebMigrationServiceTests
 		{
 			Content = new StringContent(ReleaseNotesFixture.Markdown)
 		});
-
-		_configPath = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "migrate-from-web.yml");
-		// language=yaml
-		_mockFileSystem.AddFile(_configPath, new MockFileData("""
-			products:
-			  edot-java:
-			    owner: elastic
-			    repo: elastic-otel-java
-			    path: docs/release-notes/index.md
-			    ref: 9a61ce4faaf08e272c433a083bcc6f0e96d80e0a
-			    cutoff: 1.10.0
-			"""));
 	}
 
 	private WebMigrationService CreateService() =>
 		new(NullLoggerFactory.Instance, _fileSystem, _s3Client, _httpHandler);
 
-	private MigrateFromWebArguments Args(bool dryRun = false, string bucket = Bucket, string[]? versions = null) => new()
+	// Default arguments cover the whole checked-in scope table (today: edot-java only).
+	private static MigrateFromWebArguments Args(bool dryRun = false, string bucket = Bucket, string[]? versions = null) => new()
 	{
-		Product = "edot-java",
 		S3BucketName = bucket,
 		DryRun = dryRun,
-		Config = _configPath,
 		Versions = versions ?? []
 	};
 
@@ -283,17 +269,32 @@ public class WebMigrationServiceTests
 	}
 
 	[Fact]
-	public async Task ProductNotInScopeConfig_FailsWithoutAnyNetworkAccess()
+	public async Task ProductNotInScopeTable_FailsWithoutAnyNetworkAccess()
 	{
 		var service = CreateService();
 		var ct = TestContext.Current.CancellationToken;
 
-		var result = await service.MigrateFromWeb(_collector, Args() with { Product = "not-configured" }, ct);
+		var result = await service.MigrateFromWeb(_collector, Args() with { Products = ["not-configured"] }, ct);
 
 		result.Should().BeFalse();
 		_collector.Errors.Should().BeGreaterThan(0);
 		_httpHandler.RequestedPaths.Should().BeEmpty();
 		A.CallTo(_s3Client).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task ProductsFilter_SelectsOnlyTheRequestedTableEntries()
+	{
+		_ = FakeEmptyBucket();
+		var service = CreateService();
+		var ct = TestContext.Current.CancellationToken;
+
+		var result = await service.MigrateFromWeb(_collector, Args() with { Products = ["edot-java"] }, ct);
+
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+		service.LastResults.Where(r => r.Outcome == "created").Should().HaveCount(InScopeVersions.Length);
+		service.LastResults.Should().AllSatisfy(r => r.Key.Should().StartWith("bundle/edot-java/"));
 	}
 
 	[Fact]

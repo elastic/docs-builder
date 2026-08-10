@@ -3821,16 +3821,18 @@
           ],
           "name": "migrate-from-web",
           "summary": "TEMPORARY: One-off migration of published release notes into the S3 bundle store; removed after elastic/docs-eng-team#683.",
-          "notes": "Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the\nchecked-in scope config), maps it to the existing bundle YAML shape, and uploads to\nbundle/{product}/ with create-only semantics (If-None-Match: *) \u2014 existing keys are\nskipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and\nobject ETag) suitable for pasting into the tracking issue.\n\nScope is always explicit: the product must have an entry in config/migrate-from-web.yml\n(product id \u2192 source repo, release-notes path, pinned ref, version cutoff). Nothing runs implicitly\nfor all products. Tracked by elastic/docs-eng-team#736.",
-          "usage": "docs-builder changelog migrate-from-web \u003Cproduct\u003E [options]",
+          "notes": "Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the\nchecked-in scope table), maps it to the existing bundle YAML shape, and uploads to\nbundle/{product}/ with create-only semantics (If-None-Match: *) \u2014 existing keys are\nskipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and\nobject ETag) suitable for pasting into the tracking issue.\n\nMigrates every product in the checked-in scope table by default. The table lives in code\n(MigrateFromWebScope.All: product id \u2192 source repo, release-notes path, pinned ref, version\ncutoff) and grows per rollout wave; use --products to narrow a run for tests and pilots.\nTracked by elastic/docs-eng-team#736.",
+          "usage": "docs-builder changelog migrate-from-web [options]",
           "examples": [],
           "parameters": [
             {
-              "role": "positional",
-              "name": "product",
-              "type": "string",
-              "required": true,
-              "summary": "Product id to migrate (e.g. \u0022edot-java\u0022). Must have an entry in the checked-in scope config."
+              "role": "flag",
+              "name": "products",
+              "type": "array",
+              "required": false,
+              "summary": "Optional: restrict the run to specific product ids (comma-separated or repeated), e.g. \u0022edot-java\u0022. Defaults to every product in the checked-in scope table.",
+              "repeatable": true,
+              "elementType": "string"
             },
             {
               "role": "flag",
@@ -3841,32 +3843,10 @@
             },
             {
               "role": "flag",
-              "name": "config",
-              "type": "string",
-              "required": false,
-              "summary": "Path to the scope config. Defaults to config/migrate-from-web.yml in the current directory (the copy checked into the docs-builder repository).",
-              "validations": [
-                {
-                  "kind": "rejectSymbolicLinks"
-                },
-                {
-                  "kind": "existing"
-                },
-                {
-                  "kind": "fileExtensions",
-                  "values": [
-                    "yml",
-                    "yaml"
-                  ]
-                }
-              ]
-            },
-            {
-              "role": "flag",
               "name": "versions",
               "type": "array",
               "required": false,
-              "summary": "Optional: restrict the run to specific versions (comma-separated or repeated). Versions above the configured cutoff are always skipped.",
+              "summary": "Optional: restrict the run to specific versions (comma-separated or repeated). Versions above a product\u0027s cutoff are always skipped.",
               "repeatable": true,
               "elementType": "string"
             },

@@ -2,126 +2,86 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
-using Elastic.Documentation.Configuration.ReleaseNotes;
+using System.Collections.Immutable;
 using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.Migration;
 
 /// <summary>
-/// TEMPORARY (elastic/docs-eng-team#736): the checked-in scope/cutoff list for
-/// <c>changelog migrate-from-web</c>. Maps a product id to the repository, path, and pinned git ref
-/// of the published release-notes Markdown, plus the inclusive version cutoff for the migration.
-/// Delete together with the command once the rollout (elastic/docs-eng-team#683) completes.
+/// TEMPORARY (elastic/docs-eng-team#736): one product's migration scope — where its published
+/// release-notes Markdown lives (owner/repo/path at a pinned ref) and the inclusive version cutoff.
+/// The checked-in table below replaces the former <c>config/migrate-from-web.yml</c> (dropped on
+/// review: no standing config surface for a one-off tool). It grows per rollout wave
+/// (elastic/docs-eng-team#683) and is deleted together with the command once the rollout completes.
 /// </summary>
-public sealed class MigrateFromWebScope
+public sealed record MigrateFromWebScope
 {
 	public required string ProductId { get; init; }
+
+	/// <summary>GitHub owner of the source repository (e.g. <c>elastic</c>).</summary>
 	public required string Owner { get; init; }
+
+	/// <summary>Source repository name (e.g. <c>elastic-otel-java</c>).</summary>
 	public required string Repo { get; init; }
+
+	/// <summary>Repository-relative path of the release-notes Markdown page.</summary>
 	public required string Path { get; init; }
+
+	/// <summary>Pinned git ref (commit SHA) at which the Markdown is fetched (reproducible runs).</summary>
 	public required string Ref { get; init; }
+
+	/// <summary>Inclusive upper version bound; releases above it belong to the live pipeline.</summary>
 	public required string Cutoff { get; init; }
 
 	/// <summary>
-	/// Loads and validates the scope entry for <paramref name="productId"/> from the checked-in
-	/// scope config at <paramref name="configPath"/>, or null (with errors emitted) when the file,
-	/// product, or any required field is missing.
+	/// Every product the migration knows how to source. The page→product mapping is deliberately
+	/// checked in rather than derived: bundle product ids appear in no published metadata (page
+	/// frontmatter carries the site taxonomy, not bundle ids), so each entry pins its source
+	/// explicitly. A run covers the whole table unless narrowed with <c>--products</c>.
 	/// </summary>
-	public static MigrateFromWebScope? Load(IDiagnosticsCollector collector, IFileSystem fileSystem, string configPath, string productId)
+	public static ImmutableArray<MigrateFromWebScope> All { get; } =
+	[
+		new()
+		{
+			ProductId = "edot-java",
+			Owner = "elastic",
+			Repo = "elastic-otel-java",
+			Path = "docs/release-notes/index.md",
+			// Last commit before the repo switched to native docs-builder bundle YAMLs (#1023):
+			// the final hand-authored state of the published release-notes Markdown.
+			Ref = "9a61ce4faaf08e272c433a083bcc6f0e96d80e0a",
+			Cutoff = "1.10.0"
+		}
+	];
+
+	/// <summary>
+	/// Resolves a <c>--products</c> selection against the table — the whole table when the selection
+	/// is empty — or null (with an error emitted) when any requested id is unknown.
+	/// </summary>
+	public static IReadOnlyList<MigrateFromWebScope>? Select(IDiagnosticsCollector collector, IReadOnlyList<string> products)
 	{
-		if (!fileSystem.File.Exists(configPath))
+		if (products.Count == 0)
+			return All;
+
+		var byId = All.ToDictionary(s => s.ProductId, StringComparer.Ordinal);
+		var selected = new List<MigrateFromWebScope>(products.Count);
+		var unknown = new List<string>();
+		foreach (var product in products.Distinct(StringComparer.Ordinal))
 		{
-			collector.EmitError(configPath, "Scope config not found. The migrate-from-web scope list is checked into the docs-builder repository (config/migrate-from-web.yml); pass --config when running from elsewhere.");
+			if (byId.TryGetValue(product, out var scope))
+				selected.Add(scope);
+			else
+				unknown.Add(product);
+		}
+
+		if (unknown.Count > 0)
+		{
+			var known = string.Join(", ", All.Select(s => s.ProductId).Order(StringComparer.Ordinal));
+			collector.EmitError(string.Empty,
+				$"Unknown product id(s) in --products: {string.Join(", ", unknown)}. Products in the checked-in migration scope: {known}. Add an entry to MigrateFromWebScope.All before running the migration.");
 			return null;
 		}
 
-		MigrateFromWebConfigDto? dto;
-		try
-		{
-			var deserializer = new StaticDeserializerBuilder(new MigrationYamlContext())
-				.WithNamingConvention(UnderscoredNamingConvention.Instance)
-				.Build();
-			dto = deserializer.Deserialize<MigrateFromWebConfigDto>(fileSystem.File.ReadAllText(configPath));
-		}
-		catch (Exception ex) when (ex is YamlDotNet.Core.YamlException or IOException)
-		{
-			collector.EmitError(configPath, $"Could not parse scope config: {ex.Message}", ex);
-			return null;
-		}
-
-		if (dto?.Products is null || !dto.Products.TryGetValue(productId, out var product) || product is null)
-		{
-			var known = dto?.Products is { Count: > 0 } ? string.Join(", ", dto.Products.Keys.Order(StringComparer.Ordinal)) : "<none>";
-			collector.EmitError(configPath, $"Product '{productId}' is not in the migrate-from-web scope config. Configured products: {known}. Add an entry before running the migration.");
-			return null;
-		}
-
-		if (!ChangelogKeys.IsValidProduct(productId))
-		{
-			collector.EmitError(configPath, $"Product id '{productId}' is not a valid bundle key segment (must match [a-zA-Z0-9_-]+).");
-			return null;
-		}
-
-		var missing = new List<string>();
-		if (string.IsNullOrWhiteSpace(product.Owner))
-			missing.Add("owner");
-		if (string.IsNullOrWhiteSpace(product.Repo))
-			missing.Add("repo");
-		if (string.IsNullOrWhiteSpace(product.Path))
-			missing.Add("path");
-		if (string.IsNullOrWhiteSpace(product.Ref))
-			missing.Add("ref");
-		if (string.IsNullOrWhiteSpace(product.Cutoff))
-			missing.Add("cutoff");
-
-		if (missing.Count > 0)
-		{
-			collector.EmitError(configPath, $"Scope entry for '{productId}' is missing required field(s): {string.Join(", ", missing)}.");
-			return null;
-		}
-
-		return new MigrateFromWebScope
-		{
-			ProductId = productId,
-			Owner = product.Owner!,
-			Repo = product.Repo!,
-			Path = product.Path!,
-			Ref = product.Ref!,
-			Cutoff = product.Cutoff!
-		};
+		return selected;
 	}
 }
-
-/// <summary>Root DTO of the checked-in migrate-from-web scope config (product id → source/cutoff).</summary>
-public sealed class MigrateFromWebConfigDto
-{
-	public Dictionary<string, MigrateFromWebProductDto?>? Products { get; set; }
-}
-
-/// <summary>One product's scope: where its published release-notes Markdown lives and the migration cutoff.</summary>
-public sealed class MigrateFromWebProductDto
-{
-	/// <summary>GitHub owner of the source repository (e.g. <c>elastic</c>).</summary>
-	public string? Owner { get; set; }
-
-	/// <summary>Source repository name (e.g. <c>elastic-otel-java</c>).</summary>
-	public string? Repo { get; set; }
-
-	/// <summary>Repository-relative path of the release-notes Markdown page.</summary>
-	public string? Path { get; set; }
-
-	/// <summary>Pinned git ref (commit SHA) at which the Markdown is fetched.</summary>
-	public string? Ref { get; set; }
-
-	/// <summary>Inclusive upper version bound; releases above it belong to the live pipeline.</summary>
-	public string? Cutoff { get; set; }
-}
-
-/// <summary>Source-generated YAML context for the migrate-from-web scope config (AOT-safe, no reflection).</summary>
-[YamlStaticContext]
-[YamlSerializable(typeof(MigrateFromWebConfigDto))]
-[YamlSerializable(typeof(MigrateFromWebProductDto))]
-public partial class MigrationYamlContext;

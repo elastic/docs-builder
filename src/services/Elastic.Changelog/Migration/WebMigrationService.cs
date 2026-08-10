@@ -23,17 +23,14 @@ namespace Elastic.Changelog.Migration;
 
 public record MigrateFromWebArguments
 {
-	/// <summary>Product id to migrate; must have an entry in the checked-in scope config.</summary>
-	public required string Product { get; init; }
+	/// <summary>Optional product-id selection; empty covers every product in the checked-in scope table.</summary>
+	public IReadOnlyList<string> Products { get; init; } = [];
 
 	/// <summary>Destination S3 bucket. Optional in dry-run mode (no S3 access at all when omitted).</summary>
 	public string S3BucketName { get; init; } = "";
 
 	/// <summary>When true, does everything except the S3 writes and reports what would be created.</summary>
 	public bool DryRun { get; init; }
-
-	/// <summary>Path to the scope config. Defaults to the checked-in <c>config/migrate-from-web.yml</c>.</summary>
-	public string? Config { get; init; }
 
 	/// <summary>Optional exact-version filter; when set, only these versions are migrated.</summary>
 	public IReadOnlyList<string> Versions { get; init; } = [];
@@ -56,8 +53,6 @@ public class WebMigrationService(
 	HttpMessageHandler? httpMessageHandler = null
 ) : IService
 {
-	public const string DefaultConfigPath = "config/migrate-from-web.yml";
-
 	private const string OutcomeCreated = "created";
 	private const string OutcomeWouldCreate = "would-create";
 	private const string OutcomeSkipped = "skipped";
@@ -71,45 +66,73 @@ public class WebMigrationService(
 
 	public async Task<bool> MigrateFromWeb(IDiagnosticsCollector collector, MigrateFromWebArguments args, Cancel ctx)
 	{
-		var configPath = string.IsNullOrWhiteSpace(args.Config)
-			? _fileSystem.Path.GetFullPath(DefaultConfigPath)
-			: args.Config;
-
-		var scope = MigrateFromWebScope.Load(collector, _fileSystem, configPath, args.Product);
-		if (scope is null)
+		var scopes = MigrateFromWebScope.Select(collector, args.Products);
+		if (scopes is null)
 			return false;
 
+		// One product's failure never blocks the others: the default run covers the whole table,
+		// so a broken source page should still let every other product migrate — the run itself
+		// fails at the end so nothing goes unnoticed.
+		var allResults = new List<MigrationKeyResult>();
+		var report = new StringBuilder();
+		var failedProducts = 0;
+		foreach (var scope in scopes)
+		{
+			ctx.ThrowIfCancellationRequested();
+			var results = await MigrateProduct(collector, args, scope, ctx);
+			if (results is null)
+			{
+				failedProducts++;
+				continue;
+			}
+
+			allResults.AddRange(results);
+			_ = report.Append(FormatReport(scope, args, results));
+			_ = report.AppendLine();
+		}
+
+		LastResults = allResults;
+		Console.Write(report.ToString());
+
+		var failed = allResults.Count(r => r.Outcome == OutcomeFailed);
+		if (failed > 0)
+			collector.EmitError(string.Empty, $"{failed} key(s) failed to migrate; see the run report above.");
+		if (failedProducts > 0)
+			collector.EmitError(string.Empty, $"{failedProducts} product(s) failed before upload; see the errors above.");
+
+		return failed == 0 && failedProducts == 0;
+	}
+
+	/// <summary>
+	/// Runs one product's fetch → parse → filter → stage → upload chain. Returns null (with errors
+	/// emitted) when the product fails before the upload phase — the caller continues with the
+	/// remaining products and fails the run at the end.
+	/// </summary>
+	private async Task<List<MigrationKeyResult>?> MigrateProduct(IDiagnosticsCollector collector, MigrateFromWebArguments args, MigrateFromWebScope scope, Cancel ctx)
+	{
 		var sourceUrl = $"https://raw.githubusercontent.com/{scope.Owner}/{scope.Repo}/{scope.Ref}/{scope.Path}";
 		var markdown = await FetchMarkdown(collector, sourceUrl, ctx);
 		if (markdown is null)
-			return false;
+			return null;
 
 		var releases = ReleaseNotesPageParser.Parse(collector, markdown, sourceUrl, scope);
 		if (releases.Count == 0)
 		{
-			collector.EmitError(sourceUrl, "No release sections were parsed from the published release notes; refusing to continue with an empty scope.");
-			return false;
+			collector.EmitError(sourceUrl, $"No release sections were parsed from the published release notes for '{scope.ProductId}'; refusing to continue with an empty scope.");
+			return null;
 		}
 
 		_logger.LogInformation("Parsed {Count} release section(s) from {Url}", releases.Count, sourceUrl);
 
 		var (inScope, results) = ApplyScopeFilters(releases, scope, args.Versions);
+		var errorsBeforeStaging = collector.Errors;
 		var staged = StageBundles(collector, scope, inScope);
-		if (collector.Errors > 0)
-			return false;
+		if (collector.Errors > errorsBeforeStaging)
+			return null;
 
 		var uploadResults = await UploadCreateOnly(args, staged, ctx);
 		results.AddRange(uploadResults);
-		LastResults = results;
-
-		var failed = results.Count(r => r.Outcome == OutcomeFailed);
-		var report = FormatReport(scope, args, results);
-		Console.WriteLine(report);
-
-		if (failed > 0)
-			collector.EmitError(string.Empty, $"{failed} key(s) failed to migrate; see the run report above.");
-
-		return failed == 0;
+		return results;
 	}
 
 	private async Task<string?> FetchMarkdown(IDiagnosticsCollector collector, string sourceUrl, Cancel ctx)
