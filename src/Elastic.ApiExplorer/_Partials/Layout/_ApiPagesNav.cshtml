@@ -13,7 +13,14 @@
 					onchange="window.location.href = this.value">
 					@foreach (var item in Model.VersionSwitcherItems)
 					{
-						<option value="@item.Url" selected="@item.Selected">@item.Label</option>
+						if (item.Selected)
+						{
+							<option value="@item.Url" selected>@item.Label</option>
+						}
+						else
+						{
+							<option value="@item.Url">@item.Label</option>
+						}
 					}
 				</select>
 			</div>
