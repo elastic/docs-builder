@@ -29,7 +29,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 
 	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null)
 	{
-		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
+		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix);
 		var rootNavigation = new LandingNavigationItem(url);
 
 		var tagMetadataByName = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
@@ -186,7 +186,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 
 		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName);
 
-		var url = $"{context.UrlPathPrefix}/api/{apiUrlSuffix}/{slug}/";
+		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix)}/{slug}/";
 		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
 
 		// Create simple navigation item - will be handled by regular documentation system

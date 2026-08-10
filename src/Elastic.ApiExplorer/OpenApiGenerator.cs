@@ -65,7 +65,7 @@ public class OpenApiGenerator(
 				var title = openApiDocument.Info?.Title
 					?? apiConfig.Product.DisplayName
 					?? prefix;
-				var url = $"{context.UrlPathPrefix}/api/{prefix}/";
+				var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
 				catalogEntries.Add(new ApiCatalogEntry(prefix, title, url));
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)

@@ -62,7 +62,7 @@ public static partial class ApiMarkdown
 	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)")]
 	private static partial Regex OperationLinkPattern();
 
-	[GeneratedRegex(@"^(.*/api/[^/]+/)")]
+	[GeneratedRegex(@"^(.*/api/doc/[^/]+/)")]
 	private static partial Regex ApiBaseUrlPattern();
 
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions

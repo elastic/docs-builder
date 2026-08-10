@@ -49,7 +49,7 @@ public class SimpleMarkdownNavigationItem(
 	/// <summary>Throws if the slug collides with reserved API Explorer path segments.</summary>
 	public static void ValidateSlugForCollisions(string slug, string productKey, string filePath)
 	{
-		string[] reservedSegments = ["types", "group", "operation"];
+		string[] reservedSegments = ["types", "group", "operation", "doc"];
 
 		if (reservedSegments.Contains(slug, StringComparer.OrdinalIgnoreCase))
 		{

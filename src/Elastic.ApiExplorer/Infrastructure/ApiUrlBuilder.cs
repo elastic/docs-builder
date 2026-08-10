@@ -12,6 +12,9 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public static partial class ApiUrlBuilder
 {
+	/// <summary>Product root URL: <c>{prefix}/api/doc/{key}</c> with no trailing slash.</summary>
+	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) =>
+		$"{urlPathPrefix?.TrimEnd('/')}/api/doc/{apiUrlSuffix}";
 	/// <summary>
 	/// Deterministic URL leaf for an operation page under <c>.../operation/</c>: lowercase
 	/// <c>operation-{id}</c> when an operation id is present, otherwise derived from the route.

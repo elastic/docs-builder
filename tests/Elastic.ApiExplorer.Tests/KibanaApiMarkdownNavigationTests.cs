@@ -89,7 +89,7 @@ public class KibanaApiMarkdownNavigationTests
 	{
 		var (_, introNav) = SetupKibanaNavigation();
 
-		introNav.Url.Should().Be("/api/kibana/kibana-api-overview/");
+		introNav.Url.Should().Be("/api/doc/kibana/kibana-api-overview/");
 	}
 
 	[Fact]
@@ -98,10 +98,12 @@ public class KibanaApiMarkdownNavigationTests
 		var actTypes = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("types", "kibana", "/docs/types.md");
 		var actGroup = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("group", "kibana", "/docs/group.md");
 		var actOperation = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("operation", "kibana", "/docs/operation.md");
+		var actDoc = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("doc", "kibana", "/docs/doc.md");
 
 		actTypes.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*types*");
 		actGroup.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*group*");
 		actOperation.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*operation*");
+		actDoc.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*doc*");
 	}
 
 	[Fact]

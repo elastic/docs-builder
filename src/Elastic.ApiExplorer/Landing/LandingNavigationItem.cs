@@ -129,7 +129,7 @@ public class TagNavigationItem(
 )
 	: ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
 {
-	private readonly string _url = $"{urlPathPrefix?.TrimEnd('/')}/api/{apiUrlSuffix}/group/{tag.TagUrlSegment}";
+	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
 
 	/// <inheritdoc />
 	public override string Url => _url;

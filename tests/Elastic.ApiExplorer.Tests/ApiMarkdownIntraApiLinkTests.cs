@@ -41,7 +41,7 @@ public class ApiMarkdownIntraApiLinkTests
 		var renderContext = new ApiRenderContext(context, new OpenApiDocument(), new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)))
 		{
 			NavigationHtml = string.Empty,
-			CurrentNavigation = new StubNavigationItem("/api/kibana/operation/operation-foo"),
+			CurrentNavigation = new StubNavigationItem("/api/doc/kibana/operation/operation-foo"),
 			MarkdownRenderer = renderer,
 			ApiExplorerLog = null
 		};
@@ -52,8 +52,8 @@ public class ApiMarkdownIntraApiLinkTests
 
 		_ = ApiMarkdown.Render(renderContext, markdown);
 
-		renderer.LastMarkdown.Should().Contain("(/api/kibana/group/endpoint-data-views)");
-		renderer.LastMarkdown.Should().Contain("(/api/kibana/operation/operation-post-saved-objects-export)");
+		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/group/endpoint-data-views)");
+		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/operation/operation-post-saved-objects-export)");
 	}
 
 	private sealed class StubNavigationItem(string url) : INavigationItem
