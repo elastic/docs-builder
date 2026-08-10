@@ -148,6 +148,48 @@ jobs:
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
+  build-openapi-index-lambda:
+    permissions:
+      contents: read
+    needs:
+      - release-drafter
+    uses: ./.github/workflows/build-openapi-index-lambda.yml
+    with:
+      ref: ${{ needs.release-drafter.outputs.tag_name }}
+
+  package-openapi-index-updater-lambda:
+    runs-on: ubuntu-latest
+    needs:
+      - build-openapi-index-lambda
+      - release-drafter
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    env:
+      ZIP_FILE: openapi-index-updater-lambda.zip
+    steps:
+      - name: Download bootstrap binary
+        uses: actions/download-artifact@v8
+        with:
+          name: openapi-index-updater-lambda-binary
+
+      - name: Create zip
+        run: |
+          zip -j "${ZIP_FILE}" ./bootstrap
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: openapi-index-updater-lambda.zip
+
+      - name: Attach distribution to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+          REPO: ${{ github.repository }}
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+
   deploy-link-index-updater-lambda-prod:
     environment: 
       name: link-index-updater-prod
@@ -208,6 +250,11 @@ jobs:
         with:
           name: changelog-scrubber-lambda-binary
 
+      - name: Download allowlist identity
+        uses: actions/download-artifact@v8
+        with:
+          name: changelog-scrubber-allowlist-identity
+
       - name: Create zip
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
@@ -223,12 +270,16 @@ jobs:
             --function-name elastic-docs-v3-changelog-scrubber \
             --zip-file "fileb://${ZIP_FILE}"
 
+      # The allowlist identity is attached only after update-function-code succeeded, so the
+      # presence of this asset on a release attests that the release's allowlist was deployed.
+      # Consumers resolve the deployed identity from the newest release carrying the asset
+      # (`docs-builder changelog scrubber-allowlist`, docs-eng-team#671).
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}" changelog-scrubber-allowlist.json
 
   release:
     needs: 
@@ -287,6 +338,7 @@ jobs:
       - release-drafter
       - deploy-link-index-updater-lambda-prod
       - deploy-changelog-scrubber-lambda-prod
+      - package-openapi-index-updater-lambda
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -321,6 +373,8 @@ jobs:
       - containers
       - build-link-index-lambda
       - build-changelog-scrubber-lambda
+      - build-openapi-index-lambda
+      - package-openapi-index-updater-lambda
       - deploy-link-index-updater-lambda-prod
       - deploy-changelog-scrubber-lambda-prod
       - release
