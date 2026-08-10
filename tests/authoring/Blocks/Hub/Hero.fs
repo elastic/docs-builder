@@ -81,6 +81,82 @@ type ``hero with anchor actions`` () =
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
 
+type ``hero with an external action`` () =
+    static let markdown = Setup.Markdown """
+:::{hero}
+:title: Elasticsearch documentation hub
+:primary-action: [Install Elasticsearch](https://www.elastic.co/downloads/elasticsearch)
+:::
+"""
+
+    // External links follow the same rules as inline links: they open in a new tab. The
+    // assertion starts at the section, because the pretty-printer only matches from the
+    // outermost element of the directive output. It also strips `preload`, so the absence
+    // of preloading on an external action cannot be asserted here.
+    [<Fact>]
+    let ``opens in a new tab`` () =
+        markdown |> convertsToContainingHtml """
+<section class="hub-hero">
+	<div class="hub-hero-inner">
+		<div class="hub-hero-eyebrow">
+			<a class="hub-hero-eyebrow-link" href="/">
+				<span>Browse all Elastic docs</span>
+				<svg class="hub-hero-eyebrow-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+					<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+				</svg>
+			</a>
+		</div>
+		<div class="hub-hero-top">
+			<h1>Elasticsearch documentation hub</h1>
+		</div>
+		<div class="hub-hero-actions">
+			<a class="hub-hero-action hub-hero-action-primary" href="https://www.elastic.co/downloads/elasticsearch" target="_blank" rel="noopener noreferrer">
+				<span>Install Elasticsearch</span>
+			</a>
+		</div>
+	</div>
+</section>
+"""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+type ``hero with an internal action`` () =
+    static let markdown = Setup.Markdown """
+:::{hero}
+:title: Elasticsearch documentation hub
+:primary-action: [Syntax reference](/index.md)
+:::
+"""
+
+    [<Fact>]
+    let ``strips the markdown extension and does not open a new tab`` () =
+        markdown |> convertsToContainingHtml """
+<section class="hub-hero">
+	<div class="hub-hero-inner">
+		<div class="hub-hero-eyebrow">
+			<a class="hub-hero-eyebrow-link" href="/">
+				<span>Browse all Elastic docs</span>
+				<svg class="hub-hero-eyebrow-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+					<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+				</svg>
+			</a>
+		</div>
+		<div class="hub-hero-top">
+			<h1>Elasticsearch documentation hub</h1>
+		</div>
+		<div class="hub-hero-actions">
+			<a class="hub-hero-action hub-hero-action-primary" href="/">
+				<span>Syntax reference</span>
+			</a>
+		</div>
+	</div>
+</section>
+"""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
 type ``hero with a relative action url`` () =
     static let markdown = Setup.Markdown """
 :::{hero}
