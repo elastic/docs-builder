@@ -36,7 +36,7 @@ internal sealed record VersionedOpenApiDocument(
 /// <remarks>
 /// For versioned products, renders the canonical <c>main</c> tree at the unversioned path plus one
 /// full tree per released numeric major at <c>/vN/</c>. Versionless products render only
-/// <c>main</c>. The version switcher UI is tracked separately in issue #723.
+/// <c>main</c>. When more than one version is rendered, pages include a left-nav version switcher.
 /// </remarks>
 public class OpenApiGenerator(
 	ILoggerFactory logFactory,
@@ -70,7 +70,11 @@ public class OpenApiGenerator(
 					continue;
 
 				foreach (var versioned in versionedDocuments)
-					await GenerateApiProduct(versioned.ApiUrlSuffix, versioned.Document, apiConfig, ctx).ConfigureAwait(false);
+				{
+					var switcherItems = BuildVersionSwitcherItems(versionedDocuments, versioned.Version.Moniker);
+					await GenerateApiProduct(versioned.ApiUrlSuffix, versioned.Document, apiConfig, switcherItems, ctx)
+						.ConfigureAwait(false);
+				}
 
 				var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main")
 					?? versionedDocuments[0];
@@ -224,7 +228,20 @@ public class OpenApiGenerator(
 		_ = await Render(navigation.Index, navigation.Index.Model, renderContext, navigationRenderer, ctx).ConfigureAwait(false);
 	}
 
-	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
+	private IReadOnlyList<ApiVersionSwitcherItem> BuildVersionSwitcherItems(
+		IReadOnlyList<VersionedOpenApiDocument> versions,
+		string currentMoniker) =>
+		ApiVersionSwitcher.Build(
+			context.UrlPathPrefix,
+			versions.Select(v => (v.Version.Moniker, v.ApiUrlSuffix)).ToArray(),
+			currentMoniker);
+
+	private async Task GenerateApiProduct(
+		string prefix,
+		OpenApiDocument openApiDocument,
+		ResolvedApiConfiguration? apiConfig,
+		IReadOnlyList<ApiVersionSwitcherItem> versionSwitcherItems,
+		Cancel ctx)
 	{
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
@@ -236,7 +253,8 @@ public class OpenApiGenerator(
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
 			MarkdownRenderer = markdownStringRenderer,
-			ApiExplorerLog = _logger
+			ApiExplorerLog = _logger,
+			VersionSwitcherItems = versionSwitcherItems
 		};
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);

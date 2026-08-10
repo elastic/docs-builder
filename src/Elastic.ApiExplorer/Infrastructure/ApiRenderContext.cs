@@ -14,6 +14,9 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
+/// <summary>One option in the API left-nav version switcher.</summary>
+public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected);
+
 public record ApiRenderContext(
 	BuildContext BuildContext,
 	OpenApiDocument Model,
@@ -27,4 +30,7 @@ public record ApiRenderContext(
 
 	/// <summary>Logger for API Explorer rendering (e.g. OpenAPI extension parsing); optional when the host does not provide one.</summary>
 	public ILogger? ApiExplorerLog { get; init; }
+
+	/// <summary>Version options for the left-nav switcher. Empty when the product has only one tree.</summary>
+	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 }

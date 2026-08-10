@@ -22,6 +22,9 @@ public record ApiTocItem(string Heading, string Slug, int Level = 2);
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
+
+	/// <summary>Version options for the left-nav switcher. Empty when the product has only one tree.</summary>
+	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 }
 
 public abstract class ApiViewModel(ApiRenderContext context)
@@ -80,6 +83,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
+			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",

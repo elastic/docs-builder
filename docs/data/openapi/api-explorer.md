@@ -174,8 +174,9 @@ When a local spec file exists, it overrides only the `main` moniker. Older major
 remotely through the index.
 
 Versionless products (`versioning: serverless` and similar) render only the unversioned
-`/api/doc/<key>/` path even when the index lists historical monikers. The version switcher UI is
-tracked separately.
+`/api/doc/<key>/` path even when the index lists historical monikers. When more than one
+version is rendered, API pages show a simple version dropdown at the top of the left navigation
+rail. The dropdown links to each version's landing page.
 
 ### Smoke-test every CloudFront spec locally
 
