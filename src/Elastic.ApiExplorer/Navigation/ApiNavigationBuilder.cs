@@ -140,14 +140,6 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		// Add schema type pages for shared types
 		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
-		// Collect operation monikers for collision detection
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (var path in openApiDocument.Paths)
-		{
-			foreach (var operation in path.Value.Operations ?? [])
-				_ = operationMonikers.Add(ApiUrlBuilder.OperationMoniker(operation.Value.OperationId, path.Key));
-		}
-
 		// Add explicit children declared via 'children:' below the landing page and before the
 		// generated OpenAPI groups, in declared order.
 		var finalNavigationItems = new List<INavigationItem>();
@@ -157,7 +149,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		{
 			foreach (var childFile in apiConfig.Children)
 			{
-				var childNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, childFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
+				var childNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, childFile, rootNavigation, rootNavigation, markdownSlugs);
 				finalNavigationItems.Add(childNavItem);
 			}
 		}
@@ -180,7 +172,6 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		IFileInfo markdownFile,
 		LandingNavigationItem rootNavigation,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		HashSet<string> operationMonikers,
 		HashSet<string> markdownSlugs)
 	{
 		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(markdownFile);
@@ -193,7 +184,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				$"File: {markdownFile.FullName}");
 		}
 
-		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName, operationMonikers);
+		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName);
 
 		var url = $"{context.UrlPathPrefix}/api/{apiUrlSuffix}/{slug}/";
 		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);

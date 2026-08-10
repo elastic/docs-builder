@@ -96,28 +96,26 @@ public class KibanaApiMarkdownNavigationTests
 	public void UrlCollisionValidation_ShouldDetectReservedSegments()
 	{
 		var actTypes = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("types", "kibana", "/docs/types.md");
-		var actTags = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("tags", "kibana", "/docs/tags.md");
+		var actGroup = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("group", "kibana", "/docs/group.md");
+		var actOperation = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("operation", "kibana", "/docs/operation.md");
 
 		actTypes.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*types*");
-		actTags.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*tags*");
+		actGroup.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*group*");
+		actOperation.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*operation*");
 	}
 
 	[Fact]
-	public void UrlCollisionValidation_ShouldDetectOperationMonikers()
+	public void UrlCollisionValidation_ShouldAllowSlugMatchingOperationId()
 	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index" };
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("search", "kibana", "/docs/search.md");
 
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("search", "kibana", "/docs/search.md", operationMonikers);
-
-		act.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with existing operation moniker*");
+		act.Should().NotThrow();
 	}
 
 	[Fact]
 	public void UrlCollisionValidation_ShouldAllowValidSlugs()
 	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index" };
-
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("overview", "kibana", "/docs/overview.md", operationMonikers);
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("overview", "kibana", "/docs/overview.md");
 
 		act.Should().NotThrow();
 	}
