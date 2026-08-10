@@ -10,6 +10,7 @@ using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Listing;
@@ -137,6 +138,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{math}") > 0)
 			return new MathBlock(this, context);
 
+		if (info.IndexOf("{hero}") > 0)
+			return new HeroBlock(this, context);
+
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
 
@@ -237,6 +241,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			return base.TryContinue(processor, block);
 
 		if (block is not DirectiveBlock directiveBlock)
+			return base.TryContinue(processor, block);
+
+		// Once a directive has opened a nested directive child, an option line belongs to
+		// that inner directive, not this ancestor. Without this guard the ancestor swallows
+		// every descendant's options (last one wins) and corrupts its own.
+		if (directiveBlock.LastChild is DirectiveBlock)
 			return base.TryContinue(processor, block);
 
 		var tokens = line.ToString().Split(':', 2, RemoveEmptyEntries | TrimEntries);

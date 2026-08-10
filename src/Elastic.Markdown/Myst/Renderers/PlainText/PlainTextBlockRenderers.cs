@@ -10,6 +10,7 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -271,6 +272,18 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
+				return;
+
+			// A hub page exists to answer generic "<product> docs" queries. Index the identity
+			// only. Section and card titles would let the hub compete with the pages it links to
+			// on specific queries, which is the opposite of what it is for.
+			case HeroBlock heroBlock:
+				renderer.EnsureBlockSpacing();
+				if (!string.IsNullOrEmpty(heroBlock.Title))
+					renderer.WriteLine(heroBlock.Title);
+				if (!string.IsNullOrEmpty(heroBlock.Description))
+					renderer.WriteLine(heroBlock.Description);
+				renderer.EnsureLine();
 				return;
 
 			case AgentSkillBlock agentSkillBlock:
