@@ -118,7 +118,7 @@ public class OpenApiGenerator(
 
 	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
 	{
-		var catalogUrl = $"{context.UrlPathPrefix}/api/";
+		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(context.UrlPathPrefix)}/";
 		var navigation = new ApiCatalogNavigationItem(catalogUrl, entries);
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
 

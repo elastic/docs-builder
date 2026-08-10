@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
@@ -112,6 +113,8 @@ public partial class OpenApiDocumentExporter(
 	/// </summary>
 	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
 	{
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
+
 		foreach (var path in openApiDocument.Paths)
 		{
 			if (path.Value.Operations == null)
@@ -125,7 +128,8 @@ public partial class OpenApiDocumentExporter(
 				if (!ShouldIncludeOperation(operation.Value))
 					continue;
 
-				var url = $"/docs/api/doc/{product}/operation/operation-{operationId.ToLowerInvariant()}";
+				var operationMoniker = ApiUrlBuilder.OperationMoniker(operationId, path.Key);
+				var url = $"{productUrl}/operation/{operationMoniker}";
 
 				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
 				// Trim: spec summaries occasionally carry stray leading/trailing whitespace or a
@@ -191,7 +195,7 @@ public partial class OpenApiDocumentExporter(
 					Parents =
 					[
 						new ParentDocument { Title = "API Reference", Path = "/docs/api" },
-						new ParentDocument { Title = product, Path = $"/docs/api/doc/{product}" }
+						new ParentDocument { Title = product, Path = productUrl }
 					],
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0

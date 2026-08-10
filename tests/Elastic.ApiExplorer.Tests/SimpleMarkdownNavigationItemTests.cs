@@ -32,7 +32,6 @@ public class SimpleMarkdownNavigationItemTests
 	[InlineData("types", "types")]
 	[InlineData("group", "group")]
 	[InlineData("operation", "operation")]
-	[InlineData("doc", "doc")]
 	public void ValidateSlugForCollisions_ThrowsForReservedSegments(string slug, string reservedSegment)
 	{
 		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(

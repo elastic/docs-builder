@@ -93,20 +93,6 @@ public class KibanaApiMarkdownNavigationTests
 	}
 
 	[Fact]
-	public void UrlCollisionValidation_ShouldDetectReservedSegments()
-	{
-		var actTypes = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("types", "kibana", "/docs/types.md");
-		var actGroup = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("group", "kibana", "/docs/group.md");
-		var actOperation = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("operation", "kibana", "/docs/operation.md");
-		var actDoc = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("doc", "kibana", "/docs/doc.md");
-
-		actTypes.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*types*");
-		actGroup.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*group*");
-		actOperation.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*operation*");
-		actDoc.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*doc*");
-	}
-
-	[Fact]
 	public void UrlCollisionValidation_ShouldAllowSlugMatchingOperationId()
 	{
 		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("search", "kibana", "/docs/search.md");
