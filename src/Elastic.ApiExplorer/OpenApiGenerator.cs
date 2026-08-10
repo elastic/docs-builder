@@ -11,6 +11,7 @@ using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
@@ -21,13 +22,21 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer;
 
 /// <summary>
+/// One resolved OpenAPI document for a version-index moniker, with the URL suffix used for navigation and output.
+/// </summary>
+internal sealed record VersionedOpenApiDocument(
+	ResolvedApiVersion Version,
+	OpenApiDocument Document,
+	string ApiUrlSuffix);
+
+/// <summary>
 /// Renders API explorer pages for every configured OpenAPI specification: builds the navigation
 /// tree via <see cref="ApiNavigationBuilder"/> and writes each page to the output directory.
 /// </summary>
 /// <remarks>
-/// Only renders the current tree for each API: a local override file when the docset carries one,
-/// otherwise the <c>main</c> moniker resolved remotely through <see cref="VersionIndexClient"/>. There
-/// is no version-prefixed output or switcher yet — see issue #721 for multi-version generation.
+/// For versioned products, renders the canonical <c>main</c> tree at the unversioned path plus one
+/// full tree per released numeric major at <c>/vN/</c>. Versionless products render only
+/// <c>main</c>. The version switcher UI is tracked separately in issue #723.
 /// </remarks>
 public class OpenApiGenerator(
 	ILoggerFactory logFactory,
@@ -56,13 +65,16 @@ public class OpenApiGenerator(
 		{
 			try
 			{
-				var openApiDocument = await ResolveCurrentDocument(prefix, apiConfig, ctx).ConfigureAwait(false);
-				if (openApiDocument is null)
+				var versionedDocuments = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
+				if (versionedDocuments.Count == 0)
 					continue;
 
-				await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
+				foreach (var versioned in versionedDocuments)
+					await GenerateApiProduct(versioned.ApiUrlSuffix, versioned.Document, apiConfig, ctx).ConfigureAwait(false);
 
-				var title = openApiDocument.Info?.Title
+				var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main")
+					?? versionedDocuments[0];
+				var title = canonical.Document.Info?.Title
 					?? apiConfig.Product.DisplayName
 					?? prefix;
 				var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
@@ -77,6 +89,52 @@ public class OpenApiGenerator(
 
 		if (catalogEntries.Count > 0)
 			await GenerateApiCatalog(catalogEntries, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>
+	/// Resolves every OpenAPI document to render for one API key, including canonical <c>main</c>
+	/// and released numeric majors. Returns an empty list when nothing could be resolved.
+	/// </summary>
+	internal async Task<IReadOnlyList<VersionedOpenApiDocument>> ResolveDocumentsForProduct(
+		string apiKey,
+		ResolvedApiConfiguration apiConfig,
+		Cancel ctx)
+	{
+		if (apiConfig.LocalSpecFile is { } localFile && IsVersionlessProduct(apiConfig.Product))
+			return await ResolveLocalMainOnly(apiKey, localFile).ConfigureAwait(false);
+
+		var versions = await _versionIndexClient.ResolveVersionsAsync(
+			context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
+
+		var versionsToRender = IsVersionlessProduct(apiConfig.Product)
+			? versions.Where(v => v.Moniker == "main").ToArray()
+			: [.. versions];
+
+		if (versionsToRender.Length == 0)
+			return [];
+
+		if (!IsVersionlessProduct(apiConfig.Product)
+			&& versionsToRender.All(v => v.Moniker != "main")
+			&& versions.Count > 0)
+		{
+			context.Collector.EmitGlobalWarning(
+				$"Version index for API '{apiKey}' has no 'main' entry; the unversioned path will not be rendered.");
+		}
+
+		var results = new List<VersionedOpenApiDocument>(versionsToRender.Length);
+		foreach (var version in versionsToRender)
+		{
+			var document = await ResolveDocumentForVersion(apiKey, apiConfig, version, ctx).ConfigureAwait(false);
+			if (document is null)
+				continue;
+
+			results.Add(new VersionedOpenApiDocument(
+				version,
+				document,
+				ApiUrlBuilder.ProductSuffix(apiKey, version.Moniker)));
+		}
+
+		return results;
 	}
 
 	/// <summary>
@@ -101,10 +159,43 @@ public class OpenApiGenerator(
 			return null;
 		}
 
-		if (current.IsLocal)
-			return await _openApiReader.ReadAsync(current.LocalFile!);
+		return await ResolveDocumentForVersion(apiKey, apiConfig, current, ctx).ConfigureAwait(false);
+	}
 
-		var stream = await _versionIndexClient.FetchSpecStreamAsync(apiKey, current, context.Collector, ctx).ConfigureAwait(false);
+	private async Task<IReadOnlyList<VersionedOpenApiDocument>> ResolveLocalMainOnly(string apiKey, IFileInfo localFile)
+	{
+		var document = await _openApiReader.ReadAsync(localFile).ConfigureAwait(false);
+		if (document is null)
+			return [];
+
+		return
+		[
+			new VersionedOpenApiDocument(
+				new ResolvedApiVersion
+				{
+					Moniker = "main",
+					Version = "main",
+					IsLocal = true,
+					LocalFile = localFile
+				},
+				document,
+				ApiUrlBuilder.ProductSuffix(apiKey, "main"))
+		];
+	}
+
+	private static bool IsVersionlessProduct(Product product) =>
+		product.VersioningSystem?.IsVersionless == true;
+
+	private async Task<OpenApiDocument?> ResolveDocumentForVersion(
+		string apiKey,
+		ResolvedApiConfiguration apiConfig,
+		ResolvedApiVersion version,
+		Cancel ctx)
+	{
+		if (version.IsLocal)
+			return await _openApiReader.ReadAsync(version.LocalFile!).ConfigureAwait(false);
+
+		var stream = await _versionIndexClient.FetchSpecStreamAsync(apiKey, version, context.Collector, ctx).ConfigureAwait(false);
 		if (stream is null)
 			return null;
 
@@ -148,7 +239,7 @@ public class OpenApiGenerator(
 			ApiExplorerLog = _logger
 		};
 
-		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx);
+		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
 	}
 
 	private async Task RenderNavigationItems(
