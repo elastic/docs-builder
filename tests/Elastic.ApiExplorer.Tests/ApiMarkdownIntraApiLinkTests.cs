@@ -5,12 +5,12 @@
 using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
 using Nullean.ScopedFileSystem;
@@ -41,7 +41,7 @@ public class ApiMarkdownIntraApiLinkTests
 		var renderContext = new ApiRenderContext(context, new OpenApiDocument(), new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)))
 		{
 			NavigationHtml = string.Empty,
-			CurrentNavigation = new StubNavigationItem("/api/kibana/operation-foo/"),
+			CurrentNavigation = new LandingNavigationItem("/api/doc/kibana").Index,
 			MarkdownRenderer = renderer,
 			ApiExplorerLog = null
 		};
@@ -52,17 +52,7 @@ public class ApiMarkdownIntraApiLinkTests
 
 		_ = ApiMarkdown.Render(renderContext, markdown);
 
-		renderer.LastMarkdown.Should().Contain("(/api/kibana/tags/endpoint-data-views/)");
-		renderer.LastMarkdown.Should().Contain("(/api/kibana/operation-post-saved-objects-export/)");
-	}
-
-	private sealed class StubNavigationItem(string url) : INavigationItem
-	{
-		public string Url { get; } = url;
-		public string NavigationTitle => "stub";
-		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => throw new NotSupportedException();
-		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-		public bool Hidden => false;
-		public int NavigationIndex { get; set; }
+		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/group/endpoint-data-views)");
+		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/operation/operation-post-saved-objects-export)");
 	}
 }

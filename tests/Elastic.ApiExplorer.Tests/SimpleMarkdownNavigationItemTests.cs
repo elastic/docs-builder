@@ -30,7 +30,8 @@ public class SimpleMarkdownNavigationItemTests
 
 	[Theory]
 	[InlineData("types", "types")]
-	[InlineData("tags", "tags")]
+	[InlineData("group", "group")]
+	[InlineData("operation", "operation")]
 	public void ValidateSlugForCollisions_ThrowsForReservedSegments(string slug, string reservedSegment)
 	{
 		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
@@ -41,37 +42,20 @@ public class SimpleMarkdownNavigationItemTests
 	}
 
 	[Fact]
-	public void ValidateSlugForCollisions_ThrowsForOperationMoniker()
+	public void ValidateSlugForCollisions_AllowsSlugThatMatchesOperationId()
 	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index", "get" };
-
 		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			"search", "elasticsearch", "/docs/search.md", operationMonikers);
-
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*conflicts with existing operation moniker*");
-	}
-
-	[Fact]
-	public void ValidateSlugForCollisions_AllowsValidSlug()
-	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index", "get" };
-
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			"overview", "elasticsearch", "/docs/overview.md", operationMonikers);
+			"search", "elasticsearch", "/docs/search.md");
 
 		act.Should().NotThrow();
 	}
 
 	[Fact]
-	public void ValidateSlugForCollisions_IsCaseInsensitive()
+	public void ValidateSlugForCollisions_AllowsValidSlug()
 	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index", "get" };
-
 		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			"SEARCH", "elasticsearch", "/docs/search.md", operationMonikers);
+			"overview", "elasticsearch", "/docs/overview.md");
 
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*conflicts with existing operation moniker*");
+		act.Should().NotThrow();
 	}
 }
