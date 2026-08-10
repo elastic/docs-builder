@@ -83,11 +83,18 @@
 		background-color: var(--color-grey-10);
 		color: var(--color-ink-dark);
 	}
+	/* The letter fallback keeps the fixed chip. A product mark does not: its box hugs
+	   the glyph, so the mark's left edge lines up with the eyebrow and the description
+	   below it. Each icon's viewBox is cropped to its glyph, so there is no transparent
+	   padding left to absorb. Width follows from the glyph's own aspect ratio. */
 	.hub-hero .hub-hero-icon-svg {
+		width: auto;
+		height: 40px;
 		background-color: transparent;
+		border-radius: 0;
 	}
 	.hub-hero .hub-hero-icon-svg svg {
-		width: 40px;
+		width: auto;
 		height: 40px;
 	}
 	.hub-hero .hub-hero-top h1 {
