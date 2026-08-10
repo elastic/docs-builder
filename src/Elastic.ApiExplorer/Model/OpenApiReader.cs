@@ -11,14 +11,18 @@ using YamlDotNet.RepresentationModel;
 
 namespace Elastic.ApiExplorer.Model;
 
-public static class OpenApiReader
+public sealed class OpenApiReader : IOpenApiSpecificationReader
 {
 	private const string JsonFormat = "json";
 
-	public static bool SupportsSpecFileName(string specFileName) =>
+	public static OpenApiReader Instance { get; } = new OpenApiReader();
+
+	private OpenApiReader() { }
+
+	private static bool SupportsSpecFileName(string specFileName) =>
 		Path.GetExtension(specFileName).ToLowerInvariant() is ".json" or ".yaml" or ".yml";
 
-	public static async Task<OpenApiDocument?> Create(IFileInfo openApiSpecification)
+	public async Task<OpenApiDocument?> ReadAsync(IFileInfo openApiSpecification)
 	{
 		if (!openApiSpecification.Exists)
 			return null;
@@ -27,7 +31,7 @@ public static class OpenApiReader
 			return null;
 
 		await using var fs = openApiSpecification.OpenRead();
-		return await CreateFromStream(fs, openApiSpecification.Name);
+		return await ReadAsync(fs, openApiSpecification.Name);
 	}
 
 	/// <summary>
@@ -39,7 +43,7 @@ public static class OpenApiReader
 	/// YAML 1.2, so one parser covers both. Microsoft.OpenApi accepts JSON input only, so the parsed
 	/// tree is serialized to JSON before <see cref="OpenApiDocument.LoadAsync"/> runs.
 	/// </remarks>
-	public static async Task<OpenApiDocument?> CreateFromStream(Stream stream, string specFileName)
+	public async Task<OpenApiDocument?> ReadAsync(Stream stream, string specFileName)
 	{
 		if (!SupportsSpecFileName(specFileName))
 			return null;

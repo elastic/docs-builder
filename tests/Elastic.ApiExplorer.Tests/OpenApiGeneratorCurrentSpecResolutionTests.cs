@@ -11,7 +11,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.OpenApi;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -42,16 +44,24 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var context = CreateContext(collector);
 		var localFile = new FileSystem().FileInfo.New(
 			Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch-openapi-docs.json"));
-		localFile.Exists.Should().BeTrue();
+		var expectedDocument = SpecDocument();
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		A.CallTo(() => reader.ReadAsync(localFile)).Returns(expectedDocument);
 
 		var handler = new ThrowingHandler();
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler);
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader);
 
 		var document = await generator.ResolveCurrentDocument("elasticsearch", ApiConfig(localFile), TestContext.Current.CancellationToken);
 
-		document.Should().NotBeNull();
+		document.Should().BeSameAs(expectedDocument);
 		handler.CallCount.Should().Be(0, "a local spec file must short-circuit remote version resolution entirely");
+		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
@@ -73,7 +83,15 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 				""")
 			: SpecResponse());
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
+		var expectedDocument = SpecDocument();
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).Returns(expectedDocument);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader);
 
 		// The sample docset's own kibana/dashboard entries fail product validation against this
 		// test's minimal products config; only care about diagnostics from resolving 'elasticsearch'.
@@ -81,14 +99,14 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 
 		var document = await generator.ResolveCurrentDocument("elasticsearch", ApiConfig(null), TestContext.Current.CancellationToken);
 
-		document.Should().NotBeNull();
-		document!.Info!.Title.Should().Be("Elasticsearch API");
+		document.Should().BeSameAs(expectedDocument);
 		handler.RequestedPaths.Should().BeEquivalentTo(
 		[
 			"/index.json",
 			"/elastic/elasticsearch/main/elasticsearch-openapi.json"
 		]);
 		collector.Errors.Should().Be(errorsBeforeResolution, string.Join("; ", collector.ErrorMessages));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
@@ -100,14 +118,27 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, maxAttempts: 1, sleep: (_, _) => Task.CompletedTask);
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader);
 		var errorsBeforeResolution = collector.Errors;
 
 		var document = await generator.ResolveCurrentDocument("elasticsearch", ApiConfig(null), TestContext.Current.CancellationToken);
 
 		document.Should().BeNull();
 		collector.Errors.Should().BeGreaterThan(errorsBeforeResolution);
+		A.CallTo(() => reader.ReadAsync(A<IFileInfo>._)).MustNotHaveHappened();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).MustNotHaveHappened();
 	}
+
+	private static OpenApiDocument SpecDocument() => new()
+	{
+		Info = new OpenApiInfo { Title = "Elasticsearch API", Version = "9.4" }
+	};
 
 	private static HttpResponseMessage IndexResponse(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };

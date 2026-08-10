@@ -33,12 +33,14 @@ public class OpenApiGenerator(
 	ILoggerFactory logFactory,
 	BuildContext context,
 	IMarkdownStringRenderer markdownStringRenderer,
-	VersionIndexClient? versionIndexClient = null)
+	VersionIndexClient? versionIndexClient = null,
+	IOpenApiSpecificationReader? openApiReader = null)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
+	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
 
 	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null) =>
 		new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig);
@@ -85,7 +87,7 @@ public class OpenApiGenerator(
 	internal async Task<OpenApiDocument?> ResolveCurrentDocument(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
 	{
 		if (apiConfig.LocalSpecFile is { } localFile)
-			return await OpenApiReader.Create(localFile);
+			return await _openApiReader.ReadAsync(localFile);
 
 		var versions = await _versionIndexClient.ResolveVersionsAsync(context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
 		var current = versions.FirstOrDefault(v => v.Moniker == "main");
@@ -100,13 +102,13 @@ public class OpenApiGenerator(
 		}
 
 		if (current.IsLocal)
-			return await OpenApiReader.Create(current.LocalFile!);
+			return await _openApiReader.ReadAsync(current.LocalFile!);
 
 		var stream = await _versionIndexClient.FetchSpecStreamAsync(apiKey, current, context.Collector, ctx).ConfigureAwait(false);
 		if (stream is null)
 			return null;
 
-		return await OpenApiReader.CreateFromStream(stream, apiConfig.SpecFileName).ConfigureAwait(false);
+		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName).ConfigureAwait(false);
 	}
 
 	private static readonly OpenApiDocument CatalogDocument = new()
