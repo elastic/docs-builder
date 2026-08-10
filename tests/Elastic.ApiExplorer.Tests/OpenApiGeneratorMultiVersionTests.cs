@@ -44,13 +44,13 @@ public class OpenApiGeneratorMultiVersionTests
 		IFileInfo? localSpecFile = null,
 		string specFileName = "elasticsearch-openapi.json",
 		string? repository = null) => new()
-	{
-		ProductKey = product.Id,
-		Product = product,
-		SpecFileName = specFileName,
-		LocalSpecFile = localSpecFile,
-		Repository = repository
-	};
+		{
+			ProductKey = product.Id,
+			Product = product,
+			SpecFileName = specFileName,
+			LocalSpecFile = localSpecFile,
+			Repository = repository
+		};
 
 	private static ProductsConfiguration ProductsFor(params Product[] products) =>
 		new()
@@ -100,9 +100,9 @@ public class OpenApiGeneratorMultiVersionTests
 
 		documents.Should().HaveCount(3);
 		documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9", "8"]);
-		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch" && d.Document.Info!.Title == "Elasticsearch main");
-		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch/v9" && d.Document.Info!.Title == "Elasticsearch 9");
-		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch/v8" && d.Document.Info!.Title == "Elasticsearch 8");
+		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch" && d.Document.Info.Title == "Elasticsearch main");
+		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch/v9" && d.Document.Info.Title == "Elasticsearch 9");
+		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch/v8" && d.Document.Info.Title == "Elasticsearch 8");
 	}
 
 	[Fact]
