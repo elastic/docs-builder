@@ -35,11 +35,12 @@ Each action is a single markdown link. Actions render left to right, in the orde
 
 ```markdown
 :::{hero}
-:icon: kibana
-:title: Kibana documentation hub
-:description: The UI for the Elasticsearch platform.
-:primary-action: [Get started](#get-started)
-:secondary-action: [Browse the docs](/explore-analyze.md)
+:icon: elasticsearch
+:title: Elasticsearch documentation hub
+:description: The distributed search and analytics engine.
+:primary-action: [Install Elasticsearch](https://www.elastic.co/downloads/elasticsearch)
+:secondary-action: [Get started](#get-started)
+:tertiary-action: [Syntax reference](/syntax/hero.md)
 :::
 ```
 
@@ -47,10 +48,12 @@ An action whose URL starts with `#` renders with a chevron, to signal an in-page
 
 Action URLs validate at build time. Use one of these forms:
 
-- An in-page anchor, for example `#get-started`.
-- A site-absolute path that starts with `/`, for a page in the same repository.
-- A cross-link scheme such as `elasticsearch://`, for a page in another repository.
-- An external URL.
+| Form | Example | Behavior |
+|---|---|---|
+| In-page anchor | `#get-started` | Renders a chevron. |
+| Site-absolute path | `/syntax/hero.md` | The markdown extension is stripped. The link preloads on hover. |
+| Cross-link scheme | `elasticsearch://reference/index.md` | Resolves through the link index. |
+| External URL | `https://www.elastic.co/downloads/elasticsearch` | Opens in a new tab, with `rel="noopener noreferrer"`. Does not preload. |
 
 A relative path such as `foo.md` is rejected. This differs from an inline markdown link, where a relative path resolves against the source file's directory.
 

@@ -35,7 +35,11 @@
 			<div class="hub-hero-actions">
 				@foreach (var action in Model.Actions)
 				{
-					<a class="hub-hero-action @(action.IsPrimary ? "hub-hero-action-primary" : "hub-hero-action-secondary")" href="@Model.PrefixUrl(action.Url)" preload="@Htmx.Preload">
+					<a class="hub-hero-action @(action.IsPrimary ? "hub-hero-action-primary" : "hub-hero-action-secondary")"
+					   href="@Model.PrefixUrl(action.Url)"
+					   target="@(action.IsExternal ? "_blank" : null)"
+					   rel="@(action.IsExternal ? "noopener noreferrer" : null)"
+					   preload="@(action.IsAnchor || action.IsExternal ? null : Htmx.Preload)">
 						<span>@action.Label</span>
 						@if (action.IsAnchor)
 						{

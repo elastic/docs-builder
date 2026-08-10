@@ -73,7 +73,11 @@
 			">
 				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
 					<main id="content-container" class="min-w-0 mx-4 md:col-start-2 md:row-start-1">
-						<article id="markdown-content" class="markdown-content hub-content min-w-0" data-pagefind-body>
+						@* Keeps the markdown-content id, which hljs, smooth-scroll and toc-nav select on,
+						   but not the class. typography.css is unlayered and hub.css sits in @@layer
+						   components, so the class would override every hub rule regardless of
+						   specificity. Hub directives bring their own typography. *@
+						<article id="markdown-content" class="hub-content min-w-0" data-pagefind-body>
 							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 							@await RenderBodyAsync()
 						</article>

@@ -33,9 +33,18 @@ public class HeroViewModel : DirectiveViewModel
 
 	private static void Add(List<HeroAction> actions, string? label, string? url, bool isPrimary)
 	{
-		if (!string.IsNullOrWhiteSpace(label) && !string.IsNullOrWhiteSpace(url))
-			actions.Add(new HeroAction(label, url, isPrimary, url[0] == '#'));
+		if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(url))
+			return;
+
+		var isAnchor = url[0] == '#';
+		var isExternal = url.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+		actions.Add(new HeroAction(label, url, isPrimary, isAnchor, isExternal));
 	}
 }
 
-public sealed record HeroAction(string Label, string Url, bool IsPrimary, bool IsAnchor);
+/// <summary>
+/// One hero call to action. <paramref name="IsAnchor"/> drives the chevron that marks an in-page
+/// jump. <paramref name="IsExternal"/> follows the same rules as inline links: an external link
+/// opens in a new tab and skips preloading, and only an internal link is worth preloading.
+/// </summary>
+public sealed record HeroAction(string Label, string Url, bool IsPrimary, bool IsAnchor, bool IsExternal);

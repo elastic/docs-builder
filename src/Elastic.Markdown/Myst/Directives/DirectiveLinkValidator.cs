@@ -93,7 +93,13 @@ internal static class DirectiveLinkValidator
 	private static string StripMarkdownExtension(string path)
 	{
 		if (path.EndsWith("/index.md", StringComparison.OrdinalIgnoreCase))
-			return path[..^"/index.md".Length];
+		{
+			// "/index.md" is the site root, so stripping the whole segment would leave an
+			// empty href rather than "/".
+			var stripped = path[..^"/index.md".Length];
+			return stripped.Length == 0 ? "/" : stripped;
+		}
+
 		return path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 			? path[..^".md".Length]
 			: path;

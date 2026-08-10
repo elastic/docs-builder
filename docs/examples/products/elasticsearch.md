@@ -7,4 +7,7 @@ description: Elasticsearch documentation. Index, search, and analyze your data a
 :icon: elasticsearch
 :title: Elasticsearch documentation hub
 :description: The distributed search and analytics engine at the heart of the Elastic platform. Index, search, and analyze data at any scale, build semantic and vector search experiences, and power applications. Run it as a managed service or in your own environment.
+:primary-action: [Install Elasticsearch](https://www.elastic.co/downloads/elasticsearch)
+:secondary-action: [Release notes](https://www.elastic.co/docs/release-notes/elasticsearch)
+:tertiary-action: [Syntax reference](/syntax/hero.md)
 :::
