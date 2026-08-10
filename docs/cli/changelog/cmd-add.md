@@ -87,6 +87,18 @@ The same order applies when using `--report` (after PR URLs are resolved from th
 
 If none of these steps yield at least one product, the command returns an error.
 
+## Feature ID resolution
+
+The optional `feature-id` field associates a changelog with a feature flag or project.
+The `changelog add` command resolves it in the following order:
+
+1. The `--feature-id` CLI option always takes priority.
+1. If `pivot.features` is defined in the changelog configuration file and the PR or issue has labels that match, that feature ID is used.
+   If the PR or issue has multiple labels that map to different feature IDs, the first match is used and a warning is emitted.
+
+When you map unreleased features in `pivot.features`, also list those feature IDs under the relevant bundle profile's [`hide_features`](/data/release-notes/configure-ref.md#bundle-profiles) setting so the entries stay commented out until the feature is ready to publish.
+For more information, refer to [](/data/release-notes/bundle.md#changelog-bundle-hide-features).
+
 ## Configuration checks
 
 By default, the command checks `docs/changelog.yml` for a configuration file. You can specify a different path with `--config`.

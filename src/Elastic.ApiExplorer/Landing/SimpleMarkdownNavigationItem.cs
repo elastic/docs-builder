@@ -46,21 +46,15 @@ public class SimpleMarkdownNavigationItem(
 			.Replace('_', '-');
 	}
 
-	/// <summary>Throws if the slug collides with reserved API Explorer segments or an operation moniker.</summary>
-	public static void ValidateSlugForCollisions(string slug, string productKey, string filePath, HashSet<string>? operationMonikers = null)
+	/// <summary>Throws if the slug collides with reserved API Explorer path segments.</summary>
+	public static void ValidateSlugForCollisions(string slug, string productKey, string filePath)
 	{
-		string[] reservedSegments = ["types", "tags"];
+		string[] reservedSegments = ["types", "group", "operation"];
 
 		if (reservedSegments.Contains(slug, StringComparer.OrdinalIgnoreCase))
 		{
 			throw new InvalidOperationException(
 				$"Markdown file slug '{slug}' (from '{filePath}') conflicts with reserved API Explorer segment in product '{productKey}'. Reserved segments: {string.Join(", ", reservedSegments)}");
-		}
-
-		if (operationMonikers != null && operationMonikers.Contains(slug))
-		{
-			throw new InvalidOperationException(
-				$"Markdown file slug '{slug}' (from '{filePath}') conflicts with existing operation moniker in product '{productKey}'. Consider renaming the markdown file to avoid this collision.");
 		}
 	}
 
