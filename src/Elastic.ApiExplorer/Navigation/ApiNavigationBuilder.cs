@@ -148,17 +148,17 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				_ = operationMonikers.Add(ApiUrlBuilder.OperationMoniker(operation.Value.OperationId, path.Key));
 		}
 
-		// Add intro and outro markdown pages if available
+		// Add explicit children declared via 'children:' below the landing page and before the
+		// generated OpenAPI groups, in declared order.
 		var finalNavigationItems = new List<INavigationItem>();
 		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-		// Add intro pages first
-		if (apiConfig?.IntroMarkdownFiles.Count > 0)
+		if (apiConfig?.Children.Count > 0)
 		{
-			foreach (var introFile in apiConfig.IntroMarkdownFiles)
+			foreach (var childFile in apiConfig.Children)
 			{
-				var introNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, introFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
-				finalNavigationItems.Add(introNavItem);
+				var childNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, childFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
+				finalNavigationItems.Add(childNavItem);
 			}
 		}
 
@@ -167,16 +167,6 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			finalNavigationItems.AddRange(topLevelNavigationItems);
 		else if (rootNavigation.NavigationItems.Count > 0)
 			finalNavigationItems.AddRange(rootNavigation.NavigationItems);
-
-		// Add outro pages last
-		if (apiConfig?.OutroMarkdownFiles.Count > 0)
-		{
-			foreach (var outroFile in apiConfig.OutroMarkdownFiles)
-			{
-				var outroNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, outroFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
-				finalNavigationItems.Add(outroNavItem);
-			}
-		}
 
 		// Set the final navigation items
 		if (finalNavigationItems.Count > 0)

@@ -16,14 +16,13 @@ public static class OpenApiReader
 		if (!openApiSpecification.Exists)
 			return null;
 
+		await using var fs = openApiSpecification.OpenRead();
 		var settings = new OpenApiReaderSettings
 		{
 			LeaveStreamOpen = false,
 			RuleSet = ValidationRuleSet.GetEmptyRuleSet()
 		};
-		await using var fs = openApiSpecification.OpenRead();
 		var openApiDocument = await OpenApiDocument.LoadAsync(fs, settings: settings);
 		return openApiDocument.Document;
 	}
-
 }

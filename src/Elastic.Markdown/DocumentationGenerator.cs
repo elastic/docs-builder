@@ -507,8 +507,8 @@ public partial class DocumentationGenerator
 	}
 
 	/// <summary>
-	/// Checks if a file path is registered as an intro/outro file in any API configuration.
-	/// These files should be rendered via the API pipeline rather than normal HTML generation.
+	/// Checks if a file path is registered as an explicit <c>children:</c> page in any API
+	/// configuration. These files render via the API pipeline rather than normal HTML generation.
 	/// </summary>
 	private bool IsApiMarkdownFile(string relativePath)
 	{
@@ -519,21 +519,9 @@ public partial class DocumentationGenerator
 
 		foreach (var apiConfig in Context.Configuration.ApiConfigurations.Values)
 		{
-			// Check intro files
-			foreach (var introFile in apiConfig.IntroMarkdownFiles)
+			foreach (var childPath in apiConfig.GetMarkdownPathsToExclude(Context.DocumentationSourceDirectory.FullName))
 			{
-				var introRelativePath = Path.GetRelativePath(Context.DocumentationSourceDirectory.FullName, introFile.FullName)
-					.Replace(Path.DirectorySeparatorChar, '/');
-				if (string.Equals(normalized, introRelativePath, StringComparison.OrdinalIgnoreCase))
-					return true;
-			}
-
-			// Check outro files
-			foreach (var outroFile in apiConfig.OutroMarkdownFiles)
-			{
-				var outroRelativePath = Path.GetRelativePath(Context.DocumentationSourceDirectory.FullName, outroFile.FullName)
-					.Replace(Path.DirectorySeparatorChar, '/');
-				if (string.Equals(normalized, outroRelativePath, StringComparison.OrdinalIgnoreCase))
+				if (string.Equals(normalized, childPath, StringComparison.OrdinalIgnoreCase))
 					return true;
 			}
 		}

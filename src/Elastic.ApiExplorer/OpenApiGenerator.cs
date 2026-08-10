@@ -35,33 +35,24 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		// Use the new API configurations if available, otherwise fall back to legacy OpenApiSpecifications
-		if (context.Configuration.ApiConfigurations is not null)
+		if (context.Configuration.ApiConfigurations is null)
+			return;
+
+		foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 		{
-			foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
+			if (apiConfig.LocalSpecFile is not { } localSpecFile)
 			{
-				// Validate assumption of single spec per product
-				if (apiConfig.SpecFiles.Count > 1)
-					throw new InvalidOperationException($"API product '{prefix}' has {apiConfig.SpecFiles.Count} spec files, but only one spec file per product is currently supported.");
-
-				var openApiDocument = await OpenApiReader.Create(apiConfig.PrimarySpecFile);
-				if (openApiDocument is null)
-					continue;
-
-				await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
+				context.Collector.EmitGlobalWarning(
+					$"API '{prefix}' has no local spec file at the declared 'spec:' path. " +
+					"Skipping API generation until remote version-index resolution ships in #719.");
+				continue;
 			}
-		}
-		else if (context.Configuration.OpenApiSpecifications is not null)
-		{
-			// Legacy fallback
-			foreach (var (prefix, path) in context.Configuration.OpenApiSpecifications)
-			{
-				var openApiDocument = await OpenApiReader.Create(path);
-				if (openApiDocument is null)
-					continue;
 
-				await GenerateApiProduct(prefix, openApiDocument, null, ctx);
-			}
+			var openApiDocument = await OpenApiReader.Create(localSpecFile);
+			if (openApiDocument is null)
+				continue;
+
+			await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
 		}
 	}
 
