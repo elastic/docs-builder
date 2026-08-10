@@ -37,7 +37,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	protected ApiRenderContext RenderContext { get; } = context ?? throw new ArgumentNullException(nameof(context));
 
 
-	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(MarkdownRenderer, markdown);
+	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
 
 	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
 

@@ -96,7 +96,7 @@ public record OperationPageModel
 		var analyzer = new SchemaAnalyzer(document);
 		var options = new PropertyDisplayOptions
 		{
-			RenderMarkdown = markdown => ApiMarkdown.Render(context.MarkdownRenderer, markdown),
+			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
 			VersionsConfiguration = context.BuildContext.VersionsConfiguration
 		};
