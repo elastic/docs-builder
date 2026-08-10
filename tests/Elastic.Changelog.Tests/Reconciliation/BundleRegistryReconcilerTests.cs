@@ -10,18 +10,18 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Tests.Reconciliation;
 
-public class RegistryReconcilerTests
+public class BundleRegistryReconcilerTests
 {
 	private const string PublicBucket = "public-bucket";
 
 	private static readonly DateTimeOffset FixedNow = new(2026, 7, 28, 12, 0, 0, TimeSpan.Zero);
 
 	private readonly FakeS3 _s3 = new(PublicBucket);
-	private readonly RegistryReconciler _reconciler;
+	private readonly BundleRegistryReconciler _reconciler;
 	private readonly ReconcileMetrics _metrics = new();
 
-	public RegistryReconcilerTests() =>
-		_reconciler = new RegistryReconciler(
+	public BundleRegistryReconcilerTests() =>
+		_reconciler = new BundleRegistryReconciler(
 			NullLoggerFactory.Instance,
 			_s3.Client,
 			PublicBucket,
@@ -68,7 +68,7 @@ public class RegistryReconcilerTests
 		_s3.Seed(PublicBucket, scope.Prefix + file, BundleYaml(product ?? scope.Group, target));
 
 	private void SeedManifest(ChangelogScope scope, params RegistryBundle[] bundles) =>
-		SeedManifest(scope, RegistryReconciler.Producer, Registry.CurrentSchemaVersion, bundles);
+		SeedManifest(scope, BundleRegistryReconciler.Producer, Registry.CurrentSchemaVersion, bundles);
 
 	private void SeedManifest(ChangelogScope scope, string? producer, int schemaVersion, params RegistryBundle[] bundles)
 	{
@@ -112,7 +112,7 @@ public class RegistryReconcilerTests
 		manifest.Bundles.Select(b => b.File).Should().Equal(
 			"es-9.4.0.yaml", "es-9.3.0.yaml", "es-9.2.0.yaml", "es-9.1.0.yaml");
 		manifest.Bundles.Should().OnlyContain(b => b.Target != null);
-		manifest.Producer.Should().Be(RegistryReconciler.Producer);
+		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
 
 		// 1 and 2 were ETag-reused: only the manifest itself plus 3 and 4 were read.
 		_s3.GetsFor(PublicBucket).Should().BeEquivalentTo([
@@ -248,7 +248,7 @@ public class RegistryReconcilerTests
 		outcome.Should().Be(GroupReconcileOutcome.Written);
 		_s3.GetsFor(PublicBucket).Should().Contain(scope.Prefix + "es-9.1.0.yaml", "producer mismatch disables ETag reuse");
 		var manifest = WrittenManifest();
-		manifest.Producer.Should().Be(RegistryReconciler.Producer);
+		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
 		manifest.Bundles.Single().Should().BeEquivalentTo(new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag });
 	}
 
@@ -412,7 +412,7 @@ public class RegistryReconcilerTests
 	{
 		var scope = BundleScope();
 		_ = SeedBundle(scope, "es-9.1.0.yaml", "9.1.0");
-		SeedManifest(scope, RegistryReconciler.Producer, schemaVersion: Registry.CurrentSchemaVersion + 1);
+		SeedManifest(scope, BundleRegistryReconciler.Producer, schemaVersion: Registry.CurrentSchemaVersion + 1);
 		var before = _s3.ContentOf(PublicBucket, scope.RegistryKey);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);

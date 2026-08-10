@@ -54,7 +54,7 @@ async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	using var logFactory = new LambdaLoggerFactory(context.Logger);
 	var metrics = new ReconcileMetrics();
 	var scrubber = new ChangelogContentScrubber(logFactory, allowRepos);
-	var reconciler = new RegistryReconciler(logFactory, s3Client, publicBucketName, metrics: metrics);
+	var reconciler = new BundleRegistryReconciler(logFactory, s3Client, publicBucketName, metrics: metrics);
 	var shallowReconciler = new ShallowRegistryReconciler(logFactory, s3Client, publicBucketName, metrics: metrics);
 	var processor = new ScrubberProcessor(logFactory, s3Client, publicBucketName, scrubber, reconciler, shallowReconciler, metrics);
 

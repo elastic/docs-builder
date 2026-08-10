@@ -51,7 +51,7 @@ public sealed class ReconcileConflictException(string message) : Exception(messa
 /// discovery starts from PR lists, so those manifests stay client-authored pass-through until
 /// Phase 3 retires them entirely.
 /// </remarks>
-public sealed class RegistryReconciler(
+public sealed class BundleRegistryReconciler(
 	ILoggerFactory logFactory,
 	IAmazonS3 s3Client,
 	string publicBucketName,
@@ -73,7 +73,7 @@ public sealed class RegistryReconciler(
 	// First-heal of a large group GETs every unlisted YAML; keep those reads bounded.
 	private const int MaxParallelReads = 4;
 
-	private readonly ILogger _logger = logFactory.CreateLogger<RegistryReconciler>();
+	private readonly ILogger _logger = logFactory.CreateLogger<BundleRegistryReconciler>();
 	private readonly TimeProvider _time = timeProvider ?? TimeProvider.System;
 	private readonly TimeSpan _retryBaseDelay = retryBaseDelay ?? TimeSpan.FromMilliseconds(200);
 	private readonly ReconcileMetrics _metrics = metrics ?? new ReconcileMetrics();

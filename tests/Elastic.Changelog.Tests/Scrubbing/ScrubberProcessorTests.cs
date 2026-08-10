@@ -30,7 +30,7 @@ public class ScrubberProcessorTests
 		_ = A.CallTo(() => _scrubber.ScrubAsync(A<string>._, A<string>._, A<Cancel>._))
 			.ReturnsLazily((string _, string content, Cancel _) => Task.FromResult("scrubbed: " + content));
 
-		var reconciler = new RegistryReconciler(
+		var reconciler = new BundleRegistryReconciler(
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
 		var shallowReconciler = new ShallowRegistryReconciler(
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
@@ -116,7 +116,7 @@ public class ScrubberProcessorTests
 		failed.Should().BeEmpty();
 		// The public manifest was reconciled from the listing — not copied from the private one.
 		var manifest = PublicManifest("bundle/elasticsearch/registry.json");
-		manifest.Producer.Should().Be(RegistryReconciler.Producer);
+		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
 		manifest.Bundles.Select(b => b.File).Should().Equal("es-9.1.0.yaml");
 		_s3.GetsFor(PrivateBucket).Should().BeEmpty("the private bundle registry content must never be read for pass-through");
 	}

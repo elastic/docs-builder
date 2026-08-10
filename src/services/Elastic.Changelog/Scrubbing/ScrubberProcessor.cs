@@ -29,7 +29,7 @@ public sealed class ScrubberProcessor(
 	IAmazonS3 s3Client,
 	string publicBucketName,
 	IChangelogContentScrubber scrubber,
-	RegistryReconciler reconciler,
+	BundleRegistryReconciler reconciler,
 	ShallowRegistryReconciler shallowReconciler,
 	ReconcileMetrics? metrics = null
 )
