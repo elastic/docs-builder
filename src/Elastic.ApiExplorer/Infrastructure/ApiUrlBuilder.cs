@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -9,7 +10,7 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// <summary>
 /// The single source of URL path segments (monikers) for API explorer pages.
 /// </summary>
-public static class ApiUrlBuilder
+public static partial class ApiUrlBuilder
 {
 	/// <summary>
 	/// Deterministic URL leaf for an operation page under <c>.../operation/</c>: lowercase
@@ -36,13 +37,18 @@ public static class ApiUrlBuilder
 
 		var s = tagName.Trim();
 		s = string.Join(" ", s.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+		s = ParentheticalSuffixPattern().Replace(s, "-$1");
 		s = s.Replace("{", string.Empty, StringComparison.Ordinal);
 		s = s.Replace("}", string.Empty, StringComparison.Ordinal);
 		s = s.Replace("/", "-", StringComparison.Ordinal);
 		s = s.Replace(" ", "-", StringComparison.Ordinal);
+		s = s.ToLowerInvariant();
 		if (string.IsNullOrEmpty(s))
 			return "endpoint-unknown";
 
 		return $"endpoint-{s}";
 	}
+
+	[GeneratedRegex(@"\s*\(([^)]+)\)")]
+	private static partial Regex ParentheticalSuffixPattern();
 }

@@ -857,6 +857,8 @@ public class TagMetadataTests
 	[Theory]
 	[InlineData("cat", "endpoint-cat")]
 	[InlineData("health_report", "endpoint-health_report")]
+	[InlineData("APM agent configuration", "endpoint-apm-agent-configuration")]
+	[InlineData("Elastic Package Manager (EPM)", "endpoint-elastic-package-manager-epm")]
 	public void TagMoniker_MatchesBumpShScheme(string tagName, string expected)
 	{
 		ApiUrlBuilder.TagMoniker(tagName).Should().Be(expected);
