@@ -1,0 +1,33 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
+<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
+	<nav
+		id="pages-nav"
+		class="sidebar-nav h-full simple-scrollbar">
+		@if (Model.VersionSwitcherItems.Count > 1)
+		{
+			<div class="sticky top-0 z-10 bg-white px-4 pt-4 pb-2">
+				<label for="api-version-switcher" class="sr-only">API version</label>
+				<select
+					id="api-version-switcher"
+					class="w-full border border-grey-20 rounded-sm font-sans font-semibold text-sm pl-3 pr-8 py-2 bg-white hover:border-grey-40 focus:outline-none focus:ring-2 focus:ring-blue-elastic-50 cursor-pointer"
+					onchange="window.location.href = this.value">
+					@foreach (var item in Model.VersionSwitcherItems)
+					{
+						<option value="@item.Url" selected="@item.Selected">@item.Label</option>
+					}
+				</select>
+			</div>
+		}
+		@(new HtmlString(Model.NavigationHtml))
+	</nav>
+	@* ReSharper disable once Html.IdNotResolved *@
+	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+		</svg>
+	</label>
+</aside>
+@* ReSharper disable once Html.IdNotResolved *@
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
+
+</label>

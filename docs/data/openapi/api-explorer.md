@@ -162,8 +162,21 @@ entry in the index, the build fails with an error naming the API and what was mi
 spec file is also configured, that error becomes a warning instead, and the build falls back to
 rendering the local file.
 
-Today only the `main` moniker is rendered — there is no version-prefixed output or version
-switcher yet.
+For versioned products, {{dbuild}} renders every resolved version from the index:
+
+| Index moniker | URL path | Role |
+|---|---|---|
+| `main` | `/api/doc/<key>/` | Canonical current-major tree |
+| `9`, `8`, … | `/api/doc/<key>/v9/`, `/api/doc/<key>/v8/`, … | Released major snapshots |
+
+The numeric `9` entry is a frozen v9 snapshot. It is distinct from the moving `main` entry.
+When a local spec file exists, it overrides only the `main` moniker. Older majors still resolve
+remotely through the index.
+
+Versionless products (`versioning: serverless` and similar) render only the unversioned
+`/api/doc/<key>/` path even when the index lists historical monikers. When more than one
+version is rendered, API pages show a simple version dropdown at the top of the left navigation
+rail. The dropdown links to each version's landing page.
 
 ### Smoke-test every CloudFront spec locally
 
