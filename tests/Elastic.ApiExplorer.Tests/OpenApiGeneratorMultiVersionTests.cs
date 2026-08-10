@@ -84,7 +84,7 @@ public class OpenApiGeneratorMultiVersionTests
 	[Fact]
 	public async Task ResolveDocumentsForProduct_MultiMajorIndex_ResolvesMainAndNumericVersions()
 	{
-		var collector = new CapturingDiagnosticsCollector();
+		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
@@ -100,34 +100,21 @@ public class OpenApiGeneratorMultiVersionTests
 
 		documents.Should().HaveCount(3);
 		documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9", "8"]);
-		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch" && d.Document.Info.Title == "Elasticsearch main");
-		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch/v9" && d.Document.Info.Title == "Elasticsearch 9");
-		documents.Should().ContainSingle(d => d.ApiUrlSuffix == "elasticsearch/v8" && d.Document.Info.Title == "Elasticsearch 8");
-	}
-
-	[Fact]
-	public async Task ResolveDocumentsForProduct_CurrentMajorNine_StillRendersNumericNineTree()
-	{
-		var collector = new CapturingDiagnosticsCollector();
-		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
-		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
-		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
-		var reader = CreateSequentialReader(
-			SpecDocument("Elasticsearch main"),
-			SpecDocument("Elasticsearch 9"),
-			SpecDocument("Elasticsearch 8"));
-		var generator = CreateGenerator(context, versionIndexClient, reader);
-
-		var documents = await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
-
-		documents.Should().Contain(d => d.Version.Moniker == "9" && d.ApiUrlSuffix == "elasticsearch/v9");
+		documents.Should().ContainSingle(d =>
+			ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch"
+			&& d.Document.Info.Title == "Elasticsearch main");
+		documents.Should().ContainSingle(d =>
+			ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v9"
+			&& d.Document.Info.Title == "Elasticsearch 9");
+		documents.Should().ContainSingle(d =>
+			ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v8"
+			&& d.Document.Info.Title == "Elasticsearch 8");
 	}
 
 	[Fact]
 	public async Task ResolveDocumentsForProduct_VersionlessProduct_RendersMainOnly()
 	{
-		var collector = new CapturingDiagnosticsCollector();
+		var collector = new DiagnosticsCollector([]);
 		var versionless = TestHelpers.CreateVersionlessConfiguration();
 		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
 		var context = CreateContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
@@ -140,13 +127,13 @@ public class OpenApiGeneratorMultiVersionTests
 
 		documents.Should().ContainSingle();
 		documents[0].Version.Moniker.Should().Be("main");
-		documents[0].ApiUrlSuffix.Should().Be("cloud-serverless");
+		ApiUrlBuilder.ProductSuffix("cloud-serverless", documents[0].Version.Moniker).Should().Be("cloud-serverless");
 	}
 
 	[Fact]
 	public async Task ResolveDocumentsForProduct_LocalMainAndRemoteHistoricalVersions_ResolvesAllTrees()
 	{
-		var collector = new CapturingDiagnosticsCollector();
+		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
@@ -192,7 +179,7 @@ public class OpenApiGeneratorMultiVersionTests
 	[Fact]
 	public async Task Generate_WritesDistinctOutputTreesForMainAndReleasedMajors()
 	{
-		var collector = new CapturingDiagnosticsCollector();
+		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
@@ -297,11 +284,5 @@ public class OpenApiGeneratorMultiVersionTests
 	{
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
 			Task.FromResult(responder(request));
-	}
-
-	private sealed class CapturingDiagnosticsCollector() : DiagnosticsCollector([])
-	{
-		public override DiagnosticsCollector StartAsync(Cancel ctx) => this;
-		public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
 	}
 }

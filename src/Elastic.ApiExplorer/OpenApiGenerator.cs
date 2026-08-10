@@ -21,13 +21,7 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer;
 
-/// <summary>
-/// One resolved OpenAPI document for a version-index moniker, with the URL suffix used for navigation and output.
-/// </summary>
-internal sealed record VersionedOpenApiDocument(
-	ResolvedApiVersion Version,
-	OpenApiDocument Document,
-	string ApiUrlSuffix);
+internal sealed record VersionedOpenApiDocument(ResolvedApiVersion Version, OpenApiDocument Document);
 
 /// <summary>
 /// Renders API explorer pages for every configured OpenAPI specification: builds the navigation
@@ -69,10 +63,13 @@ public class OpenApiGenerator(
 				if (versionedDocuments.Count == 0)
 					continue;
 
+				var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
 				foreach (var versioned in versionedDocuments)
 				{
-					var switcherItems = BuildVersionSwitcherItems(versionedDocuments, versioned.Version.Moniker);
-					await GenerateApiProduct(versioned.ApiUrlSuffix, versioned.Document, apiConfig, switcherItems, ctx)
+					var switcherItems = ApiVersionSwitcher.Build(
+						context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
+					var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
+					await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherItems, ctx)
 						.ConfigureAwait(false);
 				}
 
@@ -104,22 +101,21 @@ public class OpenApiGenerator(
 		ResolvedApiConfiguration apiConfig,
 		Cancel ctx)
 	{
-		if (apiConfig.LocalSpecFile is { } localFile && IsVersionlessProduct(apiConfig.Product))
-			return await ResolveLocalMainOnly(apiKey, localFile).ConfigureAwait(false);
+		var versionless = IsVersionlessProduct(apiConfig.Product);
+		if (apiConfig.LocalSpecFile is { } localFile && versionless)
+			return await ResolveLocalMainOnly(localFile).ConfigureAwait(false);
 
 		var versions = await _versionIndexClient.ResolveVersionsAsync(
 			context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
 
-		var versionsToRender = IsVersionlessProduct(apiConfig.Product)
+		var versionsToRender = versionless
 			? versions.Where(v => v.Moniker == "main").ToArray()
 			: [.. versions];
 
 		if (versionsToRender.Length == 0)
 			return [];
 
-		if (!IsVersionlessProduct(apiConfig.Product)
-			&& versionsToRender.All(v => v.Moniker != "main")
-			&& versions.Count > 0)
+		if (!versionless && versionsToRender.All(v => v.Moniker != "main") && versions.Count > 0)
 		{
 			context.Collector.EmitGlobalWarning(
 				$"Version index for API '{apiKey}' has no 'main' entry; the unversioned path will not be rendered.");
@@ -132,41 +128,13 @@ public class OpenApiGenerator(
 			if (document is null)
 				continue;
 
-			results.Add(new VersionedOpenApiDocument(
-				version,
-				document,
-				ApiUrlBuilder.ProductSuffix(apiKey, version.Moniker)));
+			results.Add(new VersionedOpenApiDocument(version, document));
 		}
 
 		return results;
 	}
 
-	/// <summary>
-	/// Resolves the document to render for the current tree: the local override file when present,
-	/// otherwise the <c>main</c> moniker fetched remotely through the version index. Returns null when
-	/// nothing could be resolved; <see cref="VersionIndexClient"/> has already emitted the diagnostic.
-	/// </summary>
-	internal async Task<OpenApiDocument?> ResolveCurrentDocument(string apiKey, ResolvedApiConfiguration apiConfig, Cancel ctx)
-	{
-		if (apiConfig.LocalSpecFile is { } localFile)
-			return await _openApiReader.ReadAsync(localFile);
-
-		var versions = await _versionIndexClient.ResolveVersionsAsync(context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
-		var current = versions.FirstOrDefault(v => v.Moniker == "main");
-		if (current is null)
-		{
-			if (versions.Count > 0)
-			{
-				context.Collector.EmitGlobalWarning(
-					$"Version index for API '{apiKey}' has no 'main' entry; this API will not be rendered.");
-			}
-			return null;
-		}
-
-		return await ResolveDocumentForVersion(apiKey, apiConfig, current, ctx).ConfigureAwait(false);
-	}
-
-	private async Task<IReadOnlyList<VersionedOpenApiDocument>> ResolveLocalMainOnly(string apiKey, IFileInfo localFile)
+	private async Task<IReadOnlyList<VersionedOpenApiDocument>> ResolveLocalMainOnly(IFileInfo localFile)
 	{
 		var document = await _openApiReader.ReadAsync(localFile).ConfigureAwait(false);
 		if (document is null)
@@ -182,8 +150,7 @@ public class OpenApiGenerator(
 					IsLocal = true,
 					LocalFile = localFile
 				},
-				document,
-				ApiUrlBuilder.ProductSuffix(apiKey, "main"))
+				document)
 		];
 	}
 
@@ -227,14 +194,6 @@ public class OpenApiGenerator(
 
 		_ = await Render(navigation.Index, navigation.Index.Model, renderContext, navigationRenderer, ctx).ConfigureAwait(false);
 	}
-
-	private IReadOnlyList<ApiVersionSwitcherItem> BuildVersionSwitcherItems(
-		IReadOnlyList<VersionedOpenApiDocument> versions,
-		string currentMoniker) =>
-		ApiVersionSwitcher.Build(
-			context.UrlPathPrefix,
-			versions.Select(v => (v.Version.Moniker, v.ApiUrlSuffix)).ToArray(),
-			currentMoniker);
 
 	private async Task GenerateApiProduct(
 		string prefix,

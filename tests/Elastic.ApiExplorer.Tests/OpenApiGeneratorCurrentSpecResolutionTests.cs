@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Net;
 using AwesomeAssertions;
@@ -10,6 +11,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -22,26 +24,39 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	private static BuildContext CreateContext(DiagnosticsCollector collector, GitCheckoutInformation? git = null)
+	private static BuildContext CreateContext(
+		DiagnosticsCollector collector,
+		VersionsConfiguration? versionsConfiguration = null,
+		ProductsConfiguration? productsConfiguration = null,
+		GitCheckoutInformation? git = null)
 	{
 		var fs = FileSystemFactory.RealGitRootForPath(null);
-		return new BuildContext(collector, fs, fs, TestHelpers.CreateConfigurationContext(new FileSystem()),
+		return new BuildContext(collector, fs, fs,
+			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration),
 			ExportOptions.Default, null, null, gitCheckoutInformation: git);
 	}
 
-	private static ResolvedApiConfiguration ApiConfig(IFileInfo? localSpecFile) => new()
+	private static ResolvedApiConfiguration ApiConfig(Product product, IFileInfo? localSpecFile = null) => new()
 	{
-		ProductKey = "elasticsearch",
-		Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" },
+		ProductKey = product.Id,
+		Product = product,
 		SpecFileName = "elasticsearch-openapi.json",
 		LocalSpecFile = localSpecFile
 	};
 
 	[Fact]
-	public async Task ResolveCurrentDocument_LocalSpecPresent_RendersLocalFileWithoutAnyNetworkCall()
+	public async Task ResolveDocumentsForProduct_VersionlessLocalSpec_RendersLocalFileWithoutNetwork()
 	{
 		var collector = new DiagnosticsCollector([]);
-		var context = CreateContext(collector);
+		var versionless = TestHelpers.CreateVersionlessConfiguration();
+		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
+		var products = new ProductsConfiguration
+		{
+			Products = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
+			PublicReferenceProducts = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
+			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
+		};
+		var context = CreateContext(collector, versionless, products);
 		var localFile = new FileSystem().FileInfo.New(
 			Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch-openapi-docs.json"));
 		var expectedDocument = SpecDocument();
@@ -57,19 +72,22 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			versionIndexClient,
 			reader);
 
-		var document = await generator.ResolveCurrentDocument("elasticsearch", ApiConfig(localFile), TestContext.Current.CancellationToken);
+		var documents = await generator.ResolveDocumentsForProduct(
+			"cloud-serverless", ApiConfig(product, localFile), TestContext.Current.CancellationToken);
 
-		document.Should().BeSameAs(expectedDocument);
-		handler.CallCount.Should().Be(0, "a local spec file must short-circuit remote version resolution entirely");
+		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
+		handler.CallCount.Should().Be(0, "a versionless local spec must short-circuit remote version resolution");
 		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
-	public async Task ResolveCurrentDocument_NoLocalSpec_ResolvesRemoteMainThroughVersionIndex()
+	public async Task ResolveDocumentsForProduct_NoLocalSpec_ResolvesRemoteMainThroughVersionIndex()
 	{
 		var collector = new CapturingDiagnosticsCollector();
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var git = new GitCheckoutInformation { Branch = "main", Remote = "https://github.com/elastic/elasticsearch.git", Ref = "refs/heads/main" };
-		var context = CreateContext(collector, git);
+		var context = CreateContext(collector, stack, git: git);
 
 		var handler = new StubHandler(request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
 			? IndexResponse(/*lang=json,strict*/ """
@@ -93,13 +111,12 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			versionIndexClient,
 			reader);
 
-		// The sample docset's own kibana/dashboard entries fail product validation against this
-		// test's minimal products config; only care about diagnostics from resolving 'elasticsearch'.
 		var errorsBeforeResolution = collector.Errors;
 
-		var document = await generator.ResolveCurrentDocument("elasticsearch", ApiConfig(null), TestContext.Current.CancellationToken);
+		var documents = await generator.ResolveDocumentsForProduct(
+			"elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
 
-		document.Should().BeSameAs(expectedDocument);
+		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.RequestedPaths.Should().BeEquivalentTo(
 		[
 			"/index.json",
@@ -110,11 +127,13 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 	}
 
 	[Fact]
-	public async Task ResolveCurrentDocument_NoLocalSpecAndIndexUnreachable_ReturnsNullAndEmitsError()
+	public async Task ResolveDocumentsForProduct_NoLocalSpecAndIndexUnreachable_ReturnsEmptyAndEmitsError()
 	{
 		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var git = new GitCheckoutInformation { Branch = "main", Remote = "https://github.com/elastic/elasticsearch.git", Ref = "refs/heads/main" };
-		var context = CreateContext(collector, git);
+		var context = CreateContext(collector, stack, git: git);
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, maxAttempts: 1, sleep: (_, _) => Task.CompletedTask);
@@ -127,9 +146,10 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			reader);
 		var errorsBeforeResolution = collector.Errors;
 
-		var document = await generator.ResolveCurrentDocument("elasticsearch", ApiConfig(null), TestContext.Current.CancellationToken);
+		var documents = await generator.ResolveDocumentsForProduct(
+			"elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
 
-		document.Should().BeNull();
+		documents.Should().BeEmpty();
 		collector.Errors.Should().BeGreaterThan(errorsBeforeResolution);
 		A.CallTo(() => reader.ReadAsync(A<IFileInfo>._)).MustNotHaveHappened();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).MustNotHaveHappened();

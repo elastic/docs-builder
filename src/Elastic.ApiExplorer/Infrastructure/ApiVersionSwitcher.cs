@@ -4,23 +4,23 @@
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-/// <summary>Builds left-nav version switcher options from resolved API version monikers.</summary>
 public static class ApiVersionSwitcher
 {
 	public static IReadOnlyList<ApiVersionSwitcherItem> Build(
 		string? urlPathPrefix,
-		IReadOnlyList<(string Moniker, string ApiUrlSuffix)> versions,
+		string apiKey,
+		IReadOnlyList<string> monikers,
 		string currentMoniker)
 	{
-		if (versions.Count <= 1)
+		if (monikers.Count <= 1)
 			return [];
 
-		return versions
-			.OrderByDescending(v => v.Moniker == "main" ? int.MaxValue : ParseMajor(v.Moniker))
-			.Select(v => new ApiVersionSwitcherItem(
-				Label: v.Moniker == "main" ? "Latest" : $"{v.Moniker}.x",
-				Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, v.ApiUrlSuffix)}/",
-				Selected: v.Moniker == currentMoniker))
+		return monikers
+			.OrderByDescending(m => m == "main" ? int.MaxValue : ParseMajor(m))
+			.Select(m => new ApiVersionSwitcherItem(
+				Label: m == "main" ? "Latest" : $"{m}.x",
+				Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m))}/",
+				Selected: m == currentMoniker))
 			.ToArray();
 	}
 

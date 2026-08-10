@@ -12,7 +12,7 @@ public class ApiVersionSwitcherTests
 	[Fact]
 	public void Build_SingleVersion_ReturnsEmpty()
 	{
-		var items = ApiVersionSwitcher.Build("", [("main", "elasticsearch")], "main");
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main"], "main");
 
 		items.Should().BeEmpty();
 	}
@@ -22,11 +22,8 @@ public class ApiVersionSwitcherTests
 	{
 		var items = ApiVersionSwitcher.Build(
 			"",
-			[
-				("main", "elasticsearch"),
-				("9", "elasticsearch/v9"),
-				("8", "elasticsearch/v8")
-			],
+			"elasticsearch",
+			["main", "9", "8"],
 			"8");
 
 		items.Should().HaveCount(3);
