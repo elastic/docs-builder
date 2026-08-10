@@ -44,6 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MSBuildNoWarn: IDE0032
+      FEATURE_ASSEMBLER_API_EXPLORER: 'true'
     steps:
       - uses: actions/checkout@v7.0.0
         with:

@@ -52,6 +52,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["diagnostics-panel"] = value;
 	}
 
+	public bool AssemblerApiExplorerEnabled
+	{
+		get => IsEnabled("assembler-api-explorer");
+		set => _featureFlags["assembler-api-explorer"] = value;
+	}
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";
