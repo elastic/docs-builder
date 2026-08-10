@@ -154,9 +154,375 @@
 		flex-shrink: 0;
 	}
 
-	/* The arrow slides and the hero animates its hover states. Honour a reduced-motion
-	   preference. Nothing about the resting appearance changes. */
+	/* Zone (section heading) ------------------------------------------ */
+	.hub-zone {
+		@apply mx-auto w-full max-w-5xl;
+		margin-top: 56px;
+		margin-bottom: 24px;
+		scroll-margin-top: 120px;
+	}
+	.hub-zone:first-of-type {
+		margin-top: 0;
+	}
+	.hub-zone .hub-zone-title {
+		font-size: 1.571rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.2;
+		margin: 0;
+	}
+	.hub-zone .hub-zone-intro {
+		color: var(--color-ink-light);
+		margin-top: 8px;
+	}
+
+	/* Card grid -------------------------------------------------------- */
+	.hub-card-grid {
+		@apply m-0 mx-auto w-full max-w-5xl list-none p-0;
+		display: grid;
+		/* min() so a container narrower than one track shrinks it instead of overflowing. */
+		grid-template-columns: repeat(auto-fill, minmax(min(310px, 100%), 1fr));
+		gap: 24px;
+	}
+
+	/* Solutions variant: lock to a 3-up layout that tolerates a future 4th card
+	   (it wraps to the next row rather than shrinking into a 4th narrow column). */
+	.hub-card-grid-solutions {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	/* Card ------------------------------------------------------------- */
+	.hub-card {
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 14px;
+		padding: 22px 22px 20px;
+		transition:
+			box-shadow 0.15s,
+			border-color 0.15s;
+		margin: 0;
+		list-style: none;
+	}
+	.hub-card:hover,
+	.hub-card:focus-within {
+		border-color: var(--color-grey-30);
+		box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+	}
+
+	.hub-card .hub-card-head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-bottom: 6px;
+	}
+	.hub-card .hub-card-icon svg {
+		width: 28px;
+		height: 28px;
+		display: block;
+	}
+	.hub-card .hub-card-title {
+		font-size: 1.0625rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		margin: 0;
+	}
+	.hub-card .hub-card-title a {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-card .hub-card-title a:hover {
+		color: var(--color-blue-elastic);
+		text-decoration: none;
+	}
+
+	.hub-card .hub-card-desc {
+		font-size: 14px;
+		color: var(--color-ink-light);
+		margin-bottom: 14px;
+		line-height: 1.5;
+	}
+
+	.hub-card .hub-card-links {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin: 0;
+		padding: 0;
+	}
+	.hub-card .hub-card-links li {
+		margin: 0;
+		padding: 0;
+	}
+	.hub-card .hub-card-links li a {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		padding: 3px 0;
+		display: inline-flex;
+		align-items: baseline;
+		gap: 6px;
+		text-decoration: none;
+	}
+	.hub-card .hub-card-links li a:hover {
+		color: var(--color-blue-elastic-110);
+		text-decoration: underline;
+	}
+	.hub-card .hub-card-links li a::before {
+		content: '\203A';
+		color: var(--color-grey-40);
+		font-weight: 700;
+		font-size: 15px;
+	}
+
+	/* Card aside (Panel types, Chart types, Key features...) */
+	.hub-card .hub-card-aside {
+		margin-top: 14px;
+		padding-top: 12px;
+		border-top: 1px solid var(--color-grey-20);
+	}
+	.hub-card .hub-card-aside-label {
+		font-size: 12px;
+		color: var(--color-grey-80);
+		margin-bottom: 6px;
+		font-weight: 600;
+		letter-spacing: 0.3px;
+	}
+	.hub-card .hub-card-aside-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0;
+		font-size: 13px;
+		line-height: 1.9;
+	}
+	.hub-card .hub-card-aside-links a {
+		color: var(--color-blue-elastic-100);
+		font-weight: 500;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		text-decoration-thickness: 1px;
+	}
+	.hub-card .hub-card-aside-links a:hover {
+		color: var(--color-blue-elastic-110);
+	}
+	.hub-card .hub-card-aside-sep {
+		color: var(--color-grey-30);
+		margin: 0 6px;
+	}
+
+	/* Explore {product} — accordion stack ------------------------------ */
+	.hub-explore {
+		@apply mx-auto w-full max-w-5xl;
+		border-top: 1px solid var(--color-grey-20);
+	}
+
+	.hub-accordion {
+		border-bottom: 1px solid var(--color-grey-20);
+	}
+	.hub-accordion-summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 18px 4px;
+		cursor: pointer;
+		list-style: none;
+		user-select: none;
+	}
+	/* Hide the native disclosure triangle across browsers. */
+	.hub-accordion-summary::-webkit-details-marker {
+		display: none;
+	}
+	.hub-accordion-summary::marker {
+		content: '';
+	}
+	.hub-accordion-title {
+		/* margin: 0 keeps the heading rendering exactly as the span it replaced. */
+		margin: 0;
+		font-size: 1.143rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.3;
+	}
+	.hub-accordion-icon {
+		flex: none;
+		color: var(--color-ink-light);
+	}
+	/* Plus when collapsed, minus when open: drop the vertical stroke on [open]. */
+	.hub-accordion-icon-v {
+		transition: opacity 0.15s ease;
+	}
+	.hub-accordion[open] > .hub-accordion-summary .hub-accordion-icon-v {
+		opacity: 0;
+	}
+	.hub-accordion-summary:hover .hub-accordion-title,
+	.hub-accordion-summary:focus-visible .hub-accordion-title {
+		color: var(--color-blue-elastic);
+	}
+	.hub-accordion-body {
+		padding: 4px 4px 28px;
+		container-type: inline-size;
+	}
+	.hub-accordion-intro {
+		color: var(--color-ink-light);
+		margin: 0 0 20px;
+	}
+
+	/* Columns inside an accordion -------------------------------------- */
+	/* Column count follows the accordion body's own width (container query), not the
+	   viewport — the hub's left nav narrows the body, so a viewport query would
+	   under-count. Targets a 4-up layout like the design when there's room. */
+	.hub-explore-cols {
+		@apply m-0 list-none p-0;
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 28px 24px;
+		align-items: start;
+	}
+	@container (min-width: 420px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@container (min-width: 620px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+	@container (min-width: 820px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+	.hub-col {
+		margin: 0;
+		list-style: none;
+		min-width: 0;
+	}
+	.hub-col-title {
+		font-size: 0.929rem;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		margin: 0 0 4px;
+		line-height: 1.3;
+	}
+	.hub-col-title a {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-col-title a:hover {
+		color: var(--color-blue-elastic);
+		text-decoration: underline;
+	}
+	.hub-col-desc {
+		font-size: 0.786rem;
+		color: var(--color-ink-light);
+		margin: 0 0 10px;
+		line-height: 1.4;
+	}
+	/* A column is a pure link index, so its entries carry the site's standard link
+	   affordance rather than a quieter bespoke one. A list marker is used, not a flex
+	   column, because markers do not render on flex children. */
+	.hub-col-links {
+		margin: 0;
+		padding-left: 1.1em;
+		list-style: disc;
+	}
+	.hub-col-links li {
+		margin: 0 0 4px;
+		list-style: disc;
+	}
+	.hub-col-links a {
+		font-size: 0.857rem;
+		color: var(--color-blue-elastic-100);
+		text-decoration: underline;
+		line-height: 1.35;
+	}
+	.hub-col-links a:hover,
+	.hub-col-links a:focus-visible {
+		color: var(--color-blue-elastic-110);
+	}
+
+	/* "Even more" badge cluster under a column ------------------------- */
+	.hub-explore-more {
+		margin-top: 14px;
+	}
+	/* The label is authored, for example "Panel types", so it keeps the casing the writer
+	   chose rather than being shouted in uppercase. */
+	.hub-explore-more-label {
+		font-size: 0.714rem;
+		font-weight: 600;
+		color: var(--color-ink-light);
+		margin-bottom: 8px;
+	}
+	.hub-explore-more-badges {
+		@apply m-0 list-none p-0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.hub-explore-more-badges li {
+		margin: 0;
+		list-style: none;
+	}
+	.hub-explore-more-badges a {
+		display: inline-block;
+		font-size: 0.75rem;
+		line-height: 1.4;
+		padding: 2px 8px;
+		border-radius: 4px;
+		background: var(--color-grey-10, #f5f7fa);
+		border: 1px solid var(--color-grey-20);
+		color: var(--color-ink-dark);
+		text-decoration: none;
+		transition:
+			background 0.15s,
+			border-color 0.15s;
+	}
+	.hub-explore-more-badges a:hover,
+	.hub-explore-more-badges a:focus-visible {
+		background: var(--color-white);
+		border-color: var(--color-grey-30);
+		color: var(--color-blue-elastic);
+	}
+
+	@media (max-width: 768px) {
+		.hub-hero h1 {
+			font-size: 2rem;
+		}
+		.hub-card-grid {
+			grid-template-columns: 1fr;
+		}
+		.hub-on-this-page {
+			position: static;
+			flex-direction: column;
+		}
+		.hub-card {
+			padding: 20px;
+		}
+	}
+
+	/* Solutions grid steps down gracefully; declared after the base mobile rule
+	   so it wins over .hub-card-grid on shared elements. */
+	@media (max-width: 980px) {
+		.hub-card-grid-solutions {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.hub-card-grid-solutions {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	/* Hover and arrow transitions are decorative. Honour a reduced-motion preference.
+	   Nothing about the resting appearance changes. */
 	@media (prefers-reduced-motion: reduce) {
+		.hub-card,
+		.hub-accordion-icon-v,
+		.hub-explore-more-badges a {
+			transition: none;
+		}
 		.hub-hero .hub-hero-eyebrow-link,
 		.hub-hero .hub-hero-action,
 		.hub-arrow {

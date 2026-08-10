@@ -4,7 +4,7 @@
 <section class="hub-hero">
 	<div class="hub-hero-inner">
 		<div class="hub-hero-eyebrow">
-			<a class="hub-hero-eyebrow-link" href="@Model.PrefixUrl("/")" preload="@Htmx.Preload">
+			<a class="hub-hero-eyebrow-link" @Model.LinkAttributes("/")>
 				<span>Browse all Elastic docs</span>
 				<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
@@ -36,11 +36,7 @@
 				@foreach (var action in Model.Actions)
 				{
 					<span class="doc-button-item doc-button-neutral">
-						<a class="hub-hero-action"
-						   href="@Model.PrefixUrl(action.Url)"
-						   target="@(action.IsExternal ? "_blank" : null)"
-						   rel="@(action.IsExternal ? "noopener noreferrer" : null)"
-						   preload="@(action.IsAnchor || action.IsExternal ? null : Htmx.Preload)">
+						<a class="hub-hero-action" @Model.LinkAttributes(action.Url)>
 							@action.Label
 						</a>
 					</span>

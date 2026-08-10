@@ -4,7 +4,7 @@ A full-bleed identity band with a product icon, page title, description, and up 
 
 All hero content comes from options. The directive body is not used.
 
-See the [Elasticsearch documentation hub](../examples/products/docs-builder.md) for a rendered hero.
+See the [docs-builder documentation hub](../examples/products/docs-builder.md) for a rendered hero.
 
 ## Basic
 

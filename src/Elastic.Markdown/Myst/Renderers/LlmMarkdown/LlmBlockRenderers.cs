@@ -505,6 +505,15 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case HeroBlock heroBlock:
 				WriteHeroBlock(renderer, heroBlock);
 				return;
+			case ExploreBlock exploreBlock:
+				WriteExploreBlock(renderer, exploreBlock);
+				return;
+			case CardGroupBlock cardGroupBlock:
+				WriteCardGroupBlock(renderer, cardGroupBlock);
+				return;
+			case LinkCardBlock linkCardBlock:
+				WriteLinkCardBlock(renderer, linkCardBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -571,12 +580,92 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.EnsureLine();
 	}
 
+	// The curated grouping of links is what a hub page is for, so the export keeps the whole
+	// structure: each section becomes a heading and each card a titled link list.
+	private static void WriteExploreBlock(LlmMarkdownRenderer renderer, ExploreBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+		if (!string.IsNullOrEmpty(block.Title))
+		{
+			renderer.WriteLine($"## {block.Title}");
+			renderer.EnsureLine();
+		}
+		if (!string.IsNullOrEmpty(block.Intro))
+		{
+			renderer.WriteLine(block.Intro);
+			renderer.EnsureLine();
+		}
+		renderer.WriteChildren(block);
+	}
+
+	private static void WriteCardGroupBlock(LlmMarkdownRenderer renderer, CardGroupBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+		if (!string.IsNullOrEmpty(block.Title))
+		{
+			renderer.WriteLine($"### {block.Title}");
+			renderer.EnsureLine();
+		}
+		if (!string.IsNullOrEmpty(block.Intro))
+		{
+			renderer.WriteLine(block.Intro);
+			renderer.EnsureLine();
+		}
+		renderer.WriteChildren(block);
+	}
+
+	private static void WriteLinkCardBlock(LlmMarkdownRenderer renderer, LinkCardBlock block)
+	{
+		var data = block.Data;
+		renderer.EnsureBlockSpacing();
+
+		if (!string.IsNullOrEmpty(data.Title))
+		{
+			var heading = string.IsNullOrEmpty(data.Link)
+				? data.Title
+				: $"[{data.Title}]({HubLinkForLlm(renderer, data.Link)})";
+			renderer.WriteLine($"#### {heading}");
+			renderer.EnsureLine();
+		}
+
+		// The description is hidden in column mode, but the export is not laid out, so it is
+		// always useful context here.
+		if (!string.IsNullOrEmpty(data.Description))
+		{
+			renderer.WriteLine(data.Description);
+			renderer.EnsureLine();
+		}
+
+		foreach (var link in data.Links)
+			WriteHeroAction(renderer, link.Label, link.Url);
+
+		if (data.Aside is { } aside)
+		{
+			if (!string.IsNullOrEmpty(aside.Label))
+			{
+				renderer.EnsureLine();
+				renderer.WriteLine($"{aside.Label}:");
+			}
+			foreach (var link in aside.Links)
+				WriteHeroAction(renderer, link.Label, link.Url);
+		}
+
+		renderer.EnsureLine();
+	}
+
+	// Also used for card links: the shape is the same, a labelled link on its own line.
 	private static void WriteHeroAction(LlmMarkdownRenderer renderer, string? label, string? url)
 	{
 		if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(url))
 			return;
-		renderer.WriteLine($"- [{label}]({LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url)})");
+		renderer.WriteLine($"- [{label}]({HubLinkForLlm(renderer, url)})");
 	}
+
+	// Hub links are authored as markdown paths. Strip the extension so the export matches how
+	// inline links render. The site path prefix is not applied: MakeAbsoluteUrl resolves against
+	// the canonical base URL instead.
+	private static string? HubLinkForLlm(LlmMarkdownRenderer renderer, string? url) =>
+		LlmRenderingHelpers.MakeAbsoluteUrl(renderer, DirectiveLinkValidator.ToHref(url, null));
 
 	private static void WriteImageBlock(LlmMarkdownRenderer renderer, ImageBlock imageBlock)
 	{

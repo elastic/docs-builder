@@ -108,6 +108,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case HeroBlock heroBlock:
 				WriteHero(renderer, heroBlock);
 				return;
+			case ExploreBlock exploreBlock:
+				WriteExplore(renderer, exploreBlock);
+				return;
+			case CardGroupBlock cardGroupBlock:
+				WriteCardGroup(renderer, cardGroupBlock);
+				return;
+			case LinkCardBlock linkCardBlock:
+				WriteLinkCard(renderer, linkCardBlock);
+				return;
 			case PageCardBlock pageCardBlock:
 				WritePageCard(renderer, pageCardBlock);
 				return;
@@ -213,6 +222,50 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			TertiaryActionLabel = block.TertiaryActionLabel,
 			TertiaryActionUrl = block.TertiaryActionUrl,
 			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteExplore(HtmlRenderer renderer, ExploreBlock block)
+	{
+		var slice = ExploreView.Create(new ExploreViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteCardGroup(HtmlRenderer renderer, CardGroupBlock block)
+	{
+		var explore = HubExplore.FindAncestor(block);
+		var slice = CardGroupView.Create(new CardGroupViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor,
+			Variant = block.Variant,
+			IsAccordion = explore is not null,
+			IsOpen = explore is not null && HubExplore.IsFirstCardGroup(explore, block),
+			AccordionGroup = explore is null
+				? null
+				: string.IsNullOrWhiteSpace(explore.Anchor) ? "hub-explore" : $"hub-explore-{explore.Anchor}"
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteLinkCard(HtmlRenderer renderer, LinkCardBlock block)
+	{
+		var slice = LinkCardView.Create(new LinkCardViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data,
+			IconSvg = ProductIcons.Get(block.Data.Icon),
+			SitePathPrefix = block.Build.UrlPathPrefix,
+			IsColumn = HubExplore.FindAncestor(block) is not null
 		});
 		RenderRazorSlice(slice, renderer);
 	}

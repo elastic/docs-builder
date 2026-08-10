@@ -4,7 +4,7 @@ A hub page is a product-scoped landing page. It gives a reader one 360° view of
 
 Hub pages are composed entirely from directives. There is no free-form body content. That constraint is deliberate. It lets every link validate at build time, and it keeps every hub structurally consistent whoever authors it.
 
-See the [Elasticsearch documentation hub](../examples/products/docs-builder.md) for a complete page.
+See the [docs-builder documentation hub](../examples/products/docs-builder.md) for a complete page.
 
 ## Enable the layout
 
@@ -54,6 +54,9 @@ Write both deliberately. The search body indexes the hero title and description 
 | Directive | Purpose |
 |---|---|
 | [`{hero}`](hero.md) | Identity band. Carries the product icon, the page title, a description, and up to three actions. |
+| [`{card-group}`](card-group.md) | Section heading and card grid. Renders as an accordion inside `{explore}`. |
+| [`{link-card}`](link-card.md) | One card: title, description, link list, optional aside. Renders as a link column inside `{explore}`. |
+| [`{explore}`](explore.md) | The browse-everything section. A stack of collapsible accordions. |
 
 ## Page skeleton
 
