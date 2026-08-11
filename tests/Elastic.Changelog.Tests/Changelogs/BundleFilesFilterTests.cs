@@ -415,7 +415,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 	private ChangelogBundlingService ServiceWithCdn(StubHandler handler)
 	{
 		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
-		return new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, fetcher);
+		return new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
 	}
 
 	private async Task<string> WriteRepoOnlyConfigAsync()
