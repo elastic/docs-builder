@@ -157,8 +157,8 @@ public static class DocumentationPathsResolver
 		IFileSystem inner)
 	{
 		// 1-2. Anchor. Scoped to the invocation path only; skipped when the docset is already known.
-		var (source, configuration) = options.ConfigurationFile is { } known && inner.NewFileInfo(known) is { Exists: true } configFile
-			? (configFile.Directory!, configFile)
+		var (source, configuration) = options.ConfigurationFile is { } known
+			? (inner.NewFileInfo(known).Directory!, inner.NewFileInfo(known))
 			: ScanForDocset(invocation, inner);
 
 		// 3. Checkout, derived from the anchor — never from the invocation.
