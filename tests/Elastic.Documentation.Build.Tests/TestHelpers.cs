@@ -81,6 +81,40 @@ public static class TestHelpers
 }
 
 /// <summary>
+/// A throwaway directory below <c>.artifacts</c>, removed on dispose. ScopedFileSystem only permits
+/// writes under the working directory root, so the system temp folder is not an option here.
+/// </summary>
+public sealed class ScopedTempDirectory : IDisposable
+{
+	public ScopedTempDirectory(IFileSystem fileSystem, string prefix)
+	{
+		Directory = fileSystem.DirectoryInfo.New(
+			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-temp", $"{prefix}-{Guid.NewGuid():N}"));
+		Directory.Create();
+	}
+
+	public IDirectoryInfo Directory { get; }
+
+	public string FullName => Directory.FullName;
+
+	public void Dispose()
+	{
+		try
+		{
+			Directory.Delete(recursive: true);
+		}
+		catch (IOException)
+		{
+			// a leftover directory under .artifacts must never fail a passing test
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// same
+		}
+	}
+}
+
+/// <summary>
 /// A no-op implementation of ICoreService for testing.
 /// </summary>
 #pragma warning disable IDE0060 // Remove unused parameter - required by interface

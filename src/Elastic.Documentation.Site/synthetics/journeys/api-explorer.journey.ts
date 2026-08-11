@@ -85,6 +85,20 @@ if (isAssemblerApiExplorerEnabled()) {
             const operationLink = page
                 .locator('#pages-nav a[href*="/operation/"]:visible')
                 .first()
+
+            // The sidebar renders every group collapsed on a landing page, so walk down the
+            // first unexpanded branch until an operation link becomes clickable.
+            const collapsedToggle = page
+                .locator(
+                    '#pages-nav li.nav-folder:visible > div.peer:has(input:not(:checked)) label'
+                )
+                .first()
+            for (let depth = 0; depth < 8; depth++) {
+                if ((await operationLink.count()) > 0) break
+                await expect(collapsedToggle).toBeVisible()
+                await collapsedToggle.click()
+            }
+
             await expect(operationLink).toBeVisible()
             await operationLink.click()
 

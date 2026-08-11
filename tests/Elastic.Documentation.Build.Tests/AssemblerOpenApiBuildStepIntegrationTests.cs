@@ -50,9 +50,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			""");
 		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
 		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
-		var workspaceRoot = fileSystem.DirectoryInfo.New(
-			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, $"assembler-openapi-integration-{Guid.NewGuid():N}"));
-		workspaceRoot.Create();
+		using var scopedWorkspace = new ScopedTempDirectory(fileSystem, "assembler-openapi-integration");
+		var workspaceRoot = scopedWorkspace.Directory;
 		var docsetPath = fileSystem.Path.Join(workspaceRoot.FullName, "docset.yml");
 		fileSystem.File.WriteAllText(docsetPath, """
 			project: test

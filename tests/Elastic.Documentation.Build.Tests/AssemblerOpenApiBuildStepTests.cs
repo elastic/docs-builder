@@ -21,8 +21,10 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Build.Tests;
 
-public class AssemblerOpenApiBuildStepTests
+public class AssemblerOpenApiBuildStepTests : IDisposable
 {
+	private readonly List<ScopedTempDirectory> _tempDirectories = [];
+
 	private static readonly string MinimalAssemblerYaml = """
 		environments:
 		  prod:
@@ -138,15 +140,21 @@ public class AssemblerOpenApiBuildStepTests
 		owners.Should().ContainSingle().Which.Set.Checkout.Repository.Name.Should().Be("docs-content");
 	}
 
-	private static IDirectoryInfo CreateTempDirectory(IFileSystem fileSystem)
+	public void Dispose()
 	{
-		var tempDirectory = fileSystem.DirectoryInfo.New(
-			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, $"assembler-openapi-test-{Guid.NewGuid():N}"));
-		tempDirectory.Create();
-		return tempDirectory;
+		foreach (var directory in _tempDirectories)
+			directory.Dispose();
+		GC.SuppressFinalize(this);
 	}
 
-	private static AssemblerDocumentationSet CreateDocumentationSet(
+	private IDirectoryInfo CreateTempDirectory(IFileSystem fileSystem)
+	{
+		var tempDirectory = new ScopedTempDirectory(fileSystem, "assembler-openapi-test");
+		_tempDirectories.Add(tempDirectory);
+		return tempDirectory.Directory;
+	}
+
+	private AssemblerDocumentationSet CreateDocumentationSet(
 		string repositoryName,
 		string? apiKey,
 		DiagnosticsCollector collector)
@@ -156,9 +164,9 @@ public class AssemblerOpenApiBuildStepTests
 		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
 		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
 		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
-		var checkoutRoot = fileSystem.DirectoryInfo.New(
-			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, $"assembler-openapi-owner-{Guid.NewGuid():N}"));
-		checkoutRoot.Create();
+		var scopedCheckoutRoot = new ScopedTempDirectory(fileSystem, "assembler-openapi-owner");
+		_tempDirectories.Add(scopedCheckoutRoot);
+		var checkoutRoot = scopedCheckoutRoot.Directory;
 		var docsetPath = fileSystem.Path.Join(checkoutRoot.FullName, "docset.yml");
 		var docsetYaml = apiKey is null
 			? """
