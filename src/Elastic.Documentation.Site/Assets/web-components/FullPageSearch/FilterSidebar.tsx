@@ -200,29 +200,38 @@ const VersionFilter = ({ selected, onChange }: VersionFilterProps) => {
                                 align-items: center;
                                 justify-content: space-between;
                                 padding: ${euiTheme.size.s} ${euiTheme.size.m};
-                                background: ${isSelected
-                                    ? `${euiTheme.colors.primary}1A`
-                                    : euiTheme.colors.emptyShade};
-                                color: ${isSelected
-                                    ? euiTheme.colors.primary
-                                    : euiTheme.colors.text};
+                                background: ${
+                                    isSelected
+                                        ? `${euiTheme.colors.primary}1A`
+                                        : euiTheme.colors.emptyShade
+                                };
+                                color: ${
+                                    isSelected
+                                        ? euiTheme.colors.primary
+                                        : euiTheme.colors.text
+                                };
                                 border: none;
-                                border-bottom: ${idx <
-                                VERSION_OPTIONS.length - 1
-                                    ? `1px solid ${euiTheme.border.color}`
-                                    : 'none'};
+                                border-bottom: ${
+                                    idx < VERSION_OPTIONS.length - 1
+                                        ? `1px solid ${euiTheme.border.color}`
+                                        : 'none'
+                                };
                                 cursor: pointer;
                                 font-size: 14px;
-                                font-weight: ${isSelected
-                                    ? euiTheme.font.weight.semiBold
-                                    : euiTheme.font.weight.regular};
+                                font-weight: ${
+                                    isSelected
+                                        ? euiTheme.font.weight.semiBold
+                                        : euiTheme.font.weight.regular
+                                };
                                 transition: background 0.15s ease;
                                 text-align: left;
 
                                 &:hover {
-                                    background: ${isSelected
-                                        ? `${euiTheme.colors.primary}26`
-                                        : euiTheme.colors.lightestShade};
+                                    background: ${
+                                        isSelected
+                                            ? `${euiTheme.colors.primary}26`
+                                            : euiTheme.colors.lightestShade
+                                    };
                                 }
                             `}
                         >
@@ -280,9 +289,11 @@ const TypeFilter = ({ items, selected, onChange }: TypeFilterProps) => {
                                 gap: ${euiTheme.size.s};
                                 width: 100%;
                                 padding: ${euiTheme.size.s} ${euiTheme.size.s};
-                                background: ${isSelected
-                                    ? `${euiTheme.colors.primary}1A`
-                                    : 'transparent'};
+                                background: ${
+                                    isSelected
+                                        ? `${euiTheme.colors.primary}1A`
+                                        : 'transparent'
+                                };
                                 border: none;
                                 border-radius: ${euiTheme.border.radius.small};
                                 cursor: pointer;
@@ -290,17 +301,21 @@ const TypeFilter = ({ items, selected, onChange }: TypeFilterProps) => {
                                 transition: background 0.15s ease;
 
                                 &:hover {
-                                    background: ${isSelected
-                                        ? `${euiTheme.colors.primary}26`
-                                        : euiTheme.colors.lightestShade};
+                                    background: ${
+                                        isSelected
+                                            ? `${euiTheme.colors.primary}26`
+                                            : euiTheme.colors.lightestShade
+                                    };
                                 }
                             `}
                         >
                             <span
                                 css={css`
-                                    color: ${isSelected
-                                        ? euiTheme.colors.primary
-                                        : euiTheme.colors.subduedText};
+                                    color: ${
+                                        isSelected
+                                            ? euiTheme.colors.primary
+                                            : euiTheme.colors.subduedText
+                                    };
                                     display: flex;
                                 `}
                             >
@@ -310,12 +325,16 @@ const TypeFilter = ({ items, selected, onChange }: TypeFilterProps) => {
                                 size="s"
                                 css={css`
                                     flex: 1;
-                                    font-weight: ${isSelected
-                                        ? euiTheme.font.weight.semiBold
-                                        : euiTheme.font.weight.regular};
-                                    color: ${isSelected
-                                        ? euiTheme.colors.primary
-                                        : 'inherit'};
+                                    font-weight: ${
+                                        isSelected
+                                            ? euiTheme.font.weight.semiBold
+                                            : euiTheme.font.weight.regular
+                                    };
+                                    color: ${
+                                        isSelected
+                                            ? euiTheme.colors.primary
+                                            : 'inherit'
+                                    };
                                 `}
                             >
                                 {TYPE_LABELS[key] ?? key}
@@ -419,9 +438,11 @@ const FacetFilter = ({
                                 gap: ${euiTheme.size.s};
                                 width: 100%;
                                 padding: ${euiTheme.size.s} ${euiTheme.size.s};
-                                background: ${isSelected
-                                    ? `${euiTheme.colors.primary}1A`
-                                    : 'transparent'};
+                                background: ${
+                                    isSelected
+                                        ? `${euiTheme.colors.primary}1A`
+                                        : 'transparent'
+                                };
                                 border: none;
                                 border-radius: ${euiTheme.border.radius.small};
                                 cursor: pointer;
@@ -429,9 +450,11 @@ const FacetFilter = ({
                                 transition: background 0.15s ease;
 
                                 &:hover {
-                                    background: ${isSelected
-                                        ? `${euiTheme.colors.primary}26`
-                                        : euiTheme.colors.lightestShade};
+                                    background: ${
+                                        isSelected
+                                            ? `${euiTheme.colors.primary}26`
+                                            : euiTheme.colors.lightestShade
+                                    };
                                 }
                             `}
                         >
@@ -440,12 +463,16 @@ const FacetFilter = ({
                                 css={css`
                                     flex: 1;
                                     text-transform: capitalize;
-                                    font-weight: ${isSelected
-                                        ? euiTheme.font.weight.semiBold
-                                        : euiTheme.font.weight.regular};
-                                    color: ${isSelected
-                                        ? euiTheme.colors.primary
-                                        : 'inherit'};
+                                    font-weight: ${
+                                        isSelected
+                                            ? euiTheme.font.weight.semiBold
+                                            : euiTheme.font.weight.regular
+                                    };
+                                    color: ${
+                                        isSelected
+                                            ? euiTheme.colors.primary
+                                            : 'inherit'
+                                    };
                                 `}
                             >
                                 {key}
@@ -528,9 +555,9 @@ const ProductFilterItem = ({
                 gap: ${euiTheme.size.s};
                 width: 100%;
                 padding: ${euiTheme.size.s} ${euiTheme.size.s};
-                background: ${isSelected
-                    ? `${euiTheme.colors.primary}1A`
-                    : 'transparent'};
+                background: ${
+                    isSelected ? `${euiTheme.colors.primary}1A` : 'transparent'
+                };
                 border: none;
                 border-radius: ${euiTheme.border.radius.small};
                 cursor: pointer;
@@ -538,9 +565,11 @@ const ProductFilterItem = ({
                 transition: background 0.15s ease;
 
                 &:hover {
-                    background: ${isSelected
-                        ? `${euiTheme.colors.primary}26`
-                        : euiTheme.colors.lightestShade};
+                    background: ${
+                        isSelected
+                            ? `${euiTheme.colors.primary}26`
+                            : euiTheme.colors.lightestShade
+                    };
                 }
             `}
         >
@@ -548,9 +577,11 @@ const ProductFilterItem = ({
                 size="s"
                 css={css`
                     flex: 1;
-                    font-weight: ${isSelected
-                        ? euiTheme.font.weight.semiBold
-                        : euiTheme.font.weight.regular};
+                    font-weight: ${
+                        isSelected
+                            ? euiTheme.font.weight.semiBold
+                            : euiTheme.font.weight.regular
+                    };
                     color: ${isSelected ? euiTheme.colors.primary : 'inherit'};
                 `}
             >
@@ -636,8 +667,9 @@ const ProductFilter = ({ items, selected, onChange }: ProductFilterProps) => {
                                 color="subdued"
                                 css={css`
                                     text-transform: uppercase;
-                                    font-weight: ${euiTheme.font.weight
-                                        .semiBold};
+                                    font-weight: ${
+                                        euiTheme.font.weight.semiBold
+                                    };
                                     letter-spacing: 0.5px;
                                 `}
                             >

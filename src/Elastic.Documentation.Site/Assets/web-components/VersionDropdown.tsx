@@ -236,8 +236,9 @@ const VersionDropdown = ({
                         ${useEuiOverflowScroll('y')}
                     }
                     .euiContextMenuPanel__title {
-                        background-color: ${euiTheme.colors
-                            .backgroundBasePlain} !important;
+                        background-color: ${
+                            euiTheme.colors.backgroundBasePlain
+                        } !important;
                     }
                 `}
             />
