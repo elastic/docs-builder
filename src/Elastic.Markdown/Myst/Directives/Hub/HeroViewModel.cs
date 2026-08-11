@@ -31,13 +31,16 @@ public class HeroViewModel : DirectiveViewModel
 		}
 	}
 
-	private static void Add(List<HeroAction> actions, string? label, string? url, bool isPrimary)
+	private void Add(List<HeroAction> actions, string? label, string? url, bool isPrimary)
 	{
 		if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(url))
 			return;
 
 		var isAnchor = url[0] == '#';
-		var isExternal = url.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+		// A cross-link resolves to a full URL but still points at documentation this site serves,
+		// so it is not external. Inline links make the same distinction.
+		var isExternal = url.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+			&& !DirectiveLinkValidator.IsResolvedCrossLink((DirectiveBlock)DirectiveBlock, url);
 		actions.Add(new HeroAction(label, url, isPrimary, isAnchor, isExternal));
 	}
 }

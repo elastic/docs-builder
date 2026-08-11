@@ -6,34 +6,82 @@ module ``AuthoringTests``.``block elements``.``nested directive options``
 open Xunit
 open authoring
 
-// DirectiveBlockParser.TryContinue stops an ancestor directive from consuming an option line
-// once that ancestor has opened a nested directive child. Without the guard the ancestor
-// swallows every descendant's options and the last one wins, corrupting its own.
+// DirectiveBlockParser.TryContinue stops an ancestor directive consuming an option line once
+// it has opened a nested directive child. Without the guard the ancestor also takes every
+// descendant's options, and the last one wins.
+//
+// No existing directive pair shares an option name, so the collision is latent for them:
+// {tab-set} reads group while {tab-item} reads sync and selected, and {applies-switch} and
+// {applies-item} split the same way. These tests pin that each option still reaches the block
+// that declared it, which is what the guard must not break.
 
-type ``tab set wrapping tab items`` () =
+type ``tab set with its own group and per-item sync`` () =
     static let markdown = Setup.Markdown """
 ::::{tab-set}
-:::{tab-item} First
-first body
+:group: install-method
+
+:::{tab-item} Local
+:sync: local
+local body
 :::
-:::{tab-item} Second
-second body
+
+:::{tab-item} Container
+:sync: container
+container body
+:::
+::::
+"""
+
+    // The group is declared on the tab-set before any child, so it still reaches the tab-set.
+    [<Fact>]
+    let ``the tab set keeps its own group`` () =
+        markdown |> convertsToContainingRawHtml "data-sync-group=\"install-method\""
+
+    // Each sync reaches the item that declared it, rather than all landing on the last one.
+    [<Fact>]
+    let ``the first item keeps its own sync`` () =
+        markdown |> convertsToContainingRawHtml "data-sync-id=\"local\""
+
+    [<Fact>]
+    let ``the second item keeps its own sync`` () =
+        markdown |> convertsToContainingRawHtml "data-sync-id=\"container\""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+type ``applies switch with its own group and per-item sync`` () =
+    static let markdown = Setup.Markdown """
+::::{applies-switch}
+:group: deployment
+
+:::{applies-item} serverless: ga
+:sync: serverless
+serverless body
+:::
+
+:::{applies-item} stack: ga 9.0+
+:sync: self-managed
+self-managed body
 :::
 ::::
 """
 
     [<Fact>]
-    let ``keeps each tab title`` () =
-        markdown |> convertsToContainingHtml """First"""
+    let ``the switch keeps its own group`` () =
+        markdown |> convertsToContainingRawHtml "data-sync-group=\"deployment\""
 
     [<Fact>]
-    let ``keeps the second tab title`` () =
-        markdown |> convertsToContainingHtml """Second"""
+    let ``the first item keeps its own sync`` () =
+        markdown |> convertsToContainingRawHtml "data-sync-id=\"serverless\""
+
+    [<Fact>]
+    let ``the second item keeps its own sync`` () =
+        markdown |> convertsToContainingRawHtml "data-sync-id=\"self-managed\""
 
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
 
-type ``stepper wrapping steps with anchors`` () =
+type ``stepper with per-step anchors`` () =
     static let markdown = Setup.Markdown """
 ::::{stepper}
 :::{step} Install
@@ -48,17 +96,17 @@ Configure the thing.
 """
 
     [<Fact>]
-    let ``keeps the first step anchor`` () =
-        markdown |> convertsToContainingHtml """install-step"""
+    let ``each step keeps its own anchor`` () =
+        markdown |> convertsToContainingRawHtml "install-step"
 
     [<Fact>]
-    let ``keeps the second step anchor`` () =
-        markdown |> convertsToContainingHtml """configure-step"""
+    let ``the second step keeps its own anchor`` () =
+        markdown |> convertsToContainingRawHtml "configure-step"
 
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
 
-type ``admonition nested in a dropdown`` () =
+type ``dropdown wrapping an admonition with its own name`` () =
     static let markdown = Setup.Markdown """
 ::::{dropdown} Outer summary
 :open:
@@ -70,8 +118,12 @@ Inner content.
 """
 
     [<Fact>]
-    let ``keeps the outer summary`` () =
-        markdown |> convertsToContainingHtml """Outer summary"""
+    let ``the dropdown keeps its own open state`` () =
+        markdown |> convertsToContainingRawHtml "Outer summary"
+
+    [<Fact>]
+    let ``the nested admonition keeps its own name`` () =
+        markdown |> convertsToContainingRawHtml "inner-note"
 
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors

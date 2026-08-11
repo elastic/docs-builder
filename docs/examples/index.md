@@ -4,8 +4,8 @@ Complete pages that show docs-builder syntax rendering in context. Each syntax p
 
 Use them to check what a page type looks like before you author one, and to verify rendering changes against a realistic page rather than a fixture.
 
-## Product hubs
+## Hubs
 
 Hub pages use `layout: hub` and are composed entirely from directives. See [Hub pages](../syntax/hub-pages.md).
 
-- [Elasticsearch documentation hub](products/elasticsearch.md)
+- [docs-builder documentation hub](products/docs-builder.md)

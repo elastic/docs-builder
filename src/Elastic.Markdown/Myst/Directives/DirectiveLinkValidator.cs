@@ -85,6 +85,24 @@ internal static class DirectiveLinkValidator
 		return prefix + path + anchor;
 	}
 
+	private const string ResolvedCrossLinksKey = "resolvedCrossLinks";
+
+	private static void RememberCrossLink(DirectiveBlock block, string resolved)
+	{
+		if (block.GetData(ResolvedCrossLinksKey) is not HashSet<string> resolvedLinks)
+		{
+			resolvedLinks = [];
+			block.SetData(ResolvedCrossLinksKey, resolvedLinks);
+		}
+		_ = resolvedLinks.Add(resolved);
+	}
+
+	/// <summary>True when <paramref name="url"/> came from a cross-link scheme on this block.</summary>
+	public static bool IsResolvedCrossLink(DirectiveBlock block, string? url) =>
+		url is not null
+		&& block.GetData(ResolvedCrossLinksKey) is HashSet<string> resolvedLinks
+		&& resolvedLinks.Contains(url, StringComparer.OrdinalIgnoreCase);
+
 	private static bool IsExternal(string url) =>
 		url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
 		|| url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
@@ -118,9 +136,14 @@ internal static class DirectiveLinkValidator
 		}
 
 		context.Build.Collector.EmitCrossLink(original);
-		return resolver.TryResolve(s => block.EmitError(s), uri, out var resolved)
-			? resolved.ToString()
-			: original;
+		if (!resolver.TryResolve(s => block.EmitError(s), uri, out var resolved))
+			return original;
+
+		// A cross-link resolves to a full URL, but it still points at documentation this site
+		// serves. Record it so the view model does not mistake it for an external link and open
+		// it in a new tab. Inline links make the same distinction.
+		RememberCrossLink(block, resolved.ToString());
+		return resolved.ToString();
 	}
 
 	private static void ValidateInternal(string url, DirectiveBlock block, ParserContext context)

@@ -180,3 +180,43 @@ type ``hero with a malformed action`` () =
     [<Fact>]
     let ``errors`` () =
         markdown |> hasError "must be a markdown link"
+
+type ``hero with a cross-link action`` () =
+    static let markdown = Setup.Markdown """
+:::{hero}
+:title: docs-builder documentation hub
+:primary-action: [Elastic documentation](docs-content://get-started/index.md)
+:::
+"""
+
+    // A cross-link resolves to a full URL but still points at documentation this site serves,
+    // so it must not open in a new tab. Inline links make the same distinction. The assertion
+    // snapshots the section rather than looking for target="_blank" anywhere on the page,
+    // because site chrome carries that attribute too.
+    [<Fact>]
+    let ``does not open in a new tab`` () =
+        markdown |> convertsToContainingHtml """
+<section class="hub-hero">
+	<div class="hub-hero-inner">
+		<div class="hub-hero-eyebrow">
+			<a class="hub-hero-eyebrow-link" href="/">
+				<span>Browse all Elastic docs</span>
+				<svg class="hub-hero-eyebrow-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+					<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+				</svg>
+			</a>
+		</div>
+		<div class="hub-hero-top">
+			<h1>docs-builder documentation hub</h1>
+		</div>
+		<div class="hub-hero-actions">
+			<a class="hub-hero-action hub-hero-action-primary" href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started">
+				<span>Elastic documentation</span>
+			</a>
+		</div>
+	</div>
+</section>
+"""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
