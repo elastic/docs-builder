@@ -25,6 +25,13 @@ internal sealed class ServeCommand
 		Console.WriteLine($"dotnet {string.Join(' ', args)}");
 
 		var arguments = new ExecArguments("dotnet", args);
-		return await Proc.ExecAsync(arguments, ct);
+		try
+		{
+			return await Proc.ExecAsync(arguments, ct);
+		}
+		catch (OperationCanceledException)
+		{
+			return 0;
+		}
 	}
 }
