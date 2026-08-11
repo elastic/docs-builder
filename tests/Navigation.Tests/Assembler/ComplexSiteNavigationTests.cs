@@ -4,9 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Navigation;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;

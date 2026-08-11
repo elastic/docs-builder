@@ -9,9 +9,9 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
-using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 

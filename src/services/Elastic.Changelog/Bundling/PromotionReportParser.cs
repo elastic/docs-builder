@@ -7,8 +7,8 @@ using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Microsoft.Extensions.Logging;
 using Elastic.Documentation.FileSystems;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Bundling;
 

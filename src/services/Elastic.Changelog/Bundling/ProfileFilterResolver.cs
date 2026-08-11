@@ -8,10 +8,10 @@ using System.Text.RegularExpressions;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Bundling;
 

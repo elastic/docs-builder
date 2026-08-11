@@ -5,8 +5,8 @@
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ReleaseNotes.ChangelogEntryType;
 

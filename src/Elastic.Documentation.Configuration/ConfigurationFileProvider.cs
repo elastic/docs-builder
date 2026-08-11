@@ -5,10 +5,10 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;

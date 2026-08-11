@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using static System.Globalization.CultureInfo;
 
 namespace Elastic.Changelog.Rendering.Markdown;

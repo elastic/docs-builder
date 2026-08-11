@@ -5,11 +5,11 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using AwesomeAssertions;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 

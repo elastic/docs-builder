@@ -9,12 +9,12 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
-using Elastic.Documentation.FileSystems;
 using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Rendering;

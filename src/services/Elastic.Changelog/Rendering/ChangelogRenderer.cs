@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using Elastic.Changelog.Rendering.Asciidoc;
 using Elastic.Changelog.Rendering.Markdown;
-using Microsoft.Extensions.Logging;
 using Elastic.Documentation.FileSystems;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Rendering;
 

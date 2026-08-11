@@ -5,8 +5,8 @@
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Text;
-using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 

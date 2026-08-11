@@ -5,8 +5,8 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;

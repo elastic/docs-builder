@@ -9,10 +9,10 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Uploading;
 

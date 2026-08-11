@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Refactor;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
