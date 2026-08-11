@@ -201,7 +201,28 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		IReadOnlyDictionary<string, string> subs,
 		out string[] anchors)
 	{
-		var includeBlocks = document.Descendants<IncludeBlock>().ToArray();
+		// Single traversal — collects typed lists and builds a position index for
+		// GetPrecedingHeadingLevel so it does not need to re-traverse once per include.
+		// IncludeBlock / StepBlock / ChangelogBlock / SettingsBlock all extend DirectiveBlock,
+		// so one bucket covers them all.
+		List<HeadingBlock> headings = [];
+		List<DirectiveBlock> directives = [];
+		List<InlineAnchor> inlineAnchors = [];
+		var allNodes = new List<MarkdownObject>();
+		var nodePositions = new Dictionary<MarkdownObject, int>();
+		foreach (var node in document.Descendants())
+		{
+			nodePositions[node] = allNodes.Count;
+			allNodes.Add(node);
+			switch (node)
+			{
+				case HeadingBlock h:   headings.Add(h);      break;
+				case DirectiveBlock d: directives.Add(d);    break;
+				case InlineAnchor a:   inlineAnchors.Add(a); break;
+			}
+		}
+
+		var includeBlocks = directives.OfType<IncludeBlock>().ToArray();
 		var includes = includeBlocks
 			.Where(i => i.Found)
 			.Select(i =>
@@ -222,8 +243,9 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var includedTocs = includes
 			.SelectMany(i =>
 			{
-				// Calculate the heading level context at the include block position
-				var precedingLevel = GetPrecedingHeadingLevel(i!.Block);
+				// Calculate the heading level context at the include block position.
+				// Uses the prebuilt position index — O(1) lookup instead of O(n) re-traversal.
+				var precedingLevel = GetPrecedingHeadingLevel(i!.Block, allNodes, nodePositions);
 
 				return i.Anchors!.TableOfContentItems
 					.Select(item =>
@@ -243,9 +265,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			})
 			.ToArray();
 
-		// Collect headings from standard markdown
-		var headingTocs = document
-			.Descendants<HeadingBlock>()
+		// Collect headings from standard markdown (already have the list — no second traversal)
+		var headingTocs = headings
 			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
 			.Where(h => h.Item1 is not null)
@@ -264,9 +285,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				};
 			});
 
-		// Collect headings from Stepper steps
-		var stepperTocs = document
-			.Descendants<DirectiveBlock>()
+		// Collect headings from Stepper steps (filter from already-collected directives)
+		var stepperTocs = directives
 			.OfType<StepBlock>()
 			.Where(step => !string.IsNullOrEmpty(step.Title))
 			.Where(step => !IsNestedInOtherDirective(step))
@@ -291,15 +311,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			});
 
 		// Collect headings from Changelog directives
-		var changelogTocs = document
-			.Descendants<DirectiveBlock>()
+		var changelogTocs = directives
 			.OfType<ChangelogBlock>()
 			.SelectMany(changelog => changelog.GeneratedTableOfContent
 				.Select(tocItem => new { TocItem = tocItem, changelog.Line }));
 
 		// Collect settings group headings (h2) from {settings} directives
-		var settingsTocs = document
-			.Descendants<DirectiveBlock>()
+		var settingsTocs = directives
 			.OfType<SettingsBlock>()
 			.Where(settings => !IsNestedInOtherDirective(settings))
 			.SelectMany(settings => settings.GeneratedTableOfContent
@@ -320,7 +338,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.ToList();
 
 		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
-		var directives = document.Descendants<DirectiveBlock>().ToArray();
 		anchors =
 		[
 			..directives
@@ -328,7 +345,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				.Where(l => !string.IsNullOrWhiteSpace(l))
 				.Select(s => s.Slugify())
 				.Concat(directives.SelectMany(b => b.GeneratedAnchors))
-				.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
+				.Concat(inlineAnchors.Select(a => a.Anchor))
 				.Concat(toc.Select(t => t.Slug))
 				.Where(anchor => !string.IsNullOrEmpty(anchor))
 				.Concat(includedAnchors)
@@ -350,30 +367,20 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	/// <summary>
 	/// Finds the heading level that precedes the given block in the document.
-	/// Used to provide context for included snippets so stepper heading levels
-	/// can be adjusted relative to the parent document's structure.
+	/// Uses a prebuilt position index to avoid an O(n) re-traversal per call.
 	/// </summary>
-	private static int? GetPrecedingHeadingLevel(MarkdownObject block)
+	private static int? GetPrecedingHeadingLevel(
+		MarkdownObject block,
+		List<MarkdownObject> allNodes,
+		Dictionary<MarkdownObject, int> nodePositions)
 	{
-		// Find the document root
-		var current = block;
-		while (current is ContainerBlock container && container.Parent != null)
-			current = container.Parent;
-
-		if (current is not ContainerBlock root)
+		if (!nodePositions.TryGetValue(block, out var thisIndex))
 			return null;
 
-		// Find all blocks and locate this one
-		var allBlocks = root.Descendants().ToList();
-		var thisIndex = allBlocks.IndexOf(block);
-
-		if (thisIndex == -1)
-			return null;
-
-		// Look backwards for the most recent heading
+		// Scan backwards from this block's position for the nearest heading
 		for (var i = thisIndex - 1; i >= 0; i--)
 		{
-			if (allBlocks[i] is HeadingBlock heading)
+			if (allNodes[i] is HeadingBlock heading)
 				return heading.Level;
 		}
 
