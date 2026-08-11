@@ -302,7 +302,8 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	{
 		var token = Current;
 		var delimChar = token.Metadata?.DelimiterChar ?? "-";
-		var openingDelim = token.Raw;
+		// Trim trailing whitespace from the raw delimiter so `--  ` matches `--` as its close
+		var openingDelim = token.Raw.TrimEnd();
 		_pos++;
 
 		var style = blockAttr?.BlockStyle?.ToLowerInvariant();
@@ -395,6 +396,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					Type = ParseAdmonitionType(style!),
 					Children = children.Count > 0 ? children : WrapAsBlocks(contentLines)
 				},
+				"sidebar" => new SidebarNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) },
 				_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
 			},
 			"/" => null,

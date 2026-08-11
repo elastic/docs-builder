@@ -243,4 +243,19 @@ public class EmitterTests
 		md.Should().NotContain("Secret");
 		md.Should().Contain("Public paragraph.");
 	}
+
+	// ── Open block delimiter trailing whitespace ───────────────────────────────
+
+	[Fact]
+	public void OpenBlock_TrailingSpaceOnOpeningDelimiter_StillClosesBlock()
+	{
+		// Source files can have `--  ` (trailing spaces) as the opening `--` delimiter.
+		// The parser must not leave the block unclosed because openingDelim = "--  " ≠ "--".
+		var adoc = "= T\n\n.Requirements\n[sidebar]\n--  \n* req one\n--\n\nNormal paragraph.\n";
+		var md = Emit(adoc);
+		md.Should().Contain("req one");
+		md.Should().Contain("Normal paragraph.");
+		// The trailing `--` must NOT appear raw in the output
+		md.Should().NotContain("\n--\n");
+	}
 }
