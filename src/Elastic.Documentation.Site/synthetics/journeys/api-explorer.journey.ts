@@ -105,7 +105,16 @@ if (isAssemblerApiExplorerEnabled()) {
             await expect(page).toHaveURL(
                 /\/docs\/api\/doc\/elasticsearch\/v\d+\/operation\//
             )
-            await expect(page.locator('#elastic-docs-v3')).toBeVisible()
+
+            // Operation pages render their own section, not the markdown one, and the
+            // reference content a reader comes for is the method and route under "Paths".
+            const operationPage = page.locator('#elastic-api-v3')
+            await expect(
+                operationPage.locator('.api-url-listing .api-method').first()
+            ).toHaveText(/^(GET|PUT|POST|DELETE|HEAD|PATCH)$/)
+            await expect(
+                operationPage.locator('.api-url-listing .api-url').first()
+            ).toHaveText(/^\//)
         })
     })
 }
