@@ -216,9 +216,15 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			allNodes.Add(node);
 			switch (node)
 			{
-				case HeadingBlock h:   headings.Add(h);      break;
-				case DirectiveBlock d: directives.Add(d);    break;
-				case InlineAnchor a:   inlineAnchors.Add(a); break;
+				case HeadingBlock h:
+					headings.Add(h);
+					break;
+				case DirectiveBlock d:
+					directives.Add(d);
+					break;
+				case InlineAnchor a:
+					inlineAnchors.Add(a);
+					break;
 			}
 		}
 
