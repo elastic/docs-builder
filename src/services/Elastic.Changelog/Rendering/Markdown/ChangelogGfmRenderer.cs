@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ReleaseNotes.ChangelogEntryType;
 
@@ -15,7 +15,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for generating clean GitHub Flavored Markdown in a single changelog.md file
 /// </summary>
-public class ChangelogGfmRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class ChangelogGfmRenderer(IChangelogFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "changelog.md";

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Buffers;
+using Elastic.Documentation.FileSystems;
 using System.IO.Abstractions;
 using System.Security;
 using System.Text;
@@ -22,7 +23,7 @@ public static class ChangelogPrBodyReader
 	public static async Task<string?> ReadAsync(
 		string? prBodyFile,
 		IDiagnosticsCollector collector,
-		IFileSystem fileSystem,
+		IRunnerTempFileSystem fileSystem,
 		CancellationToken ct)
 	{
 		if (string.IsNullOrWhiteSpace(prBodyFile))

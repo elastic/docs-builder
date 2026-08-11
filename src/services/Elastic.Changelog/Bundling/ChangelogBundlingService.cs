@@ -18,7 +18,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -145,14 +145,14 @@ public record BundlePlanResult
 /// </summary>
 public partial class ChangelogBundlingService(
 	ILoggerFactory logFactory,
-	ScopedFileSystem fileSystem,
+	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
 	IGitHubReleaseService? releaseService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null

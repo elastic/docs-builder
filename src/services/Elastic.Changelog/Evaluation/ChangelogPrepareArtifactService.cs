@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.FileSystems;
+
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.Json;
@@ -20,7 +22,7 @@ public class ChangelogPrepareArtifactService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	ICoreService coreService,
-	IFileSystem fileSystem
+	IRunnerTempFileSystem fileSystem
 ) : IService
 {
 	/// <summary>
@@ -29,7 +31,7 @@ public class ChangelogPrepareArtifactService(
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrepareArtifactService>();
-	private readonly IFileSystem _fileSystem = fileSystem;
+	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 
 	public async Task<bool> PrepareArtifact(IDiagnosticsCollector collector, PrepareArtifactArguments input, Cancel ctx)

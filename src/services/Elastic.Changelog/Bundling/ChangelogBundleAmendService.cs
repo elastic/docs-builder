@@ -16,7 +16,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -56,7 +56,7 @@ public record AmendBundleArguments
 /// </summary>
 public partial class ChangelogBundleAmendService(
 	ILoggerFactory logFactory,
-	ScopedFileSystem fileSystem,
+	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null) : IService
 {
 	/// <summary>
@@ -65,7 +65,7 @@ public partial class ChangelogBundleAmendService(
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundleAmendService>();
-	private readonly IFileSystem _fileSystem = fileSystem;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;

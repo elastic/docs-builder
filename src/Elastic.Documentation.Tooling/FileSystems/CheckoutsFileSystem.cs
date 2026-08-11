@@ -17,7 +17,7 @@ namespace Elastic.Documentation.FileSystems;
 /// Use <see cref="DocumentationFileSystem"/> when you have a single documentation set with a docset anchor.
 /// </para>
 /// </summary>
-public class CheckoutsFileSystem : ScopedFileSystem
+public class CheckoutsFileSystem : ScopedFileSystem, ICheckoutsFileSystem
 {
 	private static readonly FileSystem Physical = new();
 

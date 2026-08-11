@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.FileSystems;
+
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.Json;
@@ -20,11 +22,11 @@ public class ChangelogArtifactEvaluationService(
 	ILoggerFactory logFactory,
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
-	IFileSystem fileSystem
+	IRunnerTempFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogArtifactEvaluationService>();
-	private readonly IFileSystem _fileSystem = fileSystem;
+	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
 
 	public async Task<bool> EvaluateArtifact(IDiagnosticsCollector collector, EvaluateArtifactArguments input, Cancel ctx)
 	{

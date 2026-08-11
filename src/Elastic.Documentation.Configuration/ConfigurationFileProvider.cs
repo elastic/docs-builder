@@ -18,7 +18,7 @@ namespace Elastic.Documentation.Configuration;
 
 public partial class ConfigurationFileProvider
 {
-	private readonly IFileSystem _fileSystem;
+	private readonly IAppDataFileSystem _fileSystem;
 	private readonly string _assemblyName;
 	private readonly ILogger<ConfigurationFileProvider> _logger;
 
@@ -38,7 +38,7 @@ public partial class ConfigurationFileProvider
 
 	public ConfigurationFileProvider(
 		ILoggerFactory logFactory,
-		IFileSystem fileSystem,
+		IAppDataFileSystem fileSystem,
 		bool skipPrivateRepositories = false,
 		ConfigurationSource? configurationSource = null
 	)

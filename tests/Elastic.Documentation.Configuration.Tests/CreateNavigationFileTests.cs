@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -12,7 +13,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class CreateNavigationFileTests
 {
 	private static ConfigurationFileProvider CreateProvider(MockFileSystem fileSystem) =>
-		new(NullLoggerFactory.Instance, fileSystem, skipPrivateRepositories: true, ConfigurationSource.Embedded);
+		new(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem), skipPrivateRepositories: true, ConfigurationSource.Embedded);
 
 	private static AssemblyConfiguration CreateConfig(params string[] privateRepoNames)
 	{

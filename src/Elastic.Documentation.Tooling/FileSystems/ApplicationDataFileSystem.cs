@@ -13,12 +13,14 @@ namespace Elastic.Documentation.FileSystems;
 /// Use for components that access caches or state and have no need for workspace files
 /// (e.g. <c>CrossLinkFetcher</c>, <c>CheckForUpdatesFilter</c>, <c>GitLinkIndexReader</c>).
 /// </summary>
-public class ApplicationDataFileSystem(IFileSystem? inner = null) : ScopedFileSystem(
-	inner ?? new FileSystem(),
-	new ScopedFileSystemOptions([Paths.ApplicationData.FullName])
-	{
-		// .git needed for codex-link-index clone directory inside ApplicationData
-		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
-	})
+public class ApplicationDataFileSystem(IFileSystem? inner = null)
+	: ScopedFileSystem(
+		inner ?? new FileSystem(),
+		new ScopedFileSystemOptions([Paths.ApplicationData.FullName])
+		{
+			// .git needed for codex-link-index clone directory inside ApplicationData
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
+		}),
+	IAppDataFileSystem
 {
 }

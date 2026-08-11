@@ -11,7 +11,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -83,7 +83,7 @@ public static partial class ProfileFilterResolver
 		string profileName,
 		string? profileArgument,
 		ChangelogConfiguration? config,
-		ScopedFileSystem fileSystem,
+		IChangelogFileSystem fileSystem,
 		ILogger? logger,
 		Cancel ctx,
 		string? profileReport = null,
@@ -201,7 +201,7 @@ public static partial class ProfileFilterResolver
 		string profileArgument,
 		string profileReport,
 		BundleProfile profile,
-		ScopedFileSystem fileSystem,
+		IChangelogFileSystem fileSystem,
 		ILogger? logger,
 		Cancel ctx)
 	{
@@ -282,7 +282,7 @@ public static partial class ProfileFilterResolver
 	internal static async Task<ListFileResult?> ResolveListFileAsync(
 		IDiagnosticsCollector collector,
 		string filePath,
-		ScopedFileSystem fileSystem,
+		IChangelogFileSystem fileSystem,
 		Cancel ctx)
 	{
 		var content = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
@@ -356,7 +356,7 @@ public static partial class ProfileFilterResolver
 			: new ListFileResult(null, lines, null);
 	}
 
-	private static ProfileArgumentType DetectLocalFileType(ScopedFileSystem fileSystem, string path) =>
+	private static ProfileArgumentType DetectLocalFileType(IChangelogFileSystem fileSystem, string path) =>
 		fileSystem.Path.GetExtension(path).ToLowerInvariant() is ".html" or ".htm"
 			? ProfileArgumentType.PromotionReportFile
 			: ProfileArgumentType.UrlListFile;

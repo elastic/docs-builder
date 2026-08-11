@@ -3263,7 +3263,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			currentDirectory: "/empty-project"
 		);
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogBundlingService(LoggerFactory, CheckoutsFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3324,7 +3324,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
 
-		var service = new ChangelogBundlingService(LoggerFactory, CheckoutsFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3385,7 +3385,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
 
-		var service = new ChangelogBundlingService(LoggerFactory, CheckoutsFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{

@@ -8,17 +8,17 @@ using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Bundling;
 
 /// <summary>
 /// Parser for promotion report HTML files to extract PR lists
 /// </summary>
-public partial class PromotionReportParser(ILoggerFactory logFactory, ScopedFileSystem fileSystem)
+public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelogFileSystem fileSystem)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<PromotionReportParser>();
-	private readonly IFileSystem _fileSystem = fileSystem;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 
 	private static readonly string[] AllowedHosts = ["github.com", "buildkite.com"];
 

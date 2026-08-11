@@ -11,7 +11,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Creation;
 
@@ -71,7 +71,7 @@ public record CreateChangelogArguments
 public class ChangelogCreationService(
 ILoggerFactory logFactory,
 IConfigurationContext configurationContext,
-ScopedFileSystem fileSystem,
+IChangelogFileSystem fileSystem,
 IGitHubPrService? githubPrService = null,
 IEnvironmentVariables? env = null
 ) : IService

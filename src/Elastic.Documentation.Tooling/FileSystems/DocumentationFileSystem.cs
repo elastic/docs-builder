@@ -19,7 +19,7 @@ namespace Elastic.Documentation.FileSystems;
 /// scopes before the final scope is built.
 /// </para>
 /// </summary>
-public class DocumentationFileSystem : ScopedFileSystem
+public class DocumentationFileSystem : ScopedFileSystem, IDocumentationFileSystem
 {
 	private static readonly FileSystem Physical = new();
 

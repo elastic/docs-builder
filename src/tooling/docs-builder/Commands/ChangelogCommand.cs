@@ -48,7 +48,7 @@ internal sealed partial class ChangelogCommands(
 	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
 	private static partial Regex BundleOutputDirectoryRegex();
 
-	private readonly CheckoutsFileSystem _fileSystem = CheckoutsFileSystem.FromWorkingDirectory();
+	private readonly ChangelogFileSystem _fileSystem = ChangelogFileSystem.FromWorkingDirectory();
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommands>();
 	/// <summary>Create <c>changelog.yml</c> and the changelog/releases directory structure.</summary>
 	/// <remarks>
@@ -1392,10 +1392,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var runnerTemp = environmentVariables.GetEnvironmentVariable("RUNNER_TEMP");
-		var fileSystem = new CheckoutsFileSystem(
-			new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			extraRoots: string.IsNullOrWhiteSpace(runnerTemp) ? null : [runnerTemp]);
+		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService, fileSystem);
 
@@ -1485,10 +1482,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var physical = new FileSystem();
-		var fs = new CheckoutsFileSystem(
-			physical.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			output: string.IsNullOrWhiteSpace(outputDir) ? null : physical.DirectoryInfo.New(outputDir)).Write;
+		var fs = RunnerTempFileSystem.ForPrepareArtifact(stagingDir, outputDir);
 		var service = new ChangelogPrepareArtifactService(logFactory, configurationContext, githubActionsService, fs);
 
 		var args = new PrepareArtifactArguments
@@ -1537,10 +1531,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var metadataDir = Path.GetDirectoryName(metadata);
-		var fs = new CheckoutsFileSystem(
-			new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			extraRoots: string.IsNullOrWhiteSpace(metadataDir) ? null : [metadataDir]);
+		var fs = RunnerTempFileSystem.ForEvaluateArtifact(metadata);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogArtifactEvaluationService(logFactory, prService, githubActionsService, fs);
 

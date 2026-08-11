@@ -12,7 +12,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Uploading;
 
@@ -61,13 +61,13 @@ public record ChangelogUploadArguments
 
 public class ChangelogUploadService(
 	ILoggerFactory logFactory,
-	ScopedFileSystem fileSystem,
+	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
 	IAmazonS3? s3Client = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogUploadService>();
-	private readonly IFileSystem _fileSystem = fileSystem;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
