@@ -12,7 +12,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -80,7 +79,6 @@ internal sealed class TestCodexDocumentationContext(IDiagnosticsCollector collec
 
 	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New(_fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
 	public IDiagnosticsCollector Collector => collector;
-	public ScopedFileSystem ReadFileSystem => CheckoutsFileSystem.FromWorkingDirectory(_fileSystem);
 	public DocumentationWriteFileSystem WriteFileSystem => new(_fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, _fileSystem);
 	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New(_fileSystem.Path.Join(Paths.ApplicationData.FullName, "codex", "output"));
 	public BuildType BuildType => BuildType.Codex;

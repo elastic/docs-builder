@@ -27,11 +27,10 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public DocumentationFileSystem FileSystem { get; }
 
 	/// <summary>
-	/// Read scope. Returns the underlying <see cref="DocumentationFileSystem"/> as a
-	/// <see cref="ScopedFileSystem"/> to satisfy <see cref="IDocumentationContext"/>.
+	/// Read scope. Satisfies <see cref="IDocumentationSetContext"/>.
 	/// Use <see cref="FileSystem"/> directly when the richer type is needed.
 	/// </summary>
-	public ScopedFileSystem ReadFileSystem => FileSystem.Read;
+	public IDocumentationFileSystem ReadFileSystem => FileSystem.Read;
 
 	/// <summary>Write scope. Does not permit <c>.git</c> writes.</summary>
 	public DocumentationWriteFileSystem WriteFileSystem => FileSystem.Write;
@@ -108,7 +107,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	{
 		var previousFeatures = Configuration.Features;
 		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem)
+			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem)
 			: new DocumentationSetFile();
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;

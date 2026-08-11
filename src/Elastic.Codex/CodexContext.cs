@@ -8,7 +8,6 @@ using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex;
 
@@ -17,10 +16,6 @@ namespace Elastic.Codex;
 /// </summary>
 public class CodexContext : IDocsSyncContext
 {
-	// Explicit implementation satisfies the interface contract; public property exposes
-	// the narrower type. Removed when IDocsSyncContext.ReadFileSystem narrows to
-	// CheckoutsFileSystem in commit 6.
-	ScopedFileSystem IDocsSyncContext.ReadFileSystem => ReadFileSystem;
 	public CheckoutsFileSystem ReadFileSystem { get; }
 	public DocumentationWriteFileSystem WriteFileSystem { get; }
 	public IDiagnosticsCollector Collector { get; }

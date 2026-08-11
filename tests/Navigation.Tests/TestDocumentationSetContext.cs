@@ -15,7 +15,6 @@ using Markdig;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests;
 
@@ -84,7 +83,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		TestDiagnosticsCollector? collector = null
 	)
 	{
-		ReadFileSystem = new CheckoutsFileSystem(sourceDirectory, inner: fileSystem);
+		ReadFileSystem = DocumentationFileSystem.Resolve(sourceDirectory, new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configPath });
 		WriteFileSystem = new DocumentationWriteFileSystem(sourceDirectory, outputDirectory, fileSystem);
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;
@@ -103,7 +102,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	}
 
 	public IDiagnosticsCollector Collector { get; }
-	public ScopedFileSystem ReadFileSystem { get; }
+	public IDocumentationFileSystem ReadFileSystem { get; }
 	public DocumentationWriteFileSystem WriteFileSystem { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }

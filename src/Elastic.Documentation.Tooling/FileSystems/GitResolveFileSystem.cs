@@ -45,10 +45,14 @@ public class GitResolveFileSystem : ScopedFileSystem
 		for (var i = 0; i < maxParents; i++)
 			root = root.Parent ?? root;
 
-		var rootPath = root.FullName;
+		// ScopedFileSystem normalises scope roots via TrimEnd(separator). On Unix, "/" trimmed is "".
+		// An empty scope root makes every path fail the IsWithinRoot check, so guard against it:
+		// if the computed root IS the filesystem root, fall back to the anchor itself.
+		var fs = anchor.FileSystem;
+		var normalised = root.FullName.TrimEnd(fs.Path.DirectorySeparatorChar, fs.Path.AltDirectorySeparatorChar);
+		var rootPath = string.IsNullOrEmpty(normalised) ? anchor.FullName : root.FullName;
 		var roots = new List<string> { rootPath };
 
-		var fs = anchor.FileSystem;
 		if (gitDirectories is { Count: > 0 })
 		{
 			foreach (var gitDir in gitDirectories)

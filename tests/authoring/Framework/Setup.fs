@@ -510,7 +510,7 @@ type Setup =
             ConversionCollector= conversionCollector
             Set = set
             Generator = generator
-            ReadFileSystem = fileSystem
+            ReadFileSystem = docFs :> IDocumentationFileSystem
             WriteFileSystem = fileSystem
         }
         context.Bootstrap()

@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Security;
 using Elastic.Documentation.Extensions;
 
 // ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
@@ -39,8 +40,25 @@ public static class Paths
 		var depth = 0;
 		while (directory != null)
 		{
-			var hasGit = directory.GetDirectories(".git").Length > 0
-					  || directory.GetFiles(".git").Length > 0;
+			bool hasGit;
+			try
+			{
+				hasGit = directory.GetDirectories(".git").Length > 0
+						  || directory.GetFiles(".git").Length > 0;
+			}
+			catch (DirectoryNotFoundException)
+			{
+				// Directory does not exist in the (mock) filesystem — no .git here.
+				// Continue up the tree so the caller can decide.
+				hasGit = false;
+			}
+			catch (SecurityException)
+			{
+				// A ScopedFileSystem is blocking access to this directory (e.g. the scope root
+				// is the anchor itself so the parent is outside scope). Stop searching.
+				return null;
+			}
+
 			if (hasGit)
 			{
 #if DEBUG

@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -28,7 +29,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, context.ReadFileSystem, noSuppress: [HintType.DeepLinkingVirtualFile]);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, context.ReadFileSystem as ScopedFileSystem, noSuppress: [HintType.DeepLinkingVirtualFile]);
 
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 

@@ -12,19 +12,11 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncContext
 {
-	// Explicit implementations satisfy the interface contracts (ScopedFileSystem);
-	// the public property exposes the narrower CheckoutsFileSystem for code that knows
-	// the concrete context type. Commit 6 removes ReadFileSystem from IDocumentationContext
-	// and retypes IDocsSyncContext.ReadFileSystem to CheckoutsFileSystem, at which point
-	// these explicit implementations can be deleted.
-	ScopedFileSystem IDocumentationContext.ReadFileSystem => ReadFileSystem;
-	ScopedFileSystem IDocsSyncContext.ReadFileSystem => ReadFileSystem;
 	public CheckoutsFileSystem ReadFileSystem { get; }
 	public DocumentationWriteFileSystem WriteFileSystem { get; }
 

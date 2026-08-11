@@ -412,9 +412,6 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public IDiagnosticsCollector Collector => codexContext.Collector;
 
 	/// <inheritdoc />
-	public ScopedFileSystem ReadFileSystem => codexContext.ReadFileSystem;
-
-	/// <inheritdoc />
 	public DocumentationWriteFileSystem WriteFileSystem => codexContext.WriteFileSystem;
 
 	/// <inheritdoc />

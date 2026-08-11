@@ -8,9 +8,9 @@ namespace Elastic.Documentation.FileSystems;
 
 /// <summary>
 /// Marker interface for the documentation-set scope: a single checked-out repository
-/// anchored to a <c>docset.yml</c>. Only <see cref="DocumentationFileSystem"/> implements
+/// anchored to a <c>docset.yml</c>. Only <c>DocumentationFileSystem</c> implements
 /// this; declaring it on parameters ensures the compiler rejects an assembler-scope
-/// <see cref="ICheckoutsFileSystem"/> or a changelog-scope <see cref="IChangelogFileSystem"/>
+/// <c>ICheckoutsFileSystem</c> or a changelog-scope <c>IChangelogFileSystem</c>
 /// where a docset-anchored read scope is required.
 /// </summary>
 public interface IDocumentationFileSystem : IFileSystem;

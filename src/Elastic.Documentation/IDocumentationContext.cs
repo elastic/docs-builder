@@ -5,14 +5,12 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation;
 
 public interface IDocumentationContext
 {
 	IDiagnosticsCollector Collector { get; }
-	ScopedFileSystem ReadFileSystem { get; }
 	DocumentationWriteFileSystem WriteFileSystem { get; }
 	IDirectoryInfo OutputDirectory { get; }
 	IFileInfo ConfigurationPath { get; }
@@ -21,6 +19,7 @@ public interface IDocumentationContext
 
 public interface IDocumentationSetContext : IDocumentationContext
 {
+	IDocumentationFileSystem ReadFileSystem { get; }
 	IDirectoryInfo DocumentationSourceDirectory { get; }
 	GitCheckoutInformation Git { get; }
 

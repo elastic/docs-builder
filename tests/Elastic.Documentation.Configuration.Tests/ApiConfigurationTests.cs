@@ -13,7 +13,6 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -640,7 +639,9 @@ public class ConfigurationFileApiTests
 		: IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
-		public ScopedFileSystem ReadFileSystem => WriteFileSystem;
+		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(
+			documentationSourceDirectory,
+			new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configurationPath });
 		public DocumentationWriteFileSystem WriteFileSystem { get; } = new DocumentationWriteFileSystem(
 			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: fileSystem);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
