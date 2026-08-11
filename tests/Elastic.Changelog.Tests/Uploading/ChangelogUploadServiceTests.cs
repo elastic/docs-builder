@@ -707,7 +707,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_BundleArtifactType_UploadsRegistryAlongsideBundle()
+	public async Task Upload_BundleArtifactType_DoesNotWriteRegistry()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
 		_mockFileSystem.Directory.CreateDirectory(bundleDir);
@@ -751,14 +751,16 @@ public class ChangelogUploadServiceTests
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 
+		// The scrubber Lambda is the sole registry producer (docs-eng-team#688 Phase 3):
+		// uploads write YAML objects only, never a registry.json.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
-		)).MustHaveHappenedOnceExactly();
+		)).MustNotHaveHappened();
 	}
 
 	[Fact]
-	public async Task Upload_ChangelogArtifactType_RefreshesRepoScopedRegistry()
+	public async Task Upload_ChangelogArtifactType_DoesNotWriteRegistry()
 	{
 		// language=yaml
 		AddChangelog("entry.yaml", """
@@ -793,14 +795,15 @@ public class ChangelogUploadServiceTests
 
 		result.Should().BeTrue();
 
-		// Changelog uploads refresh the pool-scoped entry index, not a bundle index.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/entry.yaml"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 
+		// The scrubber Lambda is the sole registry producer (docs-eng-team#688 Phase 3):
+		// uploads write YAML objects only, never a registry.json.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key.StartsWith("bundle/", StringComparison.Ordinal)),
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
 		)).MustNotHaveHappened();
 	}
