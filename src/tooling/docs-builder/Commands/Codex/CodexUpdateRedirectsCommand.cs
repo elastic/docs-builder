@@ -36,7 +36,7 @@ internal sealed class CodexUpdateRedirectsCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = new CodexFileSystem(config);
+		var fs = new CodexFileSystem(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig))
 			return 1;
 

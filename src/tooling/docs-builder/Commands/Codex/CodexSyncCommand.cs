@@ -87,7 +87,7 @@ internal sealed class CodexSyncCommand(
 
 	private (CodexContext context, IncrementalDeployService service) LoadContext(FileInfo config)
 	{
-		var fs = new CodexFileSystem(config);
+		var fs = new CodexFileSystem(config.FullName);
 		var codexConfig = CodexConfiguration.Load(fs.ConfigurationFile);
 		return (new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs),
 			new IncrementalDeployService(logFactory, githubActionsService));

@@ -44,7 +44,7 @@ internal sealed class CodexIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new CodexFileSystem(config);
+		var fs = new CodexFileSystem(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
