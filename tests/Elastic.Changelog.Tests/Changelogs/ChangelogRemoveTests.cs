@@ -72,8 +72,8 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 	public ChangelogRemoveTests(ITestOutputHelper output) : base(output)
 	{
-		Service = new ChangelogRemoveService(LoggerFactory, null, FileSystem);
-		ServiceWithConfig = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystem);
+		Service = new ChangelogRemoveService(LoggerFactory, FileSystem);
+		ServiceWithConfig = new ChangelogRemoveService(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = CreateChangelogDir();
 	}
 
@@ -458,7 +458,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			currentDirectory: "/empty-project"
 		);
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, CheckoutsFileSystem.FromWorkingDirectory(cwdFs));
+		var service = new ChangelogRemoveService(LoggerFactory, CheckoutsFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new ChangelogRemoveArguments
 		{

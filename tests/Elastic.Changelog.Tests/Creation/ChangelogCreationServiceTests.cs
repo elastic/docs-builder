@@ -84,7 +84,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			products: "cloud-hosted, cloud-serverless"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -127,7 +127,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			repo: "cloud"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -170,7 +170,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			repo: "cloud"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -218,7 +218,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			products: "elasticsearch"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, writeFs, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, writeFs, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -242,7 +242,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var tempOutput = Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempOutput);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, null);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, null);
 		var input = new CreateChangelogArguments
 		{
 			Title = "Test BOM handling",

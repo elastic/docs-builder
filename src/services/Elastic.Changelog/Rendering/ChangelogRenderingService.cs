@@ -70,12 +70,12 @@ public enum ChangelogFileType
 /// </summary>
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
-	IConfigurationContext? configurationContext = null,
-	ScopedFileSystem? fileSystem = null
+	ScopedFileSystem fileSystem,
+	IConfigurationContext? configurationContext = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealWrite;
+	private readonly ScopedFileSystem _fileSystem = fileSystem;
 
 	public async Task<bool> RenderChangelogs(
 		IDiagnosticsCollector collector,

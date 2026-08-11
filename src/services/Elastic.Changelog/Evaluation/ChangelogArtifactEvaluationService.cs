@@ -20,11 +20,11 @@ public class ChangelogArtifactEvaluationService(
 	ILoggerFactory logFactory,
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
-	IFileSystem? fileSystem = null
+	IFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogArtifactEvaluationService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IFileSystem _fileSystem = fileSystem;
 
 	public async Task<bool> EvaluateArtifact(IDiagnosticsCollector collector, EvaluateArtifactArguments input, Cancel ctx)
 	{

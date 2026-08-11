@@ -21,7 +21,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	private readonly IGitHubPrService _mockPrService = A.Fake<IGitHubPrService>();
 
 	private GitHubReleaseChangelogService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, _mockReleaseService, _mockPrService, FileSystem);
+		new(LoggerFactory, ConfigurationContext, FileSystem, _mockReleaseService, _mockPrService);
 
 	private string CreateOutputDirectory() =>
 		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());

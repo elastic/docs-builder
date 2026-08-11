@@ -15,10 +15,10 @@ namespace Elastic.Changelog.Bundling;
 /// <summary>
 /// Parser for promotion report HTML files to extract PR lists
 /// </summary>
-public partial class PromotionReportParser(ILoggerFactory logFactory, ScopedFileSystem? fileSystem = null)
+public partial class PromotionReportParser(ILoggerFactory logFactory, ScopedFileSystem fileSystem)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<PromotionReportParser>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly IFileSystem _fileSystem = fileSystem;
 
 	private static readonly string[] AllowedHosts = ["github.com", "buildkite.com"];
 

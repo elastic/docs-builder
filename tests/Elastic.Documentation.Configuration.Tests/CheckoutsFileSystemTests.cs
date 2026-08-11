@@ -9,17 +9,10 @@ using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
-sealed file class StubEnv(string? runnerTemp) : IEnvironmentVariables
-{
-	public string? GetEnvironmentVariable(string name) =>
-		name == "RUNNER_TEMP" ? runnerTemp : null;
-	public bool IsRunningOnCI => runnerTemp is not null;
-}
-
-public class FileSystemFactoryTests
+public class CheckoutsFileSystemTests
 {
 	[Fact]
-	public void CheckoutsFileSystem_NestedExtensionRoot_DoesNotThrow()
+	public void NestedExtensionRoot_DoesNotThrow()
 	{
 		var workingRoot = Paths.WorkingDirectoryRoot.FullName;
 		var nestedConfigDir = Path.Join(workingRoot, "environments", "internal");
@@ -37,7 +30,7 @@ public class FileSystemFactoryTests
 	}
 
 	[Fact]
-	public void CheckoutsFileSystem_ExternalExtensionRoot_AllowsReadingExternalConfig()
+	public void ExternalExtensionRoot_AllowsReadingExternalConfig()
 	{
 		var workingRoot = Paths.WorkingDirectoryRoot.FullName;
 		var externalRoot = Path.Join(Path.GetTempPath(), $"external-codex-{Guid.NewGuid():N}");
@@ -53,7 +46,7 @@ public class FileSystemFactoryTests
 	}
 
 	[Fact]
-	public void CheckoutsFileSystem_AncestorExtensionRoot_DoesNotThrow()
+	public void AncestorExtensionRoot_DoesNotThrow()
 	{
 		// An ancestor of the working root would produce overlapping roots, the same class of
 		// crash fixed in a96ef869 / 3c5f9703 for Codex nested paths.
@@ -65,41 +58,26 @@ public class FileSystemFactoryTests
 
 		act.Should().NotThrow();
 		var scoped = act();
-		// The scoped filesystem must still allow reads within the working root.
 		var fileInWorkingRoot = Path.Join(workingRoot, "some.yml");
 		mockFs.AddFile(fileInWorkingRoot, new MockFileData("test"));
 		scoped.File.Exists(fileInWorkingRoot).Should().BeTrue();
 	}
 
 	[Fact]
-	public void RealReadForRunnerTemp_RunnerTempUnset_FallsBackToRealRead()
+	public void ExtraRunnerTempRoot_AllowsReadingStagedFile()
 	{
-		var env = new StubEnv(runnerTemp: null);
-
-		var result = FileSystemFactory.RealReadForRunnerTemp(env);
-
-		result.Should().BeSameAs(FileSystemFactory.RealRead);
-	}
-
-	[Fact]
-	public void RealReadForRunnerTemp_RunnerTempSibling_AllowsReadingStagedFile()
-	{
-		// Simulate the GitHub Actions hosted runner layout: RUNNER_TEMP and the
-		// checkout root are sibling directories. A file staged by the action in
-		// RUNNER_TEMP must be readable, which the plain RealRead scope denies.
+		// Simulate the GitHub Actions hosted runner layout: RUNNER_TEMP and the checkout root
+		// are sibling directories. A file staged in RUNNER_TEMP must be readable, which a
+		// plain working-dir scope denies.
 		var tempDir = Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar);
-		var env = new StubEnv(runnerTemp: tempDir);
 		var stagedFile = Path.Join(tempDir, "changelog-pr-body.md");
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
 		{
 			{ stagedFile, new MockFileData("Release Notes: fix memory leak") }
 		}, new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 
-		var scoped = FileSystemFactory.RealReadForRunnerTemp(env);
-		// We call the overload that accepts inner FS, reusing the factory helper
-		// that RealReadForRunnerTemp delegates to.
-		var scopedMock = new CheckoutsFileSystem(mockFs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: mockFs, extraRoots: [tempDir]);
+		var scoped = new CheckoutsFileSystem(mockFs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: mockFs, extraRoots: [tempDir]);
 
-		scopedMock.File.Exists(stagedFile).Should().BeTrue();
+		scoped.File.Exists(stagedFile).Should().BeTrue();
 	}
 }
