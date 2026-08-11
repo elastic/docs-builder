@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
@@ -12,8 +13,9 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	: INavigationHtmlWriter
 {
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
+	private readonly ConcurrentDictionary<string, string> _islandHtmlCache = [];
 
-	public Task<NavigationRenderResult> RenderNavigation(
+	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		INavigationItem currentNavigationItem,
 		Cancel ctx = default)
@@ -24,7 +26,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			return await RenderIslandNavigation(listingRoot, ctx);
 
 		var navigation = SelectNavigationRoot(currentRootNavigation);
-		return _renderedNavigationCache.GetOrRenderAsync(
+		return await _renderedNavigationCache.GetOrRenderAsync(
 			navigation,
 			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(navigation), ctx));
 	}
@@ -32,15 +34,15 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	private async Task<NavigationRenderResult> RenderIslandNavigation(
 		INodeNavigationItem<INavigationModel, INavigationItem> islandRoot, Cancel ctx)
 	{
-		var cacheKey = $"island:{islandRoot.Id}";
-		if (_renderedNavigationCache.TryGetValue(cacheKey, out var html))
-			return new NavigationRenderResult { Html = html, Id = islandRoot.Id };
+		var cacheKey = islandRoot.Id;
+		if (_islandHtmlCache.TryGetValue(cacheKey, out var html))
+			return new NavigationRenderResult { Html = html, Id = cacheKey };
 
 		var model = CreateIslandNavModel(islandRoot);
 		var slice = _IslandNav.Create(model);
 		html = await slice.RenderAsync(cancellationToken: ctx);
-		_renderedNavigationCache[cacheKey] = html;
-		return new NavigationRenderResult { Html = html, Id = islandRoot.Id };
+		_islandHtmlCache[cacheKey] = html;
+		return new NavigationRenderResult { Html = html, Id = cacheKey };
 	}
 
 	private static IslandNavViewModel CreateIslandNavModel(
