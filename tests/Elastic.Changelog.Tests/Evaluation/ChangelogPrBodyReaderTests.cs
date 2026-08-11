@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
@@ -30,7 +31,7 @@ public class ChangelogPrBodyReaderTests(ITestOutputHelper output)
 	public async Task ReadAsync_PrBodyFileMissing_EmitsWarning()
 	{
 		var bodyPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "missing-pr-body.md");
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(CreateMockFileSystem());
+		var scopedFs = CheckoutsFileSystem.FromWorkingDirectory(CreateMockFileSystem());
 		var collector = new TestDiagnosticsCollector(output);
 
 		var result = await ChangelogPrBodyReader.ReadAsync(bodyPath, collector, scopedFs, TestContext.Current.CancellationToken);
@@ -48,7 +49,7 @@ public class ChangelogPrBodyReaderTests(ITestOutputHelper output)
 		var bodyPath = Path.Join(runnerTemp, "changelog-pr-body.md");
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		mockFs.AddFile(bodyPath, new MockFileData("Release Notes: something important"));
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs);
+		var scopedFs = CheckoutsFileSystem.FromWorkingDirectory(mockFs);
 		var collector = new TestDiagnosticsCollector(output);
 
 		var result = await ChangelogPrBodyReader.ReadAsync(bodyPath, collector, scopedFs, TestContext.Current.CancellationToken);

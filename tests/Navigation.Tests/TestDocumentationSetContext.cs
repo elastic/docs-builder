@@ -84,7 +84,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		TestDiagnosticsCollector? collector = null
 	)
 	{
-		ReadFileSystem = FileSystemFactory.ScopeSourceDirectory(fileSystem, sourceDirectory.FullName);
+		ReadFileSystem = new CheckoutsFileSystem(sourceDirectory, inner: fileSystem);
 		WriteFileSystem = new DocumentationWriteFileSystem(sourceDirectory, outputDirectory, fileSystem);
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;

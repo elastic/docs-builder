@@ -16,7 +16,6 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.IntegrationTests;
 
@@ -45,9 +44,8 @@ public class SiteNavigationTests : IAsyncLifetime
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		var writeFs = new DocumentationWriteFileSystem(FileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, writeFs, CheckoutDirectory.FullName, null);
+		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, assembleFs.Write, CheckoutDirectory.FullName, null);
 	}
 
 	private Checkout CreateCheckout(IFileSystem fs, Repository repository)
@@ -100,9 +98,8 @@ public class SiteNavigationTests : IAsyncLifetime
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var writeFileSystem = new DocumentationWriteFileSystem(fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFileSystem, writeFileSystem, null, null);
+		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs2, assembleFs2.Write, null, null);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current.CancellationToken));
@@ -194,9 +191,8 @@ public class SiteNavigationTests : IAsyncLifetime
 		var fs = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var assembleWriteFs = new DocumentationWriteFileSystem(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fs);
-		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, scopedFs, assembleWriteFs, null, null);
+		var assembleFs3 = CheckoutsFileSystem.FromWorkingDirectory(fs);
+		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, assembleFs3, assembleFs3.Write, null, null);
 		var repos = assembleContext.Configuration.AvailableRepositories
 			.Where(kv => !kv.Value.Skip)
 			.Select(kv => kv.Value)

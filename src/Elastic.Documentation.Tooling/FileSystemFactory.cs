@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 using DirectoryInfoExtensions = Elastic.Documentation.Extensions.IDirectoryInfoExtensions;
 
@@ -65,51 +66,6 @@ public static class FileSystemFactory
 	/// </summary>
 	public static ScopedFileSystem AppData { get; } = new(new FileSystem(), AppDataOptions);
 
-	/// <summary>
-	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
-	/// <see cref="Paths.ApplicationData"/> for reading. Use when the inner FS contains files
-	/// that live within the current working-directory tree (e.g. a test <c>MockFileSystem</c>
-	/// seeded with workspace-relative paths).
-	/// </summary>
-	public static ScopedFileSystem ScopeCurrentWorkingDirectory(IFileSystem inner) =>
-		new(inner, WorkingDirectoryReadOptions);
-
-	/// <summary>
-	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
-	/// <see cref="Paths.ApplicationData"/> for reading, extended by <paramref name="extensionRoots"/>
-	/// (e.g. detection-rules folders declared via
-	/// <see cref="IDocsBuilderExtension.ExternalScopeRoots"/>).
-	/// </summary>
-	public static ScopedFileSystem ScopeCurrentWorkingDirectory(IFileSystem inner, IEnumerable<string>? extensionRoots)
-	{
-		if (extensionRoots is null)
-			return ScopeCurrentWorkingDirectory(inner);
-
-		var workingRoot = inner.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var externalRoots = extensionRoots
-			.Select(r => inner.DirectoryInfo.New(r))
-			// Drop descendants of the working root (already covered by the base scope).
-			// Also drop ancestors of the working root — they would subsume the working root,
-			// producing overlapping roots that ScopedFileSystem rejects with ArgumentException.
-			.Where(d => !DirectoryInfoExtensions.IsSubPathOf(d, workingRoot) && !DirectoryInfoExtensions.IsSubPathOf(workingRoot, d))
-			.Select(d => d.FullName)
-			.Distinct(StringComparer.OrdinalIgnoreCase)
-			.ToArray();
-
-		if (externalRoots.Length == 0)
-			return ScopeCurrentWorkingDirectory(inner);
-
-		var roots = new[] { Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName }
-			.Concat(externalRoots)
-			.ToArray();
-
-		return new ScopedFileSystem(inner, new ScopedFileSystemOptions(roots)
-		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
-		});
-	}
-
 	// Builds write options that include AllowedSpecialFolders.Temp PLUS the inner FS's own
 	// GetTempPath() as an explicit root — but only when the inner FS is MockFileSystem.
 	//
@@ -141,28 +97,6 @@ public static class FileSystemFactory
 			AllowedSpecialFolders = AllowedSpecialFolder.Temp
 		};
 	}
-
-	/// <summary>
-	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
-	/// <see cref="Paths.ApplicationData"/> for writing (.git not allowed). Use when
-	/// the inner FS writes into the working-directory tree.
-	/// </summary>
-	public static ScopedFileSystem ScopeCurrentWorkingDirectoryForWrite(IFileSystem inner) =>
-		new(inner, BuildWriteOptions(
-			inner, Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName));
-
-	/// <summary>
-	/// Scopes <paramref name="inner"/> to an explicit <paramref name="sourceRoot"/> and
-	/// <see cref="Paths.ApplicationData"/> for reading. Use when the files to be read live under
-	/// a specific known root that is not <see cref="Paths.WorkingDirectoryRoot"/> — for example
-	/// test fixtures with assembler-checkout paths or service code operating on a given directory.
-	/// </summary>
-	public static ScopedFileSystem ScopeSourceDirectory(IFileSystem inner, string sourceRoot) =>
-		new(inner, new ScopedFileSystemOptions([sourceRoot, Paths.ApplicationData.FullName])
-		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
-		});
 
 	/// <summary>
 	/// Creates a read <see cref="ScopedFileSystem"/> scoped to the git root of
@@ -256,6 +190,7 @@ public static class FileSystemFactory
 		if (string.IsNullOrWhiteSpace(runnerTemp))
 			return RealRead;
 
-		return ScopeCurrentWorkingDirectory(new FileSystem(), [runnerTemp]);
+		var plain = new FileSystem();
+		return new CheckoutsFileSystem(plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), extraRoots: [runnerTemp]);
 	}
 }

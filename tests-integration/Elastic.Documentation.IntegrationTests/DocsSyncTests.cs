@@ -18,7 +18,6 @@ using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 
@@ -47,9 +46,8 @@ public class DocsSyncTests
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var scopedWriteFs = new DocumentationWriteFileSystem(fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedWriteFs, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs, assembleFs.Write, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
 			.Returns(new ListObjectsV2Response
 			{
@@ -190,9 +188,8 @@ public class DocsSyncTests
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs2 = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var scopedWriteFs2 = new DocumentationWriteFileSystem(fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs2, scopedWriteFs2, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs2, assembleFs2.Write, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 
 		var s3Objects = new List<S3Object>();
 		foreach (var i in Enumerable.Range(0, remoteFiles))
@@ -242,9 +239,8 @@ public class DocsSyncTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var checkoutDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var scopedFs3 = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var scopedWriteFs3 = new DocumentationWriteFileSystem(fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs3, scopedWriteFs3, null, checkoutDirectory);
+		var assembleFs3 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs3, assembleFs3.Write, null, checkoutDirectory);
 		var plan = new SyncPlan
 		{
 			RemoteListingCompleted = true,

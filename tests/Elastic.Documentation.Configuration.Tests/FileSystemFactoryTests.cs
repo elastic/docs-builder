@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -18,7 +19,7 @@ sealed file class StubEnv(string? runnerTemp) : IEnvironmentVariables
 public class FileSystemFactoryTests
 {
 	[Fact]
-	public void ScopeCurrentWorkingDirectory_NestedExtensionRoot_DoesNotThrow()
+	public void CheckoutsFileSystem_NestedExtensionRoot_DoesNotThrow()
 	{
 		var workingRoot = Paths.WorkingDirectoryRoot.FullName;
 		var nestedConfigDir = Path.Join(workingRoot, "environments", "internal");
@@ -28,16 +29,17 @@ public class FileSystemFactoryTests
 			{ configPath, new MockFileData("environment: internal") }
 		});
 
-		var act = () => FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs, [nestedConfigDir]);
+		var act = () => new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), extraRoots: [nestedConfigDir], inner: mockFs);
 
 		act.Should().NotThrow();
-		var scoped = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs, [nestedConfigDir]);
+		var scoped = act();
 		scoped.File.Exists(configPath).Should().BeTrue();
 	}
 
 	[Fact]
-	public void ScopeCurrentWorkingDirectory_ExternalExtensionRoot_AllowsReadingExternalConfig()
+	public void CheckoutsFileSystem_ExternalExtensionRoot_AllowsReadingExternalConfig()
 	{
+		var workingRoot = Paths.WorkingDirectoryRoot.FullName;
 		var externalRoot = Path.Join(Path.GetTempPath(), $"external-codex-{Guid.NewGuid():N}");
 		var configPath = Path.Join(externalRoot, "codex.yml");
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -45,13 +47,13 @@ public class FileSystemFactoryTests
 			{ configPath, new MockFileData("environment: internal") }
 		});
 
-		var scoped = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs, [externalRoot]);
+		var scoped = new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), extraRoots: [externalRoot], inner: mockFs);
 
 		scoped.File.Exists(configPath).Should().BeTrue();
 	}
 
 	[Fact]
-	public void ScopeCurrentWorkingDirectory_AncestorExtensionRoot_DoesNotThrow()
+	public void CheckoutsFileSystem_AncestorExtensionRoot_DoesNotThrow()
 	{
 		// An ancestor of the working root would produce overlapping roots, the same class of
 		// crash fixed in a96ef869 / 3c5f9703 for Codex nested paths.
@@ -59,7 +61,7 @@ public class FileSystemFactoryTests
 		var ancestor = Path.GetDirectoryName(workingRoot)!;
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = workingRoot });
 
-		var act = () => FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs, [ancestor]);
+		var act = () => new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), extraRoots: [ancestor], inner: mockFs);
 
 		act.Should().NotThrow();
 		var scoped = act();
@@ -96,7 +98,7 @@ public class FileSystemFactoryTests
 		var scoped = FileSystemFactory.RealReadForRunnerTemp(env);
 		// We call the overload that accepts inner FS, reusing the factory helper
 		// that RealReadForRunnerTemp delegates to.
-		var scopedMock = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs, [tempDir]);
+		var scopedMock = new CheckoutsFileSystem(mockFs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), extraRoots: [tempDir], inner: mockFs);
 
 		scopedMock.File.Exists(stagedFile).Should().BeTrue();
 	}

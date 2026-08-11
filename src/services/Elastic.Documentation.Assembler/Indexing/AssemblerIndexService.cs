@@ -10,7 +10,6 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation.Assembler.Indexing;
@@ -28,7 +27,7 @@ public class AssemblerIndexService(
 	/// <summary>Index assembled documentation to Elasticsearch.</summary>
 	public async Task<bool> Index(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFs,
+		CheckoutsFileSystem readFs,
 		DocumentationWriteFileSystem writeFs,
 		ElasticsearchIndexOptions es,
 		string? environment = null,

@@ -11,6 +11,7 @@ using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Creation;
@@ -197,7 +198,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	public async Task CreateChangelog_TempOutputDirectory_Succeeds()
 	{
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(mockFs);
+		var writeFs = CheckoutsFileSystem.FromWorkingDirectory(mockFs).Write;
 
 		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		writeFs.Directory.CreateDirectory(writeFs.Path.GetDirectoryName(configPath)!);

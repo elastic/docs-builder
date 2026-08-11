@@ -13,10 +13,10 @@ using AwesomeAssertions;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Tests.Uploading;
 
@@ -24,7 +24,7 @@ namespace Elastic.Changelog.Tests.Uploading;
 public class RegistryBuilderTests
 {
 	private readonly MockFileSystem _mockFileSystem;
-	private readonly ScopedFileSystem _fileSystem;
+	private readonly CheckoutsFileSystem _fileSystem;
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly TestDiagnosticsCollector _collector;
 	private readonly string _bundleDir;
@@ -37,7 +37,7 @@ public class RegistryBuilderTests
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		_fileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(_mockFileSystem);
+		_fileSystem = CheckoutsFileSystem.FromWorkingDirectory(_mockFileSystem);
 		_collector = new TestDiagnosticsCollector(output);
 		_bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
 		_mockFileSystem.Directory.CreateDirectory(_bundleDir);

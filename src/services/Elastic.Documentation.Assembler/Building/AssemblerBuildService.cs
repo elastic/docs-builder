@@ -17,7 +17,6 @@ using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Building;
 
@@ -35,7 +34,7 @@ public class AssemblerBuildService(
 	public async Task<bool> BuildAll(
 		IDiagnosticsCollector collector,
 		AssemblerBuildOptions options,
-		ScopedFileSystem readFs,
+		CheckoutsFileSystem readFs,
 		DocumentationWriteFileSystem writeFs,
 		Cancel ctx
 	)

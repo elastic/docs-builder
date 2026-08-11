@@ -22,7 +22,6 @@ using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Nullean.ScopedFileSystem;
 using RazorSlices;
 
 namespace Elastic.Documentation.IntegrationTests;
@@ -47,10 +46,9 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
+		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fs);
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector,
-			FileSystemFactory.ScopeCurrentWorkingDirectory(fs),
-			new DocumentationWriteFileSystem(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, fs),
-			null, null);
+			assembleFs, assembleFs.Write, null, null);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();

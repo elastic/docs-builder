@@ -12,7 +12,6 @@ using Elastic.Documentation.Services;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Indexing;
 
@@ -35,7 +34,7 @@ public class AssemblerAiEnrichService(
 	/// </param>
 	public async Task<bool> AiEnrich(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFs,
+		CheckoutsFileSystem readFs,
 		DocumentationWriteFileSystem writeFs,
 		ElasticsearchIndexOptions es,
 		string? environment,

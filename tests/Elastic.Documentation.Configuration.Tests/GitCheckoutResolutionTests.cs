@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -75,7 +76,7 @@ public class GitCheckoutResolutionTests
 		var fs = BuildFs("/repo", branch: "feature/my-branch", sha: "deadbeef1234");
 
 		var checkout = fs.DirectoryInfo.New("/repo");
-		var scoped = FileSystemFactory.ScopeSourceDirectory(fs, "/repo");
+		var scoped = new CheckoutsFileSystem(fs.DirectoryInfo.New("/repo"), inner: fs);
 
 		var result = GitCheckoutInformationFactory.Create(checkout, scoped);
 
@@ -93,7 +94,7 @@ public class GitCheckoutResolutionTests
 		var fs = BuildFs("/repo", branch: null, sha: "cafebabe9876");
 
 		var checkout = fs.DirectoryInfo.New("/repo");
-		var scoped = FileSystemFactory.ScopeSourceDirectory(fs, "/repo");
+		var scoped = new CheckoutsFileSystem(fs.DirectoryInfo.New("/repo"), inner: fs);
 
 		var result = GitCheckoutInformationFactory.Create(checkout, scoped);
 
@@ -115,7 +116,7 @@ public class GitCheckoutResolutionTests
 			worktree: true, worktreeGitDir: "/main-repo/.git/worktrees/my-feature");
 
 		// Scope must cover both the worktree dir and the main .git
-		var scoped = FileSystemFactory.ScopeSourceDirectory(fs, "/worktree");
+		var scoped = new CheckoutsFileSystem(fs.DirectoryInfo.New("/worktree"), inner: fs);
 		var extended = new Nullean.ScopedFileSystem.ScopedFileSystem(fs,
 			new Nullean.ScopedFileSystem.ScopedFileSystemOptions(["/worktree", "/main-repo/.git/worktrees/my-feature"])
 			{
@@ -208,7 +209,7 @@ public class GitCheckoutResolutionTests
 		fs.AddFile("/worktree/.git", new MockFileData("gitdir: /nonexistent/.git/worktrees/wt\n"));
 
 		var checkout = fs.DirectoryInfo.New("/worktree");
-		var scoped = FileSystemFactory.ScopeSourceDirectory(fs, "/worktree");
+		var scoped = new CheckoutsFileSystem(fs.DirectoryInfo.New("/worktree"), inner: fs);
 
 		var result = GitCheckoutInformationFactory.Create(checkout, scoped);
 
@@ -222,7 +223,7 @@ public class GitCheckoutResolutionTests
 		// test instance rather than Unavailable, so existing test suites need no churn.
 		var fs = new MockFileSystem();
 		var checkout = fs.DirectoryInfo.New("/some/path");
-		var scoped = FileSystemFactory.ScopeSourceDirectory(fs, "/some/path");
+		var scoped = new CheckoutsFileSystem(fs.DirectoryInfo.New("/some/path"), inner: fs);
 
 		var result = GitCheckoutInformationFactory.Create(checkout, scoped);
 

@@ -11,9 +11,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Tests.Uploading;
 
@@ -21,7 +21,7 @@ namespace Elastic.Changelog.Tests.Uploading;
 public class ChangelogUploadServiceTests
 {
 	private readonly MockFileSystem _mockFileSystem;
-	private readonly ScopedFileSystem _fileSystem;
+	private readonly CheckoutsFileSystem _fileSystem;
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly ChangelogUploadService _service;
 	private readonly TestDiagnosticsCollector _collector;
@@ -33,7 +33,7 @@ public class ChangelogUploadServiceTests
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		_fileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(_mockFileSystem);
+		_fileSystem = CheckoutsFileSystem.FromWorkingDirectory(_mockFileSystem);
 		_service = new ChangelogUploadService(NullLoggerFactory.Instance, fileSystem: _fileSystem, s3Client: _s3Client);
 		_collector = new TestDiagnosticsCollector(output);
 		_changelogDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");

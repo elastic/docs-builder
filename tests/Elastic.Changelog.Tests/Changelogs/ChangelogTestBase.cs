@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,7 +31,7 @@ public abstract class ChangelogTestBase : IDisposable
 	{
 		Output = output;
 		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
-		FileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFileSystem);
+		FileSystem = CheckoutsFileSystem.FromWorkingDirectory(mockFileSystem);
 		Collector = new TestDiagnosticsCollector(output);
 		LoggerFactory = new TestLoggerFactory(output);
 

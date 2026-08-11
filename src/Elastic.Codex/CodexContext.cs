@@ -38,10 +38,11 @@ public class CodexContext : IDocsSyncContext
 		CodexConfiguration configuration,
 		IFileInfo configurationPath,
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFileSystem,
+		CheckoutsFileSystem readFileSystem,
 		DocumentationWriteFileSystem writeFileSystem,
 		string? checkoutDirectory,
-		string? outputDirectory)
+		string? outputDirectory
+	)
 	{
 		Configuration = configuration;
 		ConfigurationPath = configurationPath;

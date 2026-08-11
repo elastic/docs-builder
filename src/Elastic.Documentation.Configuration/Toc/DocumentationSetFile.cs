@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 using YamlDotNet.Serialization;
 using static Elastic.Documentation.SymlinkValidator;
@@ -126,7 +127,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= FileSystemFactory.ScopeSourceDirectory(docsetPath.FileSystem, docsetPath.Directory!.FullName);
+		fileSystem ??= new CheckoutsFileSystem(docsetPath.Directory!, inner: docsetPath.FileSystem);
 		// Validate that the docset.yml is not a symlink (security: prevents path traversal attacks)
 		EnsureNotSymlink(docsetPath);
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
@@ -148,7 +149,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= FileSystemFactory.ScopeSourceDirectory(sourceDirectory.FileSystem, sourceDirectory.FullName);
+		fileSystem ??= new CheckoutsFileSystem(sourceDirectory, inner: sourceDirectory.FileSystem);
 		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);

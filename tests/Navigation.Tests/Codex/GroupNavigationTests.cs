@@ -139,7 +139,7 @@ public class GroupNavigationTests
 		private readonly System.IO.Abstractions.TestingHelpers.MockFileSystem _fs = new();
 		public System.IO.Abstractions.IFileInfo ConfigurationPath => _fs.FileInfo.New("/codex.yml");
 		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector => new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
-		public ScopedFileSystem ReadFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectory(_fs);
+		public ScopedFileSystem ReadFileSystem => CheckoutsFileSystem.FromWorkingDirectory(_fs);
 		public DocumentationWriteFileSystem WriteFileSystem => new(_fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, _fs);
 		public System.IO.Abstractions.IDirectoryInfo OutputDirectory => _fs.DirectoryInfo.New("/output");
 		public BuildType BuildType => BuildType.Codex;

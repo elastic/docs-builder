@@ -67,7 +67,7 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 		IConfigurationContext configurationContext,
 		string environment,
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFileSystem,
+		CheckoutsFileSystem readFileSystem,
 		DocumentationWriteFileSystem writeFileSystem,
 		string? checkoutDirectory,
 		string? output

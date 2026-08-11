@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.FileSystems;
@@ -47,11 +48,12 @@ public class GitResolveFileSystem : ScopedFileSystem
 		var rootPath = root.FullName;
 		var roots = new List<string> { rootPath };
 
+		var fs = anchor.FileSystem;
 		if (gitDirectories is { Count: > 0 })
 		{
 			foreach (var gitDir in gitDirectories)
 			{
-				if (!IsSubPath(gitDir, rootPath))
+				if (!IDirectoryInfoExtensions.IsSubPath(gitDir, rootPath, fs))
 					roots.Add(gitDir);
 			}
 		}
@@ -61,13 +63,5 @@ public class GitResolveFileSystem : ScopedFileSystem
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
 		};
-	}
-
-	private static bool IsSubPath(string path, string parent)
-	{
-		var sep = System.IO.Path.DirectorySeparatorChar;
-		var normalised = path.TrimEnd(sep) + sep;
-		var parentNormalised = parent.TrimEnd(sep) + sep;
-		return normalised.StartsWith(parentNormalised, StringComparison.OrdinalIgnoreCase);
 	}
 }

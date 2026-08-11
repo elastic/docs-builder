@@ -10,7 +10,6 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.IntegrationTests;
 
@@ -30,9 +29,8 @@ public class PublicOnlyAssemblerConfigurationTests
 		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem, skipPrivateRepositories: true);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		var writeFs = new DocumentationWriteFileSystem(FileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, writeFs, CheckoutDirectory.FullName, null);
+		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, assembleFs.Write, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]
@@ -68,9 +66,8 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		var writeFs = new DocumentationWriteFileSystem(FileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, writeFs, CheckoutDirectory.FullName, null);
+		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs2, assembleFs2.Write, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]
