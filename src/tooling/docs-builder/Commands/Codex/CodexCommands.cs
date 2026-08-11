@@ -59,18 +59,11 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var plain = new FileSystem();
-		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
-		var fs = new CheckoutsFileSystem(
-			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			output is null ? null : plain.DirectoryInfo.New(output.FullName),
-			inner: plain, extraRoots: [gitRoot]);
-
-		var configFile = fs.FileInfo.New(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
+		var fs = new CodexFileSystem(config, output);
+		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs, null, output?.FullName);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -121,17 +114,11 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var plain = new FileSystem();
-		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
-		var fs = new CheckoutsFileSystem(
-			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			inner: plain, extraRoots: [gitRoot]);
-
-		var configFile = fs.FileInfo.New(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
+		var fs = new CodexFileSystem(config);
+		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs);
+		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -159,18 +146,11 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var plain = new FileSystem();
-		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
-		var fs = new CheckoutsFileSystem(
-			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			output is null ? null : plain.DirectoryInfo.New(output.FullName),
-			inner: plain, extraRoots: [gitRoot]);
-
-		var configFile = fs.FileInfo.New(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out _))
+		var fs = new CodexFileSystem(config, output);
+		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out _))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs, null, output?.FullName);
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)

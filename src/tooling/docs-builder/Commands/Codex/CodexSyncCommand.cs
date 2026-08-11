@@ -87,14 +87,9 @@ internal sealed class CodexSyncCommand(
 
 	private (CodexContext context, IncrementalDeployService service) LoadContext(FileInfo config)
 	{
-		var plain = new FileSystem();
-		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
-		var fs = new CheckoutsFileSystem(
-			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			inner: plain, extraRoots: [gitRoot]);
-		var configFile = fs.FileInfo.New(config.FullName);
-		var codexConfig = CodexConfiguration.Load(configFile);
-		return (new CodexContext(codexConfig, configFile, collector, fs),
+		var fs = new CodexFileSystem(config);
+		var codexConfig = CodexConfiguration.Load(fs.ConfigurationFile);
+		return (new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs),
 			new IncrementalDeployService(logFactory, githubActionsService));
 	}
 }

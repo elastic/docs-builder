@@ -36,13 +36,8 @@ internal sealed class CodexUpdateRedirectsCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var plain = new FileSystem();
-		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
-		var fs = new CheckoutsFileSystem(
-			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			inner: plain, extraRoots: [gitRoot]);
-		var configFile = fs.FileInfo.New(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig))
+		var fs = new CodexFileSystem(config);
+		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig))
 			return 1;
 
 		var resolvedEnvironment = environment

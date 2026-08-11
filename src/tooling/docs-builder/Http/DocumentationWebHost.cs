@@ -70,9 +70,7 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		var plain = new FileSystem();
-		var invocation = path is not null ? plain.DirectoryInfo.New(path) : null;
-		var docFs = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { InnerWrite = new MockFileSystem() });
+		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { InnerWrite = new MockFileSystem() });
 		_writeFileSystem = docFs.Write;
 		Context = new BuildContext(collector, docFs, configurationContext)
 		{
