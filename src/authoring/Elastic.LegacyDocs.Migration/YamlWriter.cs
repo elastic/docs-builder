@@ -18,10 +18,10 @@ public static class YamlWriter
 	public static void WriteDocsetYaml(string path, string project, List<string> tocRefs)
 	{
 		var sb = new StringBuilder();
-		_ = sb.Append("project: ").AppendLine(project);
-		_ = sb.AppendLine("toc:");
+		_ = sb.Append("project: ").Append(project).Append('\n');
+		_ = sb.Append("toc:\n");
 		foreach (var tocRef in tocRefs)
-			_ = sb.Append("  - toc: ").AppendLine(tocRef);
+			_ = sb.Append("  - toc: ").Append(tocRef).Append('\n');
 
 		EnsureDirectoryAndWrite(path, sb.ToString());
 	}
@@ -29,15 +29,15 @@ public static class YamlWriter
 	public static void WriteTocYaml(string path, List<TocEntry> entries)
 	{
 		var sb = new StringBuilder();
-		_ = sb.AppendLine("toc:");
+		_ = sb.Append("toc:\n");
 		foreach (var entry in entries)
 		{
 			if (entry.File is not null)
-				_ = sb.Append("  - file: ").AppendLine(entry.File);
+				_ = sb.Append("  - file: ").Append(entry.File).Append('\n');
 			else if (entry.Folder is not null)
-				_ = sb.Append("  - folder: ").AppendLine(entry.Folder);
+				_ = sb.Append("  - folder: ").Append(entry.Folder).Append('\n');
 			else if (entry.Toc is not null)
-				_ = sb.Append("  - toc: ").AppendLine(entry.Toc);
+				_ = sb.Append("  - toc: ").Append(entry.Toc).Append('\n');
 		}
 
 		EnsureDirectoryAndWrite(path, sb.ToString());

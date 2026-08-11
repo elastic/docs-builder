@@ -1431,7 +1431,15 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	private string? ReadFile(string path)
 	{
 		if (options.FileReader is not null)
-			return options.FileReader(path);
+		{
+			// Normalize to Unix-style paths so test FileReader lambdas receive consistent
+			// forward-slash paths regardless of OS. On Windows, Path.GetFullPath turns
+			// "/base/foo.adoc" into "C:\base\foo.adoc"; strip the drive letter and flip slashes.
+			var normalized = path.Replace('\\', '/');
+			if (normalized.Length >= 2 && normalized[1] == ':')
+				normalized = normalized[2..];
+			return options.FileReader(normalized);
+		}
 
 		return File.Exists(path) ? File.ReadAllText(path) : null;
 	}
