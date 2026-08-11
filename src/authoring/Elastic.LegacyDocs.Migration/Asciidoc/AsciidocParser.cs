@@ -559,8 +559,10 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			return false;
 
 		var delimChar = openingDelim[0];
+		// Trim trailing whitespace so source bugs like `---- ` still close a `----` block
+		var trimmed = line.TrimEnd();
 		// Require exact length so `--------` does not close a `----` block
-		return line.Length == openingDelim.Length && line.All(c => c == delimChar);
+		return trimmed.Length == openingDelim.Length && trimmed.All(c => c == delimChar);
 	}
 
 	private List<Token> CollectDelimitedTokens(string openingDelim)
@@ -1457,10 +1459,19 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	[GeneratedRegex(@"\{([a-zA-Z0-9_-]+)\}")]
 	private static partial Regex InlineAttrRefRegex();
 
+	// Normalize `<<<<target>>, text>>` (double `<<` source bug) → `<<target, text>>`
+	[GeneratedRegex(@"<<<<([^,>]+)>>(,[^>]*)?>")]
+	private static partial Regex DoubleXrefRegex();
+
 	public List<IInlineNode> ParseInlines(string text)
 	{
 		if (string.IsNullOrEmpty(text))
 			return [];
+
+		// Normalize `<<<<target>>, text>>` (double-nested xref source bug) to `<<target, text>>`
+		if (text.Contains("<<<<", StringComparison.Ordinal))
+			text = DoubleXrefRegex().Replace(text, "<<$1$2>>");
+
 
 		var result = new List<IInlineNode>();
 		var lastIndex = 0;

@@ -21,9 +21,13 @@ public static partial class ConditionalProcessor
 				var condition = token.Metadata.Condition!;
 				var inlineContent = token.Metadata.Content;
 
-				var isTrue = EvaluateCondition(directive, condition, attributes);
+				// ifeval::[expr] puts its expression inside the brackets (Content/group 3),
+				// not before them (Condition/group 2 = empty). It is always block-level.
+				var isIfeval = directive.Equals("ifeval", StringComparison.OrdinalIgnoreCase);
+				var conditionExpr = isIfeval ? (inlineContent ?? "") : condition;
+				var isTrue = EvaluateCondition(directive, conditionExpr, attributes);
 
-				if (!string.IsNullOrEmpty(inlineContent))
+				if (!isIfeval && !string.IsNullOrEmpty(inlineContent))
 				{
 					if (IsIncluding(conditionStack) && isTrue)
 						result.Add(new Token(TokenType.Text, inlineContent, token.LineNumber));

@@ -195,4 +195,52 @@ public class EmitterTests
 		md.Should().NotContain("endif::");
 		md.Should().Contain("\"credentials\": \"secret\",");
 	}
+
+	// ── Conditional blocks (ifeval) ────────────────────────────────────────────
+
+	[Fact]
+	public void Ifeval_FalseCondition_ExcludesContent()
+	{
+		// ifeval::[expr] — condition false, block content must be excluded
+		var adoc = "= T\n\nBefore.\n\nifeval::[\"{stack}\"==\"something-else\"]\nHidden text.\nendif::[]\n\nAfter.\n";
+		var md = Emit(adoc, new Dictionary<string, string> { ["stack"] = "elastic" });
+		md.Should().Contain("Before.");
+		md.Should().Contain("After.");
+		md.Should().NotContain("Hidden text.");
+	}
+
+	[Fact]
+	public void Ifeval_TrueCondition_IncludesContent()
+	{
+		// ifeval::[expr] — condition true, block content must be included
+		var adoc = "= T\n\nBefore.\n\nifeval::[\"{stack}\"==\"elastic\"]\nVisible text.\nendif::[]\n\nAfter.\n";
+		var md = Emit(adoc, new Dictionary<string, string> { ["stack"] = "elastic" });
+		md.Should().Contain("Before.");
+		md.Should().Contain("After.");
+		md.Should().Contain("Visible text.");
+	}
+
+	[Fact]
+	public void CodeBlock_TrailingSpaceOnClosingDelimiter_StillClosesBlock()
+	{
+		// Source files sometimes have `---- ` (with trailing space) as the closing delimiter.
+		// The lexer must treat this as a valid closing delimiter.
+		var adoc = "= T\n\n[source,json]\n----\n{\"hello\":\"world\"}\n---- \n\n==== Next section\n";
+		var md = Emit(adoc);
+		md.Should().Contain("```json");
+		md.Should().Contain("{\"hello\":\"world\"}");
+		// If the block closes, Next section becomes a real heading; if not, it's inside code block
+		md.Should().NotContain("==== Next section");  // raw AsciiDoc must not appear
+	}
+
+	[Fact]
+	public void Ifeval_ContentAfterBlock_NotLeaked_WhenConditionFalse()
+	{
+		// Regression: ConditionalProcessor was not pushing to the stack for ifeval,
+		// causing all content after the ifeval block to leak through unconditionally.
+		var adoc = "= T\n\nifeval::[\"{trust}\"==\"api-key\"]\nSecret\nendif::[]\n\nPublic paragraph.\n";
+		var md = Emit(adoc, new Dictionary<string, string> { ["trust"] = "cert" });
+		md.Should().NotContain("Secret");
+		md.Should().Contain("Public paragraph.");
+	}
 }

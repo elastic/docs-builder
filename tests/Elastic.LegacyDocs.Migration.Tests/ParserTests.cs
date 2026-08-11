@@ -177,6 +177,20 @@ public class ParserTests
 		allText.Should().Contain("Third line");
 	}
 
+	// ── Lexer: trailing whitespace on delimiter ───────────────────────────────
+
+	[Fact]
+	public void Lexer_VerbatimBlock_TrailingSpaceOnClosingDelimiter_ClosesBlock()
+	{
+		var input = "[source,json]\n----\n{\"k\":\"v\"}\n---- \n\nsome text\n";
+		var tokens = AsciidocLexer.Tokenize(input);
+		// The `---- ` line must be a closing BlockDelimiter, not Text
+		var textTokens = tokens.Where(t => t.Type == TokenType.Text).Select(t => t.Raw).ToList();
+		textTokens.Should().NotContain("---- "); // closing delim must NOT appear as Text
+		// The JSON content should appear as Text
+		textTokens.Should().Contain("{\"k\":\"v\"}");
+	}
+
 	// ── Step 2: include:: dispatch in ParseBlock ──────────────────────────────
 
 	[Fact]

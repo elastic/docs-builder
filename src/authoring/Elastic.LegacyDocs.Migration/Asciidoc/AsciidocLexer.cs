@@ -96,7 +96,7 @@ public static partial class AsciidocLexer
 	[GeneratedRegex(@"^\[(.+)\]\s*$")]
 	private static partial Regex GetBlockAttributeRegex();
 
-	[GeneratedRegex(@"^(-{4,}|\.{4,}|={4,}|\*{4,}|\+{4,}|/{4,}|-{2})$")]
+	[GeneratedRegex(@"^(-{4,}|\.{4,}|={4,}|\*{4,}|\+{4,}|/{4,}|-{2})\s*$")]
 	private static partial Regex GetBlockDelimiterRegex();
 
 	[GeneratedRegex(@"^(\*{1,5})\s+(.+)$")]
@@ -292,8 +292,10 @@ public static partial class AsciidocLexer
 			return false;
 
 		var delimChar = openDelimiter[0];
+		// Trim trailing whitespace so source bugs like `---- ` still close a `----` block
+		var trimmed = line.TrimEnd();
 		// Require exact length so e.g. `--------` does not close a `----` block
-		return line.Length == openDelimiter.Length && line.All(c => c == delimChar);
+		return trimmed.Length == openDelimiter.Length && trimmed.All(c => c == delimChar);
 	}
 
 	private static bool TryMatchToken(string line, int lineNumber, out Token token)
