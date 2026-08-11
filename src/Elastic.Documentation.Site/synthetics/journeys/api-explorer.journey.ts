@@ -82,10 +82,11 @@ if (isAssemblerApiExplorerEnabled()) {
         })
 
         step('Open an operation page from the API sidebar', async () => {
-            await page
-                .locator('#pages-nav a[href*="/operation/"]')
+            const operationLink = page
+                .locator('#pages-nav a[href*="/operation/"]:visible')
                 .first()
-                .click()
+            await expect(operationLink).toBeVisible()
+            await operationLink.click()
 
             await expect(page).toHaveURL(
                 /\/docs\/api\/doc\/elasticsearch\/v\d+\/operation\//
