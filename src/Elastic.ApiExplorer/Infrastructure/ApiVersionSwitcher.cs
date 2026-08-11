@@ -8,7 +8,7 @@ namespace Elastic.ApiExplorer.Infrastructure;
 
 public sealed class ApiVersionSwitcherContext
 {
-	private readonly Dictionary<PageTargetKey, NavigationDropdownItem[]> _itemsByTarget = new();
+	private readonly Dictionary<PageTargetKey, NavigationDropdownItem[]> _itemsByTarget = [];
 	private readonly IReadOnlyList<string> _orderedMonikers;
 	private readonly IReadOnlyDictionary<string, string> _productRootByMoniker;
 

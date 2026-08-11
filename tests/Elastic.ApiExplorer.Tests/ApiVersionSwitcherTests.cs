@@ -56,7 +56,7 @@ public class ApiVersionSwitcherTests
 			Versioned("9", new OpenApiDocument
 			{
 				Info = new OpenApiInfo { Title = "No ping", Version = "1.0" },
-				Paths = new OpenApiPaths()
+				Paths = []
 			})
 		]);
 		var pageTarget = new ApiPageVersionTarget(ApiPageVersionTargetKind.Operation, "operation-ping");
@@ -81,7 +81,7 @@ public class ApiVersionSwitcherTests
 			Versioned("8", new OpenApiDocument
 			{
 				Info = new OpenApiInfo { Title = "No ping", Version = "1.0" },
-				Paths = new OpenApiPaths()
+				Paths = []
 			})
 		]);
 		var pageTarget = new ApiPageVersionTarget(ApiPageVersionTargetKind.Operation, "operation-ping");

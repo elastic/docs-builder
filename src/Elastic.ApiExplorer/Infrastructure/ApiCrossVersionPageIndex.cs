@@ -15,7 +15,7 @@ public sealed record VersionedOpenApiDocument(ResolvedApiVersion Version, OpenAp
 /// </summary>
 public sealed class ApiCrossVersionPageIndex
 {
-	private readonly Dictionary<(ApiPageVersionTargetKind Kind, string Identity), HashSet<string>> _pages = new();
+	private readonly Dictionary<(ApiPageVersionTargetKind Kind, string Identity), HashSet<string>> _pages = [];
 
 	public static ApiCrossVersionPageIndex Build(IReadOnlyList<VersionedOpenApiDocument> documents)
 	{
@@ -68,10 +68,10 @@ public sealed class ApiCrossVersionPageIndex
 		var key = (kind, identity);
 		if (!_pages.TryGetValue(key, out var versions))
 		{
-			versions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			versions = [with(StringComparer.OrdinalIgnoreCase)];
 			_pages[key] = versions;
 		}
 
-		versions.Add(versionMoniker);
+		_ = versions.Add(versionMoniker);
 	}
 }
