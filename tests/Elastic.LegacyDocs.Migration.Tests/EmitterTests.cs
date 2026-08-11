@@ -228,7 +228,7 @@ public class EmitterTests
 		var adoc = "= T\n\n[source,json]\n----\n{\"hello\":\"world\"}\n---- \n\n==== Next section\n";
 		var md = Emit(adoc);
 		md.Should().Contain("```json");
-		md.Should().Contain("{\"hello\":\"world\"}");
+		md.Should().Contain(/*lang=json,strict*/ "{\"hello\":\"world\"}");
 		// If the block closes, Next section becomes a real heading; if not, it's inside code block
 		md.Should().NotContain("==== Next section");  // raw AsciiDoc must not appear
 	}

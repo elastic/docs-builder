@@ -187,8 +187,8 @@ public class ParserTests
 		// The `---- ` line must be a closing BlockDelimiter, not Text
 		var textTokens = tokens.Where(t => t.Type == TokenType.Text).Select(t => t.Raw).ToList();
 		textTokens.Should().NotContain("---- "); // closing delim must NOT appear as Text
-		// The JSON content should appear as Text
-		textTokens.Should().Contain("{\"k\":\"v\"}");
+												 // The JSON content should appear as Text
+		textTokens.Should().Contain(/*lang=json,strict*/ "{\"k\":\"v\"}");
 	}
 
 	// ── Step 2: include:: dispatch in ParseBlock ──────────────────────────────
