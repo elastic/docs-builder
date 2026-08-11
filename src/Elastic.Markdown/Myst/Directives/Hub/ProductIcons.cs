@@ -44,6 +44,15 @@ public static class ProductIcons
 				<path fill-rule="evenodd" clip-rule="evenodd" d="M9 39.3984V22H34V60C34 60 9 49.5847 9 39.3984Z" fill="#00BFB3"/>
 				<path fill-rule="evenodd" clip-rule="evenodd" d="M19 22H34V47C28.406 44.9626 19 40.292 19 34.4224V22Z" fill="rgba(255,255,255,0.85)"/>
 			</svg>
+			""",
+		["logstash"] = """
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+				<g transform="translate(3)">
+					<polygon fill="#3EBEB0" points="16 32 27 32 27 20 16 20"/>
+					<path fill="#FEC514" d="M1,0 L0,0 L0,20 L13,20 L13,12 C13,5.373 7.627,0 1,0"/>
+					<path fill="rgba(255,255,255,0.85)" d="M0,20 L0,20 C0,26.627 5.373,32 12,32 L13,32 L13,20 L0,20 Z"/>
+				</g>
+			</svg>
 			"""
 	}.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
