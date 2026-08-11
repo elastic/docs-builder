@@ -517,6 +517,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case GetStartedBlock getStartedBlock:
 				WriteGetStartedBlock(renderer, getStartedBlock);
 				return;
+			case WhatsNewBlock whatsNewBlock:
+				WriteWhatsNewBlock(renderer, whatsNewBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -581,6 +584,57 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		WriteHeroAction(renderer, heroBlock.SecondaryActionLabel, heroBlock.SecondaryActionUrl);
 		WriteHeroAction(renderer, heroBlock.TertiaryActionLabel, heroBlock.TertiaryActionUrl);
 		renderer.EnsureLine();
+	}
+
+	// Dated highlights, so the export keeps the date and tag alongside each title. A reader
+	// asking "what changed recently in X" wants exactly this list.
+	private static void WriteWhatsNewBlock(LlmMarkdownRenderer renderer, WhatsNewBlock block)
+	{
+		var data = block.Data;
+		renderer.EnsureBlockSpacing();
+
+		if (!string.IsNullOrEmpty(data.Title))
+		{
+			renderer.WriteLine($"## {data.Title}");
+			renderer.EnsureLine();
+		}
+		if (!string.IsNullOrEmpty(data.Intro))
+		{
+			renderer.WriteLine(data.Intro);
+			renderer.EnsureLine();
+		}
+
+		foreach (var link in data.ReleaseLinks)
+			WriteHeroAction(renderer, link.Label, link.Url);
+
+		foreach (var item in data.Items)
+			WriteWhatsNewItem(renderer, item);
+
+		if (data.UpgradeLink is { } upgrade)
+			WriteHeroAction(renderer, upgrade.Label, upgrade.Url);
+
+		renderer.EnsureLine();
+	}
+
+	private static void WriteWhatsNewItem(LlmMarkdownRenderer renderer, WhatsNewItem item)
+	{
+		if (string.IsNullOrEmpty(item.Title))
+			return;
+
+		renderer.EnsureLine();
+		var title = string.IsNullOrEmpty(item.Link)
+			? item.Title
+			: $"[{item.Title}]({HubLinkForLlm(renderer, item.Link)})";
+
+		var meta = new List<string>(2);
+		if (!string.IsNullOrEmpty(item.Date))
+			meta.Add(item.Date);
+		if (!string.IsNullOrEmpty(item.Tag))
+			meta.Add(item.Tag);
+
+		renderer.WriteLine(meta.Count > 0 ? $"- {title} ({string.Join(", ", meta)})" : $"- {title}");
+		if (!string.IsNullOrEmpty(item.Description))
+			renderer.WriteLine($"  {item.Description}");
 	}
 
 	// The onboarding path is a sequence, so it exports as an ordered list. Options under a step
