@@ -209,6 +209,13 @@ For example, if the source of truth for what was shipped in each release is:
   docs/changelog/1770424401-adhoc-feature.yaml
   ```
 
+  If you're bundling files from the CDN, use paths like this:
+
+  ```txt
+  /changelog/elastic/kibana/main/1783971707-the-dashboards-and-visualizations-apis-are-now-gen.yaml
+  /changelog/elastic/kibana/main/247279.yaml
+  ```
+
 - automated release notes for GitHub releases:
 
   ```sh
