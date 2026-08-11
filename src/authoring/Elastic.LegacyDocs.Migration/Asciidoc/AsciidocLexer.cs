@@ -257,6 +257,12 @@ public static partial class AsciidocLexer
 					continue;
 				}
 
+				if (CommentRegex.IsMatch(line))
+				{
+					tokens.Add(new Token(TokenType.Comment, line, lineNumber));
+					continue;
+				}
+
 				if (line.StartsWith('|'))
 				{
 					tokens.Add(new Token(TokenType.TableRow, line, lineNumber, new TokenMetadata { Content = line[1..] }));

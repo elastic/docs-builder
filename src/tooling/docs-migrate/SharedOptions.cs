@@ -74,7 +74,7 @@ internal static class SharedOptions
 			Majors: majors ?? saved.Majors,
 			All: all ?? saved.All,
 			MinVersion: minVersion ?? saved.MinVersion,
-			Book: book ?? saved.Book,
+			Book: book,
 			Minors: minors ?? saved.Minors
 		);
 	}

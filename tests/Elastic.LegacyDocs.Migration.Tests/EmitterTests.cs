@@ -244,6 +244,52 @@ public class EmitterTests
 		md.Should().Contain("Public paragraph.");
 	}
 
+	// ── Long dash delimiter (50 dashes) ──────────────────────────────────────
+
+	[Fact]
+	public void CodeBlock_LongDashDelimiter_IsTreatedAsCodeFence()
+	{
+		// Watcher 2.4 docs use 50-dash lines as code block delimiters (valid AsciiDoc: 4+ dashes).
+		var adoc = "= T\n\n[source,js]\n--------------------------------------------------\n\"input\": {}\n--------------------------------------------------\n\nNormal paragraph.\n";
+		var md = Emit(adoc);
+		md.Should().Contain("```");
+		md.Should().Contain("\"input\": {}");
+		md.Should().NotContain("--------------------------------------------------");
+		md.Should().Contain("Normal paragraph.");
+	}
+
+	[Fact]
+	public void CodeBlock_LongDashDelimiter_InNestedSection_IsTreatedAsCodeFence()
+	{
+		// Watcher 2.4 docs: code blocks with 50-dash delimiters inside nested sections (== > === > ====).
+		var adoc = string.Join("\n",
+			"= Doc",
+			"",
+			"[[top]]",
+			"== Level1",
+			"",
+			"[[sec2]]",
+			"=== Level2",
+			"",
+			"[[sec3]]",
+			"==== Level3",
+			"",
+			"Some text:",
+			"",
+			"[source,js]",
+			"--------------------------------------------------",
+			"\"key\": \"value\"",
+			"--------------------------------------------------",
+			"",
+			"Normal paragraph.",
+			"");
+		var md = Emit(adoc);
+		md.Should().Contain("```");
+		md.Should().Contain("\"key\": \"value\"");
+		md.Should().NotContain("--------------------------------------------------");
+		md.Should().Contain("Normal paragraph.");
+	}
+
 	// ── Open block delimiter trailing whitespace ───────────────────────────────
 
 	[Fact]
