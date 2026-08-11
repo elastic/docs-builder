@@ -83,7 +83,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		TestDiagnosticsCollector? collector = null
 	)
 	{
-		ReadFileSystem = DocumentationFileSystem.Resolve(sourceDirectory, new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configPath });
+		ReadFileSystem = DocumentationFileSystem.Resolve(sourceDirectory, new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configPath.FullName });
 		WriteFileSystem = new DocumentationWriteFileSystem(sourceDirectory, outputDirectory, fileSystem);
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;

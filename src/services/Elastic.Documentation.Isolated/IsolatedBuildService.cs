@@ -83,15 +83,12 @@ public class IsolatedBuildService(
 			force = true;
 		}
 
-		var plain = new FileSystem();
-		var invocation = path is not null ? plain.DirectoryInfo.New(path) : null;
-		var outputDir = options.Output is not null ? plain.DirectoryInfo.New(options.Output.FullName) : null;
 		try
 		{
-			var docFs = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions
+			var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions
 			{
-				Output = outputDir,
-				InnerWrite = writeFileSystem,
+				Output = options.Output?.FullName,
+				InnerWrite = writeFileSystem
 			});
 			context = new BuildContext(collector, docFs, configurationContext)
 			{
@@ -110,9 +107,8 @@ public class IsolatedBuildService(
 			// Derive the default output from `path` so it stays within the write FS scope.
 			// Using Paths.WorkingDirectoryRoot would be wrong when --path points to a different repo.
 			var rootFolder = !string.IsNullOrWhiteSpace(path) ? path : Paths.WorkingDirectoryRoot.FullName;
-			var fallbackFs = writeFileSystem ?? plain;
-			var outputDirectory = outputDir
-				?? fallbackFs.DirectoryInfo.New(Path.Join(rootFolder, ".artifacts/docs/html"));
+			var fallbackFs = writeFileSystem ?? new FileSystem();
+			var outputDirectory = fallbackFs.DirectoryInfo.New(output ?? Path.Join(rootFolder, ".artifacts/docs/html"));
 			// we temporarily do not error when pointed to a non-documentation folder.
 			_ = fallbackFs.Directory.CreateDirectory(outputDirectory.FullName);
 

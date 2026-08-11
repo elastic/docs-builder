@@ -44,7 +44,7 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 			new DocumentationScopeOptions
 			{
 				Inner = fs,
-				Output = fs.DirectoryInfo.New(Path.Combine(root, "codex-checkout-dir-test-out"))
+				Output = Path.Join(root, "codex-checkout-dir-test-out")
 			});
 		var context = new BuildContext(collector, docFs, configurationContext);
 
@@ -70,7 +70,7 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 			new DocumentationScopeOptions
 			{
 				Inner = fs,
-				Output = fs.DirectoryInfo.New(Path.Combine(root, "codex-docs-only-test-out"))
+				Output = Path.Join(root, "codex-docs-only-test-out")
 			});
 		var context = new BuildContext(collector, docFs, configurationContext);
 
@@ -96,7 +96,7 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		var opts = new DocumentationScopeOptions
 		{
 			Inner = fs,
-			Output = fs.DirectoryInfo.New(Path.Combine(root, "codex-equiv-test-out"))
+			Output = Path.Combine(root, "codex-equiv-test-out")
 		};
 
 		var fsFromRepoRoot = DocumentationFileSystem.Resolve(fs.DirectoryInfo.New(repoPath), opts);

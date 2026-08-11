@@ -25,9 +25,7 @@ public class LocalChangeTrackingService(
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 
-		var plain = new FileSystem();
-		var invocation = path is not null ? plain.DirectoryInfo.New(path) : null;
-		var docFs = DocumentationFileSystem.Resolve(invocation);
+		var docFs = DocumentationFileSystem.Resolve(path);
 		var buildContext = new BuildContext(collector, docFs, configurationContext) { AvailableExporters = ExportOptions.MetadataOnly };
 		var redirectFile = new RedirectFile(buildContext);
 		if (!redirectFile.Source.Exists)

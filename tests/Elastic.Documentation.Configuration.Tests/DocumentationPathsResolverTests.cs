@@ -275,7 +275,7 @@ public class DocumentationPathsResolverTests
 		var opts = new DocumentationScopeOptions
 		{
 			Inner = fs,
-			GitDir = fs.DirectoryInfo.New("/repo/.git")
+			GitDir = "/repo/.git"
 		};
 
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/project/docs"), opts, fs);
@@ -303,7 +303,7 @@ public class DocumentationPathsResolverTests
 		var opts = new DocumentationScopeOptions
 		{
 			Inner = fs,
-			GitDir = fs.DirectoryInfo.New("/repo/.git")
+			GitDir = "/repo/.git"
 		};
 
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/project/docs"), opts, fs);
@@ -383,7 +383,7 @@ public class DocumentationPathsResolverTests
 		var opts = new DocumentationScopeOptions
 		{
 			Inner = fs,
-			Output = fs.DirectoryInfo.New("/custom/output")
+			Output = "/custom/output"
 		};
 
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), opts, fs);
@@ -402,7 +402,7 @@ public class DocumentationPathsResolverTests
 		var fs = RegularRepo(repoRoot: "/project");
 		var docsetFile = fs.FileInfo.New("/project/docs/docset.yml");
 
-		var opts = new DocumentationScopeOptions { Inner = fs, ConfigurationFile = docsetFile };
+		var opts = new DocumentationScopeOptions { Inner = fs, ConfigurationFile = docsetFile.FullName };
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/project"), opts, fs);
 
 		paths.SourceDirectory.FullName.Should().Be(P(fs, "/project/docs"));

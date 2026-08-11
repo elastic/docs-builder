@@ -190,9 +190,9 @@ public class CodexBuildService(
 			// one from the repository root and always landing on `docs/`.
 			var docFs = DocumentationFileSystem.Resolve(checkout.RepositoryDirectory, new DocumentationScopeOptions
 			{
-				Output = fileSystem.DirectoryInfo.New(outputPath),
+				Output = outputPath,
 				Git = git,
-				ConfigurationFile = checkout.DocsetFile,
+				ConfigurationFile = checkout.DocsetFile.FullName,
 			});
 			var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
 			{

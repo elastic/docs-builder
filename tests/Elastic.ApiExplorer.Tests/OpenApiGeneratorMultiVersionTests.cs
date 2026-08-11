@@ -220,10 +220,10 @@ public class OpenApiGeneratorMultiVersionTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, versionsConfiguration, productsConfiguration);
 
 		return new BuildContext(collector,
-			DocumentationFileSystem.Resolve(fs.DirectoryInfo.New(repoRoot), new DocumentationScopeOptions
+			DocumentationFileSystem.Resolve(repoRoot, new DocumentationScopeOptions
 			{
-				ConfigurationFile = fs.FileInfo.New(configPath),
-				Output = fs.DirectoryInfo.New(outputRoot),
+				ConfigurationFile = configPath,
+				Output = outputRoot,
 				Git = git,
 				Inner = fs
 			}),

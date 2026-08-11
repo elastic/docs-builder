@@ -91,17 +91,17 @@ public sealed record ResolvedDocumentationPaths
 public sealed record DocumentationScopeOptions
 {
 	/// <summary>Explicit output directory (<c>--output</c>).</summary>
-	public IDirectoryInfo? Output { get; init; }
+	public string? Output { get; init; }
 
 	/// <summary>
 	/// Explicit <c>--git-dir</c> override — the <c>.git</c> directory; its <c>.Parent</c> is the checkout.
 	/// Worktrees are handled automatically through the <c>commondir</c> path; do not point this at a
 	/// worktree's internal gitdir (<c>.git/worktrees/&lt;name&gt;</c>).
 	/// </summary>
-	public IDirectoryInfo? GitDir { get; init; }
+	public string? GitDir { get; init; }
 
 	/// <summary>Pre-discovered docset configuration file. When set, the docset scan is skipped.</summary>
-	public IFileInfo? ConfigurationFile { get; init; }
+	public string? ConfigurationFile { get; init; }
 
 	/// <summary>
 	/// Git checkout information override (for tests). Replaces the <c>GitCheckoutInformationFactory</c>
@@ -157,8 +157,8 @@ public static class DocumentationPathsResolver
 		IFileSystem inner)
 	{
 		// 1-2. Anchor. Scoped to the invocation path only; skipped when the docset is already known.
-		var (source, configuration) = options.ConfigurationFile is { } known
-			? (known.Directory!, known)
+		var (source, configuration) = options.ConfigurationFile is { } known && inner.NewFileInfo(known) is { Exists: true } configFile
+			? (configFile.Directory!, configFile)
 			: ScanForDocset(invocation, inner);
 
 		// 3. Checkout, derived from the anchor — never from the invocation.
@@ -170,7 +170,7 @@ public static class DocumentationPathsResolver
 		//    anchor's ancestry by design, so a scoped FS would block the commondir traversal.
 		//    When --git-dir is explicit the checkout is gitDir.Parent, so gitDir itself must be
 		//    carried forward — ResolveGitDirectories can't find it via the gitScope (out-of-tree).
-		var gitDirectories = options.GitDir is { } explicitGitDir
+		var gitDirectories = options.GitDir is { } defined && inner.NewDirInfo(defined) is { Exists: true } explicitGitDir
 			? [explicitGitDir.FullName]
 			: ResolveGitDirectories(gitScope, checkout, inner);
 
@@ -184,8 +184,7 @@ public static class DocumentationPathsResolver
 
 		// 6. Output. Default is relative to the checkout, not the invocation.
 		//    --path repo/docs and --path repo/ must both write to repo/.artifacts, not repo/docs/.artifacts.
-		var output = options.Output ?? inner.DirectoryInfo.New(
-			inner.Path.Join(checkout.FullName, ".artifacts", "docs", "html"));
+		var output = inner.NewDirInfo(options.Output ?? inner.Path.Join(checkout.FullName, ".artifacts", "docs", "html"));
 
 		// 7. Disjointness-filter the extra roots.
 		var extraRoots = FilterExtraRoots(options.ExtraRoots, checkout);
@@ -218,17 +217,15 @@ public static class DocumentationPathsResolver
 		DocumentationScopeOptions options,
 		IFileSystem inner)
 	{
-		if (options.GitDir is { } explicitGitDir)
+		if (options.GitDir is { } configured && inner.NewDirInfo(configured) is { } explicitGitDir)
 		{
 			if (!inner.Directory.Exists(explicitGitDir.FullName))
-				throw new DocumentationPathException(
-					$"--git-dir '{explicitGitDir.FullName}' does not exist.");
+				throw new DocumentationPathException($"--git-dir '{explicitGitDir.FullName}' does not exist.");
 			if (!inner.File.Exists(inner.Path.Join(explicitGitDir.FullName, "HEAD")))
 				throw new DocumentationPathException(
 					$"--git-dir '{explicitGitDir.FullName}' does not appear to be a valid .git directory (no HEAD file found).");
 			return explicitGitDir.Parent
-				?? throw new DocumentationPathException(
-					$"--git-dir '{explicitGitDir.FullName}' has no parent directory.");
+				?? throw new DocumentationPathException($"--git-dir '{explicitGitDir.FullName}' has no parent directory.");
 		}
 
 		var gitRoot = Paths.FindGitRoot(gitScope.DirectoryInfo.New(source.FullName), options.MaxParents);

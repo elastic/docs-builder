@@ -29,9 +29,7 @@ public class MoveFileService(
 		Cancel ctx
 	)
 	{
-		var plain = new FileSystem();
-		var invocation = path is not null ? plain.DirectoryInfo.New(path) : null;
-		var docFs = DocumentationFileSystem.Resolve(invocation);
+		var docFs = DocumentationFileSystem.Resolve(path);
 		var context = new BuildContext(collector, docFs, configurationContext) { AvailableExporters = ExportOptions.MetadataOnly };
 
 		var set = new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance);

@@ -53,12 +53,9 @@ public record AssemblerDocumentationSet
 			Branch = checkout.Repository.GetBranch(env.ContentSource)
 		};
 
-		var plain = new FileSystem();
-		var invocationDir = plain.DirectoryInfo.New(path);
-		var outputDir = plain.DirectoryInfo.New(output);
-		var docFs = DocumentationFileSystem.Resolve(invocationDir, new DocumentationScopeOptions
+		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions
 		{
-			Output = outputDir,
+			Output = output,
 			Git = gitConfiguration,
 		});
 		var buildContext = new BuildContext(context.Collector, docFs, configurationContext)

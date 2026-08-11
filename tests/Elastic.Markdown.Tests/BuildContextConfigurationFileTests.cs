@@ -41,8 +41,8 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 			new DocumentationScopeOptions
 			{
 				Inner = fs,
-				ConfigurationFile = fs.FileInfo.New(internalDocsetPath),
-				Output = fs.DirectoryInfo.New(Path.Combine(root, "codex-configuration-file-test-out"))
+				ConfigurationFile = internalDocsetPath,
+				Output = Path.Join(root, "codex-configuration-file-test-out")
 			});
 
 		var context = new BuildContext(collector, docFs, configurationContext);
@@ -73,7 +73,7 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 			new DocumentationScopeOptions
 			{
 				Inner = fs,
-				Output = fs.DirectoryInfo.New(Path.Combine(root, "codex-configuration-file-fallback-test-out"))
+				Output = Path.Join(root, "codex-configuration-file-fallback-test-out")
 			});
 
 		var context = new BuildContext(collector, docFs, configurationContext);

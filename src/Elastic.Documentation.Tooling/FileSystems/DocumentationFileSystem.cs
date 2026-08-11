@@ -58,9 +58,7 @@ public class DocumentationFileSystem : ScopedFileSystem, IDocumentationFileSyste
 	/// No docset found under <paramref name="path"/>, or no <c>.git</c> within <c>MaxParents</c> of the
 	/// anchor and no <c>--git-dir</c> override.
 	/// </exception>
-	public static DocumentationFileSystem Resolve(
-		IDirectoryInfo? path = null,
-		DocumentationScopeOptions? options = null)
+	public static DocumentationFileSystem Resolve(IDirectoryInfo? path = null, DocumentationScopeOptions? options = null)
 	{
 		var opts = options ?? new DocumentationScopeOptions();
 		var inner = opts.Inner ?? Physical;
@@ -72,11 +70,12 @@ public class DocumentationFileSystem : ScopedFileSystem, IDocumentationFileSyste
 		return new DocumentationFileSystem(paths, inner, opts.InnerWrite);
 	}
 
-	public static DocumentationFileSystem Resolve(string path, DocumentationScopeOptions? options = null)
+	public static DocumentationFileSystem Resolve(string? path, DocumentationScopeOptions? options = null)
 	{
 		var opts = options ?? new DocumentationScopeOptions();
 		var inner = opts.Inner ?? Physical;
-		return Resolve(inner.DirectoryInfo.New(path), opts);
+		var invocation = path is not null ? inner.DirectoryInfo.New(path) : null;
+		return Resolve(invocation, opts);
 	}
 
 	private static ScopedFileSystemOptions BuildReadOptions(ResolvedDocumentationPaths paths)
