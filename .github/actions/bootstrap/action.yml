@@ -28,7 +28,7 @@ runs:
       run: |
         git config --global init.defaultBranch main
 
-    - uses: actions/setup-dotnet@v5.4.0
+    - uses: actions/setup-dotnet@v6.0.0
       with:
         global-json-file: global.json
         
