@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.FileSystems;
@@ -34,7 +35,7 @@ public class DocumentationWriteFileSystem(
 	IDirectoryInfo checkout,
 	IDirectoryInfo? output = null,
 	IFileSystem? inner = null)
-	: ScopedFileSystem(inner ?? new FileSystem(), BuildOptions(checkout.FullName, output?.FullName, inner))
+	: ScopedFileSystem(inner ?? new FileSystem(), BuildOptions(checkout, output, inner))
 {
 
 	/// <summary>
@@ -54,27 +55,26 @@ public class DocumentationWriteFileSystem(
 	}
 
 	private static ScopedFileSystemOptions BuildOptions(
-		string checkoutPath,
-		string? outputPath,
+		IDirectoryInfo checkout,
+		IDirectoryInfo? output,
 		IFileSystem? inner)
 	{
+		var fs = inner ?? checkout.FileSystem;
+		var checkoutPath = checkout.FullName;
 		var roots = new List<string> { checkoutPath };
 
 		// AppData is disjointness-filtered: on CI each docset checkout lives inside AppData
 		// (/home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>), so AppData would
 		// subsume checkoutPath and trigger ValidateRootsAreDisjoint.
 		var appData = ApplicationDataPath;
-		if (!IsSubPath(appData, checkoutPath) && !IsSubPath(checkoutPath, appData))
-			roots.Add(appData);
-
-		if (outputPath is not null)
+		if (!IDirectoryInfoExtensions.IsSubPath(appData, checkoutPath, fs)
+			&& !IDirectoryInfoExtensions.IsSubPath(checkoutPath, appData, fs))
 		{
-			var sep = System.IO.Path.DirectorySeparatorChar;
-			var outputNorm = outputPath.TrimEnd(sep) + sep;
-			var checkoutNorm = checkoutPath.TrimEnd(sep) + sep;
-			if (!outputNorm.StartsWith(checkoutNorm, StringComparison.OrdinalIgnoreCase))
-				roots.Add(outputPath);
+			roots.Add(appData);
 		}
+
+		if (output is not null && !IDirectoryInfoExtensions.IsSubPath(output.FullName, checkout.FullName, fs))
+			roots.Add(output.FullName);
 
 		// On non-Windows, MockFileSystem hardcodes a Unix-ified path ("/temp/", derived from "C:\temp")
 		// instead of calling System.IO.Path.GetTempPath(). AllowedSpecialFolder.Temp uses the real
@@ -83,11 +83,10 @@ public class DocumentationWriteFileSystem(
 		//
 		// Fix tracked upstream: https://github.com/TestableIO/System.IO.Abstractions/pull/1454
 		// Once that ships and we update the package reference we can drop this workaround.
-		var innerResolved = inner ?? new FileSystem();
-		var innerType = innerResolved is ScopedFileSystem sf ? sf.InnerType : innerResolved.GetType();
+		var innerType = fs is ScopedFileSystem sf ? sf.InnerType : fs.GetType();
 		if (!OperatingSystem.IsWindows() && innerType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase))
 		{
-			var innerTemp = innerResolved.Path.GetTempPath().TrimEnd(
+			var innerTemp = fs.Path.GetTempPath().TrimEnd(
 				System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
 			if (!string.IsNullOrEmpty(innerTemp) && !roots.Contains(innerTemp, StringComparer.OrdinalIgnoreCase))
 				roots.Add(innerTemp);
@@ -99,11 +98,5 @@ public class DocumentationWriteFileSystem(
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state", ".pagefind-net-frontend-version" },
 			AllowedSpecialFolders = AllowedSpecialFolder.Temp
 		};
-	}
-
-	private static bool IsSubPath(string path, string parent)
-	{
-		var sep = System.IO.Path.DirectorySeparatorChar;
-		return (path.TrimEnd(sep) + sep).StartsWith(parent.TrimEnd(sep) + sep, StringComparison.OrdinalIgnoreCase);
 	}
 }

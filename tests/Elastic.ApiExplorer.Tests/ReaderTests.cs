@@ -52,7 +52,7 @@ public class ReaderTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)), configurationContext);
+		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
 		var openApiDocument = await OpenApiReader.Instance.ReadAsync(LocalSpecFile());

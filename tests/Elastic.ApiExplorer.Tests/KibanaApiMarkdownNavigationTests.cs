@@ -54,7 +54,7 @@ public class KibanaApiMarkdownNavigationTests
 
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)), configurationContext);
+		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
 		var doc = OpenApiReader.Instance.ReadAsync(specFile).GetAwaiter().GetResult();
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);

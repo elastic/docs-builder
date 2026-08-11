@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.FileSystems;
@@ -13,7 +14,7 @@ namespace Elastic.Documentation.FileSystems;
 /// checkout root. Exposes a matching <see cref="Write"/> scope derived from the same paths — so read and
 /// write cannot disagree about the checkout.
 /// <para>
-/// Construction is via <see cref="Resolve"/> only. The constructor is private; it takes
+/// Construction is via <see cref="Resolve(IDirectoryInfo?, DocumentationScopeOptions?)"/> only. The constructor is private; it takes
 /// already-resolved paths so that <see cref="DocumentationPathsResolver"/> can run its bootstrap
 /// scopes before the final scope is built.
 /// </para>
@@ -71,8 +72,16 @@ public class DocumentationFileSystem : ScopedFileSystem
 		return new DocumentationFileSystem(paths, inner, opts.InnerWrite);
 	}
 
+	public static DocumentationFileSystem Resolve(string path, DocumentationScopeOptions? options = null)
+	{
+		var opts = options ?? new DocumentationScopeOptions();
+		var inner = opts.Inner ?? Physical;
+		return Resolve(inner.DirectoryInfo.New(path), opts);
+	}
+
 	private static ScopedFileSystemOptions BuildReadOptions(ResolvedDocumentationPaths paths)
 	{
+		var fs = paths.CheckoutDirectory.FileSystem;
 		var checkoutPath = paths.CheckoutDirectory.FullName;
 		var roots = new List<string> { checkoutPath };
 
@@ -80,19 +89,22 @@ public class DocumentationFileSystem : ScopedFileSystem
 		// (/home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>), so AppData would
 		// subsume checkoutPath and trigger ValidateRootsAreDisjoint.
 		var appData = Configuration.Paths.ApplicationData.FullName;
-		if (!IsSubPath(appData, checkoutPath) && !IsSubPath(checkoutPath, appData))
+		if (!IDirectoryInfoExtensions.IsSubPath(appData, checkoutPath, fs)
+			&& !IDirectoryInfoExtensions.IsSubPath(checkoutPath, appData, fs))
+		{
 			roots.Add(appData);
+		}
 
 		foreach (var gitDir in paths.GitDirectories)
 		{
-			if (!IsSubPath(gitDir, checkoutPath))
+			if (!IDirectoryInfoExtensions.IsSubPath(gitDir, checkoutPath, fs))
 				roots.Add(gitDir);
 		}
 
 		foreach (var extra in paths.ExtraRoots)
 		{
 			if (!string.IsNullOrEmpty(extra)
-				&& !IsSubPath(extra, checkoutPath)
+				&& !IDirectoryInfoExtensions.IsSubPath(extra, checkoutPath, fs)
 				&& !roots.Contains(extra, StringComparer.OrdinalIgnoreCase))
 			{
 				roots.Add(extra);
@@ -104,15 +116,5 @@ public class DocumentationFileSystem : ScopedFileSystem
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		};
-	}
-
-	/// <summary>Returns true if <paramref name="path"/> is a subdirectory of <paramref name="parent"/>
-	/// (or equals it), using a case-insensitive separator-normalised comparison.</summary>
-	private static bool IsSubPath(string path, string parent)
-	{
-		var sep = System.IO.Path.DirectorySeparatorChar;
-		var normalised = path.TrimEnd(sep) + sep;
-		var parentNormalised = parent.TrimEnd(sep) + sep;
-		return normalised.StartsWith(parentNormalised, StringComparison.OrdinalIgnoreCase);
 	}
 }

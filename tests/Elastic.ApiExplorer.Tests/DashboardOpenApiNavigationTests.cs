@@ -25,7 +25,7 @@ public class DashboardOpenApiNavigationTests
 	public async Task CreateNavigation_SingleTagOpenApiSpec_HasSidebarItems()
 	{
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(new DiagnosticsCollector([]), DocumentationFileSystem.Resolve(new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)), configurationContext);
+		var context = new BuildContext(new DiagnosticsCollector([]), DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
 		var fs = new FileSystem();
 		var path = fs.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "dashboard-openapi.json");
 		var fi = fs.FileInfo.New(path);

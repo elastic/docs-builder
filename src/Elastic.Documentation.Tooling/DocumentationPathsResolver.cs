@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
@@ -218,9 +219,17 @@ public static class DocumentationPathsResolver
 		IFileSystem inner)
 	{
 		if (options.GitDir is { } explicitGitDir)
+		{
+			if (!inner.Directory.Exists(explicitGitDir.FullName))
+				throw new DocumentationPathException(
+					$"--git-dir '{explicitGitDir.FullName}' does not exist.");
+			if (!inner.File.Exists(inner.Path.Join(explicitGitDir.FullName, "HEAD")))
+				throw new DocumentationPathException(
+					$"--git-dir '{explicitGitDir.FullName}' does not appear to be a valid .git directory (no HEAD file found).");
 			return explicitGitDir.Parent
 				?? throw new DocumentationPathException(
 					$"--git-dir '{explicitGitDir.FullName}' has no parent directory.");
+		}
 
 		var gitRoot = Paths.FindGitRoot(gitScope.DirectoryInfo.New(source.FullName), options.MaxParents);
 		if (gitRoot is not null)
@@ -258,6 +267,7 @@ public static class DocumentationPathsResolver
 		if (extraRoots is null)
 			return [];
 
+		var fs = checkout.FileSystem;
 		var checkoutPath = checkout.FullName;
 		var result = new List<string>();
 		foreach (var root in extraRoots)
@@ -265,21 +275,13 @@ public static class DocumentationPathsResolver
 			if (string.IsNullOrEmpty(root))
 				continue;
 			// Drop descendants of checkout (already in scope) and ancestors (would subsume checkout).
-			if (!IsSubPath(root, checkoutPath)
-				&& !IsSubPath(checkoutPath, root)
+			if (!IDirectoryInfoExtensions.IsSubPath(root, checkoutPath, fs)
+				&& !IDirectoryInfoExtensions.IsSubPath(checkoutPath, root, fs)
 				&& !result.Contains(root, StringComparer.OrdinalIgnoreCase))
 			{
 				result.Add(root);
 			}
 		}
 		return result;
-	}
-
-	private static bool IsSubPath(string path, string parent)
-	{
-		var sep = Path.DirectorySeparatorChar;
-		var normalised = path.TrimEnd(sep) + sep;
-		var parentNormalised = parent.TrimEnd(sep) + sep;
-		return normalised.StartsWith(parentNormalised, StringComparison.OrdinalIgnoreCase);
 	}
 }

@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.FileSystems;
@@ -46,6 +47,7 @@ public class CheckoutsFileSystem : ScopedFileSystem
 		IDirectoryInfo root,
 		IEnumerable<string>? extraRoots)
 	{
+		var fs = root.FileSystem;
 		var rootPath = root.FullName;
 		var roots = new List<string> { rootPath };
 
@@ -53,8 +55,11 @@ public class CheckoutsFileSystem : ScopedFileSystem
 		// (/home/runner/.local/share/elastic/docs-builder/checkouts/...), so AppData would subsume
 		// root and the ScopedFileSystem constructor would throw.
 		var appData = Paths.ApplicationData.FullName;
-		if (!IsSubPath(appData, rootPath) && !IsSubPath(rootPath, appData))
+		if (!IDirectoryInfoExtensions.IsSubPath(appData, rootPath, fs)
+			&& !IDirectoryInfoExtensions.IsSubPath(rootPath, appData, fs))
+		{
 			roots.Add(appData);
+		}
 
 		if (extraRoots is not null)
 		{
@@ -63,8 +68,8 @@ public class CheckoutsFileSystem : ScopedFileSystem
 				if (string.IsNullOrEmpty(extra))
 					continue;
 				// Drop descendants of root (already covered) and ancestors (would subsume root, causing overlap).
-				if (!IsSubPath(extra, rootPath)
-					&& !IsSubPath(rootPath, extra)
+				if (!IDirectoryInfoExtensions.IsSubPath(extra, rootPath, fs)
+					&& !IDirectoryInfoExtensions.IsSubPath(rootPath, extra, fs)
 					&& !roots.Contains(extra, StringComparer.OrdinalIgnoreCase))
 				{
 					roots.Add(extra);
@@ -88,12 +93,4 @@ public class CheckoutsFileSystem : ScopedFileSystem
 		new(
 			(inner ?? Physical).DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
 			inner: inner);
-
-	private static bool IsSubPath(string path, string parent)
-	{
-		var sep = System.IO.Path.DirectorySeparatorChar;
-		var normalised = path.TrimEnd(sep) + sep;
-		var parentNormalised = parent.TrimEnd(sep) + sep;
-		return normalised.StartsWith(parentNormalised, StringComparison.OrdinalIgnoreCase);
-	}
 }

@@ -66,35 +66,6 @@ public static class FileSystemFactory
 	public static ScopedFileSystem AppData { get; } = new(new FileSystem(), AppDataOptions);
 
 	/// <summary>
-	/// Creates a new <see cref="ScopedFileSystem"/> wrapping a fresh <see cref="MockFileSystem"/>,
-	/// using the working-directory read options. Each call returns a new independent in-memory file system.
-	/// </summary>
-	public static ScopedFileSystem InMemory() => new(new MockFileSystem(), WorkingDirectoryReadOptions);
-
-	/// <summary>
-	/// Like <see cref="InMemory"/> but additionally scopes the mock filesystem to <paramref name="path"/>'s
-	/// git root. Use when serving docs from a directory outside the current working tree so that the
-	/// in-memory output path (<c>&lt;source&gt;/.artifacts/docs/html</c>) passes scope validation.
-	/// </summary>
-	public static ScopedFileSystem InMemoryForPath(string? path)
-	{
-		if (path is null)
-			return InMemory();
-		var plain = new FileSystem();
-		var startDir = plain.DirectoryInfo.New(
-			plain.Directory.Exists(path) ? path : plain.Path.GetDirectoryName(path) ?? path);
-		var gitRoot = Paths.FindGitRoot(startDir)?.FullName;
-		if (gitRoot is null || gitRoot == Paths.WorkingDirectoryRoot.FullName)
-			return InMemory();
-		return new(new MockFileSystem(), new ScopedFileSystemOptions(
-			[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName, gitRoot])
-		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
-		});
-	}
-
-	/// <summary>
 	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
 	/// <see cref="Paths.ApplicationData"/> for reading. Use when the inner FS contains files
 	/// that live within the current working-directory tree (e.g. a test <c>MockFileSystem</c>
@@ -192,14 +163,6 @@ public static class FileSystemFactory
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
-
-	/// <summary>
-	/// Scopes <paramref name="inner"/> to an explicit <paramref name="sourceRoot"/> and
-	/// <see cref="Paths.ApplicationData"/> for writing (.git not allowed). Write variant
-	/// of <see cref="ScopeSourceDirectory(IFileSystem, string)"/>.
-	/// </summary>
-	public static ScopedFileSystem ScopeSourceDirectoryForWrite(IFileSystem inner, string sourceRoot) =>
-		new(inner, BuildWriteOptions(inner, sourceRoot, Paths.ApplicationData.FullName));
 
 	/// <summary>
 	/// Creates a read <see cref="ScopedFileSystem"/> scoped to the git root of

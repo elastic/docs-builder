@@ -28,7 +28,7 @@ public partial class ApiPagesNavRenderingTests
 		var fs = new FileSystem();
 		var context = new BuildContext(
 			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			TestHelpers.CreateConfigurationContext(fs));
 		var navigationItem = new LandingNavigationItem("/api/doc/elasticsearch/v9/").Index;
 		var model = new ApiLayoutViewModel

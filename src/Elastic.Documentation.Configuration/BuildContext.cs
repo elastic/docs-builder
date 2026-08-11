@@ -73,7 +73,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	/// <summary>
 	/// Primary constructor. Pass a resolved <see cref="DocumentationFileSystem"/> from
-	/// <see cref="DocumentationFileSystem.Resolve"/>.
+	/// <see cref="DocumentationFileSystem.Resolve(IDirectoryInfo?, DocumentationScopeOptions?)"/>.
 	/// </summary>
 	public BuildContext(
 		IDiagnosticsCollector collector,
