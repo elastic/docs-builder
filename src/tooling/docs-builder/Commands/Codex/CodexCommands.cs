@@ -59,7 +59,7 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new CodexFileSystem(config, output);
+		var fs = new CodexFileSystem(config, output?.FullName);
 		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
@@ -146,7 +146,7 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new CodexFileSystem(config, output);
+		var fs = new CodexFileSystem(config, output?.FullName);
 		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out _))
 			return 1;
 

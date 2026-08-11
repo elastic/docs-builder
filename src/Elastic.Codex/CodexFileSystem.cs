@@ -26,17 +26,16 @@ public class CodexFileSystem : CheckoutsFileSystem
 	/// <param name="config">The codex configuration file. Its directory is used to locate the git root.</param>
 	/// <param name="output">Optional explicit output directory.</param>
 	/// <param name="inner">Underlying filesystem — defaults to the physical filesystem when <see langword="null"/>.</param>
-	public CodexFileSystem(FileInfo config, DirectoryInfo? output = null, IFileSystem? inner = null)
+	public CodexFileSystem(FileInfo config, string? output = null, IFileSystem? inner = null)
 		: this(inner ?? Physical, config, output, inner)
 	{ }
 
-	private CodexFileSystem(IFileSystem fs, FileInfo config, DirectoryInfo? output, IFileSystem? inner)
+	private CodexFileSystem(IFileSystem fs, FileInfo config, string? output, IFileSystem? inner)
 		: base(
 			root: fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			output: output is not null ? fs.DirectoryInfo.New(output.FullName) : null,
+			output: output is not null ? fs.DirectoryInfo.New(output) : null,
 			inner: inner,
-			extraRoots: [Paths.FindGitRoot(fs.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!])
-	{
-		ConfigurationFile = this.FileInfo.New(config.FullName);
-	}
+			extraRoots: [Paths.FindGitRoot(fs.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!]
+		)
+		=> ConfigurationFile = FileInfo.New(config.FullName);
 }
