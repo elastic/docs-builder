@@ -228,12 +228,27 @@ public class DocumentationSet : INavigationTraversable
 	}
 
 	private bool _resolved;
+	// Array snapshot used by ResolveDirectoryTree so the parallel partitioner gets an
+	// indexable source (FrozenSet is not IList<T>, which forces the locked-enumerator path).
+	private MarkdownFile[]? _markdownFileArray;
+
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		if (_resolved)
 			return;
 
-		await Parallel.ForEachAsync(MarkdownFiles, ctx, async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
+		_markdownFileArray ??= [.. MarkdownFiles];
+
+		// MinimalParseAsync is ~60 % blocked on open() / file I/O; the default
+		// ProcessorCount cap starves the IO queue.  4× gives a wide-enough flight
+		// without runaway RSS growth (each in-flight parse holds a MarkdownDocument).
+		var options = new ParallelOptions
+		{
+			MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount * 4, 32),
+			CancellationToken = ctx
+		};
+		await Parallel.ForEachAsync(_markdownFileArray, options,
+			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
 
 		_resolved = true;
 	}
