@@ -35,7 +35,8 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 		var conf = await SharedOptions.LoadConfAsync(dir, ct);
 
 		var opts = new FilterOptions(majors, all, minVersion, book, minors);
-		SharedOptions.SaveFilterOptions(dir, opts);
+		// Save without Book — book filter is a per-run override, not a persistent setting
+		SharedOptions.SaveFilterOptions(dir, opts with { Book = null });
 
 		var books = SharedOptions.FilterBooks(conf, opts.Book);
 
