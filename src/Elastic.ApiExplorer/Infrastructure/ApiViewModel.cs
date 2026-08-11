@@ -12,6 +12,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -22,7 +23,7 @@ public record ApiTocItem(string Heading, string Slug, int Level = 2);
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
-	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
+	public IReadOnlyList<NavigationDropdownItem> VersionSwitcherItems { get; init; } = [];
 }
 
 public abstract class ApiViewModel(ApiRenderContext context)

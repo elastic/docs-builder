@@ -21,8 +21,6 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer;
 
-internal sealed record VersionedOpenApiDocument(ResolvedApiVersion Version, OpenApiDocument Document);
-
 /// <summary>
 /// Renders API explorer pages for every configured OpenAPI specification: builds the navigation
 /// tree via <see cref="ApiNavigationBuilder"/> and writes each page to the output directory.
@@ -64,12 +62,20 @@ public class OpenApiGenerator(
 					continue;
 
 				var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
+				var crossVersionIndex = ApiCrossVersionPageIndex.Build(versionedDocuments);
+				var currentMajor = apiConfig.Product.VersioningSystem?.Current.Major
+					?? throw new InvalidOperationException($"Product '{apiConfig.ProductKey}' has no versioning system.");
 				foreach (var versioned in versionedDocuments)
 				{
-					var switcherItems = ApiVersionSwitcher.Build(
-						context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
+					var switcherContext = new ApiVersionSwitcherContext(
+						prefix,
+						monikers,
+						versioned.Version.Moniker,
+						currentMajor,
+						crossVersionIndex,
+						context.UrlPathPrefix);
 					var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
-					await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherItems, ctx)
+					await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherContext, ctx)
 						.ConfigureAwait(false);
 				}
 
@@ -192,57 +198,57 @@ public class OpenApiGenerator(
 			ApiExplorerLog = _logger
 		};
 
-		_ = await Render(navigation.Index, navigation.Index.Model, renderContext, navigationRenderer, ctx).ConfigureAwait(false);
+		_ = await Render(navigation.Index, navigation.Index.Model, renderContext, navigationRenderer, versionSwitcherContext: null, ctx).ConfigureAwait(false);
 	}
 
 	private async Task GenerateApiProduct(
 		string prefix,
 		OpenApiDocument openApiDocument,
 		ResolvedApiConfiguration? apiConfig,
-		IReadOnlyList<ApiVersionSwitcherItem> versionSwitcherItems,
+		ApiVersionSwitcherContext? versionSwitcherContext,
 		Cancel ctx)
 	{
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
 
-		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation, suppressNavigationDropdown: true);
 
 		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
 			MarkdownRenderer = markdownStringRenderer,
-			ApiExplorerLog = _logger,
-			VersionSwitcherItems = versionSwitcherItems
+			ApiExplorerLog = _logger
 		};
 
-		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
+		await RenderNavigationItems(renderContext, navigationRenderer, navigation, versionSwitcherContext, ctx).ConfigureAwait(false);
 	}
 
 	private async Task RenderNavigationItems(
 		ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer,
 		INavigationItem currentNavigation,
+		ApiVersionSwitcherContext? versionSwitcherContext,
 		Cancel ctx)
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
 			if (currentNavigation is not ClassificationNavigationItem)
-				_ = await Render(node, node.Index.Model, renderContext, navigationRenderer, ctx);
+				_ = await Render(node, node.Index.Model, renderContext, navigationRenderer, versionSwitcherContext, ctx);
 
 			foreach (var child in node.NavigationItems)
-				await RenderNavigationItems(renderContext, navigationRenderer, child, ctx);
+				await RenderNavigationItems(renderContext, navigationRenderer, child, versionSwitcherContext, ctx);
 		}
 		else
 		{
 			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
-				? await Render(leaf, leaf.Model, renderContext, navigationRenderer, ctx)
+				? await Render(leaf, leaf.Model, renderContext, navigationRenderer, versionSwitcherContext, ctx)
 				: throw new Exception($"Unknown navigation item type {currentNavigation.GetType()}");
 		}
 	}
 
 	private async Task<IFileInfo> Render<T>(INavigationItem current, T page, ApiRenderContext renderContext,
-		IsolatedBuildNavigationHtmlWriter navigationRenderer, Cancel ctx)
+		IsolatedBuildNavigationHtmlWriter navigationRenderer, ApiVersionSwitcherContext? versionSwitcherContext, Cancel ctx)
 		where T : INavigationModel, IPageRenderer<ApiRenderContext>
 	{
 		var outputFile = OutputFile(current);
@@ -250,10 +256,12 @@ public class OpenApiGenerator(
 			outputFile.Directory.Create();
 
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
+		var versionSwitcherItems = versionSwitcherContext?.GetItems(ApiPageVersionTarget.FromNavigation(current)) ?? [];
 		renderContext = renderContext with
 		{
 			CurrentNavigation = current,
-			NavigationHtml = navigationRenderResult.Html
+			NavigationHtml = navigationRenderResult.Html,
+			VersionSwitcherItems = versionSwitcherItems
 		};
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);

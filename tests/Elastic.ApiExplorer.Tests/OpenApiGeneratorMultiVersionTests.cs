@@ -199,6 +199,33 @@ public class OpenApiGeneratorMultiVersionTests
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping", "index.html")).Should().BeTrue();
 	}
 
+	[Fact]
+	public async Task Generate_OperationPage_RendersApiVersionSwitcherAndSuppressesNavDropdown()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		context.Configuration.Features.PrimaryNavEnabled = true;
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(
+			SpecDocument("Elasticsearch main"),
+			SpecDocument("Elasticsearch 9"),
+			SpecDocument("Elasticsearch 8"));
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		await generator.Generate(TestContext.Current.CancellationToken);
+
+		var operationPage = Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-ping", "index.html");
+		var html = await context.WriteFileSystem.File.ReadAllTextAsync(operationPage, TestContext.Current.CancellationToken);
+
+		html.Should().Contain("id=\"api-version-dropdown\"");
+		html.Should().Contain("/api/doc/elasticsearch/v8/operation/operation-ping");
+		html.Should().NotContain("id=\"pages-dropdown\"");
+		html.Should().NotContain("id=\"nav-dropdown\"");
+	}
+
 	private static BuildContext CreateGenerateContext(
 		DiagnosticsCollector collector,
 		VersionsConfiguration versionsConfiguration,

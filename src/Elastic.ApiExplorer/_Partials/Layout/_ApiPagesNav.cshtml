@@ -1,28 +1,53 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
+@{
+	var currentItem = Model.VersionSwitcherItems.SingleOrDefault(i => i.IsActive)
+		?? Model.VersionSwitcherItems.FirstOrDefault();
+}
 <aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
 	<nav
 		id="pages-nav"
 		class="sidebar-nav h-full simple-scrollbar">
 		@if (Model.VersionSwitcherItems.Count > 1)
 		{
-			<div class="sticky top-0 z-10 bg-white px-4 pt-4 pb-2">
-				<label for="api-version-switcher" class="sr-only">API version</label>
-				<select
-					id="api-version-switcher"
-					class="w-full border border-grey-20 rounded-sm font-sans font-semibold text-sm pl-3 pr-8 py-2 bg-white hover:border-grey-40 focus:outline-none focus:ring-2 focus:ring-blue-elastic-50 cursor-pointer"
-					onchange="window.location.href = this.value">
-					@foreach (var item in Model.VersionSwitcherItems)
-					{
-						if (item.Selected)
-						{
-							<option value="@item.Url" selected>@item.Label</option>
-						}
-						else
-						{
-							<option value="@item.Url">@item.Label</option>
-						}
-					}
-				</select>
+			<div class="sticky top-0 z-10 bg-white">
+				<div id="api-version-dropdown">
+					<div class="py-4 bg-white border-grey-20 px-4">
+						<div tabindex="0" id="api-version-pages-dropdown" class="block group border border-grey-20 rounded-sm font-sans relative">
+							<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
+								<div>
+									<span class="pages-dropdown_active text-blue-elastic">
+										@currentItem!.NavigationTitle
+									</span>
+								</div>
+								<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="w-4 group-open:rotate-180">
+										<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+									</svg>
+								</div>
+							</button>
+							<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
+								<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md">
+									@foreach (var item in Model.VersionSwitcherItems)
+									{
+										<li class="block">
+											<a
+												class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.IsActive ? "text-blue-elastic" : "")"
+												href="@item.Url">
+												@item.NavigationTitle
+											</a>
+										</li>
+									}
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		}
 		@(new HtmlString(Model.NavigationHtml))

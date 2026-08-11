@@ -175,8 +175,10 @@ remotely through the index.
 
 Versionless products (`versioning: serverless` and similar) render only the unversioned
 `/api/doc/<key>/` path even when the index lists historical monikers. When more than one
-version is rendered, API pages show a simple version dropdown at the top of the left navigation
-rail. The dropdown links to each version's landing page.
+version is rendered, API pages show a version dropdown at the top of the left navigation
+rail. The dropdown uses the same presentation as the documentation-group navigation
+dropdown. It links to the same page in each version when that page exists, and falls back
+to the version landing page when it does not.
 
 ### Smoke-test every CloudFront spec locally
 

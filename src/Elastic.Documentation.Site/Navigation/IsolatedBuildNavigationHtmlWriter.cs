@@ -7,7 +7,10 @@ using Elastic.Documentation.Navigation;
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
+public class IsolatedBuildNavigationHtmlWriter(
+	BuildContext context,
+	IRootNavigationItem<INavigationModel, INavigationItem> siteRoot,
+	bool suppressNavigationDropdown = false)
 	: INavigationHtmlWriter
 {
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
@@ -38,11 +41,15 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		return useRequestedRoot ? requestedRoot : siteRoot;
 	}
 
-	private NavigationRenderModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
-		NavigationRenderModel.Create(
+	private NavigationRenderModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation)
+	{
+		var useNavigationDropdown = !suppressNavigationDropdown
+			&& (context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown);
+		return NavigationRenderModel.Create(
 			tree: navigation,
 			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			isUsingNavigationDropdown: context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
+			isUsingNavigationDropdown: useNavigationDropdown,
 			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
 			isGlobalAssemblyBuild: false);
+	}
 }
