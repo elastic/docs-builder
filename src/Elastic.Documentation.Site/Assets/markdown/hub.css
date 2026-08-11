@@ -157,4 +157,18 @@
 		border-color: var(--color-ink-dark);
 		background: var(--color-grey-10);
 	}
+
+	/* The hero animates its eyebrow arrow and its hover states. Honour a reduced-motion
+	   preference. Nothing about the resting appearance changes. */
+	@media (prefers-reduced-motion: reduce) {
+		.hub-hero .hub-hero-eyebrow-link,
+		.hub-hero .hub-hero-eyebrow-arrow,
+		.hub-hero .hub-hero-action {
+			transition: none;
+		}
+		.hub-hero .hub-hero-eyebrow-link:hover .hub-hero-eyebrow-arrow,
+		.hub-hero .hub-hero-eyebrow-link:focus-visible .hub-hero-eyebrow-arrow {
+			transform: none;
+		}
+	}
 }

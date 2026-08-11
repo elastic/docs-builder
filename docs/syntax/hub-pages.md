@@ -4,7 +4,7 @@ A hub page is a product-scoped landing page. It gives a reader one 360° view of
 
 Hub pages are composed entirely from directives. There is no free-form body content. That constraint is deliberate. It lets every link validate at build time, and it keeps every hub structurally consistent whoever authors it.
 
-See the [Elasticsearch documentation hub](../examples/products/elasticsearch.md) for a complete page.
+See the [Elasticsearch documentation hub](../examples/products/docs-builder.md) for a complete page.
 
 ## Enable the layout
 

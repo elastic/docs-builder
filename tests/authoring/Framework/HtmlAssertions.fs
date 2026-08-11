@@ -167,3 +167,47 @@ But was not found in:
 
         let defaultFile = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
         defaultFile |> containsHtml expected
+
+    /// Asserts a raw fragment is present in the rendered HTML, without pretty-printing.
+    /// The pretty-printed comparison only matches an element with no children, or one
+    /// snapshotted from the outermost element of the directive output. Use this to assert an
+    /// attribute on a container without snapshotting its whole subtree.
+    [<DebuggerStepThrough>]
+    let containsRawHtml (expected: string) (actual: MarkdownResult) =
+        if not <| actual.Html.Contains expected then
+            let msg = $"""Expected html to contain:
+{expected}
+
+But it was not found in:
+
+{actual.Html}
+"""
+            raise (XunitException(msg))
+
+    [<DebuggerStepThrough>]
+    let convertsToContainingRawHtml (expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+
+        let defaultFile = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
+        defaultFile |> containsRawHtml expected
+
+    /// Asserts a fragment is absent from the rendered HTML. Checks the whole page, so the
+    /// needle must be unique to the directive under test and not appear in site chrome.
+    [<DebuggerStepThrough>]
+    let doesNotContainHtml (expected: string) (actual: MarkdownResult) =
+        if actual.Html.Contains expected then
+            let msg = $"""Expected html NOT to contain:
+{expected}
+
+But it was found in:
+
+{actual.Html}
+"""
+            raise (XunitException(msg))
+
+    [<DebuggerStepThrough>]
+    let doesNotConvertToContainingHtml (expected: string) (actual: Lazy<GeneratorResults>) =
+        let actual = actual.Value
+
+        let defaultFile = actual.MarkdownResults |> Seq.find (fun r -> r.File.RelativePath = "index.md")
+        defaultFile |> doesNotContainHtml expected

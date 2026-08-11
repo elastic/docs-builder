@@ -4,7 +4,7 @@ A full-bleed identity band with a product icon, page title, description, and up 
 
 All hero content comes from options. The directive body is not used.
 
-See the [Elasticsearch documentation hub](../examples/products/elasticsearch.md) for a rendered hero.
+See the [Elasticsearch documentation hub](../examples/products/docs-builder.md) for a rendered hero.
 
 ## Basic
 
@@ -52,7 +52,7 @@ Action URLs validate at build time. Use one of these forms:
 |---|---|---|
 | In-page anchor | `#get-started` | Renders a chevron. |
 | Site-absolute path | `/syntax/hero.md` | The markdown extension is stripped. The link preloads on hover. |
-| Cross-link scheme | `elasticsearch://reference/index.md` | Resolves through the link index. |
+| Cross-link scheme | `docs-content://get-started/index.md` | Resolves through the link index. Not treated as external, so it does not open in a new tab. |
 | External URL | `https://www.elastic.co/downloads/elasticsearch` | Opens in a new tab, with `rel="noopener noreferrer"`. Does not preload. |
 
 A relative path such as `foo.md` is rejected. This differs from an inline markdown link, where a relative path resolves against the source file's directory.

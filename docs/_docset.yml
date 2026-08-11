@@ -149,7 +149,7 @@ toc:
       - file: index.md
       - folder: products
         children:
-          - file: elasticsearch.md
+          - file: docs-builder.md
 
   # Documentation builds
   - folder: documentation
