@@ -2,13 +2,20 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
+using System.Diagnostics;
 using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
+using Elastic.Documentation.Assembler.Navigation;
+using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
 
@@ -36,84 +43,165 @@ public class AssemblerOpenApiBuildStepTests
 	[Fact]
 	public async Task BuildAsync_SkipsWhenFeatureFlagDisabled()
 	{
-		var previousDirectory = Directory.GetCurrentDirectory();
-		var tempDirectory = Directory.CreateTempSubdirectory("assembler-openapi-test-");
-		try
-		{
-			Directory.SetCurrentDirectory(tempDirectory.FullName);
+		var fileSystem = new FileSystem();
+		var collector = new DiagnosticsCollector([]);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var tempDirectory = CreateTempDirectory(fileSystem);
+		var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
+		var context = new AssembleContext(
+			assemblyConfig,
+			configurationContext,
+			"prod",
+			collector,
+			readFs,
+			writeFs,
+			tempDirectory.FullName,
+			outputDirectory);
+		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
 
-			var fileSystem = new FileSystem();
-			var collector = new DiagnosticsCollector([]);
-			var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-			var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
-			var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-			var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
-			var context = new AssembleContext(
-				assemblyConfig,
-				configurationContext,
-				"prod",
-				collector,
-				scopedFs,
-				scopedFs,
-				tempDirectory.FullName,
-				outputDirectory);
+		await AssemblerOpenApiBuildStep.BuildAsync(
+			NullLoggerFactory.Instance,
+			context,
+			assembleSources,
+			TestContext.Current.CancellationToken);
 
-			await AssemblerOpenApiBuildStep.BuildAsync(
-				NullLoggerFactory.Instance,
-				context,
-				[],
-				configurationContext,
-				TestContext.Current.CancellationToken);
-
-			fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
-				.Should().BeFalse("OpenAPI generation must not run when the feature flag is disabled");
-		}
-		finally
-		{
-			Directory.SetCurrentDirectory(previousDirectory);
-			tempDirectory.Delete(recursive: true);
-		}
+		fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
+			.Should().BeFalse("OpenAPI generation must not run when the feature flag is disabled");
 	}
 
 	[Fact]
-	public async Task BuildAsync_SkipsWhenDocsetNotFoundAndFlagEnabled()
+	public async Task BuildAsync_SkipsWhenNoApiDeclarationsAndFlagEnabled()
 	{
-		var previousDirectory = Directory.GetCurrentDirectory();
-		var tempDirectory = Directory.CreateTempSubdirectory("assembler-openapi-test-");
-		try
+		var fileSystem = new FileSystem();
+		var collector = new DiagnosticsCollector([]);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var tempDirectory = CreateTempDirectory(fileSystem);
+		var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
+		var context = new AssembleContext(
+			assemblyConfig,
+			configurationContext,
+			"staging",
+			collector,
+			readFs,
+			writeFs,
+			tempDirectory.FullName,
+			outputDirectory);
+		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
+
+		await AssemblerOpenApiBuildStep.BuildAsync(
+			NullLoggerFactory.Instance,
+			context,
+			assembleSources,
+			TestContext.Current.CancellationToken);
+
+		fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
+			.Should().BeFalse("OpenAPI generation must not run without API declarations");
+	}
+
+	[Fact]
+	public void DiscoverApiOwners_EmitsErrorWhenDuplicateKeysDeclared()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var first = CreateDocumentationSet("docs-content", "elasticsearch", collector);
+		var second = CreateDocumentationSet("docs-builder", "elasticsearch", collector);
+		var assembleSets = new Dictionary<string, AssemblerDocumentationSet>
 		{
-			Directory.SetCurrentDirectory(tempDirectory.FullName);
+			[first.Checkout.Repository.Name] = first,
+			[second.Checkout.Repository.Name] = second
+		}.ToFrozenDictionary();
 
-			var fileSystem = new FileSystem();
-			var collector = new DiagnosticsCollector([]);
-			var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-			var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
-			var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-			var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
-			var context = new AssembleContext(
-				assemblyConfig,
-				configurationContext,
-				"staging",
-				collector,
-				scopedFs,
-				scopedFs,
-				tempDirectory.FullName,
-				outputDirectory);
+		_ = AssemblerOpenApiBuildStep.DiscoverApiOwners(assembleSets, collector);
 
-			await AssemblerOpenApiBuildStep.BuildAsync(
-				NullLoggerFactory.Instance,
-				context,
-				[],
-				configurationContext,
-				TestContext.Current.CancellationToken);
+		collector.Errors.Should().Be(1);
+	}
 
-			fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
-				.Should().BeFalse("OpenAPI generation must not run without a docs-builder docset checkout");
-		}
-		finally
+	[Fact]
+	public void DiscoverApiOwners_ReturnsOwnersForSetsWithApiDeclarations()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var withApi = CreateDocumentationSet("docs-content", "elasticsearch", collector);
+		var withoutApi = CreateDocumentationSet("kibana", apiKey: null, collector);
+		var assembleSets = new Dictionary<string, AssemblerDocumentationSet>
 		{
-			Directory.SetCurrentDirectory(previousDirectory);
-			tempDirectory.Delete(recursive: true);
-		}
+			[withApi.Checkout.Repository.Name] = withApi,
+			[withoutApi.Checkout.Repository.Name] = withoutApi
+		}.ToFrozenDictionary();
+
+		var owners = AssemblerOpenApiBuildStep.DiscoverApiOwners(assembleSets, collector);
+
+		owners.Should().ContainSingle().Which.Set.Checkout.Repository.Name.Should().Be("docs-content");
+	}
+
+	private static IDirectoryInfo CreateTempDirectory(IFileSystem fileSystem)
+	{
+		var tempDirectory = fileSystem.DirectoryInfo.New(
+			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, $"assembler-openapi-test-{Guid.NewGuid():N}"));
+		tempDirectory.Create();
+		return tempDirectory;
+	}
+
+	private static AssemblerDocumentationSet CreateDocumentationSet(
+		string repositoryName,
+		string? apiKey,
+		DiagnosticsCollector collector)
+	{
+		var fileSystem = new FileSystem();
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var checkoutRoot = fileSystem.DirectoryInfo.New(
+			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, $"assembler-openapi-owner-{Guid.NewGuid():N}"));
+		checkoutRoot.Create();
+		var docsetPath = fileSystem.Path.Join(checkoutRoot.FullName, "docset.yml");
+		var docsetYaml = apiKey is null
+			? """
+				project: test
+				toc:
+				  - file: index.md
+				"""
+			: $$"""
+				project: test
+				toc:
+				  - file: index.md
+				api:
+				  {{apiKey}}:
+				    - spec: elasticsearch-openapi.json
+				      product: elasticsearch
+				      repository: elastic/elasticsearch-specification
+				""";
+		fileSystem.File.WriteAllText(docsetPath, docsetYaml);
+		fileSystem.File.WriteAllText(fileSystem.Path.Join(checkoutRoot.FullName, "index.md"), "# Test\n");
+
+		var outputDirectory = fileSystem.Path.Join(checkoutRoot.FullName, "output");
+		var context = new AssembleContext(
+			assemblyConfig,
+			configurationContext,
+			"staging",
+			collector,
+			readFs,
+			writeFs,
+			checkoutRoot.FullName,
+			outputDirectory);
+		var checkout = new Checkout
+		{
+			Repository = new Repository { Name = repositoryName, Origin = $"elastic/{repositoryName}" },
+			HeadReference = "main",
+			Directory = checkoutRoot
+		};
+		return new AssemblerDocumentationSet(
+			NullLoggerFactory.Instance,
+			context,
+			checkout,
+			NoopCrossLinkResolver.Instance,
+			new ReleaseNotesResolver(),
+			configurationContext,
+			ExportOptions.Default);
 	}
 }

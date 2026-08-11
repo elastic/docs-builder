@@ -2,14 +2,20 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
+using Elastic.Documentation.Assembler.Navigation;
+using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
 
@@ -27,61 +33,93 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 			return;
 
-		var solutionDirectory = Paths.GetSolutionDirectory();
-		if (solutionDirectory is null)
-			return;
-
-		var previousDirectory = Directory.GetCurrentDirectory();
-		var outputRoot = Directory.CreateTempSubdirectory("assembler-openapi-integration-");
-		try
+		var fileSystem = new FileSystem();
+		var collector = new DiagnosticsCollector([]);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var assemblyConfig = AssemblyConfiguration.Deserialize("""
+			environments:
+			  staging:
+			    uri: https://staging-website.elastic.co
+			    path_prefix: docs
+			    content_source: next
+			    feature_flags:
+			      ASSEMBLER_API_EXPLORER: true
+			narrative:
+			  checkout_strategy: full
+			references: {}
+			""");
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var workspaceRoot = fileSystem.DirectoryInfo.New(
+			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, $"assembler-openapi-integration-{Guid.NewGuid():N}"));
+		workspaceRoot.Create();
+		var docsetPath = fileSystem.Path.Join(workspaceRoot.FullName, "docset.yml");
+		fileSystem.File.WriteAllText(docsetPath, """
+			project: test
+			toc:
+			  - file: index.md
+			api:
+			  elasticsearch:
+			    - spec: elasticsearch.json
+			      product: elasticsearch
+			      repository: elastic/elasticsearch-specification
+			""");
+		fileSystem.File.WriteAllText(fileSystem.Path.Join(workspaceRoot.FullName, "index.md"), "# Test\n");
+		var outputDirectory = fileSystem.Path.Join(workspaceRoot.FullName, "output");
+		var context = new AssembleContext(
+			assemblyConfig,
+			configurationContext,
+			"staging",
+			collector,
+			readFs,
+			writeFs,
+			workspaceRoot.FullName,
+			outputDirectory);
+		var checkout = new Checkout
 		{
-			Directory.SetCurrentDirectory(solutionDirectory.FullName);
+			Repository = new Repository { Name = "docs-content", Origin = "elastic/docs-content" },
+			HeadReference = "main",
+			Directory = workspaceRoot
+		};
+		var documentationSet = new AssemblerDocumentationSet(
+			NullLoggerFactory.Instance,
+			context,
+			checkout,
+			NoopCrossLinkResolver.Instance,
+			new ReleaseNotesResolver(),
+			configurationContext,
+			ExportOptions.Default);
+		var assembleSources = AssembleSources.ForTests(
+			context,
+			new Dictionary<string, AssemblerDocumentationSet> { [checkout.Repository.Name] = documentationSet }
+				.ToFrozenDictionary());
 
-			var fileSystem = new FileSystem();
-			var collector = new DiagnosticsCollector([]);
-			var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-			var assemblyConfig = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-			var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-			var outputDirectory = fileSystem.Path.Join(outputRoot.FullName, "output");
-			var context = new AssembleContext(
-				assemblyConfig,
-				configurationContext,
-				"staging",
-				collector,
-				scopedFs,
-				scopedFs,
-				solutionDirectory.FullName,
-				outputDirectory);
+		await documentationSet.DocumentationSet.ResolveDirectoryTree(TestContext.Current.CancellationToken);
 
-			var stopwatch = Stopwatch.StartNew();
-			await AssemblerOpenApiBuildStep.BuildAsync(
-				NullLoggerFactory.Instance,
-				context,
-				[],
-				configurationContext,
-				TestContext.Current.CancellationToken);
-			stopwatch.Stop();
+		var stopwatch = Stopwatch.StartNew();
+		await AssemblerOpenApiBuildStep.BuildAsync(
+			NullLoggerFactory.Instance,
+			context,
+			assembleSources,
+			TestContext.Current.CancellationToken);
+		stopwatch.Stop();
 
-			TestContext.Current.TestOutputHelper?.WriteLine(
-				$"OpenAPI assembler step completed in {stopwatch.ElapsedMilliseconds} ms");
+		TestContext.Current.TestOutputHelper?.WriteLine(
+			$"OpenAPI assembler step completed in {stopwatch.ElapsedMilliseconds} ms");
 
-			var apiRoot = fileSystem.Path.Join(outputDirectory, "docs", "api");
-			fileSystem.Directory.Exists(apiRoot).Should().BeTrue();
+		collector.Errors.Should().Be(0);
 
-			var elasticsearchLanding = fileSystem.Path.Join(apiRoot, "doc", "elasticsearch", "index.html");
-			fileSystem.File.Exists(elasticsearchLanding).Should().BeTrue(
-				"staging assembler builds should emit the unversioned elasticsearch API landing page");
+		var apiRoot = fileSystem.Path.Join(outputDirectory, "docs", "api");
+		fileSystem.Directory.Exists(apiRoot).Should().BeTrue();
 
-			var versionedLanding = fileSystem.Directory
-				.EnumerateDirectories(fileSystem.Path.Join(apiRoot, "doc", "elasticsearch"))
-				.FirstOrDefault(path => fileSystem.Path.GetFileName(path).StartsWith('v'));
-			versionedLanding.Should().NotBeNull(
-				"versioned products should emit at least one /vN/ tree under /docs/api/doc/elasticsearch/");
-		}
-		finally
-		{
-			Directory.SetCurrentDirectory(previousDirectory);
-			outputRoot.Delete(recursive: true);
-		}
+		var elasticsearchLanding = fileSystem.Path.Join(apiRoot, "doc", "elasticsearch", "index.html");
+		fileSystem.File.Exists(elasticsearchLanding).Should().BeTrue(
+			"staging assembler builds should emit the unversioned elasticsearch API landing page");
+
+		var versionedLanding = fileSystem.Directory
+			.EnumerateDirectories(fileSystem.Path.Join(apiRoot, "doc", "elasticsearch"))
+			.FirstOrDefault(path => fileSystem.Path.GetFileName(path).StartsWith('v'));
+		versionedLanding.Should().NotBeNull(
+			"versioned products should emit at least one /vN/ tree under /docs/api/doc/elasticsearch/");
 	}
 }

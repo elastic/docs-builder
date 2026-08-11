@@ -135,7 +135,7 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.Html))
 		{
 			var openApiStopwatch = Stopwatch.StartNew();
-			await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, checkouts, configurationContext, ctx);
+			await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, assembleSources, ctx);
 			openApiStopwatch.Stop();
 			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
 
