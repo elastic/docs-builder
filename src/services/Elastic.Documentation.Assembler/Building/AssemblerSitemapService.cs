@@ -38,10 +38,7 @@ public class AssemblerSitemapService(
 
 		_logger.LogInformation("Generating sitemap from ES index for environment {Environment}", environment);
 
-		var assembleContext = new AssembleContext(
-			assemblyConfiguration, configurationContext, environment, collector,
-			fileSystem.Read, fileSystem.Write, null, null
-		);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
 
 		var cfg = configurationContext.Endpoints.Elasticsearch;
 		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);

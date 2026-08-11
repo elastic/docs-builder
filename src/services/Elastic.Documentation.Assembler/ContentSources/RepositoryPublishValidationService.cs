@@ -27,7 +27,7 @@ public class RepositoryPublishValidationService(
 	public async Task<bool> ValidatePublishStatus(IDiagnosticsCollector collector, Cancel ctx)
 	{
 		// environment does not matter to check the configuration, defaulting to dev
-		var context = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem.Read, fileSystem.Write, null, null);
+		var context = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader);
 		var links = await fetcher.FetchLinkRegistry(ctx);

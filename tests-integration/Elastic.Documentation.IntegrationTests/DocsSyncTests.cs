@@ -47,7 +47,7 @@ public class DocsSyncTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs, assembleFs.Write, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
 			.Returns(new ListObjectsV2Response
 			{
@@ -189,7 +189,7 @@ public class DocsSyncTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs2, assembleFs2.Write, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs2, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 
 		var s3Objects = new List<S3Object>();
 		foreach (var i in Enumerable.Range(0, remoteFiles))
@@ -240,7 +240,7 @@ public class DocsSyncTests
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var checkoutDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var assembleFs3 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs3, assembleFs3.Write, null, checkoutDirectory);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs3);
 		var plan = new SyncPlan
 		{
 			RemoteListingCompleted = true,

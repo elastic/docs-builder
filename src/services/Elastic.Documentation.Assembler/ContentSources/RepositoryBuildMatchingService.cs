@@ -71,7 +71,7 @@ public class RepositoryBuildMatchingService(
 		var linkRegistry = await GetRegistryWithRetry(linkIndexProvider, ctx);
 		var alreadyPublishing = linkRegistry.Repositories.ContainsKey(repositoryName);
 		_logger.LogInformation("'{Repository}' (registry key: '{RepositoryName}') publishing to link registry: {PublishState} ", repo, repositoryName, alreadyPublishing);
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem.Read, fileSystem.Write, null, null);
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		var product = assembleContext.ProductsConfiguration.GetProductByRepositoryName(repo);
 		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product, alreadyPublishing);
 		if (matches is { Current: null, Next: null, Edge: null, Speculative: false })

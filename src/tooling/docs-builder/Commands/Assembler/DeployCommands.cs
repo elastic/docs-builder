@@ -45,7 +45,7 @@ internal sealed class DeployCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs.Read, fs.Write, null, null);
+		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
 			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, [], ctx)
@@ -67,7 +67,7 @@ internal sealed class DeployCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs.Read, fs.Write, null, null);
+		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
 			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)

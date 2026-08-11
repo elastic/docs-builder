@@ -27,7 +27,7 @@ public class AssemblerCloneService(
 		var environment = options.Environment ?? (!string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev");
 
 		var cfs = CheckoutsFileSystem.FromWorkingDirectory();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, cfs.Read, cfs.Write, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, cfs);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
 		_ = await cloner.CloneAll(options.FetchLatest ?? false, options.AssumeCloned ?? false, ctx);

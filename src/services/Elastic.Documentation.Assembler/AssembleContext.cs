@@ -18,7 +18,14 @@ namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncContext
 {
-	public ScopedFileSystem ReadFileSystem { get; }
+	// Explicit implementations satisfy the interface contracts (ScopedFileSystem);
+	// the public property exposes the narrower CheckoutsFileSystem for code that knows
+	// the concrete context type. Commit 6 removes ReadFileSystem from IDocumentationContext
+	// and retypes IDocsSyncContext.ReadFileSystem to CheckoutsFileSystem, at which point
+	// these explicit implementations can be deleted.
+	ScopedFileSystem IDocumentationContext.ReadFileSystem => ReadFileSystem;
+	ScopedFileSystem IDocsSyncContext.ReadFileSystem => ReadFileSystem;
+	public CheckoutsFileSystem ReadFileSystem { get; }
 	public DocumentationWriteFileSystem WriteFileSystem { get; }
 
 	public IDiagnosticsCollector Collector { get; }
@@ -67,15 +74,14 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 		IConfigurationContext configurationContext,
 		string environment,
 		IDiagnosticsCollector collector,
-		CheckoutsFileSystem readFileSystem,
-		DocumentationWriteFileSystem writeFileSystem,
-		string? checkoutDirectory,
-		string? output
+		CheckoutsFileSystem fileSystem,
+		string? checkoutDirectory = null,
+		string? output = null
 	)
 	{
 		Collector = collector;
-		ReadFileSystem = readFileSystem;
-		WriteFileSystem = writeFileSystem;
+		ReadFileSystem = fileSystem;
+		WriteFileSystem = fileSystem.Write;
 
 		Configuration = configuration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
@@ -96,8 +102,8 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 		var contentSource = Environment.ContentSource.ToStringFast(true);
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "checkouts", contentSource);
 		CheckoutDirectory = checkoutDirectory is null
-			? readFileSystem.DirectoryInfo.New(defaultCheckoutDirectory)
-			: readFileSystem.DirectoryInfo.New(checkoutDirectory);
+			? fileSystem.DirectoryInfo.New(defaultCheckoutDirectory)
+			: fileSystem.DirectoryInfo.New(checkoutDirectory);
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = WriteFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
 

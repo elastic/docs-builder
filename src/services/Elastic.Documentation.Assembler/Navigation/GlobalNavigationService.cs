@@ -22,7 +22,7 @@ public class GlobalNavigationService(
 {
 	public async Task<bool> Validate(IDiagnosticsCollector collector, Cancel ctx)
 	{
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem.Read, fileSystem.Write, null, null);
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 
 		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
@@ -40,7 +40,7 @@ public class GlobalNavigationService(
 	public async Task<bool> ValidateLocalLinkReference(IDiagnosticsCollector collector, string? file, Cancel ctx)
 	{
 		file ??= ".artifacts/docs/html/links.json";
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem.Read, fileSystem.Write, null, null);
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformationFactory.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName

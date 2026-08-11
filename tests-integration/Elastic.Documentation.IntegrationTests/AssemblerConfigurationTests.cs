@@ -30,7 +30,7 @@ public class PublicOnlyAssemblerConfigurationTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, assembleFs.Write, CheckoutDirectory.FullName, null);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]
@@ -67,7 +67,7 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs2, assembleFs2.Write, CheckoutDirectory.FullName, null);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs2, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]

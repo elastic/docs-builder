@@ -53,7 +53,7 @@ internal sealed class CodexIndexCommand(
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, null);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs);
 
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
@@ -65,9 +65,9 @@ internal sealed class CodexIndexCommand(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var service = new CodexIndexService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(service, (codexContext, cloneResult, readFs: fs.Read, es),
+		serviceInvoker.AddCommand(service, (codexContext, cloneResult, fs, es),
 			static async (s, col, state, c) =>
-				await s.Index(state.codexContext, state.cloneResult, state.readFs, state.es, c)
+				await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
 		);
 
 		return await serviceInvoker.InvokeAsync(ct);

@@ -44,12 +44,10 @@ internal sealed class AssemblerAiEnrichCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var aifs = CheckoutsFileSystem.FromWorkingDirectory();
-		var readFs = aifs.Read;
-		var writeFs = aifs.Write;
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var service = new AssemblerAiEnrichService(logFactory, configuration, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service,
-			async (s, col, ctx) => await s.AiEnrich(col, readFs, writeFs, es, environment, bootstrapOnly, ctx)
+			async (s, col, ctx) => await s.AiEnrich(col, fs, es, environment, bootstrapOnly, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

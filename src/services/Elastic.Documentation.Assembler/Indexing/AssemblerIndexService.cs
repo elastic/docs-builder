@@ -27,15 +27,14 @@ public class AssemblerIndexService(
 	/// <summary>Index assembled documentation to Elasticsearch.</summary>
 	public async Task<bool> Index(
 		IDiagnosticsCollector collector,
-		CheckoutsFileSystem readFs,
-		DocumentationWriteFileSystem writeFs,
+		CheckoutsFileSystem fileSystem,
 		ElasticsearchIndexOptions es,
 		string? environment = null,
 		Cancel ctx = default
 	)
 	{
 		var cfg = _configurationContext.Endpoints.Elasticsearch;
-		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, readFs, ctx);
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
 
 		return await BuildAll(collector, new AssemblerBuildOptions
 		{
@@ -45,6 +44,6 @@ public class AssemblerIndexService(
 			ShowHints = false,
 			Exporters = new HashSet<Exporter> { Elasticsearch },
 			AssumeBuild = false
-		}, readFs, writeFs, ctx);
+		}, fileSystem, ctx);
 	}
 }

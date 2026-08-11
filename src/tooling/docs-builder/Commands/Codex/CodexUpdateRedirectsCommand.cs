@@ -50,7 +50,7 @@ internal sealed class CodexUpdateRedirectsCommand(
 			?? Environment.GetEnvironmentVariable("ENVIRONMENT")
 			?? "internal";
 
-		var service = new DeployUpdateRedirectsService(logFactory, fs.Read);
+		var service = new DeployUpdateRedirectsService(logFactory, fs);
 		serviceInvoker.AddCommand(service, (environment: resolvedEnvironment, redirectsFile, kvsNamePrefix: "codex", defaultRedirectsFile: ".artifacts/codex/docs/redirects.json"),
 			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile?.FullName, state.kvsNamePrefix, state.defaultRedirectsFile, c)
 		);

@@ -48,7 +48,7 @@ public class IncrementalDeployRoundTripTests
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new DiagnosticsCollector([]);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fs);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs, assembleFs.Write, null, outputDir);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs, null, outputDir);
 
 		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
 	}
@@ -64,7 +64,7 @@ public class IncrementalDeployRoundTripTests
 		// so we can point to any path without adding it to the mock FS.
 		var codexConfig = new CodexConfiguration { Environment = "dev" };
 		var configFile = fs.FileInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
-		var context = new CodexContext(codexConfig, configFile, collector, codexFs, codexFs.Write, null, outputDir);
+		var context = new CodexContext(codexConfig, configFile, collector, codexFs, null, outputDir);
 
 		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
 	}
@@ -228,7 +228,7 @@ public class IncrementalDeployExcludeTests
 		var codexFs2 = CheckoutsFileSystem.FromWorkingDirectory(fs);
 		var codexConfig = new CodexConfiguration { Environment = "dev" };
 		var configFile = fs.FileInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
-		var context = new CodexContext(codexConfig, configFile, collector, codexFs2, codexFs2.Write, null, outputDir);
+		var context = new CodexContext(codexConfig, configFile, collector, codexFs2, null, outputDir);
 
 		var planPath = Path.Join(outputDir, "sync-plan.json");
 		var planOk = await svc.Plan(

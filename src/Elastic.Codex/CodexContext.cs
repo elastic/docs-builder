@@ -17,7 +17,11 @@ namespace Elastic.Codex;
 /// </summary>
 public class CodexContext : IDocsSyncContext
 {
-	public ScopedFileSystem ReadFileSystem { get; }
+	// Explicit implementation satisfies the interface contract; public property exposes
+	// the narrower type. Removed when IDocsSyncContext.ReadFileSystem narrows to
+	// CheckoutsFileSystem in commit 6.
+	ScopedFileSystem IDocsSyncContext.ReadFileSystem => ReadFileSystem;
+	public CheckoutsFileSystem ReadFileSystem { get; }
 	public DocumentationWriteFileSystem WriteFileSystem { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public CodexConfiguration Configuration { get; }
@@ -38,24 +42,23 @@ public class CodexContext : IDocsSyncContext
 		CodexConfiguration configuration,
 		IFileInfo configurationPath,
 		IDiagnosticsCollector collector,
-		CheckoutsFileSystem readFileSystem,
-		DocumentationWriteFileSystem writeFileSystem,
-		string? checkoutDirectory,
-		string? outputDirectory
+		CheckoutsFileSystem fileSystem,
+		string? checkoutDirectory = null,
+		string? outputDirectory = null
 	)
 	{
 		Configuration = configuration;
 		ConfigurationPath = configurationPath;
 		Collector = collector;
-		ReadFileSystem = readFileSystem;
-		WriteFileSystem = writeFileSystem;
+		ReadFileSystem = fileSystem;
+		WriteFileSystem = fileSystem.Write;
 
 		EnvironmentName = string.IsNullOrEmpty(configuration.Environment) ? "codex" : configuration.Environment;
 
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
 		CheckoutDirectory = checkoutDirectory is null
-			? readFileSystem.DirectoryInfo.New(defaultCheckoutDirectory)
-			: readFileSystem.DirectoryInfo.New(checkoutDirectory);
+			? fileSystem.DirectoryInfo.New(defaultCheckoutDirectory)
+			: fileSystem.DirectoryInfo.New(checkoutDirectory);
 
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
 		OutputDirectory = WriteFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);

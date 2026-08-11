@@ -70,7 +70,7 @@ internal sealed class CodexCommands(
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, null, output?.FullName);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -85,12 +85,12 @@ internal sealed class CodexCommands(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs: fs.Read), strict,
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
 				if (state.cloneResult == null)
 					return false;
-				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.readFs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 
@@ -131,7 +131,7 @@ internal sealed class CodexCommands(
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, null);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -170,7 +170,7 @@ internal sealed class CodexCommands(
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out _))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, null, output?.FullName);
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
@@ -181,10 +181,10 @@ internal sealed class CodexCommands(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs: fs.Read), strict,
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
-				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.readFs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 

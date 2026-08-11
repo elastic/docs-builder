@@ -34,8 +34,7 @@ public class AssemblerAiEnrichService(
 	/// </param>
 	public async Task<bool> AiEnrich(
 		IDiagnosticsCollector collector,
-		CheckoutsFileSystem readFs,
-		DocumentationWriteFileSystem writeFs,
+		CheckoutsFileSystem fileSystem,
 		ElasticsearchIndexOptions es,
 		string? environment,
 		bool bootstrapOnly,
@@ -43,12 +42,12 @@ public class AssemblerAiEnrichService(
 	)
 	{
 		var cfg = configurationContext.Endpoints.Elasticsearch;
-		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, readFs, ctx);
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
 
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, readFs, writeFs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
 
 		using var exporter = new ElasticsearchMarkdownExporter(logFactory, collector, assembleContext.Endpoints, assembleContext);
 		if (!exporter.AiEnrichmentEnabled)

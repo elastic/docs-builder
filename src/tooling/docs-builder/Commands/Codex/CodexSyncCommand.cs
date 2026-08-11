@@ -94,7 +94,7 @@ internal sealed class CodexSyncCommand(
 			inner: plain, extraRoots: [gitRoot]);
 		var configFile = fs.FileInfo.New(config.FullName);
 		var codexConfig = CodexConfiguration.Load(configFile);
-		return (new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, null),
+		return (new CodexContext(codexConfig, configFile, collector, fs),
 			new IncrementalDeployService(logFactory, githubActionsService));
 	}
 }
