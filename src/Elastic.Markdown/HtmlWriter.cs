@@ -94,8 +94,9 @@ public class HtmlWriter(
 		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
-		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable)
 		{
+			var checkoutDirectory = DocumentationSet.Context.DocumentationCheckoutDirectory;
 			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
 			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
 			editUrl = $"https://github.com/{gitHubRepo}/edit/{branch}/{path}";
@@ -158,9 +159,9 @@ public class HtmlWriter(
 		var gitRef = DocumentationSet.Context.Git.Ref;
 		string? gitHubDocsUrl = null;
 		if (gitHubRepo is not null
-			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable"
-			&& DocumentationSet.Context.DocumentationCheckoutDirectory is { } docsCheckoutDir)
+			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
 		{
+			var docsCheckoutDir = DocumentationSet.Context.DocumentationCheckoutDirectory;
 			var relativeDocsPath = Path.GetRelativePath(docsCheckoutDir.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName)
 				.Replace(Path.DirectorySeparatorChar, '/');
 			gitHubDocsUrl = $"https://github.com/{gitHubRepo}/tree/{gitBranch}/{relativeDocsPath}";

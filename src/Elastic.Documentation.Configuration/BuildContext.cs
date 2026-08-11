@@ -37,7 +37,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public IReadOnlySet<Exporter> AvailableExporters { get; init; }
 
-	public IDirectoryInfo? DocumentationCheckoutDirectory => FileSystem.Paths.CheckoutDirectory;
+	public IDirectoryInfo DocumentationCheckoutDirectory => FileSystem.Paths.CheckoutDirectory;
 	public IDirectoryInfo DocumentationSourceDirectory => FileSystem.Paths.SourceDirectory;
 	public IDirectoryInfo OutputDirectory => FileSystem.Paths.OutputDirectory;
 	public IFileInfo ConfigurationPath => FileSystem.Paths.ConfigurationPath;

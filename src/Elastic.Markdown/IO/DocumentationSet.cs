@@ -91,7 +91,7 @@ public class DocumentationSet : INavigationTraversable
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
-			: Context.DocumentationCheckoutDirectory?.Name
+			: Context.DocumentationCheckoutDirectory.Name
 				?? Context.DocumentationSourceDirectory.Parent?.Name
 				?? Context.DocumentationSourceDirectory.Name;
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, ".doc.state"));
