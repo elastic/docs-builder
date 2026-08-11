@@ -201,23 +201,30 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		IReadOnlyDictionary<string, string> subs,
 		out string[] anchors)
 	{
-		// Single traversal — collects typed lists and builds a position index for
-		// GetPrecedingHeadingLevel so it does not need to re-traverse once per include.
+		// Single traversal — collects typed lists in DFS order.
+		// We also track the last heading seen so that IncludeBlocks can be annotated
+		// with their preceding heading level at discovery time, eliminating any need for
+		// a position index or secondary traversal.
 		// IncludeBlock / StepBlock / ChangelogBlock / SettingsBlock all extend DirectiveBlock,
 		// so one bucket covers them all.
 		List<HeadingBlock> headings = [];
 		List<DirectiveBlock> directives = [];
 		List<InlineAnchor> inlineAnchors = [];
-		var allNodes = new List<MarkdownObject>();
-		var nodePositions = new Dictionary<MarkdownObject, int>();
+		// Pairs each IncludeBlock with the heading level that immediately precedes it in
+		// DFS order — recorded inline so we never need to re-traverse.
+		List<(IncludeBlock Block, int? PrecedingHeadingLevel)> includeContexts = [];
+		int? lastHeadingLevel = null;
 		foreach (var node in document.Descendants())
 		{
-			nodePositions[node] = allNodes.Count;
-			allNodes.Add(node);
 			switch (node)
 			{
 				case HeadingBlock h:
 					headings.Add(h);
+					lastHeadingLevel = h.Level;
+					break;
+				case IncludeBlock inc:
+					directives.Add(inc);
+					includeContexts.Add((inc, lastHeadingLevel));
 					break;
 				case DirectiveBlock d:
 					directives.Add(d);
@@ -228,12 +235,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			}
 		}
 
-		var includeBlocks = directives.OfType<IncludeBlock>().ToArray();
-		var includes = includeBlocks
-			.Where(i => i.Found)
-			.Select(i =>
+		var includes = includeContexts
+			.Where(t => t.Block.Found)
+			.Select(t =>
 			{
-				var relativePath = i.IncludePathRelativeToSource;
+				var relativePath = t.Block.IncludePathRelativeToSource;
 				if (relativePath is null)
 					return null;
 				var doc = documentationFileLookup(relativePath);
@@ -241,7 +247,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 					return null;
 
 				var anchors = snippet.GetAnchors(collector, documentationFileLookup, parser, frontMatter);
-				return new { Block = i, Anchors = anchors };
+				return new { t.Block, Anchors = anchors, t.PrecedingHeadingLevel };
 			})
 			.Where(i => i is not null)
 			.ToArray();
@@ -249,9 +255,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var includedTocs = includes
 			.SelectMany(i =>
 			{
-				// Calculate the heading level context at the include block position.
-				// Uses the prebuilt position index — O(1) lookup instead of O(n) re-traversal.
-				var precedingLevel = GetPrecedingHeadingLevel(i!.Block, allNodes, nodePositions);
+				var precedingLevel = i!.PrecedingHeadingLevel;
 
 				return i.Anchors!.TableOfContentItems
 					.Select(item =>
@@ -369,28 +373,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			parent = parent.Parent;
 		}
 		return false;
-	}
-
-	/// <summary>
-	/// Finds the heading level that precedes the given block in the document.
-	/// Uses a prebuilt position index to avoid an O(n) re-traversal per call.
-	/// </summary>
-	private static int? GetPrecedingHeadingLevel(
-		MarkdownObject block,
-		List<MarkdownObject> allNodes,
-		Dictionary<MarkdownObject, int> nodePositions)
-	{
-		if (!nodePositions.TryGetValue(block, out var thisIndex))
-			return null;
-
-		// Scan backwards from this block's position for the nearest heading
-		for (var i = thisIndex - 1; i >= 0; i--)
-		{
-			if (allNodes[i] is HeadingBlock heading)
-				return heading.Level;
-		}
-
-		return null;
 	}
 
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)
