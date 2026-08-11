@@ -11,10 +11,9 @@ namespace Elastic.Markdown.Myst.Directives.CsvInclude;
 
 public static class CsvReader
 {
-	public static IEnumerable<string[]> ReadCsvFile(string filePath, string separator, ScopedFileSystem? fileSystem = null)
+	public static IEnumerable<string[]> ReadCsvFile(string filePath, string separator, ScopedFileSystem fileSystem)
 	{
-		var fs = fileSystem ?? FileSystemFactory.RealRead;
-		return ReadWithSep(filePath, separator, fs);
+		return ReadWithSep(filePath, separator, fileSystem);
 	}
 
 	private static IEnumerable<string[]> ReadWithSep(string filePath, string separator, IFileSystem fileSystem)

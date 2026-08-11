@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.ApiExplorer;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
@@ -47,7 +48,7 @@ public class ReloadableGeneratorState : IDisposable
 		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Join(outputPath.FullName, "api"));
 
 		if (context.Configuration.Registry != DocSetRegistry.Public)
-			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData);
+			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem());
 
 		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.
@@ -80,7 +81,7 @@ public class ReloadableGeneratorState : IDisposable
 			_context.ReloadConfiguration();
 			(_codexReader as IDisposable)?.Dispose();
 			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
-				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
+				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem())
 				: null;
 			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		}

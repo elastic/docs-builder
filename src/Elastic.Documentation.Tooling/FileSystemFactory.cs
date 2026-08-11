@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 using DirectoryInfoExtensions = Elastic.Documentation.Extensions.IDirectoryInfoExtensions;
@@ -36,13 +34,6 @@ public static class FileSystemFactory
 		AllowedSpecialFolders = AllowedSpecialFolder.Temp
 	};
 
-	// AppData-only options: for components that only access caches/state files.
-	private static readonly ScopedFileSystemOptions AppDataOptions = new([Paths.ApplicationData.FullName])
-	{
-		// .git needed for codex-link-index clone directory inside ApplicationData
-		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
-	};
-
 	/// <summary>
 	/// A pre-allocated <see cref="ScopedFileSystem"/> for reading workspace files.
 	/// Scoped to the working directory root and per-user app data; allows <c>.git</c>
@@ -57,14 +48,6 @@ public static class FileSystemFactory
 	/// nothing in the output pipeline should write into git repository metadata.
 	/// </summary>
 	public static ScopedFileSystem RealWrite { get; } = new(new FileSystem(), WorkingDirectoryWriteOptions);
-
-	/// <summary>
-	/// A pre-allocated <see cref="ScopedFileSystem"/> scoped only to the per-user
-	/// <c>elastic/docs-builder</c> application data folder. Use for components that
-	/// access caches or state and have no need for workspace files
-	/// (e.g. <c>CrossLinkFetcher</c>, <c>CheckForUpdatesFilter</c>, <c>GitLinkIndexReader</c>).
-	/// </summary>
-	public static ScopedFileSystem AppData { get; } = new(new FileSystem(), AppDataOptions);
 
 	// Builds write options that include AllowedSpecialFolders.Temp PLUS the inner FS's own
 	// GetTempPath() as an explicit root — but only when the inner FS is MockFileSystem.
@@ -96,52 +79,6 @@ public static class FileSystemFactory
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state", ".pagefind-net-frontend-version" },
 			AllowedSpecialFolders = AllowedSpecialFolder.Temp
 		};
-	}
-
-	/// <summary>
-	/// Creates a read <see cref="ScopedFileSystem"/> scoped to the git root of
-	/// <paramref name="path"/>. Falls back to <see cref="RealRead"/> when <paramref name="path"/>
-	/// is <see langword="null"/>. Use in commands that accept an explicit <c>--path</c> argument.
-	/// <para>
-	/// Suitable for command-layer code. Service-layer tests use <see cref="InMemory()"/> directly
-	/// and do not exercise this method.
-	/// </para>
-	/// </summary>
-	public static ScopedFileSystem RealGitRootForPath(string? path)
-	{
-		var plain = new FileSystem();
-		string root;
-		if (path is null)
-			root = Paths.WorkingDirectoryRoot.FullName;
-		else
-		{
-			var startDir = plain.DirectoryInfo.New(
-				plain.Directory.Exists(path) ? path : plain.Path.GetDirectoryName(path) ?? path);
-			root = Paths.FindGitRoot(startDir)?.FullName ?? startDir.FullName;
-		}
-
-		var roots = new List<string> { root, Paths.ApplicationData.FullName };
-
-		// In a git worktree the local .git entry is a file pointing to the main repo's git dir.
-		// Resolve it via TryReadGitDirPointer (handles relative paths and commondir) and add the
-		// real .git directory to the scope so config/HEAD reads are not rejected.
-		var gitFilePath = plain.Path.Join(root, ".git");
-		if (plain.File.Exists(gitFilePath)
-			&& Paths.TryReadGitDirPointer(plain, plain.FileInfo.New(gitFilePath), out var resolvedGitDir)
-			&& resolvedGitDir is not null)
-		{
-			roots.Add(resolvedGitDir.FullName);
-		}
-
-		// Fast path: no worktree detected and path was null — reuse the pre-built instance
-		if (roots.Count == 2 && path is null)
-			return RealRead;
-
-		return new ScopedFileSystem(plain, new ScopedFileSystemOptions([.. roots])
-		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
-		});
 	}
 
 	/// <summary>

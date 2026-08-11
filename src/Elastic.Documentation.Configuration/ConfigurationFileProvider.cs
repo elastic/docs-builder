@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Configuration.Toc;
@@ -272,7 +273,7 @@ public static class ConfigurationFileProviderServiceCollectionExtensions
 	{
 		using var sp = services.BuildServiceProvider();
 		var logFactory = sp.GetRequiredService<ILoggerFactory>();
-		var provider = new ConfigurationFileProvider(logFactory, FileSystemFactory.RealRead, skipPrivateRepositories, configurationSource);
+		var provider = new ConfigurationFileProvider(logFactory, new ConfigurationFileSystem(), skipPrivateRepositories, configurationSource);
 		_ = services.AddSingleton(provider);
 		configure(services, provider);
 		return services;

@@ -29,7 +29,7 @@ public class FileSystemFactoryTests
 			{ configPath, new MockFileData("environment: internal") }
 		});
 
-		var act = () => new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), extraRoots: [nestedConfigDir], inner: mockFs);
+		var act = () => new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), inner: mockFs, extraRoots: [nestedConfigDir]);
 
 		act.Should().NotThrow();
 		var scoped = act();
@@ -47,7 +47,7 @@ public class FileSystemFactoryTests
 			{ configPath, new MockFileData("environment: internal") }
 		});
 
-		var scoped = new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), extraRoots: [externalRoot], inner: mockFs);
+		var scoped = new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), inner: mockFs, extraRoots: [externalRoot]);
 
 		scoped.File.Exists(configPath).Should().BeTrue();
 	}
@@ -61,7 +61,7 @@ public class FileSystemFactoryTests
 		var ancestor = Path.GetDirectoryName(workingRoot)!;
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = workingRoot });
 
-		var act = () => new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), extraRoots: [ancestor], inner: mockFs);
+		var act = () => new CheckoutsFileSystem(mockFs.DirectoryInfo.New(workingRoot), inner: mockFs, extraRoots: [ancestor]);
 
 		act.Should().NotThrow();
 		var scoped = act();
@@ -98,7 +98,7 @@ public class FileSystemFactoryTests
 		var scoped = FileSystemFactory.RealReadForRunnerTemp(env);
 		// We call the overload that accepts inner FS, reusing the factory helper
 		// that RealReadForRunnerTemp delegates to.
-		var scopedMock = new CheckoutsFileSystem(mockFs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), extraRoots: [tempDir], inner: mockFs);
+		var scopedMock = new CheckoutsFileSystem(mockFs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: mockFs, extraRoots: [tempDir]);
 
 		scopedMock.File.Exists(stagedFile).Should().BeTrue();
 	}

@@ -7,10 +7,10 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -68,7 +68,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, FileSystemFactory.RealGitRootForPath(null));
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -94,7 +94,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, FileSystemFactory.RealGitRootForPath(null));
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -126,7 +126,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, FileSystemFactory.RealGitRootForPath(null));
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);

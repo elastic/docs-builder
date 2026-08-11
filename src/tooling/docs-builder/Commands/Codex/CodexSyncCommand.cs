@@ -91,8 +91,7 @@ internal sealed class CodexSyncCommand(
 		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
 		var fs = new CheckoutsFileSystem(
 			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			extraRoots: [gitRoot],
-			inner: plain);
+			inner: plain, extraRoots: [gitRoot]);
 		var configFile = fs.FileInfo.New(config.FullName);
 		var codexConfig = CodexConfiguration.Load(configFile);
 		return (new CodexContext(codexConfig, configFile, collector, fs.Read, fs.Write, null, null),

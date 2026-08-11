@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
+using static Elastic.Documentation.Extensions.IDirectoryInfoExtensions;
 
 namespace Elastic.Documentation.FileSystems;
 
@@ -23,11 +23,10 @@ public class CheckoutsFileSystem : ScopedFileSystem
 
 	private readonly IFileSystem _inner;
 
-	public CheckoutsFileSystem(
-		IDirectoryInfo root,
+	public CheckoutsFileSystem(IDirectoryInfo root,
 		IDirectoryInfo? output = null,
-		IEnumerable<string>? extraRoots = null,
-		IFileSystem? inner = null)
+		IFileSystem? inner = null,
+		IEnumerable<string>? extraRoots = null)
 		: base(inner ?? Physical, BuildReadOptions(root, extraRoots))
 	{
 		_inner = inner ?? Physical;
@@ -43,9 +42,7 @@ public class CheckoutsFileSystem : ScopedFileSystem
 	/// <summary>Write scope for this checkout tree.</summary>
 	public DocumentationWriteFileSystem Write { get; }
 
-	private static ScopedFileSystemOptions BuildReadOptions(
-		IDirectoryInfo root,
-		IEnumerable<string>? extraRoots)
+	private static ScopedFileSystemOptions BuildReadOptions(IDirectoryInfo root, IEnumerable<string>? extraRoots)
 	{
 		var fs = root.FileSystem;
 		var rootPath = root.FullName;
@@ -55,11 +52,8 @@ public class CheckoutsFileSystem : ScopedFileSystem
 		// (/home/runner/.local/share/elastic/docs-builder/checkouts/...), so AppData would subsume
 		// root and the ScopedFileSystem constructor would throw.
 		var appData = Paths.ApplicationData.FullName;
-		if (!IDirectoryInfoExtensions.IsSubPath(appData, rootPath, fs)
-			&& !IDirectoryInfoExtensions.IsSubPath(rootPath, appData, fs))
-		{
+		if (!IsSubPath(appData, rootPath, fs) && !IsSubPath(rootPath, appData, fs))
 			roots.Add(appData);
-		}
 
 		if (extraRoots is not null)
 		{
@@ -68,12 +62,8 @@ public class CheckoutsFileSystem : ScopedFileSystem
 				if (string.IsNullOrEmpty(extra))
 					continue;
 				// Drop descendants of root (already covered) and ancestors (would subsume root, causing overlap).
-				if (!IDirectoryInfoExtensions.IsSubPath(extra, rootPath, fs)
-					&& !IDirectoryInfoExtensions.IsSubPath(rootPath, extra, fs)
-					&& !roots.Contains(extra, StringComparer.OrdinalIgnoreCase))
-				{
+				if (!IsSubPath(extra, rootPath, fs) && !IsSubPath(rootPath, extra, fs) && !roots.Contains(extra, StringComparer.OrdinalIgnoreCase))
 					roots.Add(extra);
-				}
 			}
 		}
 
@@ -90,7 +80,5 @@ public class CheckoutsFileSystem : ScopedFileSystem
 	/// </summary>
 	/// <param name="inner">The underlying filesystem. Defaults to a new <see cref="FileSystem"/> when <see langword="null"/>.</param>
 	public static CheckoutsFileSystem FromWorkingDirectory(IFileSystem? inner = null) =>
-		new(
-			(inner ?? Physical).DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			inner: inner);
+		new((inner ?? Physical).DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: inner);
 }

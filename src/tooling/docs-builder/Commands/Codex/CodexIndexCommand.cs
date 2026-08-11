@@ -48,8 +48,7 @@ internal sealed class CodexIndexCommand(
 		var gitRoot = Paths.FindGitRoot(plain.DirectoryInfo.New(config.DirectoryName!))?.FullName ?? config.DirectoryName!;
 		var fs = new CheckoutsFileSystem(
 			plain.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			extraRoots: [gitRoot],
-			inner: plain);
+			inner: plain, extraRoots: [gitRoot]);
 		var configFile = fs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
