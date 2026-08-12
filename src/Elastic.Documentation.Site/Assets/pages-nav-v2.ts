@@ -1,4 +1,4 @@
-import { $$ } from 'select-dom'
+import { $$optional } from 'select-dom'
 import tippy from 'tippy.js'
 import type { Instance } from 'tippy.js'
 
@@ -6,8 +6,13 @@ const navV2CollapsedStorageKey = 'docs-builder-nav-v2-collapsed-ids'
 
 let navV2FolderLinkToggleBound = false
 let navV2OptimisticNavigateBound = false
+let navV2ScrollViewportBound = false
 
 let navV2TruncationTippyInstances: Instance[] = []
+
+/** Latest pages-nav aside / scrollport for viewport clamp + edge fades. */
+let navV2ScrollViewportAside: HTMLElement | null = null
+let navV2ScrollViewportScrollEl: HTMLElement | null = null
 
 function readCollapsedFolderIds(): Set<string> {
     try {
@@ -46,9 +51,38 @@ function persistFolderCheckboxCollapsedState(cb: HTMLInputElement) {
     writeCollapsedFolderIds(ids)
 }
 
+/**
+ * Normalize a docs pathname for nav matching: resolve {@code .}/{@code ..},
+ * drop trailing slash, strip a trailing {@code .md}. Uses the URL parser so
+ * hrefs like {@code /docs/extend/kibana/./getting-started} match the live path.
+ */
 function normalizeDocPathname(pathname: string) {
-    const p = pathname.replace(/\/$/, '')
+    let p: string
+    try {
+        p = new URL(pathname, 'https://docs.local').pathname
+    } catch {
+        p = pathname
+    }
+    p = p.replace(/\/$/, '')
+    if (p.endsWith('.md')) {
+        p = p.slice(0, -3)
+    }
     return p === '' ? '/' : p
+}
+
+function anchorMatchesPath(anchor: HTMLAnchorElement, pathnameRaw: string) {
+    const href = anchor.getAttribute('href')
+    if (!href) {
+        return false
+    }
+    try {
+        return (
+            normalizeDocPathname(new URL(href, window.location.href).pathname) ===
+            normalizeDocPathname(pathnameRaw)
+        )
+    } catch {
+        return false
+    }
 }
 
 /**
@@ -60,18 +94,10 @@ function sectionRootHasSidebarDestination(nav: HTMLElement): boolean {
         return false
     }
 
-    let pathname: string
-    try {
-        pathname = stripTrailingSlashForNavHref(
-            new URL(sectionUrl, window.location.href).pathname
-        )
-    } catch {
-        return false
-    }
-
-    return (
-        nav.querySelector(`a[href="${pathname}"], a[href="${pathname}/"]`) !=
-        null
+    return $$optional('a.sidebar-link[href]', nav).some(
+        (el) =>
+            el instanceof HTMLAnchorElement &&
+            anchorMatchesPath(el, sectionUrl)
     )
 }
 
@@ -102,22 +128,8 @@ function isOnSectionRootPage(nav: HTMLElement): boolean {
     return !sectionRootHasSidebarDestination(nav)
 }
 
-/** Matches {@link markCurrentPage} / {@link expandToCurrentPage} href selectors (not root-normalized). */
-function stripTrailingSlashForNavHref(pathname: string) {
-    return pathname.replace(/\/$/, '')
-}
-
 function linkPathMatchesCurrentPage(anchor: HTMLAnchorElement) {
-    const href = anchor.getAttribute('href')
-    if (!href) {
-        return false
-    }
-
-    const linkPath = normalizeDocPathname(
-        new URL(href, window.location.href).pathname
-    )
-    const currentPath = normalizeDocPathname(window.location.pathname)
-    return linkPath === currentPath
+    return anchorMatchesPath(anchor, window.location.pathname)
 }
 
 /**
@@ -171,18 +183,14 @@ function ensureNavV2FolderLinkToggle() {
             }
 
             if (linkPathMatchesCurrentPage(a)) {
-                cb.checked = !cb.checked
-                cb.dispatchEvent(new Event('change', { bubbles: true }))
-                persistFolderCheckboxCollapsedState(cb)
+                setNavV2FolderOpen(cb, !cb.checked, { animate: true })
                 e.preventDefault()
                 e.stopPropagation()
                 return
             }
 
             if (!cb.checked) {
-                cb.checked = true
-                cb.dispatchEvent(new Event('change', { bubbles: true }))
-                persistFolderCheckboxCollapsedState(cb)
+                setNavV2FolderOpen(cb, true, { animate: true })
             }
         },
         true
@@ -252,9 +260,10 @@ function ensureNavV2OptimisticCurrentOnNavigate() {
                 return
             }
 
-            const here = window.location.pathname.replace(/\/$/, '')
-            const pathStripped = path.replace(/\/$/, '')
-            if (pathStripped === here) {
+            if (
+                normalizeDocPathname(path) ===
+                normalizeDocPathname(window.location.pathname)
+            ) {
                 return
             }
 
@@ -308,11 +317,163 @@ function initAccordion(nav: HTMLElement) {
             const target = e.target as HTMLInputElement
             if (target.checked) {
                 getSiblingAccordionCheckboxes(target).forEach((sibling) => {
-                    sibling.checked = false
+                    if (sibling.checked) {
+                        setNavV2FolderOpen(sibling, false, { animate: true })
+                    }
                 })
             }
         })
     })
+}
+
+function prefersReducedMotion(): boolean {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+type NavV2FolderClipEls = {
+    clip: HTMLElement
+    inner: HTMLElement
+}
+
+function getNavV2FolderClipEls(
+    cb: HTMLInputElement
+): NavV2FolderClipEls | null {
+    const peer = cb.closest('.nav-folder-peer')
+    const li = peer?.parentElement
+    if (!li?.matches('li.group-navigation')) {
+        return null
+    }
+
+    const clip = li.querySelector<HTMLElement>(
+        ':scope > .docs-sidebar-nav-v2__folder-clip'
+    )
+    const inner = clip?.querySelector<HTMLElement>(
+        ':scope > .docs-sidebar-nav-v2__folder-clip-inner'
+    )
+    if (!clip || !inner) {
+        return null
+    }
+
+    return { clip, inner }
+}
+
+const navV2FolderClipAnimToken = new WeakMap<HTMLElement, number>()
+const navV2FolderClipOpenAnimation = new WeakMap<HTMLElement, Animation>()
+
+function clearNavV2FolderClipInlineAnim(clip: HTMLElement) {
+    navV2FolderClipOpenAnimation.get(clip)?.cancel()
+    navV2FolderClipOpenAnimation.delete(clip)
+    clip.style.height = ''
+    clip.style.minHeight = ''
+    clip.style.overflow = ''
+    clip.style.transition = ''
+    clip.style.gridTemplateRows = ''
+    clip.style.display = ''
+}
+
+/** Children ul scrollHeight while the clip is at 0fr (inner is often 0). */
+function measureNavV2FolderContentHeight(clip: HTMLElement): number {
+    const ul = clip.querySelector<HTMLElement>(
+        ':scope > .docs-sidebar-nav-v2__folder-clip-inner > .docs-sidebar-nav-v2__folder-children'
+    )
+    if (ul && ul.scrollHeight > 0) {
+        return ul.scrollHeight
+    }
+    const inner = clip.querySelector<HTMLElement>(
+        ':scope > .docs-sidebar-nav-v2__folder-clip-inner'
+    )
+    return inner?.scrollHeight ?? 0
+}
+
+/**
+ * Open/close a folder checkbox.
+ * - Close: CSS {@code 1fr→0fr} (already reliable).
+ * - Open: Web Animations height 0→N (CSS {@code 0fr→1fr} / style transitions
+ *   snap on the real click path because of style coalescing + grid).
+ * Pending opens set {@code data-nav-v2-pending-open} so optimistic
+ * {@link expandToCurrentPageForPath} does not force {@code checked} mid-tween.
+ */
+function setNavV2FolderOpen(
+    cb: HTMLInputElement,
+    open: boolean,
+    options: { animate?: boolean } = {}
+) {
+    const animate = options.animate !== false
+    // Ignore duplicate opens while a tween is already in flight.
+    if (open && cb.dataset.navV2PendingOpen === 'true') {
+        return
+    }
+    if (cb.checked === open) {
+        return
+    }
+
+    const els = getNavV2FolderClipEls(cb)
+    if (els) {
+        clearNavV2FolderClipInlineAnim(els.clip)
+    }
+
+    const applyChecked = (next: boolean) => {
+        delete cb.dataset.navV2PendingOpen
+        cb.checked = next
+        cb.dispatchEvent(new Event('change', { bubbles: true }))
+        persistFolderCheckboxCollapsedState(cb)
+    }
+
+    if (!animate || !els || prefersReducedMotion()) {
+        applyChecked(open)
+        return
+    }
+
+    // Close: let CSS grid-template-rows animate 1fr → 0fr.
+    if (!open) {
+        applyChecked(false)
+        return
+    }
+
+    const { clip } = els
+    const targetPx = measureNavV2FolderContentHeight(clip)
+    if (targetPx <= 0 || typeof clip.animate !== 'function') {
+        applyChecked(true)
+        return
+    }
+
+    const token = (navV2FolderClipAnimToken.get(clip) ?? 0) + 1
+    navV2FolderClipAnimToken.set(clip, token)
+    cb.dataset.navV2PendingOpen = 'true'
+
+    clip.style.display = 'block'
+    clip.style.overflow = 'hidden'
+    clip.style.minHeight = '0'
+    clip.style.height = '0px'
+
+    cb.checked = true
+    cb.dispatchEvent(new Event('change', { bubbles: true }))
+
+    const animation = clip.animate(
+        [{ height: '0px' }, { height: `${targetPx}px` }],
+        {
+            duration: 220,
+            easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+            fill: 'forwards',
+        }
+    )
+    navV2FolderClipOpenAnimation.set(clip, animation)
+
+    const finish = () => {
+        if (navV2FolderClipAnimToken.get(clip) !== token) {
+            return
+        }
+        navV2FolderClipOpenAnimation.delete(clip)
+        animation.cancel()
+        clip.style.height = ''
+        clip.style.minHeight = ''
+        clip.style.overflow = ''
+        clip.style.display = ''
+        delete cb.dataset.navV2PendingOpen
+        persistFolderCheckboxCollapsedState(cb)
+    }
+
+    void animation.finished.then(finish).catch(finish)
 }
 
 function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
@@ -486,8 +647,9 @@ function deepestCurrentSidebarLink(nav: HTMLElement): HTMLAnchorElement | null {
 }
 
 /**
- * Apply #F1F6FF background per design: folder index → whole folder + visible children;
- * nested folder index → that folder + its children only; leaf → that row only.
+ * Apply #f6f9fc on the deepest {@code li.group-navigation} that contains the current page
+ * (not every expanded folder, not outer ancestors). Folder index → that group; leaf →
+ * immediate parent group. Ancestor rows still get weight via {@code nav-v2-active-ancestor}.
  */
 function applyActiveSubtreeHighlight(nav: HTMLElement) {
     clearActiveSubtreeHighlight(nav)
@@ -523,26 +685,30 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
     }
 
     /*
-     * Keep ancestor-state styling across the full chain, but mark only the nearest parent
-     * with nav-v2-active-parent so background treatment can stay scoped to one level.
+     * Walk up: every ancestor group-navigation gets heading weight; background goes only
+     * on the deepest one (closest to current), never on outer wrappers.
      */
-    let walk: Element | null = hostLi
-    let markedImmediateParent = false
+    const ancestorGroups: HTMLElement[] = []
+    let walk: Element | null = hostLi.parentElement
     while (walk && walk !== nav) {
         if (walk.matches('li.group-navigation')) {
             const ancestorRow = walk.querySelector<HTMLAnchorElement>(
                 ':scope > .nav-folder-peer > a.sidebar-link'
             )
-            if (ancestorRow && ancestorRow !== current) {
+            if (ancestorRow && ancestorRow !== current && walk instanceof HTMLElement) {
                 walk.classList.add('nav-v2-active-ancestor')
-                if (!markedImmediateParent) {
-                    walk.classList.add('nav-v2-active-parent')
-                    markedImmediateParent = true
-                }
+                ancestorGroups.push(walk)
             }
         }
 
         walk = walk.parentElement
+    }
+
+    if (
+        ancestorGroups.length > 0 &&
+        !hostLi.classList.contains('nav-v2-active-subtree')
+    ) {
+        ancestorGroups[0].classList.add('nav-v2-active-parent')
     }
 }
 
@@ -550,12 +716,14 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
  * Mark all nav links whose href matches {@code pathname} with the "current" CSS class.
  */
 function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
-    $$('.current', nav).forEach((el) => el.classList.remove('current'))
+    // $$ throws when empty; SSR has no .current yet, so use $$optional.
+    $$optional('.current', nav).forEach((el) => el.classList.remove('current'))
 
-    const pathname = stripTrailingSlashForNavHref(pathnameRaw)
-    $$(`a[href="${pathname}"], a[href="${pathname}/"]`, nav).forEach((el) =>
-        el.classList.add('current')
-    )
+    $$optional('a.sidebar-link[href]', nav).forEach((el) => {
+        if (el instanceof HTMLAnchorElement && anchorMatchesPath(el, pathnameRaw)) {
+            el.classList.add('current')
+        }
+    })
 }
 
 /**
@@ -564,7 +732,9 @@ function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
  */
 function markCurrentPage(nav: HTMLElement) {
     if (isOnSectionRootPage(nav)) {
-        $$('.current', nav).forEach((el) => el.classList.remove('current'))
+        $$optional('.current', nav).forEach((el) =>
+            el.classList.remove('current')
+        )
         return
     }
     markCurrentPageForPath(nav, window.location.pathname)
@@ -574,15 +744,16 @@ function pickDeepestAnchorMatchingPath(
     nav: HTMLElement,
     pathnameRaw: string
 ): HTMLElement | null {
-    const pathname = stripTrailingSlashForNavHref(pathnameRaw)
-    const matches = nav.querySelectorAll<HTMLElement>(
-        `a[href="${pathname}"], a[href="${pathname}/"]`
+    const matches = $$optional('a.sidebar-link[href]', nav).filter(
+        (el): el is HTMLAnchorElement =>
+            el instanceof HTMLAnchorElement &&
+            anchorMatchesPath(el, pathnameRaw)
     )
     if (matches.length === 0) {
         return null
     }
 
-    let best = matches[0]
+    let best: HTMLElement = matches[0]
     let bestDepth = navListItemDepthFromAnchor(best, nav)
     for (let i = 1; i < matches.length; i++) {
         const m = matches[i]
@@ -620,7 +791,9 @@ function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
                 const currentIsThisFolderRow =
                     rowLink !== null && rowLink === link
 
-                if (collapsedIds.has(cb.id)) {
+                if (cb.dataset.navV2PendingOpen === 'true') {
+                    // Click handler owns an animated open on this checkbox — do not snap it.
+                } else if (collapsedIds.has(cb.id)) {
                     if (currentIsThisFolderRow) {
                         // User collapsed this folder while its index is current; HTML swap often
                         // re-checks the input — force closed so a second click can stay collapsed.
@@ -634,7 +807,9 @@ function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
                     cb.checked = true
                 }
             } else if (cb) {
-                cb.checked = true
+                if (cb.dataset.navV2PendingOpen !== 'true') {
+                    cb.checked = true
+                }
             }
         }
 
@@ -730,6 +905,206 @@ function initNavV2TruncationTooltips(nav: HTMLElement) {
     }
 }
 
+function getNavV2ScrollOverflow(scrollEl: HTMLElement) {
+    const { scrollTop, scrollHeight, clientHeight } = scrollEl
+    const maxScroll = scrollHeight - clientHeight
+    const eps = 1
+    const canScroll = maxScroll > eps
+    return {
+        canScrollUp: canScroll && scrollTop > eps,
+        canScrollDown: canScroll && scrollTop < maxScroll - eps,
+    }
+}
+
+/**
+ * Soft top/bottom edge fades on the pages-nav scrollport: only when content
+ * overflows in that direction (so the first/last items stay sharp at rest).
+ * Also toggles Figma scroll buttons (hover reveal is CSS; direction via data-visible).
+ */
+function updateNavV2ScrollFades(scrollEl: HTMLElement) {
+    const { canScrollUp, canScrollDown } = getNavV2ScrollOverflow(scrollEl)
+    scrollEl.dataset.navFadeTop = canScrollUp ? 'true' : 'false'
+    scrollEl.dataset.navFadeBottom = canScrollDown ? 'true' : 'false'
+
+    const { upBtn, downBtn } = findNavV2ScrollButtons(scrollEl)
+    if (upBtn) {
+        upBtn.dataset.visible = canScrollUp ? 'true' : 'false'
+    }
+    if (downBtn) {
+        downBtn.dataset.visible = canScrollDown ? 'true' : 'false'
+    }
+}
+
+/**
+ * Buttons are siblings of the scrollport inside `.pages-nav-v2__menu` so they
+ * stay pinned while the tree scrolls. Fallbacks cover older HTML shapes.
+ */
+function findNavV2ScrollButtons(scrollEl: HTMLElement) {
+    const menu =
+        scrollEl.closest<HTMLElement>('.pages-nav-v2__menu') ??
+        scrollEl.parentElement
+    const pagesNav = scrollEl.closest('#pages-nav')
+    const upBtn =
+        menu?.querySelector<HTMLButtonElement>(
+            ':scope > .pages-nav-v2__scroll-btn--up'
+        ) ??
+        scrollEl.querySelector<HTMLButtonElement>(
+            ':scope > .pages-nav-v2__scroll-btn--up'
+        ) ??
+        pagesNav?.querySelector<HTMLButtonElement>(
+            ':scope > .pages-nav-v2__scroll-btn--up'
+        ) ??
+        null
+    const downBtn =
+        menu?.querySelector<HTMLButtonElement>(
+            ':scope > .pages-nav-v2__scroll-btn--down'
+        ) ??
+        scrollEl.querySelector<HTMLButtonElement>(
+            ':scope > .pages-nav-v2__scroll-btn--down'
+        ) ??
+        pagesNav?.querySelector<HTMLButtonElement>(
+            ':scope > .pages-nav-v2__scroll-btn--down'
+        ) ??
+        null
+    return { upBtn, downBtn }
+}
+
+function scrollNavV2ByPage(scrollEl: HTMLElement, direction: 'up' | 'down') {
+    const delta = Math.max(120, Math.round(scrollEl.clientHeight * 0.75))
+    scrollEl.scrollBy({
+        top: direction === 'up' ? -delta : delta,
+        behavior: 'smooth',
+    })
+}
+
+function findSiteFooter(): HTMLElement | null {
+    return (
+        document.querySelector<HTMLElement>('footer.bg-ink-dark') ??
+        document.querySelector<HTMLElement>('body > footer:last-of-type')
+    )
+}
+
+function getOffsetTopPx() {
+    const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue('--offset-top')
+        .trim()
+    const parsed = Number.parseFloat(raw)
+    return Number.isFinite(parsed) ? parsed : 48
+}
+
+/**
+ * Clamp the sticky host to the visible strip under chrome → viewport bottom or
+ * footer. CSS padding (24px top / bottom, border-box) insets #pages-nav inside
+ * that strip; scroll buttons overlay .pages-nav-v2__menu (pinned over the scrollport).
+ *
+ * `--offset-top` is only the sticky secondary nav (assembler) / isolated header.
+ * While the Elastic global nav is still on screen (position:static, scrolls
+ * away), the aside sits lower — use its live getBoundingClientRect().top so the
+ * panel does not extend past the viewport bottom.
+ */
+function updatePagesNavAsideViewportHeight(aside: HTMLElement) {
+    if (!window.matchMedia('(width >= 768px)').matches) {
+        aside.style.removeProperty('--pages-nav-aside-height')
+        return
+    }
+
+    const stickyTop = getOffsetTopPx()
+    const layoutTop = aside.getBoundingClientRect().top
+    const top = Number.isFinite(layoutTop)
+        ? Math.max(stickyTop, Math.round(layoutTop))
+        : stickyTop
+    let bottom = window.innerHeight
+    const footer = findSiteFooter()
+    if (footer) {
+        const footerTop = footer.getBoundingClientRect().top
+        if (footerTop < bottom) {
+            bottom = footerTop
+        }
+    }
+
+    const height = Math.max(0, Math.round(bottom - top))
+    aside.style.setProperty('--pages-nav-aside-height', `${height}px`)
+}
+
+function refreshNavV2ScrollViewport() {
+    const aside = navV2ScrollViewportAside
+    const scrollEl = navV2ScrollViewportScrollEl
+    if (!aside || !scrollEl) {
+        return
+    }
+
+    updatePagesNavAsideViewportHeight(aside)
+    updateNavV2ScrollFades(scrollEl)
+}
+
+function initNavV2ScrollViewport(nav: HTMLElement) {
+    const shell = nav.closest('.pages-nav-v2-shell')
+    const scrollEl = shell?.querySelector<HTMLElement>('.pages-nav-v2__scroll')
+    const aside =
+        nav.closest<HTMLElement>('aside.sidebar') ??
+        document.querySelector<HTMLElement>('aside.sidebar:has(#pages-nav)')
+    if (!scrollEl || !aside) {
+        return
+    }
+
+    navV2ScrollViewportAside = aside
+    navV2ScrollViewportScrollEl = scrollEl
+
+    if (!navV2ScrollViewportBound) {
+        navV2ScrollViewportBound = true
+        window.addEventListener('scroll', refreshNavV2ScrollViewport, {
+            passive: true,
+        })
+        window.addEventListener('resize', refreshNavV2ScrollViewport, {
+            passive: true,
+        })
+    }
+
+    scrollEl.addEventListener(
+        'scroll',
+        () => updateNavV2ScrollFades(scrollEl),
+        { passive: true }
+    )
+    // Folder open/close changes scrollHeight without resizing the scrollport.
+    shell?.addEventListener('change', refreshNavV2ScrollViewport)
+
+    const { upBtn, downBtn } = findNavV2ScrollButtons(scrollEl)
+    if (upBtn && upBtn.dataset.navScrollBound !== 'true') {
+        upBtn.dataset.navScrollBound = 'true'
+        upBtn.addEventListener('click', () => scrollNavV2ByPage(scrollEl, 'up'))
+    }
+    if (downBtn && downBtn.dataset.navScrollBound !== 'true') {
+        downBtn.dataset.navScrollBound = 'true'
+        downBtn.addEventListener('click', () =>
+            scrollNavV2ByPage(scrollEl, 'down')
+        )
+    }
+
+    const content = scrollEl.querySelector('.pages-nav-v2__content')
+    if (content) {
+        const mo = new MutationObserver(refreshNavV2ScrollViewport)
+        mo.observe(content, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'style', 'open'],
+        })
+    }
+
+    const ro = new ResizeObserver(refreshNavV2ScrollViewport)
+    ro.observe(aside)
+    ro.observe(scrollEl)
+    // Assembler: elastic-nav.js injects the global header async and changes layout height.
+    const elasticNav =
+        document.querySelector<HTMLElement>('#elastic-nav') ??
+        document.querySelector<HTMLElement>('#elastic-nav-wrapper')
+    if (elasticNav) {
+        ro.observe(elasticNav)
+    }
+    refreshNavV2ScrollViewport()
+    requestAnimationFrame(refreshNavV2ScrollViewport)
+}
+
 /**
  * Initialize all V2 nav behaviours on the given sidebar element.
  * Call this on every htmx:load when [data-nav-v2] is present.
@@ -740,6 +1115,7 @@ export function initNavV2(nav: HTMLElement) {
     expandToCurrentPage(nav)
     applyActiveSubtreeHighlight(nav)
     initNavV2FolderLayoutWarmup(nav)
+    initNavV2ScrollViewport(nav)
     requestAnimationFrame(() => {
         requestAnimationFrame(() => initNavV2TruncationTooltips(nav))
     })

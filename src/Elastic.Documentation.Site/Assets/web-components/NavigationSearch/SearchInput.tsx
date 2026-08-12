@@ -50,7 +50,6 @@ export interface SearchInputProps {
 
 export const SearchInput = ({
     placeholder,
-    size,
     inputRef,
     value,
     onChange,
@@ -106,15 +105,8 @@ export const SearchInput = ({
                 disabled={disabled}
                 css={css`
                     width: 100%;
-                    padding: calc(
-                            ${
-                                size === 's'
-                                    ? euiTheme.size.xs
-                                    : euiTheme.size.s
-                            } +
-                                2px
-                        )
-                        ${size === 's' ? euiTheme.size.s : euiTheme.size.m};
+                    /* 5px block → 32px total with 20px line-height + 1px borders (matches Back). */
+                    padding: 5px 12px;
                     padding-left: 34px;
                     padding-right: calc(
                         ${euiTheme.size.m} + ${isMac ? '2ch' : '4ch'} +
