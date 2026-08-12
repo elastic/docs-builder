@@ -4,8 +4,10 @@
 
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using RazorSlices;
 
@@ -237,17 +239,23 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	private static async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> navigation)
 	{
-		var renderModel = NavigationRenderModel.Create(
-			tree: navigation,
-			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>(),
-			isUsingNavigationDropdown: false,
-			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false);
-		var html = await _TocTree.Create(renderModel).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var model = new NavigationViewModel
+		{
+			Title = navigation.NavigationTitle,
+			TitleUrl = navigation.Url,
+			Tree = navigation,
+			IsUsingNavigationDropdown = false,
+			IsPrimaryNavEnabled = false,
+			IsGlobalAssemblyBuild = false,
+			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>(),
+			Htmx = new DefaultHtmxAttributeProvider("/"),
+			BuildType = BuildType.Codex
+		};
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 		return new NavigationRenderResult
 		{
 			Html = html,
-			Id = renderModel.ContentHash
+			Id = navigation.Id
 		};
 	}
 }

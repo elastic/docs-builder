@@ -74,7 +74,7 @@ links:
 
 ## Product badges
 
-Every regular (non-hub) page that declares one or more `products:` in its frontmatter automatically gets a clickable badge above its H1, linking to that product's hub page. The badge → hub URL mapping is set per product in [`config/products.yml`](../configure/site/products.md):
+Every regular (non-hub) page that declares one or more `products:` in its frontmatter automatically gets a clickable badge above its H1, linking to that product's hub page. The badge → hub URL mapping is set per product in [`config/products.yml`](../documentation/catalog/products.md):
 
 ```yaml
 products:

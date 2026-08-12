@@ -41,6 +41,7 @@ public partial class ApiPagesNavRenderingTests
 			Next = null,
 			NavigationHtml = string.Empty,
 			UrlPathPrefix = string.Empty,
+			Htmx = new DefaultHtmxAttributeProvider("/"),
 			AllowIndexing = false,
 			CanonicalBaseUrl = null,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
