@@ -1461,7 +1461,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			var aliasesNode = indexNode?["aliases"]?.AsObject();
 			var aliases = aliasesNode is not null
 				? aliasesNode.Select(a => a.Key).ToHashSet(StringComparer.OrdinalIgnoreCase)
-				: new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+				: [with(StringComparer.OrdinalIgnoreCase)];
 			result[indexName] = aliases;
 		}
 		return result;
