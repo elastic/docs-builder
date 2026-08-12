@@ -199,6 +199,11 @@ references:
   detection-rules:
     checkout_strategy: full
 
+  # @elastic/obs-docs
+  autoops-insights:
+    private: true
+    sparse_paths: ["generated/docs"]
+
   # @elastic/docs-engineering
   docs-builder:
     current: 9.0

@@ -611,6 +611,11 @@ toc:
       - toc: docs-content://reference/machine-learning
         path_prefix: reference/machine-learning
 
+      # AutoOps insights
+      # https://github.com/elastic/autoops-insights/blob/main/generated/docs/elasticsearch/toc.yml
+      - toc: autoops-insights://elasticsearch
+        path_prefix: reference/autoops-insights
+
       # Search UI
       # https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
       - toc: search-ui://reference
