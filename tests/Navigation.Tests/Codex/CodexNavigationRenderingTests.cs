@@ -239,6 +239,14 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	private static async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> navigation)
 	{
+		var topLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>();
+		// ContentHash distinguishes trees that share a navigation.Id (projectless repos).
+		var contentHash = NavigationRenderModel.Create(
+			tree: navigation,
+			topLevelItems: topLevelItems,
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: false,
+			isGlobalAssemblyBuild: false).ContentHash;
 		var model = new NavigationViewModel
 		{
 			Title = navigation.NavigationTitle,
@@ -247,7 +255,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 			IsUsingNavigationDropdown = false,
 			IsPrimaryNavEnabled = false,
 			IsGlobalAssemblyBuild = false,
-			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>(),
+			TopLevelItems = topLevelItems,
 			Htmx = new DefaultHtmxAttributeProvider("/"),
 			BuildType = BuildType.Codex
 		};
@@ -255,7 +263,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		return new NavigationRenderResult
 		{
 			Html = html,
-			Id = navigation.Id
+			Id = contentHash
 		};
 	}
 }

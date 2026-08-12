@@ -25,18 +25,22 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 	)
 	{
 		var attributes = new StringBuilder();
-		_ = attributes.Append($" hx-select-oob={hxSwapOob ?? GetHxSelectOob(hasSameTopLevelGroup)}");
+		// hx-swap=none is required with hx-select-oob: body hx-boost would otherwise
+		// also swap the whole body and leave stale main content (breaks synthetics/nav).
+		_ = attributes.Append($" hx-select-oob=\"{hxSwapOob ?? GetHxSelectOob(hasSameTopLevelGroup)}\"");
+		_ = attributes.Append(" hx-swap=\"none\"");
 		if (!string.IsNullOrEmpty(preload))
-			_ = attributes.Append($" preload={preload}");
+			_ = attributes.Append($" preload=\"{preload}\"");
 		return attributes.ToString();
 	}
 
 	public string GetNavHxAttributes(bool hasSameTopLevelGroup = false, string? preload = Preload)
 	{
 		var attributes = new StringBuilder();
-		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(hasSameTopLevelGroup)}");
+		_ = attributes.Append($" hx-select-oob=\"{GetHxSelectOob(hasSameTopLevelGroup)}\"");
+		_ = attributes.Append(" hx-swap=\"none\"");
 		if (!string.IsNullOrEmpty(preload))
-			_ = attributes.Append($" preload={preload}");
+			_ = attributes.Append($" preload=\"{preload}\"");
 		return attributes.ToString();
 	}
 }
