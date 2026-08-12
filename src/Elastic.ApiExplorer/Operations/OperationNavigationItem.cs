@@ -13,8 +13,11 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
-public record ApiOperation(HttpMethod OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName) : IApiModel
+public record ApiOperation(HttpMethod OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName)
+	: IApiModel, IHttpMethodNavigationModel
 {
+	string IHttpMethodNavigationModel.HttpMethod => OperationType.Method.ToLowerInvariant();
+
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var viewModel = new OperationViewModel(context)

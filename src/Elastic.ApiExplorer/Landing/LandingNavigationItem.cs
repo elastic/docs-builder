@@ -104,10 +104,13 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 public class ClassificationNavigationItem(ApiClassification classification, LandingNavigationItem rootNavigation, LandingNavigationItem parent)
 	: ApiGroupingNavigationItem<ApiClassification, INavigationItem>(classification, rootNavigation, parent),
 		IRootNavigationItem<ApiClassification, INavigationItem>,
-		INavigationSidebarLabel
+		ISidebarHeadingNavigationItem
 {
-	/// <summary>Section titles from <c>x-tagGroups</c> are not their own page; rendered as non-clickable sidebar labels.</summary>
-	public override string Url => string.Empty;
+	/// <summary>
+	/// Classifications have no dedicated page. Kept as the product overview URL for any code that still
+	/// reads <see cref="INavigationItem.Url"/>; Nav V2 renders these as non-clickable sidebar headings.
+	/// </summary>
+	public override string Url => rootNavigation.Index.Url;
 
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = classification.Name;
@@ -146,7 +149,9 @@ public class TagNavigationItem(
 public interface IEndpointOrOperationNavigationItem : INavigationItem;
 
 public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
-	: IApiGroupingNavigationItem<ApiEndpoint, OperationNavigationItem>, IEndpointOrOperationNavigationItem
+	: IApiGroupingNavigationItem<ApiEndpoint, OperationNavigationItem>,
+		IEndpointOrOperationNavigationItem,
+		IMultiOperationNavigationItem
 {
 	/// <inheritdoc />
 	public string Url => NavigationItems.First().Url;

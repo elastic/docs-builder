@@ -155,6 +155,66 @@
 .api-method-delete {
 	@apply border-red-30 bg-red-10 text-red-90;
 }
+
+/*
+ * Nav V2 method badges — Figma APIs (node 10065:6317):
+ * GET green + pivot 180°; POST blue; PUT/PATCH orange; DELETE red + X;
+ * multi-operation (and HEAD/OPTIONS) gray + branch glyph.
+ */
+#pages-nav nav[data-nav-v2] .nav-v2-api-method {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	border: 1px solid;
+	border-radius: 6px;
+	box-sizing: border-box;
+}
+
+#pages-nav nav[data-nav-v2] .nav-v2-api-method svg {
+	display: block;
+}
+
+/* Only GET flips the pivot arrow (incoming). */
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-get svg {
+	transform: rotate(180deg);
+}
+
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-get {
+	background-color: #c9f3e3;
+	border-color: #aee8d2;
+	color: #008a5e;
+}
+
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-post {
+	background-color: #d9e8ff;
+	border-color: #bfdbff;
+	color: #0b64dd;
+}
+
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-put,
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-patch {
+	background-color: #ffdebf;
+	border-color: #ffcda1;
+	color: #ed6723;
+}
+
+/* Neutral gray reserved for multi-operation endpoints (and rare HEAD/OPTIONS). */
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-head,
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-options,
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-multi {
+	background-color: #fff;
+	border-color: #cad3e2;
+	color: #5a6d8c;
+}
+
+#pages-nav nav[data-nav-v2] .nav-v2-api-method-delete {
+	background-color: #fdddd8;
+	border-color: #ffc9c2;
+	color: #c61e25;
+}
 .api-url {
 	margin-left: calc(var(--spacing) * 2);
 	display: inline;
