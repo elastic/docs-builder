@@ -5,21 +5,10 @@
 @using Elastic.Documentation.Site.Navigation
 @inherits RazorSlice<NavigationTreeItem>
 @{
-	var isTopLevel = Model.Level == 0 && Model.SubTree is not LabelNavigationNode;
+	var isTopLevel = Model.Level == 0 && Model.SubTree is not ISidebarHeadingNavigationItem;
+	// Within an island sidebar, only content + in-page TOC change — not #main-container (avoids flash).
+	// Entering an island from the parent section uses islandHxAttrs below (#pages-nav included once).
 	var navHxAttrs = Model.Htmx.GetNavHxAttributes(hasSameTopLevelGroup: true, preload: null);
-
-	NavigationTreeItem ChildTreeItem(INodeNavigationItem<INavigationModel, INavigationItem> subTree, int level) =>
-		new()
-		{
-			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
-			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
-			Level = level,
-			SubTree = subTree,
-			RootNavigationId = Model.RootNavigationId,
-			Htmx = Model.Htmx,
-			IsIslandSubtree = Model.IsIslandSubtree,
-			ActiveNavigationUrl = Model.ActiveNavigationUrl
-		};
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
@@ -28,136 +17,297 @@
 		continue;
 	}
 
-	if (item is INavigationSidebarLabel and INodeNavigationItem<INavigationModel, INavigationItem> label)
+	if (item is ISidebarHeadingNavigationItem and INodeNavigationItem<INavigationModel, INavigationItem> heading)
 	{
-		var labelBodyIsSubsection = label is LabelNavigationNode labelNode && NavV2LabelListKind.IsSubsectionList(labelNode);
+		var labelBodyIsSubsection = NavV2LabelListKind.IsSubsectionList(heading);
 		var labelBodyClass = labelBodyIsSubsection
 			? "docs-sidebar-nav-v2__subsection"
-			: "docs-sidebar-nav-v2__items-list";
-		@* Main Group Item — maps to Figma "Main Group Item" (one li per block in __tree). *@
-		<li class="docs-sidebar-nav-v2__main-group">
+			: "docs-sidebar-nav-v2__label-children";
+		@* Subsection = ul whose direct children are li.relative (nested labels/links), not li.group-navigation folders. *@
+		<li class="relative">
 			@if (isTopLevel)
 			{
-				<div class="docs-sidebar-nav-v2__title docs-sidebar-nav-v2__block-top">
-					<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--top docs-sidebar-nav-v2__nav-text">
-						@label.NavigationTitle
-					</span>
-				</div>
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--top docs-sidebar-nav-v2__block-top flex items-center">
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@heading.NavigationTitle</span>
+				</span>
 			}
 			else
 			{
-				<div class="docs-sidebar-nav-v2__subtitle docs-sidebar-nav-v2__block-subtitle">
-					<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--nested docs-sidebar-nav-v2__nav-text">
-						@label.NavigationTitle
-					</span>
-				</div>
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--nested docs-sidebar-nav-v2__block-subtitle docs-sidebar-nav-v2__nav-text block">
+					@heading.NavigationTitle
+				</span>
 			}
-			@if (label.NavigationItems.Count > 0)
+			@if (heading.NavigationItems.Count > 0)
 			{
-				<ul class="@labelBodyClass">
-					@await RenderPartialAsync(_TocTreeNavV2.Create(ChildTreeItem(label, Model.Level)))
+				<ul class="@labelBodyClass w-full">
+					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+					{
+						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+						Level = Model.Level,
+						SubTree = heading,
+						RootNavigationId = Model.RootNavigationId,
+						Htmx = Model.Htmx,
+						IsIslandSubtree = Model.IsIslandSubtree
+					}))
 				</ul>
 			}
 		</li>
 	}
 	else if (item is PlaceholderNavigationLeaf placeholder)
 	{
-		<li class="docs-sidebar-nav-v2__list-item docs-sidebar-nav-v2__list-item--leaf">
-			<div class="docs-sidebar-nav-v2__item-content">
-				<a
-					href="@placeholder.Url"
-					@navHxAttrs
-					class="@TocTreeNavV2Helpers.NavLinkClass(Model.ActiveNavigationUrl, placeholder.Url)">
-					<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
-					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@placeholder.NavigationTitle</span>
-				</a>
-			</div>
+		<li class="flex group/li">
+			<a
+				href="@placeholder.Url"
+				@navHxAttrs
+				class="sidebar-link nav-v2-link flex w-full min-w-0 items-center gap-2 py-[6px]"
+				style="--nav-level:@Model.Level">
+				<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@placeholder.NavigationTitle</span>
+			</a>
 		</li>
 	}
 	else if (item is PlaceholderNavigationNode placeholderGroup)
 	{
-		@await RenderPartialAsync(_TocTreeNavV2Folder.Create(new NavV2FolderRenderModel
-		{
-			Id = placeholderGroup.Id,
-			Url = placeholderGroup.Url,
-			Title = placeholderGroup.NavigationTitle,
-			AllHidden = placeholderGroup.NavigationItems.All(n => n.Hidden),
-			IsOpen = NavigationActiveUrlResolver.TreeContainsActiveUrl(placeholderGroup, Model.ActiveNavigationUrl),
-			HasChildren = placeholderGroup.NavigationItems.Count > 0,
-			HxAttributes = navHxAttrs,
-			ActiveNavigationUrl = Model.ActiveNavigationUrl,
-			ChildTree = ChildTreeItem(placeholderGroup, Model.Level + 1)
-		}))
+		var allHidden = placeholderGroup.NavigationItems.All(n => n.Hidden);
+		<li class="flex flex-wrap group-navigation relative">
+			<div class="peer nav-folder-peer grid w-full grid-cols-1">
+				@if (!allHidden)
+				{
+					<input
+						id="@placeholderGroup.Id"
+						type="checkbox"
+						class="sr-only pointer-events-none"
+						tabindex="-1"
+						aria-hidden="true">
+				}
+				<a
+					href="@placeholderGroup.Url"
+					@navHxAttrs
+					class="sidebar-link nav-v2-link flex w-full min-w-0 items-center gap-2 py-[6px]"
+					style="--nav-level:@Model.Level">
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@placeholderGroup.NavigationTitle</span>
+					@if (!allHidden)
+					{
+						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</span>
+					}
+				</a>
+			</div>
+			@if (placeholderGroup.NavigationItems.Count > 0)
+			{
+				<div class="docs-sidebar-nav-v2__folder-clip w-full">
+					<div class="docs-sidebar-nav-v2__folder-clip-inner">
+						<ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+							@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+							{
+								IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+								IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+								Level = Model.Level + 1,
+								SubTree = placeholderGroup,
+								RootNavigationId = Model.RootNavigationId,
+								Htmx = Model.Htmx,
+								IsIslandSubtree = Model.IsIslandSubtree
+							}))
+						</ul>
+					</div>
+				</div>
+			}
+		</li>
 	}
 	else if (item is IslandNavigationNode island)
 	{
 		var islandHxAttrs = Model.Htmx.GetHxAttributes(
-			hxSwapOob: "#content-container,#toc-nav,#api-examples-panel,#pages-nav",
+			hxSwapOob: "#content-container,#toc-nav,#pages-nav",
 			preload: null);
-		@await RenderPartialAsync(_TocTreeNavV2Folder.Create(new NavV2FolderRenderModel
-		{
-			Id = island.Id,
-			Url = island.Url,
-			Title = island.NavigationTitle,
-			AllHidden = island.NavigationItems.All(n => n.Hidden),
-			IsOpen = NavigationActiveUrlResolver.TreeContainsActiveUrl(island, Model.ActiveNavigationUrl),
-			HasChildren = island.NavigationItems.Count > 0,
-			HxAttributes = islandHxAttrs,
-			ActiveNavigationUrl = Model.ActiveNavigationUrl,
-			ChildTree = new NavigationTreeItem
+		var islandAllHidden = island.NavigationItems.All(n => n.Hidden);
+		<li class="flex flex-wrap group-navigation relative">
+			<div class="peer nav-folder-peer grid w-full grid-cols-1">
+				@if (!islandAllHidden)
+				{
+					<input
+						id="@island.Id"
+						type="checkbox"
+						class="sr-only pointer-events-none"
+						tabindex="-1"
+						aria-hidden="true">
+				}
+				<a
+					href="@island.Url"
+					@islandHxAttrs
+					class="sidebar-link nav-v2-link flex w-full min-w-0 items-center gap-2 py-[6px]"
+					style="--nav-level:@Model.Level">
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@island.NavigationTitle</span>
+					@if (!islandAllHidden)
+					{
+						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</span>
+					}
+				</a>
+			</div>
+			@if (island.NavigationItems.Count > 0)
 			{
-				IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
-				IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
-				Level = Model.Level + 1,
-				SubTree = island,
-				RootNavigationId = Model.RootNavigationId,
-				Htmx = Model.Htmx,
-				IsIslandSubtree = true,
-				ActiveNavigationUrl = Model.ActiveNavigationUrl
+				<div class="docs-sidebar-nav-v2__folder-clip w-full">
+					<div class="docs-sidebar-nav-v2__folder-clip-inner">
+						<ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+							@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+							{
+								IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+								IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+								Level = Model.Level + 1,
+								SubTree = island,
+								RootNavigationId = Model.RootNavigationId,
+								Htmx = Model.Htmx,
+								IsIslandSubtree = true
+							}))
+						</ul>
+					</div>
+				</div>
 			}
-		}))
+		</li>
 	}
 	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
 	{
-		<li class="docs-sidebar-nav-v2__list-item docs-sidebar-nav-v2__list-item--leaf">
-			<div class="docs-sidebar-nav-v2__item-content">
-				<a
-					href="@group.Url"
-					@navHxAttrs
-					class="@TocTreeNavV2Helpers.NavLinkClass(Model.ActiveNavigationUrl, group.Url)">
-					<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
-					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@group.NavigationTitle</span>
-				</a>
-			</div>
+		<li class="flex group/li">
+			<a
+				href="@group.Url"
+				@navHxAttrs
+				class="sidebar-link nav-v2-link flex w-full min-w-0 items-center gap-2 py-[6px]"
+				style="--nav-level:@Model.Level"
+			>
+				<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@group.NavigationTitle</span>
+			</a>
 		</li>
 	}
 	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> folder)
 	{
-		@await RenderPartialAsync(_TocTreeNavV2Folder.Create(new NavV2FolderRenderModel
-		{
-			Id = folder.Id,
-			Url = folder.Url,
-			Title = folder.NavigationTitle,
-			AllHidden = folder.NavigationItems.All(n => n.Hidden),
-			IsOpen = NavigationActiveUrlResolver.TreeContainsActiveUrl(folder, Model.ActiveNavigationUrl),
-			HasChildren = folder.NavigationItems.Count > 0,
-			HxAttributes = navHxAttrs,
-			ActiveNavigationUrl = Model.ActiveNavigationUrl,
-			ChildTree = ChildTreeItem(folder, Model.Level + 1)
-		}))
+		var allHidden = folder.NavigationItems.All(n => n.Hidden);
+		var isMultiOp = item is IMultiOperationNavigationItem;
+		<li class="flex flex-wrap group-navigation relative">
+			<div class="peer nav-folder-peer grid w-full grid-cols-1">
+				@if (!allHidden)
+				{
+					<input
+						id="@folder.Id"
+						type="checkbox"
+						class="sr-only pointer-events-none"
+						tabindex="-1"
+						aria-hidden="true">
+				}
+				<a
+					href="@(folder.Url)"
+					@navHxAttrs
+					class="sidebar-link nav-v2-link flex w-full min-w-0 items-center gap-2 py-[6px]"
+					style="--nav-level:@Model.Level">
+					@if (isMultiOp)
+					{
+						<span
+							class="nav-v2-api-method nav-v2-api-method-multi"
+							aria-label="Multiple operations"
+							title="Multiple operations">
+							@* EUI branch — Figma APIs multi-operation badge (10066:6411) *@
+							<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+								<path
+									fill="currentColor"
+									fill-rule="evenodd"
+									clip-rule="evenodd"
+									d="M5 1a1.998 1.998 0 0 1 .5 3.934v4.163C6.105 8.476 7.053 8 8.5 8c1.654 0 2.372-.47 2.687-.83.082-.093.14-.187.185-.273a2 2 0 1 1 1.053.056 2.321 2.321 0 0 1-.487.876C11.378 8.47 10.346 9 8.5 9c-1.574 0-2.284.657-2.63 1.252a2.797 2.797 0 0 0-.313.828 2 2 0 1 1-1.057-.015V4.934A1.998 1.998 0 0 1 5 1Zm0 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm7-8a1 1 0 1 0 0 2 1 1 0 0 0 0-2ZM5 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/>
+							</svg>
+						</span>
+					}
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@(folder.NavigationTitle)</span>
+					@if (!allHidden)
+					{
+						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</span>
+					}
+				</a>
+			</div>
+			@if (folder.NavigationItems.Count > 0)
+			{
+				<div class="docs-sidebar-nav-v2__folder-clip w-full">
+					<div class="docs-sidebar-nav-v2__folder-clip-inner">
+						<ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+							@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+							{
+								IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+								IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+								Level = Model.Level + 1,
+								SubTree = folder,
+								RootNavigationId = Model.RootNavigationId,
+								Htmx = Model.Htmx,
+								IsIslandSubtree = Model.IsIslandSubtree
+							}))
+						</ul>
+					</div>
+				</div>
+			}
+		</li>
 	}
 	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
-		<li class="docs-sidebar-nav-v2__list-item docs-sidebar-nav-v2__list-item--leaf">
-			<div class="docs-sidebar-nav-v2__item-content">
-				<a
-					href="@leaf.Url"
-					@navHxAttrs
-					class="@TocTreeNavV2Helpers.NavLinkClass(Model.ActiveNavigationUrl, leaf.Url)">
-					<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
-					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@leaf.NavigationTitle</span>
-				</a>
-			</div>
+		var httpMethod = leaf.Model is IHttpMethodNavigationModel methodModel
+			? methodModel.HttpMethod
+			: null;
+		<li class="flex group/li">
+			<a
+				href="@leaf.Url"
+				@navHxAttrs
+				class="sidebar-link nav-v2-link flex w-full min-w-0 items-center gap-2 py-[6px]"
+				style="--nav-level:@Model.Level"
+			>
+				@if (httpMethod is not null)
+				{
+					<span
+						class="nav-v2-api-method nav-v2-api-method-@httpMethod"
+						aria-label="@httpMethod.ToUpperInvariant()"
+						title="@httpMethod.ToUpperInvariant()">
+						@* Figma APIs icons: pivot arrow (GET rotated via CSS); DELETE uses cross. *@
+						@if (httpMethod == "delete")
+						{
+							<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+								<path
+									fill="currentColor"
+									fill-rule="evenodd"
+									clip-rule="evenodd"
+									d="M5.46967 6 1.98484 2.51517 2.51517 1.98484 6 5.46967 9.48484 1.98484 10.0152 2.51517 6.53033 6 10.0152 9.48484 9.48484 10.0152 6 6.53033 2.51517 10.0152 1.98484 9.48484 5.46967 6Z"/>
+							</svg>
+						}
+						else
+						{
+							<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+								<path
+									fill="currentColor"
+									d="M9.75 6.75H9V3.53027L2.51514 10.0151 1.98486 9.48486 8.46973 3H5.25V2.25h4.5V6.75Z"/>
+							</svg>
+						}
+					</span>
+				}
+				<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@leaf.NavigationTitle</span>
+			</a>
 		</li>
 	}
 }

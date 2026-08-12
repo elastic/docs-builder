@@ -48,6 +48,8 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 					? relativePath[..^3]  // Remove last 3 characters (.md)
 					: relativePath;
 
+				path = CollapseDotSegments(path);
+
 				// If a path ends with /index or is just index, omit it from the URL
 				if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
 					path = path[..^6]; // Remove "/index"
@@ -60,6 +62,24 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 				return $"{rootUrl}/{path.TrimEnd('/')}";
 			}
 		}
+	}
+
+	/// <summary>
+	/// Collapse <c>.</c> segments (<c>./foo</c>, <c>a/./b</c>) so site URLs never contain <c>/./</c>.
+	/// </summary>
+	private static string CollapseDotSegments(string path)
+	{
+		if (string.IsNullOrEmpty(path) || path.IndexOf('.', StringComparison.Ordinal) < 0)
+			return path;
+
+		path = path.Replace('\\', '/');
+		while (path.StartsWith("./", StringComparison.Ordinal))
+			path = path[2..];
+		while (path.Contains("/./", StringComparison.Ordinal))
+			path = path.Replace("/./", "/", StringComparison.Ordinal);
+		if (path is "." or "./")
+			return string.Empty;
+		return path;
 	}
 
 	/// <inheritdoc />
