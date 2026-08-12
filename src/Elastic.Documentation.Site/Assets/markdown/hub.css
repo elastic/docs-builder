@@ -162,13 +162,13 @@
 	}
 	.hub-get-started .hub-get-started-title {
 		margin: 0 0 8px;
-		font-size: 1.375rem;
+		font-size: var(--text-xl);
 		font-weight: 700;
 		color: var(--color-ink);
 	}
 	.hub-get-started .hub-get-started-intro {
 		margin: 0 0 20px;
-		font-size: 0.9375rem;
+		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.5;
 	}
@@ -187,7 +187,7 @@
 	}
 	.hub-get-started .hub-get-started-install code {
 		font-family: var(--font-mono, monospace);
-		font-size: 0.8125rem;
+		font-size: var(--text-sm);
 		color: var(--color-white);
 		background: transparent;
 	}
@@ -216,20 +216,23 @@
 		position: absolute;
 		top: 20px;
 		right: 20px;
-		font-size: 0.8125rem;
+		font-size: var(--text-sm);
 		font-weight: 600;
-		color: var(--color-grey-70, #98a2b3);
+		/* grey-70 reads at 3.31:1 on white, short of the 4.5:1 minimum. ink-light
+		   carries the same quiet weight at 7.03:1 and is what other secondary text
+		   on the page already uses. */
+		color: var(--color-ink-light);
 		letter-spacing: 0.06em;
 	}
 	.hub-get-started .hub-get-started-step-title {
 		margin: 0;
-		font-size: 0.9375rem;
+		font-size: var(--text-base);
 		font-weight: 700;
 		color: var(--color-ink-dark);
 	}
 	.hub-get-started .hub-get-started-step-desc {
 		margin: 0;
-		font-size: 0.8125rem;
+		font-size: var(--text-sm);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.45;
 	}
@@ -260,13 +263,13 @@
 		border-left: 1px solid var(--color-grey-20);
 	}
 	.hub-get-started .hub-get-started-option-label {
-		font-size: 0.875rem;
+		font-size: var(--text-sm);
 		font-weight: 700;
 		color: var(--color-ink-dark);
 	}
 	.hub-get-started .hub-get-started-option-desc {
 		margin: 0;
-		font-size: 0.8125rem;
+		font-size: var(--text-sm);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.45;
 	}
@@ -282,7 +285,7 @@
 		min-height: 48px;
 		margin-top: auto;
 		padding: 0 18px;
-		font-size: 0.875rem;
+		font-size: var(--text-sm);
 		font-weight: 600;
 		color: var(--color-ink-dark);
 		background: var(--color-white);
@@ -301,7 +304,7 @@
 	.hub-get-started .hub-get-started-option-link {
 		@apply inline-flex items-center gap-1;
 		align-self: flex-start;
-		font-size: 0.8125rem;
+		font-size: var(--text-sm);
 		font-weight: 600;
 		color: var(--color-blue-elastic-100, #0b64dd);
 	}
@@ -347,7 +350,7 @@
 		@apply inline-flex items-center gap-1;
 		margin-top: auto;
 		padding-top: 14px;
-		font-size: 0.8125rem;
+		font-size: var(--text-sm);
 		font-weight: 600;
 		color: var(--color-blue-elastic-100, #0b64dd);
 	}
