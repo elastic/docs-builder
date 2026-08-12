@@ -181,9 +181,9 @@ internal sealed class LabsCommands(
 		var cacheLogger = loggerFactory.CreateLogger<ElasticsearchCrawlCache>();
 		var crawlCache = new ElasticsearchCrawlCache(cacheLogger, transport);
 		var cache = force
-			? [with(StringComparer.OrdinalIgnoreCase)]
+			? new Dictionary<string, CachedDocInfo>(StringComparer.OrdinalIgnoreCase)
 			: !await crawlCache.IndexExistsAsync(indexAlias, ct)
-			? [with(StringComparer.OrdinalIgnoreCase)]
+			? new Dictionary<string, CachedDocInfo>(StringComparer.OrdinalIgnoreCase)
 			: await crawlCache.LoadCacheAsync(indexAlias, progress: null, ct);
 
 		var plan = LabsSiteCrawlPlanner.BuildCrawlPlan(filtered, cache, unchanged, fair, maxPages, loggerFactory);

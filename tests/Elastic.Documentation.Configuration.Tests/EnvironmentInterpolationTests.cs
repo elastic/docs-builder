@@ -101,7 +101,7 @@ public class EnvironmentInterpolationTests
 
 	private sealed class MockEnvironment : IEnvironmentVariables
 	{
-		private readonly Dictionary<string, string?> _variables = [with(StringComparer.Ordinal)];
+		private readonly Dictionary<string, string?> _variables = new(StringComparer.Ordinal);
 
 		public string? this[string name]
 		{

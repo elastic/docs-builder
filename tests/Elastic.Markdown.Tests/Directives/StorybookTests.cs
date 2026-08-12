@@ -114,7 +114,7 @@ public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistr
 /// <summary>Deterministic <see cref="IEnvironmentVariables"/> so storybook interpolation tests don't depend on the host shell.</summary>
 internal sealed class TestEnvironmentVariables : IEnvironmentVariables
 {
-	private readonly Dictionary<string, string?> _variables = [with(StringComparer.Ordinal)];
+	private readonly Dictionary<string, string?> _variables = new(StringComparer.Ordinal);
 
 	public string? this[string name]
 	{
