@@ -4,7 +4,7 @@ A panel with a "New" badge, section title, optional release-notes link list on t
 
 ## Centralized lookup (recommended)
 
-Edit content in one place — [`config/whats-new.yml`](../configure/site/products.md) — and any page can render a product's panel with a one-line directive:
+Edit content in one place — [`config/whats-new.yml`](https://github.com/elastic/docs-builder/blob/main/config/whats-new.yml) — and any page can render a product's panel with a one-line directive:
 
 ```markdown
 :::{whats-new}

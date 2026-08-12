@@ -29,4 +29,17 @@ export const assemblerStrategy: HtmxUrlStrategy = {
             return null
         }
     },
+
+    getFirstSegment: (path) => {
+        const relative = path.startsWith(`${root}/`)
+            ? path.slice(root.length + 1)
+            : path.replace(/^\/docs\//, '')
+        return relative.split('/').filter(Boolean)[0] ?? ''
+    },
+
+    isSimpleSwapPath: (path) => {
+        const normalizedPath = path.endsWith('/') ? path.slice(0, -1) : path
+        if (normalizedPath === root || normalizedPath === '/docs') return true
+        return path === apiRoot || path.startsWith(`${apiRoot}/`)
+    },
 }

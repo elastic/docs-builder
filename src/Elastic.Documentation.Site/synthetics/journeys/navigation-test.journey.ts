@@ -77,10 +77,13 @@ journey('navigation test', ({ page, params }) => {
         await expect(
             page.getByRole('heading', { name: 'Elastic fundamentals' })
         ).toBeVisible()
-        // Tag the nav tree so later steps can tell preserved DOM from a swap
+        // Tag sidebar chrome so later steps can tell preserved DOM from a swap
+        // (Nav V2 keeps #pages-nav / #nav-tree; prefer the stable pages-nav host).
         await page.evaluate(() => {
-            const navTree = document.querySelector('[id^="nav-tree"]')
-            if (navTree) navTree['__synthOriginal'] = true
+            const nav =
+                document.querySelector('#pages-nav') ??
+                document.querySelector('[id^="nav-tree"]')
+            if (nav) nav['__synthOriginal'] = true
         })
     })
 
@@ -120,48 +123,63 @@ journey('navigation test', ({ page, params }) => {
         }
     )
 
-    step('Click on "deployment options" in nav', async () => {
-        // Expand a collapsed nav section so we can assert its state survives
+    step('Click on "Evaluate Elastic during a trial" in nav', async () => {
+        // Expand a collapsed nav folder so we can assert its state survives
         const expandedId = await page.evaluate(() => {
             const checkbox = document.querySelector<HTMLInputElement>(
-                '[id^="nav-tree"] input[type="checkbox"]:not(:checked)'
+                '#pages-nav input[type="checkbox"]:not(:checked), [id^="nav-tree"] input[type="checkbox"]:not(:checked)'
             )
             if (checkbox) checkbox.checked = true
             return checkbox?.id ?? null
         })
 
-        await page
-            .getByRole('link', { name: 'Deployment options' })
+        // Nav V2 IA: same Guides/get-started group (deployment-options is no longer a sibling).
+        const evaluateLink = page
+            .locator('#pages-nav')
+            .getByRole('link', { name: 'Evaluate Elastic during a trial' })
             .first()
-            .click()
-        await expect(page).toHaveURL(
-            `${host}/docs/get-started/deployment-options`
-        )
-        await expect(page).toHaveTitle(/Deployment options/)
+        await expect(evaluateLink).toBeVisible()
+        await Promise.all([
+            page.waitForURL(`${host}/docs/get-started/evaluate-elastic`, {
+                timeout: 15000,
+            }),
+            evaluateLink.click(),
+        ])
+        await expect(page).toHaveTitle(/Evaluate Elastic during a trial/)
         await expect(
-            page.getByRole('heading', { name: 'Deployment options' })
+            page.getByRole('heading', {
+                name: 'Evaluate Elastic during a trial',
+            })
         ).toBeVisible()
 
-        // Same-group navigation: no reload, nav tree DOM (and state) preserved
+        // Same-group navigation: no reload, sidebar host DOM (and state) preserved
         const state = await page.evaluate((id) => {
-            const navTree = document.querySelector('[id^="nav-tree"]')
+            const nav =
+                document.querySelector('#pages-nav') ??
+                document.querySelector('[id^="nav-tree"]')
             return {
                 noReload: window['__synthNoReload'] === true,
-                navTreePreserved: navTree?.['__synthOriginal'] === true,
+                navPreserved: nav?.['__synthOriginal'] === true,
                 checkboxStillChecked: id
                     ? (document.getElementById(id) as HTMLInputElement)?.checked
                     : null,
             }
         }, expandedId)
         expect(state.noReload).toBe(true)
-        expect(state.navTreePreserved).toBe(true)
+        expect(state.navPreserved).toBe(true)
         if (expandedId) expect(state.checkboxStillChecked).toBe(true)
     })
 
     step('Click on "Elastic Cloud" in markdown content', async () => {
-        const treeIdBefore = await page.evaluate(
-            () => document.querySelector('[id^="nav-tree"]')?.id
-        )
+        const navMarkerBefore = await page.evaluate(() => {
+            const nav =
+                document.querySelector('#pages-nav') ??
+                document.querySelector('[id^="nav-tree"]')
+            return {
+                id: nav?.id ?? null,
+                hadMarker: nav?.['__synthOriginal'] === true,
+            }
+        })
         await page
             .locator('#markdown-content')
             .getByRole('link', { name: 'Elastic Cloud' })
@@ -172,22 +190,28 @@ journey('navigation test', ({ page, params }) => {
         )
         await expect(page).toHaveTitle(/Elastic Cloud/)
 
-        // Cross-group navigation: still no reload, but the nav tree is replaced
+        // Cross-group navigation: still no reload, but sidebar chrome is replaced
         const state = await page.evaluate(() => {
-            const navTree = document.querySelector('[id^="nav-tree"]')
+            const nav =
+                document.querySelector('#pages-nav') ??
+                document.querySelector('[id^="nav-tree"]')
             return {
                 noReload: window['__synthNoReload'] === true,
-                treeId: navTree?.id,
-                treeIsNewNode: navTree?.['__synthOriginal'] === undefined,
-                treeShowsNewGroup:
-                    navTree?.querySelector('a[href*="/deploy-manage/"]') !==
-                    null,
+                navId: nav?.id ?? null,
+                navIsNewNode: nav?.['__synthOriginal'] === undefined,
+                navShowsNewGroup:
+                    nav?.querySelector('a[href*="/deploy-manage/"]') !== null,
             }
         })
         expect(state.noReload).toBe(true)
-        expect(state.treeId).not.toBe(treeIdBefore)
-        expect(state.treeIsNewNode).toBe(true)
-        expect(state.treeShowsNewGroup).toBe(true)
+        // Nav V2 may keep a stable #pages-nav id while replacing inner tree HTML.
+        if (navMarkerBefore.id && state.navId === navMarkerBefore.id) {
+            expect(state.navIsNewNode).toBe(true)
+        } else {
+            expect(state.navId).not.toBe(navMarkerBefore.id)
+            expect(state.navIsNewNode).toBe(true)
+        }
+        expect(state.navShowsNewGroup).toBe(true)
     })
 
     step('Use dropdown to navigate to reference', async () => {

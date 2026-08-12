@@ -14,4 +14,8 @@ export const isolatedStrategy: HtmxUrlStrategy = {
             return null
         }
     },
+
+    getFirstSegment: (path) => path.replace('/docs/', '/').split('/')[1] ?? '',
+
+    isSimpleSwapPath: () => false,
 }

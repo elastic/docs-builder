@@ -13,14 +13,14 @@ internal static class NavV2LabelListKind
 	/// True when every direct child under this label renders as a non-folder row (nested labels, plain links).
 	/// False when any child renders as <c>li.group-navigation</c> (accordion folder rows from _TocTreeNavV2).
 	/// </summary>
-	public static bool IsSubsectionList(LabelNavigationNode label) =>
+	public static bool IsSubsectionList(INodeNavigationItem<INavigationModel, INavigationItem> label) =>
 		label.NavigationItems.Count > 0 && label.NavigationItems.All(i => !RendersAsGroupNavigationRow(i));
 
 	private static bool RendersAsGroupNavigationRow(INavigationItem item)
 	{
 		if (item is PlaceholderNavigationNode)
 			return true;
-		if (item is LabelNavigationNode)
+		if (item is ISidebarHeadingNavigationItem)
 			return false;
 		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node && node.NavigationItems.Count > 0)
 			return true;

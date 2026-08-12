@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Navigation.V2;
 /// A non-clickable section heading in the V2 navigation sidebar.
 /// Has children but no URL of its own.
 /// </summary>
-public class LabelNavigationNode : INodeNavigationItem<INavigationModel, INavigationItem>
+public class LabelNavigationNode : INodeNavigationItem<INavigationModel, INavigationItem>, ISidebarHeadingNavigationItem
 {
 	private readonly LabelIndexLeaf _index;
 

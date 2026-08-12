@@ -25,7 +25,11 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 	)
 	{
 		var attributes = new StringBuilder();
+		// Unquoted attribute values: Razor HTML-encodes @Model.Htmx.* output, so quotes
+		// become &quot; and break htmx. hx-swap=none is required with hx-select-oob —
+		// otherwise body hx-boost also swaps the whole body and leaves stale content.
 		_ = attributes.Append($" hx-select-oob={hxSwapOob ?? GetHxSelectOob(hasSameTopLevelGroup)}");
+		_ = attributes.Append(" hx-swap=none");
 		if (!string.IsNullOrEmpty(preload))
 			_ = attributes.Append($" preload={preload}");
 		return attributes.ToString();
@@ -35,6 +39,7 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 	{
 		var attributes = new StringBuilder();
 		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(hasSameTopLevelGroup)}");
+		_ = attributes.Append(" hx-swap=none");
 		if (!string.IsNullOrEmpty(preload))
 			_ = attributes.Append($" preload={preload}");
 		return attributes.ToString();
