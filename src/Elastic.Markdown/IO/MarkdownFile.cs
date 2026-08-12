@@ -177,6 +177,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;
+
+		// The hub layout suppresses the page H1, so {hero} is the only thing that can title the
+		// page. Without it the page renders with no title at all and falls back to its file path.
+		if (yamlFrontMatter.Layout == MarkdownPageLayout.Hub && !document.Descendants<HeroBlock>().Any())
+			Collector.EmitError(FilePath, "A page with `layout: hub` requires a {hero} directive. Without it the page renders without a title.");
+
 		if (yamlFrontMatter.NavigationTitle is not null)
 			NavigationTitle = yamlFrontMatter.NavigationTitle;
 		if (yamlFrontMatter.Description is not null)

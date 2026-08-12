@@ -109,10 +109,12 @@ type ``hero with an external action`` () =
 		<div class="hub-hero-top">
 			<h1>Elasticsearch documentation hub</h1>
 		</div>
-		<div class="hub-hero-actions">
-			<a class="hub-hero-action hub-hero-action-primary" href="https://www.elastic.co/downloads/elasticsearch" target="_blank" rel="noopener noreferrer">
-				<span>Install Elasticsearch</span>
-			</a>
+		<div class="hub-hero-actions doc-button-group">
+			<span class="doc-button-item doc-button-secondary">
+				<a class="hub-hero-action" href="https://www.elastic.co/downloads/elasticsearch" target="_blank" rel="noopener noreferrer">
+					<span>Install Elasticsearch</span>
+				</a>
+			</span>
 		</div>
 	</div>
 </section>
@@ -145,10 +147,12 @@ type ``hero with an internal action`` () =
 		<div class="hub-hero-top">
 			<h1>Elasticsearch documentation hub</h1>
 		</div>
-		<div class="hub-hero-actions">
-			<a class="hub-hero-action hub-hero-action-primary" href="/">
-				<span>Syntax reference</span>
-			</a>
+		<div class="hub-hero-actions doc-button-group">
+			<span class="doc-button-item doc-button-secondary">
+				<a class="hub-hero-action" href="/">
+					<span>Syntax reference</span>
+				</a>
+			</span>
 		</div>
 	</div>
 </section>
@@ -209,13 +213,43 @@ type ``hero with a cross-link action`` () =
 		<div class="hub-hero-top">
 			<h1>docs-builder documentation hub</h1>
 		</div>
-		<div class="hub-hero-actions">
-			<a class="hub-hero-action hub-hero-action-primary" href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started">
-				<span>Elastic documentation</span>
-			</a>
+		<div class="hub-hero-actions doc-button-group">
+			<span class="doc-button-item doc-button-secondary">
+				<a class="hub-hero-action" href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started">
+					<span>Elastic documentation</span>
+				</a>
+			</span>
 		</div>
 	</div>
 </section>
+"""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+// These two set frontmatter, so they use Setup.Document. Setup.Markdown prepends an H1,
+// which would push the frontmatter into the body where it never parses.
+type ``hub layout without a hero`` () =
+    static let markdown = Setup.Document """---
+layout: hub
+---
+
+Body content with no hero directive.
+"""
+
+    // The hub layout removes the page H1, so {hero} is the only thing that can title the page.
+    [<Fact>]
+    let ``errors`` () =
+        markdown |> hasError "A page with `layout: hub` requires a {hero} directive."
+
+type ``hub layout with a hero`` () =
+    static let markdown = Setup.Document """---
+layout: hub
+---
+
+:::{hero}
+:title: Elasticsearch documentation hub
+:::
 """
 
     [<Fact>]

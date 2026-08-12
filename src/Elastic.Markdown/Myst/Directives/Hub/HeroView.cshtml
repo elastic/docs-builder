@@ -32,22 +32,24 @@
 
 		@if (Model.Actions.Count > 0)
 		{
-			<div class="hub-hero-actions">
+			<div class="hub-hero-actions doc-button-group">
 				@foreach (var action in Model.Actions)
 				{
-					<a class="hub-hero-action @(action.IsPrimary ? "hub-hero-action-primary" : "hub-hero-action-secondary")"
-					   href="@Model.PrefixUrl(action.Url)"
-					   target="@(action.IsExternal ? "_blank" : null)"
-					   rel="@(action.IsExternal ? "noopener noreferrer" : null)"
-					   preload="@(action.IsAnchor || action.IsExternal ? null : Htmx.Preload)">
-						<span>@action.Label</span>
-						@if (action.IsAnchor)
-						{
-							<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-								<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-							</svg>
-						}
-					</a>
+					<span class="doc-button-item doc-button-secondary">
+						<a class="hub-hero-action"
+						   href="@Model.PrefixUrl(action.Url)"
+						   target="@(action.IsExternal ? "_blank" : null)"
+						   rel="@(action.IsExternal ? "noopener noreferrer" : null)"
+						   preload="@(action.IsAnchor || action.IsExternal ? null : Htmx.Preload)">
+							<span>@action.Label</span>
+							@if (action.IsAnchor)
+							{
+								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+									<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+							}
+						</a>
+					</span>
 				}
 			</div>
 		}

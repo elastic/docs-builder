@@ -11,18 +11,22 @@
 @layer components {
 	/* Page wrapper: full-width content. Stays white so the page reads
 	   consistently whether the user lands via full navigation or via an
-	   htmx-boosted swap from a regular docs page. */
+	   htmx-boosted swap from a regular docs page.
+
+	   The content column supplies the horizontal gutter. No hub section adds one
+	   of its own: a section that did would inset itself alone and break alignment
+	   with the rest below the shared max-width. */
 	.hub-page .hub-content {
 		@apply mb-20 w-full max-w-none p-0;
 	}
 
 	/* Hero ------------------------------------------------------------- */
 	/* Light hero on the page background, separated from the body by a rule
-	   (matches the redesign — no dark band). */
+	   (matches the redesign, no dark band). */
 	.hub-hero {
 		background-color: transparent;
 		color: var(--color-ink-dark);
-		padding: 40px 24px 28px;
+		padding: 40px 0 28px;
 		margin-bottom: 44px;
 		border-bottom: 1px solid var(--color-grey-20);
 	}
@@ -35,7 +39,7 @@
 		align-items: center;
 		gap: 10px 14px;
 		margin: 0 0 20px;
-		font-size: 0.8125rem;
+		font-size: var(--text-sm);
 		letter-spacing: 0.02em;
 	}
 	.hub-hero .hub-hero-eyebrow-label {
@@ -98,7 +102,7 @@
 		height: 40px;
 	}
 	.hub-hero .hub-hero-top h1 {
-		font-size: 2.285rem;
+		font-size: var(--text-4xl);
 		font-weight: 700;
 		line-height: 1.2;
 		letter-spacing: -0.5px;
@@ -110,7 +114,7 @@
 		text-decoration: none;
 	}
 	.hub-hero .hub-hero-desc {
-		font-size: 1.071rem;
+		font-size: var(--text-base);
 		color: var(--color-ink-light);
 		max-width: 760px;
 		line-height: 1.6;
@@ -123,39 +127,15 @@
 		gap: 12px;
 		margin-top: 24px;
 	}
+	/* The three actions carry equal weight, so they all take the secondary button
+	   treatment from the {button} directive rather than a bespoke hero button.
+	   Only the layout properties the hero needs are set here: the type, height,
+	   colour and radius come from `.doc-button-secondary`. */
 	.hub-hero .hub-hero-action {
-		display: inline-flex;
-		align-items: center;
 		gap: 8px;
-		padding: 9px 18px;
-		font-size: 0.9375rem;
-		font-weight: 600;
-		border-radius: 8px;
-		text-decoration: none;
-		color: var(--color-ink-dark);
-		background: var(--color-white);
-		border: 1px solid var(--color-grey-30);
-		transition:
-			background 0.15s ease,
-			border-color 0.15s ease,
-			color 0.15s ease;
 	}
 	.hub-hero .hub-hero-action svg {
 		flex-shrink: 0;
-		color: var(--color-ink-light);
-	}
-	.hub-hero .hub-hero-action:hover,
-	.hub-hero .hub-hero-action:focus-visible {
-		background: var(--color-grey-10);
-		border-color: var(--color-grey-40);
-	}
-	.hub-hero .hub-hero-action-primary {
-		border-color: var(--color-ink-dark);
-	}
-	.hub-hero .hub-hero-action-primary:hover,
-	.hub-hero .hub-hero-action-primary:focus-visible {
-		border-color: var(--color-ink-dark);
-		background: var(--color-grey-10);
 	}
 
 	/* The hero animates its eyebrow arrow and its hover states. Honour a reduced-motion

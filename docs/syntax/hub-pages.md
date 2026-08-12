@@ -16,6 +16,8 @@ layout: hub
 ---
 ```
 
+A page with `layout: hub` must contain a `{hero}` directive. The build fails without one, because the layout removes the page H1 and leaves the page with no title.
+
 ## What the layout changes
 
 The hub layout differs from the default page layout in three ways:
