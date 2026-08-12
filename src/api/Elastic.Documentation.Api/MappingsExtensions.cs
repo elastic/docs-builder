@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Search;
@@ -16,6 +17,8 @@ namespace Elastic.Documentation.Api;
 
 public static class MappingsExtension
 {
+	[RequiresDynamicCode()]
+	[RequiresUnreferencedCode()]
 	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group)
 	{
 		_ = group.MapGet("/", () => Results.Empty);
@@ -26,6 +29,7 @@ public static class MappingsExtension
 		MapChanges(group);
 	}
 
+	[RequiresUnreferencedCode("Calls Microsoft.AspNetCore.Builder.EndpointRouteBuilderExtensions.MapPost(String, Delegate)")]
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
 	{
 		var askAiGroup = group.MapGroup("/ask-ai");
@@ -98,6 +102,7 @@ public static class MappingsExtension
 		}).DisableAntiforgery();
 	}
 
+	[RequiresUnreferencedCode("Calls Microsoft.AspNetCore.Builder.EndpointRouteBuilderExtensions.MapGet(String, Delegate)")]
 	private static void MapNavigationSearch(IEndpointRouteBuilder group)
 	{
 		var searchGroup = group.MapGroup("/navigation-search");
@@ -121,6 +126,7 @@ public static class MappingsExtension
 			});
 	}
 
+	[RequiresUnreferencedCode("Calls Microsoft.AspNetCore.Builder.EndpointRouteBuilderExtensions.MapGet(String, Delegate)")]
 	private static void MapFullSearch(IEndpointRouteBuilder group)
 	{
 		var searchGroup = group.MapGroup("/search");
@@ -156,6 +162,7 @@ public static class MappingsExtension
 			});
 	}
 
+	[RequiresUnreferencedCode("Calls Microsoft.AspNetCore.Builder.EndpointRouteBuilderExtensions.MapGet(String, Delegate)")]
 	private static void MapChanges(IEndpointRouteBuilder group) =>
 		group.MapGet("/changes",
 			async (

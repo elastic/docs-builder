@@ -77,8 +77,9 @@ function anchorMatchesPath(anchor: HTMLAnchorElement, pathnameRaw: string) {
     }
     try {
         return (
-            normalizeDocPathname(new URL(href, window.location.href).pathname) ===
-            normalizeDocPathname(pathnameRaw)
+            normalizeDocPathname(
+                new URL(href, window.location.href).pathname
+            ) === normalizeDocPathname(pathnameRaw)
         )
     } catch {
         return false
@@ -96,8 +97,7 @@ function sectionRootHasSidebarDestination(nav: HTMLElement): boolean {
 
     return $$optional('a.sidebar-link[href]', nav).some(
         (el) =>
-            el instanceof HTMLAnchorElement &&
-            anchorMatchesPath(el, sectionUrl)
+            el instanceof HTMLAnchorElement && anchorMatchesPath(el, sectionUrl)
     )
 }
 
@@ -695,7 +695,11 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
             const ancestorRow = walk.querySelector<HTMLAnchorElement>(
                 ':scope > .nav-folder-peer > a.sidebar-link'
             )
-            if (ancestorRow && ancestorRow !== current && walk instanceof HTMLElement) {
+            if (
+                ancestorRow &&
+                ancestorRow !== current &&
+                walk instanceof HTMLElement
+            ) {
                 walk.classList.add('nav-v2-active-ancestor')
                 ancestorGroups.push(walk)
             }
@@ -720,7 +724,10 @@ function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
     $$optional('.current', nav).forEach((el) => el.classList.remove('current'))
 
     $$optional('a.sidebar-link[href]', nav).forEach((el) => {
-        if (el instanceof HTMLAnchorElement && anchorMatchesPath(el, pathnameRaw)) {
+        if (
+            el instanceof HTMLAnchorElement &&
+            anchorMatchesPath(el, pathnameRaw)
+        ) {
             el.classList.add('current')
         }
     })

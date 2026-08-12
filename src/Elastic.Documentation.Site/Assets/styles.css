@@ -529,7 +529,8 @@ aside.sidebar:has(#pages-nav):hover .pages-nav-v2__scroll {
 	scrollbar-color: #e3e8f2 transparent;
 }
 
-aside.sidebar:has(#pages-nav):hover .pages-nav-v2__scroll::-webkit-scrollbar-thumb {
+aside.sidebar:has(#pages-nav):hover
+	.pages-nav-v2__scroll::-webkit-scrollbar-thumb {
 	background-color: rgb(227 232 242 / 1);
 }
 
@@ -768,11 +769,7 @@ nav.docs-sidebar-nav-v2 {
 	color: #516381;
 }
 
-#pages-nav
-	nav[data-nav-v2]
-	li
-	~ li
-	> .docs-sidebar-nav-v2__label--nested {
+#pages-nav nav[data-nav-v2] li ~ li > .docs-sidebar-nav-v2__label--nested {
 	padding-top: 24px;
 }
 
