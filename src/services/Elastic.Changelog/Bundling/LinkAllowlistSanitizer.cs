@@ -115,7 +115,9 @@ public static partial class LinkAllowlistSanitizer
 
 	/// <summary>
 	/// Builds a list of allowed <c>owner/repo</c> strings from an <see cref="AssemblyConfiguration"/>
-	/// by collecting every reference repository that is not marked <c>private: true</c> or <c>skip: true</c>.
+	/// by collecting every reference repository that is not marked <c>private: true</c>.
+	/// <c>skip: true</c> only means the repository does not publish docs — it says nothing about
+	/// visibility, so public skip-repos (e.g. <c>elastic/roadmap</c>) remain linkable.
 	/// Bare keys (without a slash) are assumed to be under the <c>elastic</c> organization.
 	/// </summary>
 	public static IReadOnlyList<string> BuildAllowReposFromAssembler(AssemblyConfiguration assembly)
@@ -123,7 +125,7 @@ public static partial class LinkAllowlistSanitizer
 		var result = new List<string>();
 		foreach (var kvp in assembly.ReferenceRepositories)
 		{
-			if (kvp.Value.Private || kvp.Value.Skip)
+			if (kvp.Value.Private)
 				continue;
 
 			var key = kvp.Key;

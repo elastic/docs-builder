@@ -17,7 +17,7 @@ public record BundleValidationResult
 	public required bool IsValid { get; init; }
 
 	/// <summary>
-	/// List of validated bundle data with their inputs and directories
+	/// List of validated bundle data with their inputs
 	/// </summary>
 	public required IReadOnlyList<ValidatedBundle> Bundles { get; init; }
 
@@ -39,5 +39,4 @@ public record ValidatedBundle
 {
 	public required Bundle Data { get; init; }
 	public required BundleInput Input { get; init; }
-	public required string Directory { get; init; }
 }

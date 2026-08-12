@@ -36,6 +36,18 @@ public class ChangelogShouldHideEntryDescriptionsTests
 	}
 
 	[Fact]
+	public void KeepHighlightDescriptions_AlwaysReturnsTrue()
+	{
+		// Default path hides descriptions; Highlights section overrides separately in the renderer.
+		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
+			"kibana",
+			[],
+			ChangelogDescriptionVisibility.KeepHighlightDescriptions);
+
+		result.Should().BeTrue();
+	}
+
+	[Fact]
 	public void Auto_WithEmptyPrivateRepos_HidesBodies()
 	{
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(

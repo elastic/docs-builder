@@ -18,6 +18,7 @@ permissions:
   contents: read
   id-token: write
   pull-requests: read
+  deployments: write
 
 # PR number avoids grouping disparate PRs that share the same head.ref (e.g. forks).
 concurrency:
@@ -93,7 +94,7 @@ jobs:
     steps:
       - name: Checkout
         if: github.event_name == 'push'
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -111,7 +112,7 @@ jobs:
       - name: Get modified file detail
         if: github.event_name == 'pull_request'
         id: check-modified-file-detail
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           IGNORE_PATTERNS: |
             .github/**
@@ -190,7 +191,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      deployments: none
+      deployments: write
       id-token: write
       pull-requests: none
     outputs:
@@ -211,22 +212,20 @@ jobs:
         if: >
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
 
       - name: Create Deployment
-        # disabled: deployments are not enabled on this branch
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
           && (
             github.event_name == 'push'
             || github.event_name == 'pull_request'
           )
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: deployment
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -293,6 +292,7 @@ jobs:
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
           && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        continue-on-error: true
         run: |
           dotnet run --project src/tooling/docs-builder -- diff validate
 
@@ -363,11 +363,9 @@ jobs:
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status
-        uses: actions/github-script@v8
-        # disabled: deployments are not enabled on this branch
+        uses: actions/github-script@v9
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && always()
           && steps.deployment.outputs.result
         env:

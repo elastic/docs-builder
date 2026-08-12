@@ -140,4 +140,21 @@ public abstract class ChangelogTestBase : IDisposable
 		var hash = System.Security.Cryptography.SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
+
+	/// <summary>
+	/// Builds resolved-bundle YAML the same way <c>changelog bundle</c> does: each changelog entry
+	/// is inlined into the bundle with file provenance (name + checksum). The header YAML carries
+	/// bundle-level fields (products, description, hide_features, ...) and must not declare entries.
+	/// </summary>
+	protected static string CreateResolvedBundleContent(string bundleHeaderYaml, params (string FileName, string Changelog)[] changelogs)
+	{
+		var bundle = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeBundle(bundleHeaderYaml);
+		var entries = changelogs
+			.Select(c => Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(c.Changelog).ToBundledEntry() with
+			{
+				File = new Documentation.ReleaseNotes.BundledFile { Name = c.FileName, Checksum = ComputeSha1(c.Changelog) }
+			})
+			.ToList();
+		return Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.SerializeBundle(bundle with { Entries = entries });
+	}
 }

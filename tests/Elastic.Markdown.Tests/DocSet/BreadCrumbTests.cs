@@ -15,19 +15,18 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 	{
 		var documentationSet = Generator.DocumentationSet;
 		INavigationTraversable navigationTraversable = documentationSet;
-		var crossLinks = Generator.DocumentationSet.MarkdownFiles.ToDictionary(f => $"docs-builder://{f.RelativePath.OptionalWindowsReplace()}");
+		var crossLinks = Generator.DocumentationSet.MarkdownFiles.ToDictionary(f => f.CrossLink);
 		var allKeys = crossLinks.Keys.ToList();
-		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
-		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
 
-		var lookup = Path.Join("testing", "nested", "index.md");
+		var lookup = Path.Join("nested", "index.md");
 		var doc = Generator.DocumentationSet.MarkdownFiles
 			.FirstOrDefault(f => f.SourceFile.FullName.EndsWith(lookup, StringComparison.OrdinalIgnoreCase));
 
 		doc.Should().NotBeNull();
 
-		var f = crossLinks.FirstOrDefault(kv => kv.Key == "docs-builder://testing/deeply-nested/foo.md");
-		f.Should().NotBeNull();
+		var deeplyNestedDoc = Generator.DocumentationSet.MarkdownFiles
+			.FirstOrDefault(f => f.RelativePath.OptionalWindowsReplace().EndsWith("deeply-nested/foo.md", StringComparison.Ordinal));
+		deeplyNestedDoc.Should().NotBeNull();
 
 		crossLinks.Should().ContainKey(doc.CrossLink);
 		var nav = navigationTraversable.GetNavigationFor(crossLinks[doc.CrossLink]);
@@ -38,7 +37,7 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		docNavigation.Should().NotBeNull();
 		var parents = navigationTraversable.GetParentsOfMarkdownFile(doc);
 
-		parents.Should().HaveCount(2);
+		parents.Should().HaveCount(1);
 
 	}
 }

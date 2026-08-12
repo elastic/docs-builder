@@ -5,6 +5,7 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Exporters.Elasticsearch;
+using Elastic.Markdown.Exporters.Pagefind;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Exporters;
@@ -25,6 +26,10 @@ public static class ExporterExtensions
 			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
 		if (exportOptions.Contains(Exporter.Elasticsearch))
 			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints, context));
+		if (exportOptions.Contains(Exporter.Okf))
+			markdownExporters.Add(new OkfMarkdownExporter());
+		if (exportOptions.Contains(Exporter.Pagefind))
+			markdownExporters.Add(new PagefindMarkdownExporter(logFactory));
 		return markdownExporters;
 	}
 }

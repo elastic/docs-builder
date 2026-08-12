@@ -1,13 +1,13 @@
 ## Description
 
 Create a changelog file that describes a single item in the release documentation.
-For details and examples, go to [](/contribute/create-changelogs.md).
+For details and examples, go to [](/data/release-notes/create.md).
 
 ## Options
 
 : `--no-extract-release-notes`
   Turn off extraction of release notes from PR or issue descriptions.
-  By default, the behavior is determined by the [extract.release_notes](/contribute/configure-changelogs-ref.md#extract) changelog configuration setting. Release notes are extracted when using `--prs` or `--report` (and from issues when using `--issues`).
+  By default, the behavior is determined by the [extract.release_notes](/data/release-notes/configure-ref.md#extract) changelog configuration setting. Release notes are extracted when using `--prs` or `--report` (and from issues when using `--issues`).
 
 : `--products`
   Products affected in format `"product target lifecycle, ..."` (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
@@ -38,7 +38,7 @@ By default, output files are named according to the `filename` strategy in `chan
 | `pr` | `137431.yaml` | Uses the PR number. |
 | `issue` | `2571.yaml` | Uses the issue number. |
 
-Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) or [](/contribute/configure-changelogs-ref.md).
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) or [](/data/release-notes/configure-ref.md).
 
 You can override those settings with the `--use-pr-number` or `--use-issue-number` flags:
 
@@ -68,7 +68,7 @@ The `--products` option accepts values with the format `"product target lifecycl
 - `target` is the target version or date (optional)
 - `lifecycle` exists in [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) (optional)
 
-You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
+You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 
 For example:
 
@@ -87,6 +87,18 @@ The same order applies when using `--report` (after PR URLs are resolved from th
 
 If none of these steps yield at least one product, the command returns an error.
 
+## Feature ID resolution
+
+The optional `feature-id` field associates a changelog with a feature flag or project.
+The `changelog add` command resolves it in the following order:
+
+1. The `--feature-id` CLI option always takes priority.
+1. If `pivot.features` is defined in the changelog configuration file and the PR or issue has labels that match, that feature ID is used.
+   If the PR or issue has multiple labels that map to different feature IDs, the first match is used and a warning is emitted.
+
+When you map unreleased features in `pivot.features`, also list those feature IDs under the relevant bundle profile's [`hide_features`](/data/release-notes/configure-ref.md#bundle-profiles) setting so the entries stay commented out until the feature is ready to publish.
+For more information, refer to [](/data/release-notes/bundle.md#changelog-bundle-hide-features).
+
 ## Configuration checks
 
 By default, the command checks `docs/changelog.yml` for a configuration file. You can specify a different path with `--config`.
@@ -100,7 +112,7 @@ If a configuration file exists, the command validates its values before generati
 In each of these cases where validation fails, a changelog file is not created.
 
 If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
-For more information, refer to [](/contribute/create-changelogs.md#rules).
+For more information, refer to [](/data/release-notes/create.md#rules).
 
 ## Fetch failures
 

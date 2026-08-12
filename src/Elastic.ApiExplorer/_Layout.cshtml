@@ -27,7 +27,7 @@ else
 			</div>
 			@await RenderPartialAsync(_ApiToc.Create(Model.TocItems.ToArray()))
 		</div>
-		@await RenderPartialAsync(_PagesNav.Create(Model))
+		@await RenderPartialAsync(_ApiPagesNav.Create(Model))
 	</div>
 </div>
 @if (Model.BuildType == BuildType.Assembler)

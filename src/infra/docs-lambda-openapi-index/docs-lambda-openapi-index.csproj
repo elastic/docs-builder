@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <AssemblyName>bootstrap</AssemblyName>
+    <AWSProjectType>Lambda</AWSProjectType>
+
+    <IsPublishable>true</IsPublishable>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+
+    <RootNamespace>Elastic.Documentation.Lambda.OpenApiIndex</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" />
+    <PackageReference Include="Amazon.Lambda.Core" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" />
+    <PackageReference Include="Amazon.Lambda.S3Events" />
+    <PackageReference Include="Amazon.Lambda.SQSEvents" />
+    <PackageReference Include="AWSSDK.CloudFront" />
+    <PackageReference Include="AWSSDK.Core" />
+    <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Elastic.Documentation.OpenApiIndex\Elastic.Documentation.OpenApiIndex.csproj" />
+  </ItemGroup>
+</Project>

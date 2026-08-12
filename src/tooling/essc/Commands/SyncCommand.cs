@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Elastic.Documentation.Indexing;
 using Elastic.SiteSearch.Cli.ContentStack;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -34,8 +36,8 @@ internal sealed class SyncCommand(
 	/// (default <c>100</c> enrichment candidates per run; see <paramref name="maxAiDocs"/>).
 	/// </remarks>
 	/// <param name="cacheFolder">See <see cref="ContentStackCommands.Sync"/>.</param>
-	/// <param name="esApiKey">See <see cref="ContentStackCommands.Sync"/>.</param>
-	/// <param name="esUrl">See <see cref="ContentStackCommands.Sync"/>.</param>
+	/// <param name="apiKey">See <see cref="ContentStackCommands.Sync"/>.</param>
+	/// <param name="endpoint">See <see cref="ContentStackCommands.Sync"/>.</param>
 	/// <param name="force">See <see cref="ContentStackCommands.Sync"/>.</param>
 	/// <param name="noAi">See <see cref="ContentStackCommands.Sync"/>.</param>
 	/// <param name="maxAiDocs">See <see cref="ContentStackCommands.Sync"/>.</param>
@@ -45,8 +47,8 @@ internal sealed class SyncCommand(
 	/// <param name="ct">Cancellation token.</param>
 	public async Task Sync(
 		string? cacheFolder = null,
-		string? esApiKey = null,
-		Uri? esUrl = null,
+		string? apiKey = null,
+		Uri? endpoint = null,
 		bool force = false,
 		bool noAi = false,
 		int? maxAiDocs = null,
@@ -56,10 +58,9 @@ internal sealed class SyncCommand(
 		Cancel ct = default
 	)
 	{
-		if (maxAiTime is { } wall && wall < TimeSpan.FromMinutes(1))
+		if (!AiEnrichmentBudget.TryValidateMaxTime(maxAiTime, out var maxAiTimeError))
 		{
-			await Console.Error.WriteLineAsync(
-				"Error: --max-ai-time must be at least 1m (for example 1m, 90m, 2h) when specified.");
+			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}");
 			await Console.Error.WriteLineAsync("Run 'essc contentstack sync --help' for usage.");
 			Environment.Exit(2);
 		}
@@ -72,12 +73,12 @@ internal sealed class SyncCommand(
 		var cursorMap = store.Load(StateFile, StateJsonContext.Default.SyncCursorMap)
 			?? new SyncCursorMap();
 
-		var endpoint = ResolveEndpoint(esUrl, esApiKey);
+		var cfg = ResolveEndpoint(endpoint, apiKey);
 
 		AnsiConsole.MarkupLine("[aqua bold]Contentstack Parallel Sync[/]");
 		AnsiConsole.MarkupLine($"[dim]Cache: {Markup.Escape(store.CacheFolder)}[/]");
 		if (!noIndex)
-			AnsiConsole.MarkupLine($"[dim]Elasticsearch: {Markup.Escape(endpoint.Uri.ToString())}[/]");
+			AnsiConsole.MarkupLine($"[dim]Elasticsearch: {Markup.Escape(cfg.Uri.ToString())}[/]");
 		var pagesInfo = pagePer > 0 ? $" | Max pages/type: {pagePer}" : "";
 		var indexInfo = noIndex ? " | [yellow]indexing disabled[/]" : "";
 		AnsiConsole.MarkupLine($"[dim]Content types: {PageContentTypes.All.Length} | Lanes: {LaneCount}{pagesInfo}{indexInfo}[/]");
@@ -97,10 +98,10 @@ internal sealed class SyncCommand(
 		SiteDocumentExporter? exporter = null;
 		if (!noIndex)
 		{
-			var transport = ElasticsearchTransportFactory.Create(endpoint);
+			var transport = ElasticsearchTransportFactory.Create(cfg);
 			exporter = new SiteDocumentExporter(
 				loggerFactory,
-				endpoint,
+				cfg,
 				transport,
 				config.BuildType,
 				config.ElasticsearchEnvironment,
@@ -108,7 +109,7 @@ internal sealed class SyncCommand(
 			);
 
 			if (!noAi)
-				exporter.ConfigurePostSyncAiBatch(maxAiDocs ?? 100, maxAiTime);
+				exporter.ConfigurePostSyncAiBatch(maxAiDocs, maxAiTime);
 
 			if (IsInteractive())
 			{
@@ -142,6 +143,10 @@ internal sealed class SyncCommand(
 			var runCounts = new Dictionary<string, int>();
 			var indexedCounts = new Dictionary<string, int>();
 			var skippedCounts = new Dictionary<string, int>();
+			var duplicateCounts = new Dictionary<string, int>();
+			// Concurrent: incremented from every lane as items are indexed, unlike the per-content-type
+			// dictionaries above (each content type is only ever owned by one lane at a time).
+			var localeCounts = new ConcurrentDictionary<string, int>();
 
 			if (IsInteractive())
 			{
@@ -166,7 +171,7 @@ internal sealed class SyncCommand(
 							var laneTask = ctx.AddTask($"[dim]Lane {i + 1}: idle[/]", maxValue: 100);
 							laneTask.IsIndeterminate = true;
 							return RunLaneAsync(i + 1, laneTask, channel.Reader, cursorMap, runCounts, indexedCounts, skippedCounts,
-								pagePer, exporter, store, writeSemaphore, overallTask, ct);
+								duplicateCounts, localeCounts, pagePer, exporter, store, writeSemaphore, overallTask, ct);
 						}).ToArray();
 
 						await Task.WhenAll(lanes);
@@ -179,7 +184,7 @@ internal sealed class SyncCommand(
 			{
 				var lanes = Enumerable.Range(0, LaneCount).Select(i =>
 					RunLaneAsync(i + 1, null, channel.Reader, cursorMap, runCounts, indexedCounts, skippedCounts,
-						pagePer, exporter, store, writeSemaphore, null, ct)
+						duplicateCounts, localeCounts, pagePer, exporter, store, writeSemaphore, null, ct)
 				).ToArray();
 				await Task.WhenAll(lanes);
 				AnsiConsole.MarkupLine($"[green]✓[/] All {PageContentTypes.All.Length} content types synced");
@@ -213,7 +218,7 @@ internal sealed class SyncCommand(
 			}
 
 			AnsiConsole.WriteLine();
-			DisplaySummary(cursorMap, runCounts, indexedCounts, skippedCounts, exporter, noIndex, store.CacheFolder);
+			DisplaySummary(cursorMap, runCounts, indexedCounts, skippedCounts, duplicateCounts, localeCounts, exporter, noIndex, store.CacheFolder);
 		}
 		finally
 		{
@@ -221,18 +226,18 @@ internal sealed class SyncCommand(
 		}
 	}
 
-	private ElasticsearchEndpoint ResolveEndpoint(Uri? esUrl, string? esApiKey)
+	private ElasticsearchEndpoint ResolveEndpoint(Uri? endpoint, string? apiKey)
 	{
-		var endpoint = config.Elasticsearch;
-		if (esUrl is not null)
-			endpoint.Uri = esUrl;
-		if (esApiKey is not null)
+		var cfg = config.Elasticsearch;
+		if (endpoint is not null)
+			cfg.Uri = endpoint;
+		if (apiKey is not null)
 		{
-			endpoint.ApiKey = esApiKey;
-			endpoint.Username = null;
-			endpoint.Password = null;
+			cfg.ApiKey = apiKey;
+			cfg.Username = null;
+			cfg.Password = null;
 		}
-		return endpoint;
+		return cfg;
 	}
 
 	private async Task RunLaneAsync(
@@ -243,6 +248,8 @@ internal sealed class SyncCommand(
 		Dictionary<string, int> runCounts,
 		Dictionary<string, int> indexedCounts,
 		Dictionary<string, int> skippedCounts,
+		Dictionary<string, int> duplicateCounts,
+		ConcurrentDictionary<string, int> localeCounts,
 		int maxPages,
 		SiteDocumentExporter? exporter,
 		StateManager store,
@@ -267,7 +274,15 @@ internal sealed class SyncCommand(
 			var itemsThisType = 0;
 			var indexedThisType = 0;
 			var skippedThisType = 0;
+			var duplicatesThisType = 0;
 			var totalThisType = 0;
+
+			// Contentstack's sync log can emit the exact same publish event twice within a single
+			// pass (same uid, same eventAt, byte-identical payload) — exporting both races the same
+			// document id across bulk batches and Elasticsearch rejects the loser with a 409. Track
+			// paths already exported in this pass only (never persisted, cleared per content type)
+			// so the second identical delivery is skipped instead of racing the first.
+			var exportedPaths = new HashSet<string>(StringComparer.Ordinal);
 
 			var progress = new Progress<SyncProgress>(p =>
 			{
@@ -294,13 +309,21 @@ internal sealed class SyncCommand(
 					foreach (var item in response.Items)
 					{
 						var doc = ContentStackMapper.ToSiteDocument(item);
-						if (doc is not null)
+						if (doc is null)
 						{
-							await exporter.ExportAsync(doc, ct);
-							_ = Interlocked.Increment(ref indexedThisType);
-						}
-						else
 							_ = Interlocked.Increment(ref skippedThisType);
+							continue;
+						}
+
+						if (!exportedPaths.Add(doc.Path))
+						{
+							_ = Interlocked.Increment(ref duplicatesThisType);
+							continue;
+						}
+
+						_ = localeCounts.AddOrUpdate(doc.Locale, 1, (_, c) => c + 1);
+						await exporter.ExportAsync(doc, ct);
+						_ = Interlocked.Increment(ref indexedThisType);
 					}
 				}
 
@@ -348,6 +371,7 @@ internal sealed class SyncCommand(
 				runCounts[contentType] = itemsThisType;
 				indexedCounts[contentType] = indexedThisType;
 				skippedCounts[contentType] = skippedThisType;
+				duplicateCounts[contentType] = duplicatesThisType;
 				store.Save(StateFile, cursorMap, StateJsonContext.Default.SyncCursorMap);
 			}
 			finally
@@ -381,6 +405,8 @@ internal sealed class SyncCommand(
 		Dictionary<string, int> runCounts,
 		Dictionary<string, int> indexedCounts,
 		Dictionary<string, int> skippedCounts,
+		Dictionary<string, int> duplicateCounts,
+		ConcurrentDictionary<string, int> localeCounts,
 		SiteDocumentExporter? exporter,
 		bool noIndex,
 		string cacheFolder
@@ -391,6 +417,7 @@ internal sealed class SyncCommand(
 		var totalThisRun = runCounts.Values.Sum();
 		var totalIndexed = indexedCounts.Values.Sum();
 		var totalSkipped = skippedCounts.Values.Sum();
+		var totalDuplicates = duplicateCounts.Values.Sum();
 
 		var table = new Table()
 			.Border(TableBorder.Rounded)
@@ -433,6 +460,22 @@ internal sealed class SyncCommand(
 		AnsiConsole.Write(table);
 		AnsiConsole.WriteLine();
 
+		if (!localeCounts.IsEmpty)
+		{
+			var localeTable = new Table()
+				.Border(TableBorder.Rounded)
+				.BorderColor(Color.Grey)
+				.Title("[aqua]Observed Locales[/]")
+				.AddColumn("[aqua]Locale[/]")
+				.AddColumn(new TableColumn("[aqua]Count[/]").RightAligned());
+
+			foreach (var (locale, count) in localeCounts.OrderByDescending(kvp => kvp.Value))
+				_ = localeTable.AddRow(new Markup(Markup.Escape(locale)), new Markup($"[white]{count:N0}[/]"));
+
+			AnsiConsole.Write(localeTable);
+			AnsiConsole.WriteLine();
+		}
+
 		var summaryRows = new List<Markup>
 		{
 			new($"[green]Fetched this run:[/] [white]{totalThisRun:N0}[/]"),
@@ -443,6 +486,8 @@ internal sealed class SyncCommand(
 			summaryRows.Add(new Markup($"[green]Indexed this run:[/] [white]{totalIndexed:N0}[/]"));
 			if (totalSkipped > 0)
 				summaryRows.Add(new Markup($"[yellow]Skipped (no URL/title):[/] [white]{totalSkipped:N0}[/]"));
+			if (totalDuplicates > 0)
+				summaryRows.Add(new Markup($"[yellow]Duplicate deliveries skipped (this pass):[/] [white]{totalDuplicates:N0}[/]"));
 			if (exporter is not null)
 			{
 				if (exporter.ReindexTotal > 0)
@@ -462,6 +507,8 @@ internal sealed class SyncCommand(
 					summaryRows.Add(new Markup($"[red]ES rejections (4xx):[/] [white]{exporter.RejectedCount:N0}[/]"));
 				if (exporter.FailedCount > 0)
 					summaryRows.Add(new Markup($"[red]ES failures (timeout/retry):[/] [white]{exporter.FailedCount:N0}[/]"));
+				SyncProgressConsole.AddBootstrapRows(summaryRows, "primary", exporter.PrimaryBootstrap);
+				SyncProgressConsole.AddBootstrapRows(summaryRows, "secondary", exporter.SecondaryBootstrap);
 			}
 		}
 

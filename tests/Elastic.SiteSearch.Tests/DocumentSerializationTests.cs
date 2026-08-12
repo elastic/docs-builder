@@ -70,15 +70,15 @@ public class DocumentSerializationTests
 	{
 		var original = CreateAutoFaker<SiteDocument>().Generate();
 
-		original.HttpEtag.Should().NotBeNullOrEmpty("AutoFaker should populate HttpEtag");
-		original.HttpLastModified.Should().NotBeNull("AutoFaker should populate HttpLastModified");
+		original.Http.Etag.Should().NotBeNullOrEmpty("AutoFaker should populate Http.Etag");
+		original.Http.LastModified.Should().NotBeNull("AutoFaker should populate Http.LastModified");
 
 		var json = JsonSerializer.Serialize<ISearchDocument>(original, Options);
 		var deserialized = JsonSerializer.Deserialize<ISearchDocument>(json, Options) as SiteDocument;
 
 		deserialized.Should().NotBeNull();
-		deserialized.HttpEtag.Should().Be(original.HttpEtag);
-		deserialized.HttpLastModified.Should().Be(original.HttpLastModified);
+		deserialized.Http.Etag.Should().Be(original.Http.Etag);
+		deserialized.Http.LastModified.Should().Be(original.Http.LastModified);
 	}
 
 	[Fact]
@@ -86,15 +86,15 @@ public class DocumentSerializationTests
 	{
 		var original = CreateAutoFaker<GuideDocument>().Generate();
 
-		original.HttpEtag.Should().NotBeNullOrEmpty("AutoFaker should populate HttpEtag");
-		original.HttpLastModified.Should().NotBeNull("AutoFaker should populate HttpLastModified");
+		original.Http.Etag.Should().NotBeNullOrEmpty("AutoFaker should populate Http.Etag");
+		original.Http.LastModified.Should().NotBeNull("AutoFaker should populate Http.LastModified");
 
 		var json = JsonSerializer.Serialize<ISearchDocument>(original, Options);
 		var deserialized = JsonSerializer.Deserialize<ISearchDocument>(json, Options) as GuideDocument;
 
 		deserialized.Should().NotBeNull();
-		deserialized.HttpEtag.Should().Be(original.HttpEtag);
-		deserialized.HttpLastModified.Should().Be(original.HttpLastModified);
+		deserialized.Http.Etag.Should().Be(original.Http.Etag);
+		deserialized.Http.LastModified.Should().Be(original.Http.LastModified);
 	}
 
 	[Fact]
@@ -123,7 +123,7 @@ public class DocumentSerializationTests
 		{
 			"title": "Getting Started",
 			"search_title": "Getting Started with Elasticsearch",
-			"url": "/docs/get-started",
+			"path": "/docs/get-started",
 			"hash": "abc123"
 		}
 		""";
@@ -142,7 +142,7 @@ public class DocumentSerializationTests
 			"$type": "unknown-future-type",
 			"title": "Some Page",
 			"search_title": "Some Page",
-			"url": "/some/page",
+			"path": "/some/page",
 			"hash": "def456"
 		}
 		""";
@@ -160,7 +160,7 @@ public class DocumentSerializationTests
 		{
 			"title": "Getting Started",
 			"search_title": "Getting Started with Elasticsearch",
-			"url": "/docs/get-started",
+			"path": "/docs/get-started",
 			"hash": "abc123"
 		}
 		""";
@@ -170,7 +170,7 @@ public class DocumentSerializationTests
 		fallback.Should().NotBeNull();
 		fallback.Should().BeOfType<SearchDocumentBase>();
 		fallback.Title.Should().Be("Getting Started");
-		fallback.Url.Should().Be("/docs/get-started");
+		fallback.Path.Should().Be("/docs/get-started");
 	}
 
 	[Fact]
@@ -183,7 +183,7 @@ public class DocumentSerializationTests
 			"$type": "unknown-future-type",
 			"title": "Some Page",
 			"search_title": "Some Page",
-			"url": "/some/page",
+			"path": "/some/page",
 			"hash": "def456"
 		}
 		""";
@@ -204,7 +204,7 @@ public class DocumentSerializationTests
 			"$type": "site",
 			"title": "Blog Post",
 			"search_title": "Blog Post",
-			"url": "/blog/post",
+			"path": "/blog/post",
 			"hash": "abc"
 		}
 		""";
@@ -222,7 +222,7 @@ public class DocumentSerializationTests
 		{
 			"title": "Legacy",
 			"search_title": "Legacy",
-			"url": "/x",
+			"path": "/x",
 			"hash": "h",
 			"content_type": "archived-site"
 		}
@@ -258,11 +258,10 @@ public class DocumentSerializationTests
 			"$type": "site",
 			"title": "Test",
 			"search_title": "Test",
-			"url": "/blog/my-post",
+			"path": "/blog/my-post",
 			"hash": "abc",
-			"navigation_section": "blog",
-			"navigation_depth": 2,
-			"navigation_table_of_contents": 5,
+			"section": "blog",
+			"navigation": { "depth": 2, "table_of_contents": 5 },
 			"ai_autocomplete_questions": ["search elasticsearch", "how to index", "query dsl basics"]
 		}
 		""";
@@ -270,16 +269,16 @@ public class DocumentSerializationTests
 		var doc = JsonSerializer.Deserialize<ISearchDocument>(json, Options) as SiteDocument;
 
 		doc.Should().NotBeNull();
-		doc.NavigationSection.Should().Be("blog");
-		doc.NavigationDepth.Should().Be(2);
-		doc.NavigationTableOfContents.Should().Be(5);
+		doc.Section.Should().Be("blog");
+		doc.Navigation.Depth.Should().Be(2);
+		doc.Navigation.TableOfContents.Should().Be(5);
 		doc.AiAutocompleteQuestions.Should().BeEquivalentTo(["search elasticsearch", "how to index", "query dsl basics"]);
 
 		var reserialised = JsonSerializer.Serialize<ISearchDocument>(doc, Options);
 		using var el = JsonDocument.Parse(reserialised);
-		el.RootElement.GetProperty("navigation_section").GetString().Should().Be("blog");
-		el.RootElement.GetProperty("navigation_depth").GetInt32().Should().Be(2);
-		el.RootElement.GetProperty("navigation_table_of_contents").GetInt32().Should().Be(5);
+		el.RootElement.GetProperty("section").GetString().Should().Be("blog");
+		el.RootElement.GetProperty("navigation").GetProperty("depth").GetInt32().Should().Be(2);
+		el.RootElement.GetProperty("navigation").GetProperty("table_of_contents").GetInt32().Should().Be(5);
 	}
 
 	[Fact]
@@ -289,19 +288,19 @@ public class DocumentSerializationTests
 		{
 			Title = "Test",
 			SearchTitle = "Test",
-			Url = "/x",
+			Path = "/x",
 			Hash = "h"
 		};
 
 		// rank_feature defaults to 50 so documents without explicit nav metadata are penalised
-		doc.NavigationDepth.Should().Be(50);
-		doc.NavigationTableOfContents.Should().Be(50);
+		doc.Navigation.Depth.Should().Be(50);
+		doc.Navigation.TableOfContents.Should().Be(50);
 
 		var json = JsonSerializer.Serialize<SiteDocument>(doc, Options);
 		using var el = JsonDocument.Parse(json);
-		el.RootElement.GetProperty("navigation_depth").GetInt32().Should().Be(50);
-		el.RootElement.GetProperty("navigation_table_of_contents").GetInt32().Should().Be(50);
-		el.RootElement.TryGetProperty("navigation_section", out _).Should().BeFalse();
+		el.RootElement.GetProperty("navigation").GetProperty("depth").GetInt32().Should().Be(50);
+		el.RootElement.GetProperty("navigation").GetProperty("table_of_contents").GetInt32().Should().Be(50);
+		el.RootElement.TryGetProperty("section", out _).Should().BeFalse();
 		el.RootElement.TryGetProperty("ai_autocomplete_questions", out _).Should().BeFalse();
 	}
 
@@ -361,18 +360,18 @@ public class DocumentSerializationTests
 		var options = new JsonSerializerOptions { TypeInfoResolver = composed };
 
 		// Known $type still dispatches correctly when reading as SearchDocumentBase.
-		var guideJson = """{"$type":"guide","title":"t","search_title":"t","url":"/g","hash":"h"}""";
+		var guideJson = """{"$type":"guide","title":"t","search_title":"t","path":"/g","hash":"h"}""";
 		var guide = JsonSerializer.Deserialize<SearchDocumentBase>(guideJson, options);
 		guide.Should().BeOfType<GuideDocument>();
 
 		// Unknown $type returns a SearchDocumentBase fallback.
-		var unknownJson = """{"$type":"future-type","title":"t","search_title":"t","url":"/g","hash":"h"}""";
+		var unknownJson = """{"$type":"future-type","title":"t","search_title":"t","path":"/g","hash":"h"}""";
 		var fallback = JsonSerializer.Deserialize<SearchDocumentBase>(unknownJson, options);
 		fallback.Should().BeOfType<SearchDocumentBase>();
 		fallback.Title.Should().Be("t");
 
 		// Missing $type returns a SearchDocumentBase fallback.
-		var missingJson = """{"title":"t","search_title":"t","url":"/g","hash":"h"}""";
+		var missingJson = """{"title":"t","search_title":"t","path":"/g","hash":"h"}""";
 		var missing = JsonSerializer.Deserialize<SearchDocumentBase>(missingJson, options);
 		missing.Should().BeOfType<SearchDocumentBase>();
 	}
@@ -389,22 +388,22 @@ public class DocumentSerializationTests
 		var options = new JsonSerializerOptions { TypeInfoResolver = composed };
 
 		// ISearchDocument dispatch: guide → GuideDocument
-		var guideJson = """{"$type":"guide","title":"t","search_title":"t","url":"/g","hash":"h"}""";
+		var guideJson = """{"$type":"guide","title":"t","search_title":"t","path":"/g","hash":"h"}""";
 		var guide = JsonSerializer.Deserialize<ISearchDocument>(guideJson, options);
 		guide.Should().BeOfType<GuideDocument>();
 
 		// ISearchDocument dispatch: site → SiteDocument
-		var siteJson = """{"$type":"site","title":"t","search_title":"t","url":"/s","hash":"h"}""";
+		var siteJson = """{"$type":"site","title":"t","search_title":"t","path":"/s","hash":"h"}""";
 		var site = JsonSerializer.Deserialize<ISearchDocument>(siteJson, options);
 		site.Should().BeOfType<SiteDocument>();
 
 		// ISearchDocument dispatch: labs → LabsDocument
-		var labsJson = """{"$type":"labs","title":"t","search_title":"t","url":"/l","hash":"h"}""";
+		var labsJson = """{"$type":"labs","title":"t","search_title":"t","path":"/l","hash":"h"}""";
 		var labs = JsonSerializer.Deserialize<ISearchDocument>(labsJson, options);
 		labs.Should().BeOfType<LabsDocument>();
 
 		// ISearchDocument dispatch: website → WebsiteSearchDocument
-		var websiteJson = """{"$type":"website","title":"t","search_title":"t","url":"/w","hash":"h"}""";
+		var websiteJson = """{"$type":"website","title":"t","search_title":"t","path":"/w","hash":"h"}""";
 		var website = JsonSerializer.Deserialize<ISearchDocument>(websiteJson, options);
 		website.Should().BeOfType<WebsiteSearchDocument>();
 	}
@@ -420,7 +419,7 @@ public class DocumentSerializationTests
 			SearchDocumentPolymorphism.WithFallback()
 		);
 		var options = new JsonSerializerOptions { TypeInfoResolver = composed };
-		var json = """{"$type":"future-type","title":"t","search_title":"t","url":"/g","hash":"h"}""";
+		var json = """{"$type":"future-type","title":"t","search_title":"t","path":"/g","hash":"h"}""";
 
 		var act = () => JsonSerializer.Deserialize<ISearchDocument>(json, options);
 		act.Should().Throw<NotSupportedException>();
@@ -436,7 +435,7 @@ public class DocumentSerializationTests
 			SearchDocumentPolymorphism.WithFallback()
 		);
 		var options = new JsonSerializerOptions { TypeInfoResolver = composed };
-		var json = """{"title":"t","search_title":"t","url":"/g","hash":"h"}""";
+		var json = """{"title":"t","search_title":"t","path":"/g","hash":"h"}""";
 
 		var act = () => JsonSerializer.Deserialize<ISearchDocument>(json, options);
 		act.Should().Throw<NotSupportedException>();

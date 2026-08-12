@@ -7,6 +7,7 @@ using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Transport;
 
 namespace Elastic.Documentation.Search.Common;

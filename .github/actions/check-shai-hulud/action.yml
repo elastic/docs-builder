@@ -1,0 +1,64 @@
+---
+name: check-shai-hulud
+description: |
+  Scans a directory for the known shai-hulud npm supply-chain attack
+  payloads using SHA-1 and SHA-256 hashes published by Semgrep and Wiz.
+
+  Use after `npm ci` (or any flow that restores npm dependencies into
+  node_modules/) and BEFORE exposing any registry credentials, so a
+  poisoned dependency cannot run with publish privileges. See
+  elastic/docs-eng-team#518 for the threat model.
+
+inputs:
+  path:
+    description: Directory to scan recursively. Defaults to current dir.
+    required: false
+    default: '.'
+
+runs:
+  using: composite
+  steps:
+    - name: Check shai-hulud attack hashes
+      shell: bash
+      env:
+        SCAN_PATH: ${{ inputs.path }}
+      # language=bash
+      run: |
+        set -euo pipefail
+
+        if [ ! -d "$SCAN_PATH" ]; then
+          echo "::error::shai-hulud scan path does not exist: ${SCAN_PATH}"
+          exit 1
+        fi
+
+        # shai-hulud v1
+        # https://semgrep.dev/blog/2025/security-advisory-npm-packages-using-secret-scanning-tools-to-steal-credentials/
+        SHAI_HULUD_V1_SHA256="46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09"
+        # shai-hulud v2
+        # https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack#malware-hashes-65
+        SHAI_HULUD_V2_SHA1="d1829b4708126dcc7bea7437c04d1f10eacd4a16"
+
+        # Fail-open `|| true` on the find/grep pipeline so that an empty
+        # match doesn't trip `set -e`. The explicit non-empty test below
+        # is what decides pass/fail.
+        v1_matches=$(
+          find "$SCAN_PATH" -type f -name "*.js" -exec sha256sum {} \; \
+            | grep "$SHAI_HULUD_V1_SHA256" || true
+        )
+        if [ -n "$v1_matches" ]; then
+          echo "::error::shai-hulud v1 (vulnerable serialize-javascript) detected:"
+          echo "$v1_matches" | awk '{print $2}'
+          exit 1
+        fi
+
+        v2_matches=$(
+          find "$SCAN_PATH" -type f -name "*.js" -exec sha1sum {} \; \
+            | grep "$SHAI_HULUD_V2_SHA1" || true
+        )
+        if [ -n "$v2_matches" ]; then
+          echo "::error::shai-hulud v2 (vulnerable serialize-javascript) detected:"
+          echo "$v2_matches" | awk '{print $2}'
+          exit 1
+        fi
+
+        echo "shai-hulud check passed (scanned ${SCAN_PATH})"

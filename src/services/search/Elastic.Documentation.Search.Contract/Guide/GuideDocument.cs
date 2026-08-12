@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// Document type for legacy <c>/guide</c> documentation pages on elastic.co.
-/// Narrower than <c>DocumentationDocument</c> (no applies_to/products); narrower
+/// Narrower than <see cref="DocumentationDocument"/> (no applies_to/products); narrower
 /// language matrix than <see cref="SiteDocument"/>.
 /// </summary>
 public record GuideDocument : SearchDocumentBase, ICrawlDocument
@@ -27,12 +27,7 @@ public record GuideDocument : SearchDocumentBase, ICrawlDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? Version { get; set; }
 
-	[Keyword(Index = false)]
-	[JsonPropertyName("http_etag")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? HttpEtag { get; set; }
-
-	[JsonPropertyName("http_last_modified")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public DateTimeOffset? HttpLastModified { get; set; }
+	[Object]
+	[JsonPropertyName("http")]
+	public HttpMetadata Http { get; set; } = new();
 }

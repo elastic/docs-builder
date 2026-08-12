@@ -29,7 +29,7 @@ public class DashboardOpenApiNavigationTests
 		var fs = new FileSystem();
 		var path = fs.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "dashboard-openapi.json");
 		var fi = fs.FileInfo.New(path);
-		var doc = await OpenApiReader.Create(fi);
+		var doc = await OpenApiReader.Instance.ReadAsync(fi);
 
 		doc.Should().NotBeNull();
 

@@ -38,6 +38,21 @@ internal static class SyncProgressConsole
 		return $"[aqua]{label}[/] [dim]…[/]";
 	}
 
+	/// <summary>
+	/// Appends a "Bootstrap {label}:" summary row describing the resolved target index and whether
+	/// bootstrap created a new one or reused an existing one. No-op if <paramref name="info"/> is null
+	/// (bootstrap didn't run, e.g. <c>--no-index</c>).
+	/// </summary>
+	public static void AddBootstrapRows(List<Markup> rows, string label, IndexBootstrapInfo? info)
+	{
+		if (info is null)
+			return;
+
+		var decision = info.RolledOver ? "[green]NEW[/]" : "[yellow]EXISTING[/]";
+		var index = info.TargetIndex is { } idx ? Markup.Escape(idx) : "[dim]unresolved[/]";
+		rows.Add(new Markup($"[grey]Bootstrap {Markup.Escape(label)}:[/] {decision} index [white]{index}[/]"));
+	}
+
 	/// <summary>Maps generative AI enrichment streaming progress to <see cref="SyncProgressInfo"/> for the same status line as finalize.</summary>
 	public static SyncProgressInfo FromAiProgress(AiEnrichmentProgress p)
 	{

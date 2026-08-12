@@ -2,6 +2,10 @@
 
 Dropdowns allow you to hide and reveal content on user interaction. By default, dropdowns are collapsed. This hides content until a user clicks the title of the collapsible block.
 
+## Plain-text titles
+
+Dropdown titles are plain text. They do not render inline markdown such as `` `code` ``, `**bold**`, or `_italic_`. If you include those markers in the title line, docs-builder converts them to plain text automatically (for example, `` Deprecate `elastic.apm` settings `` renders as "Deprecate elastic.apm settings"). Use the dropdown body for formatted code, emphasis, and links.
+
 ## Basic dropdown
 
 

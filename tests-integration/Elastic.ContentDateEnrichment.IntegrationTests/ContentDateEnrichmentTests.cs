@@ -9,8 +9,8 @@ using AwesomeAssertions;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
-using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
@@ -131,7 +131,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 	private static DocumentationDocument CreateDoc(string url, string contentHash, string title) => new()
 	{
-		Url = url,
+		Path = url,
 		Title = title,
 		SearchTitle = title,
 		Hash = contentHash,
@@ -318,7 +318,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		// using the same serializer context that HashedBulkUpdate uses in production
 		var doc = new DocumentationDocument
 		{
-			Url = "test-discovery-url",
+			Path = "test-discovery-url",
 			Title = "Discovery Test",
 			SearchTitle = "Discovery Test",
 			ContentType = "doc",
@@ -328,12 +328,12 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var serializedDoc = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
 
 		// Index via scripted upsert (same as HashedBulkUpdate)
-		await IndexFullDocumentViaScriptedUpsert(index, doc.Url, serializedDoc);
+		await IndexFullDocumentViaScriptedUpsert(index, doc.Path, serializedDoc);
 		await RefreshIndex(index);
 
 		// Read back from ES
 		var response = await _transport.GetAsync<StringResponse>(
-			$"{index}/_doc/{doc.Url}", CancellationToken.None
+			$"{index}/_doc/{doc.Path}", CancellationToken.None
 		);
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
 			$"Failed to get document: {response.ApiCallDetails.DebugInformation}");
@@ -547,7 +547,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		{
 			var doc = new DocumentationDocument
 			{
-				Url = url,
+				Path = url,
 				Title = title,
 				SearchTitle = title,
 				ContentType = "doc",

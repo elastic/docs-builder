@@ -13,7 +13,7 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Codex;
 
-/// <summary>Codex cross-links resolve to path-only URLs with htmx attributes including codex-breadcrumbs.</summary>
+/// <summary>Codex cross-links resolve to path-only URLs; navigation relies on body-level hx-boost, so links carry no per-link htmx attributes.</summary>
 public class CodexHtmxCrossLinkTests(ITestOutputHelper output) : LinkTestBase(output, "Go to [test](kibana://index.md)")
 {
 	protected override BuildContext CreateBuildContext(
@@ -37,16 +37,11 @@ public class CodexHtmxCrossLinkTests(ITestOutputHelper output) : LinkTestBase(ou
 	}
 
 	[Fact]
-	public void CrossLink_HasHtmxWithCodexBreadcrumbs() =>
-		Html.Should().Contain("#codex-breadcrumbs");
-
-	[Fact]
-	public void CrossLink_HasHtmxSelectOob() =>
-		Html.Should().Contain("hx-select-oob=");
-
-	[Fact]
-	public void CrossLink_HasPreload() =>
+	public void CrossLink_HasNoSelectOobButKeepsPreload()
+	{
+		Html.Should().NotContain("hx-select-oob");
 		Html.Should().Contain("preload=\"mousedown\"");
+	}
 
 	[Fact]
 	public void CrossLink_NoTargetBlank() =>

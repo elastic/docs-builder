@@ -103,6 +103,37 @@ public class TableDirectiveAutoPresetTests(ITestOutputHelper output) : Directive
 	public void DoesNotInjectColgroup() => Html.Should().NotContain("colgroup");
 }
 
+public class TableDirectiveMatrixTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
+"""
+:::{table}
+:matrix:
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+""")
+{
+	[Fact]
+	public void ParsesMatrixOption() => Block!.Matrix.Should().BeTrue();
+
+	[Fact]
+	public void RendersMatrixClass() => Html.Should().Contain("table-wrapper table-matrix");
+}
+
+public class TableDirectiveWithoutMatrixTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
+"""
+:::{table}
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+""")
+{
+	[Fact]
+	public void DoesNotRenderMatrixClass() => Html.Should().NotContain("table-matrix");
+}
+
 public class TableDirectiveWidthCountMismatchTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
 """
 :::{table}

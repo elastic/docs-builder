@@ -33,11 +33,13 @@ internal sealed class SourcingConfiguration
 	public required ElasticsearchEndpoint Elasticsearch { get; init; }
 
 	/// <summary>
-	/// Optional destination cluster for cross-cluster operations (e.g. <c>indices sync</c>).
-	/// Resolved from <c>DESTINATION_ELASTIC_URL</c> / <c>DESTINATION_ELASTIC_APIKEY</c>.
-	/// Null when not configured.
+	/// Destination cluster for cross-cluster operations (e.g. <c>indices copy</c>, <c>indices sync-remote</c>).
+	/// Seeds from the same <c>Parameters:ElasticsearchUrl</c> / <c>Parameters:ElasticsearchApiKey</c> values as
+	/// <see cref="Elasticsearch"/> — one configured secret covers both ends of a copy. Set
+	/// <c>DESTINATION_ELASTIC_URL</c> / <c>DESTINATION_ELASTIC_APIKEY</c> (or pass <c>--to-url</c> / <c>--to-api-key</c>
+	/// on the command) to point only the destination elsewhere while the source still comes from the seed.
 	/// </summary>
-	public ElasticsearchEndpoint? Destination { get; init; }
+	public required ElasticsearchEndpoint Destination { get; init; }
 
 	public string ElasticsearchEnvironment { get; init; } = "dev";
 	public string BuildType { get; init; } = "public";
@@ -79,20 +81,21 @@ internal sealed class SourcingConfiguration
 			Password = string.IsNullOrEmpty(apiKey) ? password : null,
 		};
 
-		// Optional destination cluster for cross-cluster commands (e.g. indices sync).
-		var destUrl = config["DESTINATION_ELASTIC_URL"];
-		var destApiKey = config["DESTINATION_ELASTIC_APIKEY"];
-		var destUsername = config["DESTINATION_ELASTIC_USERNAME"] ?? "elastic";
-		var destPassword = config["DESTINATION_ELASTIC_PASSWORD"];
-		var destEndpoint = destUrl is not null
-			? new ElasticsearchEndpoint
-			{
-				Uri = new Uri(destUrl),
-				ApiKey = destApiKey,
-				Username = string.IsNullOrEmpty(destApiKey) ? destUsername : null,
-				Password = string.IsNullOrEmpty(destApiKey) ? destPassword : null,
-			}
-			: null;
+		// Destination cluster for cross-cluster commands (e.g. indices copy). Seeds from the same
+		// Parameters:ElasticsearchUrl / Parameters:ElasticsearchApiKey values as the source so a single
+		// configured secret covers both ends — DESTINATION_ELASTIC_* only needs to be set to point the
+		// destination somewhere else.
+		var destUrl = config["DESTINATION_ELASTIC_URL"] ?? elasticUrl;
+		var destApiKey = config["DESTINATION_ELASTIC_APIKEY"] ?? apiKey;
+		var destUsername = config["DESTINATION_ELASTIC_USERNAME"] ?? username;
+		var destPassword = config["DESTINATION_ELASTIC_PASSWORD"] ?? password;
+		var destEndpoint = new ElasticsearchEndpoint
+		{
+			Uri = new Uri(destUrl),
+			ApiKey = destApiKey,
+			Username = string.IsNullOrEmpty(destApiKey) ? destUsername : null,
+			Password = string.IsNullOrEmpty(destApiKey) ? destPassword : null,
+		};
 
 		return new SourcingConfiguration
 		{

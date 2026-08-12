@@ -12,11 +12,12 @@ namespace Elastic.Documentation.Search.Contract;
 /// AOT-safe composition helpers for <see cref="ISearchDocument"/> / <see cref="SearchDocumentBase"/>
 /// polymorphism.
 /// <para>
-/// The contract project only ships the cross-cutting primitives (<c>SiteDocument</c>,
-/// <c>LabsDocument</c>, <c>GuideDocument</c>, <c>WebsiteSearchDocument</c>). Producer-specific
-/// document types (e.g. <c>Elastic.Documentation</c>'s <c>DocumentationDocument</c>) are registered at runtime
-/// from the consumer's own source-generated <see cref="System.Text.Json.Serialization.JsonSerializerContext"/>
-/// using <see cref="AddDerivedType{TBase}"/> and <see cref="Compose"/>.
+/// The contract project ships all known document types (<see cref="SiteDocument"/>,
+/// <see cref="LabsDocument"/>, <see cref="GuideDocument"/>, <see cref="WebsiteSearchDocument"/>,
+/// <see cref="DocumentationDocument"/>) with <c>[JsonDerivedType]</c> baked onto
+/// <see cref="ISearchDocument"/>. <see cref="AddDerivedType{TBase}"/> and <see cref="Compose"/>
+/// remain available for consumers that need to register additional, out-of-repo document types
+/// at runtime.
 /// </para>
 /// <para>
 /// All APIs are AOT-compatible: they do not use reflection-based type discovery. Every type
@@ -26,13 +27,14 @@ namespace Elastic.Documentation.Search.Contract;
 /// </summary>
 public static class SearchDocumentPolymorphism
 {
-	// Derived types baked into the contract's own source-gen context (docs excluded — registered by consumers).
+	// Derived types baked into the contract's own source-gen context.
 	private static readonly (Type DerivedType, string Discriminator)[] ContractDerivedTypes =
 	[
 		(typeof(SiteDocument), "site"),
 		(typeof(LabsDocument), "labs"),
 		(typeof(GuideDocument), "guide"),
 		(typeof(WebsiteSearchDocument), "website"),
+		(typeof(DocumentationDocument), "docs"),
 	];
 
 	/// <summary>The contract's own source-generated type metadata resolver.</summary>
@@ -75,7 +77,7 @@ public static class SearchDocumentPolymorphism
 	/// a missing or unrecognized <c>$type</c> deserializes to a <see cref="SearchDocumentBase"/>
 	/// instance instead of throwing <see cref="NotSupportedException"/>.
 	/// <para>
-	/// All contract-known derived types (site / labs / guide / website) are registered on
+	/// All contract-known derived types (site / labs / guide / website / docs) are registered on
 	/// <see cref="SearchDocumentBase"/> so that known discriminators still dispatch to the
 	/// correct concrete type. Register additional consumer-specific types with
 	/// <see cref="AddDerivedType{TBase}"/> targeting <see cref="SearchDocumentBase"/> before or
@@ -123,10 +125,7 @@ public static class SearchDocumentPolymorphism
 	/// SearchDocumentPolymorphism.Compose(
 	///     consumerContexts: [
 	///         Elastic.Documentation.Search.SourceGenerationContext.Default,
-	///         Elastic.Documentation.Serialization.SourceGenerationContext.Default,
 	///     ],
-	///     SearchDocumentPolymorphism.AddDerivedType&lt;ISearchDocument&gt;(typeof(DocumentationDocument), "docs"),
-	///     SearchDocumentPolymorphism.AddDerivedType&lt;SearchDocumentBase&gt;(typeof(DocumentationDocument), "docs"),
 	///     SearchDocumentPolymorphism.WithFallback()
 	/// );
 	/// </code>

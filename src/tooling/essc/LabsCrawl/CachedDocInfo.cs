@@ -9,6 +9,4 @@ public record CachedDocInfo(
 	string Hash,
 	DateTimeOffset LastUpdated,
 	string? HttpEtag,
-	DateTimeOffset? HttpLastModified,
-	string? EnrichmentKey,
-	string? EnrichmentPromptHash);
+	DateTimeOffset? HttpLastModified);

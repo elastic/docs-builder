@@ -18,7 +18,7 @@ public class ElasticsearchCrawlCache(
 
 	private static readonly string[] CacheSourceIncludes =
 	[
-		"url", "hash", "last_updated", "http_etag", "http_last_modified", "enrichment_key", "enrichment_prompt_hash"
+		"path", "hash", "last_updated", "http.etag", "http.last_modified"
 	];
 
 	public async Task<bool> IndexExistsAsync(string indexAlias, CancellationToken ct = default)
@@ -51,7 +51,7 @@ public class ElasticsearchCrawlCache(
 					Index = indexAlias,
 					Size = BatchSize,
 					KeepAlive = PitKeepAlive,
-					Sort = /*lang=json,strict*/ """{"url":"asc"}""",
+					Sort = /*lang=json,strict*/ """{"path":"asc"}""",
 					SourceIncludes = CacheSourceIncludes,
 					Slices = 1
 				},
@@ -62,20 +62,18 @@ public class ElasticsearchCrawlCache(
 			{
 				foreach (var src in page.Documents)
 				{
-					if (string.IsNullOrEmpty(src.Url))
+					if (string.IsNullOrEmpty(src.Path))
 						continue;
 
-					cache[src.Url] = new CachedDocInfo(
-						src.Url,
+					cache[src.Path] = new CachedDocInfo(
+						src.Path,
 						src.Hash ?? string.Empty,
 						src.LastUpdated ?? DateTimeOffset.MinValue,
-						src.HttpEtag,
-						src.HttpLastModified,
-						src.EnrichmentKey,
-						src.EnrichmentPromptHash);
+						src.Http?.Etag,
+						src.Http?.LastModified);
 
 					loaded++;
-					progress?.Report((loaded, src.Url));
+					progress?.Report((loaded, src.Path));
 				}
 			}
 

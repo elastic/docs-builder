@@ -37,13 +37,13 @@ internal static class IndicesCleanupPlanner
 
 	/// <summary>
 	/// Returns the <c>ws-content-{env}</c> alias name — the single search-facing alias for the
-	/// unified website-search index. Centralised here so callers never construct the string directly.
+	/// unified ws-catalog index. Centralised here so callers never construct the string directly.
 	/// </summary>
 	public static string PageAliasName(string env) => $"ws-content-{env}";
 
 	/// <summary>
 	/// Builds the complete set of alias entries for the given build type and environment.
-	/// Derives site, labs, guide, and website-search entries from their mapping contexts; adds
+	/// Derives site, labs, guide, and ws-catalog entries from their mapping contexts; adds
 	/// <c>docs-assembler</c> as a literal external prefix.
 	/// </summary>
 	public static IReadOnlyList<AliasEntry> BuildAliasEntries(string buildType, string environment)
@@ -93,7 +93,7 @@ internal static class IndicesCleanupPlanner
 	/// <param name="pageAlias">
 	/// The search-facing alias (e.g. <c>ws-content-prod</c>). Any index this alias points to is
 	/// unconditionally protected. A warning is emitted when its target diverges from the
-	/// <c>website-search.semantic-{env}-latest</c> target.
+	/// <c>ws-catalog.semantic-{env}-latest</c> target.
 	/// </param>
 	public static CleanupPlan Plan(
 		IReadOnlyDictionary<string, IReadOnlySet<string>> indexAliases,
@@ -112,7 +112,7 @@ internal static class IndicesCleanupPlanner
 		if (pageAlias is not null)
 		{
 			var semanticLatestAlias = knownAliases
-				.FirstOrDefault(a => a.Source == "website-search" && a.Variant == "semantic")
+				.FirstOrDefault(a => a.Source == "ws-catalog" && a.Variant == "semantic")
 				?.LatestAlias;
 			if (semanticLatestAlias is not null)
 			{

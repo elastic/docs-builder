@@ -77,17 +77,12 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			root.Parent.Should().BeOfType<SiteNavigation>();
 		}*/
 
-		var slice = _TocTree.Create(new NavigationViewModel
-		{
-			Title = "X",
-			IsGlobalAssemblyBuild = true,
-			IsPrimaryNavEnabled = true,
-			Tree = navigation,
-			TopLevelItems = navigation.TopLevelItems,
-			TitleUrl = navigation.Index.Url,
-			IsUsingNavigationDropdown = true,
-			Htmx = new DefaultHtmxAttributeProvider("/")
-		});
+		var slice = _TocTree.Create(NavigationRenderModel.Create(
+			tree: navigation,
+			topLevelItems: navigation.TopLevelItems,
+			isUsingNavigationDropdown: true,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: true));
 		var html = await slice.RenderAsync(cancellationToken: ctx);
 		var context = BrowsingContext.New();
 		var document = await context.OpenAsync(req => req.Content(html), ctx);
@@ -139,23 +134,19 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 	}
 
 	/// <summary>
-	/// Recursively extracts all URLs from the navigation tree, following the same logic as the Razor templates.
-	/// Excludes hidden items and parent index items (to match _TocTreeNav.cshtml logic).
+	/// Recursively extracts all URLs from the navigation tree, mirroring the skip rules
+	/// <see cref="NavigationRenderModel" /> applies when mapping the domain tree for rendering.
 	/// </summary>
 	private static IEnumerable<string> GetAllNavigationUrls(INavigationItem item)
 	{
-		// Skip hidden items (matches _TocTreeNav.cshtml line 9-12)
 		if (item.Hidden)
 			yield break;
 
-		// Skip if this item is its parent's index (matches _TocTreeNav.cshtml line 14-16)
 		if (item.Parent is not null && item.Parent.Index == item)
 			yield break;
 
-		// Yield the current item's URL
 		yield return item.Url;
 
-		// Recursively process children if this is a node
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			yield break;
 

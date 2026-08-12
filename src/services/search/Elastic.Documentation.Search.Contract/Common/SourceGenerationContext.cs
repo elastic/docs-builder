@@ -13,6 +13,10 @@ namespace Elastic.Documentation.Search.Contract;
 [JsonSerializable(typeof(LabsDocument))]
 [JsonSerializable(typeof(GuideDocument))]
 [JsonSerializable(typeof(WebsiteSearchDocument))]
+[JsonSerializable(typeof(DocumentationDocument))]
+[JsonSerializable(typeof(AppliesToEntry))]
+[JsonSerializable(typeof(IndexedProduct))]
+[JsonSerializable(typeof(IndexedProduct[]))]
 [JsonSerializable(typeof(ParentDocument))]
 [JsonSerializable(typeof(string[]))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

@@ -1,4 +1,10 @@
 import '@testing-library/jest-dom'
+import { TextDecoder, TextEncoder } from 'util'
+
+// Polyfill TextEncoder/TextDecoder for jsdom test environment
+// Not available in jsdom by default; needed by OpenTelemetry's protobuf-based exporters
+global.TextEncoder = TextEncoder as typeof global.TextEncoder
+global.TextDecoder = TextDecoder as typeof global.TextDecoder
 
 // This prevets the error:
 // TypeError: Cannot set properties of undefined (setting 'diff')

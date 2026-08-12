@@ -16,8 +16,8 @@ internal sealed partial class CachingJsonContext : JsonSerializerContext;
 
 internal sealed class SourceDocument
 {
-	[JsonPropertyName("url")]
-	public string? Url { get; set; }
+	[JsonPropertyName("path")]
+	public string? Path { get; set; }
 
 	[JsonPropertyName("hash")]
 	public string? Hash { get; set; }
@@ -25,15 +25,15 @@ internal sealed class SourceDocument
 	[JsonPropertyName("last_updated")]
 	public DateTimeOffset? LastUpdated { get; set; }
 
-	[JsonPropertyName("http_etag")]
-	public string? HttpEtag { get; set; }
+	[JsonPropertyName("http")]
+	public HttpSourceDocument? Http { get; set; }
+}
 
-	[JsonPropertyName("http_last_modified")]
-	public DateTimeOffset? HttpLastModified { get; set; }
+internal sealed class HttpSourceDocument
+{
+	[JsonPropertyName("etag")]
+	public string? Etag { get; set; }
 
-	[JsonPropertyName("enrichment_key")]
-	public string? EnrichmentKey { get; set; }
-
-	[JsonPropertyName("enrichment_prompt_hash")]
-	public string? EnrichmentPromptHash { get; set; }
+	[JsonPropertyName("last_modified")]
+	public DateTimeOffset? LastModified { get; set; }
 }
