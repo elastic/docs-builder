@@ -254,3 +254,15 @@ toc:
 
   # Development
   - toc: development
+
+  # Hub / product page fixtures used by local tests and assembler preview
+  - folder: testing
+    children:
+      - folder: products
+        children:
+          - folder: elasticsearch
+            children:
+              - file: v9.md
+          - folder: kibana
+            children:
+              - file: v9.md

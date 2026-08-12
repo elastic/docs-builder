@@ -134,14 +134,17 @@ journey('navigation test', ({ page, params }) => {
         })
 
         // Nav V2 IA: same Guides/get-started group (deployment-options is no longer a sibling).
-        await page
+        const evaluateLink = page
             .locator('#pages-nav')
             .getByRole('link', { name: 'Evaluate Elastic during a trial' })
             .first()
-            .click()
-        await expect(page).toHaveURL(
-            `${host}/docs/get-started/evaluate-elastic`
-        )
+        await expect(evaluateLink).toBeVisible()
+        await Promise.all([
+            page.waitForURL(`${host}/docs/get-started/evaluate-elastic`, {
+                timeout: 15000,
+            }),
+            evaluateLink.click(),
+        ])
         await expect(page).toHaveTitle(/Evaluate Elastic during a trial/)
         await expect(
             page.getByRole('heading', {
