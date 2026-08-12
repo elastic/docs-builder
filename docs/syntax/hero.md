@@ -33,6 +33,8 @@ The `:title:` option doubles as the page title, so a hub page needs no body H1. 
 
 Each action is a single markdown link. Actions render left to right, in the order primary, secondary, tertiary. Actions are optional. Omit them for a pure identity hero.
 
+The option names set the order, not the weight. All three render as secondary buttons, with the same styling as the [button](/syntax/buttons.md) directive.
+
 ```markdown
 :::{hero}
 :icon: elasticsearch
@@ -44,7 +46,7 @@ Each action is a single markdown link. Actions render left to right, in the orde
 :::
 ```
 
-An action whose URL starts with `#` renders with a chevron, to signal an in-page jump.
+An action whose URL starts with `#` renders with an arrow, to signal an in-page jump.
 
 Action URLs validate at build time. Use one of these forms:
 
