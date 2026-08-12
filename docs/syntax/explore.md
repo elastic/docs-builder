@@ -56,6 +56,7 @@ links:
 
 - Each [`{card-group}`](card-group.md) inside becomes one accordion. Its `:title:` is the accordion header.
 - The first accordion is expanded. The rest are collapsed.
+- A reader can expand as many accordions as they want. Expanding one does not collapse the others.
 - Each [`{link-card}`](link-card.md) inside renders as a link column rather than a bordered card.
 
 Toggling uses native `<details>` and `<summary>`, so it works without JavaScript.

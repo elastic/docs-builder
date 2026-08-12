@@ -16,10 +16,4 @@ public class CardGroupViewModel : DirectiveViewModel
 
 	/// <summary>The accordion is expanded by default (the first group in an Explore stack).</summary>
 	public bool IsOpen { get; init; }
-
-	/// <summary>
-	/// Shared &lt;details name&gt; group so the accordions open exclusively: expanding one
-	/// collapses the others in the same Explore section.
-	/// </summary>
-	public string? AccordionGroup { get; init; }
 }

@@ -59,6 +59,14 @@
 	@apply text-ink-dark hover:text-ink-dark border-grey-70 hover:border-ink-dark hover:bg-grey-10 focus:ring-blue-elastic-50 flex h-10 cursor-pointer items-center justify-center rounded-sm border px-6 py-2 text-center font-sans text-base font-medium text-nowrap no-underline focus:ring-4 focus:outline-none;
 }
 
+/* Small size modifier. Composes with either type. Used where a cluster of buttons
+   sits inside dense content, such as a hub card's aside. Height stays above the
+   24px pointer-target floor. Declared after both types so it wins on height,
+   padding, and type size. */
+.doc-button-small a {
+	@apply h-8 px-3 text-sm;
+}
+
 /* Remove external link icon from buttons */
 .doc-button-wrapper a[target='_blank']::after,
 .doc-button-item a[target='_blank']::after {

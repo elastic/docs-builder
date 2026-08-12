@@ -2,7 +2,9 @@
 
 @if (Model.IsAccordion)
 {
-	<details class="hub-accordion"@(string.IsNullOrWhiteSpace(Model.AccordionGroup) ? "" : $" name={Model.AccordionGroup}")@(string.IsNullOrWhiteSpace(Model.Anchor) ? "" : $" id={Model.Anchor}")@(Model.IsOpen ? " open" : "")>
+	@* No `name` attribute: a browse surface should let a reader keep several sections open
+	   and compare them. A shared name would close every other accordion on each expand. *@
+	<details class="hub-accordion"@(string.IsNullOrWhiteSpace(Model.Anchor) ? "" : $" id={Model.Anchor}")@(Model.IsOpen ? " open" : "")>
 		<summary class="hub-accordion-summary">
 			@* A heading, not a span. Without it the accordion group is missing from the page
 			   outline, and a reader navigating by heading jumps from the section straight into the

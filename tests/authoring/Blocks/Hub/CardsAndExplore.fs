@@ -126,7 +126,7 @@ title: Syntax
     let ``renders the accordion stack`` () =
         markdown |> convertsToContainingHtml """
 <div class="hub-explore">
-	<details class="hub-accordion" name="hub-explore-explore" id="quick-links" open="">
+	<details class="hub-accordion" id="quick-links" open="">
 		<summary class="hub-accordion-summary">
 			<h3 class="hub-accordion-title">Quick links</h3>
 			<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -148,7 +148,7 @@ title: Syntax
 					<div class="hub-explore-more">
 						<div class="hub-explore-more-label">Also see</div>
 						<ul class="hub-explore-more-badges">
-							<li>
+							<li class="doc-button-item doc-button-secondary doc-button-small">
 								<a href="/">Versions</a>
 							</li>
 						</ul>
@@ -157,7 +157,7 @@ title: Syntax
 			</ul>
 		</div>
 	</details>
-	<details class="hub-accordion" name="hub-explore-explore" id="authoring">
+	<details class="hub-accordion" id="authoring">
 		<summary class="hub-accordion-summary">
 			<h3 class="hub-accordion-title">Authoring</h3>
 			<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">

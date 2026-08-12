@@ -42,7 +42,7 @@
 					{
 						if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
 							continue;
-						<li><a @Model.LinkAttributes(link.Url)>@link.Label</a></li>
+						<li class="doc-button-item doc-button-secondary doc-button-small"><a @Model.LinkAttributes(link.Url)>@link.Label</a></li>
 					}
 				</ul>
 			</div>
@@ -52,6 +52,10 @@
 else
 {
 	var classes = "hub-card";
+	// A card with its own link gets a whole-card target. Without one there is nothing
+	// for a card-wide hover state to point at.
+	if (!string.IsNullOrWhiteSpace(d.Link))
+		classes += " hub-card-linked";
 	if (!string.IsNullOrWhiteSpace(d.Variant))
 		classes += " hub-card-sol hub-card-sol-" + d.Variant;
 
