@@ -116,7 +116,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		StubHandler handler,
 		IGitHubCommitRangeService rangeService,
 		IGitHubPrService? prService = null) =>
-		new(LoggerFactory, ConfigurationContext, FileSystem, null, Fetcher(handler),
+		new(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler),
 			prService ?? A.Fake<IGitHubPrService>(), rangeService);
 
 	[Fact]

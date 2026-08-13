@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -51,7 +52,7 @@ public static class TestHelpers
 			{
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, fileSystem),
+			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem)),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },

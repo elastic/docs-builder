@@ -50,6 +50,60 @@ public class ButtonSecondaryTests(ITestOutputHelper output) : DirectiveTest<Butt
 	public void RendersSecondaryClass() => Html.Should().Contain("doc-button-secondary");
 }
 
+public class ButtonNeutralTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+:type: neutral
+[Browse All Docs](https://www.elastic.co/docs)
+:::
+"""
+)
+{
+	[Fact]
+	public void ParsesNeutralType() => Block!.Type.Should().Be("neutral");
+
+	[Fact]
+	public void RendersNeutralClass() => Html.Should().Contain("doc-button-neutral");
+
+	[Fact]
+	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+public class ButtonNeutralVariantAliasTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+:variant: neutral
+[Browse All Docs](https://www.elastic.co/docs)
+:::
+"""
+)
+{
+	[Fact]
+	public void ParsesNeutralTypeFromVariantAlias() => Block!.Type.Should().Be("neutral");
+}
+
+public class ButtonNeutralInGroupTests(ITestOutputHelper output) : DirectiveTest<ButtonGroupBlock>(output,
+"""
+::::{button-group}
+:::{button}
+[Get Started](/get-started)
+:::
+:::{button}
+:type: neutral
+[What's New](/whats-new)
+:::
+::::
+"""
+)
+{
+	[Fact]
+	public void RendersNeutralItemInsideGroup() =>
+		Html.Should().Contain("class=\"doc-button-item doc-button-neutral\"");
+
+	[Fact]
+	public void RendersPrimaryAlongsideNeutral() => Html.Should().Contain("doc-button-primary");
+}
+
 public class ButtonAlignmentTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
 """
 :::{button}

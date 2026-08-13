@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
+using Elastic.Documentation.Configuration.Toc.Listing;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 using YamlDotNet.Serialization;
 using static Elastic.Documentation.SymlinkValidator;
@@ -126,7 +129,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= FileSystemFactory.ScopeSourceDirectory(docsetPath.FileSystem, docsetPath.Directory!.FullName);
+		fileSystem ??= new CheckoutsFileSystem(docsetPath.Directory!, inner: docsetPath.FileSystem);
 		// Validate that the docset.yml is not a symlink (security: prevents path traversal attacks)
 		EnsureNotSymlink(docsetPath);
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
@@ -148,7 +151,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= FileSystemFactory.ScopeSourceDirectory(sourceDirectory.FileSystem, sourceDirectory.FullName);
+		fileSystem ??= new CheckoutsFileSystem(sourceDirectory, inner: sourceDirectory.FileSystem);
 		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
@@ -185,6 +188,7 @@ public class DocumentationSetFile : TableOfContentsFile
 				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(collector, tocRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				DetectionRuleOverviewRef ruleOverviewReference => ResolveRuleOverviewReference(collector, ruleOverviewReference, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				CliReferenceRef cliRef => ResolveCliReference(collector, cliRef, baseDirectory, fileSystem, parentPath, containerPath, context),
+				ListingRef listingRef => ResolveListingRef(collector, listingRef, baseDirectory, fileSystem, parentPath, containerPath, context),
 				FileRef fileRef => ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				FolderRef folderRef => ResolveFolderRef(collector, folderRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				CrossLinkRef crossLink => ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
@@ -263,7 +267,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			// Validate: toc.yml file must exist
 			collector.EmitError(parentContext, $"Table of contents file not found: {fullTocPath}/toc.yml");
-			return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, [], parentContext);
+			return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, [], parentContext, tocRef.Island);
 		}
 
 		// Validate that the toc.yml is not a symlink (security: prevents path traversal attacks)
@@ -301,9 +305,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		if (resolvedChildren.Count == 0)
 			collector.EmitError(tocFilePath, $"Table of contents '{fullTocPath}' has no children defined");
 
-		// Return TOC ref with FULL path and resolved children
-		// The context remains the parent context (where this TOC was referenced)
-		return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, resolvedChildren, parentContext);
+		// Return TOC ref with FULL path and resolved children.
+		// Island flag is OR-ed: either the inline `- toc:` entry or the child toc.yml root can opt in.
+		return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, resolvedChildren, parentContext, tocRef.Island || nestedTocFile.Island);
 	}
 
 	/// <summary>
@@ -726,6 +730,206 @@ public class DocumentationSetFile : TableOfContentsFile
 					CollectExcluded(children, result);
 			}
 		}
+	}
+
+	/// <summary>
+	/// Resolves a <see cref="ListingRef"/> by glob-matching all content files under the listing folder,
+	/// partitioning them into groups based on frontmatter, and emitting hidden <see cref="FileRef"/>s.
+	/// </summary>
+	private static ITableOfContentsItem? ResolveListingRef(
+		IDiagnosticsCollector collector,
+		ListingRef listingRef,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath,
+		string containerPath,
+		string context)
+	{
+		// Resolve the full path (same pattern as ResolveFolderRef)
+		string fullPath;
+		if (listingRef.PathRelativeToDocumentationSet.Contains('/'))
+		{
+			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
+			var contextRelativePath = fileSystem.Path.GetRelativePath(baseDirectory.FullName, contextDir);
+			if (contextRelativePath == ".")
+				contextRelativePath = "";
+			fullPath = string.IsNullOrEmpty(contextRelativePath)
+				? listingRef.PathRelativeToDocumentationSet
+				: $"{contextRelativePath}/{listingRef.PathRelativeToDocumentationSet}";
+		}
+		else
+		{
+			fullPath = string.IsNullOrEmpty(parentPath)
+				? listingRef.PathRelativeToDocumentationSet
+				: $"{parentPath}/{listingRef.PathRelativeToDocumentationSet}";
+		}
+
+		var pathRelativeToContainer = string.IsNullOrEmpty(containerPath)
+			? fullPath
+			: fullPath[(containerPath.Length + 1)..];
+
+		var options = listingRef.Options;
+		var globPattern = options.Glob ?? "**/*.md";
+
+		// Validate that non-.md globs must specify an extension
+		var hasNonMdGlob = !globPattern.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			&& !globPattern.EndsWith("/*.md", StringComparison.OrdinalIgnoreCase)
+			&& !globPattern.Equals("**/*.md", StringComparison.OrdinalIgnoreCase);
+
+		if (hasNonMdGlob && string.IsNullOrEmpty(options.Extension))
+		{
+			collector.EmitError(context,
+				$"Listing '{fullPath}': glob '{globPattern}' may match non-.md files — 'extension:' is required to handle them.");
+		}
+
+		// Build exclude globs
+		var excludeGlobs = options.Exclude is { Count: > 0 }
+			? options.Exclude.Select(Glob.Parse).ToArray()
+			: [];
+
+		var listingDirAbsolute = fileSystem.Path.Join(baseDirectory.FullName, fullPath);
+		var listingDir = fileSystem.DirectoryInfo.New(listingDirAbsolute);
+
+		if (!listingDir.Exists)
+		{
+			collector.EmitError(context, $"Listing folder not found: {fullPath}");
+			return null;
+		}
+
+		// Glob-match files. We enumerate all files in the folder tree and test against the pattern.
+		var pattern = Glob.Parse(globPattern);
+		var allFiles = listingDir
+			.EnumerateFiles("*.*", SearchOption.AllDirectories)
+			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
+			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
+			.Where(f => f.LinkTarget == null)
+			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
+			.Where(f =>
+			{
+				var rel = Path.GetRelativePath(listingDirAbsolute, f.FullName).Replace('\\', '/');
+				return pattern.IsMatch(rel);
+			})
+			.Where(f =>
+			{
+				if (excludeGlobs.Length == 0)
+					return true;
+				var rel = Path.GetRelativePath(listingDirAbsolute, f.FullName).Replace('\\', '/');
+				return !excludeGlobs.Any(g => g.IsMatch(rel));
+			})
+			.ToList();
+
+		if (allFiles.Count == 0)
+			return null;
+
+		// Read listing group from frontmatter of each .md file
+		var fileGroups = new Dictionary<IFileInfo, string?>(ReferenceEqualityComparer.Instance);
+		foreach (var file in allFiles)
+		{
+			if (file.Extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
+				fileGroups[file] = ListingFrontMatterReader.ReadGroup(file);
+			else
+				fileGroups[file] = null; // extension will provide group via TryGetListingGroup
+		}
+
+		// Separate root/group index pages from content pages
+		var rootIndex = allFiles.FirstOrDefault(f =>
+			f.FullName.Equals(fileSystem.Path.Join(listingDirAbsolute, "index.md"), StringComparison.OrdinalIgnoreCase));
+
+		var groupIndexFiles = allFiles
+			.Where(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase) && f != rootIndex)
+			.ToDictionary(
+				f => Path.GetRelativePath(listingDirAbsolute, f.Directory!.FullName).Replace('\\', '/'),
+				f => f,
+				StringComparer.OrdinalIgnoreCase);
+
+		var contentFiles = allFiles
+			.Where(f => f != rootIndex && !groupIndexFiles.ContainsValue(f))
+			.ToList();
+
+		// Sort content files
+		contentFiles = SortOrderExtensions.TryParse(options.Sort, out var sortOrder)
+			? sortOrder == SortOrder.Descending
+				? contentFiles.OrderByDescending(f => f.Name, NaturalStringComparer.Instance).ToList()
+				: contentFiles.OrderBy(f => f.Name, NaturalStringComparer.Instance).ToList()
+			: contentFiles.OrderBy(f => Path.GetRelativePath(listingDirAbsolute, f.FullName)).ToList();
+
+		// Partition content files into groups
+		var groupedFiles = new Dictionary<string, List<IFileInfo>>(StringComparer.OrdinalIgnoreCase);
+		var ungrouped = new List<IFileInfo>();
+
+		foreach (var file in contentFiles)
+		{
+			var group = fileGroups[file];
+			if (!string.IsNullOrEmpty(group))
+			{
+				if (!groupedFiles.ContainsKey(group))
+					groupedFiles[group] = [];
+				groupedFiles[group].Add(file);
+			}
+			else
+			{
+				ungrouped.Add(file);
+			}
+		}
+
+		// Determine group order: explicit groups first (in listed order), then remaining alphabetically
+		var orderedGroups = new List<string>();
+		if (options.Groups is { Count: > 0 })
+		{
+			foreach (var g in options.Groups)
+				orderedGroups.Add(g);
+		}
+		foreach (var g in groupedFiles.Keys.Where(k => !orderedGroups.Contains(k, StringComparer.OrdinalIgnoreCase)).OrderBy(k => k))
+			orderedGroups.Add(g);
+
+		var tocItems = new List<ITableOfContentsItem>();
+
+		// Root index (visible) — always emit; ListingDocsBuilderExtension creates a synthetic page if missing.
+		var rootRelPath = $"{fullPath}/index.md";
+		var rootRelContainer = string.IsNullOrEmpty(containerPath) ? rootRelPath : rootRelPath[(containerPath.Length + 1)..];
+		tocItems.Add(new IndexFileRef(rootRelPath, rootRelContainer, false, [], context));
+
+		// Group children
+		foreach (var groupKey in orderedGroups)
+		{
+			if (!groupedFiles.TryGetValue(groupKey, out var groupFiles))
+				continue;
+
+			// Always emit an IndexFileRef for the group — points to a real file if one exists,
+			// otherwise to the synthetic path that ListingDocsBuilderExtension will register.
+			var groupIndexPath = $"{fullPath}/{groupKey}/index.md";
+
+			var groupChildren = new List<ITableOfContentsItem>();
+
+			var groupIdxRelContainer = string.IsNullOrEmpty(containerPath) ? groupIndexPath : groupIndexPath[(containerPath.Length + 1)..];
+			groupChildren.Add(new IndexFileRef(groupIndexPath, groupIdxRelContainer, false, [], context));
+
+			// Content pages (always hidden)
+			foreach (var file in groupFiles)
+			{
+				var relToSet = Path.GetRelativePath(baseDirectory.FullName, file.FullName).Replace('\\', '/');
+				var relToContainer = string.IsNullOrEmpty(containerPath) ? relToSet : relToSet[(containerPath.Length + 1)..];
+				groupChildren.Add(new FileRef(relToSet, relToContainer, true, [], context));
+			}
+
+			tocItems.Add(new ListingGroupRef(groupKey, fullPath, pathRelativeToContainer, groupChildren, context));
+		}
+
+		// Ungrouped pages (always hidden)
+		foreach (var file in ungrouped)
+		{
+			var relToSet = Path.GetRelativePath(baseDirectory.FullName, file.FullName).Replace('\\', '/');
+			var relToContainer = string.IsNullOrEmpty(containerPath) ? relToSet : relToSet[(containerPath.Length + 1)..];
+			tocItems.Add(new FileRef(relToSet, relToContainer, true, [], context));
+		}
+
+		// Resolve explicit children (from YAML `children:`) last
+		var explicitChildren = listingRef.Children.Count > 0
+			? ResolveTableOfContents(collector, listingRef.Children, baseDirectory, fileSystem, fullPath, containerPath, context)
+			: [];
+		tocItems.AddRange(explicitChildren);
+
+		return new ListingRef(fullPath, pathRelativeToContainer, tocItems, context, options);
 	}
 
 	/// <summary>

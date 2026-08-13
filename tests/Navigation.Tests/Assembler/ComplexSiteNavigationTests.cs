@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
@@ -38,7 +39,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			var docset = DocumentationSetFile.LoadAndResolve(
 				context.Collector,
 				fileSystem.FileInfo.New($"{repositoryPath}/docs/docset.yml"),
-				FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 			documentationSets.Add(
 				new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance));
 		}
@@ -101,7 +102,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 				? $"{repo.FullName}/docs/docset.yml"
 				: $"{repo.FullName}/docs/_docset.yml";
 
-			var docset = DocumentationSetFile.LoadAndResolve(context.Collector, fileSystem.FileInfo.New(docsetPath), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+			var docset = DocumentationSetFile.LoadAndResolve(context.Collector, fileSystem.FileInfo.New(docsetPath), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 
 			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
@@ -179,7 +180,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
-			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{
@@ -230,7 +231,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
-			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{
@@ -292,7 +293,7 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
-			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{

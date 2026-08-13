@@ -33,7 +33,7 @@ public class IsolatedIndexService(
 		var cfg = _configurationContext.Endpoints.Elasticsearch;
 		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
 
-		return await Build(collector, fileSystem, new IsolatedBuildOptions
+		return await Build(collector, new IsolatedBuildOptions
 		{
 			Path = path != null ? new DirectoryInfo(path) : null,
 			MetadataOnly = true,
