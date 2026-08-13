@@ -24,14 +24,14 @@ public class HeroViewModel : DirectiveViewModel
 		get
 		{
 			var actions = new List<HeroAction>(3);
-			Add(actions, PrimaryActionLabel, PrimaryActionUrl, isPrimary: true);
-			Add(actions, SecondaryActionLabel, SecondaryActionUrl, isPrimary: false);
-			Add(actions, TertiaryActionLabel, TertiaryActionUrl, isPrimary: false);
+			Add(actions, PrimaryActionLabel, PrimaryActionUrl);
+			Add(actions, SecondaryActionLabel, SecondaryActionUrl);
+			Add(actions, TertiaryActionLabel, TertiaryActionUrl);
 			return actions;
 		}
 	}
 
-	private void Add(List<HeroAction> actions, string? label, string? url, bool isPrimary)
+	private void Add(List<HeroAction> actions, string? label, string? url)
 	{
 		if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(url))
 			return;
@@ -41,13 +41,15 @@ public class HeroViewModel : DirectiveViewModel
 		// so it is not external. Inline links make the same distinction.
 		var isExternal = url.StartsWith("http", StringComparison.OrdinalIgnoreCase)
 			&& !DirectiveLinkValidator.IsResolvedCrossLink((DirectiveBlock)DirectiveBlock, url);
-		actions.Add(new HeroAction(label, url, isPrimary, isAnchor, isExternal));
+		actions.Add(new HeroAction(label, url, isAnchor, isExternal));
 	}
 }
 
 /// <summary>
-/// One hero call to action. <paramref name="IsAnchor"/> drives the chevron that marks an in-page
-/// jump. <paramref name="IsExternal"/> follows the same rules as inline links: an external link
+/// One hero call to action. The three actions carry equal weight and render as secondary
+/// buttons, so the option a label came from does not change its appearance.
+/// <paramref name="IsAnchor"/> drives the arrow that marks an in-page jump.
+/// <paramref name="IsExternal"/> follows the same rules as inline links: an external link
 /// opens in a new tab and skips preloading, and only an internal link is worth preloading.
 /// </summary>
-public sealed record HeroAction(string Label, string Url, bool IsPrimary, bool IsAnchor, bool IsExternal);
+public sealed record HeroAction(string Label, string Url, bool IsAnchor, bool IsExternal);
