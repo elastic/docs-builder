@@ -186,7 +186,7 @@ public partial class ElasticsearchMarkdownExporter
 				Path = i.Url
 			}).Reverse().ToArray(),
 			Headings = headings,
-			Hidden = fileContext.NavigationItem.Hidden
+			Hidden = fileContext.NavigationItem.ExcludeFromIndexing
 		};
 
 		// Infer product and repository metadata

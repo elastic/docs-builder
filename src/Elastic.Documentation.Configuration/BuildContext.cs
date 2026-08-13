@@ -95,6 +95,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
 		Optimizely = new OptimizelyConfiguration { Enabled = false };
 
+
 		ConfigurationYaml = ConfigurationPath.Exists
 			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, fileSystem.Read)
 			: new DocumentationSetFile();

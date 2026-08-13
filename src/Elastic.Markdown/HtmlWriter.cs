@@ -90,7 +90,10 @@ public class HtmlWriter(
 
 		// For hidden nav items (e.g. individual detection rule pages) there is no rendered nav link,
 		// so JS can't mark anything as current. Point it at the nearest visible ancestor instead.
-		var navActiveUrl = current.Hidden ? parents.FirstOrDefault(p => !p.Hidden)?.Url : null;
+		// Island pages have their own sidebar nav so JS uses window.location directly — skip the parent lookup.
+		var navActiveUrl = current.Hidden && current.IslandListingRoot is null
+			? parents.FirstOrDefault(p => !p.Hidden)?.Url
+			: null;
 		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
@@ -188,7 +191,7 @@ public class HtmlWriter(
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",
-			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.ExcludeFromIndexing),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Optimizely = DocumentationSet.Context.Optimizely,

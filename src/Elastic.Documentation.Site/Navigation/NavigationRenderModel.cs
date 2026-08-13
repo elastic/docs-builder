@@ -12,7 +12,8 @@ namespace Elastic.Documentation.Site.Navigation;
 public enum NavigationRenderNodeKind
 {
 	Leaf,
-	Node
+	Node,
+	Island
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -116,6 +117,18 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode CreateNode(INodeNavigationItem<INavigationModel, INavigationItem> node, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(node.NavigationTitle);
+		if (node.IsIslandListing)
+		{
+			return new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Island,
+				IsTopLevel = isTopLevel,
+				NavigationTitle = navigationTitle,
+				Badge = badge,
+				Url = node.Url,
+				Id = node.Id
+			};
+		}
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Node,

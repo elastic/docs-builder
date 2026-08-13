@@ -9,17 +9,24 @@ namespace Elastic.Documentation.Navigation.Isolated;
 /// </summary>
 /// <param name="RelativePathToDocumentationSet">The relative path from the documentation set root</param>
 /// <param name="RelativePathToTableOfContents">The relative path from the table of contents root</param>
-/// <param name="Hidden">Whether this navigation item should be hidden from navigation</param>
+/// <param name="Hidden">Whether this navigation item should be hidden from the rendered nav tree</param>
 /// <param name="NavigationIndex">The index position in navigation</param>
 /// <param name="Parent">The parent navigation item</param>
 /// <param name="HomeAccessor">The home accessor for this navigation item</param>
+/// <param name="ExcludeFromIndexing">
+/// When <c>true</c>, the page is excluded from search indexing and the HTML noindex directive.
+/// Defaults to <see langword="null"/>, which falls back to the value of <paramref name="Hidden"/>.
+/// Set explicitly to <c>false</c> for listing pages that are hidden from the nav tree but should still be indexed.
+/// </param>
 public record FileNavigationArgs(
 	string RelativePathToDocumentationSet,
 	string RelativePathToTableOfContents,
 	bool Hidden,
 	int NavigationIndex,
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
-	INavigationHomeAccessor HomeAccessor
+	INavigationHomeAccessor HomeAccessor,
+	bool? ExcludeFromIndexing = null,
+	INodeNavigationItem<INavigationModel, INavigationItem>? IslandListingRoot = null
 );
 
 /// <summary>

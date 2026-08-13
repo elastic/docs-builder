@@ -73,7 +73,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 					}
 					value = childrenList;
 				}
-				else if (key.Value is "detection_rules" or "exclude" or "deprecated_detection_rules")
+				else if (key.Value is "detection_rules" or "exclude" or "deprecated_detection_rules" or "groups")
 				{
 					// Parse the children list manually
 					var childrenList = new List<string>();
@@ -111,6 +111,23 @@ public class TocItemYamlConverter : IYamlTypeConverter
 
 		// Capture exclude list for folder auto-discovery
 		var exclude = dictionary.TryGetValue("exclude", out var excludeObj) && excludeObj is string[] excludeArr ? excludeArr : null;
+
+		// Check for listing (listing: <folder>) — a glob-driven auto-discovered nav entry with generated index.
+		// Must come before folder: and file: so those keys can still appear on the entry as children context.
+		if (dictionary.TryGetValue("listing", out var listingPath) && listingPath is string listing)
+		{
+			var glob = dictionary.TryGetValue("glob", out var globObj) && globObj is string globStr ? globStr : null;
+			var extension = dictionary.TryGetValue("extension", out var extObj) && extObj is string extStr ? extStr : null;
+			var groups = dictionary.TryGetValue("groups", out var groupsObj) && groupsObj is string[] groupsArr ? (IReadOnlyCollection<string>)groupsArr : null;
+			var listingVisual = ListingVisual.None;
+			if (dictionary.TryGetValue("visual", out var visualObj) && visualObj is string visualStr)
+				_ = ListingVisualExtensions.TryParse(visualStr, out listingVisual);
+			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			// Reuse the already-captured sort and exclude variables from the outer scope
+			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension, island);
+			return new ListingRef(listing, listing, children, placeholderContext, options);
+		}
 
 		// Check for CLI reference (cli: schema.json, optional folder: supplemental-docs/)
 		// Must come before the folder+file check to prevent folder: from being consumed by that branch

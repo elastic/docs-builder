@@ -16,7 +16,13 @@ public static class NavigationItemExtensions
 	)
 		where TModel : class, IDocumentationFile
 	{
-		var index = LookupIndex(preferVisible: true);
+		// Path match first — works even when the index leaf is Hidden (e.g. island listing groups
+		// where the index is hidden to suppress it from the main nav tree but must still be the
+		// folder's canonical index so QueryIndex returns it correctly).
+		var index = items.OfType<ILeafNavigationItem<TModel>>()
+			.FirstOrDefault(l => l.Model.SourcePath == fallbackPath);
+
+		index ??= LookupIndex(preferVisible: true);
 		index ??= LookupIndex(preferVisible: false);
 		ArgumentNullException.ThrowIfNull(index);
 
