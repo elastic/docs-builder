@@ -17,6 +17,7 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
+using Elastic.Changelog.Migration;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
@@ -1721,6 +1722,59 @@ internal sealed partial class ChangelogCommands(
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.ResolveDeployedAsync(c, state, ct) is not null
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>TEMPORARY: One-off migration of published release notes into the S3 bundle store; removed after elastic/docs-eng-team#683.</summary>
+	/// <remarks>
+	/// <para>Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the
+	/// checked-in scope table), maps it to the existing bundle YAML shape, and uploads to
+	/// <c>bundle/{product}/</c> with create-only semantics (<c>If-None-Match: *</c>) — existing keys are
+	/// skipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and
+	/// object ETag) suitable for pasting into the tracking issue.</para>
+	/// <para>Migrates every product in the checked-in scope table by default. The table lives in code
+	/// (<c>MigrateFromWebScope.All</c>: product id → source repo, release-notes path, pinned ref, version
+	/// cutoff) and grows per rollout wave; use <c>--products</c> to narrow a run for tests and pilots.
+	/// Tracked by elastic/docs-eng-team#736.</para>
+	/// </remarks>
+	/// <param name="products">Optional: restrict the run to specific product ids (comma-separated or repeated), e.g. "edot-java". Defaults to every product in the checked-in scope table.</param>
+	/// <param name="s3BucketName">Destination S3 bucket. Required unless --dry-run; when provided with --dry-run, existing keys are still inspected so the report distinguishes would-create from skipped.</param>
+	/// <param name="versions">Optional: restrict the run to specific versions (comma-separated or repeated). Versions above a product's cutoff are always skipped.</param>
+	/// <param name="dryRun">Do everything except the S3 writes and report what would be created.</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> MigrateFromWeb(
+		string[]? products = null,
+		string s3BucketName = "",
+		string[]? versions = null,
+		[DryRun] bool dryRun = false,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		if (!dryRun && string.IsNullOrWhiteSpace(s3BucketName))
+		{
+			collector.EmitError(string.Empty, "--s3-bucket-name is required unless --dry-run is specified.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		var service = new WebMigrationService(logFactory, FileSystemFactory.RealWrite);
+		var args = new MigrateFromWebArguments
+		{
+			Products = ExpandCommaSeparated(products),
+			S3BucketName = s3BucketName,
+			DryRun = dryRun,
+			Versions = ExpandCommaSeparated(versions)
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.MigrateFromWeb(c, state, ct)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
