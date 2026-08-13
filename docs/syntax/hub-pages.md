@@ -55,7 +55,7 @@ Write both deliberately. The search body indexes the hero title and description 
 |---|---|
 | [`{hero}`](hero.md) | Identity band. Carries the product icon, the page title, a description, and up to three actions. |
 | [`{card-group}`](card-group.md) | Section heading and card grid. Renders as an accordion inside `{explore}`. |
-| [`{link-card}`](link-card.md) | One card: title, description, link list, optional aside. Renders as a link column inside `{explore}`. |
+| [`{link-card}`](link-card.md) | One card: title, description, and a list of links. Renders as a link column inside `{explore}`. |
 | [`{explore}`](explore.md) | The browse-everything section. A stack of collapsible accordions. |
 
 ## Page skeleton

@@ -90,11 +90,6 @@ description: This description is dropped in column mode.
 links:
   - label: Exporters
     url: /index.md
-aside:
-  label: Also see
-  links:
-    - label: Versions
-      url: /index.md
 :::
 ::::
 
@@ -119,9 +114,8 @@ title: Syntax
 """
 
     // One snapshot covers what nesting changes: accordion mode, the first accordion open and
-    // the rest closed, link cards as columns, and the aside as a badge cluster under its own
-    // label rather than a fixed string. It also pins the heading levels, so an Explore stack
-    // keeps a complete outline: section h2, accordion h3, column h4.
+    // the rest closed, and link cards as columns. It also pins the heading levels, so an
+    // Explore stack keeps a complete outline: section h2, accordion h3, column h4.
     [<Fact>]
     let ``renders the accordion stack`` () =
         markdown |> convertsToContainingHtml """
@@ -145,14 +139,6 @@ title: Syntax
 							<a href="/">Exporters</a>
 						</li>
 					</ul>
-					<div class="hub-explore-more">
-						<div class="hub-explore-more-label">Also see</div>
-						<ul class="hub-explore-more-badges">
-							<li class="doc-button-item doc-button-secondary doc-button-small">
-								<a href="/">Versions</a>
-							</li>
-						</ul>
-					</div>
 				</li>
 			</ul>
 		</div>

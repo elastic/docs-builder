@@ -1,6 +1,6 @@
 # Link card
 
-A card with a title, description, a primary link list, and an optional aside. It is designed to sit inside a [`{card-group}`](card-group.md), and it renders standalone too.
+A card with a title, a description, and a list of links. It is designed to sit inside a [`{card-group}`](card-group.md), and it renders standalone too.
 
 See the [docs-builder documentation hub](../examples/products/docs-builder.md) for both rendering modes on one page.
 
@@ -29,17 +29,13 @@ link: /getting-started/serve.md    # optional, makes the title clickable
 description: One short blurb.      # optional
 icon: elasticsearch                # optional, product-keyed inline SVG
 variant: es                        # optional accent: es, obs, or sec
-links:                             # optional, the primary link list
+links:                             # optional, the card's links
   - label: Pages and links
     url: /getting-started/pages-and-links.md
-aside:                             # optional bottom rail
-  label: Build types
-  links:
-    - label: Isolated
-      url: /documentation/isolated/configure/index.md
-    - label: Assembler
-      url: /documentation/assembler/index.md
 ```
+
+A card holds one group of links. To present a second group, add a second card. There is no
+sub-list, so every group of links reads the same way wherever it appears.
 
 ## Variants
 
@@ -49,16 +45,11 @@ aside:                             # optional bottom rail
 
 ## Inside `{explore}`
 
-Nested in an [`{explore}`](explore.md) section, through a `{card-group}` ancestor, the same YAML renders as a titled link column instead of a bordered card. Two things change:
-
-- `description` is dropped. A column is a pure link index.
-- `aside` renders as a badge cluster under its own `label`, rather than an inline dot-separated list.
-
-The `aside` label is authored. There is no fixed label text.
+Nested in an [`{explore}`](explore.md) section, through a `{card-group}` ancestor, the same YAML renders as a titled link column instead of a bordered card. One thing changes: `description` is dropped, because a column is a pure link index.
 
 ## Links
 
-Every `link`, every entry in `links`, and every entry in `aside.links` validates at build time. Use one of these forms:
+Every `link` and every entry in `links` validates at build time. Use one of these forms:
 
 | Form | Example | Behavior |
 |---|---|---|

@@ -29,24 +29,6 @@
 				}
 			</ul>
 		}
-
-		@if (d.Aside is { } aside && aside.Links.Length > 0)
-		{
-			<div class="hub-explore-more">
-				@if (!string.IsNullOrWhiteSpace(aside.Label))
-				{
-					<div class="hub-explore-more-label">@aside.Label</div>
-				}
-				<ul class="hub-explore-more-badges">
-					@foreach (var link in aside.Links)
-					{
-						if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
-							continue;
-						<li class="doc-button-item doc-button-secondary doc-button-small"><a @Model.LinkAttributes(link.Url)>@link.Label</a></li>
-					}
-				</ul>
-			</div>
-		}
 	</li>
 }
 else
@@ -94,27 +76,5 @@ else
 			</ul>
 		}
 
-		@if (d.Aside is { } aside && aside.Links.Length > 0)
-		{
-			<div class="hub-card-aside">
-				@if (!string.IsNullOrWhiteSpace(aside.Label))
-				{
-					<div class="hub-card-aside-label">@aside.Label</div>
-				}
-				<div class="hub-card-aside-links">
-					@for (var i = 0; i < aside.Links.Length; i++)
-					{
-						var link = aside.Links[i];
-						if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
-							continue;
-						<a @Model.LinkAttributes(link.Url)>@link.Label</a>
-						@if (i < aside.Links.Length - 1)
-						{
-							<span class="hub-card-aside-sep" aria-hidden="true">·</span>
-						}
-					}
-				</div>
-			</div>
-		}
 	</li>
 }

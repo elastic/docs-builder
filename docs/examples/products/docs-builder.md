@@ -112,17 +112,19 @@ links:
     url: /syntax/hub-pages.md
   - label: Hero
     url: /syntax/hero.md
-aside:
-  label: Card directives
-  links:
-    - label: Card group
-      url: /syntax/card-group.md
-    - label: Link card
-      url: /syntax/link-card.md
-    - label: Explore
-      url: /syntax/explore.md
-    - label: Page card
-      url: /syntax/page-card.md
+:::
+
+:::{link-card}
+title: Card directives
+links:
+  - label: Card group
+    url: /syntax/card-group.md
+  - label: Link card
+    url: /syntax/link-card.md
+  - label: Explore
+    url: /syntax/explore.md
+  - label: Page card
+    url: /syntax/page-card.md
 :::
 
 :::{link-card}
@@ -183,13 +185,15 @@ links:
     url: /documentation/catalog/products.md
   - label: Versions
     url: /documentation/catalog/versions.md
-aside:
-  label: Also see
-  links:
-    - label: Synonyms
-      url: /documentation/catalog/synonyms.md
-    - label: Legacy URLs
-      url: /documentation/catalog/legacy-url-mappings.md
+:::
+
+:::{link-card}
+title: Catalog reference
+links:
+  - label: Synonyms
+    url: /documentation/catalog/synonyms.md
+  - label: Legacy URLs
+    url: /documentation/catalog/legacy-url-mappings.md
 :::
 ::::
 

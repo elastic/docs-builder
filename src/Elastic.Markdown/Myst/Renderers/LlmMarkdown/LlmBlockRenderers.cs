@@ -639,17 +639,6 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		foreach (var link in data.Links)
 			WriteHeroAction(renderer, link.Label, link.Url);
 
-		if (data.Aside is { } aside)
-		{
-			if (!string.IsNullOrEmpty(aside.Label))
-			{
-				renderer.EnsureLine();
-				renderer.WriteLine($"{aside.Label}:");
-			}
-			foreach (var link in aside.Links)
-				WriteHeroAction(renderer, link.Label, link.Url);
-		}
-
 		renderer.EnsureLine();
 	}
 

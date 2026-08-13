@@ -222,8 +222,7 @@
 	.hub-card-linked {
 		position: relative;
 	}
-	.hub-card .hub-card-links,
-	.hub-card .hub-card-aside {
+	.hub-card .hub-card-links {
 		position: relative;
 	}
 
@@ -284,47 +283,6 @@
 	.hub-card .hub-card-links li a:hover,
 	.hub-card .hub-card-links li a:focus-visible {
 		color: var(--color-blue-elastic-110);
-	}
-
-	/* Card aside (Panel types, Chart types, Key features...) */
-	.hub-card .hub-card-aside {
-		margin-top: 14px;
-		padding-top: 12px;
-		border-top: 1px solid var(--color-grey-20);
-	}
-	.hub-card .hub-card-aside-label {
-		font-size: var(--text-sm);
-		color: var(--color-grey-80);
-		margin-bottom: 6px;
-		font-weight: 600;
-		letter-spacing: 0.3px;
-	}
-	.hub-card .hub-card-aside-links {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0;
-		font-size: var(--text-base);
-		line-height: 1.9;
-	}
-	.hub-card .hub-card-aside-links a {
-		color: var(--color-blue-elastic-100);
-		font-weight: 500;
-		text-decoration: underline;
-		text-underline-offset: 2px;
-		text-decoration-thickness: 1px;
-	}
-	.hub-card .hub-card-aside-links a:hover {
-		color: var(--color-blue-elastic-110);
-	}
-	.hub-card .hub-card-aside-sep {
-		color: var(--color-grey-30);
-		margin: 0 6px;
-	}
-
-	/* Explore {product} — accordion stack ------------------------------ */
-	.hub-explore {
-		@apply mx-auto w-full max-w-5xl;
-		border-top: 1px solid var(--color-grey-20);
 	}
 
 	.hub-accordion {
@@ -457,35 +415,6 @@
 		color: var(--color-blue-elastic-110);
 	}
 
-	/* "Even more" badge cluster under a column ------------------------- */
-	.hub-explore-more {
-		margin-top: 14px;
-	}
-	/* The label is authored, for example "Panel types", so it keeps the casing the writer
-	   chose rather than being shouted in uppercase. */
-	.hub-explore-more-label {
-		font-size: var(--text-sm);
-		font-weight: 600;
-		color: var(--color-ink-light);
-		margin-bottom: 8px;
-	}
-	.hub-explore-more-badges {
-		@apply m-0 list-none p-0;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
-	.hub-explore-more-badges li {
-		margin: 0;
-		list-style: none;
-	}
-	/* These are buttons, not cards, so they take the {button} directive's secondary
-	   treatment in its small size. Nothing about their type, colour, height or
-	   radius is set here. */
-	.hub-explore-more-badges li {
-		display: inline-flex;
-	}
-
 	@media (max-width: 768px) {
 		.hub-hero h1 {
 			font-size: var(--text-3xl);
@@ -519,8 +448,7 @@
 	   Nothing about the resting appearance changes. */
 	@media (prefers-reduced-motion: reduce) {
 		.hub-card,
-		.hub-accordion-icon-v,
-		.hub-explore-more-badges a {
+		.hub-accordion-icon-v {
 			transition: none;
 		}
 		.hub-hero .hub-hero-eyebrow-link,

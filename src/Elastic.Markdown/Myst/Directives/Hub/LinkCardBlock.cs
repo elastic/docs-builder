@@ -9,9 +9,8 @@ using YamlDotNet.Serialization;
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
 /// <summary>
-/// A rich card with title, link, description, primary-link list, and an optional
-/// aside (e.g. "Panel types: A · B · C"). The card schema is YAML-formatted in the
-/// directive body for predictable structure.
+/// A card with a title, an optional link and description, and a list of links. The card
+/// schema is YAML-formatted in the directive body for predictable structure.
 /// </summary>
 /// <example>
 /// <code>
@@ -24,13 +23,6 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 ///     url: /discover/get-started
 ///   - label: Use ES|QL in Kibana
 ///     url: /esql
-/// aside:
-///   label: Panel types
-///   links:
-///     - label: Visualizations
-///       url: /viz
-///     - label: Maps
-///       url: /maps
 /// :::
 /// </code>
 /// </example>
@@ -68,11 +60,6 @@ public class LinkCardBlock(DirectiveBlockParser parser, ParserContext context)
 		Data.Link = DirectiveLinkValidator.ValidateAndResolve(Data.Link, this, context);
 		foreach (var link in Data.Links)
 			link.Url = DirectiveLinkValidator.ValidateAndResolve(link.Url, this, context);
-		if (Data.Aside is not null)
-		{
-			foreach (var link in Data.Aside.Links)
-				link.Url = DirectiveLinkValidator.ValidateAndResolve(link.Url, this, context);
-		}
 	}
 }
 
@@ -97,9 +84,6 @@ public record LinkCardData
 	[YamlMember(Alias = "links")]
 	public LinkCardLink[] Links { get; set; } = [];
 
-	[YamlMember(Alias = "aside")]
-	public LinkCardAside? Aside { get; set; }
-
 	public static LinkCardData Empty { get; } = new();
 }
 
@@ -111,14 +95,4 @@ public record LinkCardLink
 
 	[YamlMember(Alias = "url")]
 	public string? Url { get; set; }
-}
-
-[YamlSerializable]
-public record LinkCardAside
-{
-	[YamlMember(Alias = "label")]
-	public string? Label { get; set; }
-
-	[YamlMember(Alias = "links")]
-	public LinkCardLink[] Links { get; set; } = [];
 }
