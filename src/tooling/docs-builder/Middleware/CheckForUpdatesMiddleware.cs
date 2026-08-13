@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh.Middleware;
@@ -15,7 +16,7 @@ namespace Documentation.Builder.Middleware;
 internal sealed class CheckForUpdatesMiddleware(ILogger<CheckForUpdatesMiddleware> logger) : ICommandMiddleware
 {
 	// Only accesses ApplicationData — no workspace access needed
-	private static readonly IFileSystem Fs = FileSystemFactory.AppData;
+	private static readonly ApplicationDataFileSystem Fs = new();
 	private readonly IFileInfo _stateFile = Fs.FileInfo.New(Path.Join(Paths.ApplicationData.FullName, "docs-build-check.state"));
 	private readonly ILogger<CheckForUpdatesMiddleware> _logger = logger;
 

@@ -1,0 +1,70 @@
+@using Elastic.Markdown.Myst.Directives.Listing
+@inherits RazorSlice<ListingViewModel>
+@{
+	var groups = Model.Entries
+		.GroupBy(e => e.GroupKey)
+		.OrderBy(g => g.Key is null ? 1 : 0)
+		.ToList();
+	var groupTitles = Model.Entries
+		.Where(e => e.GroupKey is not null && e.GroupTitle is not null)
+		.DistinctBy(e => e.GroupKey)
+		.ToDictionary(e => e.GroupKey!, e => e.GroupTitle!);
+	var hasGroups = groups.Any(g => g.Key is not null);
+	var totalCount = Model.Entries.Count;
+}
+<div class="listing-root" data-listing-total="@totalCount">
+@if (totalCount > 0)
+{
+	<div class="listing-filter-bar mt-4 mb-6">
+		<input
+			type="search"
+			class="listing-filter-input w-full border border-grey-20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-elastic"
+			placeholder="Filter @totalCount page@(totalCount == 1 ? "" : "s")…"
+			aria-label="Filter pages"
+		/>
+		@if (hasGroups)
+		{
+			<div class="listing-group-chips flex flex-wrap items-center gap-2 mt-3">
+				<button class="listing-chip listing-chip-all listing-chip-active px-3 py-1 text-xs rounded-full border border-blue-elastic text-blue-elastic" data-group="">All</button>
+				<span class="text-grey-20 select-none">|</span>
+				@foreach (var kvp in groupTitles)
+				{
+					<button class="listing-chip px-3 py-1 text-xs rounded-full border border-grey-20 text-ink-light hover:border-blue-elastic hover:text-blue-elastic" data-group="@kvp.Key">@kvp.Value</button>
+				}
+			</div>
+		}
+	</div>
+}
+@foreach (var group in groups)
+{
+	var gKey = group.Key;
+	var gTitle = gKey is not null && groupTitles.TryGetValue(gKey, out var t) ? t : null;
+	<div class="listing-group" data-group-key="@(gKey ?? "")">
+		@if (gTitle is not null)
+		{
+			<h2 class="listing-group-heading" id="@(gKey ?? "")">@gTitle</h2>
+		}
+		@foreach (var entry in group)
+		{
+			<a href="@entry.Url" style="text-decoration:none;"
+			   class="page-card flex items-center justify-between w-full border border-grey-20 rounded-lg px-6 py-4 mt-2 hover:border-grey-80 hover:bg-grey-5 group"
+			   data-listing-group="@(entry.GroupKey ?? "")"
+			   data-listing-title="@entry.Title.ToLowerInvariant()"
+			>
+				<div class="min-w-0">
+					<div class="font-semibold text-blue-elastic group-hover:underline">@entry.Title</div>
+					@if (!string.IsNullOrWhiteSpace(entry.Description))
+					{
+						<div class="text-sm text-ink-light mt-0.5 font-normal" style="text-decoration:none;">@entry.Description</div>
+					}
+				</div>
+				<svg class="size-5 shrink-0 ml-4 text-ink-light" xmlns="http://www.w3.org/2000/svg"
+					 fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+				</svg>
+			</a>
+		}
+	</div>
+}
+<p class="listing-no-results hidden text-sm text-ink-light mt-4">No pages match your filter.</p>
+</div>

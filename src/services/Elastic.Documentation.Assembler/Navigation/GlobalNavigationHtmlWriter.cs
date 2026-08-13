@@ -7,34 +7,37 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
+using RazorSlices;
 
 namespace Elastic.Documentation.Assembler.Navigation;
 
+#pragma warning disable CS9113 // collector kept for binary-compatibility; no longer used internally
 public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter
+#pragma warning restore CS9113
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GlobalNavigationHtmlWriter>();
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
 
-	public Task<NavigationRenderResult> RenderNavigation(
+	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
-#pragma warning disable IDE0060
-		INavigationItem currentNavigationItem, // temporary https://github.com/elastic/docs-content/pull/3730
-#pragma warning restore IDE0060
+		INavigationItem currentNavigationItem,
 		Cancel ctx = default
 	)
 	{
-		if (currentRootNavigation is SiteNavigation)
-			return Task.FromResult(NavigationRenderResult.Empty);
+		// FindIslandRoot() resolves nested islands AND top-level sections (which are implicitly islands).
+		// Narrative root file leafs (direct SiteNavigation children with no island ancestor) return null,
+		// falling back to currentRootNavigation which is SiteNavigation itself → Empty.
+		var renderRoot = currentNavigationItem.FindIslandRoot() ?? currentRootNavigation;
 
-		if (currentRootNavigation.Parent is null or not SiteNavigation)
-			collector.EmitGlobalError($"Passed root is not actually a top level navigation item {currentRootNavigation.NavigationTitle} ({currentRootNavigation.Id}) in {currentRootNavigation.Url}, trying to render: {currentNavigationItem.Url}");
+		if (renderRoot is SiteNavigation)
+			return NavigationRenderResult.Empty;
 
-		if (currentRootNavigation is not INodeNavigationItem<INavigationModel, INavigationItem> group)
-			return Task.FromResult(NavigationRenderResult.Empty);
+		if (renderRoot is not INodeNavigationItem<INavigationModel, INavigationItem> group)
+			return NavigationRenderResult.Empty;
 
-		return _renderedNavigationCache.GetOrRenderAsync(currentRootNavigation, () =>
+		return await _renderedNavigationCache.GetOrRenderAsync(renderRoot, () =>
 		{
-			_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", currentRootNavigation.NavigationTitle, currentRootNavigation.Id);
+			_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", renderRoot.NavigationTitle, renderRoot.Id);
 			return ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx);
 		});
 	}

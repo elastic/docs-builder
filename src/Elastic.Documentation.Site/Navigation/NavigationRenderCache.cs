@@ -8,18 +8,19 @@ using Elastic.Documentation.Navigation;
 namespace Elastic.Documentation.Site.Navigation;
 
 /// <summary>
-/// Renders each navigation root at most once per build and shares the result with every page under it.
-/// Keyed on root identity rather than <see cref="INavigationItem.Id"/> because ids are not unique across
-/// roots. Concurrent callers for the same root await a single render; a failed render is evicted so a
-/// cancelled or faulted first caller does not poison the cache for later pages.
+/// Renders each navigation item at most once per build and shares the result with every page that maps to it.
+/// Keyed on object identity (not <see cref="INavigationItem.Id"/>) because ids are not unique across roots.
+/// Concurrent callers for the same item await a single render; a failed render is evicted so a cancelled or
+/// faulted first caller does not poison the cache for later pages.
+/// Used for both full navigation roots and island roots.
 /// </summary>
 public sealed class NavigationRenderCache
 {
-	private readonly ConcurrentDictionary<IRootNavigationItem<INavigationModel, INavigationItem>, Lazy<Task<NavigationRenderResult>>> _cache =
+	private readonly ConcurrentDictionary<INavigationItem, Lazy<Task<NavigationRenderResult>>> _cache =
 		new(ReferenceEqualityComparer.Instance);
 
 	public async Task<NavigationRenderResult> GetOrRenderAsync(
-		IRootNavigationItem<INavigationModel, INavigationItem> root,
+		INavigationItem root,
 		Func<Task<NavigationRenderResult>> render)
 	{
 		var pending = _cache.GetOrAdd(root, _ => new Lazy<Task<NavigationRenderResult>>(render, LazyThreadSafetyMode.ExecutionAndPublication));
