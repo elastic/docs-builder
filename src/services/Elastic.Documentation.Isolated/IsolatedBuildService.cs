@@ -13,15 +13,11 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
-using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Services;
-using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
 
@@ -191,75 +187,4 @@ public class IsolatedBuildService(
 
 		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
 	}
-
-	/// <summary>
-	/// Builds a pre-configured documentation set with optional injected navigation.
-	/// Used by portal builds where navigation spans multiple documentation sets.
-	/// When <paramref name="externalExporters"/> is provided, those exporters are used instead of
-	/// creating new ones, and their lifecycle (Start/Stop) is not managed by this method.
-	/// </summary>
-	public async Task<BuildDocumentationSetResult> BuildDocumentationSet(
-		DocumentationSet documentationSet,
-		INavigationTraversable? navigation = null,
-		INavigationHtmlWriter? navigationHtmlWriter = null,
-		IReadOnlySet<Exporter>? exporters = null,
-		IMarkdownExporter[]? externalExporters = null,
-		IPageViewFactory? pageViewFactory = null,
-		Cancel ctx = default)
-	{
-		var context = documentationSet.Context;
-		var manageLifecycle = externalExporters is null;
-
-		IMarkdownExporter[] allExporters;
-		if (externalExporters is not null)
-		{
-			allExporters = externalExporters;
-		}
-		else
-		{
-			exporters ??= ExportOptions.Default;
-			context.Endpoints.BuildType = "codex";
-			allExporters = exporters.CreateMarkdownExporters(logFactory, context).ToArray();
-		}
-
-		if (manageLifecycle)
-		{
-			var startTasks = allExporters.Select(async e => await e.StartAsync(ctx));
-			await Task.WhenAll(startTasks);
-		}
-
-		// Use the provided navigation or fall back to the doc set's own navigation
-		var effectiveNavigation = navigation ?? documentationSet;
-
-		var generator = new DocumentationGenerator(
-			documentationSet,
-			logFactory,
-			effectiveNavigation,
-			navigationHtmlWriter,
-			null,
-			allExporters,
-			pageViewFactory: pageViewFactory);
-
-		var result = await generator.GenerateAll(ctx);
-
-		if (manageLifecycle)
-		{
-			var finishTasks = allExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
-			_ = await Task.WhenAll(finishTasks);
-
-			var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
-			await Task.WhenAll(stopTasks);
-		}
-
-		_logger.LogInformation("Finished building documentation set {Name}", documentationSet.Context.Git.RepositoryName);
-
-		return new BuildDocumentationSetResult(context.Collector.Errors == 0, result.Redirects);
-	}
 }
-
-/// <summary>
-/// Result of building a documentation set, including redirects for aggregation in portal builds.
-/// </summary>
-/// <param name="Success">Whether the build completed without errors.</param>
-/// <param name="Redirects">Redirect mappings from the documentation set, if available.</param>
-public record BuildDocumentationSetResult(bool Success, IReadOnlyDictionary<string, LinkRedirect> Redirects);
