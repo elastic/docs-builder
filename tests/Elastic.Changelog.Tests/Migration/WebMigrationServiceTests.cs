@@ -11,6 +11,7 @@ using Amazon.S3.Model;
 using AwesomeAssertions;
 using Elastic.Changelog.Migration;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
@@ -36,7 +37,7 @@ public class WebMigrationServiceTests
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		_fileSystem = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(_mockFileSystem);
+		_fileSystem = CheckoutsFileSystem.FromWorkingDirectory(_mockFileSystem).Write;
 		_collector = new TestDiagnosticsCollector(output);
 		_httpHandler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
 		{

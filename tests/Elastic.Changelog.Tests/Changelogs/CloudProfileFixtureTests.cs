@@ -132,7 +132,7 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var handler = RepoPoolHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, Fetcher(handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler));
 
 		var input = new BundleChangelogsArguments
 		{

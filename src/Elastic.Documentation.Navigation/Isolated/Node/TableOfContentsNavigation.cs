@@ -12,6 +12,7 @@ namespace Elastic.Documentation.Navigation.Isolated.Node;
 public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INavigationItem>
 	, INavigationHomeAccessor
 	, INavigationHomeProvider
+	, IAssignableIslandNavigation
 	where TModel : class, IDocumentationFile
 {
 	public TableOfContentsNavigation(
@@ -75,6 +76,9 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	/// The setter is used in assembler builds to rehome the navigation.
 	/// </summary>
 	public INavigationHomeProvider HomeProvider { get; set; }
+
+	/// <inheritdoc />
+	public bool IsIsland { get; set; }
 
 	/// <inheritdoc />
 	public bool Hidden { get; private set; }

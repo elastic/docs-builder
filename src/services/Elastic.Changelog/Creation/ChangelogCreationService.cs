@@ -9,9 +9,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Creation;
 
@@ -71,17 +71,17 @@ public record CreateChangelogArguments
 public class ChangelogCreationService(
 ILoggerFactory logFactory,
 IConfigurationContext configurationContext,
+IChangelogFileSystem fileSystem,
 IGitHubPrService? githubPrService = null,
-ScopedFileSystem? fileSystem = null,
 IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
-	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? FileSystemFactory.RealWrite, logFactory.CreateLogger<ChangelogFileWriter>());
+	private readonly ChangelogFileWriter _fileWriter = new(fileSystem, logFactory.CreateLogger<ChangelogFileWriter>());
 	private readonly ProductInferService _productInferService = new(
 		configurationContext.ProductsConfiguration);
 

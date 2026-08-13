@@ -82,7 +82,13 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			);
 
 			if (navItem != null)
+			{
+				// Every top-level navigation.yml section owns the sidebar — that is the definition of an island.
+				// The dropdown is how a top-level island renders its way out; see NavigationRenderModel.CreateBackLinks.
+				if (navItem is IAssignableIslandNavigation assignable)
+					assignable.IsIsland = true;
 				items.Add(navItem);
+			}
 		}
 
 		var indexNavigation = items.QueryIndex<IDocumentationFile>(this, "/index.md", out var navigationItems);
@@ -234,6 +240,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		root ??= node;
 
 		_ = UnseenNodes.Remove(tocRef.Source);
+		// Apply assembler-level island override (OR semantics — can enable, never disable)
+		if (tocRef.Island && node is IAssignableIslandNavigation islandNode)
+			islandNode.IsIsland = true;
 		// Set the navigation index
 		node.Parent = parent;
 		node.NavigationIndex = index;

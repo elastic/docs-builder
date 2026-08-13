@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
@@ -71,7 +72,7 @@ public static class TestHelpers
 			{
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(null), fileSystem),
+			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem(fileSystem)),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = search,

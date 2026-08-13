@@ -55,7 +55,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 	public BundleFilesFilterTests(ITestOutputHelper output) : base(output)
 	{
-		ServiceWithConfig = new(LoggerFactory, ConfigurationContext, FileSystem);
+		ServiceWithConfig = new(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}
@@ -279,7 +279,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
@@ -412,7 +412,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 	private ChangelogBundlingService ServiceWithCdn(StubHandler handler)
 	{
 		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
-		return new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, fetcher);
+		return new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
 	}
 
 	private async Task<string> WriteRepoOnlyConfigAsync()
@@ -446,7 +446,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments

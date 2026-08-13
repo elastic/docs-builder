@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
@@ -559,6 +560,9 @@ public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper outpu
 	:::
 	""")
 {
+	// Force Unavailable so InferCdnProductFromRepository() returns null — the "could not be inferred" path.
+	protected override GitCheckoutInformation? GetGitCheckoutInformation() => GitCheckoutInformation.Unavailable;
+
 	[Fact]
 	public void EmitsErrorWhenProductCannotBeInferred()
 	{

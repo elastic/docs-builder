@@ -74,7 +74,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		// Under the artifact-root layout the CDN entry pool is keyed by the authoring repo, not the
 		// target product. A resolvable repo (here via --repo) is what enables CDN sourcing.
 		var handler = RegistryHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, Fetcher(Output, handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -103,7 +103,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	{
 		// Explicit owner/branch select a specific pool; the branch is stored verbatim (dots kept).
 		var handler = RegistryHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, Fetcher(Output, handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -128,7 +128,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		// When --repo is given in owner/repo form and no explicit owner is set, the owner segment must be
 		// taken from the repo prefix (not defaulted to elastic), so the CDN pool path stays correct.
 		var handler = RegistryHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, Fetcher(Output, handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -166,7 +166,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var handler = RegistryHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, Fetcher(Output, handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments { Config = configPath, Output = output, All = true };
@@ -202,7 +202,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var handler = RegistryHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, Fetcher(Output, handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
@@ -226,7 +226,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	{
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output),
 			new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)), sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -256,7 +256,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			return new HttpResponseMessage(HttpStatusCode.NotFound); // 2-bravo.yaml never propagates
 		});
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, maxAttempts: 2, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -300,7 +300,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		A.CallTo(() => releaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.3.0", TestContext.Current.CancellationToken))
 			.Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = releaseBody });
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, releaseService, Fetcher());
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, releaseService, Fetcher());
 
 		var input = new BundleChangelogsArguments
 		{

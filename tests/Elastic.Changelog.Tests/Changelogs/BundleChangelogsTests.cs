@@ -8,6 +8,7 @@ using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -20,8 +21,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 	public BundleChangelogsTests(ITestOutputHelper output) : base(output)
 	{
-		Service = new(LoggerFactory, null, FileSystem);
-		ServiceWithConfig = new(LoggerFactory, ConfigurationContext, FileSystem);
+		Service = new(LoggerFactory, FileSystem);
+		ServiceWithConfig = new(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = CreateChangelogDir();
 	}
 
@@ -3251,7 +3252,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			currentDirectory: "/empty-project"
 		);
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3311,7 +3312,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3371,7 +3372,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{

@@ -8,13 +8,13 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated;
 using Markdig;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests;
 
@@ -83,8 +83,8 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		TestDiagnosticsCollector? collector = null
 	)
 	{
-		ReadFileSystem = FileSystemFactory.ScopeSourceDirectory(fileSystem, sourceDirectory.FullName);
-		WriteFileSystem = FileSystemFactory.ScopeSourceDirectoryForWrite(fileSystem, outputDirectory.FullName);
+		ReadFileSystem = DocumentationFileSystem.Resolve(sourceDirectory, new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configPath.FullName });
+		WriteFileSystem = new DocumentationWriteFileSystem(sourceDirectory, outputDirectory, fileSystem);
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;
 		ConfigurationPath = configPath;
@@ -102,8 +102,8 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	}
 
 	public IDiagnosticsCollector Collector { get; }
-	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
+	public IDocumentationFileSystem ReadFileSystem { get; }
+	public DocumentationWriteFileSystem WriteFileSystem { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public GitCheckoutInformation Git { get; }

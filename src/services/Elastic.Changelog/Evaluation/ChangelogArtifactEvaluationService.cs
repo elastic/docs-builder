@@ -10,6 +10,7 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -20,11 +21,11 @@ public class ChangelogArtifactEvaluationService(
 	ILoggerFactory logFactory,
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
-	IFileSystem? fileSystem = null
+	IRunnerTempFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogArtifactEvaluationService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
 
 	public async Task<bool> EvaluateArtifact(IDiagnosticsCollector collector, EvaluateArtifactArguments input, Cancel ctx)
 	{

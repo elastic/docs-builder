@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using Actions.Core.Services;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -42,12 +43,11 @@ internal sealed class IsolatedBuildCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var readFs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.RealGitRootForPath(options.Path?.FullName);
-		var writeFs = inMemory ? null : FileSystemFactory.RealGitRootForPathWrite(options.Path?.FullName, options.Output?.FullName);
+		IFileSystem? writeFs = inMemory ? new MockFileSystem() : null;
 		var strictCommand = service.IsStrict(options.Strict);
 
-		serviceInvoker.AddCommand(service, (options, readFs, writeFs), strictCommand,
-			static async (s, col, state, ctx) => await s.Build(col, state.readFs, state.options, state.writeFs, ctx)
+		serviceInvoker.AddCommand(service, (options, writeFs), strictCommand,
+			static async (s, col, state, ctx) => await s.Build(col, state.options, state.writeFs, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

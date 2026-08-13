@@ -23,7 +23,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 	public BundleProfileGitHubReleaseTests(ITestOutputHelper output) : base(output)
 	{
 		_mockReleaseService = A.Fake<IGitHubReleaseService>();
-		_service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, _mockReleaseService);
+		_service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, _mockReleaseService);
 
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
