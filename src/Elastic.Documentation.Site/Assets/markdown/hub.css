@@ -209,7 +209,10 @@
 	   where focus sits rather than what is clickable. */
 	.hub-card-linked:hover,
 	.hub-card:focus-within {
-		border-color: var(--color-grey-30);
+		/* grey-80 is what {page-card} uses for the same job, and it clears the 3:1 ratio a
+		   state indicator needs. The resting grey-20 border is a container edge, not the
+		   thing that identifies the control, so it stays quiet. */
+		border-color: var(--color-grey-80);
 		box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
 	}
 	/* The card title's link covers the whole card, so the lift and the target agree.
