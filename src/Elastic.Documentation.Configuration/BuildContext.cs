@@ -54,6 +54,13 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	/// <summary>
+	/// The content source this build publishes (assembler builds only): <see cref="Assembler.ContentSource.Current"/>
+	/// for production, <see cref="Assembler.ContentSource.Next"/> for staging. Null for isolated/local
+	/// builds, which have no publish target and render everything.
+	/// </summary>
+	public ContentSource? ContentSource { get; init; }
+
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
