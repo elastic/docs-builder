@@ -18,6 +18,7 @@ using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Migration;
+using Elastic.Changelog.Onboarding;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
@@ -1707,6 +1708,29 @@ internal sealed partial class ChangelogCommands(
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)
 		);
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>Validate that every product registered with <c>features.release-notes: prestage</c> has the required onboarding files in its repository.</summary>
+	/// <remarks>
+	/// Probes each Prestage product's repository (resolved from <c>products.yml</c>: the product key
+	/// or its <c>repository:</c> override) via the GitHub contents API for the changelog
+	/// configuration (<c>docs/changelog.yml</c> or <c>changelog.yml</c>) and the
+	/// <c>changelog-validate</c>, <c>changelog-submit</c>, <c>changelog-upload</c>, and
+	/// <c>changelog-bundle-stage</c> workflows. Exits non-zero when anything is missing, so CI can
+	/// gate on registration drift. Set <c>GITHUB_TOKEN</c> to probe private repositories.
+	/// </remarks>
+	/// <param name="owner">GitHub owner (org) the product repositories live under.</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> ValidateOnboarding(string owner = "elastic", CancellationToken ct = default)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+		var service = new ChangelogOnboardingValidationService(logFactory, configurationContext);
+		var args = new ValidateOnboardingArguments { Owner = owner };
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.ValidateOnboardingAsync(c, state, ct));
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
