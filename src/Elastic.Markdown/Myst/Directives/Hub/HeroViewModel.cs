@@ -46,7 +46,7 @@ public class HeroViewModel : DirectiveViewModel
 }
 
 /// <summary>
-/// One hero call to action. The three actions carry equal weight and render as secondary
+/// One hero call to action. The three actions carry equal weight and render as neutral
 /// buttons, so the option a label came from does not change its appearance.
 /// <paramref name="IsAnchor"/> drives the arrow that marks an in-page jump.
 /// <paramref name="IsExternal"/> follows the same rules as inline links: an external link

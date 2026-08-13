@@ -33,7 +33,7 @@ The `:title:` option doubles as the page title, so a hub page needs no body H1. 
 
 Each action is a single markdown link. Actions render left to right, in the order primary, secondary, tertiary. Actions are optional. Omit them for a pure identity hero.
 
-The option names set the order, not the weight. All three render as secondary buttons, with the same styling as the [button](/syntax/buttons.md) directive.
+The option names set the order, not the weight. All three render as neutral buttons, the monochrome variant of the [button](/syntax/buttons.md) directive. A blue variant would make each action claim to be the call to action.
 
 ```markdown
 :::{hero}

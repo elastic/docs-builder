@@ -94,12 +94,12 @@ type ``hero with anchor actions`` () =
 			<h1>Elasticsearch documentation hub</h1>
 		</div>
 		<div class="hub-hero-actions doc-button-group">
-			<span class="doc-button-item doc-button-secondary">
+			<span class="doc-button-item doc-button-neutral">
 				<a class="hub-hero-action" href="#get-started">
 					Get started
 				</a>
 			</span>
-			<span class="doc-button-item doc-button-secondary">
+			<span class="doc-button-item doc-button-neutral">
 				<a class="hub-hero-action" href="#whats-new">
 					What's new
 				</a>
@@ -141,7 +141,7 @@ type ``hero with an external action`` () =
 			<h1>Elasticsearch documentation hub</h1>
 		</div>
 		<div class="hub-hero-actions doc-button-group">
-			<span class="doc-button-item doc-button-secondary">
+			<span class="doc-button-item doc-button-neutral">
 				<a class="hub-hero-action" href="https://www.elastic.co/downloads/elasticsearch" target="_blank" rel="noopener noreferrer">
 					Install Elasticsearch
 				</a>
@@ -179,7 +179,7 @@ type ``hero with an internal action`` () =
 			<h1>Elasticsearch documentation hub</h1>
 		</div>
 		<div class="hub-hero-actions doc-button-group">
-			<span class="doc-button-item doc-button-secondary">
+			<span class="doc-button-item doc-button-neutral">
 				<a class="hub-hero-action" href="/">
 					Syntax reference
 				</a>
@@ -245,7 +245,7 @@ type ``hero with a cross-link action`` () =
 			<h1>docs-builder documentation hub</h1>
 		</div>
 		<div class="hub-hero-actions doc-button-group">
-			<span class="doc-button-item doc-button-secondary">
+			<span class="doc-button-item doc-button-neutral">
 				<a class="hub-hero-action" href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started">
 					Elastic documentation
 				</a>

@@ -55,7 +55,10 @@
 		color: var(--color-ink-dark);
 		text-decoration: none;
 		background: var(--color-white);
-		border: 1px solid var(--color-grey-20);
+		/* grey-70 is the lightest token clearing the 3:1 non-text contrast ratio, which
+		   the border needs because it is what identifies this control. Same reasoning as
+		   the neutral button in button.css. */
+		border: 1px solid var(--color-grey-70);
 		border-radius: 999px;
 		transition:
 			background 0.15s ease,
@@ -64,7 +67,7 @@
 	.hub-hero .hub-hero-eyebrow-link:hover,
 	.hub-hero .hub-hero-eyebrow-link:focus-visible {
 		background: var(--color-grey-10);
-		border-color: var(--color-grey-30);
+		border-color: var(--color-ink-dark);
 	}
 	/* Shared arrow -----------------------------------------------------
 	   The site puts an arrow on exactly two kinds of link: one that sends the
@@ -139,10 +142,11 @@
 		gap: 12px;
 		margin-top: 24px;
 	}
-	/* The three actions carry equal weight, so they all take the secondary button
-	   treatment from the {button} directive rather than a bespoke hero button.
-	   Only the layout properties the hero needs are set here: the type, height,
-	   colour and radius come from `.doc-button-secondary`. */
+	/* The three actions carry equal weight, so they all take the neutral button
+	   treatment from the {button} directive rather than a bespoke hero button. A blue
+	   variant would make each one claim to be the call to action. Only the layout
+	   properties the hero needs are set here: the type, height, colour and radius come
+	   from `.doc-button-neutral`. */
 	.hub-hero .hub-hero-action {
 		gap: 8px;
 	}
