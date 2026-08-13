@@ -11,6 +11,7 @@ using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Creation;
@@ -83,7 +84,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			products: "cloud-hosted, cloud-serverless"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -126,7 +127,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			repo: "cloud"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -169,7 +170,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			repo: "cloud"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -189,24 +190,16 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	}
 
 	/// <summary>
-	/// When --output points to a temp directory (e.g. /tmp/changelog-staging in CI),
-	/// the service must use a write-scoped filesystem that allows temp paths.
-	/// Regression test for ScopedFileSystemException on temp output.
+	/// When --output points to a subdirectory of the repo root, the service writes changelog files there.
 	/// </summary>
 	[Fact]
-	public async Task CreateChangelog_TempOutputDirectory_Succeeds()
+	public async Task CreateChangelog_OutputSubdirectory_Succeeds()
 	{
-		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(mockFs);
-
 		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
-		writeFs.Directory.CreateDirectory(writeFs.Path.GetDirectoryName(configPath)!);
-		await writeFs.File.WriteAllTextAsync(configPath, ConfigWithProductLabels, TestContext.Current.CancellationToken);
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, ConfigWithProductLabels, TestContext.Current.CancellationToken);
 
-		// Use the real system temp path so AllowedSpecialFolder.Temp matches cross-platform.
-		// MockFileSystem's GetTempPath() returns a hardcoded "C:\temp" that diverges from the
-		// real temp on Windows CI (D:\Temp), causing scope validation to fail.
-		var tempOutput = Path.Join(Path.GetTempPath(), "changelog-staging");
+		var output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "changelog-staging");
 
 		var env = FakeCIEnv(
 			prNumber: "1044",
@@ -217,12 +210,12 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			products: "elasticsearch"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, writeFs, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
 			Config = configPath,
-			Output = tempOutput,
+			Output = output,
 			Concise = true
 		};
 
@@ -230,8 +223,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		writeFs.Directory.Exists(tempOutput).Should().BeTrue();
-		writeFs.Directory.GetFiles(tempOutput, "*.yaml").Should().NotBeEmpty();
+		FileSystem.Directory.Exists(output).Should().BeTrue();
+		FileSystem.Directory.GetFiles(output, "*.yaml").Should().NotBeEmpty();
 	}
 
 	[Fact]
@@ -241,7 +234,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var tempOutput = Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempOutput);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, null);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, null);
 		var input = new CreateChangelogArguments
 		{
 			Title = "Test BOM handling",

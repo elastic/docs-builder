@@ -24,6 +24,12 @@ public sealed record BundleDto
 	[YamlMember(Alias = "release-date", ApplyNamingConventions = false)]
 	public string? ReleaseDate { get; set; }
 	/// <summary>
+	/// Optional git ref of the published endpoint this bundle was cut for.
+	/// Written by commit-range bundling (<c>--end-git-ref</c>); serialized as <c>git_ref</c>.
+	/// </summary>
+	[YamlMember(Alias = "git_ref", ApplyNamingConventions = false)]
+	public string? GitRef { get; set; }
+	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>

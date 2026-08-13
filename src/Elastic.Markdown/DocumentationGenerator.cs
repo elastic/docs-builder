@@ -239,13 +239,8 @@ public partial class DocumentationGenerator
 
 	private void CopyFileAcrossFileSystems(IFileInfo source, IFileInfo destination)
 	{
-		if (Context.ReadFileSystem == _writeFileSystem)
-			Context.ReadFileSystem.File.Copy(source.FullName, destination.FullName, overwrite: true);
-		else
-		{
-			var bytes = Context.ReadFileSystem.File.ReadAllBytes(source.FullName);
-			_writeFileSystem.File.WriteAllBytes(destination.FullName, bytes);
-		}
+		var bytes = Context.ReadFileSystem.File.ReadAllBytes(source.FullName);
+		_writeFileSystem.File.WriteAllBytes(destination.FullName, bytes);
 	}
 
 	private void HintUnusedSubstitutionKeys()

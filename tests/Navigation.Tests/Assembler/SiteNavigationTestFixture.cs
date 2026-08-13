@@ -34,6 +34,7 @@ public static class SiteNavigationTestFixture
 	{
 		var baseDir = "/checkouts/current/observability";
 		fileSystem.AddDirectory(baseDir);
+		fileSystem.AddDirectory($"{baseDir}/.git");
 
 		// Add docset.yml
 		// language=yaml
@@ -68,6 +69,7 @@ public static class SiteNavigationTestFixture
 	{
 		var baseDir = "/checkouts/current/serverless-search";
 		fileSystem.AddDirectory(baseDir);
+		fileSystem.AddDirectory($"{baseDir}/.git");
 
 		// Add docset.yml
 		// language=yaml
@@ -100,6 +102,7 @@ public static class SiteNavigationTestFixture
 	{
 		var baseDir = "/checkouts/current/serverless-security";
 		fileSystem.AddDirectory(baseDir);
+		fileSystem.AddDirectory($"{baseDir}/.git");
 
 		// Add docset.yml with underscore prefix
 		// language=yaml
@@ -132,6 +135,7 @@ public static class SiteNavigationTestFixture
 	{
 		var baseDir = "/checkouts/current/platform";
 		fileSystem.AddDirectory(baseDir);
+		fileSystem.AddDirectory($"{baseDir}/.git");
 
 		// Add docset.yml
 		// language=yaml
@@ -186,6 +190,7 @@ public static class SiteNavigationTestFixture
 	{
 		var baseDir = "/checkouts/current/elasticsearch-reference";
 		fileSystem.AddDirectory(baseDir);
+		fileSystem.AddDirectory($"{baseDir}/.git");
 
 		// Add docset.yml
 		// language=yaml

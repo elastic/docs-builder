@@ -7,7 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 using Xunit;
 
 namespace Elastic.Markdown.Tests;
@@ -33,21 +33,19 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 		fs.AddFile(publicDocsetPath, new MockFileData("toc: []\n"));
 		fs.AddFile(internalDocsetPath, new MockFileData("registry: internal\ntoc: []\n"));
 
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
+		var docFs = DocumentationFileSystem.Resolve(
+			fs.DirectoryInfo.New(repoPath),
+			new DocumentationScopeOptions
+			{
+				Inner = fs,
+				ConfigurationFile = internalDocsetPath,
+				Output = Path.Join(root, "codex-configuration-file-test-out")
+			});
 
-		var context = new BuildContext(
-			collector,
-			readFs,
-			writeFs,
-			configurationContext,
-			ExportOptions.Default,
-			source: repoPath,
-			output: Path.Combine(root, "codex-configuration-file-test-out"),
-			configurationFile: readFs.FileInfo.New(internalDocsetPath));
+		var context = new BuildContext(collector, docFs, configurationContext);
 
 		context.ConfigurationPath.FullName.Should().Be(internalDocsetPath);
 		context.DocumentationSourceDirectory.FullName.Should().Be(Path.Combine(repoPath, "docs-dev"));
@@ -67,20 +65,18 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(publicDocsetPath, new MockFileData("toc: []\n"));
 
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
+		var docFs = DocumentationFileSystem.Resolve(
+			fs.DirectoryInfo.New(repoPath),
+			new DocumentationScopeOptions
+			{
+				Inner = fs,
+				Output = Path.Join(root, "codex-configuration-file-fallback-test-out")
+			});
 
-		var context = new BuildContext(
-			collector,
-			readFs,
-			writeFs,
-			configurationContext,
-			ExportOptions.Default,
-			source: repoPath,
-			output: Path.Combine(root, "codex-configuration-file-fallback-test-out"));
+		var context = new BuildContext(collector, docFs, configurationContext);
 
 		context.ConfigurationPath.FullName.Should().Be(publicDocsetPath);
 	}

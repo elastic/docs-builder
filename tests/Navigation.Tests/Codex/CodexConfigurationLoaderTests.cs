@@ -6,7 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Codex;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -21,8 +21,8 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 	private static readonly string ConfigPath =
 		Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml");
 
-	private ScopedFileSystem ScopedFs(MockFileSystem mockFs) =>
-		FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs);
+	private CheckoutsFileSystem ScopedFs(MockFileSystem mockFs) =>
+		CheckoutsFileSystem.FromWorkingDirectory(mockFs);
 
 	private TestDiagnosticsCollector Collector() => new(output);
 

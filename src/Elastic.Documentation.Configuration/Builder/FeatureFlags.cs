@@ -52,6 +52,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["diagnostics-panel"] = value;
 	}
 
+	public bool NavigationPreviewEnabled
+	{
+		get => IsEnabled("navigation-preview");
+		set => _featureFlags["navigation-preview"] = value;
+	}
+
 	public bool GuideNavEnabled
 	{
 		get => IsEnabled("guide-nav");

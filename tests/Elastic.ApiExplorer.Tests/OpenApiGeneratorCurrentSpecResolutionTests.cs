@@ -13,10 +13,10 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -30,10 +30,9 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		ProductsConfiguration? productsConfiguration = null,
 		GitCheckoutInformation? git = null)
 	{
-		var fs = FileSystemFactory.RealGitRootForPath(null);
-		return new BuildContext(collector, fs, fs,
-			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration),
-			ExportOptions.Default, null, null, gitCheckoutInformation: git);
+		return new BuildContext(collector,
+			DocumentationFileSystem.Resolve(new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), new DocumentationScopeOptions { Git = git }),
+			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration));
 	}
 
 	private static ResolvedApiConfiguration ApiConfig(Product product, IFileInfo? localSpecFile = null) => new()

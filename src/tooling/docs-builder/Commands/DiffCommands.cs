@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Refactor.Tracking;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -32,7 +33,7 @@ internal sealed class DiffCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new LocalChangeTrackingService(logFactory, configurationContext);
-		var fs = FileSystemFactory.RealGitRootForPath(path);
+		var fs = DocumentationFileSystem.Resolve(path ?? Paths.WorkingDirectoryRoot.FullName);
 
 		serviceInvoker.AddCommand(service, (path, fs),
 			async static (s, collector, state, _) => await s.ValidateRedirects(collector, state.path, state.fs)
