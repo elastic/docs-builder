@@ -160,7 +160,6 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			  directory: {_changelogDir}
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -175,7 +174,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
 		await FileSystem.File.WriteAllTextAsync(listFile, "keep.yaml\n", TestContext.Current.CancellationToken);
 
-		var expectedOutput = FileSystem.Path.Join(_changelogDir, "bundle.yaml");
+		var expectedOutput = FileSystem.Path.Join(_changelogDir, "changelog-bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Config = configPath,
@@ -200,7 +199,6 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			bundle:
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -360,7 +358,6 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			  repo: elasticsearch
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -386,7 +383,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
 		var bundle = await FileSystem.File.ReadAllTextAsync(
-			FileSystem.Path.Join(outputDir, "bundle.yaml"), TestContext.Current.CancellationToken);
+			FileSystem.Path.Join(outputDir, "changelog-bundle.yaml"), TestContext.Current.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
 	}

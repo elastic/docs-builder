@@ -2304,7 +2304,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			      hide_features:
 			        - feature:profile-hidden
 			        - feature:another-profile-hidden
@@ -2375,7 +2374,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			      hide_features:
 			        - feature:from-profile
 			""";
@@ -2441,7 +2439,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			      hide_features:
 			        - feature:profile-one
 			        - feature:profile-two
@@ -2773,7 +2770,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} *"
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} ga"
 			""";
 
@@ -2834,7 +2830,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} *"
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} ga extra-token"
 			""";
 
@@ -2887,7 +2882,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} ga extra bad"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
@@ -2940,7 +2934,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			bundle:
 			  profiles:
 			    serverless-release:
-			      output: "serverless-{version}.yaml"
 			      output_products: "cloud-serverless {version} {lifecycle}"
 			""";
 
@@ -3010,7 +3003,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    serverless-release:
 			      products: "cloud-serverless {version} *"
-			      output: "serverless-{version}.yaml"
 			      repo: cloud
 			      owner: elastic
 			""";
@@ -3076,7 +3068,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
@@ -3138,7 +3129,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			      repo: elasticsearch
 			""";
 
@@ -3202,7 +3192,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
@@ -3305,7 +3294,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelog.yml"), configContent, TestContext.Current.CancellationToken);
 
@@ -3365,7 +3353,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		// Config is in docs/ subdir, not in CWD directly
 		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "docs/changelog.yml"), configContent, TestContext.Current.CancellationToken);
@@ -3415,7 +3402,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  use_local_changelogs: true
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -3459,8 +3445,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 			TestContext.Current.CancellationToken
 		);
 
-		// Profile writes to _changelogDir/bundle.yaml because bundle.directory is the fallback for output_directory
-		var expectedOutputPath = FileSystem.Path.Join(_changelogDir, "bundle.yaml");
+		// URL-list invocations have no version, so the default changelog-bundle.yaml naming applies
+		// in bundle.directory (the fallback for output_directory).
+		var expectedOutputPath = FileSystem.Path.Join(_changelogDir, "changelog-bundle.yaml");
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3491,7 +3478,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  use_local_changelogs: true
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -3535,9 +3521,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 			TestContext.Current.CancellationToken
 		);
 
-		// Profile writes to _changelogDir/bundle.yaml (output: "bundle.yaml" + no output_directory in config)
-		// Profile writes to _changelogDir/bundle.yaml because bundle.directory is the fallback for output_directory
-		var expectedOutputPath = FileSystem.Path.Join(_changelogDir, "bundle.yaml");
+		// URL-list invocations have no version, so the default changelog-bundle.yaml naming applies
+		// in bundle.directory (the fallback for output_directory).
+		var expectedOutputPath = FileSystem.Path.Join(_changelogDir, "changelog-bundle.yaml");
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3567,7 +3553,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			bundle:
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -3620,7 +3605,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			bundle:
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -3678,7 +3662,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    serverless-release:
 			      output_products: "cloud-serverless {version}"
-			      output: "serverless-{version}.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -3766,7 +3749,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			bundle:
 			  profiles:
 			    serverless-release:
-			      output: "serverless-{version}.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -3813,7 +3795,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    release:
 			      products: "elasticsearch 9.2.0 ga"
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);

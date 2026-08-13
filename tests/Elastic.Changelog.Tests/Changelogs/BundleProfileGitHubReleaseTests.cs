@@ -54,7 +54,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} {lifecycle}"
 			""".Replace("PLACEHOLDER", _changelogDir);
 
@@ -144,7 +143,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} {lifecycle}"
 			""".Replace("PLACEHOLDER", _changelogDir);
 
@@ -217,7 +215,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			""".Replace("PLACEHOLDER", _changelogDir);
 
 		var configPath = await CreateConfigAsync(configContent);
@@ -259,7 +256,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = await CreateConfigAsync(configContent);
@@ -298,7 +294,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} {lifecycle}"
 			""".Replace("PLACEHOLDER", _changelogDir);
 
@@ -359,7 +354,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			  profiles:
 			    es-gh-release:
 			      source: github_release
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = await CreateConfigAsync(configContent);
@@ -398,7 +392,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			      source: github_release
 			      repo: elasticsearch
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = await CreateConfigAsync(configContent);
@@ -436,7 +429,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = await CreateConfigAsync(configContent);
@@ -478,7 +470,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} {lifecycle}"
 			""".Replace("PLACEHOLDER", _changelogDir);
 
@@ -548,7 +539,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: apm-agent-dotnet
-			      output: "apm-agent-dotnet-{version}.yaml"
 			      output_products: "apm-agent-dotnet {version} {lifecycle}"
 			""".Replace("PLACEHOLDER", _changelogDir);
 
@@ -617,7 +607,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			  profiles:
 			    es-gh-release:
 			      source: github_release
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} {lifecycle}"
 			""".Replace("PLACEHOLDER", _changelogDir);
 
