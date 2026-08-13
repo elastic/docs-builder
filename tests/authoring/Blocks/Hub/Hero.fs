@@ -74,9 +74,40 @@ type ``hero with anchor actions`` () =
 :::
 """
 
+    // Actions render as buttons, and no button on the site carries an arrow, not even
+    // an anchor action that jumps within the page. The assertion starts at the section,
+    // because the pretty-printer only matches from the outermost element of the output.
     [<Fact>]
-    let ``renders the primary action`` () =
-        markdown |> convertsToContainingHtml """<span>Get started</span>"""
+    let ``renders both actions as buttons without an arrow`` () =
+        markdown |> convertsToContainingHtml """
+<section class="hub-hero">
+	<div class="hub-hero-inner">
+		<div class="hub-hero-eyebrow">
+			<a class="hub-hero-eyebrow-link" href="/">
+				<span>Browse all Elastic docs</span>
+				<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
+				</svg>
+			</a>
+		</div>
+		<div class="hub-hero-top">
+			<h1>Elasticsearch documentation hub</h1>
+		</div>
+		<div class="hub-hero-actions doc-button-group">
+			<span class="doc-button-item doc-button-secondary">
+				<a class="hub-hero-action" href="#get-started">
+					Get started
+				</a>
+			</span>
+			<span class="doc-button-item doc-button-secondary">
+				<a class="hub-hero-action" href="#whats-new">
+					What's new
+				</a>
+			</span>
+		</div>
+	</div>
+</section>
+"""
 
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
@@ -101,8 +132,8 @@ type ``hero with an external action`` () =
 		<div class="hub-hero-eyebrow">
 			<a class="hub-hero-eyebrow-link" href="/">
 				<span>Browse all Elastic docs</span>
-				<svg class="hub-hero-eyebrow-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+				<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
 				</svg>
 			</a>
 		</div>
@@ -112,7 +143,7 @@ type ``hero with an external action`` () =
 		<div class="hub-hero-actions doc-button-group">
 			<span class="doc-button-item doc-button-secondary">
 				<a class="hub-hero-action" href="https://www.elastic.co/downloads/elasticsearch" target="_blank" rel="noopener noreferrer">
-					<span>Install Elasticsearch</span>
+					Install Elasticsearch
 				</a>
 			</span>
 		</div>
@@ -139,8 +170,8 @@ type ``hero with an internal action`` () =
 		<div class="hub-hero-eyebrow">
 			<a class="hub-hero-eyebrow-link" href="/">
 				<span>Browse all Elastic docs</span>
-				<svg class="hub-hero-eyebrow-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+				<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
 				</svg>
 			</a>
 		</div>
@@ -150,7 +181,7 @@ type ``hero with an internal action`` () =
 		<div class="hub-hero-actions doc-button-group">
 			<span class="doc-button-item doc-button-secondary">
 				<a class="hub-hero-action" href="/">
-					<span>Syntax reference</span>
+					Syntax reference
 				</a>
 			</span>
 		</div>
@@ -205,8 +236,8 @@ type ``hero with a cross-link action`` () =
 		<div class="hub-hero-eyebrow">
 			<a class="hub-hero-eyebrow-link" href="/">
 				<span>Browse all Elastic docs</span>
-				<svg class="hub-hero-eyebrow-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+				<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
 				</svg>
 			</a>
 		</div>
@@ -216,7 +247,7 @@ type ``hero with a cross-link action`` () =
 		<div class="hub-hero-actions doc-button-group">
 			<span class="doc-button-item doc-button-secondary">
 				<a class="hub-hero-action" href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/get-started">
-					<span>Elastic documentation</span>
+					Elastic documentation
 				</a>
 			</span>
 		</div>

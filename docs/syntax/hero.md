@@ -46,13 +46,13 @@ The option names set the order, not the weight. All three render as secondary bu
 :::
 ```
 
-An action whose URL starts with `#` renders with an arrow, to signal an in-page jump.
+Actions render as buttons, and no button on the site carries an arrow. The arrow belongs to the eyebrow link, which sends the reader onward to the docs home.
 
 Action URLs validate at build time. Use one of these forms:
 
 | Form | Example | Behavior |
 |---|---|---|
-| In-page anchor | `#get-started` | Renders a chevron. |
+| In-page anchor | `#get-started` | Jumps to a section on the same page. Does not preload. |
 | Site-absolute path | `/syntax/hero.md` | The markdown extension is stripped. The link preloads on hover. |
 | Cross-link scheme | `docs-content://get-started/index.md` | Resolves through the link index. Not treated as external, so it does not open in a new tab. |
 | External URL | `https://www.elastic.co/downloads/elasticsearch` | Opens in a new tab, with `rel="noopener noreferrer"`. Does not preload. |
