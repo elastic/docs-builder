@@ -55,8 +55,8 @@
 										{
 											<a class="hub-get-started-option-link" @Model.LinkAttributes(option.Url)>
 												<span>@(string.IsNullOrWhiteSpace(option.UrlLabel) ? "Learn more" : option.UrlLabel)</span>
-												<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-													<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+												<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
 												</svg>
 											</a>
 										}
@@ -87,8 +87,8 @@
 							}
 							<span class="hub-get-started-step-arrow" aria-hidden="true">
 								<span>@(string.IsNullOrWhiteSpace(step.LinkLabel) ? "Open" : step.LinkLabel)</span>
-								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-									<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
 								</svg>
 							</span>
 						</a>
