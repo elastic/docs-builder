@@ -28,7 +28,7 @@ public interface IDocumentationSetNavigation
 
 [DebuggerDisplay("{Url}")]
 public class DocumentationSetNavigation<TModel>
-	: IDocumentationSetNavigation, IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider
+	: IDocumentationSetNavigation, IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider, IAssignableIslandNavigation
 
 	where TModel : class, IDocumentationFile
 {
@@ -56,6 +56,7 @@ public class DocumentationSetNavigation<TModel>
 		HomeProvider = this;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
+		IsIsland = documentationSet.Island;
 		Git = context.Git;
 		Identifier = new Uri($"{Git.RepositoryName}://");
 		_ = _tableOfContentNodes.TryAdd(Identifier, this);
@@ -151,6 +152,9 @@ public class DocumentationSetNavigation<TModel>
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown { get; }
+
+	/// <inheritdoc />
+	public bool IsIsland { get; set; }
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
@@ -445,6 +449,8 @@ public class DocumentationSetNavigation<TModel>
 			return null;
 		}
 		tocNavigation.SetNavigationItems(children);
+		if (tocRef.Island)
+			tocNavigation.IsIsland = true;
 
 		return tocNavigation;
 	}
@@ -633,7 +639,7 @@ public class DocumentationSetNavigation<TModel>
 						var docFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
 						if (docFile is null)
 							break;
-						var args = new FileNavigationArgs(indexRef.PathRelativeToDocumentationSet, indexRef.PathRelativeToContainer, false, childIndex++, folderNavigation, homeAccessor, IslandListingRoot: null);
+						var args = new FileNavigationArgs(indexRef.PathRelativeToDocumentationSet, indexRef.PathRelativeToContainer, false, childIndex++, folderNavigation, homeAccessor);
 						children.Add(DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args));
 						break;
 					}
@@ -642,9 +648,9 @@ public class DocumentationSetNavigation<TModel>
 						// Group node visibility depends on `visual:`.
 						// FolderNavigation.Hidden is derived from its index page's Hidden flag,
 						// so we control group node visibility by setting Hidden on the index leaf.
-						// For island listings visual controls what the island sidebar renders, not the parent nav.
-						// Island groups are always hidden from the parent nav tree.
-						var groupHidden = isIsland || visual is ListingVisual.None;
+						// When this listing is an island the parent nav shows it as a ≫ stub (no subtree),
+						// so group visibility only matters for the island sidebar — driven by visual: as before.
+						var groupHidden = visual is ListingVisual.None;
 						// Derive the group folder path from the first child's parent dir so URL generation works
 						var groupFolderPath = groupRef.PathRelativeToDocumentationSet + "/" + groupRef.GroupKey;
 						var groupFolderNav = new FolderNavigation<TModel>(groupFolderPath, folderNavigation, homeAccessor) { NavigationIndex = childIndex++ };
@@ -677,16 +683,13 @@ public class DocumentationSetNavigation<TModel>
 								continue;
 
 							var leafArgs = new FileNavigationArgs(pathDs, pathCont, pageHidden, groupChildIndex++, groupFolderNav, homeAccessor,
-								ExcludeFromIndexing: excludeFromIndexing,
-								IslandListingRoot: isIsland ? folderNavigation : null);
+								ExcludeFromIndexing: excludeFromIndexing);
 							groupChildren.Add(DocumentationNavigationFactory.CreateFileNavigationLeaf(childDocFile, childFileInfo, leafArgs));
 						}
 
 						if (groupChildren.Count == 0)
 							break;
 						groupFolderNav.SetNavigationItems(groupChildren);
-						if (isIsland)
-							groupFolderNav.IslandListingRoot = folderNavigation;
 						children.Add(groupFolderNav);
 						break;
 					}
@@ -698,8 +701,7 @@ public class DocumentationSetNavigation<TModel>
 						if (docFile is null)
 							break;
 						var args = new FileNavigationArgs(fileRef.PathRelativeToDocumentationSet, fileRef.PathRelativeToContainer, true, childIndex++, folderNavigation, homeAccessor,
-							ExcludeFromIndexing: false,
-							IslandListingRoot: isIsland ? folderNavigation : null);
+							ExcludeFromIndexing: false);
 						children.Add(DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args));
 						break;
 					}
@@ -721,10 +723,7 @@ public class DocumentationSetNavigation<TModel>
 
 		folderNavigation.SetNavigationItems(children);
 		if (isIsland)
-		{
-			folderNavigation.IsIslandListing = true;
-			folderNavigation.IslandVisual = visual;
-		}
+			folderNavigation.IsIsland = true;
 		return folderNavigation;
 	}
 

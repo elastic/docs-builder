@@ -79,6 +79,64 @@ public sealed record NavigationRenderModel
 		};
 	}
 
+	/// <summary>
+	/// Builds an <see cref="IslandNavViewModel"/> for <paramref name="islandRoot"/>.
+	/// Reuses the same projection helpers as <see cref="Create"/> so island sidebars render
+	/// collapsible nodes, badges, nested islands, and htmx preserve-state out of the box.
+	/// </summary>
+	public static IslandNavViewModel CreateIsland(INodeNavigationItem<INavigationModel, INavigationItem> islandRoot)
+	{
+		var backLinks = CreateBackLinks(islandRoot);
+		var nodes = CreateNavigationItems(islandRoot, isTopLevel: true).ToList();
+		var (_, navigationTitle) = ParseNavTitle(islandRoot.NavigationTitle);
+		return new IslandNavViewModel
+		{
+			BackLinks = backLinks,
+			NavigationTitle = navigationTitle,
+			Url = islandRoot.Url,
+			Tree = nodes,
+			ContentHash = HashIsland(backLinks, nodes)
+		};
+	}
+
+	/// <summary>
+	/// Builds the root-first back-link trail out of the island:
+	/// the top navigation root, every ancestor that <see cref="NavigationItemExtensions.RendersAsIsland"/>,
+	/// and the island's immediate parent. Deduped by URL.
+	/// </summary>
+	private static IReadOnlyList<IslandBackLink> CreateBackLinks(INavigationItem islandRoot)
+	{
+		var immediateParent = islandRoot.Parent;
+		var links = new List<IslandBackLink>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		for (var ancestor = immediateParent; ancestor is not null; ancestor = ancestor.Parent)
+		{
+			var include = ReferenceEquals(ancestor, immediateParent)
+				|| ancestor.Parent is null          // top navigation root
+				|| ancestor.RendersAsIsland();
+			if (!include || !seen.Add(ancestor.Url))
+				continue;
+			var (_, title) = ParseNavTitle(ancestor.NavigationTitle);
+			links.Add(new IslandBackLink(title, ancestor.Url));
+		}
+		links.Reverse(); // collected nearest-first, rendered root-first
+		return links;
+	}
+
+	private static string HashIsland(IReadOnlyList<IslandBackLink> backLinks, IReadOnlyList<NavigationRenderNode> tree)
+	{
+		using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+		Append(hash, "island-nav-v1");
+		AppendInt(hash, backLinks.Count);
+		foreach (var link in backLinks)
+		{
+			Append(hash, link.Title);
+			Append(hash, link.Url);
+		}
+		AppendNodes(hash, tree);
+		return Convert.ToHexStringLower(hash.GetHashAndReset().AsSpan(0, 8));
+	}
+
 	private static NavigationRenderNode? CreateRootIndex(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
 		bool isPrimaryNavEnabled,
@@ -117,7 +175,7 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode CreateNode(INodeNavigationItem<INavigationModel, INavigationItem> node, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(node.NavigationTitle);
-		if (node.IsIslandListing)
+		if (node.RendersAsIsland())
 		{
 			return new NavigationRenderNode
 			{

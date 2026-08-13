@@ -2,19 +2,37 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Toc;
-
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IslandNavViewModel
-{
-	public required string BackLinkUrl { get; init; }
-	public required string BackLinkTitle { get; init; }
-	public required string ListingRootUrl { get; init; }
-	public required string ListingRootTitle { get; init; }
-	public required IReadOnlyList<IslandNavGroup> Groups { get; init; }
-	public ListingVisual Visual { get; init; }
-}
+/// <summary>A single back-link in the island sidebar's breadcrumb trail.</summary>
+public sealed record IslandBackLink(string Title, string Url);
 
-public record IslandNavGroup(string Title, string Url, IReadOnlyList<IslandNavPage> Pages);
-public record IslandNavPage(string Title, string Url);
+/// <summary>
+/// Everything <c>_IslandNav.cshtml</c> renders.
+/// The tree is the same <see cref="NavigationRenderNode"/> projection the main sidebar consumes,
+/// rooted at the island instead of at the navigation root.
+/// </summary>
+public sealed record IslandNavViewModel
+{
+	/// <summary>
+	/// Root-first trail out of the island: the top navigation root, each enclosing island,
+	/// and the island's immediate parent. Deduped so the root/immediate-parent never appear twice.
+	/// </summary>
+	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
+
+	/// <summary>Display title of the island root node.</summary>
+	public required string NavigationTitle { get; init; }
+
+	/// <summary>URL of the island root node (its index page).</summary>
+	public required string Url { get; init; }
+
+	/// <summary>Navigation tree rooted at the island, using the same node types as the main sidebar.</summary>
+	public required IReadOnlyList<NavigationRenderNode> Tree { get; init; }
+
+	/// <summary>
+	/// SHA-256 fragment of the island tree content.
+	/// Drives the <c>nav-tree-*</c> <c>hx-preserve</c> id so expand/collapse state survives
+	/// htmx navigations within the island.
+	/// </summary>
+	public required string ContentHash { get; init; }
+}

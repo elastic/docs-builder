@@ -25,8 +25,7 @@ public record FileNavigationArgs(
 	int NavigationIndex,
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent,
 	INavigationHomeAccessor HomeAccessor,
-	bool? ExcludeFromIndexing = null,
-	INodeNavigationItem<INavigationModel, INavigationItem>? IslandListingRoot = null
+	bool? ExcludeFromIndexing = null
 );
 
 /// <summary>

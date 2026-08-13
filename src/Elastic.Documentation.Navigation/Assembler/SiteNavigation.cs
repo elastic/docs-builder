@@ -234,6 +234,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		root ??= node;
 
 		_ = UnseenNodes.Remove(tocRef.Source);
+		// Apply assembler-level island override (OR semantics — can enable, never disable)
+		if (tocRef.Island && node is IAssignableIslandNavigation islandNode)
+			islandNode.IsIsland = true;
 		// Set the navigation index
 		node.Parent = parent;
 		node.NavigationIndex = index;

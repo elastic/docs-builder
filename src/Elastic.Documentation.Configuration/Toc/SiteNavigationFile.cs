@@ -116,7 +116,11 @@ public class PhantomRegistration
 
 public class SiteTableOfContents : List<SiteTableOfContentsRef>;
 
-public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCollection<SiteTableOfContentsRef> Children)
+/// <param name="Island">
+/// When <c>true</c>, the resolved navigation node is marked as an island from the assembler side.
+/// OR-ed with any <c>island: true</c> the content set already declares — can only enable, never disable.
+/// </param>
+public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCollection<SiteTableOfContentsRef> Children, bool Island = false)
 	: ITableOfContentsItem
 {
 	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
@@ -224,7 +228,10 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 				? path
 				: string.Empty;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children);
+			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island);
 		}
 
 		return null;
