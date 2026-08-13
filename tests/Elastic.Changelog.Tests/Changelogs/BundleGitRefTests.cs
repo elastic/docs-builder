@@ -349,10 +349,10 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var plan = await service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		plan.Should().NotBeNull();
-		plan!.NeedsNetwork.Should().BeTrue();
+		plan.NeedsNetwork.Should().BeTrue();
 		plan.NeedsGithubToken.Should().BeTrue();
 		plan.OutputPath.Should().NotBeNull();
-		FileSystem.Path.GetFileName(plan.OutputPath!).Should().Be("cloud-hosted-2026-08-13.yaml");
+		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("cloud-hosted-2026-08-13.yaml");
 	}
 
 	[Fact]
