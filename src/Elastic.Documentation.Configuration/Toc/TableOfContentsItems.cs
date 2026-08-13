@@ -147,8 +147,17 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, string? Sort = null, IReadOnlyCollection<string>? Exclude = null)
 	: ITableOfContentsItem;
 
-public record IsolatedTableOfContentsRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: ITableOfContentsItem;
+/// <param name="Island">
+/// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
+/// <c>- toc: x</c> entry and the child <c>toc.yml</c> root (OR semantics).
+/// </param>
+public record IsolatedTableOfContentsRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	bool Island = false
+) : ITableOfContentsItem;
 
 /// <summary>Controls how much of the listing appears in the rendered navigation tree.</summary>
 public enum ListingVisual

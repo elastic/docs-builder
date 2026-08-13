@@ -267,7 +267,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			// Validate: toc.yml file must exist
 			collector.EmitError(parentContext, $"Table of contents file not found: {fullTocPath}/toc.yml");
-			return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, [], parentContext);
+			return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, [], parentContext, tocRef.Island);
 		}
 
 		// Validate that the toc.yml is not a symlink (security: prevents path traversal attacks)
@@ -305,9 +305,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		if (resolvedChildren.Count == 0)
 			collector.EmitError(tocFilePath, $"Table of contents '{fullTocPath}' has no children defined");
 
-		// Return TOC ref with FULL path and resolved children
-		// The context remains the parent context (where this TOC was referenced)
-		return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, resolvedChildren, parentContext);
+		// Return TOC ref with FULL path and resolved children.
+		// Island flag is OR-ed: either the inline `- toc:` entry or the child toc.yml root can opt in.
+		return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, resolvedChildren, parentContext, tocRef.Island || nestedTocFile.Island);
 	}
 
 	/// <summary>

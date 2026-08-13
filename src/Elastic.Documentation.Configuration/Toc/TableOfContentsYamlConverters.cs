@@ -195,7 +195,11 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Check for toc reference
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string source)
-			return new IsolatedTableOfContentsRef(source, source, children, placeholderContext);
+		{
+			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			return new IsolatedTableOfContentsRef(source, source, children, placeholderContext, island);
+		}
 
 		return null;
 	}

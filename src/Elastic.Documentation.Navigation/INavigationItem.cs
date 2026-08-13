@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration.Toc;
-
 namespace Elastic.Documentation.Navigation;
 
 /// Represents navigation model data for documentation elements.
@@ -43,23 +41,12 @@ public interface INavigationItem
 	bool ExcludeFromIndexing => Hidden;
 
 	/// <summary>
-	/// When non-null, this item is part of an island listing and this is its listing root node.
-	/// Island pages render a dedicated sidebar nav instead of the full tree.
+	/// When <c>true</c>, this node roots an island: the parent nav renders it as a <c>≫</c> stub
+	/// and its subtree renders only inside a dedicated island sidebar.
+	/// Combined with <see cref="NavigationItemExtensions.RendersAsIsland"/> (which also checks
+	/// <see cref="Parent"/> is non-null) to suppress island behaviour on a docset root in isolated builds.
 	/// </summary>
-	INodeNavigationItem<INavigationModel, INavigationItem>? IslandListingRoot => null;
-
-	/// <summary>
-	/// When true, this node IS the island listing root (the listing index page).
-	/// Used to render the island nav when viewing the listing overview page.
-	/// </summary>
-	bool IsIslandListing => false;
-
-	/// <summary>
-	/// For island listing roots, controls what depth the island sidebar nav renders.
-	/// <see cref="ListingVisual.Groups"/> shows group headings only;
-	/// <see cref="ListingVisual.All"/> shows groups with their pages.
-	/// </summary>
-	ListingVisual IslandVisual => ListingVisual.None;
+	bool IsIsland => false;
 
 	int NavigationIndex { get; set; }
 }
@@ -94,6 +81,16 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INaviga
 public interface IAssignableChildrenNavigation
 {
 	void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems);
+}
+
+/// <summary>
+/// Allows external code (e.g. <c>SiteNavigation</c>) to mark a resolved navigation node as an island
+/// after the content set's own isolated build has already finished.
+/// Implemented by every node type that supports <see cref="INavigationItem.IsIsland"/>.
+/// </summary>
+public interface IAssignableIslandNavigation
+{
+	bool IsIsland { get; set; }
 }
 
 public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNavigationItem<TIndex, TChildNavigation>, IAssignableChildrenNavigation

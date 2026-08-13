@@ -11,6 +11,27 @@ namespace Elastic.Documentation.Navigation;
 
 public static class NavigationItemExtensions
 {
+	/// <summary>
+	/// Returns <c>true</c> when <paramref name="item"/> has <see cref="INavigationItem.IsIsland"/> set <em>and</em>
+	/// has a parent — the parent check suppresses island behaviour on an isolated docset root, which has no parent
+	/// but would otherwise render as an island in a single-repo serve.
+	/// </summary>
+	public static bool RendersAsIsland(this INavigationItem item) =>
+		item.IsIsland && item.Parent is not null;
+
+	/// <summary>
+	/// Walks <paramref name="item"/> and then its ancestors, returning the first node that
+	/// <see cref="RendersAsIsland"/>, or <c>null</c> if none do.
+	/// </summary>
+	public static INodeNavigationItem<INavigationModel, INavigationItem>? FindIslandRoot(this INavigationItem item)
+	{
+		for (var current = item; current is not null; current = current.Parent)
+		{
+			if (current is INodeNavigationItem<INavigationModel, INavigationItem> node && node.RendersAsIsland())
+				return node;
+		}
+		return null;
+	}
 	public static ILeafNavigationItem<TModel> QueryIndex<TModel>(
 		this IReadOnlyCollection<INavigationItem> items, INodeNavigationItem<INavigationModel, INavigationItem> node, string fallbackPath, out IReadOnlyCollection<INavigationItem> children
 	)
