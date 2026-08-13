@@ -89,6 +89,9 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 			throw new Exception($"Could not find environment {environment}");
 		Environment = env;
 
+		if (Environment.ToFeatureFlags().NavigationPreviewEnabled)
+			_ = ConfigurationFileProvider.UseNavigationPreview();
+
 		Endpoints.Environment = environment;
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);

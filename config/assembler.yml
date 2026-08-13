@@ -35,6 +35,7 @@ environments:
     path_prefix: docs
     feature_flags:
       WEBSITE_SEARCH: true
+      NAVIGATION_PREVIEW: true
     website_search_url: http://localhost:4078/elastic-website-search.js
   preview:
     uri: https://docs-v3-preview.elastic.dev
@@ -42,6 +43,8 @@ environments:
     content_source: current
     google_tag_manager:
       enabled: false
+    feature_flags:
+      NAVIGATION_PREVIEW: true
   air-gapped:
     uri: http://localhost:8080
     path_prefix: docs
