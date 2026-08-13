@@ -522,7 +522,9 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					: new BundleProfile
 					{
 						Products = kvp.Value.Products,
+#pragma warning disable CS0618 // Output stays parseable for one release cycle so ValidateProfileOutputs can emit an actionable error
 						Output = kvp.Value.Output,
+#pragma warning restore CS0618
 						OutputProducts = kvp.Value.OutputProducts,
 						Description = kvp.Value.Description,
 						Repo = kvp.Value.Repo,

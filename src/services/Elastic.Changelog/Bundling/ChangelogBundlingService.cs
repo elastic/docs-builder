@@ -1104,8 +1104,10 @@ public partial class ChangelogBundlingService(
 		var valid = true;
 		foreach (var (name, profile) in profiles)
 		{
+#pragma warning disable CS0618 // intentionally reading the obsolete field to reject profiles that still set it
 			if (string.IsNullOrWhiteSpace(profile.Output))
 				continue;
+#pragma warning restore CS0618
 			collector.EmitError(string.Empty,
 				$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
 				"as '{product}-{version}.yaml' from the profile's output_products.");

@@ -92,6 +92,7 @@ public record BundleProfile
 	/// field remains parseable for one release cycle so authors get an actionable error rather
 	/// than a YAML parse failure.
 	/// </summary>
+	[Obsolete("No longer supported: bundle output names are derived by convention as '{product}-{version}.yaml' from the profile's output_products. Setting 'output' is a hard error at bundle time.")]
 	public string? Output { get; init; }
 
 	/// <summary>
