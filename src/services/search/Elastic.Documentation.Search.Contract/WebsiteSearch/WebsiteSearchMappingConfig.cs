@@ -11,12 +11,12 @@ namespace Elastic.Documentation.Search.Contract;
 
 [ElasticsearchMappingContext]
 [Index<WebsiteSearchDocument>(
-	NameTemplate = "website-search.lexical-{env}",
+	NameTemplate = "ws-catalog.lexical-{env}",
 	DatePattern = "yyyy.MM.dd.HHmmss",
 	Configuration = typeof(WebsiteSearchLexicalConfig)
 )]
 [Index<WebsiteSearchDocument>(
-	NameTemplate = "website-search.semantic-{env}",
+	NameTemplate = "ws-catalog.semantic-{env}",
 	Variant = "Semantic",
 	DatePattern = "yyyy.MM.dd.HHmmss",
 	Configuration = typeof(WebsiteSearchSemanticConfig)
@@ -30,7 +30,13 @@ public class WebsiteSearchLexicalConfig : IConfigureElasticsearch<WebsiteSearchD
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
-		mappings.AddSearchDocumentMappings();
+		mappings.AddSearchDocumentMappings().AddSiteMappings()
+			// WebsiteSearchDocument has no C# property for applies_to (DocumentationDocument-only) and
+			// its inherited parents field lacks the docs-specific keyword/multi-field topology — merge
+			// DocumentationDocument's mapping (additive-only; existing fields here always win) so docs-*
+			// documents reindexed into the unified ws-catalog index keep their field-level mapping
+			// instead of falling back to Elasticsearch dynamic mapping.
+			.Merge(DocumentationMappingContext.DocumentationDocument, d => d.AddDocumentationMappings());
 }
 
 public class WebsiteSearchSemanticConfig : IConfigureElasticsearch<WebsiteSearchDocument>
@@ -40,5 +46,6 @@ public class WebsiteSearchSemanticConfig : IConfigureElasticsearch<WebsiteSearch
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
-		mappings.AddSearchDocumentMappings(semantic: true);
+		mappings.AddSearchDocumentMappings(semantic: true).AddSiteMappings()
+			.Merge(DocumentationMappingContext.DocumentationDocumentSemantic, d => d.AddDocumentationMappings());
 }

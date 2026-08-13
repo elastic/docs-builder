@@ -12,6 +12,6 @@ public record ParentDocument
 	[JsonPropertyName("title")]
 	public required string Title { get; set; }
 
-	[JsonPropertyName("url")]
-	public required string Url { get; set; }
+	[JsonPropertyName("path")]
+	public required string Path { get; set; }
 }

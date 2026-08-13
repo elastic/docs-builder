@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using Amazon.S3;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -11,7 +10,6 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Integrations.S3;
-using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
@@ -53,9 +51,15 @@ public record ChangelogUploadArguments
 	/// CLI via the precedence <c>--branch</c> &gt; the current git branch.
 	/// </summary>
 	public string? Branch { get; init; }
+
+	/// <summary>
+	/// When true, upload every discovered file even when its content hash matches the remote object.
+	/// Useful to re-trigger downstream scrubbers without changing file content.
+	/// </summary>
+	public bool SkipEtagCheck { get; init; }
 }
 
-public partial class ChangelogUploadService(
+public class ChangelogUploadService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
 	ScopedFileSystem? fileSystem = null,
@@ -67,19 +71,6 @@ public partial class ChangelogUploadService(
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
 		: null;
-
-	[GeneratedRegex(@"^[a-zA-Z0-9_-]+$")]
-	private static partial Regex ProductNameRegex();
-
-	// Authoring repo identifier used as a single S3 path segment (changelog/{org}/{repo}/{branch}/{file}).
-	// Same character class as product names but also allows "."; "." / ".." are rejected to prevent traversal.
-	[GeneratedRegex(@"^[a-zA-Z0-9._-]+$")]
-	private static partial Regex RepoNameRegex();
-
-	// GitHub owner (org) login used as the first changelog key segment (changelog/{org}/...). GitHub logins
-	// are ASCII alphanumerics with single hyphens; "." is intentionally excluded.
-	[GeneratedRegex(@"^[a-zA-Z0-9-]+$")]
-	private static partial Regex OrgNameRegex();
 
 	public async Task<bool> Upload(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
@@ -123,49 +114,17 @@ public partial class ChangelogUploadService(
 		var client = s3Client ?? defaultClient!;
 		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
-		var result = await uploader.Upload(targets, ctx);
+		var result = await uploader.Upload(targets, args.SkipEtagCheck, ctx);
 
 		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed", result.Uploaded, result.Skipped, result.Failed);
 
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
 
-		// On a successful upload, refresh the per-product registry.json so consumers can enumerate
-		// content without an S3 listing: the bundle index (consumed by the changelog directive in
-		// cdn: mode) for bundle uploads, and the changelog-entry index (consumed by `changelog
-		// bundle` when sourcing entries from the CDN) for changelog uploads.
-		// Failures here are logged but don't fail the upload — the objects themselves are already in S3.
-		if (result.Failed == 0 && targets.Count > 0)
-		{
-			var scope = args.ArtifactType == ArtifactType.Bundle ? RegistryScope.Bundle : RegistryScope.Changelog;
-			await RefreshRegistries(collector, client, etagCalculator, args, targets, scope, ctx);
-		}
-
+		// No registry refresh here: the scrubber Lambda is the sole producer of the public
+		// registry.json, reconciled from actual public bucket state on every S3 event this upload
+		// just emitted (elastic/docs-eng-team#688). A private-bucket registry no longer exists.
 		return result.Failed == 0;
-	}
-
-	private async Task RefreshRegistries(
-		IDiagnosticsCollector collector,
-		IAmazonS3 client,
-		IS3EtagCalculator etagCalculator,
-		ChangelogUploadArguments args,
-		IReadOnlyList<UploadTarget> uploadTargets,
-		RegistryScope scope,
-		Cancel ctx)
-	{
-		try
-		{
-			var builder = new RegistryBuilder(logFactory, _fileSystem, client, etagCalculator, args.S3BucketName);
-			var result = await builder.RefreshAsync(collector, uploadTargets, ctx, scope);
-			_logger.LogInformation("Registry refresh ({Scope}): {Updated} updated, {Unchanged} unchanged, {Failed} failed",
-				scope, result.Updated, result.Unchanged, result.Failed);
-		}
-		catch (Exception ex) when (ex is not OperationCanceledException)
-		{
-			// Leaving the manifest stale is non-fatal — bundle objects are unaffected.
-			_logger.LogWarning(ex, "Registry refresh failed; bundles uploaded successfully but manifests may be stale");
-			collector.EmitWarning(string.Empty, $"Failed to refresh registry manifest(s): {ex.Message}");
-		}
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir, string? org, string? repo, string? branch)
@@ -173,7 +132,7 @@ public partial class ChangelogUploadService(
 		// Option AD: entries live once, under the authoring org/repo/branch pool — independent of which
 		// products later consume them. Org, repo, and branch must all resolve (CLI flags > bundle config >
 		// git); a missing/invalid value is fatal because every entry key derives from them.
-		if (string.IsNullOrWhiteSpace(org) || !OrgNameRegex().IsMatch(org))
+		if (!ChangelogKeys.IsValidOrg(org))
 		{
 			collector.EmitError(string.Empty,
 				$"A valid GitHub owner is required to upload changelog entries (resolved: \"{org ?? "<none>"}\"). " +
@@ -181,7 +140,7 @@ public partial class ChangelogUploadService(
 			return [];
 		}
 
-		if (string.IsNullOrWhiteSpace(repo) || !RepoNameRegex().IsMatch(repo) || repo is "." or "..")
+		if (!ChangelogKeys.IsValidRepo(repo))
 		{
 			collector.EmitError(string.Empty,
 				$"A valid repository identifier is required to upload changelog entries (resolved: \"{repo ?? "<none>"}\"). " +
@@ -189,7 +148,7 @@ public partial class ChangelogUploadService(
 			return [];
 		}
 
-		if (string.IsNullOrWhiteSpace(branch) || !IsValidBranch(branch))
+		if (!ChangelogKeys.IsValidBranch(branch))
 		{
 			collector.EmitError(string.Empty,
 				$"A valid branch is required to upload changelog entries (resolved: \"{branch ?? "<none>"}\"). " +
@@ -215,24 +174,11 @@ public partial class ChangelogUploadService(
 			}
 
 			var fileName = _fileSystem.Path.GetFileName(filePath);
-			var s3Key = $"changelog/{org}/{repo}/{branch}/{fileName}";
+			var s3Key = ChangelogKeys.ChangelogFileKey(org, repo, branch, fileName);
 			targets.Add(new UploadTarget(filePath, s3Key));
 		}
 
 		return targets;
-	}
-
-	// Validates a branch used verbatim as one-or-more changelog key segments
-	// (changelog/{org}/{repo}/{branch}/…). Each "/"-delimited part uses the repo-name class; empty parts
-	// and "." / ".." are rejected so slashes stay meaningful without enabling traversal.
-	private static bool IsValidBranch(string branch)
-	{
-		foreach (var part in branch.Split('/'))
-		{
-			if (part.Length == 0 || part is "." or ".." || !RepoNameRegex().IsMatch(part))
-				return false;
-		}
-		return true;
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
@@ -255,6 +201,21 @@ public partial class ChangelogUploadService(
 			}
 
 			var products = ReadProductsFromBundle(filePath);
+
+			// Amends published before products were copied from the parent omit them; derive the
+			// destination from the parent bundle next to the amend so they are not silently skipped.
+			if (products.Count == 0 && BundleAmendMerger.IsAmendFile(filePath))
+			{
+				products = ReadProductsFromParentBundle(filePath);
+				if (products.Count == 0)
+				{
+					collector.EmitWarning(filePath,
+						"Amend bundle declares no products and its parent bundle is missing or has none; " +
+						"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products.");
+					continue;
+				}
+			}
+
 			if (products.Count == 0)
 			{
 				_logger.LogDebug("No products found in bundle {File}, skipping", filePath);
@@ -265,18 +226,26 @@ public partial class ChangelogUploadService(
 
 			foreach (var product in products)
 			{
-				if (!ProductNameRegex().IsMatch(product))
+				if (!ChangelogKeys.IsValidProduct(product))
 				{
 					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
 					continue;
 				}
 
-				var s3Key = $"bundle/{product}/{fileName}";
+				var s3Key = ChangelogKeys.BundleFileKey(product, fileName);
 				targets.Add(new UploadTarget(filePath, s3Key));
 			}
 		}
 
 		return targets;
+	}
+
+	private List<string> ReadProductsFromParentBundle(string amendFilePath)
+	{
+		var parentPath = BundleAmendMerger.GetParentBundlePath(amendFilePath);
+		return parentPath != null && _fileSystem.File.Exists(parentPath)
+			? ReadProductsFromBundle(parentPath)
+			: [];
 	}
 
 	private List<string> ReadProductsFromBundle(string filePath)

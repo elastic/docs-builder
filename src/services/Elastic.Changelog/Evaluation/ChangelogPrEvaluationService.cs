@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
@@ -102,7 +103,9 @@ public class ChangelogPrEvaluationService(
 		if (string.IsNullOrWhiteSpace(title))
 		{
 			_logger.LogWarning("PR has no title after processing");
-			return await SetOutputs(PrEvaluationResult.NoTitle);
+			collector.EmitError(string.Empty, "PR has no title. Cannot generate a changelog entry.");
+			_ = await SetOutputs(PrEvaluationResult.NoTitle);
+			return false;
 		}
 
 		// Resolve type
@@ -143,13 +146,15 @@ public class ChangelogPrEvaluationService(
 		if (resolvedType == null)
 		{
 			_logger.LogInformation("No type label found on PR");
-			return await SetOutputs(
+			collector.EmitError(string.Empty, "No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label.");
+			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel, title,
 				resolvedDescription: description,
 				labelTable: BuildLabelTable(config.LabelToType),
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels
 			);
+			return false;
 		}
 
 		// Multiple products are configured via labels but none matched, and no defaults are
@@ -160,12 +165,14 @@ public class ChangelogPrEvaluationService(
 			&& (config.ProductsConfiguration?.Default is null or { Count: 0 }))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
-			return await SetOutputs(
+			collector.EmitError(string.Empty, "No matching product label found on this PR. Add a label from your changelog.yml pivot.products.");
+			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel, title,
 				resolvedDescription: description,
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels
 			);
+			return false;
 		}
 
 		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}", title, resolvedType, resolvedProducts, existingFilename);
@@ -203,24 +210,27 @@ public class ChangelogPrEvaluationService(
 		await coreService.SetOutputAsync("status", statusString);
 		await coreService.SetOutputAsync("should-generate", shouldGenerate ? "true" : "false");
 
+		// All PR-derived outputs flow through OutputSanitizer to strip
+		// control characters and enforce per-field length caps before they
+		// cross the GITHUB_OUTPUT boundary. See elastic/docs-eng-team#491.
 		if (resolvedTitle != null)
-			await coreService.SetOutputAsync("title", resolvedTitle);
+			await coreService.SetOutputAsync("title", OutputSanitizer.SanitizeForOutput(resolvedTitle, OutputSanitizer.TitleMaxLength));
 		if (resolvedDescription != null)
-			await coreService.SetOutputAsync("description", resolvedDescription);
+			await coreService.SetOutputAsync("description", OutputSanitizer.SanitizeForOutput(resolvedDescription, OutputSanitizer.DescriptionMaxLength));
 		if (resolvedType != null)
-			await coreService.SetOutputAsync("type", resolvedType);
+			await coreService.SetOutputAsync("type", OutputSanitizer.SanitizeForOutput(resolvedType, OutputSanitizer.TypeMaxLength));
 		if (resolvedProducts != null)
-			await coreService.SetOutputAsync("products", resolvedProducts);
+			await coreService.SetOutputAsync("products", OutputSanitizer.SanitizeForOutput(resolvedProducts, OutputSanitizer.LabelsMaxLength));
 		if (labelTable != null)
-			await coreService.SetOutputAsync("label-table", labelTable);
+			await coreService.SetOutputAsync("label-table", OutputSanitizer.SanitizeForOutput(labelTable, OutputSanitizer.LabelTableMaxLength));
 		if (productLabelTable != null)
-			await coreService.SetOutputAsync("product-label-table", productLabelTable);
+			await coreService.SetOutputAsync("product-label-table", OutputSanitizer.SanitizeForOutput(productLabelTable, OutputSanitizer.LabelTableMaxLength));
 		if (changelogDir != null)
-			await coreService.SetOutputAsync("changelog-dir", changelogDir);
+			await coreService.SetOutputAsync("changelog-dir", OutputSanitizer.SanitizeForOutput(changelogDir, OutputSanitizer.PathMaxLength));
 		if (existingFilename != null)
-			await coreService.SetOutputAsync("existing-changelog-filename", existingFilename);
+			await coreService.SetOutputAsync("existing-changelog-filename", OutputSanitizer.SanitizeForOutput(existingFilename, OutputSanitizer.PathMaxLength));
 		if (skipLabels != null)
-			await coreService.SetOutputAsync("skip-labels", skipLabels);
+			await coreService.SetOutputAsync("skip-labels", OutputSanitizer.SanitizeForOutput(skipLabels, OutputSanitizer.LabelsMaxLength));
 
 		return true;
 	}

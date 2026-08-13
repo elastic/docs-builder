@@ -27,12 +27,14 @@ public static class ChangelogInlineRenderer
 			Subsections = block.Subsections,
 			DropdownsEnabled = block.DropdownsEnabled,
 			ReleaseDatesEnabled = block.ReleaseDatesEnabled,
+			HighlightsEnabled = block.HighlightsEnabled,
 			TypeFilter = block.TypeFilter,
 			LinkVisibility = block.LinkVisibility,
 			DescriptionVisibility = block.DescriptionVisibility,
 			PrivateRepositories = block.PrivateRepositories,
 			HideFeatures = block.HideFeatures,
-			PublishBlocker = block.PublishBlocker
+			PublishBlocker = block.PublishBlocker,
+			FromCdn = block.CdnProduct is not null
 		};
 
 		// Render each bundle as a version section (already sorted by semver descending)
@@ -60,8 +62,7 @@ public static class ChangelogInlineRenderer
 	public static bool IsDedicatedSeparatedTypePage(ChangelogTypeFilter typeFilter) =>
 		typeFilter is ChangelogTypeFilter.BreakingChange
 			or ChangelogTypeFilter.Deprecation
-			or ChangelogTypeFilter.KnownIssue
-			or ChangelogTypeFilter.Highlight;
+			or ChangelogTypeFilter.KnownIssue;
 
 	/// <summary>
 	/// True when <paramref name="typeFilter"/> is <see cref="ChangelogTypeFilter.All"/> or default.
@@ -122,6 +123,7 @@ public static class ChangelogInlineRenderer
 		{
 			ChangelogLinkVisibility.KeepLinks => false,
 			ChangelogLinkVisibility.HideLinks => true,
+			_ when options.FromCdn => false,
 			_ => ShouldHideLinksForRepo(bundle.Repo, options.PrivateRepositories)
 		};
 
@@ -154,7 +156,6 @@ public static class ChangelogInlineRenderer
 			ChangelogTypeFilter.BreakingChange => entries.Where(e => e.Type == ChangelogEntryType.BreakingChange).ToList(),
 			ChangelogTypeFilter.Deprecation => entries.Where(e => e.Type == ChangelogEntryType.Deprecation).ToList(),
 			ChangelogTypeFilter.KnownIssue => entries.Where(e => e.Type == ChangelogEntryType.KnownIssue).ToList(),
-			ChangelogTypeFilter.Highlight => entries.Where(e => e.Highlight == true).ToList(),
 			_ => entries.Where(e => !ChangelogBlock.SeparatedTypes.Contains(e.Type)).ToList() // Default: exclude separated types
 		};
 
@@ -197,6 +198,7 @@ public static class ChangelogInlineRenderer
 		visibility switch
 		{
 			ChangelogDescriptionVisibility.HideDescriptions => true,
+			ChangelogDescriptionVisibility.KeepHighlightDescriptions => true,
 			ChangelogDescriptionVisibility.KeepDescriptions => false,
 			ChangelogDescriptionVisibility.Auto => !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories),
 			_ => !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories)
@@ -239,6 +241,9 @@ public static class ChangelogInlineRenderer
 		var subsections = options.Subsections;
 		var hideLinks = model.HideLinks;
 		var hideEntryDescriptions = model.HideEntryDescriptions;
+		var hideHighlightDescriptions = options.DescriptionVisibility
+			is not ChangelogDescriptionVisibility.KeepHighlightDescriptions
+			&& hideEntryDescriptions;
 		var dropdownsEnabled = options.DropdownsEnabled;
 		var typeFilter = options.TypeFilter;
 		var publishBlocker = options.PublishBlocker;
@@ -285,19 +290,6 @@ public static class ChangelogInlineRenderer
 
 		AppendVersionHeader(sb, title, description, releaseDate);
 
-		// Special case: When filtering by highlight, render only highlights without type-based sections
-		if (typeFilter == ChangelogTypeFilter.Highlight)
-		{
-			if (highlights.Count > 0)
-			{
-				_ = sb.AppendLine();
-				RenderSeparatedTypeEntries(
-					sb, highlights, repo, owner, subsections, dropdownsEnabled, groupBySubtype: false,
-					hideLinks, hideEntryDescriptions, publishBlocker);
-			}
-			return sb.ToString();
-		}
-
 		if (breakingChanges.Count > 0)
 		{
 			AppendSectionHeader(sb, dedicatedPage, $"### Breaking changes [{repo}-{titleSlug}-breaking-changes]");
@@ -307,14 +299,14 @@ public static class ChangelogInlineRenderer
 				RenderDetailedEntriesFlattened(sb, breakingChanges, repo, owner, groupBySubtype: true, hideLinks, hideEntryDescriptions);
 		}
 
-		if (highlights.Count > 0 && typeFilter == ChangelogTypeFilter.All)
+		if (highlights.Count > 0 && options.HighlightsEnabled)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Highlights [{repo}-{titleSlug}-highlights]");
 			if (dropdownsEnabled)
-				RenderDetailedEntries(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+				RenderDetailedEntries(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideHighlightDescriptions, publishBlocker);
 			else
-				RenderDetailedEntriesFlattened(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions);
+				RenderDetailedEntriesFlattened(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideHighlightDescriptions);
 		}
 
 		if (security.Count > 0)
@@ -613,7 +605,7 @@ public static class ChangelogInlineRenderer
 			}
 		}
 
-		return linksParts.Count > 0 ? $"[{string.Join(", ", linksParts)}]" : string.Empty;
+		return linksParts.Count > 0 ? string.Join(" ", linksParts) : string.Empty;
 	}
 
 	private static void RenderDetailedEntry(StringBuilder sb, ChangelogEntry entry, string repo, string owner, bool hideLinks, bool hideEntryDescriptions)

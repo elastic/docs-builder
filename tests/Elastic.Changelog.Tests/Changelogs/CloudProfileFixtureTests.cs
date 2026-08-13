@@ -14,7 +14,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// <summary>
 /// End-to-end fixture modelled on the non-trivial <c>elastic/cloud</c> changelog configuration
 /// (multi-product, a monthly profile, <c>bundle.repo</c> with repo != product, <c>link_allow_repos</c>,
-/// <c>resolve: true</c>, <c>release_dates: false</c>, and <c>rules.bundle.exclude_types</c>), but using
+/// <c>release_dates: false</c> and <c>rules.bundle.exclude_types</c>), but using
 /// anonymized repo and product names only — never the real org/repo/product IDs.
 ///
 /// It verifies the artifact-root (Option AD) behaviour: entries are sourced once from the authoring
@@ -115,7 +115,6 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 			    exclude_types: "docs"
 			bundle:
 			  output_directory: PLACEHOLDER
-			  resolve: true
 			  repo: widget
 			  owner: elastic
 			  release_dates: false

@@ -90,15 +90,19 @@ public class DocumentationSetFileTests
 		var yaml = """
 		           project: 'test-project'
 		           api:
-		             elasticsearch: elasticsearch-openapi.json
-		             kibana: kibana-openapi.json
+		             elasticsearch:
+		               - spec: elasticsearch-openapi.json
+		                 product: elasticsearch
+		             kibana:
+		               - spec: kibana-openapi.json
+		                 product: kibana
 		           """;
 
 		var result = Deserialize(yaml);
 
-		result.Api.Should().HaveCount(2)
-			.And.ContainKey("elasticsearch").WhoseValue.GetSpecPaths().Should().Contain("elasticsearch-openapi.json");
-		result.Api.Should().ContainKey("kibana").WhoseValue.GetSpecPaths().Should().Contain("kibana-openapi.json");
+		result.Api.Should().HaveCount(2);
+		result.Api["elasticsearch"].SingleEntry!.Spec.Should().Be("elasticsearch-openapi.json");
+		result.Api["kibana"].SingleEntry!.Spec.Should().Be("kibana-openapi.json");
 	}
 
 	[Fact]
@@ -271,8 +275,12 @@ public class DocumentationSetFileTests
 		           features:
 		             primary-nav: false
 		           api:
-		             elasticsearch: elasticsearch-openapi.json
-		             kibana: kibana-openapi.json
+		             elasticsearch:
+		               - spec: elasticsearch-openapi.json
+		                 product: elasticsearch
+		             kibana:
+		               - spec: kibana-openapi.json
+		                 product: kibana
 		           toc:
 		             - file: index.md
 		             - hidden: 404.md

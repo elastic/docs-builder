@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="FakeItEasy" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
   </ItemGroup>
 

@@ -154,6 +154,31 @@ public class IndicesCleanupPlannerTests
 	}
 
 	[Fact]
+	public void Applying_the_plan_then_replanning_yields_no_further_deletions()
+	{
+		// f1 (idempotency): a cleanup run is safe to retry. Simulate applying plan #1 (removing
+		// exactly the indices it deleted) and re-planning against the resulting state — the second
+		// plan must delete nothing further and keep exactly what the first plan kept.
+		var indexAliases = Idx(
+			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"]),
+			("test-source.lexical-prod-2026.04.14.000000", []),
+			("test-source.lexical-prod-2026.04.13.000000", []),
+			("test-source.lexical-prod-2026.04.12.000000", []));
+
+		var firstPlan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 2);
+		firstPlan.ToDelete.Should().HaveCount(2); // sanity check against the scenario above
+
+		var afterApply = indexAliases
+			.Where(kv => firstPlan.ToDelete.All(d => d.Name != kv.Key))
+			.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+
+		var secondPlan = IndicesCleanupPlanner.Plan(afterApply, [TestEntry], keep: 2);
+
+		secondPlan.ToDelete.Should().BeEmpty();
+		secondPlan.ToKeep.Select(i => i.Name).Should().BeEquivalentTo(firstPlan.ToKeep.Select(i => i.Name));
+	}
+
+	[Fact]
 	public void BuildAliasEntries_returns_ten_entries()
 	{
 		var entries = IndicesCleanupPlanner.BuildAliasEntries("public", "prod");
@@ -164,8 +189,8 @@ public class IndicesCleanupPlannerTests
 		entries.Should().Contain(e => e.Source == "site-public" || e.LatestAlias.StartsWith("site-public."));
 		entries.Should().Contain(e => e.Source == "labs-public" || e.LatestAlias.StartsWith("labs-public."));
 		entries.Should().Contain(e => e.Source == "guide-public" || e.LatestAlias.StartsWith("guide-public."));
-		entries.Should().Contain(e => e.LatestAlias == "website-search.lexical-prod-latest");
-		entries.Should().Contain(e => e.LatestAlias == "website-search.semantic-prod-latest");
+		entries.Should().Contain(e => e.LatestAlias == "ws-catalog.lexical-prod-latest");
+		entries.Should().Contain(e => e.LatestAlias == "ws-catalog.semantic-prod-latest");
 		entries.Should().OnlyContain(e => e.LatestAlias.EndsWith("-latest"));
 		entries.Should().OnlyContain(e => e.IndexPattern.EndsWith("-*"));
 	}
@@ -174,12 +199,12 @@ public class IndicesCleanupPlannerTests
 	public void PageAlias_on_older_index_keeps_it_regardless_of_keep_budget()
 	{
 		// ws-content-prod points to an older index that -latest does not; it must not be deleted
-		var semanticEntry = new AliasEntry("website-search", "semantic", "prod",
-			"website-search.semantic-prod-latest", "website-search.semantic-prod-*");
+		var semanticEntry = new AliasEntry("ws-catalog", "semantic", "prod",
+			"ws-catalog.semantic-prod-latest", "ws-catalog.semantic-prod-*");
 		var indexAliases = Idx(
-			("website-search.semantic-prod-2026.04.15.000000", ["website-search.semantic-prod-latest"]),
-			("website-search.semantic-prod-2026.04.14.000000", ["ws-content-prod"]),
-			("website-search.semantic-prod-2026.04.13.000000", []));
+			("ws-catalog.semantic-prod-2026.04.15.000000", ["ws-catalog.semantic-prod-latest"]),
+			("ws-catalog.semantic-prod-2026.04.14.000000", ["ws-content-prod"]),
+			("ws-catalog.semantic-prod-2026.04.13.000000", []));
 
 		// keep=1 would normally only retain the active index and delete the other two;
 		// but the page-alias index must also survive
@@ -187,21 +212,21 @@ public class IndicesCleanupPlannerTests
 			pageAlias: "ws-content-prod");
 
 		plan.ToKeep.Should().HaveCount(2);
-		plan.ToKeep.Should().Contain(i => i.Name == "website-search.semantic-prod-2026.04.15.000000" && i.IsActive);
-		plan.ToKeep.Should().Contain(i => i.Name == "website-search.semantic-prod-2026.04.14.000000" && i.IsActive);
-		plan.ToDelete.Should().ContainSingle(i => i.Name == "website-search.semantic-prod-2026.04.13.000000");
+		plan.ToKeep.Should().Contain(i => i.Name == "ws-catalog.semantic-prod-2026.04.15.000000" && i.IsActive);
+		plan.ToKeep.Should().Contain(i => i.Name == "ws-catalog.semantic-prod-2026.04.14.000000" && i.IsActive);
+		plan.ToDelete.Should().ContainSingle(i => i.Name == "ws-catalog.semantic-prod-2026.04.13.000000");
 	}
 
 	[Fact]
 	public void PageAlias_pointing_to_different_index_than_semantic_latest_emits_warning()
 	{
-		var semanticEntry = new AliasEntry("website-search", "semantic", "prod",
-			"website-search.semantic-prod-latest", "website-search.semantic-prod-*");
+		var semanticEntry = new AliasEntry("ws-catalog", "semantic", "prod",
+			"ws-catalog.semantic-prod-latest", "ws-catalog.semantic-prod-*");
 		var indexAliases = Idx(
 			// -latest points here
-			("website-search.semantic-prod-2026.04.15.000000", ["website-search.semantic-prod-latest"]),
+			("ws-catalog.semantic-prod-2026.04.15.000000", ["ws-catalog.semantic-prod-latest"]),
 			// pages alias points to an older index — mismatch!
-			("website-search.semantic-prod-2026.04.14.000000", ["ws-content-prod"]));
+			("ws-catalog.semantic-prod-2026.04.14.000000", ["ws-content-prod"]));
 
 		var plan = IndicesCleanupPlanner.Plan(indexAliases, [semanticEntry], keep: 2,
 			pageAlias: "ws-content-prod");

@@ -617,7 +617,97 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_BundleArtifactType_UploadsRegistryAlongsideBundle()
+	public void DiscoverBundleUploadTargets_AmendWithProducts_MapsToProductKey()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// Amend materialized by a current docs-builder: it carries the parent's complete products.
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "elasticsearch-9.3.0.amend-1.yaml"), new MockFileData("""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: 2-late.yaml
+			      checksum: c0ffee
+			    type: enhancement
+			    title: Late addition
+			"""));
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("bundle/elasticsearch/elasticsearch-9.3.0.amend-1.yaml");
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().Be(0);
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_LegacyAmendWithoutProducts_DerivesDestinationFromParent()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "stack-9.3.0.yaml"), new MockFileData("""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			  - product: kibana
+			    target: 9.3.0
+			    repo: kibana
+			entries:
+			  - file:
+			      name: 1-old.yaml
+			      checksum: deadbeef
+			    type: bug-fix
+			    title: To be retracted
+			"""));
+		// Amend published before products were copied from the parent: exclusion only, no products.
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "stack-9.3.0.amend-1.yaml"), new MockFileData("""
+			exclude-entries:
+			  - file:
+			      name: 1-old.yaml
+			      checksum: deadbeef
+			"""));
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().HaveCount(4, "the amend fans out to the parent's products");
+		targets.Should().Contain(t => t.S3Key == "bundle/elasticsearch/stack-9.3.0.amend-1.yaml");
+		targets.Should().Contain(t => t.S3Key == "bundle/kibana/stack-9.3.0.amend-1.yaml");
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().Be(0);
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_OrphanLegacyAmend_WarnsAndSkips()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// No parent bundle next to the amend, and the amend declares no products: the destination
+		// cannot be derived, but the skip must be visible instead of silent.
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "stack-9.3.0.amend-1.yaml"), new MockFileData("""
+			exclude-entries:
+			  - file:
+			      name: 1-old.yaml
+			      checksum: deadbeef
+			"""));
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public async Task Upload_BundleArtifactType_DoesNotWriteRegistry()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
 		_mockFileSystem.Directory.CreateDirectory(bundleDir);
@@ -661,14 +751,16 @@ public class ChangelogUploadServiceTests
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 
+		// The scrubber Lambda is the sole registry producer (docs-eng-team#688 Phase 3):
+		// uploads write YAML objects only, never a registry.json.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
-		)).MustHaveHappenedOnceExactly();
+		)).MustNotHaveHappened();
 	}
 
 	[Fact]
-	public async Task Upload_ChangelogArtifactType_RefreshesRepoScopedRegistry()
+	public async Task Upload_ChangelogArtifactType_DoesNotWriteRegistry()
 	{
 		// language=yaml
 		AddChangelog("entry.yaml", """
@@ -703,14 +795,15 @@ public class ChangelogUploadServiceTests
 
 		result.Should().BeTrue();
 
-		// Changelog uploads refresh the pool-scoped entry index, not a bundle index.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/entry.yaml"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 
+		// The scrubber Lambda is the sole registry producer (docs-eng-team#688 Phase 3):
+		// uploads write YAML objects only, never a registry.json.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key.StartsWith("bundle/", StringComparison.Ordinal)),
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
 		)).MustNotHaveHappened();
 	}

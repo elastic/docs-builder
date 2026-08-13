@@ -62,4 +62,51 @@ public class OpenApiOperationIdSearchTitleTests
 		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk");
 		doc.SearchTitle.Should().Contain("_bulk");
 	}
+
+	private static OpenApiDocument CreateSpecWithSummaryWhitespace(string summary) => new()
+	{
+		Paths = new OpenApiPaths
+		{
+			["/_bulk"] = new OpenApiPathItem
+			{
+				Operations = new Dictionary<HttpMethod, OpenApiOperation>
+				{
+					[HttpMethod.Put] = new OpenApiOperation
+					{
+						OperationId = "_bulk",
+						Summary = summary
+					}
+				}
+			}
+		}
+	};
+
+	[Fact]
+	public void Operation_SummaryWithTrailingNewline_DoesNotLeakIntoTitleOrSearchTitle()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+
+		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"), "elasticsearch").ToArray();
+
+		docs.Should().HaveCount(1);
+		var doc = docs[0];
+
+		doc.Title.Should().Be("Bulk index or delete documents - Elasticsearch API");
+		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk");
+		doc.Title.Should().NotContain("\n");
+		doc.SearchTitle.Should().NotContain("\n");
+	}
+
+	[Fact]
+	public void Operation_BlankSummary_FallsBackToOperationId()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+
+		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("   "), "elasticsearch").ToArray();
+
+		docs.Should().HaveCount(1);
+		var doc = docs[0];
+
+		doc.Title.Should().Be("_bulk - Elasticsearch API");
+	}
 }

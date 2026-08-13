@@ -63,8 +63,10 @@ public class BundleLoaderFromContentTests
 
 		bundles.Should().ContainSingle();
 		bundles[0].Entries.Should().BeEmpty();
-		warnings.Should().ContainSingle()
-			.Which.Should().Contain("self-contained");
+		var warning = warnings.Should().ContainSingle().Which;
+		warning.Should().Contain("no inline content");
+		warning.Should().Contain("9.3.0.yaml");
+		warning.Should().Contain("orphan.yaml");
 	}
 
 	[Fact]

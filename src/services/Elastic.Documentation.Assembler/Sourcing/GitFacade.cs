@@ -28,9 +28,6 @@ public class SingleCommitOptimizedGitRepository(ILoggerFactory logFactory, IDiag
 	: ExternalCommandExecutor(collector, workingDirectory, Environment.GetEnvironmentVariable("CI") is null or "" ? null : TimeSpan.FromMinutes(10))
 		, IGitRepository
 {
-	/// <inheritdoc />
-	protected override ILogger Logger { get; } = logFactory.CreateLogger<SingleCommitOptimizedGitRepository>();
-
 	private static readonly Dictionary<string, string> EnvironmentVars = new()
 	{
 		// Disable git editor prompts:
@@ -39,12 +36,19 @@ public class SingleCommitOptimizedGitRepository(ILoggerFactory logFactory, IDiag
 		{ "GIT_EDITOR", "true" }
 	};
 
+	// Only the network bound commands retry. CloneRef wraps this with up to 3 wipe-and-reclone passes,
+	// so the effective worst case is 3 x 5 invocations.
+	private static readonly RetryPolicy NetworkRetry = new(MaxAttempts: 5, BaseDelay: TimeSpan.FromSeconds(1));
+
+	/// <inheritdoc />
+	protected override ILogger Logger { get; } = logFactory.CreateLogger<SingleCommitOptimizedGitRepository>();
+
 	public string GetCurrentCommit() => Capture("git", "rev-parse", "HEAD");
 
 	public void Init() => ExecIn(EnvironmentVars, "git", "init");
 	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));
-	public void Pull(string branch) => ExecIn(EnvironmentVars, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", branch);
-	public void Fetch(string reference) => ExecIn(EnvironmentVars, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
+	public void Pull(string branch) => _ = ExecInWithRetry(EnvironmentVars, NetworkRetry, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", branch);
+	public void Fetch(string reference) => _ = ExecInWithRetry(EnvironmentVars, NetworkRetry, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
 	public void EnableSparseCheckout(string[] folders) => ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);
 
 	public void DisableSparseCheckout() => ExecIn(EnvironmentVars, "git", "sparse-checkout", "disable");

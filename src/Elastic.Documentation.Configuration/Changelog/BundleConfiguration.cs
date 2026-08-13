@@ -30,12 +30,6 @@ public record BundleConfiguration
 	public bool UseLocalChangelogs { get; init; }
 
 	/// <summary>
-	/// Whether to resolve (copy contents of each changelog file into the entries array).
-	/// Defaults to true
-	/// </summary>
-	public bool Resolve { get; init; } = true;
-
-	/// <summary>
 	/// Default bundle description used when no profile-specific description is provided.
 	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
 	/// </summary>
@@ -62,7 +56,6 @@ public record BundleConfiguration
 	/// <summary>
 	/// When set (including an empty list), PR/issue references whose resolved <c>owner/repo</c> is not listed
 	/// are rewritten to <c># PRIVATE:</c> sentinels at bundle time. When absent, no link filtering is applied.
-	/// Requires <see cref="Resolve"/>.
 	/// </summary>
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 

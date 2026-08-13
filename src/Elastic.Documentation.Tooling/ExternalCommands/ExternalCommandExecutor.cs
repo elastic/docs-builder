@@ -10,6 +10,16 @@ using ProcNet.Std;
 
 namespace Elastic.Documentation.ExternalCommands;
 
+/// <param name="MaxAttempts">Total attempts, including the first.</param>
+/// <param name="BaseDelay">Delay before the second attempt. Each later attempt doubles it.</param>
+public readonly record struct RetryPolicy(int MaxAttempts, TimeSpan BaseDelay)
+{
+	public static RetryPolicy None { get; } = new(1, TimeSpan.Zero);
+
+	public TimeSpan DelayBeforeAttempt(int attempt) =>
+		attempt <= 1 ? TimeSpan.Zero : BaseDelay * Math.Pow(2, attempt - 2);
+}
+
 public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, TimeSpan? timeout = null)
 {
 	protected abstract ILogger Logger { get; }
@@ -23,7 +33,8 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 
 	protected IDirectoryInfo WorkingDirectory => workingDirectory;
 	protected IDiagnosticsCollector Collector => collector;
-	protected void ExecIn(Dictionary<string, string> environmentVars, string binary, params string[] args)
+
+	protected virtual int ExecInCore(Dictionary<string, string> environmentVars, string binary, params string[] args)
 	{
 		var arguments = new ExecArguments(binary, args)
 		{
@@ -31,9 +42,41 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 			Environment = environmentVars,
 			Timeout = timeout
 		};
-		var result = Proc.Exec(arguments);
-		if (result != 0)
-			collector.EmitError("", $"Exit code: {result} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+		return Proc.Exec(arguments);
+	}
+
+	protected void ExecIn(Dictionary<string, string> environmentVars, string binary, params string[] args) =>
+		_ = ExecInWithRetry(environmentVars, RetryPolicy.None, binary, args);
+
+	protected bool ExecInWithRetry(Dictionary<string, string> environmentVars, RetryPolicy retry, string binary, params string[] args)
+	{
+		var command = $"{binary} {string.Join(" ", args)}";
+		var exitCode = 0;
+		for (var attempt = 1; attempt <= retry.MaxAttempts; attempt++)
+		{
+			if (attempt > 1)
+				DelayBeforeRetry(retry.DelayBeforeAttempt(attempt));
+
+			exitCode = ExecInCore(environmentVars, binary, args);
+			if (exitCode == 0)
+				return true;
+
+			// Deliberately not routed through Log: a silent multi second stall is worse than extra local output.
+			if (attempt < retry.MaxAttempts)
+			{
+				Logger.LogWarning("[{Command}] Exit code {ExitCode}. Retrying ({Attempt}/{MaxAttempts}) in {WorkingDirectory}",
+					command, exitCode, attempt, retry.MaxAttempts, workingDirectory.FullName);
+			}
+		}
+
+		collector.EmitError("", $"Exit code: {exitCode} while executing {command} in {workingDirectory}");
+		return false;
+	}
+
+	protected virtual void DelayBeforeRetry(TimeSpan delay)
+	{
+		if (delay > TimeSpan.Zero)
+			Thread.Sleep(delay);
 	}
 
 	protected void ExecInSilent(Dictionary<string, string> environmentVars, string binary, params string[] args)

@@ -45,10 +45,12 @@
     <Project Path="src/Elastic.Codex/Elastic.Codex.csproj" />
     <Project Path="src/Elastic.ApiExplorer/Elastic.ApiExplorer.csproj" />
     <Project Path="src/Elastic.Documentation.Configuration/Elastic.Documentation.Configuration.csproj" />
+    <Project Path="src/Elastic.Documentation.Indexing/Elastic.Documentation.Indexing.csproj" />
     <Project Path="src/Elastic.Documentation.LegacyDocs/Elastic.Documentation.LegacyDocs.csproj" />
     <Project Path="src/Elastic.Documentation.LinkIndex/Elastic.Documentation.LinkIndex.csproj" />
     <Project Path="src/Elastic.Documentation.Links/Elastic.Documentation.Links.csproj" />
     <Project Path="src/Elastic.Documentation.Navigation/Elastic.Documentation.Navigation.csproj" />
+    <Project Path="src/Elastic.Documentation.OpenApiIndex/Elastic.Documentation.OpenApiIndex.csproj" />
     <Project Path="src/Elastic.Documentation.ServiceDefaults/Elastic.Documentation.ServiceDefaults.csproj" />
     <Project Path="src/Elastic.Documentation.Site/Elastic.Documentation.Site.csproj" />
     <Project Path="src/Elastic.Documentation.Svg/Elastic.Documentation.Svg.csproj" />
@@ -66,6 +68,7 @@
   <Folder Name="/src/infra/">
 	  <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
 	  <Project Path="src/infra/docs-lambda-changelog-scrubber/docs-lambda-changelog-scrubber.csproj" />
+	  <Project Path="src/infra/docs-lambda-openapi-index/docs-lambda-openapi-index.csproj" />
   </Folder>
   <Folder Name="/src/services/">
     <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
@@ -99,12 +102,15 @@
     <Project Path="tests/Elastic.Documentation.Api.Tests/Elastic.Documentation.Api.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Build.Tests/Elastic.Documentation.Build.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Configuration.Tests/Elastic.Documentation.Configuration.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Tests/Elastic.Documentation.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Indexing.Tests/Elastic.Documentation.Indexing.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
     <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Integrations.Tests/Elastic.Documentation.Integrations.Tests.csproj" />
     <Project Path="tests/Elastic.SiteSearch.Tests/Elastic.SiteSearch.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.OpenApiIndex.Tests/Elastic.Documentation.OpenApiIndex.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />

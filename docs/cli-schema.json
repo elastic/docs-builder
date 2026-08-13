@@ -503,6 +503,34 @@
         },
         {
           "role": "flag",
+          "name": "max-ai-docs",
+          "type": "integer",
+          "required": false,
+          "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+          "validations": [
+            {
+              "kind": "range",
+              "min": "1",
+              "max": "2147483647"
+            }
+          ]
+        },
+        {
+          "role": "flag",
+          "name": "max-ai-time",
+          "type": "string",
+          "required": false,
+          "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+          "validations": [
+            {
+              "kind": "timeSpanRange",
+              "min": "\u00221m\u0022",
+              "max": "\u002224h\u0022"
+            }
+          ]
+        },
+        {
+          "role": "flag",
           "name": "search-num-threads",
           "type": "integer",
           "required": false,
@@ -885,6 +913,308 @@
           "path": [
             "assembler"
           ],
+          "name": "ai-enrich",
+          "summary": "Run generative AI enrichment against an already-indexed semantic index, without a full assembler build.",
+          "notes": "Bootstraps and resolves the existing Elasticsearch aliases for environment, then runs a\nbounded generative AI enrichment pass on the semantic index, budgeted by --max-ai-docs/--max-ai-time\n(the same flags used by index and assembler index). Does not crawl, build, or index documents \u2014\nrun assemble or assembler index first.",
+          "usage": "docs-builder assembler ai-enrich [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "endpoint",
+              "type": "string",
+              "required": false,
+              "summary": "-es,--endpoint, Elasticsearch endpoint URL. Falls back to env DOCUMENTATION_ELASTIC_URL.",
+              "validations": [
+                {
+                  "kind": "uriScheme",
+                  "values": [
+                    "http",
+                    "https"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "api-key",
+              "type": "string",
+              "required": false,
+              "summary": "API key for authentication. Falls back to env DOCUMENTATION_ELASTIC_APIKEY."
+            },
+            {
+              "role": "flag",
+              "name": "username",
+              "type": "string",
+              "required": false,
+              "summary": "Username for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_USERNAME."
+            },
+            {
+              "role": "flag",
+              "name": "password",
+              "type": "string",
+              "required": false,
+              "summary": "Password for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_PASSWORD."
+            },
+            {
+              "role": "flag",
+              "name": "ai-enrichment",
+              "type": "boolean",
+              "required": false,
+              "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "search-num-threads",
+              "type": "integer",
+              "required": false,
+              "summary": "Number of search threads for the inference endpoint.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "128"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "index-num-threads",
+              "type": "integer",
+              "required": false,
+              "summary": "Number of index threads for the inference endpoint.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "128"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "eis",
+              "type": "boolean",
+              "required": false,
+              "summary": "Use the Elastic Inference Service to bootstrap the inference endpoint (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "bootstrap-timeout",
+              "type": "string",
+              "required": false,
+              "summary": "How long to wait for the inference endpoint to become ready (e.g. 4m, 90s).",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221s\u0022",
+                  "max": "\u002260m\u0022"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "force-reindex",
+              "type": "boolean",
+              "required": false,
+              "summary": "Force a full reindex, discarding any incremental state."
+            },
+            {
+              "role": "flag",
+              "name": "buffer-size",
+              "type": "integer",
+              "required": false,
+              "summary": "Number of documents per bulk request.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "10000"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-retries",
+              "type": "integer",
+              "required": false,
+              "summary": "Number of retry attempts for failed bulk items.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "0",
+                  "max": "20"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "debug-mode",
+              "type": "boolean",
+              "required": false,
+              "summary": "Log every Elasticsearch request and response body; append ?pretty to all requests."
+            },
+            {
+              "role": "flag",
+              "name": "proxy-address",
+              "type": "string",
+              "required": false,
+              "summary": "Route requests through this proxy URL.",
+              "validations": [
+                {
+                  "kind": "uriScheme",
+                  "values": [
+                    "http",
+                    "https"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "proxy-username",
+              "type": "string",
+              "required": false,
+              "summary": "Proxy server username."
+            },
+            {
+              "role": "flag",
+              "name": "proxy-password",
+              "type": "string",
+              "required": false,
+              "summary": "Proxy server password."
+            },
+            {
+              "role": "flag",
+              "name": "disable-ssl-verification",
+              "type": "boolean",
+              "required": false,
+              "summary": "Disable SSL certificate validation. Use only in controlled environments."
+            },
+            {
+              "role": "flag",
+              "name": "certificate-fingerprint",
+              "type": "string",
+              "required": false,
+              "summary": "SHA-256 fingerprint of a self-signed server certificate."
+            },
+            {
+              "role": "flag",
+              "name": "certificate-path",
+              "type": "string",
+              "required": false,
+              "summary": "Path to a PEM or DER certificate file for SSL validation.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "pem",
+                    "der",
+                    "crt",
+                    "cer"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "certificate-not-root",
+              "type": "boolean",
+              "required": false,
+              "summary": "Set when the certificate is an intermediate CA rather than the root."
+            },
+            {
+              "role": "flag",
+              "name": "environment",
+              "type": "string",
+              "required": false,
+              "summary": "Named deployment target whose existing indices should be enriched."
+            },
+            {
+              "role": "flag",
+              "name": "bootstrap-only",
+              "type": "boolean",
+              "required": false,
+              "summary": "Bootstrap the enrich policy, pipeline, and lookup index, then exit without enriching any documents.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "assembler"
+          ],
           "name": "build",
           "summary": "Build the unified site from all previously cloned repositories.",
           "notes": "Run after assembler clone. Reads every cloned repository, applies the shared navigation.yml,\nand writes the unified site to .artifacts/docs/.",
@@ -1111,6 +1441,34 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
             },
             {
               "role": "flag",
@@ -1449,6 +1807,34 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
             },
             {
               "role": "flag",
@@ -2644,7 +3030,7 @@
           ],
           "name": "bundle",
           "summary": "Aggregate changelog entries matching a filter into a single bundle YAML.",
-          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\nresolve, description, hide-features, and release-date behaviour come from changelog.yml. Only --plan is supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, or --report.",
+          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. Only --plan is supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
           "usage": "docs-builder changelog bundle [\u003Cprofile\u003E] [\u003Cprofile-arg\u003E] [\u003Cprofile-report\u003E] [options]",
           "examples": [],
           "parameters": [
@@ -2667,7 +3053,7 @@
               "name": "profile-report",
               "type": "string",
               "required": false,
-              "summary": "Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source (for example, \u0022bundle serverless-release 2026-02 ./report.html\u0022). Optional third positional argument in profile-based commands."
+              "summary": "Promotion report, URL list file, or changelog path list file when also providing a version. When provided, the second argument must be a version string and this is the filter source (for example, \u0022bundle serverless-release 2026-02 ./report.html\u0022). Optional third positional argument in profile-based commands."
             },
             {
               "role": "flag",
@@ -2774,6 +3160,23 @@
             },
             {
               "role": "flag",
+              "name": "files",
+              "type": "array",
+              "required": false,
+              "summary": "Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. When entries are sourced from the CDN, paths are matched to pool entries by file name and do not need to exist locally; with local sourcing (--force-local, --directory, or bundle.use_local_changelogs) the paths must exist on disk. This option is not supported in profile-based commands; pass a path list file as the second or third positional argument instead.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "force-local",
+              "type": "boolean",
+              "required": false,
+              "summary": "Force local entry sourcing for this run (equivalent to bundle.use_local_changelogs: true without editing config). Allowed in profile-based commands.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "owner",
               "type": "string",
               "required": false,
@@ -2823,14 +3226,6 @@
               "type": "string",
               "required": false,
               "summary": "URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead."
-            },
-            {
-              "role": "flag",
-              "name": "resolve",
-              "type": "boolean",
-              "required": false,
-              "summary": "Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false. This option is not supported in profile-based commands. The equivalent configuration option is bundle.resolve.",
-              "defaultValue": "default"
             },
             {
               "role": "flag",
@@ -2920,14 +3315,6 @@
               "summary": "Optional: Changelog YAML paths to exclude from the effective bundle. Repeat --remove or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.",
               "repeatable": true,
               "elementType": "string"
-            },
-            {
-              "role": "flag",
-              "name": "resolve",
-              "type": "boolean",
-              "required": false,
-              "summary": "Optional: When using --add, inline each added changelog\u0027s content in the amend file. Use --no-resolve to record file references only. When omitted, inferred from the parent bundle. Does not apply to --remove.",
-              "defaultValue": "default"
             },
             {
               "role": "flag",
@@ -3598,7 +3985,6 @@
           ],
           "name": "remove",
           "summary": "Delete changelog entry files matching a filter.",
-          "notes": "Blocks when a file is referenced by an unresolved bundle to avoid breaking the {changelog}\ndirective in published documentation. Pass --force to override.",
           "usage": "docs-builder changelog remove [\u003Cprofile\u003E] [\u003Cprofile-arg\u003E] [\u003Cprofile-report\u003E] [options]",
           "examples": [],
           "parameters": [
@@ -3621,27 +4007,15 @@
               "name": "profile-report",
               "type": "string",
               "required": false,
-              "summary": "Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source."
+              "summary": "Optional: Promotion report, URL list file, or changelog path list file when also providing a version. When provided, the second argument must be a version string and this is the filter source."
             },
             {
               "role": "flag",
               "name": "all",
               "type": "boolean",
               "required": false,
-              "summary": "Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, or --report.",
+              "summary": "Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, --report, or --files.",
               "defaultValue": "false"
-            },
-            {
-              "role": "flag",
-              "name": "bundles-dir",
-              "type": "string",
-              "required": false,
-              "summary": "Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.",
-              "validations": [
-                {
-                  "kind": "rejectSymbolicLinks"
-                }
-              ]
             },
             {
               "role": "flag",
@@ -3686,19 +4060,20 @@
               "defaultValue": "false"
             },
             {
-              "role": "confirmationSkip",
-              "name": "force",
-              "type": "boolean",
-              "required": false,
-              "summary": "Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.",
-              "defaultValue": "false"
-            },
-            {
               "role": "flag",
               "name": "issues",
               "type": "array",
               "required": false,
               "summary": "Filter by issue URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "files",
+              "type": "array",
+              "required": false,
+              "summary": "Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. Not supported in profile-based commands; pass a path list file as a positional argument instead.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3744,7 +4119,7 @@
               "name": "report",
               "type": "string",
               "required": false,
-              "summary": "Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, and --issues."
+              "summary": "Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, --issues, and --files."
             },
             {
               "role": "flag",
@@ -3804,7 +4179,7 @@
               "name": "input",
               "type": "array",
               "required": false,
-              "summary": "Required: Bundle input(s) in format \u0022bundle-file-path|changelog-file-path|repo|link-visibility\u0022 (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be \u0022hide-links\u0022 or \u0022keep-links\u0022 (default). Use \u0022hide-links\u0022 for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.",
+              "summary": "Required: Bundle input(s) in format \u0022bundle-file-path|repo|link-visibility\u0022 (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be \u0022hide-links\u0022 or \u0022keep-links\u0022 (default). Use \u0022hide-links\u0022 for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3875,7 +4250,7 @@
               "name": "no-descriptions",
               "type": "boolean",
               "required": false,
-              "summary": "Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false",
+              "summary": "Optional: Hide changelog descriptions from output. When enabled, entry titles, PR/issue links, impact, and action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false",
               "defaultValue": "false"
             },
             {
@@ -3884,6 +4259,100 @@
               "type": "string",
               "required": false,
               "summary": "Optional: Title to use for section headers in output files. Defaults to version from first bundle"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "scrubber-allowlist",
+          "summary": "Resolve the link allowlist identity of the deployed changelog scrubber.",
+          "notes": "The scrubber Lambda embeds its link allowlist from config/assembler.yml at build time, so the\ndeployed allowlist can differ from any local checkout. The release pipeline attaches a\nchangelog-scrubber-allowlist.json asset to the GitHub release after each successful scrubber\ndeploy; this command resolves the identity from that asset. Without a --tag, the newest release\ncarrying the asset wins \u2014 the most recent deploy that passed the gated pipeline. Exits non-zero when\nno identity can be resolved: backfill plans must pin this identity and cannot be approved without it.",
+          "usage": "docs-builder changelog scrubber-allowlist [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "tag",
+              "type": "string",
+              "required": false,
+              "summary": "Release tag to resolve the identity from (e.g., \u0022v5.7.0\u0022). Defaults to the newest release carrying the identity asset."
+            },
+            {
+              "role": "flag",
+              "name": "assembler",
+              "type": "string",
+              "required": false,
+              "summary": "Path to a local assembler.yml to compare against the deployed allowlist. Defaults to config/assembler.yml when it exists; a mismatch is reported as a warning, not an error.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub owner of the repository whose releases carry the identity asset.",
+              "defaultValue": "elastic"
+            },
+            {
+              "role": "flag",
+              "name": "repo",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub repository whose releases carry the identity asset.",
+              "defaultValue": "docs-builder"
             },
             {
               "role": "flag",
@@ -4009,6 +4478,14 @@
               "type": "string",
               "required": false,
               "summary": "Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout\u0027s branch. Required for changelog uploads; ignored for bundle uploads."
+            },
+            {
+              "role": "flag",
+              "name": "skip-etag-check",
+              "type": "boolean",
+              "required": false,
+              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
+              "defaultValue": "false"
             },
             {
               "role": "flag",
@@ -4434,6 +4911,34 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
             },
             {
               "role": "flag",

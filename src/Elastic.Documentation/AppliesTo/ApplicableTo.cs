@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.AppliesTo;

@@ -27,6 +27,7 @@ The directive supports the following options:
 | `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
 | `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
 | `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
+| `:highlights:` | Emit a dedicated highlights section for entries with `highlight: true` (entries still appear under their type sections) | false |
 | `:release-dates:` | Render the bundle `release-date` field as _Released: …_ after the version heading | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
 | `:cdn: [product]` | Render bundles for a product that is declared under `release_notes` in `docset.yml` and prefetched from the public changelog CDN. The product is optional and inferred from the current repository when omitted | (local folder) |
@@ -41,6 +42,7 @@ The directive supports the following options:
 :link-visibility: keep-links
 :description-visibility: keep-descriptions
 :dropdowns:
+:highlights:
 :release-dates:
 :::
 ```
@@ -49,16 +51,15 @@ The directive supports the following options:
 
 #### `:type:`
 
-Controls which entry types are displayed. By default, the directive excludes "separated types" (known issues, breaking changes, deprecations, and highlights) which are typically shown on their own dedicated pages.
+Controls which entry types are displayed. By default, the directive excludes "separated types" (known issues, breaking changes, and deprecations) which are typically shown on their own dedicated pages. Highlights are not a type filter — use [`:highlights:`](#highlights) to show a highlights section.
 
 | Value | Description |
 |-------|-------------|
-| (omitted) | Default: shows all types EXCEPT known issues, breaking changes, deprecations, and highlights |
-| `all` | Shows all entry types including known issues, breaking changes, deprecations, and highlights |
+| (omitted) | Default: shows all types EXCEPT known issues, breaking changes, and deprecations |
+| `all` | Shows all entry types including known issues, breaking changes, and deprecations |
 | `breaking-change` | Shows only breaking change entries |
 | `deprecation` | Shows only deprecation entries |
 | `known-issue` | Shows only known issue entries |
-| `highlight` | Shows only highlighted entries |
 
 This allows you to create separate pages for different entry types:
 
@@ -66,6 +67,7 @@ This allows you to create separate pages for different entry types:
 # Release Notes
 
 :::{changelog}
+:highlights:
 :::
 ```
 
@@ -93,19 +95,12 @@ This allows you to create separate pages for different entry types:
 :::
 ```
 
-```markdown
-# Highlights
-
-:::{changelog}
-:type: highlight
-:::
-```
-
-To show all entries on a single page (previous default behavior):
+To show all entry types on a single page (including separated types), and optionally a highlights section:
 
 ```markdown
 :::{changelog}
 :type: all
+:highlights:
 :::
 ```
 
@@ -121,7 +116,7 @@ Bundles whose repo is listed as private in `assembler.yml` hide links by default
 
 | Value | Behavior |
 |-------|----------|
-| `auto` | Hide all PR and issue links for bundles from private repos; show links for public repos. |
+| `auto` | Hide all PR and issue links for bundles from private repos; show links for public repos. When [`:cdn:`](#cdn) is set, **keep** links (CDN bundles are scrubbed for public delivery and assembler private-repo hiding does not apply). |
 | `keep-links` | Show PR and issue links even when the bundle source repo is private (does not undo bundle-time private-target sanitization)). |
 | `hide-links` | Hide all PR and issue links for this directive block. Refer to [Hiding links](#hide-links). |
 
@@ -133,9 +128,10 @@ Controls whether the **`description`** text on each **changelog record** appears
 
 | Value | Behavior |
 |-------|----------|
-| `auto` | When **every** constituent repository in the bundle’s resolved repo identity is **public** (same private-repo detection as `:link-visibility:` from `assembler.yml`, including `repo1+repo2` merged bundles), **omit** record `description` bodies. When **any** constituent is marked **private**, **show** those bodies. In standalone builds without `assembler.yml`, every repo is treated as public ⇒ record descriptions are omitted under `auto`. |
-| `keep-descriptions` | Always render record descriptions when present in the bundle source. Use this on pages such as deprecations or breaking changes when you still want full release-note prose alongside public repos. |
-| `hide-descriptions` | Always omit record `description` bodies (titles, PR/issue links, Impact and Action sections, and bundle-level intros are unaffected). |
+| `auto` | When **every** constituent repository in the bundle’s resolved repo identity is **public** (same private-repo detection as `:link-visibility:` from `assembler.yml`, including `repo1+repo2` merged bundles), **omit** record `description` bodies. When **any** constituent is marked **private**, **show** those bodies. In standalone builds without `assembler.yml`, every repo is treated as public ⇒ changelog descriptions are omitted under `auto`. |
+| `keep-descriptions` | Always render changelog descriptions when present in the bundle source. Use this on pages such as deprecations or breaking changes when you still want full release-note prose alongside public repos. |
+| `keep-highlight-descriptions` | Show changelog descriptions **only** in the [`:highlights:`](#highlights) section. Hide them in every other section, including the type-section copy of a highlighted entry. When `:highlights:` is omitted, descriptions are hidden everywhere. |
+| `hide-descriptions` | Always omit changelog descriptions (titles, PR/issue links, impact, and action sections and bundle-level intros are unaffected). |
 
 **Contrast with `:link-visibility:`:** `:link-visibility: auto` hides **links** when a repo is **private**. `:description-visibility: auto` **shows** richer record **description** prose when **any** source repo is **private**, and hides that prose for bundles that resolve to **only public** repositories.
 
@@ -148,7 +144,22 @@ Controls how the "separated" entry types (`breaking-change`, `deprecation`, `kno
 | (omitted, default) | Flattened: each entry renders as a bullet with its title, links, and (when present) `Impact:` / `Action:` lines as indented continuation. |
 | `:dropdowns:` | Dropdowns: each entry renders as an expandable `{dropdown}` with the title as the summary and description, links, `**Impact**`, and `**Action**` inside. |
 
-Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release-notes pages where the list itself is the primary content.
+Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release notes where the list itself is the primary content.
+
+Entry titles may contain inline markdown markers from changelog YAML (for example, `` `setting.name` ``). Dropdown titles are plain text; see [Plain-text titles](/syntax/dropdowns.md#plain-text-titles).
+
+#### `:highlights:` [highlights]
+
+Controls whether entries with `highlight: true` get a dedicated **Highlights** section on the page. Defaults to `false`.
+
+| Mode | Behavior |
+|------|----------|
+| (omitted, default) | Inline only: highlighted entries appear under their normal type sections (for example Features and enhancements). No `### Highlights` section. |
+| `:highlights:` | Section: emit a `### Highlights` section and keep those entries under their type sections. |
+
+Use `:highlights:` on general release notes when you want a highlights section alongside features, enhancements, and bug fixes — without requiring `:type: all` (which also pulls in breaking changes, deprecations, and known issues).
+
+Changelog descriptions follow [`:description-visibility:`](#description-visibility). Use `keep-descriptions` to show prose in every section, or `keep-highlight-descriptions` to show prose only in the highlights section.
 
 #### `:release-dates:` [release-dates]
 
@@ -194,7 +205,7 @@ release_notes:
 :::
 ```
 
-The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). The value is **optional**: leave it blank to infer the product from the repository that holds the doc. The repository name is mapped to its canonical product id via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product).
+The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). The value is **optional**: leave it blank to infer the product from the repository that holds the doc. The repository name is mapped to its canonical product ID via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product).
 
 ```markdown
 :::{changelog}
@@ -202,7 +213,9 @@ The value names a product defined in [`products.yml`](https://github.com/elastic
 :::
 ```
 
-If the product cannot be inferred, or is not declared under `release_notes`, the block emits an error rather than rendering empty. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:release-dates:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
+If the product cannot be inferred, or is not declared under `release_notes`, the block emits an error rather than rendering empty. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:highlights:`, `:release-dates:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
+
+With `:link-visibility: auto` (the default), PR and issue links from CDN bundles are shown as-is. Public CDN copies are scrubbed before delivery, so the directive does not re-hide links based on `assembler.yml` private repositories. Explicit `:link-visibility: hide-links` still hides links for CDN-sourced bundles.
 
 The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
 
@@ -210,7 +223,7 @@ Bundles are fetched **once at build startup** for every declared product, not pe
 
 ##### Declaring CDN-backed products [declaring-cdn-backed-products]
 
-List each CDN-sourced product under `release_notes` in `docset.yml`. Every entry must reference a product id from `products.yml` that participates in the release-notes system:
+List each CDN-sourced product under `release_notes` in `docset.yml`. Every entry must reference a product ID from `products.yml` that participates in the release notes system:
 
 ```yaml
 # docset.yml
@@ -277,21 +290,22 @@ entries:
 When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
 
 To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`.
-For more details, go to [Hide features in bundles](../contribute/bundle-changelogs.md#changelog-bundle-hide-features).
+For more details, go to [Hide features in bundles](/data/release-notes/bundle.md#changelog-bundle-hide-features).
 
 ## Hiding private links [hide-links]
 
 A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
 
-PR and issue links are automatically hidden (commented out) for bundles from private repositories.
+PR and issue links are automatically hidden (commented out) for bundles from private repositories when loading from a **local** bundles folder.
 When links are hidden, **all** PR and issue links for an affected entry are hidden together.
 This is determined by checking the `assembler.yml` configuration:
 
 - Repositories marked with `private: true` in `assembler.yml` will have their links hidden
-- For merged bundles (for example, `elasticsearch+kibana`), links are hidden if ANY component repository is private
+- For merged bundles loaded locally (for example, `elasticsearch+kibana`), links are hidden if ANY component repository is private
 - In standalone builds without `assembler.yml`, all links are shown by default
+- When [`:cdn:`](#cdn) is set, `:link-visibility: auto` keeps links (CDN bundles are already scrubbed for public delivery). You do not need `:link-visibility: keep-links` on CDN pages for this reason alone.
 
-Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior.
+Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior. For local merged bundles where a private repo's entries were already sanitized at bundle time with [`link_allow_repos`](/data/release-notes/configure-ref.md#bundle-basic), use `:link-visibility: keep-links` so public constituents' links are not hidden with the private repo's.
 
 ## Bundle merging
 
@@ -373,7 +387,7 @@ When a bundle includes a `release-date` field, the directive renders it as itali
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
-**Record descriptions:** Each changelog entry may have its own `description` field in YAML (shown as body text under list items or as the introductory paragraph inside dropdowns). Visibility of **these** descriptions is controlled with `:description-visibility:` (defaults to `auto`; see Option details section). Do not confuse bundle `description` (intro prose) with per-record `description` (entry bodies).
+Each changelog entry may have its own `description` field in YAML (shown as body text under list items or as the introductory paragraph inside dropdowns). The visibility of these descriptions is controlled with `:description-visibility:` (defaults to `auto`). Do not confuse bundle `description` (intro prose) with changelog `description` (entry bodies).
 
 ### Section types
 
@@ -385,36 +399,29 @@ Bundle descriptions are rendered when present in the bundle YAML file. The descr
 | Regressions | `regression` | Grouped by area |
 | Other changes | `other` | Grouped by area |
 | Breaking changes | `breaking-change` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
-| Highlights | Entries with `highlight: true` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Highlights | Entries with `highlight: true` | Dedicated section only when [`:highlights:`](#highlights) is set; flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 | Deprecations | `deprecation` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 | Known issues | `known-issue` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 
 **Note about highlights:**
-- Highlights only appear when using `:type: all` (they are excluded from the default view)
-- When rendered, highlighted entries appear in BOTH the "Highlights" section AND their original type section (for example, a highlighted feature appears in both "Highlights" and "Features and enhancements")
-- The "Highlights" section is only created when at least one entry has `highlight: true`
-- When using `:type: highlight`, only highlighted entries are shown (no section headers or other content)
 
-Sections with no entries of that type are omitted from the output. Releases with no entries after the `:type:` filter are omitted entirely, except on general release-notes pages (`:type: all` or default) when the bundle has a `description`.
+- The highlights section appears only when [`:highlights:`](#highlights) is set and at least one entry has `highlight: true`
+- When the section is shown, highlighted entries appear in **both** the highlights section and their original type section (for example, both the "highlights" and "features and enhancements" sections)
+- When `:highlights:` is omitted, flagged entries still appear under their type sections (inline only)
+- You can combine `:highlights:` with the default type filter (no `:type:`) to show highlights alongside features and fixes without including breaking changes, deprecations, or known issues
 
-## Error behavior for missing files [changelog-missing-files]
+Sections with no entries of that type are omitted from the output. Releases with no entries after the `:type:` filter are omitted entirely, except on general release notes (`:type: all` or default) when the bundle has a `description`.
 
-Bundles created without the `--resolve` option store `file:` references (filenames and checksums) instead of embedding entry content inline.
-When the directive loads such a bundle, it looks up each referenced file to read its content.
-If a referenced file cannot be found on disk, the directive emits an error and the build fails.
+## Error behavior for invalid entries [changelog-missing-files]
+
+Bundles are self-contained: every entry must embed its content (`title`, `type`, and so on) inline.
+The directive never reads individual changelog files from disk to satisfy a bundle entry.
+If a bundle contains an entry without inline content (for example, only a `file:` name/checksum block), the directive emits an error naming the bundle and the entry, and the build fails.
 This prevents silent data loss where changelog entries would be quietly omitted from rendered release notes without any indication that something was missing.
 
-To fix this, either:
-
-- Restore the missing changelog files, or
-- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained).
+To fix this, re-create the bundle with `docs-builder changelog bundle` so every entry is embedded.
 
 `bundle-amend --remove` only applies when the source changelog file is still available (for example, to drop an entry from the effective bundle before you delete the file with `changelog remove`).
-
-:::{tip}
-In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
-For more command syntax details, go to [Remove changelog files](../contribute/bundle-changelogs.md#changelog-remove).
-:::
 
 ## Example
 
@@ -442,7 +449,7 @@ The `{changelog}` directive is ideal for release notes pages that should always 
 
 ## Related
 
-- [Create and bundle changelogs](/contribute/changelog.md) — Overview, workflow, and links to detailed guides
+- [Create and bundle changelogs](/data/release-notes/overview.md) — Overview, workflow, and links to detailed guides
 - [`changelog add`](/cli/changelog/add.md) — CLI command to create changelog entries
 - [`changelog bundle`](/cli/changelog/bundle.md) — CLI command to bundle changelog entries
 - [`changelog remove`](/cli/changelog/remove.md) — CLI command to remove changelog files

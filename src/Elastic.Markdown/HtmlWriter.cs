@@ -54,10 +54,16 @@ public class HtmlWriter(
 	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
 		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
 
-	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1)
+	/// <inheritdoc />
+	public string RenderApiDescription(string markdown, IFileInfo? source) =>
+		RenderCore(markdown, source, stripFirstHeadingLevel1: true, skipValidation: true);
+
+	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1, bool skipValidation = false)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
-		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		var parsed = skipValidation
+			? DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source)
+			: DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
 		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1);
 	}
 

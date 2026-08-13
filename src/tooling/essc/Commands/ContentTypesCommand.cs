@@ -51,6 +51,7 @@ internal sealed class ContentTypesCommand(
 				AnsiConsole.MarkupLine("[green]Survey already complete.[/] Use [yellow]--force[/] to re-run.");
 				AnsiConsole.WriteLine();
 				DisplayResults(state);
+				ExitIfUnregistered(state);
 				return;
 			}
 
@@ -110,6 +111,34 @@ internal sealed class ContentTypesCommand(
 
 		AnsiConsole.WriteLine();
 		DisplayResults(state);
+		ExitIfUnregistered(state);
+	}
+
+	/// <summary>
+	/// Every discovered content type must be explicitly registered as synced (<see cref="PageContentTypes.All"/>),
+	/// intentionally ignored for now (<see cref="PageContentTypes.Blocked"/>), or a non-page component/taxonomy
+	/// type that will never be synced (<see cref="PageContentTypes.KnownNonPages"/>). Fail the run so newly-added
+	/// Contentstack content types can't silently go unclassified.
+	/// </summary>
+	private static void ExitIfUnregistered(ContentTypesState state)
+	{
+		var unregistered = state.ContentTypes.Keys
+			.Where(uid => !PageContentTypes.All.Contains(uid)
+				&& !PageContentTypes.Blocked.Contains(uid)
+				&& !PageContentTypes.KnownNonPages.Contains(uid))
+			.OrderBy(uid => uid, StringComparer.Ordinal)
+			.ToList();
+
+		if (unregistered.Count == 0)
+			return;
+
+		AnsiConsole.WriteLine();
+		AnsiConsole.MarkupLine(
+			$"[red bold]{unregistered.Count} unregistered content type(s) found:[/] {Markup.Escape(string.Join(", ", unregistered))}");
+		AnsiConsole.MarkupLine(
+			"[red]Add each to PageContentTypes.All (to sync it), PageContentTypes.Blocked (to ignore it for now), " +
+			"or PageContentTypes.KnownNonPages (if it's a component/taxonomy type, not a page).[/]");
+		Environment.Exit(1);
 	}
 
 	private static void ProcessPage(ContentTypesState state, SyncResponse response)
@@ -150,6 +179,7 @@ internal sealed class ContentTypesCommand(
 			.AddColumn("[aqua]Content Type UID[/]")
 			.AddColumn(new TableColumn("[aqua]Entries[/]").RightAligned())
 			.AddColumn(new TableColumn("[aqua]Has URL[/]").Centered())
+			.AddColumn(new TableColumn("[aqua]Status[/]").Centered())
 			.AddColumn("[aqua]Sample URLs[/]");
 
 		foreach (var info in groups)
@@ -161,6 +191,14 @@ internal sealed class ContentTypesCommand(
 				_ => $"[yellow]{info.WithUrl}[/]/{info.Total}"
 			};
 
+			var statusDisplay = info.Uid switch
+			{
+				_ when PageContentTypes.Blocked.Contains(info.Uid) => "[grey]ignored[/]",
+				_ when PageContentTypes.KnownNonPages.Contains(info.Uid) => "[grey]skipped[/]",
+				_ when PageContentTypes.All.Contains(info.Uid) => "[green]synced[/]",
+				_ => "[red bold]unregistered[/]"
+			};
+
 			var samples = info.SampleUrls.Count > 0
 				? string.Join("\n", info.SampleUrls.Select(u => $"[dim]{Markup.Escape(u)}[/]"))
 				: "[grey]—[/]";
@@ -169,6 +207,7 @@ internal sealed class ContentTypesCommand(
 				new Markup(Markup.Escape(info.Uid)),
 				new Markup($"[white]{info.Total:N0}[/]"),
 				new Markup(hasUrlDisplay),
+				new Markup(statusDisplay),
 				new Markup(samples)
 			);
 		}

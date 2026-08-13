@@ -35,7 +35,7 @@ public class GuideLexicalConfig : IConfigureElasticsearch<GuideDocument>
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<GuideDocument> ConfigureMappings(MappingsBuilder<GuideDocument> mappings) =>
-		mappings.AddSearchDocumentMappings();
+		mappings.AddSearchDocumentMappings().AddGuideMappings();
 }
 
 public class GuideSemanticConfig : IConfigureElasticsearch<GuideDocument>
@@ -45,5 +45,16 @@ public class GuideSemanticConfig : IConfigureElasticsearch<GuideDocument>
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<GuideDocument> ConfigureMappings(MappingsBuilder<GuideDocument> mappings) =>
-		mappings.AddSearchDocumentMappings(semantic: true);
+		mappings.AddSearchDocumentMappings(semantic: true).AddGuideMappings();
+}
+
+/// <summary>Legacy-name aliases for Guide's <c>http.*</c> nesting.</summary>
+public static class GuideMappingExtensions
+{
+	public static MappingsBuilder<GuideDocument> AddGuideMappings(this MappingsBuilder<GuideDocument> m) =>
+		m
+			// Aliases for pre-nesting field names — remove once all indices are rebuilt under the
+			// new `http.*` shape and no consumer queries the old names.
+			.AddField("http_etag", f => f.Alias("http.etag"))
+			.AddField("http_last_modified", f => f.Alias("http.last_modified"));
 }

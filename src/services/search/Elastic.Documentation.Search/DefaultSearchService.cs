@@ -34,13 +34,13 @@ public partial class DefaultSearchService<TDocument>(
 
 	private static readonly string[] AutocompleteSourceIncludes =
 	[
-		"content_type", "title", "search_title", "url", "description", "parents", "headings"
+		"content_type", "title", "search_title", "path", "description", "parents", "headings"
 	];
 
 	private static readonly string[] SearchSourceIncludes =
 	[
-		"content_type", "title", "search_title", "url", "description", "parents", "headings",
-		"navigation_section", "ai_short_summary", "ai_rag_optimized_summary",
+		"content_type", "title", "search_title", "path", "description", "parents", "headings",
+		"section", "ai_short_summary", "ai_rag_optimized_summary",
 		"last_updated", "product", "related_products"
 	];
 
@@ -118,7 +118,7 @@ public partial class DefaultSearchService<TDocument>(
 								.Analyzer("highlight_analyzer")))
 							.PreTags(PreTag)
 							.PostTags(PostTag))
-						.Add(QueryFieldNames.StrippedBody, hf => hf
+						.Add(QueryFieldNames.Body, hf => hf
 							.FragmentSize(150)
 							.NumberOfFragments(3)
 							.NoMatchSize(150)
@@ -138,7 +138,7 @@ public partial class DefaultSearchService<TDocument>(
 		var typeAgg = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response, "type");
 
 		LogAutocompleteResults(request.PageSize, request.PageNumber, request.Query,
-			results.Select(r => r.Document.Url).ToArray());
+			results.Select(r => r.Document.Path).ToArray());
 
 		// NOTE: ElasticsearchTookMs and IsValidResponse are available on the in-repo contract — restore in a follow-up.
 		return new AutocompleteResponse<TDocument>
@@ -183,7 +183,7 @@ public partial class DefaultSearchService<TDocument>(
 				.Query(filteredQuery)
 				.Aggregations(agg => agg
 					.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType)))
-					.Add("navigation_section", a => a.Terms(t => t.Field(QueryFieldNames.NavigationSection)))
+					.Add("navigation_section", a => a.Terms(t => t.Field(QueryFieldNames.Section)))
 					.Add("product", a => a.Terms(t => t.Field(QueryFieldNames.RelatedProductsId).Size(100))))
 				.Source(sf => sf.Filter(f => f.Includes(SearchSourceIncludes)));
 
@@ -201,7 +201,7 @@ public partial class DefaultSearchService<TDocument>(
 								.Analyzer("highlight_analyzer")))
 							.PreTags(PreTag)
 							.PostTags(PostTag))
-						.Add(QueryFieldNames.StrippedBody, hf => hf
+						.Add(QueryFieldNames.Body, hf => hf
 							.FragmentSize(150)
 							.NumberOfFragments(3)
 							.NoMatchSize(150)
@@ -235,7 +235,7 @@ public partial class DefaultSearchService<TDocument>(
 		};
 
 		LogSearchResults(request.PageSize, request.PageNumber, request.Query, isSemantic,
-			results2.Select(r => r.Document.Url).ToArray());
+			results2.Select(r => r.Document.Path).ToArray());
 
 		// NOTE: ElasticsearchTookMs and IsValidResponse are available on the in-repo contract — restore in a follow-up.
 		return new Contract.SearchResponse<TDocument>
@@ -270,7 +270,7 @@ public partial class DefaultSearchService<TDocument>(
 		if (request.SectionFilter is { Length: > 0 })
 		{
 			filters.Add(new TermsQuery(
-				QueryFieldNames.NavigationSection,
+				QueryFieldNames.Section,
 				new TermsQueryField(request.SectionFilter.Select(s => (FieldValue)s).ToArray())));
 		}
 

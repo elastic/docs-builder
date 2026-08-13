@@ -119,6 +119,19 @@ $"""
 		await Collector.StopAsync(TestContext.Current.CancellationToken);
 	}
 
+	/// <summary>
+	/// Returns the content of all SVG files written to the output directory during rendering.
+	/// Use this to assert on diagram content after the switch from inline SVG to external files.
+	/// </summary>
+	protected IReadOnlyList<string> ReadMermaidSvgs()
+	{
+		var outputDir = Set.Context.OutputDirectory.FullName;
+		return FileSystem.AllFiles
+			.Where(f => f.StartsWith(outputDir, StringComparison.OrdinalIgnoreCase) && f.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+			.Select(f => FileSystem.File.ReadAllText(f))
+			.ToList();
+	}
+
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);

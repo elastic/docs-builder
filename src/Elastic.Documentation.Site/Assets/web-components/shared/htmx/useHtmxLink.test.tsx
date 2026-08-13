@@ -61,12 +61,18 @@ describe('isExternalDocsUrl', () => {
 
 describe('getPathFromUrl', () => {
     describe('paths (starting with /)', () => {
-        it('should return paths as-is', () => {
+        it('should return docs paths as-is', () => {
             expect(getPathFromUrl('/docs/elasticsearch')).toBe(
                 '/docs/elasticsearch'
             )
             expect(getPathFromUrl('/docs/api/kibana')).toBe('/docs/api/kibana')
-            expect(getPathFromUrl('/')).toBe('/')
+            expect(getPathFromUrl('/docs')).toBe('/docs')
+        })
+
+        it('should return null for same-origin non-docs paths', () => {
+            expect(getPathFromUrl('/')).toBe(null)
+            expect(getPathFromUrl('/pricing')).toBe(null)
+            expect(getPathFromUrl('/docsomething')).toBe(null)
         })
     })
 

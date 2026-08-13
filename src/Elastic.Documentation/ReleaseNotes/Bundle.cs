@@ -41,7 +41,4 @@ public record Bundle
 	/// Matched by file name and optional checksum.
 	/// </summary>
 	public IReadOnlyList<BundledEntry> ExcludeEntries { get; init; } = [];
-
-	/// <summary>Whether entries in this bundle have their contents resolved (inlined).</summary>
-	public bool IsResolved => Entries.Any(e => e.Title != null);
 }

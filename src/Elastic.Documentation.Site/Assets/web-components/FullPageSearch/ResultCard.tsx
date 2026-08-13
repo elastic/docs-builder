@@ -91,9 +91,9 @@ const Breadcrumbs = ({ parents, typeIcon }: BreadcrumbsProps) => {
                         align-items: center;
                         gap: 6px;
                         min-width: 0;
-                        flex-shrink: ${idx === displayedParents.length - 1
-                            ? 1
-                            : 0};
+                        flex-shrink: ${
+                            idx === displayedParents.length - 1 ? 1 : 0
+                        };
                     `}
                 >
                     {idx > 0 && (
@@ -370,11 +370,13 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                                         padding: 4px 10px;
                                         background: ${euiTheme.colors.primary};
                                         color: #fff;
-                                        border-radius: ${euiTheme.border.radius
-                                            .medium};
+                                        border-radius: ${
+                                            euiTheme.border.radius.medium
+                                        };
                                         font-size: 13px;
-                                        font-weight: ${euiTheme.font.weight
-                                            .medium};
+                                        font-weight: ${
+                                            euiTheme.font.weight.medium
+                                        };
                                         line-height: 1.2;
                                     `}
                                 >
@@ -396,11 +398,13 @@ export const ResultCard = ({ result }: ResultCardProps) => {
                                             color: ${euiTheme.colors.text};
                                             border: 1px solid
                                                 ${euiTheme.border.color};
-                                            border-radius: ${euiTheme.border
-                                                .radius.medium};
+                                            border-radius: ${
+                                                euiTheme.border.radius.medium
+                                            };
                                             font-size: 13px;
-                                            font-weight: ${euiTheme.font.weight
-                                                .regular};
+                                            font-weight: ${
+                                                euiTheme.font.weight.regular
+                                            };
                                             line-height: 1.2;
                                         `}
                                     >

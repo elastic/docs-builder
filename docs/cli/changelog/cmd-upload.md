@@ -3,7 +3,7 @@
 Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory and uploads only files whose content hash changed since the last run. Changelog entries are uploaded once under `changelog/{org}/{repo}/{branch}/{file}`, keyed by the authoring owner, repository, and branch; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
 
 To create bundles first, use [](/cli/changelog/bundle.md).
-For the end-to-end workflow, see [](/contribute/bundle-changelogs.md).
+For the end-to-end workflow, see [](/data/release-notes/bundle.md).
 
 ## Requirements
 
@@ -115,7 +115,14 @@ The registry refresh is best-effort: upload failures block the run, but a stale 
 
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files are skipped. Re-running the same command is safe and idempotent.
+If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
 :::
+
+## Options
+
+| Option | Purpose |
+| ------ | ------- |
+| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. |
 
 ## Configuration
 

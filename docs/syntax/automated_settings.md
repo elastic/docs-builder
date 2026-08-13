@@ -100,4 +100,4 @@ _Everything below this line is auto-generated._
 ::::{settings} /syntax/settings-with-applies-example.yml
 ::::
 
-For large Kibana-exported YAML samples used in local stress tests, see [Kibana settings YAML samples](../testing/kibana-settings-yaml-samples.md).
+For large Kibana-exported YAML samples used in local stress tests, see `kibana-settings-yaml-samples.md` in the `docs-tests/` docset at the repository root (outside the main `docs/` folder).

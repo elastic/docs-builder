@@ -18,7 +18,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		var options = new PropertyDisplayOptions
 		{
 			RenderMarkdown = s => new HtmlString($"<p>{s}</p>"),
-			ApiRootUrl = "/api/fixture",
+			ApiRootUrl = "/api/doc/fixture",
 			CollapseMode = collapseMode
 		};
 		return new ApiPropertyTreeBuilder(fixture.Document, options, currentPageType);
@@ -70,7 +70,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		aggs.Children.Kind.Should().Be(ChildKind.None, "the dictionary value type has its own page");
 		aggs.TypeLink.Should().NotBeNull();
 		aggs.TypeLink!.TypeName.Should().Be("AggregationContainer");
-		aggs.TypeLink.Url.Should().Be("/api/fixture/types/_types-aggregations-aggregationcontainer");
+		aggs.TypeLink.Url.Should().Be("/api/doc/fixture/types/_types-aggregations-aggregationcontainer");
 	}
 
 	[Fact]
