@@ -124,6 +124,19 @@ public partial class ConfigurationFileProvider
 	public IFileInfo LegacyUrlMappingsFile { get; }
 
 	public IFileInfo SearchFile { get; }
+	/// <summary>
+	/// Repoints <see cref="NavigationFile"/> at <c>config/navigation_preview.yml</c>.
+	/// Must be called before any reader accesses <see cref="NavigationFile"/> —
+	/// the intended caller is <c>AssembleContext</c>'s constructor.
+	/// Falls back to <c>navigation.yml</c> when no preview file is present (safe for old remote refs).
+	/// </summary>
+	public IFileInfo UseNavigationPreview()
+	{
+		_logger.LogInformation("Feature flag navigation-preview: loading navigation from navigation_preview.yml");
+		NavigationFile = CreateTemporaryConfigurationFile("navigation_preview.yml", "navigation.yml");
+		return NavigationFile;
+	}
+
 	public IFileInfo CreateNavigationFile(AssemblyConfiguration configuration)
 	{
 		var privateRepositories = configuration.PrivateRepositories;
@@ -243,15 +256,16 @@ public partial class ConfigurationFileProvider
 			}
 			throw new Exception($"Can not read {fileName} in directory {AppDataConfigurationDirectory}");
 		}
-		return GetEmbeddedStream(fileName);
+		return GetEmbeddedStream(fileName, fallback);
 	}
 
-	private StreamReader GetEmbeddedStream(string fileName)
+	private StreamReader GetEmbeddedStream(string fileName, string? fallback = null)
 	{
-		var resourceName = $"{_assemblyName}.{fileName}";
-		var resourceStream = typeof(ConfigurationFileProvider).Assembly.GetManifestResourceStream(resourceName)!;
-		var reader = new StreamReader(resourceStream, leaveOpen: false);
-		return reader;
+		var assembly = typeof(ConfigurationFileProvider).Assembly;
+		var resourceStream = assembly.GetManifestResourceStream($"{_assemblyName}.{fileName}")
+			?? (fallback is not null ? assembly.GetManifestResourceStream($"{_assemblyName}.{fallback}") : null)
+			?? throw new Exception($"Can not read embedded resource {fileName}");
+		return new StreamReader(resourceStream, leaveOpen: false);
 	}
 
 	public static string AppDataConfigurationDirectory { get; } = Path.Join(Paths.ApplicationData.FullName, "config-clone", "config");
