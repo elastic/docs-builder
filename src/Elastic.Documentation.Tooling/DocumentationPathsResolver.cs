@@ -116,8 +116,11 @@ public sealed record DocumentationScopeOptions
 	public IEnumerable<string>? ExtraRoots { get; init; }
 
 	/// <summary>
-	/// Maximum number of parent directories to walk above the docset anchor when searching for
-	/// <c>.git</c> (default: 1).
+	/// Minimum number of parent directories to walk above the docset anchor when searching for
+	/// <c>.git</c> (default: 1). This is a floor, not a cap: the resolver raises it to at least the
+	/// distance between the invocation root and the resolved anchor, so a docset discovered several
+	/// levels deep by the recursive scan (step 2) doesn't need this raised just to reach a <c>.git</c>
+	/// at the invocation root.
 	/// </summary>
 	public int MaxParents { get; init; } = 1;
 
@@ -161,9 +164,18 @@ public static class DocumentationPathsResolver
 			? (inner.NewFileInfo(known).Directory!, inner.NewFileInfo(known))
 			: ScanForDocset(invocation, inner);
 
+		// 2b. Widen the depth guard to at least the distance between the invocation root and the
+		//     anchor. The recursive docset scan (step 2) can legitimately land several levels down
+		//     (e.g. a monorepo docset at `docs/<team>/docset.yml`); without this, `--git-dir`-less
+		//     resolution would need `MaxParents` raised globally just to reach a `.git` that sits
+		//     at the invocation root. Anchoring the allowance to the invocation keeps the guard
+		//     meaningful for `--path` pointing deep into an unrelated tree, while making the
+		//     no-`--path` case (invocation == repo root) a non-issue.
+		var maxParents = Math.Max(options.MaxParents, AnchorDepthBelowInvocation(invocation, source));
+
 		// 3. Checkout, derived from the anchor — never from the invocation.
-		var gitScope = new GitResolveFileSystem(source, options.MaxParents, inner: inner);
-		var checkout = ResolveCheckout(gitScope, source, options, inner);
+		var gitScope = new GitResolveFileSystem(source, maxParents, inner: inner);
+		var checkout = ResolveCheckout(gitScope, source, options, maxParents, inner);
 
 		// 4. Real git directories (the .git pointer path + resolved target for worktrees).
 		//    inner (unscoped) is used for worktree resolution: the resolved gitdir lives outside the
@@ -180,7 +192,7 @@ public static class DocumentationPathsResolver
 		//    This step uses a GitResolveFileSystem (for .git-aware scoping) because it reads FILES
 		//    inside .git/ rather than listing directories at the scope root.
 		var git = options.Git ?? GitCheckoutInformationFactory.Create(checkout,
-			new GitResolveFileSystem(source, options.MaxParents, gitDirectories, inner));
+			new GitResolveFileSystem(source, maxParents, gitDirectories, inner));
 
 		// 6. Output. Default is relative to the checkout, not the invocation.
 		//    --path repo/docs and --path repo/ must both write to repo/.artifacts, not repo/docs/.artifacts.
@@ -211,10 +223,31 @@ public static class DocumentationPathsResolver
 		return (dir, file);
 	}
 
+	/// <summary>
+	/// Counts how many directory levels <paramref name="anchor"/> sits below <paramref name="invocation"/>.
+	/// Returns 0 when the anchor is at or above the invocation root, or is not one of its descendants
+	/// (e.g. a pre-supplied <c>ConfigurationFile</c> living outside the invocation tree).
+	/// </summary>
+	private static int AnchorDepthBelowInvocation(IDirectoryInfo invocation, IDirectoryInfo anchor)
+	{
+		var invocationPath = invocation.FullName.TrimEnd('/', '\\');
+		var depth = 0;
+		var directory = anchor;
+		while (directory is not null)
+		{
+			if (string.Equals(directory.FullName.TrimEnd('/', '\\'), invocationPath, StringComparison.OrdinalIgnoreCase))
+				return depth;
+			directory = directory.Parent;
+			depth++;
+		}
+		return 0;
+	}
+
 	private static IDirectoryInfo ResolveCheckout(
 		IFileSystem gitScope,
 		IDirectoryInfo source,
 		DocumentationScopeOptions options,
+		int maxParents,
 		IFileSystem inner)
 	{
 		if (options.GitDir is { } configured && inner.NewDirInfo(configured) is { } explicitGitDir)
@@ -228,7 +261,7 @@ public static class DocumentationPathsResolver
 				?? throw new DocumentationPathException($"--git-dir '{explicitGitDir.FullName}' has no parent directory.");
 		}
 
-		var gitRoot = Paths.FindGitRoot(gitScope.DirectoryInfo.New(source.FullName), options.MaxParents);
+		var gitRoot = Paths.FindGitRoot(gitScope.DirectoryInfo.New(source.FullName), maxParents);
 		if (gitRoot is not null)
 			return gitRoot;
 
@@ -239,7 +272,7 @@ public static class DocumentationPathsResolver
 			return source;
 
 		throw new DocumentationPathException(
-			$"No .git found at '{source.FullName}' or within {options.MaxParents} parent directory(ies). "
+			$"No .git found at '{source.FullName}' or within {maxParents} parent directory(ies). "
 			+ "Pass --git-dir to point at the repository's .git directory explicitly.");
 	}
 

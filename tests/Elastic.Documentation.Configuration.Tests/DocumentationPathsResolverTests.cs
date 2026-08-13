@@ -144,6 +144,45 @@ public class DocumentationPathsResolverTests
 	}
 
 	[Fact]
+	public void AnchorTwoLevelsBelowInvocationRoot_StillResolvesCheckoutAtGitRoot()
+	{
+		// Mirrors the `elastic/infra` shape: no `--path` (invocation == repo root), and the only
+		// docset sits two levels down (`docs/resilience-team/docset.yml`). The recursive scan in
+		// step 2 finds it fine; without widening `MaxParents` by that same distance, step 3's
+		// default maxParents=1 can't see the `.git` two levels above the anchor and would either
+		// throw (real FS) or silently fall back to the wrong directory (mock FS leniency).
+		var fs = RegularRepo(docsRelative: "docs/resilience-team");
+		var invocation = fs.DirectoryInfo.New("/repo");
+
+		var paths = DocumentationPathsResolver.Resolve(invocation, new DocumentationScopeOptions { Inner = fs }, fs);
+
+		paths.SourceDirectory.FullName.Should().Be(P(fs, "/repo/docs/resilience-team"));
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"),
+			"the anchor's depth below the invocation root should widen the git-root search, not require --git-dir");
+		paths.Git.IsAvailable.Should().BeTrue();
+	}
+
+	[Fact]
+	public void AnchorAtInvocationRoot_UnrelatedAncestorGit_StillOutOfReach()
+	{
+		// The depth-widening must stay anchored to the invocation, not become unbounded: when the
+		// anchor IS the invocation (depth 0), an unrelated repo's .git two levels up must remain
+		// out of reach, exactly as before this change.
+		var fs = new MockFileSystem();
+		fs.AddDirectory("/parent-repo/.git");
+		fs.AddDirectory("/parent-repo/checkout");
+		fs.AddFile("/parent-repo/checkout/docs/docset.yml", new MockFileData("toc: []\n"));
+
+		var invocation = fs.DirectoryInfo.New("/parent-repo/checkout/docs");
+		var opts = new DocumentationScopeOptions { Inner = fs, Git = GitCheckoutInformation.Unavailable };
+
+		var paths = DocumentationPathsResolver.Resolve(invocation, opts, fs);
+
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/parent-repo/checkout/docs"),
+			"depth-widening is relative to the invocation, so an ancestor repo's .git outside the invocation must not be adopted");
+	}
+
+	[Fact]
 	public void InvocationPath_StoredVerbatim_IndependentOfCheckout()
 	{
 		var fs = RegularRepo();

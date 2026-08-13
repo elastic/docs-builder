@@ -112,7 +112,11 @@ public class IsolatedBuildService(
 			// we temporarily do not error when pointed to a non-documentation folder.
 			_ = fallbackFs.Directory.CreateDirectory(outputDirectory.FullName);
 
-			_logger.LogInformation("Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {Message}",
+			// Surfaced as a warning (not swallowed at Information level) so that when the underlying
+			// cause is a real bug — not the stale-merge-commit case this catch was written for —
+			// the --git-dir remedy in e.Message actually reaches whoever is reading the failed run,
+			// rather than being buried above a later, unrelated artifact-upload failure.
+			_logger.LogWarning("Skipping build on CI: {Message} If the docs folder is not actually out of date on a stale merge commit, this indicates a real path-resolution issue.",
 				e.Message);
 
 			await githubActionsService.SetOutputAsync("skip", "true");
