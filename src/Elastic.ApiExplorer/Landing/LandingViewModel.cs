@@ -16,4 +16,7 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	/// <summary>Flattened overview table rows; built before the slice renders.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
+
+	protected override string BreadcrumbCurrentTitle =>
+		ApiInfo.Title ?? CurrentNavigationItem.NavigationTitle;
 }

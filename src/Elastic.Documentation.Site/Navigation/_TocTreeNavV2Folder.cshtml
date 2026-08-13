@@ -1,0 +1,51 @@
+@using Elastic.Documentation.Site.Navigation
+@inherits RazorSlice<NavV2FolderRenderModel>
+@* Figma: Item (List) / Item (List - Open) with Item Children rail. *@
+<li class="docs-sidebar-nav-v2__list-item group-navigation">
+	<div class="docs-sidebar-nav-v2__item-content peer nav-folder-peer">
+		@if (!Model.AllHidden)
+		{
+			<input
+				id="@Model.Id"
+				type="checkbox"
+				class="sr-only pointer-events-none"
+				tabindex="-1"
+				aria-hidden="true"
+				checked="@(Model.IsOpen ? "checked" : null)">
+		}
+		<a
+			href="@Model.Url"
+			@Model.HxAttributes
+			class="@TocTreeNavV2Helpers.NavLinkClass(Model.ActiveNavigationUrl, Model.Url)">
+			@if (!Model.AllHidden)
+			{
+				<span class="nav-folder-chevron shrink-0" aria-hidden="true">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+					</svg>
+				</span>
+			}
+			else
+			{
+				<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
+			}
+			<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@Model.Title</span>
+		</a>
+	</div>
+	@if (Model.HasChildren)
+	{
+		<div class="docs-sidebar-nav-v2__item-children docs-sidebar-nav-v2__folder-clip">
+			<div class="docs-sidebar-nav-v2__item-children-rail" aria-hidden="true"></div>
+			<div class="docs-sidebar-nav-v2__folder-clip-inner">
+				<ul class="docs-sidebar-nav-v2__items-list">
+					@await RenderPartialAsync(_TocTreeNavV2.Create(Model.ChildTree))
+				</ul>
+			</div>
+		</div>
+	}
+</li>

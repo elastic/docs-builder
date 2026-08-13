@@ -158,5 +158,31 @@
 		.hljs-emphasis {
 			font-style: italic;
 		}
+
+		/* API example/response cards use the light Card/Code palette, not docs hljs. */
+		.api-code-sample .hljs,
+		.api-code-sample [class^='hljs-'],
+		.api-code-sample [class*='hljs-'],
+		.example-block--response .hljs,
+		.example-block--response [class^='hljs-'],
+		.example-block--response [class*='hljs-'] {
+			color: #1d2a3e !important;
+			font-weight: 400 !important;
+		}
+
+		.api-code-sample .hljs-string,
+		.example-block--response .hljs-string {
+			color: #047471 !important;
+		}
+
+		.api-code-sample .hljs-literal,
+		.example-block--response .hljs-literal {
+			color: #0b64dd !important;
+		}
+
+		.api-code-sample .hljs-number,
+		.example-block--response .hljs-number {
+			color: #a11262 !important;
+		}
 	}
 }

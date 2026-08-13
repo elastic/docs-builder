@@ -22,8 +22,10 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		Cancel ctx = default)
 	{
 		var navigation = SelectNavigationRoot(currentRootNavigation);
-		var id = ShortId.Create($"{navigation.Id.GetHashCode()}");
-		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
+		var activeNavigationUrl = NavigationActiveUrlResolver.Resolve(currentNavigationItem);
+		var cacheKey = $"{navigation.Id}:{activeNavigationUrl ?? string.Empty}";
+		var id = ShortId.Create(cacheKey);
+		if (_renderedNavigationCache.TryGetValue(cacheKey, out var value))
 		{
 			return new NavigationRenderResult
 			{
@@ -31,9 +33,9 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 				Id = id
 			};
 		}
-		var model = CreateNavigationModel(navigation);
+		var model = CreateNavigationModel(navigation, activeNavigationUrl);
 		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
-		_renderedNavigationCache[navigation.Id] = value;
+		_renderedNavigationCache[cacheKey] = value;
 		return new NavigationRenderResult
 		{
 			Html = value,
@@ -56,7 +58,9 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		return useRequestedRoot ? requestedRoot : siteRoot;
 	}
 
-	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation)
+	private NavigationViewModel CreateNavigationModel(
+		IRootNavigationItem<INavigationModel, INavigationItem> navigation,
+		string? activeNavigationUrl)
 	{
 		var rootPath = context.SiteRootPath ?? GetDefaultRootPath(context.UrlPathPrefix);
 		var htmx = context.BuildType == BuildType.Codex
@@ -75,7 +79,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			BuildType = context.BuildType,
 			// Isolated serve (e.g. port 3000): reuse V2 sidebar markup/CSS/JS for local styling; tree is still docset TOC only.
 			IsNavV2 = context.BuildType == BuildType.Isolated,
-			Branding = context.Configuration.Branding
+			Branding = context.Configuration.Branding,
+			ActiveNavigationUrl = activeNavigationUrl
 		};
 	}
 

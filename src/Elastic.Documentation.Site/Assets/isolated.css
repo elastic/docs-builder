@@ -5,7 +5,17 @@
 	--offset-top: 48px;
 }
 
-/* Custom element default is inline; stretch to the preview chrome row so navy wrapper does not show through. */
+/* Match elastic-docs-header default (non-branded) chrome so full-page API nav does not flash navy. */
+.isolated-header-shell {
+	background: linear-gradient(to bottom, #ffffff 0%, #f5f7fa 100%);
+	border-bottom: 1px solid var(--color-grey-20);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+	min-height: 48px;
+	max-height: 48px;
+	overflow: hidden;
+}
+
+/* Custom element default is inline; stretch to the preview chrome row so the shell does not show through. */
 elastic-docs-header {
 	display: block;
 	width: 100%;
@@ -14,15 +24,15 @@ elastic-docs-header {
 
 /*
  * Preview chrome: fixed bar uses z-[60] in _IsolatedHeader.cshtml (above sidebar z-40 / overlay z-30).
- * Until the custom element upgrades, keep a visible bar so the strip is not mistaken for “missing”.
+ * Until the custom element upgrades, mirror the final header surface (not ink-navy).
  */
 elastic-docs-header:not(:defined) {
 	display: block;
 	min-height: 48px;
-	background-color: var(--color-ink-navy);
+	background: linear-gradient(to bottom, #ffffff 0%, #f5f7fa 100%);
 }
 
-/* Host fills the fixed flex row so .euiHeader can span the full width (avoids ink-navy “void”). */
+/* Host fills the fixed flex row so .euiHeader can span the full width. */
 elastic-docs-header .euiHeader {
 	width: 100%;
 	padding-inline: calc((100vw - var(--max-layout-width)) / 2 + 8px);

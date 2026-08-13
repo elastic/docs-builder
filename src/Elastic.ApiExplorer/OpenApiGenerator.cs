@@ -262,7 +262,8 @@ public class OpenApiGenerator(
 		IFileInfo OutputFile(INavigationItem currentNavigation)
 		{
 			const string indexHtml = "index.html";
-			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{context.UrlPathPrefix}", string.Empty);
+			var pathPrefix = context.UrlPathPrefix ?? string.Empty;
+			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{Regex.Escape(pathPrefix)}", string.Empty);
 			var fileInfo = _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, fileName.Trim('/')));
 			return fileInfo;
 		}

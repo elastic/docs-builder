@@ -3,7 +3,6 @@ import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearch } from './NavigationSearch'
 import { EuiProvider } from '@elastic/eui'
-import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { StrictMode } from 'react'
@@ -31,12 +30,7 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
     }
 
     return (
-        <div
-            className="pages-nav-v2__search-inner sticky top-0 z-10 shrink-0 bg-white"
-            css={css`
-                padding: 16px 19px 0 0;
-            `}
-        >
+        <div className="pages-nav-v2__search-inner sticky top-0 z-10 shrink-0">
             <NavigationSearch placeholder={placeholder} />
         </div>
     )

@@ -12,6 +12,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -22,6 +23,11 @@ public record ApiTocItem(string Heading, string Slug, int Level = 2);
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
+
+	/// <summary>When set, operation pages render examples in the right rail instead of the in-page TOC.</summary>
+	public OperationExamplesPanelModel? ExamplesPanel { get; init; }
+
+	public required ApiBreadcrumbTrail Breadcrumbs { get; init; }
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 }
 
@@ -44,6 +50,10 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
 	protected virtual string? LayoutPageTitle => null;
+
+	/// <summary>Last breadcrumb label. Defaults to <see cref="LayoutPageTitle"/> or the nav title.</summary>
+	protected virtual string BreadcrumbCurrentTitle =>
+		LayoutPageTitle ?? CurrentNavigationItem.NavigationTitle;
 
 	private string? GetGitHubDocsUrl()
 	{
@@ -73,16 +83,22 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Previous = null,
 			Next = null,
 			NavigationHtml = NavigationHtml,
+			NavigationActiveUrl = NavigationActiveUrlResolver.Resolve(CurrentNavigationItem),
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
 			Htmx = new DefaultHtmxAttributeProvider(rootPath),
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
-			GoogleTagManager = new GoogleTagManagerConfiguration(),
-			Optimizely = new OptimizelyConfiguration(),
+			GoogleTagManager = BuildContext.GoogleTagManager,
+			Optimizely = BuildContext.Optimizely,
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
+			Breadcrumbs = ApiBreadcrumbBuilder.Build(
+				CurrentNavigationItem,
+				BreadcrumbCurrentTitle,
+				Document.Info?.Title
+			),
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,

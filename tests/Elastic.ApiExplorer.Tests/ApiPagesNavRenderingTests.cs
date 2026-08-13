@@ -41,6 +41,7 @@ public partial class ApiPagesNavRenderingTests
 			Next = null,
 			NavigationHtml = string.Empty,
 			UrlPathPrefix = string.Empty,
+			Htmx = new DefaultHtmxAttributeProvider("/"),
 			AllowIndexing = false,
 			CanonicalBaseUrl = null,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
@@ -48,6 +49,7 @@ public partial class ApiPagesNavRenderingTests
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
+			Breadcrumbs = ApiBreadcrumbTrail.Empty,
 			VersionSwitcherItems =
 			[
 				new("Latest", "/api/doc/elasticsearch/", Selected: false),

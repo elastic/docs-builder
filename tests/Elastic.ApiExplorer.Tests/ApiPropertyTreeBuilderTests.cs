@@ -95,6 +95,22 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 	}
 
 	[Fact]
+	public void Describe_StringArraySchema_ShowsArrayOfStrings()
+	{
+		var builder = CreateBuilder();
+		var schema = new OpenApiSchema
+		{
+			Type = JsonSchemaType.Array,
+			Items = new OpenApiSchema { Type = JsonSchemaType.String }
+		};
+
+		var annotation = builder.Describe(schema);
+
+		annotation.Spans.Select(s => s.Text).Should().Equal("array of ", "strings");
+		annotation.Spans.Should().NotContain(s => s.Text.Contains("[]", StringComparison.Ordinal));
+	}
+
+	[Fact]
 	public void BuildUnionVariantsForSchemas_TopLevelOneOf_BuildsVariantPerOption()
 	{
 		var builder = CreateBuilder(currentPageType: "Aggregate", collapseMode: CollapseMode.DepthBased);

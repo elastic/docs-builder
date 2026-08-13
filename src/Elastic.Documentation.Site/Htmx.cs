@@ -15,8 +15,8 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 
 	public virtual string GetHxSelectOob(bool hasSameTopLevelGroup) =>
 		hasSameTopLevelGroup
-			? "#content-container,#toc-nav"
-			: "#content-container,#toc-nav,#pages-nav";
+			? "#content-container,#toc-nav,#api-examples-panel"
+			: "#content-container,#toc-nav,#api-examples-panel,#pages-nav";
 
 	public string GetHxAttributes(
 		bool hasSameTopLevelGroup = false,

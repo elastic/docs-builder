@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -645,9 +646,11 @@ public class TagMetadataTests
 		var informationGroup = navigation.NavigationItems
 			.OfType<ClassificationNavigationItem>()
 			.First(c => c.NavigationTitle == "Information");
-		informationGroup.Url.Should().Be(expectedOverviewUrl);
+		informationGroup.Should().BeAssignableTo<ISidebarHeadingNavigationItem>();
+		informationGroup.Url.Should().Be(expectedOverviewUrl, "classifications keep the product overview URL; Nav V2 renders them as headings");
 
 		var firstTag = informationGroup.NavigationItems.OfType<TagNavigationItem>().First();
+		firstTag.Url.Should().NotBe(expectedOverviewUrl);
 		informationGroup.Url.Should().NotBe(firstTag.Url);
 		firstTag.Url.Should().Contain("/group/");
 	}

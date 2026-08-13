@@ -48,6 +48,8 @@ html {
 body {
 	/* This is still needed because of some usages of ch units and to maintain the previous behavior */
 	font-size: 16px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 :root {
@@ -116,8 +118,25 @@ body {
 			flex-direction: column;
 			align-self: start;
 			min-height: 0;
-			max-height: calc(100vh - var(--offset-top));
+			box-sizing: border-box;
+			/*
+			 * Sticky host: full strip under the header → viewport/footer.
+			 * Padding insets #pages-nav (24px top / bottom).
+			 * --pages-nav-aside-height is set in pages-nav-v2.ts.
+			 */
+			top: var(--offset-top);
+			height: var(
+				--pages-nav-aside-height,
+				calc(100vh - var(--offset-top))
+			);
+			max-height: var(
+				--pages-nav-aside-height,
+				calc(100vh - var(--offset-top))
+			);
+			padding-top: 24px;
+			padding-bottom: 24px;
 			overflow: hidden;
+			background-color: transparent;
 		}
 	}
 
@@ -263,6 +282,153 @@ body:has([data-nav-v2]) aside.sidebar:has(#pages-nav) {
 	max-width: 279px;
 	align-self: start;
 	transition: none;
+	background-color: transparent;
+	border: 0;
+}
+
+@media (width >= 768px) {
+	body:has([data-nav-v2]) aside.sidebar:has(#pages-nav) {
+		top: var(--offset-top);
+		height: var(--pages-nav-aside-height, calc(100vh - var(--offset-top)));
+		max-height: var(
+			--pages-nav-aside-height,
+			calc(100vh - var(--offset-top))
+		);
+		padding-top: 24px;
+		padding-bottom: 24px;
+		box-sizing: border-box;
+		overflow: hidden;
+	}
+
+	/*
+	 * Nav V2 panel: flex-fill the sticky host content box (inside the 24px gaps).
+	 * Do not use height:100% — with border-box padding on the aside it can resolve
+	 * against the border box and paint the #f6f9fc panel over the bottom gap.
+	 * Scroll affordances overlay .pages-nav-v2__menu (not Search/Back above it).
+	 */
+	body:has([data-nav-v2]) #pages-nav.sidebar-nav {
+		position: relative;
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		align-self: stretch;
+		min-height: 0;
+		height: auto;
+		max-height: 100%;
+		overflow: hidden;
+		background-color: #f6f9fc;
+		border-radius: 16px;
+	}
+}
+
+/*
+ * Island Back: nav-item structure (padding / radius / height) + scroll-btn colors.
+ */
+/* Same chrome as Jump to page: 16px inset + bottom rule under Search / Back. */
+.pages-nav-v2__back-chrome {
+	box-sizing: border-box;
+	padding: 16px;
+	border-bottom: 1px solid #e3e8f2;
+	background-color: transparent;
+}
+
+.pages-nav-v2__back {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	margin: 0;
+	min-height: 32px;
+	padding-inline: 12px;
+	border: 1px solid #d3dae6;
+	border-radius: 8px;
+	background-color: #fff;
+	color: #343741;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease,
+		color 0.12s ease;
+}
+
+.pages-nav-v2__back:hover {
+	background-color: #f5f7fa;
+	border-color: #98a2b3;
+	color: #343741;
+}
+
+.pages-nav-v2__back:focus-visible {
+	outline: 2px solid #0b64dd;
+	outline-offset: 2px;
+}
+
+.pages-nav-v2__back-icon {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+}
+
+/* Menu host: scrollport + pinned scroll buttons (below Search/Back in the shell). */
+.pages-nav-v2__menu {
+	position: relative;
+	min-height: 0;
+	overflow: hidden;
+}
+
+/* Figma EuiButtonIcon — pinned over the scrollport, not scrolling with the tree. */
+.pages-nav-v2__scroll-btn {
+	position: absolute;
+	left: 50%;
+	/* Above scroll fades and nav tree chrome; host is .pages-nav-v2__menu. */
+	z-index: 50;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	margin: 0;
+	border: 1px solid #d3dae6;
+	border-radius: 8px;
+	background-color: #fff;
+	color: #343741;
+	cursor: pointer;
+	opacity: 0;
+	pointer-events: none;
+	transform: translateX(-50%);
+	transition:
+		opacity 0.28s ease,
+		background-color 0.15s ease,
+		border-color 0.15s ease;
+}
+
+.pages-nav-v2__scroll-btn--up {
+	top: 8px;
+}
+
+.pages-nav-v2__scroll-btn--down {
+	bottom: 8px;
+}
+
+.pages-nav-v2__scroll-btn:hover {
+	background-color: #f5f7fa;
+	border-color: #98a2b3;
+}
+
+.pages-nav-v2__scroll-btn:focus-visible {
+	outline: 2px solid #0b64dd;
+	outline-offset: 2px;
+}
+
+aside.sidebar:has(#pages-nav):hover
+	.pages-nav-v2__scroll-btn[data-visible='true'] {
+	opacity: 1;
+	pointer-events: auto;
 }
 
 body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
@@ -272,21 +438,81 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 
 /* Figma Nav shell: Search / Back / Content (Top · Subtitle · List). */
 .pages-nav-v2-shell {
+	display: flex;
 	min-width: 279px;
+	min-height: 0;
+	flex: 1 1 auto;
+	flex-direction: column;
+	height: 100%;
+	max-height: 100%;
+	overflow: hidden;
+	background-color: transparent;
 }
 
 .pages-nav-v2__search-inner {
-	border-bottom: 1px solid transparent;
+	border-bottom: 1px solid #e3e8f2;
+	background-color: transparent;
+	padding: 16px;
 }
 
-.pages-nav-v2__search-inner[data-nav-scrolled] {
-	border-bottom-color: #e3e8f2;
-}
-
+/* Scrollbar fades in while hovering the pages aside (gutter stays stable). */
 .pages-nav-v2__scroll {
+	--nav-scroll-fade-size: 28px;
+	padding-block: 8px;
 	scrollbar-width: thin;
-	scrollbar-color: #e3e8f2 transparent;
+	scrollbar-color: transparent transparent;
 	scrollbar-gutter: stable;
+	transition: scrollbar-color 0.28s ease;
+	/* Soft edge: items fade into the sidebar background as they leave the viewport. */
+	-webkit-mask-image: none;
+	mask-image: none;
+}
+
+.pages-nav-v2__scroll[data-nav-fade-top='true'] {
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		#000 var(--nav-scroll-fade-size),
+		#000 100%
+	);
+	mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		#000 var(--nav-scroll-fade-size),
+		#000 100%
+	);
+}
+
+.pages-nav-v2__scroll[data-nav-fade-bottom='true'] {
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		#000 0,
+		#000 calc(100% - var(--nav-scroll-fade-size)),
+		transparent 100%
+	);
+	mask-image: linear-gradient(
+		to bottom,
+		#000 0,
+		#000 calc(100% - var(--nav-scroll-fade-size)),
+		transparent 100%
+	);
+}
+
+.pages-nav-v2__scroll[data-nav-fade-top='true'][data-nav-fade-bottom='true'] {
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		#000 var(--nav-scroll-fade-size),
+		#000 calc(100% - var(--nav-scroll-fade-size)),
+		transparent 100%
+	);
+	mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		#000 var(--nav-scroll-fade-size),
+		#000 calc(100% - var(--nav-scroll-fade-size)),
+		transparent 100%
+	);
 }
 
 .pages-nav-v2__scroll::-webkit-scrollbar {
@@ -294,19 +520,32 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 }
 
 .pages-nav-v2__scroll::-webkit-scrollbar-thumb {
-	background-color: #e3e8f2;
+	background-color: rgb(227 232 242 / 0);
 	border-radius: 9999px;
+	transition: background-color 0.28s ease;
 }
 
-.pages-nav-v2__scroll::-webkit-scrollbar-thumb:hover {
+aside.sidebar:has(#pages-nav):hover .pages-nav-v2__scroll {
+	scrollbar-color: #e3e8f2 transparent;
+}
+
+aside.sidebar:has(#pages-nav):hover .pages-nav-v2__scroll::-webkit-scrollbar-thumb {
+	background-color: rgb(227 232 242 / 1);
+}
+
+aside.sidebar:has(#pages-nav):hover
+	.pages-nav-v2__scroll::-webkit-scrollbar-thumb:hover {
 	background-color: #c5cedb;
+	transition: background-color 0.15s ease;
 }
 
 .pages-nav-v2__content {
-	padding-top: 24px;
+	/* Vertical inset lives on .pages-nav-v2__scroll (padding + fade mask). */
+	padding-top: 0;
+	padding-left: 8px;
 }
 
-/* First Top / Subtitle in scroll: no extra top inset (Figma); siblings get pt-16. */
+/* Label heading margins come from the label padding rules below (Figma). */
 .pages-nav-v2__content
 	.docs-sidebar-nav-v2__tree
 	> li
@@ -318,26 +557,21 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 	margin: 0;
 }
 
-.pages-nav-v2__content
-	.docs-sidebar-nav-v2__tree
-	> li
-	~ li
-	> .docs-sidebar-nav-v2__block-top {
-	padding-top: 16px;
-}
-
-.pages-nav-v2__content
-	.docs-sidebar-nav-v2__tree
-	> li
-	~ li
-	> .docs-sidebar-nav-v2__block-subtitle {
-	padding-top: 16px;
-	padding-bottom: 8px;
-}
-
 .pages-nav-v2__content nav[data-nav-v2] ul.docs-sidebar-nav-v2__label-children,
 .pages-nav-v2__content nav[data-nav-v2] ul.docs-sidebar-nav-v2__subsection {
 	gap: 1px;
+}
+
+/*
+ * Space between root sections only when they are non-clickable top labels
+ * (docs label: / API classifications). Plain folder/leaf roots stay tight.
+ */
+#pages-nav
+	nav[data-nav-v2]
+	ul#nav-tree.docs-sidebar-nav-v2__tree
+	> li:has(> .docs-sidebar-nav-v2__label--top)
+	+ li:has(> .docs-sidebar-nav-v2__label--top) {
+	margin-top: 8px;
 }
 
 /* Nav V2: no motion on sidebar column (sticky offset / max-height). */
@@ -347,7 +581,11 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 
 /* Sticky chrome wrapper is unstyled; search row chrome lives on .pages-nav-v2__search-inner. */
 
-.sidebar #pages-nav .pages-nav-menu.pages-nav-v2__scroll {
+.sidebar #pages-nav .pages-nav-menu.pages-nav-v2__menu {
+	padding-right: 0;
+}
+
+.sidebar #pages-nav .pages-nav-menu .pages-nav-v2__scroll {
 	padding-right: 0;
 }
 
@@ -372,7 +610,10 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 	gap: 0 !important;
 }
 
-/* Gap between sibling subsection blocks (each li: nested subtitle + its ul) under a top icon section only. */
+/*
+ * Nested-label blocks: spacing lives on the subtitle padding (8px first / 24px siblings),
+ * not on the parent ul gap.
+ */
 #pages-nav
 	nav[data-nav-v2]
 	li
@@ -388,7 +629,7 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 	+ ul.docs-sidebar-nav-v2__subsection:has(
 		> li > .docs-sidebar-nav-v2__label--nested
 	) {
-	gap: 8px !important;
+	gap: 0 !important;
 }
 
 /*
@@ -424,16 +665,23 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 	min-height: 0;
 	overflow: hidden;
 	transform: translateZ(0);
+	/* Indent only here — rail lives on the children ul so active borders can overlap it
+	 * (overflow:hidden on this box would clip a negative-margin border on the links). */
+	margin-inline-start: 16px;
 }
 
 /*
  * Folder accordion body: flat/styled link rows (chevron folders, leaves). Distinct from
  * .docs-sidebar-nav-v2__subsection (label heading + list pattern).
+ * Rail on the ul (not clip-inner) so .current can pull 1px left and cover it.
  */
 #pages-nav nav[data-nav-v2] ul.docs-sidebar-nav-v2__folder-children {
 	display: flex;
 	flex-direction: column;
+	gap: 1px;
 	list-style: none;
+	margin-block: 8px;
+	border-inline-start: 1px solid #e3e8f2;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -446,22 +694,15 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 }
 
 /*
- * Nav V2: block spacing only for root rows that start a top-level section (label--top).
- * Leaf / folder rows without a top label do not get the 24px bottom padding.
+ * Root label sections: no extra li padding — vertical rhythm is on the heading itself
+ * (Figma: first top pb-8 / sibling top pt-16 + pb-8).
  */
 #pages-nav
 	nav[data-nav-v2]
 	ul.docs-sidebar-nav-v2__tree
 	> li:has(> .docs-sidebar-nav-v2__label--top) {
 	margin-top: 0;
-	padding: 0 0 16px;
-}
-
-#pages-nav
-	nav[data-nav-v2]
-	ul.docs-sidebar-nav-v2__tree
-	> li:has(> .docs-sidebar-nav-v2__label--top):last-child {
-	padding: 0 0 16px;
+	padding: 0;
 }
 
 /*
@@ -493,49 +734,46 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 nav.docs-sidebar-nav-v2 {
 	position: relative;
 	overflow: hidden;
-}
-
-#pages-nav
-	nav.docs-sidebar-nav-v2:has(> ul > li:first-child):not(
-		:has(> ul > li:first-child > .docs-sidebar-nav-v2__label)
-	) {
-	padding: 0 0 22px 0;
-}
-
-/* Nav V2: top-level section titles (with icon) — inherit body font stack */
-nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
-	font-weight: 700;
-	font-size: 16px;
-	line-height: 24px;
-	color: #1c1e23;
-	margin: 16px 0;
-}
-
-#pages-nav
-	nav[data-nav-v2]
-	.docs-sidebar-nav-v2__block-top.docs-sidebar-nav-v2__label--top,
-#pages-nav
-	nav[data-nav-v2]
-	.docs-sidebar-nav-v2__block-subtitle.docs-sidebar-nav-v2__label--nested {
-	margin: 0;
+	padding: 0;
 }
 
 /*
- * Label--top spacing:
- * - Default (12px 0 16px): top sections whose body is a folder list (.docs-sidebar-nav-v2__label-children).
- * - Tighter bottom (12px 0 8px): top sections whose body is a true subsection list (nested labels only).
+ * Non-clickable headings (docs label: + API x-tagGroups) — Figma Navigation:
+ * - Top:            padding 16px 12px 8px, weight 700, 16/24
+ * - Nested first:   padding 8px 12px 8px
+ * - Nested siblings: padding-top 24px
  */
-#pages-nav
-	nav[data-nav-v2]
-	.docs-sidebar-nav-v2__label--top:has(+ ul.docs-sidebar-nav-v2__subsection) {
-	margin: 12px 0 8px;
+#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__label--top {
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0;
+	padding: 16px 12px 8px;
+	font-weight: 700;
+	font-size: 16px;
+	line-height: 24px;
+	color: #111c2c;
+	border-radius: 8px;
 }
 
-/* Nav V2: nested subgroup section titles (non-clickable; color never overridden by active path) */
-nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--nested {
-	font-weight: 500;
-	margin: 16px 0;
-	color: #a2b1c9;
+#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__label--nested {
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0;
+	padding: 8px 12px 8px;
+	font-weight: 700;
+	font-size: 12px;
+	line-height: 16px;
+	letter-spacing: normal;
+	text-transform: uppercase;
+	color: #516381;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li
+	~ li
+	> .docs-sidebar-nav-v2__label--nested {
+	padding-top: 24px;
 }
 
 /* Nav V2: top-level section title text only (icons removed). */
@@ -553,19 +791,6 @@ nav.docs-sidebar-nav-v2
 #pages-nav nav[data-nav-v2] li {
 	min-width: 0;
 	width: 100%;
-}
-
-/*
- * Subsection heading copy (nested label + nav-text). Scoped to nested only so link/folder
- * rows keep normal body styling.
- */
-#pages-nav
-	nav[data-nav-v2]
-	.docs-sidebar-nav-v2__label--nested.docs-sidebar-nav-v2__nav-text {
-	font-size: 12px;
-	color: #8a919e;
-	margin: 16px 0 8px;
-	font-weight: 700;
 }
 
 #pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__nav-text {
@@ -599,11 +824,48 @@ nav.docs-sidebar-nav-v2
 	font-weight: 400;
 	border-radius: 8px;
 	background-color: transparent;
+	transition:
+		background-color 0.12s ease,
+		color 0.12s ease,
+		border-color 0.12s ease;
+}
+
+/*
+ * Nested rows / open groups sit against the folder rail. Square off the left corners
+ * so borders meet the rail cleanly. Top-level tree rows keep full 8px radius.
+ *
+ * Always reserve a 1px transparent inline-start border (pulled over the rail) so
+ * toggling .current only changes color — avoids chevron/layout jump.
+ */
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__folder-children
+	a.sidebar-link {
+	border-start-start-radius: 0;
+	border-end-start-radius: 0;
+	border-inline-start: 1px solid transparent;
+	margin-inline-start: -1px;
+	padding-inline-start: 12px;
+	/* Keep hover fill inside the padding box so it does not paint through the
+	 * transparent/blue left border and cover the folder rail. */
+	background-clip: padding-box;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__folder-children
+	li.nav-v2-active-parent,
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__folder-children
+	li.nav-v2-active-subtree {
+	border-start-start-radius: 0;
+	border-end-start-radius: 0;
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link.nav-v2-link {
-	padding-inline-end: 10px;
-	padding-inline-start: max(10px, calc(10px + var(--nav-level, 0) * 12px));
+	min-height: 32px;
+	padding-inline: 12px;
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link:not(.text-grey-40) {
@@ -613,7 +875,8 @@ nav.docs-sidebar-nav-v2
 #pages-nav
 	nav[data-nav-v2]
 	a.sidebar-link:not(.text-grey-40):not(.current):hover {
-	background-color: #f6f9fc;
+	background-color: #ecf1f9;
+	color: #1d2a3e;
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link.text-grey-40 {
@@ -621,32 +884,44 @@ nav.docs-sidebar-nav-v2
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link.text-grey-40:not(.current):hover {
-	background-color: #f6f9fc;
+	background-color: #ecf1f9;
 }
 
+/*
+ * Active row: #0B64DD text; idle fill transparent; hover uses the same fills as siblings.
+ * Do not set border-inline-start here — nested rows keep a 1px transparent border
+ * always (color flips / thickens on .current). A shorthand `none` would zero the width.
+ * Top-level rows have no reserved border, so they stay borderless.
+ */
 #pages-nav nav[data-nav-v2] a.sidebar-link.current {
 	position: relative;
 	color: #0b64dd !important;
+	background-color: transparent !important;
+}
+
+/* Weight 600 on label text only — never on the chevron. */
+#pages-nav
+	nav[data-nav-v2]
+	a.sidebar-link.current
+	.docs-sidebar-nav-v2__nav-text {
 	font-weight: 600 !important;
-	background-color: #ecf1f9 !important;
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link.current:hover {
-	color: #0b64dd;
+	color: #0b64dd !important;
 	background-color: #ecf1f9 !important;
 }
 
-/* Vertical accent on the active page row (blue bar + blue title; chevron uses parent-path ink). */
 #pages-nav nav[data-nav-v2] a.sidebar-link.current::before {
-	content: '';
-	position: absolute;
-	inset-inline-start: 3px;
-	top: 6px;
-	bottom: 6px;
-	width: 3px;
-	border-radius: 9999px;
-	background-color: var(--color-blue-elastic);
-	pointer-events: none;
+	content: none;
+}
+
+/* Nested current: active rail marker is 2px (idle rows keep 1px transparent). */
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__folder-children
+	a.sidebar-link.current {
+	border-inline-start: 2px solid #0b64dd;
 	z-index: 1;
 }
 
@@ -673,11 +948,25 @@ nav.docs-sidebar-nav-v2
 	background-color: #ecf1f9 !important;
 }
 
-#pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link.current,
 #pages-nav
 	nav[data-nav-v2]
 	li.nav-v2-active-subtree
-	a.sidebar-link.current:hover {
+	a.sidebar-link.current:not(:hover) {
+	background-color: transparent !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-subtree
+	a.sidebar-link.current:hover,
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-parent
+	a.sidebar-link.current:hover,
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-leaf
+	> a.sidebar-link.current:hover {
 	background-color: #ecf1f9 !important;
 }
 
@@ -688,24 +977,24 @@ nav.docs-sidebar-nav-v2
 	background-color: #ecf1f9 !important;
 }
 
-#pages-nav nav[data-nav-v2] li.nav-v2-active-leaf > a.sidebar-link.current,
 #pages-nav
 	nav[data-nav-v2]
 	li.nav-v2-active-leaf
-	> a.sidebar-link.current:hover {
-	background-color: #ecf1f9 !important;
+	> a.sidebar-link.current:not(:hover) {
+	background-color: transparent !important;
 }
 
 /*
- * Ancestor folder rows (current is deeper): semibold + dark ink on the open path.
- * .current on the same row (folder index) uses blue text; chevron stays dark via scoped rule below.
+ * Ancestor folder rows on the path to current: weight 600 on the label only.
+ * Open ancestor ink: #516381 on the row link (chevron stays muted).
+ * Background (#f6f9fc) is only on the deepest group-navigation (nav-v2-active-parent / subtree).
  */
 #pages-nav
 	nav[data-nav-v2]
 	li.nav-v2-active-ancestor
 	> .nav-folder-peer
-	> a.sidebar-link {
-	color: #1d2a3e !important;
+	> a.sidebar-link
+	.docs-sidebar-nav-v2__nav-text {
 	font-weight: 600 !important;
 }
 
@@ -720,14 +1009,14 @@ nav.docs-sidebar-nav-v2
 	> .nav-folder-peer
 	> a.sidebar-link.current {
 	color: #0b64dd !important;
-	font-weight: 600 !important;
 }
 
 #pages-nav
 	nav[data-nav-v2]
 	li.nav-v2-active-ancestor
 	> .nav-folder-peer
-	> a.sidebar-link.text-grey-40 {
+	> a.sidebar-link.text-grey-40
+	.docs-sidebar-nav-v2__nav-text {
 	color: var(--color-grey-40) !important;
 	font-weight: 600 !important;
 }
@@ -769,55 +1058,33 @@ nav.docs-sidebar-nav-v2
 	min-width: 0;
 }
 
-/* Chevrons: muted by default; active folder row icon follows active blue. */
+/* Chevrons: muted by default (no special color on open ancestors). */
 #pages-nav nav[data-nav-v2] .nav-folder-chevron {
-	color: #a2b1c9;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	font-weight: 400;
+	color: #98a2b3;
+	transition: color 0.12s ease;
 }
 
-#pages-nav
-	nav[data-nav-v2]
-	.nav-folder-peer
-	> a.sidebar-link.current
-	.nav-folder-chevron {
-	color: #0b64dd;
-}
-
+/* Open ancestor of current: muted ink on the row label only (not the chevron). */
 #pages-nav
 	nav[data-nav-v2]
 	li.nav-v2-active-ancestor
-	> .nav-folder-peer
-	> a.sidebar-link:not(.current)
-	.nav-folder-chevron {
-	color: currentColor;
-}
-
-#pages-nav
-	nav[data-nav-v2]
-	.nav-folder-peer
-	> a.sidebar-link.current
-	.nav-folder-chevron
-	svg,
-#pages-nav
-	nav[data-nav-v2]
-	li.nav-v2-active-ancestor
-	> .nav-folder-peer
-	> a.sidebar-link
-	.nav-folder-chevron
-	svg {
-	stroke-width: 3.5;
+	> .nav-folder-peer:has(input[type='checkbox']:checked)
+	> a.sidebar-link:not(.current):not(.text-grey-40) {
+	color: #516381;
 }
 
 .docs-sidebar-nav-v2 .nav-folder-peer .nav-folder-chevron svg {
 	display: block;
-	width: 12px;
-	height: 12px;
+	width: 16px;
+	height: 16px;
+	/* Collapsed = chevron right; open = chevron down. */
 	transform: rotate(-90deg);
-}
-
-.docs-sidebar-nav-v2 .nav-item-slot {
-	display: block;
-	width: 12px;
-	height: 12px;
 }
 
 .docs-sidebar-nav-v2

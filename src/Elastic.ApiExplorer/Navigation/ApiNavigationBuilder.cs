@@ -128,7 +128,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
 				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
-				CreateTagNavigationItems(apiUrlSuffix, classification, classificationNavigationItem, classificationNavigationItem, tagNavigationItems);
+				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, classificationNavigationItem, tagNavigationItems);
 				topLevelNavigationItems.Add(classificationNavigationItem);
 				// if there is only a single tag item will be added directly to the classificationNavigationItem, otherwise they will be added to the tagNavigationItems
 				if (classificationNavigationItem.NavigationItems.Count == 0)

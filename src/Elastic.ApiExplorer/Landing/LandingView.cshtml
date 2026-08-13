@@ -5,6 +5,9 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
+@{
+	var apiHxAttrs = LayoutModel.Htmx.GetHxAttributes(hasSameTopLevelGroup: true);
+}
 <section id="elastic-docs-v3">
 	<h1>@Model.ApiInfo.Title</h1>
 	<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
@@ -22,19 +25,19 @@
 						break;
 					case OverviewRowKind.TagHeading:
 					<tr>
-						<td colspan="2"><h3><a href="@row.Url" class="api-tag-landing-link">@row.Title</a></h3></td>
+						<td colspan="2"><h3><a href="@row.Url" class="api-tag-landing-link" @apiHxAttrs>@row.Title</a></h3></td>
 					</tr>
 						break;
 					case OverviewRowKind.Endpoint:
 							<tr>
 								<td class="api-name">@(row.Title)</td>
-								<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
+								<td>@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Operations, apiHxAttrs)))</td>
 							</tr>
 						break;
 					case OverviewRowKind.Operation:
 					<tr>
 						<td class="api-name">@(row.Title)</td>
-						<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
+						<td>@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Operations, apiHxAttrs)))</td>
 					</tr>
 						break;
 					case OverviewRowKind.SchemaCategoryHeading:
@@ -44,13 +47,13 @@
 						break;
 					case OverviewRowKind.Schema:
 					<tr>
-						<td class="api-name"><a href="@row.Url">@(row.Title)</a></td>
+						<td class="api-name"><a href="@row.Url" @apiHxAttrs>@(row.Title)</a></td>
 						<td><code>@row.SchemaId</code></td>
 					</tr>
 						break;
 					case OverviewRowKind.MarkdownPage:
 					<tr>
-						<td class="api-name"><a href="@row.Url">@(row.Title)</a></td>
+						<td class="api-name"><a href="@row.Url" @apiHxAttrs>@(row.Title)</a></td>
 						<td>Additional documentation</td>
 					</tr>
 						break;

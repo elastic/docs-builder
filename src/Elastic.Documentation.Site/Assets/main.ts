@@ -54,9 +54,12 @@ import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
 import('./web-components/StorybookStory/StorybookStoryComponent')
 
-if (config.buildType === 'isolated' || config.airGapped) {
-    import('./isolated')
-} else if (config.buildType === 'codex') {
+const isolatedHeaderReady =
+    config.buildType === 'isolated' || config.airGapped
+        ? import('./isolated')
+        : Promise.resolve()
+
+if (config.buildType === 'codex') {
     import('./codex')
 }
 
@@ -64,6 +67,35 @@ const { getOS } = new UAParser()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HtmxEvent = any
+
+function releaseLayoutTransitions() {
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            document.documentElement.classList.remove('no-transitions')
+        })
+    })
+}
+
+/** Suppress CSS transitions until fonts and isolated header are ready (reduces CLS). */
+function suppressLayoutTransitionsUntilReady() {
+    const headerReady =
+        config.buildType === 'isolated' || config.airGapped
+            ? Promise.all([
+                  isolatedHeaderReady,
+                  customElements.whenDefined('elastic-docs-header'),
+              ])
+            : Promise.resolve()
+
+    void Promise.all([
+        document.fonts?.ready ?? Promise.resolve(),
+        headerReady,
+    ]).then(releaseLayoutTransitions)
+
+    // Safety valve: never leave transitions disabled indefinitely.
+    setTimeout(releaseLayoutTransitions, 2000)
+}
+
+suppressLayoutTransitionsUntilReady()
 
 // Run each init step in isolation so a failure in one does not abort the rest.
 async function runInitSteps(
@@ -267,6 +299,7 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
+    document.documentElement.classList.add('no-transitions')
     if (
         event.detail.requestConfig.verb === 'get' &&
         event.detail.requestConfig.triggeringEvent
@@ -284,6 +317,10 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
             )
         }
     }
+})
+
+document.addEventListener('htmx:afterSettle', function () {
+    releaseLayoutTransitions()
 })
 
 document.body.addEventListener(

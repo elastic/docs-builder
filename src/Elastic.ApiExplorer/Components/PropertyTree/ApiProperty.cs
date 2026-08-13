@@ -126,7 +126,7 @@ public record ApiProperty
 	public required bool IsLast { get; init; }
 	public required bool IsRecursive { get; init; }
 
-	/// <summary>Whether the row shows the <c>required</c>/<c>optional</c> tag for request or response context.</summary>
+	/// <summary>Whether the row is in a request body (vs response); kept for callers that branch on context.</summary>
 	public required bool IsRequest { get; init; }
 
 	public required TypeAnnotation Type { get; init; }
