@@ -88,6 +88,7 @@
     <Project Path="src/tooling/docs-builder/docs-builder.csproj" />
     <Project Path="src/tooling/essc/essc.csproj" />
     <Project Path="src/tooling/docs-migrate/docs-migrate.csproj" />
+    <Project Path="src/tooling/adoc-compare/adoc-compare.csproj" />
   </Folder>
   <Folder Name="/tests-integration/">
     <File Path="tests-integration/Directory.Build.props" />
