@@ -254,7 +254,7 @@
 	}
 
 	.hub-card .hub-card-desc {
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		color: var(--color-ink-light);
 		margin-bottom: 14px;
 		line-height: 1.5;
@@ -293,7 +293,7 @@
 		border-top: 1px solid var(--color-grey-20);
 	}
 	.hub-card .hub-card-aside-label {
-		font-size: var(--text-xs);
+		font-size: var(--text-sm);
 		color: var(--color-grey-80);
 		margin-bottom: 6px;
 		font-weight: 600;
@@ -303,7 +303,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		line-height: 1.9;
 	}
 	.hub-card .hub-card-aside-links a {
@@ -426,7 +426,7 @@
 		text-decoration: underline;
 	}
 	.hub-col-desc {
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		color: var(--color-ink-light);
 		margin: 0 0 10px;
 		line-height: 1.4;
@@ -464,7 +464,7 @@
 	/* The label is authored, for example "Panel types", so it keeps the casing the writer
 	   chose rather than being shouted in uppercase. */
 	.hub-explore-more-label {
-		font-size: var(--text-xs);
+		font-size: var(--text-sm);
 		font-weight: 600;
 		color: var(--color-ink-light);
 		margin-bottom: 8px;
