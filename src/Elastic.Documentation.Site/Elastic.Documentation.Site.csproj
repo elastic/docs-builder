@@ -103,9 +103,9 @@
   <Target Name="EmbedGeneratedAssets" AfterTargets="NpmRunBuild">
     <ItemGroup>
       <EmbeddedResource Include="_static/*.js" Watch="false" />
-      <EmbeddedResource Include="_static/*.js.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
+      <EmbeddedResource Include="_static/*.js.map" Watch="false" />
       <EmbeddedResource Include="_static/*.css" Watch="false" />
-      <EmbeddedResource Include="_static/*.css.map" Watch="false" Condition="'$(Configuration)' == 'Debug'" />
+      <EmbeddedResource Include="_static/*.css.map" Watch="false" />
       <EmbeddedResource Include="_static/*.svg" Watch="false" />
       <EmbeddedResource Include="_static/*.png" Watch="false" />
       <EmbeddedResource Include="_static/*.ttf" Watch="false" />
