@@ -468,9 +468,11 @@
 			border-color 0.15s ease,
 			box-shadow 0.15s ease;
 	}
+	/* Same hover treatment as every other card that is itself a link. The pale blue this
+	   replaced read at 2.12:1 against white, so the state was barely visible. */
 	.hub-whats-new a.hub-wn-card-link:hover,
 	.hub-whats-new .hub-wn-card-link:focus-visible {
-		border-color: var(--color-blue-elastic-60, #7db8e8);
+		border-color: var(--color-grey-80);
 		box-shadow: 0 2px 10px rgb(0 0 0 / 0.06);
 	}
 	.hub-whats-new .hub-wn-card-meta {
