@@ -5,7 +5,7 @@
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			<li class="api-url-list-item">
 				<a href="@overload.Url" class="current api-url-list-item-landing" @Model.HtmxAttributes>
-					<span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
+					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
 					<span class="api-url">@overload.Model.Route</span>
 				</a>
 			</li>

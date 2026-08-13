@@ -67,6 +67,75 @@ public class XReqAuthTests
 	}
 
 	[Fact]
+	public void ParsePrerequisiteRow_LabelAndBacktickValue_Splits()
+	{
+		var row = OpenApiXReqAuthParser.ParsePrerequisiteRow("Index privileges: `read`\n");
+
+		row.Label.Should().Be("Index privileges");
+		row.Badge.Should().Be("read");
+	}
+
+	[Fact]
+	public void ParsePrerequisiteRow_PlainLine_LeavesBadgeNull()
+	{
+		var row = OpenApiXReqAuthParser.ParsePrerequisiteRow("You must authenticate.");
+
+		row.Label.Should().Be("You must authenticate.");
+		row.Badge.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task TryGetPrerequisiteRows_MinimalOpenApi3Spec_SplitsLabelAndBadge()
+	{
+		var json = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.0",
+		  "info": { "title": "t", "version": "1" },
+		  "paths": {
+		    "/a": {
+		      "get": {
+		        "operationId": "op-a",
+		        "responses": { "200": { "description": "ok" } },
+		        "x-req-auth": [
+		          "Index privileges: `monitor`\n",
+		          "Cluster privileges: `monitor`\n"
+		        ]
+		      }
+		    }
+		  }
+		}
+		""";
+		var jsonPath = Path.Join(Path.GetTempPath(), $"xreqauth-rows-{Guid.NewGuid():N}.json");
+		try
+		{
+			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current.CancellationToken);
+			var loaded = await OpenApiDocument.LoadAsync(
+				jsonPath,
+				new OpenApiReaderSettings
+				{
+					LeaveStreamOpen = false
+				},
+				TestContext.Current.CancellationToken
+			);
+			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
+
+			var rows = OpenApiXReqAuthParser.TryGetPrerequisiteRows(op, null, "/a", "op-a");
+
+			rows.Should().NotBeNull();
+			rows!.Should().HaveCount(2);
+			rows[0].Label.Should().Be("Index privileges");
+			rows[0].Badge.Should().Be("monitor");
+			rows[1].Label.Should().Be("Cluster privileges");
+			rows[1].Badge.Should().Be("monitor");
+		}
+		finally
+		{
+			if (File.Exists(jsonPath))
+				File.Delete(jsonPath);
+		}
+	}
+
+	[Fact]
 	public async Task TryGetPrerequisiteLines_EmptyArray_ReturnsNull()
 	{
 		var json = /*lang=json,strict*/ """

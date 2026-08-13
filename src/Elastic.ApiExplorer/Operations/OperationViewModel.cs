@@ -15,20 +15,23 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required OperationPageModel Page { get; init; }
 
-	public IReadOnlyList<string>? RequiredAuthItems =>
-		OpenApiXReqAuthParser.TryGetPrerequisiteLines(
+	public IReadOnlyList<PrerequisiteRow>? Prerequisites =>
+		OpenApiXReqAuthParser.TryGetPrerequisiteRows(
 			Operation.Operation,
 			RenderContext.ApiExplorerLog,
 			Operation.Route,
 			Operation.Operation.OperationId
 		);
 
+	protected override string BreadcrumbCurrentTitle =>
+		Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
+
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
 	{
 		var operation = Operation.Operation;
 		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
 
-		if (RequiredAuthItems is { Count: > 0 })
+		if (Prerequisites is { Count: > 0 })
 			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
 
 		if (Page.QueryParameters.Count > 0)

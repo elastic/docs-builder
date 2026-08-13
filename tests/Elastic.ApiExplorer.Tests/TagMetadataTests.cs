@@ -646,8 +646,8 @@ public class TagMetadataTests
 		var informationGroup = navigation.NavigationItems
 			.OfType<ClassificationNavigationItem>()
 			.First(c => c.NavigationTitle == "Information");
-		informationGroup.Should().BeAssignableTo<INavigationSidebarLabel>();
-		informationGroup.Url.Should().BeEmpty("x-tagGroups sections have no landing page");
+		informationGroup.Should().BeAssignableTo<ISidebarHeadingNavigationItem>();
+		informationGroup.Url.Should().Be(expectedOverviewUrl, "classifications keep the product overview URL; Nav V2 renders them as headings");
 
 		var firstTag = informationGroup.NavigationItems.OfType<TagNavigationItem>().First();
 		firstTag.Url.Should().NotBe(expectedOverviewUrl);

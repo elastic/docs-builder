@@ -1,66 +1,232 @@
 .api-url-listing {
-	margin-top: 32px;
 	margin-left: 0 !important;
-	&:has(.api-method-get) {
-		.api-method {
-			width: calc(4ch + var(--spacing));
-		}
-	}
-	&:has(.api-method-put) {
-		.api-method {
-			width: calc(4ch + var(--spacing));
-		}
-	}
-	&:has(.api-method-head) {
-		.api-method {
-			width: calc(5ch + var(--spacing));
-		}
-	}
-	&:has(.api-method-post) {
-		.api-method {
-			width: calc(5ch + var(--spacing));
-		}
-	}
-	&:has(.api-method-delete) {
-		.api-method {
-			width: calc(7ch + var(--spacing));
-		}
-	}
 
 	li {
 		list-style-type: none;
 		margin-left: 0;
-		a {
-			@apply text-grey-80 inline-block w-full p-4 pr-4 pl-4 no-underline;
-			@apply border-grey-20 bg-grey-10 rounded-sm border;
-		}
-		a.current {
-			@apply border-grey-30 text-grey-120 bg-white p-4;
-			font-weight: bold;
-		}
-		a:hover {
-			@apply border-grey-30 text-grey-120 bg-white;
-			font-weight: bold;
-		}
-		a.api-url-list-item-landing {
-			font-weight: normal !important;
-		}
-		a.api-url-list-item-landing:hover {
-			font-weight: normal !important;
-		}
-	}
-	li:only-child {
-		a.current {
-			@apply border-grey-20 rounded-sm border bg-white;
-		}
-		a.current:hover {
-			@apply border-grey-20 bg-white;
-		}
-	}
-	.api-url-list-item {
-		@apply mt-4;
 	}
 }
+
+/* Operation page endpoints — radio rows, 8px between items, no chrome */
+.api-page-intro .api-url-listing {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 32px;
+	padding: 0;
+}
+
+.api-page-intro .api-url-list-item {
+	margin: 0;
+	padding: 0;
+}
+
+.api-page-intro .api-url-listing > li > .api-url-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background-color: transparent;
+	color: #1d2a3e;
+	font-weight: 400;
+	text-decoration: none;
+	cursor: default;
+}
+
+.api-page-intro .api-url-listing--multi > li > .api-url-row {
+	cursor: pointer;
+}
+
+.api-page-intro .api-url-listing > li > .api-url-row:has(.api-url-radio:focus-visible) {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: 2px;
+}
+
+.api-page-intro .api-url-radio {
+	appearance: none;
+	-webkit-appearance: none;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	flex-shrink: 0;
+	border: 1px solid #98a2b3;
+	border-radius: 50%;
+	background-color: #fff;
+	cursor: pointer;
+}
+
+.api-page-intro .api-url-radio:checked {
+	border-color: #0b64dd;
+	background-image: radial-gradient(circle, #0b64dd 0 4px, #fff 4.5px);
+}
+
+.api-page-intro .api-url-radio:focus {
+	outline: none;
+}
+
+.api-page-intro .api-url-copy.copybtn {
+	position: static;
+	top: auto;
+	right: auto;
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	opacity: 0;
+	pointer-events: none;
+	background-color: transparent;
+	color: #516381;
+	border-radius: 0;
+}
+
+.api-page-intro .api-url-row:hover .api-url-copy.copybtn,
+.api-page-intro .api-url-copy.copybtn:focus-visible,
+.api-page-intro .api-url-copy.copybtn.success {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.api-page-intro .api-url-copy.copybtn:hover {
+	color: #1d2a3e;
+}
+
+.api-page-intro .api-url-copy.copybtn.success {
+	background-color: transparent;
+	color: #22863a;
+}
+
+.api-page-intro .api-url-copy.copybtn svg {
+	width: 16px;
+	height: 16px;
+	padding: 0;
+}
+
+.api-page-intro .api-url-copy.copybtn.o-tooltip--left:after {
+	background-color: #1d2a3e;
+	color: #f6f9fc;
+	transform: translateX(-102%) translateY(0);
+}
+
+.api-page-intro .api-url {
+	margin-left: 0;
+	color: #1d2a3e;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+}
+
+/* Operation page title — Figma APIs 10079:2802 */
+.api-page-intro h1 {
+	margin: 0;
+	padding-top: 0;
+	color: var(--color-ink-navy, #111c2c);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 30px;
+	font-weight: 600;
+	line-height: 36px;
+	letter-spacing: 0;
+}
+
+/* API breadcrumbs — Figma APIs 10087:3195 (EuiBreadcrumbs Page). On all API pages. */
+#markdown-content .api-breadcrumbs {
+	margin: 0 0 16px;
+	color: var(--color-subdued, #516381);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
+}
+
+#markdown-content .api-breadcrumbs ol {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+#markdown-content .api-breadcrumbs li {
+	margin: 0;
+	list-style: none;
+}
+
+#markdown-content .api-breadcrumbs a {
+	color: var(--color-subdued, #516381);
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: 400;
+	line-height: inherit;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+#markdown-content .api-breadcrumbs a:hover {
+	color: #1d2a3e;
+}
+
+#markdown-content .api-breadcrumbs a[target='_blank']::after {
+	content: none;
+}
+
+#markdown-content .api-breadcrumbs__current {
+	color: var(--color-subdued, #516381);
+}
+
+#markdown-content .api-breadcrumbs__sep {
+	padding: 0 8px;
+	color: var(--color-subdued, #516381);
+}
+
+#markdown-content .api-breadcrumbs__overflow {
+	position: relative;
+}
+
+#markdown-content .api-breadcrumbs__overflow summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	cursor: pointer;
+	list-style: none;
+	color: inherit;
+}
+
+#markdown-content .api-breadcrumbs__overflow summary::-webkit-details-marker {
+	display: none;
+}
+
+#markdown-content .api-breadcrumbs__chevron {
+	display: block;
+	flex-shrink: 0;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.5;
+}
+
+#markdown-content .api-breadcrumbs__overflow ul {
+	position: absolute;
+	z-index: 20;
+	top: calc(100% + 4px);
+	left: 0;
+	margin: 0;
+	padding: 8px;
+	list-style: none;
+	background: #fff;
+	border: 1px solid #e3e8f2;
+	border-radius: 4px;
+	min-width: 12rem;
+	box-shadow: 0 4px 12px rgb(17 28 44 / 8%);
+}
+
+#markdown-content .api-breadcrumbs__overflow ul li {
+	margin: 0;
+	padding: 4px 8px;
+}
+
 .api-overview {
 	.api-url-listing {
 		@apply mt-1;
@@ -70,7 +236,7 @@
 	}
 	li {
 		a {
-			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
+			@apply text-grey-80 flex w-full items-center p-2 no-underline;
 			@apply rounded-sm border border-white;
 		}
 		a:hover {
@@ -78,7 +244,7 @@
 			@apply border-grey-20;
 		}
 		a.current {
-			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
+			@apply text-grey-80 flex w-full items-center p-2 no-underline;
 			@apply rounded-sm border border-white;
 		}
 		a.current:hover {
@@ -88,7 +254,7 @@
 	}
 	li:only-child {
 		a.current {
-			@apply text-grey-80 inline-block w-full p-2 pr-2 pl-2 no-underline;
+			@apply text-grey-80 flex w-full items-center p-2 no-underline;
 			@apply rounded-sm border border-white;
 		}
 		a.current:hover {
@@ -119,41 +285,83 @@
 	}
 }
 
+/*
+ * Labeled HTTP method chips on operation/overview pages — Figma APIs node 10067:6424.
+ * Icon + uppercase label, 24px tall, 8px radius. Sidebar glyphs stay in .nav-v2-api-method.
+ */
 .api-method {
-	@apply rounded-sm border;
-	padding-left: var(--spacing);
-	padding-right: var(--spacing);
-	font-family: var(
-		--default-mono-font-family,
-		ui-monospace,
-		SFMono-Regular,
-		Menlo,
-		Monaco,
-		Consolas,
-		'Liberation Mono',
-		'Courier New',
-		monospace
-	);
-	font-feature-settings: var(--default-mono-font-feature-settings, normal);
-	font-variation-settings: var(
-		--default-mono-font-variation-settings,
-		normal
-	);
-	font-size: 0.8em;
-	display: inline-block;
-	font-weight: bold;
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	height: 24px;
+	gap: 4px;
+	padding: 0 6px;
+	border: 1px solid;
+	border-radius: 8px;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	text-transform: uppercase;
+	white-space: nowrap;
 }
+
+.api-method-icon {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	overflow: clip;
+}
+
+.api-method-icon svg,
+.api-method-label {
+	display: block;
+}
+
+.api-method-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.api-method-label {
+	padding: 0 2px;
+}
+
+.api-method-get svg {
+	transform: rotate(180deg);
+}
+
 .api-method-get {
-	@apply border-blue-elastic-30 bg-blue-elastic-10 text-blue-elastic;
-}
-.api-method-put {
-	@apply border-yellow-30 bg-yellow-10 text-yellow-90;
+	background-color: #c9f3e3;
+	border-color: #aee8d2;
+	color: #008a5e;
 }
 .api-method-post {
-	@apply border-green-30 bg-green-10 text-green-90;
+	background-color: #d9e8ff;
+	border-color: #bfdbff;
+	color: #0b64dd;
+}
+.api-method-put,
+.api-method-patch {
+	background-color: #ffdebf;
+	border-color: #ffcda1;
+	color: #ed6723;
 }
 .api-method-delete {
-	@apply border-red-30 bg-red-10 text-red-90;
+	background-color: #fdddd8;
+	border-color: #ffc9c2;
+	color: #c61e25;
+}
+.api-method-head,
+.api-method-options {
+	background-color: #fff;
+	border-color: #cad3e2;
+	color: #5a6d8c;
 }
 
 /*
@@ -215,9 +423,10 @@
 	border-color: #ffc9c2;
 	color: #c61e25;
 }
+
 .api-url {
 	margin-left: calc(var(--spacing) * 2);
-	display: inline;
+	min-width: 0;
 	font-size: 14px;
 	line-height: 17px;
 	font-weight: 400;
@@ -233,9 +442,6 @@
 
 	dt a {
 		@apply no-underline;
-		code {
-			@apply inline-block p-1;
-		}
 	}
 	h1,
 	h2,
@@ -245,52 +451,165 @@
 	h6 {
 		@apply font-body;
 	}
-	h1 {
-		@apply pt-4;
-	}
 	h3 {
 		@apply border-b-grey-20 mt-6 border-b-1 pb-2;
 	}
-	h4 {
-		@apply border-b-grey-20 border-b-1;
-		padding-bottom: 14px;
-	}
-	h4.section-header {
-		margin-top: 0;
+}
+
+.responses-header.section-header {
+	@apply justify-start gap-3;
+}
+
+.responses-title {
+	@apply shrink-0;
+}
+
+.responses-meta {
+	@apply ml-auto inline-flex items-center gap-2;
+}
+
+.api-responses-select,
+.api-responses-status {
+	@apply font-mono text-sm font-semibold;
+	border: 0;
+	background: transparent;
+	padding: 0;
+	margin: 0;
+	box-shadow: none;
+}
+
+.api-responses-select {
+	@apply cursor-pointer appearance-none pr-4;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23516381' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 0 center;
+	background-size: 0.625rem;
+
+	&:focus-visible {
+		outline: 2px solid var(--color-blue-elastic, #0b64dd);
+		outline-offset: 2px;
 	}
 }
 
-/* Property list with tree-like nested indentation */
-.property-list {
+.api-responses-select.status-success,
+.api-responses-status.status-success {
+	@apply text-green-90;
+}
+
+.api-responses-select.status-error,
+.api-responses-status.status-error {
+	@apply text-red-90;
+}
+
+.api-responses-select.status-info,
+.api-responses-status.status-info {
+	@apply text-blue-elastic;
+}
+
+.api-responses-select:hover {
+	filter: brightness(0.82);
+}
+
+.response-panel {
+	@apply mt-3;
+}
+
+.response-description {
+	@apply text-grey-80 mt-0 mb-0 text-sm;
+}
+
+.content-type-tag {
+	@apply text-blue-elastic bg-blue-elastic-10 shrink-0 rounded px-1 py-0.5 text-xs font-medium;
+}
+
+.response-fields {
 	@apply mt-2;
+}
+
+.response-fields-toggle {
+	@apply text-grey-80 hover:text-grey-120 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
+}
+
+.response-fields-toggle .toggle-icon {
+	@apply font-mono font-semibold;
+}
+
+.response-fields-body {
+	@apply border-grey-20 mt-2 rounded-sm border px-3 py-2;
+}
+
+.response-fields.collapsed > .response-fields-body:not([hidden='until-found']) {
+	display: none;
+}
+
+.response-fields.expanded > .response-fields-body {
+	display: block;
+}
+
+.response-fields-body[hidden='until-found'] {
+	display: none;
+	border: 0;
+	padding: 0;
+	margin: 0;
+}
+
+/* Property list — Figma APIs 10079:2948 (Query Parameters / properties) */
+.property-list {
+	margin-top: 0;
 	position: relative;
 
 	dt {
-		@apply flex items-baseline gap-1;
-		padding-top: calc(var(--spacing) * 3);
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding-top: 16px;
 		padding-bottom: 0;
 		margin: 0;
-		line-height: 1.4;
+		line-height: 24px;
 
 		a {
-			@apply flex items-baseline gap-2 no-underline;
+			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 8px;
+			text-decoration: none;
 		}
 
-		code:first-of-type {
-			@apply text-ink font-bold;
+		> code:first-of-type,
+		a > code:first-of-type {
+			color: #6b3c9f;
+			font-family:
+				'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
+				Consolas, monospace;
+			font-size: 14px;
+			font-weight: 700;
+			line-height: 24px;
+			background: none;
+			border: 0;
+			padding: 0;
+			margin: 0;
+			border-radius: 0;
+			mix-blend-mode: normal;
+			word-break: break-word;
+			white-space: normal;
 		}
 	}
 
 	dd {
-		@apply text-grey-80;
-		padding: calc(var(--spacing) * 2) 0 0 0;
-		padding-left: calc(var(--spacing) * 2);
+		color: var(--color-subdued, #516381);
+		padding: 8px 0 0 0;
 		margin: 0;
-		line-height: 1.4;
-		font-size: 0.9em;
+		font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 20px;
 
 		p {
 			margin: 0;
+			color: inherit;
+			font-size: inherit;
+			line-height: inherit;
 		}
 
 		/* Hide empty dd elements */
@@ -307,7 +626,9 @@
 		margin-top: 0;
 
 		&.depth-0 {
-			margin-top: 0.125rem;
+			margin-top: 0;
+			padding-bottom: 16px;
+			border-bottom: 1px solid #e3e8f2;
 		}
 
 		&.depth-1 {
@@ -477,9 +798,33 @@
 	}
 }
 
-/* Schema type styling - visually distinct from property names */
+.query-param,
+.path-param,
+.prerequisite-item {
+	border-bottom: 1px solid #e3e8f2;
+	padding-bottom: 16px;
+}
+
+/* Type badge — Figma APIs 10079:2957 (boolean / string / read). Not markdown code. */
+.property-list code.schema-type,
+.property-list .api-type-badge,
 .schema-type {
-	@apply text-blue-elastic border-0 bg-transparent p-0 text-xs font-normal;
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0 6px;
+	border: 0;
+	border-radius: 4px;
+	background-color: #f6f9fc;
+	color: #516381;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	vertical-align: middle;
+	mix-blend-mode: normal;
 }
 
 /* Required badge */
@@ -490,14 +835,6 @@
 /* Optional badge - more subtle than required */
 .optional {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
-}
-
-/* Recursive badge - amber/yellow with icon */
-.recursive {
-	@apply text-yellow-90 bg-yellow-10 border-yellow-30 rounded border px-1.5 py-0.5 text-xs font-medium;
-}
-.recursive::before {
-	content: '↻ ';
 }
 
 /* Title badges: own line below h1, inline chips (not sharing the heading line) */
@@ -591,11 +928,16 @@
 	font-variant: small-caps;
 }
 
-/* Array type icon */
+/* Array type icon (still used in union variant labels) */
 .array-icon {
 	@apply text-green-70 font-normal;
 	font-size: 1.2em;
 	font-variant: small-caps;
+}
+
+.array-keyword {
+	@apply text-grey-50 font-normal;
+	font-size: 0.85em;
 }
 
 /* Dictionary/map type icon - same color as object icon */
@@ -634,11 +976,6 @@
 	@apply text-purple-70 bg-purple-10 rounded px-1.5 py-0.5 text-xs;
 }
 
-.union-option {
-	@apply text-yellow-90 bg-yellow-10 rounded px-1.5 py-0.5 text-xs;
-}
-
-/* Validation constraints display */
 .validation-constraints {
 	@apply mt-1 flex flex-wrap items-center gap-1;
 	padding-left: calc(var(--spacing) * 2);
@@ -1013,10 +1350,28 @@
 	@apply underline;
 }
 
-/* Inline code in property descriptions - more distinct */
-.property-list dd code:not(.enum-value):not(.schema-type) {
-	@apply text-yellow-90 bg-yellow-10 rounded px-1 py-0.5 text-xs;
+/* Inline token chip — Figma APIs 10080:3030 (`q`, `false`, `_all`) */
+.api-operation-description :not(pre) > code,
+.property-list dd code:not(.enum-value):not(.schema-type):not(.union-type-option),
+.example-description code,
+.union-option {
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	margin: 0 1px;
+	padding: 0 6px;
+	border: 1px solid #e3e8f2;
+	border-radius: 4px;
+	background-color: #f6f9fc;
+	color: #516381;
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 12px;
 	font-weight: 500;
+	line-height: 16px;
+	white-space: nowrap;
+	vertical-align: middle;
+	mix-blend-mode: normal;
+	word-break: normal;
 }
 
 /* Type definition link */
@@ -1031,7 +1386,8 @@
 }
 
 .property-list dd ul li {
-	@apply relative mb-2 pl-4;
+	@apply relative pl-4;
+	margin-bottom: 4px;
 }
 
 .property-list dd ul li::before {
@@ -1063,14 +1419,22 @@
 	}
 }
 
-/* Left column scrolls normally — only the examples rail is sticky */
+/* Figma APIs 10079:2948 / 10079:2918 — H4 + 40px spacer, 16px below, border #e3e8f2 */
 #elastic-api-v3 h4.section-header,
 #schema-definition h4.section-header {
 	@apply bg-white;
 	position: static;
-	padding-top: 3rem;
-	padding-bottom: 1rem;
+	box-sizing: border-box;
 	margin-top: 0;
+	margin-bottom: 0;
+	padding-top: 40px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid #e3e8f2;
+	color: var(--color-ink-navy, #111c2c);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 24px;
 }
 
 #api-examples-panel h4.section-header {
@@ -1093,8 +1457,8 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding-top: 3rem;
-	padding-bottom: 1rem;
+	padding-top: 40px;
+	padding-bottom: 16px;
 }
 
 /* Content-type badge for request/response headers */
@@ -1103,11 +1467,13 @@
 	font-weight: 500;
 }
 
-/* Operation description — body only, no section title; sits above Parameters */
+/* Operation description — same body copy as property/query descriptions (14/20, #516381) */
 .api-operation-description {
-	@apply text-grey-80;
-	font-size: 0.9em;
-	line-height: 1.5;
+	color: var(--color-subdued, #516381);
+	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 20px;
 	margin-top: 1.5rem;
 	margin-bottom: 0.5rem;
 
@@ -1118,10 +1484,37 @@
 	> :last-child {
 		margin-bottom: 0;
 	}
+
+	p {
+		margin-top: 0;
+		margin-bottom: 24px;
+		color: inherit;
+		font-size: 14px;
+		line-height: 20px;
+	}
+
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		margin-top: 0;
+		margin-bottom: 24px;
+		color: var(--color-subdued, #516381);
+		font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+		font-size: 14px;
+		font-weight: 600;
+		line-height: 20px;
+	}
+
+	strong,
+	b {
+		font-weight: 600;
+	}
 }
 
 /* Example blocks — response card chrome.
-   Request JSON without x-codeSamples reuses .api-code-sample (same dark card). */
+   Request / x-codeSamples (.api-code-sample) uses the same light card. */
 .example-block {
 	margin-bottom: 24px;
 	position: relative;
@@ -1172,6 +1565,15 @@ button.example-response-tab:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
 	border-radius: 2px;
+}
+
+.example-block--response .example-empty {
+	margin: 0;
+	padding: 12px 16px;
+	font-size: 13px;
+	line-height: 1.4;
+	color: #516381;
+	font-style: italic;
 }
 
 .example-block-actions {
@@ -1228,7 +1630,9 @@ button.example-response-tab:focus-visible {
    Beat `.markdown-content .hljs { color: blue-elastic-30 }` (same 0,2,0 + !important)
    by including .markdown-content in the selector — the examples rail uses that class. */
 .markdown-content .example-block--response pre code,
-#api-examples-panel .example-block--response pre code {
+#api-examples-panel .example-block--response pre code,
+.markdown-content .api-code-sample pre code,
+#api-examples-panel .api-code-sample pre code {
 	background-color: transparent !important;
 	color: var(--api-response-text) !important;
 	font-family:
@@ -1254,25 +1658,70 @@ button.example-response-tab:focus-visible {
 .markdown-content .example-block--response .hljs-comment,
 .markdown-content .example-block--response .hljs-quote,
 #api-examples-panel .example-block--response .hljs,
-#api-examples-panel .example-block--response [class^='hljs-'] {
+#api-examples-panel .example-block--response [class^='hljs-'],
+.markdown-content .api-code-sample .hljs,
+.markdown-content .api-code-sample .hljs-attr,
+.markdown-content .api-code-sample .hljs-punctuation,
+.markdown-content .api-code-sample .hljs-subst,
+.markdown-content .api-code-sample .hljs-bullet,
+.markdown-content .api-code-sample .hljs-section,
+.markdown-content .api-code-sample .hljs-title,
+.markdown-content .api-code-sample .hljs-name,
+.markdown-content .api-code-sample .hljs-type,
+.markdown-content .api-code-sample .hljs-params,
+.markdown-content .api-code-sample .hljs-meta,
+.markdown-content .api-code-sample .hljs-built_in,
+.markdown-content .api-code-sample .hljs-comment,
+.markdown-content .api-code-sample .hljs-quote,
+#api-examples-panel .api-code-sample .hljs,
+#api-examples-panel .api-code-sample [class^='hljs-'] {
 	color: var(--api-response-text) !important;
 }
 
 .markdown-content .example-block--response .hljs-string,
-#api-examples-panel .example-block--response .hljs-string {
+#api-examples-panel .example-block--response .hljs-string,
+.markdown-content .api-code-sample .hljs-string,
+#api-examples-panel .api-code-sample .hljs-string {
 	color: var(--api-response-string) !important;
 }
 
 .markdown-content .example-block--response .hljs-literal,
 .markdown-content .example-block--response .hljs-keyword,
 #api-examples-panel .example-block--response .hljs-literal,
-#api-examples-panel .example-block--response .hljs-keyword {
+#api-examples-panel .example-block--response .hljs-keyword,
+.markdown-content .api-code-sample .hljs-literal,
+#api-examples-panel .api-code-sample .hljs-literal {
 	color: var(--api-response-boolean) !important;
 }
 
 .markdown-content .example-block--response .hljs-number,
-#api-examples-panel .example-block--response .hljs-number {
+#api-examples-panel .example-block--response .hljs-number,
+.markdown-content .api-code-sample .hljs-number,
+#api-examples-panel .api-code-sample .hljs-number {
 	color: var(--api-response-number) !important;
+}
+
+/* Beat docs `.markdown-content .hljs` (blue-elastic-30) and `.hljs-keyword`
+   (python `from=`). `span` covers tokens that are not `.hljs *` descendants. */
+.api-page-shell #api-examples-panel .api-code-sample pre code,
+.api-page-shell #api-examples-panel .api-code-sample pre code *,
+.api-page-shell #api-examples-panel .api-code-sample span {
+	color: #1d2a3e !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-string,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-string * {
+	color: #047471 !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-literal,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-literal * {
+	color: #0b64dd !important;
+}
+
+.api-page-shell #api-examples-panel .api-code-sample .hljs-number,
+.api-page-shell #api-examples-panel .api-code-sample .hljs-number * {
+	color: #a11262 !important;
 }
 
 /* API page shell: same max width as docs; right column only when examples exist */
@@ -1280,11 +1729,21 @@ button.example-response-tab:focus-visible {
 	max-width: var(--max-layout-width);
 }
 
+@media (min-width: 768px) {
+	.api-page-shell > .grid {
+		column-gap: 48px;
+	}
+}
+
 @media (min-width: 1024px) {
 	/* Prefer :has() over a server class on this wrapper: htmx swaps #api-examples-panel
-	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale. */
+	   oob but does not remount .api-content-grid, so a toggled --examples class goes stale.
+	   Must set display:grid here — Tailwind lg:grid is 1280px and left the rail stacked
+	   under the reference column between 1024 and 1280. */
 	.api-content-grid:has(#api-examples-panel.api-examples-panel) {
-		grid-template-columns: minmax(0, 1fr) var(--max-examples-width);
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		column-gap: 24px;
 		/* Rows size to content so the examples rail can position:sticky while the page scrolls */
 	}
 
@@ -1302,25 +1761,29 @@ button.example-response-tab:focus-visible {
 	}
 
 	.api-content-grid:has(#api-examples-panel.api-examples-panel)
-		.api-page-intro {
+		.api-breadcrumbs {
 		grid-column: 1 / -1;
 		grid-row: 1;
 		min-width: 0;
 		padding-top: calc(
 			var(--spacing) * 6
 		); /* replaces .api-page-main pt-6 lost to contents */
-		padding-left: calc(
-			var(--spacing) * 4
-		); /* replaces article md:px-4 (left only) */
+	}
+
+	.api-content-grid:has(#api-examples-panel.api-examples-panel)
+		.api-page-intro {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		min-width: 0;
+		padding-top: 0;
 		padding-right: 0;
 	}
 
 	.api-content-grid:has(#api-examples-panel.api-examples-panel)
 		.api-page-reference {
 		grid-column: 1;
-		grid-row: 2;
+		grid-row: 3;
 		min-width: 0;
-		padding-inline: calc(var(--spacing) * 4);
 		padding-bottom: calc(var(--spacing) * 12); /* replaces main pb-12 */
 	}
 
@@ -1330,8 +1793,7 @@ button.example-response-tab:focus-visible {
 			var(--spacing) * 6
 		); /* match content pt-6 */
 		grid-column: 2;
-		grid-row: 2;
-		max-width: var(--max-examples-width);
+		grid-row: 3;
 		position: sticky;
 		top: var(--offset-top);
 		align-self: start;
@@ -1464,7 +1926,8 @@ button.example-response-tab:focus-visible {
 	color: var(--api-code-muted);
 }
 
-#api-examples-panel .example-block--response .api-code-line-gutter {
+#api-examples-panel .example-block--response .api-code-line-gutter,
+#api-examples-panel .api-code-sample .api-code-line-gutter {
 	font-family:
 		'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		monospace;
@@ -1495,26 +1958,30 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Code sample widget — Figma Card/Code (APIs 10002:17781)
-   bg #2b394f, tabs white/disabled, syntax white / #798eaf / #16c5c0 / #eaae01 */
+/* Code sample widget — same light Card/Code chrome as .example-block--response */
 .api-code-sample {
-	--api-code-bg: #2b394f;
-	--api-code-text: #ffffff;
-	--api-code-muted: #798eaf;
-	--api-code-accent: #16c5c0;
-	--api-code-string: #eaae01;
-	--api-code-param: #79b8ff;
-	--api-code-number: #f0a070;
+	--api-response-text: #1d2a3e;
+	--api-response-string: #047471;
+	--api-response-boolean: #0b64dd;
+	--api-response-number: #a11262;
+	--api-code-bg: #f6f9fc;
+	--api-code-text: #1d2a3e;
+	--api-code-muted: #516381;
+	--api-code-accent: #0b64dd;
+	--api-code-string: #047471;
+	--api-code-param: #1d2a3e;
+	--api-code-number: #a11262;
 	@apply overflow-hidden;
 	border-radius: 16px;
 	margin-bottom: 24px;
 	background-color: var(--api-code-bg);
 	color: var(--api-code-text);
+	border: 1px solid #e3e8f2;
 }
 
 .api-code-sample-header {
 	@apply flex min-w-0 items-center justify-between gap-2 px-3 py-2;
-	border-bottom: 1px solid rgb(255 255 255 / 0.08);
+	border-bottom: 1px solid #e3e8f2;
 }
 
 .api-code-sample-label {
@@ -1533,16 +2000,16 @@ button.example-response-tab:focus-visible {
 	line-height: 1.25rem;
 	padding-block: 0;
 	color: var(--api-code-muted);
-	background-color: rgb(255 255 255 / 0.06);
-	border-color: rgb(255 255 255 / 0.12);
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23798eaf' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-color: #fff;
+	border-color: #d3dae6;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23516381' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
 	background-position: right 0.35rem center;
 	background-size: 0.625rem;
 
 	&:hover {
-		background-color: rgb(255 255 255 / 0.1);
-		border-color: rgb(255 255 255 / 0.2);
+		background-color: #f5f7fa;
+		border-color: #98a2b3;
 	}
 
 	&:focus-visible {
@@ -1574,7 +2041,7 @@ button.example-response-tab:focus-visible {
 
 .api-code-sample-actions .copybtn.copybtn--in-header.success {
 	background-color: transparent;
-	color: var(--api-code-accent);
+	color: #22863a;
 }
 
 .api-code-sample-actions .copybtn.copybtn--in-header svg {
@@ -1610,63 +2077,6 @@ button.example-response-tab:focus-visible {
 .example-block--response .hljs,
 .example-block--response [class^='hljs-'] {
 	font-weight: 400 !important;
-}
-
-.api-code-sample .hljs,
-.api-code-sample .hljs-subst,
-.api-code-sample .hljs-punctuation {
-	color: var(--api-code-text) !important;
-}
-
-.api-code-sample .hljs-comment,
-.api-code-sample .hljs-quote,
-.api-code-sample .hljs-attr {
-	color: var(--api-code-muted) !important;
-}
-
-/* Keywords / HTTP methods / literals */
-.api-code-sample .hljs-meta,
-.api-code-sample .hljs-literal,
-.api-code-sample .hljs-keyword {
-	color: var(--api-code-accent) !important;
-}
-
-/* Command names (curl) and built-ins */
-.api-code-sample .hljs-built_in {
-	color: var(--api-code-string) !important;
-}
-
-/* Flags / params (-H, --url, kwarg names) */
-.api-code-sample .hljs-params {
-	color: var(--api-code-param) !important;
-}
-
-/* Strings, paths, titles / function names */
-.api-code-sample .hljs-string,
-.api-code-sample .hljs-title,
-.api-code-sample .hljs-title.function_,
-.api-code-sample .hljs-title.class_,
-.api-code-sample .hljs-name,
-.api-code-sample .hljs-selector-id,
-.api-code-sample .hljs-selector-class,
-.api-code-sample .hljs-type,
-.api-code-sample .hljs-link {
-	color: var(--api-code-string) !important;
-}
-
-.api-code-sample .hljs-number {
-	color: var(--api-code-number) !important;
-}
-
-/* Line-continuation `\`, bullets */
-.api-code-sample .hljs-symbol,
-.api-code-sample .hljs-bullet {
-	color: var(--api-code-param) !important;
-}
-
-.api-code-sample .hljs-variable,
-.api-code-sample .hljs-template-variable {
-	color: var(--api-code-accent) !important;
 }
 
 #api-examples-panel .api-code-sample .highlight pre code {
@@ -1733,11 +2143,6 @@ button.example-response-tab:focus-visible {
 
 	p {
 		margin: 0;
-	}
-
-	code {
-		@apply text-yellow-90 bg-yellow-10 rounded px-1 py-0.5 text-xs;
-		font-weight: 500;
 	}
 }
 

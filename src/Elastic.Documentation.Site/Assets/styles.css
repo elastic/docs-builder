@@ -739,7 +739,7 @@ nav.docs-sidebar-nav-v2 {
 
 /*
  * Non-clickable headings (docs label: + API x-tagGroups) — Figma Navigation:
- * - Top:            padding 16px 12px 8px, weight 600, 14/20
+ * - Top:            padding 16px 12px 8px, weight 700, 16/24
  * - Nested first:   padding 8px 12px 8px
  * - Nested siblings: padding-top 24px
  */
@@ -748,9 +748,9 @@ nav.docs-sidebar-nav-v2 {
 	width: 100%;
 	margin: 0;
 	padding: 16px 12px 8px;
-	font-weight: 600;
-	font-size: 14px;
-	line-height: 20px;
+	font-weight: 700;
+	font-size: 16px;
+	line-height: 24px;
 	color: #111c2c;
 	border-radius: 8px;
 }
