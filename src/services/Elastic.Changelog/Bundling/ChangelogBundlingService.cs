@@ -1041,10 +1041,22 @@ public partial class ChangelogBundlingService(
 			PlanVersionArgumentRegex().IsMatch(input.ProfileArgument) &&
 			ResolvePrimaryProduct(profileDef, input) is { } primaryProduct)
 		{
+			// For 'source: github_release', ProcessProfile names the bundle from the version it
+			// extracts out of the fetched release tag (ExtractBaseVersion strips a leading 'v' and any
+			// pre-release suffix), not the raw CLI argument. Mirror that here for concrete version
+			// arguments so plan's output_path always matches the file bundle actually writes; "latest"
+			// can't be resolved to a concrete tag without the network call plan deliberately avoids, so
+			// it is passed through as-is (a best-effort value CI must not depend on byte-for-byte).
+			var planVersion = string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
+				? ChangelogTextUtilities.ExtractBaseVersion(input.ProfileArgument)
+				: input.ProfileArgument;
+			// Same precedence as ProcessProfile: config.Bundle.OutputDirectory > input.OutputDirectory
+			// (programmatic override, e.g. a CI-provided --output-directory) > config.Bundle.Directory > cwd.
 			var outputDir = config?.Bundle?.OutputDirectory
+				?? input.OutputDirectory
 				?? config?.Bundle?.Directory
 				?? _fileSystem.Directory.GetCurrentDirectory();
-			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{input.ProfileArgument}.yaml").OptionalWindowsReplace();
+			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{planVersion}.yaml").OptionalWindowsReplace();
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
 			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();

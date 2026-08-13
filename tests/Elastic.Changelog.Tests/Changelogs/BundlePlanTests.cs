@@ -204,7 +204,10 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeTrue();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-v9.2.0.yaml").OptionalWindowsReplace());
+		// 'source: github_release' names the bundle from ExtractBaseVersion(release.TagName) at run time
+		// (leading 'v' stripped), not the raw CLI argument — plan must mirror that so output_path matches
+		// the file 'bundle' actually writes.
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
@@ -235,7 +238,9 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-1.0.0-beta.1.yaml").OptionalWindowsReplace());
+		// ExtractBaseVersion strips the pre-release suffix at run time too, so plan's file name must
+		// drop "-beta.1" the same way to stay in sync with the bundle 'run' actually writes.
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]

@@ -41,7 +41,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 		return configPath;
 	}
 
-	private ChangelogBundlingService Service() => new(LoggerFactory, ConfigurationContext, FileSystem);
+	private ChangelogBundlingService Service() => new(LoggerFactory, FileSystem, ConfigurationContext);
 
 	[Fact]
 	public async Task ProfileWithOutputPattern_EmitsHardError()
