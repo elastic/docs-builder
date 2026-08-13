@@ -418,7 +418,7 @@ public record ConfigurationFile
 				continue;
 			}
 
-			if (!resolved.Features.ReleaseNotes)
+			if (!resolved.Features.ParticipatesInReleaseNotes)
 			{
 				context.EmitError(context.ConfigurationPath,
 					$"Product '{product}' declared in 'release_notes' does not participate in the release-notes system (it lacks the 'release-notes' feature in products.yml).");

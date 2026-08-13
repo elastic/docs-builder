@@ -12,9 +12,13 @@ public static class ProductExtensions
 {
 	public static ProductsConfiguration CreateProducts(this ConfigurationFileProvider provider, VersionsConfiguration versionsConfiguration)
 	{
-		var productsFilePath = provider.ProductsFile;
+		using var reader = provider.ProductsFile.OpenText();
+		return CreateProducts(reader, versionsConfiguration);
+	}
 
-		var productsDto = ConfigurationFileProvider.Deserializer.Deserialize<ProductConfigDto>(productsFilePath.OpenText());
+	internal static ProductsConfiguration CreateProducts(TextReader reader, VersionsConfiguration versionsConfiguration)
+	{
+		var productsDto = ConfigurationFileProvider.Deserializer.Deserialize<ProductConfigDto>(reader);
 
 		var products = productsDto.Products.ToDictionary(
 			kvp => kvp.Key,
@@ -59,7 +63,7 @@ public static class ProductExtensions
 			? versionsConfiguration.GetVersioningSystem(versioningSystemId)
 			: null;
 
-	private static ProductFeatures ResolveFeatures(string productId, Dictionary<string, bool>? featuresDto)
+	private static ProductFeatures ResolveFeatures(string productId, Dictionary<string, string>? featuresDto)
 	{
 		if (featuresDto is null)
 			return ProductFeatures.All;
@@ -78,8 +82,40 @@ public static class ProductExtensions
 
 		return new ProductFeatures
 		{
-			PublicReference = featuresDto.GetValueOrDefault("public-reference", true),
-			ReleaseNotes = featuresDto.GetValueOrDefault("release-notes", true)
+			PublicReference = ResolveBooleanFeature(productId, featuresDto, "public-reference"),
+			ReleaseNotes = ResolveReleaseNotesPath(productId, featuresDto)
+		};
+	}
+
+	private static bool ResolveBooleanFeature(string productId, Dictionary<string, string> featuresDto, string key)
+	{
+		if (!featuresDto.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+			return true;
+		if (bool.TryParse(value, out var enabled))
+			return enabled;
+		throw new InvalidOperationException(
+			$"Product '{productId}' has invalid '{key}' value '{value}'. Allowed values: true, false.");
+	}
+
+	/// <summary>
+	/// Resolves <c>features.release-notes</c> into an onboarding path. Backward compatible with the
+	/// historical boolean flag: omitted/<c>true</c> mean on-release participation, <c>false</c> opts
+	/// out; the strings <c>prestage</c> and <c>on-release</c> select the path explicitly.
+	/// </summary>
+	private static ReleaseNotesPath ResolveReleaseNotesPath(string productId, Dictionary<string, string> featuresDto)
+	{
+		if (!featuresDto.TryGetValue("release-notes", out var value) || string.IsNullOrWhiteSpace(value))
+			return ReleaseNotesPath.OnRelease;
+
+		if (bool.TryParse(value, out var enabled))
+			return enabled ? ReleaseNotesPath.OnRelease : ReleaseNotesPath.None;
+
+		return value.ToLowerInvariant() switch
+		{
+			"prestage" => ReleaseNotesPath.Prestage,
+			"on-release" => ReleaseNotesPath.OnRelease,
+			_ => throw new InvalidOperationException(
+				$"Product '{productId}' has invalid 'release-notes' value '{value}'. Allowed values: true, false, prestage, on-release.")
 		};
 	}
 }
@@ -101,6 +137,10 @@ internal sealed record ProductDto
 
 	public string? Repository { get; set; }
 
+	/// <summary>
+	/// Feature values are strings so <c>release-notes</c> accepts both the historical booleans and
+	/// the <c>prestage</c>/<c>on-release</c> path names; parsing happens in <see cref="ProductExtensions"/>.
+	/// </summary>
 	[YamlMember(Alias = "features")]
-	public Dictionary<string, bool>? Features { get; set; }
+	public Dictionary<string, string>? Features { get; set; }
 }
