@@ -19,7 +19,8 @@ public class ProductFeaturesTests
 		var elasticsearch = config.Products["elasticsearch"];
 
 		elasticsearch.Features.PublicReference.Should().BeTrue();
-		elasticsearch.Features.ReleaseNotes.Should().BeTrue();
+		elasticsearch.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+		elasticsearch.Features.ParticipatesInReleaseNotes.Should().BeTrue();
 	}
 
 	[Fact]
@@ -29,7 +30,7 @@ public class ProductFeaturesTests
 		var docsBuilder = config.Products["docs-builder"];
 
 		docsBuilder.Features.PublicReference.Should().BeFalse();
-		docsBuilder.Features.ReleaseNotes.Should().BeTrue();
+		docsBuilder.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
 	}
 
 	[Fact]
@@ -76,7 +77,8 @@ public class ProductFeaturesTests
 		var all = ProductFeatures.All;
 
 		all.PublicReference.Should().BeTrue();
-		all.ReleaseNotes.Should().BeTrue();
+		all.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+		all.ParticipatesInReleaseNotes.Should().BeTrue();
 	}
 
 	[Fact]
@@ -103,6 +105,83 @@ public class ProductFeaturesTests
 
 		product.Should().NotBeNull();
 		product.Id.Should().Be("docs-builder");
+	}
+
+	[Theory]
+	[InlineData("true", ReleaseNotesPath.OnRelease)]
+	[InlineData("false", ReleaseNotesPath.None)]
+	[InlineData("prestage", ReleaseNotesPath.Prestage)]
+	[InlineData("Prestage", ReleaseNotesPath.Prestage)]
+	[InlineData("on-release", ReleaseNotesPath.OnRelease)]
+	public void ReleaseNotesFeature_AcceptsBooleansAndPathStrings(string value, ReleaseNotesPath expected)
+	{
+		var config = ParseProducts($"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes: {value}
+			""");
+
+		config.Products["widget"].Features.ReleaseNotes.Should().Be(expected);
+		config.Products["widget"].Features.ParticipatesInReleaseNotes.Should().Be(expected != ReleaseNotesPath.None);
+	}
+
+	[Fact]
+	public void ReleaseNotesFeature_OmittedInFeaturesMap_DefaultsToOnRelease()
+	{
+		var config = ParseProducts("""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      public-reference: false
+			""");
+
+		config.Products["widget"].Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+		config.Products["widget"].Features.PublicReference.Should().BeFalse();
+	}
+
+	[Fact]
+	public void ReleaseNotesFeature_InvalidValue_Throws()
+	{
+		var act = () => ParseProducts("""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes: sideways
+			""");
+
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*'release-notes' value 'sideways'*Allowed values: true, false, prestage, on-release*");
+	}
+
+	[Fact]
+	public void PublicReferenceFeature_InvalidValue_Throws()
+	{
+		var act = () => ParseProducts("""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      public-reference: prestage
+			""");
+
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*'public-reference' value 'prestage'*Allowed values: true, false*");
+	}
+
+	private static ProductsConfiguration ParseProducts(string yaml)
+	{
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new FileSystem());
+		var versionsConfig = provider.CreateVersionConfiguration();
+		using var reader = new StringReader(yaml);
+		return ProductExtensions.CreateProducts(reader, versionsConfig);
 	}
 
 	private static ProductsConfiguration LoadActualProductsConfiguration()
