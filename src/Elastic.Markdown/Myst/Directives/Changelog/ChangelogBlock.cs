@@ -534,7 +534,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private void ApplyLoadedBundles(IReadOnlyList<LoadedBundle> loadedBundles)
 	{
-		var filteredBundles = FilterByVersion(loadedBundles);
+		var filteredBundles = FilterUnreleasedVersions(FilterByVersion(loadedBundles));
 
 		// Sort by version (descending - newest first)
 		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions
@@ -552,6 +552,43 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			foreach (var featureId in bundle.HideFeatures)
 				_ = HideFeatures.Add(featureId);
 		}
+	}
+
+	/// <summary>
+	/// Prestage visibility filtering (release-notes onboarding RFC, B1): Prestage bundles are
+	/// uploaded to S3 weeks before release day, so CDN-mode rendering must not show bundles whose
+	/// target version the published content source has not released yet. Production publishes the
+	/// <see cref="ContentSource.Current"/> content source, where only versions at or below the
+	/// versioning system's current release render; staging publishes <see cref="ContentSource.Next"/>
+	/// and keeps them visible, enabling pre-release review. The versions.yml bump on release day
+	/// then makes staged bundles visible on production automatically. Local/isolated builds (no
+	/// content source) and date-based/versionless products are never filtered.
+	/// </summary>
+	private IReadOnlyList<LoadedBundle> FilterUnreleasedVersions(IReadOnlyList<LoadedBundle> bundles)
+	{
+		if (CdnProduct is null || Build.ContentSource != ContentSource.Current)
+			return bundles;
+
+		var versioningSystem = Build.ProductsConfiguration.Products.TryGetValue(CdnProduct, out var product)
+			? product.VersioningSystem
+			: null;
+		if (versioningSystem is null || versioningSystem.IsVersionless)
+			return bundles;
+
+		var visible = new List<LoadedBundle>(bundles.Count);
+		foreach (var bundle in bundles)
+		{
+			if (SemVersion.TryParse(bundle.Version, out var target) && target > versioningSystem.Current)
+			{
+				this.EmitHint(
+					$"Hiding changelog bundle '{CdnProduct} {bundle.Version}': it targets a version newer than the current release ({versioningSystem.Current}) and this build publishes the 'current' content source.");
+				continue;
+			}
+
+			visible.Add(bundle);
+		}
+
+		return visible;
 	}
 
 	/// <summary>Filters bundles by the optional <c>:version:</c> value; warns and renders empty when nothing matches.</summary>
