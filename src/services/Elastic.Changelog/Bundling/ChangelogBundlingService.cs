@@ -15,10 +15,10 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -165,8 +165,8 @@ public record BundlePlanResult
 /// </summary>
 public partial class ChangelogBundlingService(
 	ILoggerFactory logFactory,
+	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	ScopedFileSystem? fileSystem = null,
 	IGitHubReleaseService? releaseService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
@@ -174,13 +174,13 @@ public partial class ChangelogBundlingService(
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
 
 	// Defaults applied when sourcing CDN entries and the org/branch are not otherwise resolvable.

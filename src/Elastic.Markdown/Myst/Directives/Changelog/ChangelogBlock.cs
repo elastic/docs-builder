@@ -404,7 +404,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// against this same root.
 	/// </summary>
 	private IDirectoryInfo ConfigTrustRoot =>
-		Build.DocumentationCheckoutDirectory ?? Build.DocumentationSourceDirectory;
+		Build.DocumentationCheckoutDirectory;
 
 	private string? ResolveConfigPath()
 	{

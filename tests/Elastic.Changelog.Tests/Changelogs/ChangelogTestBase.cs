@@ -11,16 +11,17 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
 public abstract class ChangelogTestBase : IDisposable
 {
-	protected ScopedFileSystem FileSystem { get; }
+	protected ChangelogFileSystem FileSystem { get; }
+	protected RunnerTempFileSystem RunnerTempFileSystem { get; }
 	protected IConfigurationContext ConfigurationContext { get; }
 	protected TestDiagnosticsCollector Collector { get; }
 	protected ILoggerFactory LoggerFactory { get; }
@@ -30,7 +31,14 @@ public abstract class ChangelogTestBase : IDisposable
 	{
 		Output = output;
 		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
-		FileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFileSystem);
+		FileSystem = ChangelogFileSystem.FromWorkingDirectory(mockFileSystem);
+		RunnerTempFileSystem = new RunnerTempFileSystem(
+			mockFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: mockFileSystem);
+		// ConfigurationFileProvider writes to AppData/config-runtime, which is outside ChangelogFileSystem's
+		// git-root scope by design. Use a CheckoutsFileSystem (includes AppData) for the config provider only;
+		// it wraps the same mock so both filesystems share in-memory state.
+		var configFileSystem = CheckoutsFileSystem.FromWorkingDirectory(mockFileSystem);
 		Collector = new TestDiagnosticsCollector(output);
 		LoggerFactory = new TestLoggerFactory(output);
 
@@ -104,7 +112,7 @@ public abstract class ChangelogTestBase : IDisposable
 			{
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem),
+			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, configFileSystem),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },

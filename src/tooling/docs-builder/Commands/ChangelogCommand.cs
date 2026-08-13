@@ -25,6 +25,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -48,7 +49,7 @@ internal sealed partial class ChangelogCommands(
 	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
 	private static partial Regex BundleOutputDirectoryRegex();
 
-	private readonly IFileSystem _fileSystem = FileSystemFactory.RealRead;
+	private readonly ChangelogFileSystem _fileSystem = ChangelogFileSystem.FromWorkingDirectory();
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommands>();
 	/// <summary>Create <c>changelog.yml</c> and the changelog/releases directory structure.</summary>
 	/// <remarks>
@@ -357,7 +358,7 @@ internal sealed partial class ChangelogCommands(
 			var repoArg = resolvedRepo.Contains('/') ? resolvedRepo : $"{resolvedOwner}/{resolvedRepo}";
 			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 			IGitHubPrService prService = new GitHubPrService(logFactory);
-			var releaseChangelogService = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
+			var releaseChangelogService = new GitHubReleaseChangelogService(logFactory, configurationContext, _fileSystem, releaseService, prService);
 
 			var releaseInput = new CreateChangelogsFromReleaseArguments
 			{
@@ -377,7 +378,7 @@ internal sealed partial class ChangelogCommands(
 		}
 
 		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
-		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService, env: SystemEnvironmentVariables.Instance);
+		var service = new ChangelogCreationService(logFactory, configurationContext, _fileSystem, githubPrService, env: SystemEnvironmentVariables.Instance);
 
 		// Parse PRs: promotion report (--report), or comma-separated values and file paths (--prs)
 		string[]? parsedPrs = null;
@@ -388,7 +389,7 @@ internal sealed partial class ChangelogCommands(
 				!reportSource.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 				reportSource = NormalizePath(reportSource);
 
-			var reportParser = new PromotionReportParser(logFactory, null);
+			var reportParser = new PromotionReportParser(logFactory, _fileSystem);
 			parsedPrs = await reportParser.ParseReportToPrUrlsAsync(collector, reportSource, ctx);
 			if (parsedPrs == null)
 			{
@@ -615,7 +616,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundlingService(logFactory, configurationContext);
+		var service = new ChangelogBundlingService(logFactory, _fileSystem, configurationContext);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 		var isGitRefMode = !string.IsNullOrWhiteSpace(startGitRef) || !string.IsNullOrWhiteSpace(endGitRef);
@@ -1008,7 +1009,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogRemoveService(logFactory, configurationContext);
+		var service = new ChangelogRemoveService(logFactory, _fileSystem, configurationContext);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
@@ -1224,7 +1225,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogRenderingService(logFactory, configurationContext);
+		var service = new ChangelogRenderingService(logFactory, _fileSystem, configurationContext);
 
 		var allFeatureIds = ExpandCommaSeparated(hideFeatures);
 
@@ -1297,7 +1298,7 @@ internal sealed partial class ChangelogCommands(
 
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
-		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
+		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, _fileSystem, releaseService, prService);
 
 		// Validate release date format if provided
 		if (!string.IsNullOrWhiteSpace(releaseDate) && !DateOnly.TryParseExact(releaseDate, "yyyy-MM-dd", out _))
@@ -1348,7 +1349,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundleAmendService(logFactory, configurationContext: configurationContext);
+		var service = new ChangelogBundleAmendService(logFactory, _fileSystem, configurationContext: configurationContext);
 
 		var normalizedAddFiles = add != null
 			? ExpandCommaSeparated(add).Select(NormalizePath).ToList()
@@ -1425,7 +1426,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fileSystem = FileSystemFactory.RealReadForRunnerTemp(environmentVariables);
+		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService, fileSystem);
 
@@ -1515,7 +1516,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealGitRootForPathWrite(null, outputDir);
+		var fs = RunnerTempFileSystem.ForPrepareArtifact(stagingDir, outputDir);
 		var service = new ChangelogPrepareArtifactService(logFactory, configurationContext, githubActionsService, fs);
 
 		var args = new PrepareArtifactArguments
@@ -1564,7 +1565,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealGitRootForPathWrite(null, metadata);
+		var fs = RunnerTempFileSystem.ForEvaluateArtifact(metadata);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogArtifactEvaluationService(logFactory, prService, githubActionsService, fs);
 
@@ -1691,7 +1692,7 @@ internal sealed partial class ChangelogCommands(
 		var (resolvedRepo, resolvedOwner, resolvedBranch) = await ResolveUploadRepoOwnerBranch(repo, owner, branch, resolvedConfig, resolvedDirectory, ctx);
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new ChangelogUploadService(logFactory, configurationContext);
+		var service = new ChangelogUploadService(logFactory, _fileSystem, configurationContext);
 		var args = new ChangelogUploadArguments
 		{
 			ArtifactType = parsedArtifactType,
@@ -1797,7 +1798,7 @@ internal sealed partial class ChangelogCommands(
 			return 1;
 		}
 
-		var service = new WebMigrationService(logFactory, FileSystemFactory.RealWrite);
+		var service = new WebMigrationService(logFactory, CheckoutsFileSystem.FromWorkingDirectory().Write);
 		var args = new MigrateFromWebArguments
 		{
 			Products = ExpandCommaSeparated(products),

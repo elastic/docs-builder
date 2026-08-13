@@ -11,7 +11,6 @@ using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -48,7 +47,7 @@ public sealed record MigrationKeyResult(string Key, string Outcome, string? ETag
 /// </summary>
 public class WebMigrationService(
 	ILoggerFactory logFactory,
-	ScopedFileSystem? fileSystem = null,
+	ScopedFileSystem fileSystem,
 	IAmazonS3? s3Client = null,
 	HttpMessageHandler? httpMessageHandler = null
 ) : IService
@@ -59,7 +58,7 @@ public class WebMigrationService(
 	private const string OutcomeFailed = "failed";
 
 	private readonly ILogger _logger = logFactory.CreateLogger<WebMigrationService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealWrite;
+	private readonly IFileSystem _fileSystem = fileSystem;
 
 	/// <summary>Per-key results of the most recent run; exposed for tests.</summary>
 	internal IReadOnlyList<MigrationKeyResult> LastResults { get; private set; } = [];

@@ -8,6 +8,7 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
@@ -58,10 +59,10 @@ public record FetchedCrossLinks
 	};
 }
 
-public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, ScopedFileSystem? fileSystem = null) : IDisposable
+public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, ApplicationDataFileSystem? fileSystem = null) : IDisposable
 {
 	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.AppData;
+	private readonly IFileSystem _fileSystem = fileSystem ?? new ApplicationDataFileSystem();
 	private LinkRegistry? _linkIndex;
 
 	public static RepositoryLinks Deserialize(string json) =>

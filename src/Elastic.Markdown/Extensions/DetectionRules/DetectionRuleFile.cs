@@ -164,7 +164,7 @@ public record DetectionRuleFile : MarkdownFile
 
 	private static IFileInfo GetRuleSourcePath(IFileInfo rulePath, BuildContext build)
 	{
-		var checkoutDir = build.DocumentationCheckoutDirectory ?? build.DocumentationSourceDirectory.Parent!;
+		var checkoutDir = build.DocumentationCheckoutDirectory;
 		var relative = Path.GetRelativePath(checkoutDir.FullName, rulePath.FullName);
 		var newPath = Path.Join(build.DocumentationSourceDirectory.FullName, relative);
 		var md = Path.ChangeExtension(newPath, ".md");

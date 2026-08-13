@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -107,8 +108,7 @@ public class ProductFeaturesTests
 
 	private static ProductsConfiguration LoadActualProductsConfiguration()
 	{
-		var fileSystem = new FileSystem();
-		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();
 		return provider.CreateProducts(versionsConfig);
 	}

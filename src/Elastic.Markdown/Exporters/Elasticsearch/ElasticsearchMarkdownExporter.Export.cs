@@ -210,9 +210,9 @@ public partial class ElasticsearchMarkdownExporter
 		var gitHubRepo = fileContext.BuildContext.Git.GitHubRepository;
 		var branch = fileContext.BuildContext.Git.Branch;
 		if (gitHubRepo is not null
-			&& fileContext.BuildContext.Git != GitCheckoutInformation.Unavailable
-			&& fileContext.BuildContext.DocumentationCheckoutDirectory is { } checkoutDirectory)
+			&& fileContext.BuildContext.Git != GitCheckoutInformation.Unavailable)
 		{
+			var checkoutDirectory = fileContext.BuildContext.DocumentationCheckoutDirectory;
 			var relativeSourcePath = Path.GetRelativePath(
 				checkoutDirectory.FullName,
 				fileContext.BuildContext.DocumentationSourceDirectory.FullName);

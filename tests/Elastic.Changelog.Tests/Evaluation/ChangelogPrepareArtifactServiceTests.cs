@@ -43,7 +43,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		""";
 
 	private ChangelogPrepareArtifactService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, _mockCore, FileSystem);
+		new(LoggerFactory, ConfigurationContext, _mockCore, RunnerTempFileSystem);
 
 	private PrepareArtifactArguments DefaultArgs(
 		string evaluateStatus = "proceed",

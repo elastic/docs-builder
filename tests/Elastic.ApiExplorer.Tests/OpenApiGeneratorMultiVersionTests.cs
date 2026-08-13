@@ -17,10 +17,10 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -34,9 +34,9 @@ public class OpenApiGeneratorMultiVersionTests
 		ProductsConfiguration? productsConfiguration = null,
 		GitCheckoutInformation? git = null)
 	{
-		var fs = FileSystemFactory.RealGitRootForPath(null);
-		return new BuildContext(collector, fs, fs, TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration),
-			ExportOptions.Default, null, null, gitCheckoutInformation: git);
+		return new BuildContext(collector,
+			DocumentationFileSystem.Resolve(new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), new DocumentationScopeOptions { Git = git }),
+			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration));
 	}
 
 	private static ResolvedApiConfiguration ApiConfig(
@@ -217,13 +217,17 @@ public class OpenApiGeneratorMultiVersionTests
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
 		fs.AddFile(configPath, new MockFileData(docsetYaml));
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, versionsConfiguration, productsConfiguration);
 
-		return new BuildContext(collector, readFs, writeFs, configurationContext,
-			ExportOptions.Default, source: repoRoot, output: outputRoot, gitCheckoutInformation: git,
-			configurationFile: readFs.FileInfo.New(configPath));
+		return new BuildContext(collector,
+			DocumentationFileSystem.Resolve(repoRoot, new DocumentationScopeOptions
+			{
+				ConfigurationFile = configPath,
+				Output = outputRoot,
+				Git = git,
+				Inner = fs
+			}),
+			configurationContext);
 	}
 
 	private static OpenApiGenerator CreateGenerator(BuildContext context, VersionIndexClient versionIndexClient, IOpenApiSpecificationReader reader) =>
