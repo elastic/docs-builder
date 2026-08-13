@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -19,24 +18,15 @@ namespace Elastic.Changelog.GitHub;
 /// (commit → PR association). Works for squash and merge commits on protected integration branches;
 /// commits with no associated merged PR are reported, not silently dropped.
 /// </summary>
-public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService, IDisposable
+public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, GitHubApiTransport? transport = null)
+	: IGitHubCommitRangeService
 {
 	private const int ComparePageSize = 100;
 	private const int GraphQlBatchSize = 50;
 	private const int MaxAssociatedPullRequests = 10;
 
-	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(60);
-
-	/// <summary>
-	/// Process-wide client shared by every service built for the production (no injected handler)
-	/// path. Intentionally never disposed — it lives for the lifetime of the process.
-	/// </summary>
-	private static readonly HttpClient SharedHttpClient = CreateClient(null);
-
-	private readonly ILogger _logger;
-	private readonly HttpClient _httpClient;
-	private readonly HttpClient? _ownedHttpClient;
-	private readonly string? _githubToken;
+	private readonly ILogger _logger = logFactory.CreateLogger<GitHubCommitRangeService>();
+	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
 	[GeneratedRegex("^[0-9a-fA-F]{7,40}$")]
 	private static partial Regex CommitShaRegex();
@@ -44,40 +34,13 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
 	private static partial Regex SafeGraphQlIdentifierRegex();
 
-	/// <param name="logFactory">Logger factory.</param>
-	/// <param name="handler">Optional HTTP handler override (tests). Owned by the caller.</param>
-	/// <param name="githubToken">Optional token override; defaults to the <c>GITHUB_TOKEN</c> environment variable.</param>
-	public GitHubCommitRangeService(ILoggerFactory logFactory, HttpMessageHandler? handler = null, string? githubToken = null)
-	{
-		_logger = logFactory.CreateLogger<GitHubCommitRangeService>();
-		_githubToken = githubToken;
-		if (handler is null)
-			_httpClient = SharedHttpClient;
-		else
-		{
-			// disposeHandler: false — the injected handler is owned by the caller (tests), not by us.
-			_ownedHttpClient = CreateClient(handler);
-			_httpClient = _ownedHttpClient;
-		}
-	}
-
-	private static HttpClient CreateClient(HttpMessageHandler? handler)
-	{
-		var client = handler is null
-			? new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) })
-			: new HttpClient(handler, disposeHandler: false);
-		client.Timeout = FetchTimeout;
-		client.DefaultRequestHeaders.Add("User-Agent", "docs-builder");
-		return client;
-	}
-
 	/// <inheritdoc />
 	public async Task<CommitRangeResolution?> ResolvePullRequestsAsync(
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
 		Cancel ctx)
 	{
-		var token = _githubToken ?? Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+		var token = _transport.ResolveToken();
 		if (string.IsNullOrWhiteSpace(token))
 		{
 			collector.EmitError(string.Empty,
@@ -93,7 +56,7 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 			return null;
 		}
 
-		var commits = await FetchCompareCommitsAsync(collector, args, token, ctx).ConfigureAwait(false);
+		var commits = await FetchCompareCommitsAsync(collector, args, ctx).ConfigureAwait(false);
 		if (commits == null)
 			return null;
 
@@ -104,7 +67,7 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 			return new CommitRangeResolution { TotalCommits = 0, PullRequests = [], CommitsWithoutPullRequest = [] };
 		}
 
-		return await AssociatePullRequestsAsync(collector, args, commits, token, ctx).ConfigureAwait(false);
+		return await AssociatePullRequestsAsync(collector, args, commits, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -114,7 +77,6 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 	private async Task<IReadOnlyList<string>?> FetchCompareCommitsAsync(
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
-		string token,
 		Cancel ctx)
 	{
 		var basehead = $"{Uri.EscapeDataString(args.StartRef)}...{Uri.EscapeDataString(args.EndRef)}";
@@ -127,8 +89,7 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 			var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/compare/{basehead}?per_page={ComparePageSize}&page={page}";
 			_logger.LogDebug("Fetching compare page {Page}: {Url}", page, url);
 
-			using var request = CreateRestRequest(url, token);
-			using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+			using var response = await _transport.GetAsync(url, ctx).ConfigureAwait(false);
 			if (response.StatusCode == HttpStatusCode.NotFound)
 			{
 				collector.EmitError(string.Empty,
@@ -203,7 +164,6 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
 		IReadOnlyList<string> commits,
-		string token,
 		Cancel ctx)
 	{
 		var invalidShas = commits.Where(sha => !CommitShaRegex().IsMatch(sha)).ToList();
@@ -222,7 +182,7 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 		for (var offset = 0; offset < commits.Count; offset += GraphQlBatchSize)
 		{
 			var batch = commits.Skip(offset).Take(GraphQlBatchSize).ToList();
-			var byAlias = await FetchAssociatedPullRequestsBatchAsync(collector, args, batch, token, ctx).ConfigureAwait(false);
+			var byAlias = await FetchAssociatedPullRequestsBatchAsync(collector, args, batch, ctx).ConfigureAwait(false);
 			if (byAlias == null)
 				return null;
 
@@ -314,17 +274,12 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
 		IReadOnlyList<string> shas,
-		string token,
 		Cancel ctx)
 	{
 		var query = BuildBatchQuery(args.Owner, args.Repo, shas);
 		var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
 
-		using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.github.com/graphql");
-		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-		request.Content = new StringContent(body, Encoding.UTF8, "application/json");
-
-		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+		using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
 		if (!response.IsSuccessStatusCode)
 		{
 			collector.EmitError(string.Empty,
@@ -371,20 +326,6 @@ public sealed partial class GitHubCommitRangeService : IGitHubCommitRangeService
 		_ = sb.Append(" } }");
 		return sb.ToString();
 	}
-
-	private static HttpRequestMessage CreateRestRequest(string url, string token)
-	{
-		var request = new HttpRequestMessage(HttpMethod.Get, url);
-		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
-		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-		return request;
-	}
-
-	/// <summary>
-	/// Disposes the per-instance client created for an injected handler; the shared production
-	/// client is process-lived and intentionally not disposed.
-	/// </summary>
-	public void Dispose() => _ownedHttpClient?.Dispose();
 
 	private sealed class GitHubCompareResponse
 	{

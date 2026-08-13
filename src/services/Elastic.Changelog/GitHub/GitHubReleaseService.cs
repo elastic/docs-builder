@@ -12,16 +12,10 @@ namespace Elastic.Changelog.GitHub;
 /// <summary>
 /// Service for fetching release information from GitHub
 /// </summary>
-public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHubReleaseService
+public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubApiTransport? transport = null) : IGitHubReleaseService
 {
 	private readonly ILogger<GitHubReleaseService> _logger = loggerFactory.CreateLogger<GitHubReleaseService>();
-	private static readonly HttpClient HttpClient = new();
-
-	static GitHubReleaseService()
-	{
-		HttpClient.DefaultRequestHeaders.Add("User-Agent", "docs-builder");
-		HttpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
-	}
+	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
 	/// <inheritdoc />
 	public async Task<GitHubReleaseInfo?> FetchReleaseAsync(
@@ -79,10 +73,9 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 		try
 		{
 			var url = $"https://api.github.com/repos/{owner}/{repo}/releases?per_page={count}";
-			using var request = CreateRequest(url);
 			_logger.LogDebug("Fetching releases from: {ApiUrl}", url);
 
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
 				_logger.LogDebug("Failed to fetch releases. Status: {StatusCode}, Reason: {ReasonPhrase}",
@@ -111,10 +104,9 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 	{
 		try
 		{
-			using var request = CreateRequest(asset.BrowserDownloadUrl);
 			_logger.LogDebug("Downloading release asset: {AssetUrl}", asset.BrowserDownloadUrl);
 
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(asset.BrowserDownloadUrl, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
 				_logger.LogDebug("Failed to download asset {AssetName}. Status: {StatusCode}, Reason: {ReasonPhrase}",
@@ -136,22 +128,11 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 		}
 	}
 
-	private static HttpRequestMessage CreateRequest(string url)
-	{
-		// Add GitHub token if available (for rate limiting and private repos)
-		var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-		var request = new HttpRequestMessage(HttpMethod.Get, url);
-		if (!string.IsNullOrEmpty(githubToken))
-			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
-		return request;
-	}
-
 	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
 	{
-		using var request = CreateRequest(url);
 		_logger.LogDebug("Fetching release info from: {ApiUrl}", url);
 
-		var response = await HttpClient.SendAsync(request, ctx);
+		using var response = await _transport.GetAsync(url, ctx);
 		if (!response.IsSuccessStatusCode)
 		{
 			_logger.LogDebug("Failed to fetch release info. Status: {StatusCode}, Reason: {ReasonPhrase}",

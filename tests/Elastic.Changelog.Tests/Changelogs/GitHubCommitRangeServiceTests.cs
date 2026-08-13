@@ -60,7 +60,7 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 	}
 
 	private GitHubCommitRangeService Service(StubHandler handler) =>
-		new(new TestLoggerFactory(Output), handler, githubToken: "test-token");
+		new(new TestLoggerFactory(Output), new GitHubApiTransport(handler, "test-token"));
 
 	private static StubHandler Handler(Func<HttpRequestMessage, string?> compareResponder, Func<HttpRequestMessage, string> graphQlResponder) =>
 		new(req =>
@@ -244,7 +244,7 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 	public async Task ResolvePullRequests_MissingToken_EmitsErrorWithoutAnyRequest()
 	{
 		var handler = Handler(_ => throw new InvalidOperationException("no request expected"), _ => throw new InvalidOperationException("no request expected"));
-		var service = new GitHubCommitRangeService(new TestLoggerFactory(Output), handler, githubToken: "");
+		var service = new GitHubCommitRangeService(new TestLoggerFactory(Output), new GitHubApiTransport(handler, ""));
 
 		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 
