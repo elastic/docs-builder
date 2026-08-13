@@ -348,9 +348,11 @@
 			box-shadow 0.15s,
 			border-color 0.15s;
 	}
+	/* Same hover treatment as every other card that is itself a link. Blue would make
+	   one step look like the call to action when they are a sequence. */
 	.hub-get-started .hub-get-started-step-link:hover,
 	.hub-get-started .hub-get-started-step-link:focus-visible {
-		border-color: var(--color-blue-elastic);
+		border-color: var(--color-grey-80);
 		box-shadow: 0 1px 4px rgb(0 0 0 / 0.07);
 	}
 	.hub-get-started .hub-get-started-step-anchor {
