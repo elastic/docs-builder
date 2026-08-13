@@ -33,6 +33,9 @@ public sealed record NavigationRenderNode
 
 public sealed record NavigationDropdownItem(string NavigationTitle, string Url, bool IsActive);
 
+/// <summary>A single back-link in the island sidebar's breadcrumb trail.</summary>
+public sealed record IslandBackLink(string Title, string Url);
+
 /// <summary>
 /// Everything <c>_TocTree.cshtml</c> renders, resolved from the domain navigation up front.
 /// <see cref="ContentHash"/> identifies the preserved tree content: pages whose trees are identical
@@ -46,12 +49,18 @@ public sealed record NavigationRenderModel
 	public required string CurrentTopLevelUrl { get; init; }
 	public required IReadOnlyList<NavigationDropdownItem> DropdownItems { get; init; }
 	/// <summary>
+	/// Root-first trail out of a nested island.
+	/// Empty when <paramref name="IsUsingNavigationDropdown"/> covers the outermost scope
+	/// (i.e. the render root is itself a top-level section with no island ancestors).
+	/// </summary>
+	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
+	/// <summary>
 	/// Root index link as the first sidebar row when primary nav is off.
 	/// Null when primary nav / global assembly already covers that role.
 	/// </summary>
 	public NavigationRenderNode? RootIndex { get; init; }
 	public required IReadOnlyList<NavigationRenderNode> Tree { get; init; }
-	/// <summary>Hash of the preserved tree content only; the dropdown and search live outside the preserved element.</summary>
+	/// <summary>Hash of the preserved tree content only; the dropdown, back-links and search live outside the preserved element.</summary>
 	public required string ContentHash { get; init; }
 
 	public static NavigationRenderModel Create(
@@ -62,17 +71,31 @@ public sealed record NavigationRenderModel
 		bool isGlobalAssemblyBuild)
 	{
 		var topLevel = topLevelItems.ToArray();
-		var currentTopLevelItem = topLevel.FirstOrDefault(i => i.Id == tree.Id) ?? tree;
+		// Resolve current top-level by walking self-then-ancestors so nested islands
+		// still highlight the right dropdown entry (e.g. "Reference" when rendering
+		// the Java client island nested 3 levels deep).
+		var topLevelIds = topLevel.Select(i => i.Id).ToHashSet();
+		var currentTopLevelItem = tree;
+		for (var cursor = (INavigationItem)tree; cursor is not null; cursor = cursor.Parent)
+		{
+			if (cursor is INodeNavigationItem<INavigationModel, INavigationItem> n && topLevelIds.Contains(n.Id))
+			{
+				currentTopLevelItem = n;
+				break;
+			}
+		}
 		var rootIndex = CreateRootIndex(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild);
 		var nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
+		var backLinks = CreateBackLinks(tree, isUsingNavigationDropdown);
 		return new NavigationRenderModel
 		{
 			IsUsingNavigationDropdown = isUsingNavigationDropdown,
 			CurrentTopLevelNavigationTitle = currentTopLevelItem.NavigationTitle,
 			CurrentTopLevelUrl = currentTopLevelItem.Url,
 			DropdownItems = isUsingNavigationDropdown
-				? [.. topLevel.Select(i => new NavigationDropdownItem(i.NavigationTitle, i.Url, i.NavigationRoot.Id == tree.Id))]
+				? [.. topLevel.Select(i => new NavigationDropdownItem(i.NavigationTitle, i.Url, i.Id == currentTopLevelItem.Id))]
 				: [],
+			BackLinks = backLinks,
 			RootIndex = rootIndex,
 			Tree = nodes,
 			ContentHash = HashContent(rootIndex, nodes)
@@ -80,39 +103,31 @@ public sealed record NavigationRenderModel
 	}
 
 	/// <summary>
-	/// Builds an <see cref="IslandNavViewModel"/> for <paramref name="islandRoot"/>.
-	/// Reuses the same projection helpers as <see cref="Create"/> so island sidebars render
-	/// collapsible nodes, badges, nested islands, and htmx preserve-state out of the box.
+	/// Builds the root-first back-link trail out of a nested island.
+	/// When the dropdown is enabled, the navigation root is omitted (the dropdown replaces it),
+	/// but top-level ancestor entries are kept — clicking the active dropdown item is hard so
+	/// an explicit back-link is more usable.
+	/// Returns empty when the render root has no island ancestry (e.g. a top-level section whose
+	/// only ancestor is the nav root, which the dropdown already replaces).
 	/// </summary>
-	public static IslandNavViewModel CreateIsland(INodeNavigationItem<INavigationModel, INavigationItem> islandRoot)
+	private static IReadOnlyList<IslandBackLink> CreateBackLinks(
+		INavigationItem renderRoot,
+		bool isUsingNavigationDropdown)
 	{
-		var backLinks = CreateBackLinks(islandRoot);
-		var nodes = CreateNavigationItems(islandRoot, isTopLevel: true).ToList();
-		var (_, navigationTitle) = ParseNavTitle(islandRoot.NavigationTitle);
-		return new IslandNavViewModel
-		{
-			BackLinks = backLinks,
-			NavigationTitle = navigationTitle,
-			Url = islandRoot.Url,
-			Tree = nodes,
-			ContentHash = HashIsland(backLinks, nodes)
-		};
-	}
+		var immediateParent = renderRoot.Parent;
+		if (immediateParent is null)
+			return [];
 
-	/// <summary>
-	/// Builds the root-first back-link trail out of the island:
-	/// the top navigation root, every ancestor that <see cref="NavigationItemExtensions.RendersAsIsland"/>,
-	/// and the island's immediate parent. Deduped by URL.
-	/// </summary>
-	private static IReadOnlyList<IslandBackLink> CreateBackLinks(INavigationItem islandRoot)
-	{
-		var immediateParent = islandRoot.Parent;
 		var links = new List<IslandBackLink>();
 		var seen = new HashSet<string>(StringComparer.Ordinal);
 		for (var ancestor = immediateParent; ancestor is not null; ancestor = ancestor.Parent)
 		{
+			// Drop the nav root when the dropdown is enabled — the dropdown already represents it
+			if (isUsingNavigationDropdown && ancestor.Parent is null)
+				continue;
+
 			var include = ReferenceEquals(ancestor, immediateParent)
-				|| ancestor.Parent is null          // top navigation root
+				|| ancestor.Parent is null              // top navigation root (when dropdown is off)
 				|| ancestor.RendersAsIsland();
 			if (!include || !seen.Add(ancestor.Url))
 				continue;
@@ -123,27 +138,47 @@ public sealed record NavigationRenderModel
 		return links;
 	}
 
-	private static string HashIsland(IReadOnlyList<IslandBackLink> backLinks, IReadOnlyList<NavigationRenderNode> tree)
-	{
-		using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-		Append(hash, "island-nav-v1");
-		AppendInt(hash, backLinks.Count);
-		foreach (var link in backLinks)
-		{
-			Append(hash, link.Title);
-			Append(hash, link.Url);
-		}
-		AppendNodes(hash, tree);
-		return Convert.ToHexStringLower(hash.GetHashAndReset().AsSpan(0, 8));
-	}
-
 	private static NavigationRenderNode? CreateRootIndex(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
 		bool isPrimaryNavEnabled,
 		bool isGlobalAssemblyBuild)
 	{
-		if (isGlobalAssemblyBuild || isPrimaryNavEnabled || tree.Index.Hidden)
+		if (tree.Index.Hidden)
 			return null;
+
+		if (isGlobalAssemblyBuild)
+		{
+			// Top-level sections in assembler builds: dropdown covers navigation, no root row.
+			// Nested islands (parent exists AND grandparent exists, i.e. not direct child of SiteNavigation)
+			// show their own title row.
+			if (tree.Parent?.Parent is null)
+				return null;
+
+			var (_, title) = ParseNavTitle(tree.NavigationTitle);
+			return new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = true,
+				NavigationTitle = title,
+				Url = tree.Url
+			};
+		}
+
+		if (isPrimaryNavEnabled)
+			return null;
+
+		// Island roots in isolated builds (no primary nav) show their own title row using the node title
+		if (tree.RendersAsIsland())
+		{
+			var (_, title) = ParseNavTitle(tree.NavigationTitle);
+			return new NavigationRenderNode
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = true,
+				NavigationTitle = title,
+				Url = tree.Url
+			};
+		}
 
 		return new NavigationRenderNode
 		{

@@ -11,7 +11,9 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Assembler.Navigation;
 
+#pragma warning disable CS9113 // collector kept for binary-compatibility; no longer used internally
 public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter
+#pragma warning restore CS9113
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GlobalNavigationHtmlWriter>();
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
@@ -22,34 +24,22 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		Cancel ctx = default
 	)
 	{
-		// Island check must come before the SiteNavigation short-circuit so island pages under
-		// the narrative root (which is a top-level docset directly under SiteNavigation) still
-		// get the island sidebar rather than the empty result.
-		if (currentNavigationItem.FindIslandRoot() is { } islandRoot)
-			return await _renderedNavigationCache.GetOrRenderAsync(islandRoot, () => RenderIslandAsync(islandRoot, ctx));
+		// FindIslandRoot() resolves nested islands AND top-level sections (which are implicitly islands).
+		// Narrative root file leafs (direct SiteNavigation children with no island ancestor) return null,
+		// falling back to currentRootNavigation which is SiteNavigation itself → Empty.
+		var renderRoot = currentNavigationItem.FindIslandRoot() ?? currentRootNavigation;
 
-		if (currentRootNavigation is SiteNavigation)
+		if (renderRoot is SiteNavigation)
 			return NavigationRenderResult.Empty;
 
-		if (currentRootNavigation.Parent is null or not SiteNavigation)
-			collector.EmitGlobalError($"Passed root is not actually a top level navigation item {currentRootNavigation.NavigationTitle} ({currentRootNavigation.Id}) in {currentRootNavigation.Url}, trying to render: {currentNavigationItem.Url}");
-
-		if (currentRootNavigation is not INodeNavigationItem<INavigationModel, INavigationItem> group)
+		if (renderRoot is not INodeNavigationItem<INavigationModel, INavigationItem> group)
 			return NavigationRenderResult.Empty;
 
-		return await _renderedNavigationCache.GetOrRenderAsync(currentRootNavigation, () =>
+		return await _renderedNavigationCache.GetOrRenderAsync(renderRoot, () =>
 		{
-			_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", currentRootNavigation.NavigationTitle, currentRootNavigation.Id);
+			_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", renderRoot.NavigationTitle, renderRoot.Id);
 			return ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx);
 		});
-	}
-
-	private static async Task<NavigationRenderResult> RenderIslandAsync(
-		INodeNavigationItem<INavigationModel, INavigationItem> islandRoot, Cancel ctx)
-	{
-		var model = NavigationRenderModel.CreateIsland(islandRoot);
-		var html = await _IslandNav.Create(model).RenderAsync(cancellationToken: ctx);
-		return new NavigationRenderResult { Html = html, Id = model.ContentHash };
 	}
 
 	private NavigationRenderModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group) =>

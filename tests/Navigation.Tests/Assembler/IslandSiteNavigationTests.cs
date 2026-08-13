@@ -14,6 +14,40 @@ namespace Elastic.Documentation.Navigation.Tests.Assembler;
 public class IslandSiteNavigationTests(ITestOutputHelper output)
 {
 	// ──────────────────────────────────────────────────────────────
+	// Every top-level navigation.yml entry is implicitly an island
+	// ──────────────────────────────────────────────────────────────
+	[Fact]
+	public void TopLevelEntries_AreIslands_WithoutDeclaringIt()
+	{
+		// A plain - toc: entry in navigation.yml with no island: property
+		// must still be marked as an island by SiteNavigation's constructor.
+		// language=yaml
+		var siteNavYaml = """
+		                  toc:
+		                    - toc: observability://
+		                      path_prefix: observability
+		                  """;
+
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+
+		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
+
+		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
+
+		var obsNode = navigation.NavigationItems.ElementAt(0)
+			.Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
+
+		// No island: declared in either docset.yml or navigation.yml
+		obsNode.IsIsland.Should().BeTrue("SiteNavigation marks every top-level section as an island implicitly");
+		obsNode.RendersAsIsland().Should().BeTrue("node has SiteNavigation as parent");
+	}
+
+	// ──────────────────────────────────────────────────────────────
 	// navigation.yml island: true marks the resolved node as an island
 	// ──────────────────────────────────────────────────────────────
 	[Fact]

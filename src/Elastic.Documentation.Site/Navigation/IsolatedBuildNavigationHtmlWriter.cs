@@ -18,21 +18,14 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		INavigationItem currentNavigationItem,
 		Cancel ctx = default)
 	{
-		if (currentNavigationItem.FindIslandRoot() is { } islandRoot)
-			return await _renderedNavigationCache.GetOrRenderAsync(islandRoot, () => RenderIslandAsync(islandRoot, ctx));
+		var renderRoot = currentNavigationItem.FindIslandRoot() ?? SelectNavigationRoot(currentRootNavigation);
 
-		var navigation = SelectNavigationRoot(currentRootNavigation);
+		if (renderRoot is not INodeNavigationItem<INavigationModel, INavigationItem> group)
+			return NavigationRenderResult.Empty;
+
 		return await _renderedNavigationCache.GetOrRenderAsync(
-			navigation,
-			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(navigation), ctx));
-	}
-
-	private static async Task<NavigationRenderResult> RenderIslandAsync(
-		INodeNavigationItem<INavigationModel, INavigationItem> islandRoot, Cancel ctx)
-	{
-		var model = NavigationRenderModel.CreateIsland(islandRoot);
-		var html = await _IslandNav.Create(model).RenderAsync(cancellationToken: ctx);
-		return new NavigationRenderResult { Html = html, Id = model.ContentHash };
+			renderRoot,
+			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx));
 	}
 
 	/// <summary>
@@ -50,11 +43,17 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		return useRequestedRoot ? requestedRoot : siteRoot;
 	}
 
-	private NavigationRenderModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
-		NavigationRenderModel.Create(
-			tree: navigation,
-			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			isUsingNavigationDropdown: context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
+	private NavigationRenderModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> renderRoot)
+	{
+		// Top-level items always come from the docset root (siteRoot) so the dropdown
+		// correctly lists all sections even when renderRoot is a nested island.
+		var topLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
+		var isUsingDropdown = context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown;
+		return NavigationRenderModel.Create(
+			tree: renderRoot,
+			topLevelItems: topLevelItems,
+			isUsingNavigationDropdown: isUsingDropdown,
 			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
 			isGlobalAssemblyBuild: false);
+	}
 }

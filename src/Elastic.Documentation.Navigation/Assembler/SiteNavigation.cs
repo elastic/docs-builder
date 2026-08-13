@@ -82,7 +82,13 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			);
 
 			if (navItem != null)
+			{
+				// Every top-level navigation.yml section owns the sidebar — that is the definition of an island.
+				// The dropdown is how a top-level island renders its way out; see NavigationRenderModel.CreateBackLinks.
+				if (navItem is IAssignableIslandNavigation assignable)
+					assignable.IsIsland = true;
 				items.Add(navItem);
+			}
 		}
 
 		var indexNavigation = items.QueryIndex<IDocumentationFile>(this, "/index.md", out var navigationItems);
