@@ -327,6 +327,35 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 	}
 
 	[Fact]
+	public async Task Plan_GitRefProfileWithoutOutputPattern_ResolvesConventionalPathAndNetworkNeeds()
+	{
+		// The bundle-create CI action relies on --plan's output_path to locate the generated file,
+		// so the plan must mirror the {product}-{version}.yaml convention of the real run.
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+
+		var service = Service(PoolHandler(), RangeService());
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var plan = await service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		plan.Should().NotBeNull();
+		plan!.NeedsNetwork.Should().BeTrue();
+		plan.NeedsGithubToken.Should().BeTrue();
+		plan.OutputPath.Should().NotBeNull();
+		FileSystem.Path.GetFileName(plan.OutputPath!).Should().Be("cloud-hosted-2026-08-13.yaml");
+	}
+
+	[Fact]
 	public void GitRangeReport_ToMarkdown_ListsPrSourcesAndOrphanCommits()
 	{
 		var report = new GitRangeBundleReport

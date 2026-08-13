@@ -1021,6 +1021,19 @@ public partial class ChangelogBundlingService(
 				?? _fileSystem.Directory.GetCurrentDirectory();
 			outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
 		}
+		else if (string.IsNullOrWhiteSpace(outputPath) &&
+			!string.IsNullOrWhiteSpace(input.StartGitRef) &&
+			profileDef != null &&
+			!string.IsNullOrWhiteSpace(input.ProfileArgument) &&
+			ResolvePrimaryProduct(profileDef, input) is { } primaryProduct)
+		{
+			// Mirror ProcessProfile's commit-range convention: {product}-{version}.yaml when the
+			// profile sets no explicit output pattern.
+			var outputDir = config?.Bundle?.OutputDirectory
+				?? config?.Bundle?.Directory
+				?? _fileSystem.Directory.GetCurrentDirectory();
+			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{input.ProfileArgument}.yaml").OptionalWindowsReplace();
+		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
 			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
 
