@@ -76,15 +76,16 @@ public class DocumentationWriteFileSystem(
 		if (output is not null && !IDirectoryInfoExtensions.IsSubPath(output.FullName, checkout.FullName, fs))
 			roots.Add(output.FullName);
 
-		// On non-Windows, MockFileSystem hardcodes a Unix-ified path ("/temp/", derived from "C:\temp")
-		// instead of calling System.IO.Path.GetTempPath(). AllowedSpecialFolder.Temp uses the real
-		// GetTempPath() (e.g. "/tmp/" on Linux), so the two diverge and scope validation fails for any
-		// path created via mockFs.Path.GetTempPath().
+		// MockFileSystem hardcodes its temp path ("C:\temp" on Windows, unix-ified to "/temp/"
+		// elsewhere) instead of calling System.IO.Path.GetTempPath(). AllowedSpecialFolder.Temp uses
+		// the real GetTempPath() (e.g. "/tmp/" on Linux, "C:\Users\<user>\AppData\Local\Temp" on
+		// Windows), so the two diverge on every OS and scope validation fails for any path created
+		// via mockFs.Path.GetTempPath().
 		//
 		// Fix tracked upstream: https://github.com/TestableIO/System.IO.Abstractions/pull/1454
 		// Once that ships and we update the package reference we can drop this workaround.
 		var innerType = fs is ScopedFileSystem sf ? sf.InnerType : fs.GetType();
-		if (!OperatingSystem.IsWindows() && innerType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase))
+		if (innerType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase))
 		{
 			var innerTemp = fs.Path.GetTempPath().TrimEnd(
 				System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);

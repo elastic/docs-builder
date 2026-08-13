@@ -230,12 +230,22 @@ public class DocumentationSet : INavigationTraversable
 	}
 
 	private bool _resolved;
+
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		if (_resolved)
 			return;
 
-		await Parallel.ForEachAsync(MarkdownFiles, ctx, async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
+		// MinimalParseAsync is ~60 % blocked on open() / file I/O; the default
+		// ProcessorCount cap starves the IO queue.  4× gives a wide-enough flight
+		// without runaway RSS growth (each in-flight parse holds a MarkdownDocument).
+		var options = new ParallelOptions
+		{
+			MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount * 4, 32),
+			CancellationToken = ctx
+		};
+		await Parallel.ForEachAsync(MarkdownFiles, options,
+			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
 
 		_resolved = true;
 	}
