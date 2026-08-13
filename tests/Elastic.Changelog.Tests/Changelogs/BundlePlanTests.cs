@@ -66,7 +66,6 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -101,7 +100,6 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -132,7 +130,6 @@ public class BundlePlanTests : ChangelogTestBase
 			    serverless:
 			      products: "cloud-serverless {version} *"
 			      output_products: "cloud-serverless {version} *"
-			      output: "serverless-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -146,7 +143,7 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/serverless-2026-03.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/cloud-serverless-2026-03.yaml");
 	}
 
 	[Fact]
@@ -162,7 +159,6 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -192,7 +188,7 @@ public class BundlePlanTests : ChangelogTestBase
 			    es-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
+			      output_products: "elasticsearch {version}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -212,8 +208,10 @@ public class BundlePlanTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task Plan_ProfileMode_LifecycleSubstitution_ResolvesCorrectly()
+	public async Task Plan_ProfileMode_ConventionalName_UsesPrimaryOutputProduct()
 	{
+		// Output names follow the {product}-{version}.yaml convention; lifecycle only affects
+		// product metadata (output_products), never the file name.
 		// language=yaml
 		var configContent =
 			"""
@@ -223,7 +221,7 @@ public class BundlePlanTests : ChangelogTestBase
 			    dotnet-release:
 			      source: github_release
 			      repo: apm-agent-dotnet
-			      output: "dotnet-{version}-{lifecycle}.yaml"
+			      output_products: "apm-agent-dotnet {version} {lifecycle}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -237,7 +235,7 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "dotnet-1.0.0-beta.1-beta.yaml").OptionalWindowsReplace());
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-1.0.0-beta.1.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]

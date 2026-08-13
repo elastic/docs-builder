@@ -124,7 +124,6 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 			  profiles:
 			    wh-monthly:
 			      products: "cloud-hosted {version}-* *"
-			      output: "widget-{version}.yaml"
 			      output_products: "cloud-hosted {version}"
 			""".Replace("PLACEHOLDER", outputDir);
 
@@ -154,7 +153,7 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle("the monthly profile writes a single bundle file");
-		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-2026-05.yaml");
+		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("cloud-hosted-2026-05.yaml");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
