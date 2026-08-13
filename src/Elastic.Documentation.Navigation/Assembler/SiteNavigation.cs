@@ -104,6 +104,11 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Build positional navigation lookup tables from all navigation items in a single traversal
 		NavigationDocumentationFileLookup = [];
 		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
+		foreach (var node in UnseenNodes)
+		{
+			if (_nodes.TryGetValue(node, out var value))
+				value.AddNavigationFileLookups(NavigationDocumentationFileLookup);
+		}
 	}
 
 	public HashSet<Uri> DeclaredPhantoms { get; }

@@ -1,0 +1,100 @@
+/*
+ * Top-bar section dropdown. Opt in by setting `dropdown: true` on a
+ * `- section:` entry in `navigation-v2.yml`. The section's own URL
+ * remains the link target on the summary's anchor; the chevron toggles
+ * a panel listing the section's children so users can jump straight
+ * to a child page without going through the section landing.
+ */
+
+@layer components {
+	.secondary-nav-dropdown {
+		display: inline-flex;
+		align-items: center;
+	}
+	.secondary-nav-dropdown summary {
+		list-style: none;
+	}
+	.secondary-nav-dropdown summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.secondary-nav-dropdown-chevron {
+		flex-shrink: 0;
+		color: var(--color-grey-60);
+		transition: transform 0.15s ease;
+	}
+	.secondary-nav-dropdown[open] .secondary-nav-dropdown-chevron {
+		transform: rotate(180deg);
+	}
+
+	.secondary-nav-dropdown-menu {
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		min-width: 220px;
+		max-width: 320px;
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+		padding: 6px 0;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 6px;
+		box-shadow: 0 8px 24px rgb(0 0 0 / 0.08);
+		font-weight: 500;
+	}
+
+	.secondary-nav-dropdown-group-label {
+		padding: 8px 14px 4px 14px;
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--color-grey-80);
+		user-select: none;
+	}
+	.secondary-nav-dropdown-group-label:not(:first-child) {
+		margin-top: 4px;
+		border-top: 1px solid var(--color-grey-15, var(--color-grey-20));
+		padding-top: 10px;
+	}
+
+	.secondary-nav-dropdown-link {
+		display: block;
+		padding: 6px 14px;
+		font-size: 14px;
+		color: var(--color-ink-dark) !important;
+		text-decoration: none !important;
+		transition: background-color 0.12s ease;
+	}
+	.secondary-nav-dropdown-link:hover {
+		background: var(--color-grey-10);
+		color: var(--color-blue-elastic) !important;
+	}
+
+	.secondary-nav-dropdown-stub {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 14px;
+		font-size: 14px;
+		color: var(--color-grey-60);
+		cursor: default;
+	}
+	.secondary-nav-dropdown-stub::after {
+		content: 'soon';
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 2px 6px;
+		border-radius: 4px;
+		background: var(--color-grey-15, var(--color-grey-20));
+		color: var(--color-grey-70);
+	}
+
+	/* Close the menu when the user clicks outside is browser-default for
+	   <details>; just suppress the htmx-boost on summary clicks so the
+	   first click only toggles. */
+	.secondary-nav-dropdown summary a {
+		text-decoration: none;
+	}
+}

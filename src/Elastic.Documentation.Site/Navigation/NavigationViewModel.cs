@@ -1,0 +1,41 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
+
+namespace Elastic.Documentation.Site.Navigation;
+
+public class NavigationViewModel
+{
+	public required string Title { get; init; }
+	public required string TitleUrl { get; init; }
+	public required INodeNavigationItem<INavigationModel, INavigationItem> Tree { get; init; }
+	public required bool IsPrimaryNavEnabled { get; init; }
+	public required bool IsGlobalAssemblyBuild { get; init; }
+	public required IEnumerable<INodeNavigationItem<INavigationModel, INavigationItem>> TopLevelItems { get; init; }
+
+	/// <summary>Controls whether to split the navigation tree automatically.</summary>
+	public required bool IsUsingNavigationDropdown { get; init; }
+
+	public required IHtmxAttributeProvider Htmx { get; init; }
+
+	public BuildType BuildType { get; init; } = BuildType.Isolated;
+
+	/// <summary>When true, the sidebar renders using the V2 nav partial with accordion behaviour.</summary>
+	public bool IsNavV2 { get; init; }
+
+	/// <summary>YAML <c>isolated: true</c> section (e.g. Extension points): no top-bar tab, no sidebar search.</summary>
+	public bool IsIsolatedSection { get; init; }
+
+	/// <summary>The section's own URL, used by JS to skip current-page highlighting on the section root.</summary>
+	public string? SectionUrl { get; init; }
+
+	/// <summary>Back arrow URL for islands — points to the parent section's landing page.</summary>
+	public string? BackArrowUrl { get; init; }
+
+	public BrandingConfiguration? Branding { get; init; }
+}

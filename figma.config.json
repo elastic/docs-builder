@@ -1,0 +1,8 @@
+{
+  "codeConnect": {
+    "include": [
+      "src/Elastic.Documentation.Site/Assets/web-components/VectorSizingCalculator/**/*.figma.ts"
+    ],
+    "parser": "react"
+  }
+}

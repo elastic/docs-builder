@@ -1,5 +1,6 @@
 ---
-navigation_title: docs-builder
+navigation_title: Elastic Docs v3
+layout: landing-page
 ---
 
 # docs-builder

@@ -187,13 +187,31 @@ public static class ApplicabilityRenderer
 
 		var showVersionNote = productInfo is { IncludeVersionNote: true } && versioningSystem.IsVersioned();
 
+		var description = InterpolateVersionPlaceholders(productInfo?.Description, versioningSystem);
+
 		return new PopoverData(
-			ProductDescription: productInfo?.Description,
+			ProductDescription: description,
 			AvailabilityItems: orderedApplicabilities.Select(applicability => BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count)).OfType<PopoverAvailabilityItem>().ToArray(),
 			AdditionalInfo: productInfo?.AdditionalAvailabilityInfo,
 			ShowVersionNote: showVersionNote,
 			VersionNote: showVersionNote ? ProductDescriptions.VersionNote : null
 		);
+	}
+
+	/// <summary>
+	/// Substitutes <c>{base}</c>, <c>{current}</c>, and <c>{base-major}</c> placeholders in
+	/// product descriptions with values from the versioning system, so tooltips can surface
+	/// the actual version range without hardcoding it in <c>ProductDescriptions</c>.
+	/// </summary>
+	private static string? InterpolateVersionPlaceholders(string? template, VersioningSystem versioningSystem)
+	{
+		if (string.IsNullOrEmpty(template))
+			return template;
+
+		return template
+			.Replace("{base}", versioningSystem.Base.ToString())
+			.Replace("{current}", versioningSystem.Current.ToString())
+			.Replace("{base-major}", versioningSystem.Base.Major.ToString());
 	}
 
 	/// <summary>

@@ -8,9 +8,10 @@ import { initImageCarousel } from './image-carousel'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initNavV2 } from './pages-nav-v2'
 import { initSmoothScroll } from './smooth-scroll'
-import { initTable } from './table'
 import { initTabs } from './tabs'
+import { initializeOtel } from './telemetry/instrumentation'
 import { logError, logInfo } from './telemetry/logging'
 import {
     ATTR_CTA_NAME,
@@ -22,13 +23,9 @@ import {
     ATTR_URL_FULL,
 } from './telemetry/semconv'
 import { initTocNav } from './toc-nav'
-import { loadWebComponents } from './web-components/loadWebComponents'
-import {
-    getPathFromUrl,
-    isExternalDocsUrl,
-} from './web-components/shared/htmx/utils'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
+import * as katex from 'katex'
 import { $, $optional, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
@@ -36,32 +33,31 @@ import { UAParser } from 'ua-parser-js'
 const DOCS_BUILDER_VERSION =
     process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
 
-// Initialize OpenTelemetry before the web components when telemetry is enabled, so
-// their instrumented work runs after init. The OTel SDK is dynamically imported, so
-// pages built with telemetry disabled never fetch it.
-async function bootstrap() {
-    if (config.telemetryEnabled) {
-        const { initializeOtel } = await import('./telemetry/instrumentation')
-        initializeOtel({
-            serviceName: config.serviceName,
-            serviceVersion: DOCS_BUILDER_VERSION,
-            baseUrl: config.rootPath,
-            debug: false,
-        })
-    }
-
-    if (config.buildType === 'isolated' || config.airGapped) {
-        import('./isolated')
-    } else if (config.buildType === 'codex') {
-        import('./codex')
-    }
+// Initialize OpenTelemetry FIRST, before any other code runs (when enabled)
+// This must happen early so all subsequent code is instrumented
+if (config.telemetryEnabled) {
+    initializeOtel({
+        serviceName: config.serviceName,
+        serviceVersion: DOCS_BUILDER_VERSION,
+        baseUrl: config.rootPath,
+        debug: false,
+    })
 }
 
-const bootstrapPromise = bootstrap()
+// Dynamically import web components after telemetry is initialized.
+// Parcel code-splits these into separate chunks loaded on demand.
+import('./web-components/NavigationSearch/NavigationSearchComponent')
+import('./web-components/AskAi/AskAi')
+import('./web-components/VersionDropdown')
+import('./web-components/AppliesToPopover')
+import('./web-components/FullPageSearch/FullPageSearchComponent')
+import('./web-components/Diagnostics/DiagnosticsComponent')
+import('./web-components/StorybookStory/StorybookStoryComponent')
 
-async function initWebComponents() {
-    await bootstrapPromise
-    await loadWebComponents()
+if (config.buildType === 'isolated' || config.airGapped) {
+    import('./isolated')
+} else if (config.buildType === 'codex') {
+    import('./codex')
 }
 
 const { getOS } = new UAParser()
@@ -95,15 +91,10 @@ function applyEditParam() {
 }
 
 /**
- * Initialize KaTeX math rendering for elements with class 'math'.
- * KaTeX's JS and fonts/CSS are lazy-loaded here so pages without math pay nothing for them.
+ * Initialize KaTeX math rendering for elements with class 'math'
  */
-async function initMath() {
+function initMath() {
     const mathElements = $$optional('.math:not([data-katex-processed])')
-    if (mathElements.length === 0) return
-
-    const [katex] = await Promise.all([import('katex'), import('./katex.css')])
-
     mathElements.forEach((element) => {
         try {
             const content = element.textContent?.trim()
@@ -145,6 +136,15 @@ async function initMath() {
             element.innerHTML = element.textContent || ''
         }
     })
+}
+
+function initPageNav() {
+    const v2Nav = document.querySelector<HTMLElement>('[data-nav-v2]')
+    if (v2Nav) {
+        initNavV2(v2Nav)
+    } else {
+        initNav()
+    }
 }
 
 // Attributes shared by cta_viewed and cta_clicked so the two are directly comparable (CTR).
@@ -190,19 +190,8 @@ function initCtaImpressions() {
     )
 }
 
-// Initialize on initial page load
-document.addEventListener('DOMContentLoaded', function () {
+function initPageAfterContentSwap() {
     runInitSteps([
-        ['loadWebComponents', initWebComponents],
-        ['initMath', initMath],
-        ['initMermaid', initMermaid],
-        ['initCtaImpressions', initCtaImpressions],
-    ])
-})
-
-document.addEventListener('htmx:load', function () {
-    runInitSteps([
-        ['loadWebComponents', initWebComponents],
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
         ['initCopyButton', initCopyButton],
@@ -211,15 +200,28 @@ document.addEventListener('htmx:load', function () {
         ['initAppliesSwitch', initAppliesSwitch],
         ['initMath', initMath],
         ['initMermaid', initMermaid],
-        ['initNav', initNav],
+        ['initPageNav', initPageNav],
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
-        ['initTable', initTable],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
         ['initCtaImpressions', initCtaImpressions],
     ])
+}
+
+// htmx defers the initial htmx:load to setTimeout(0); prime V2 sidebar on first paint so isolated serve shows behaviour before that tick.
+document.addEventListener('DOMContentLoaded', function () {
+    runInitSteps([
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+        ['initPageNav', initPageNav],
+        ['initCtaImpressions', initCtaImpressions],
+    ])
+})
+
+document.addEventListener('htmx:load', function () {
+    initPageAfterContentSwap()
 })
 
 // Delegated listeners: survive htmx swaps without needing re-init, unlike the
@@ -265,43 +267,38 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
-    if (event.detail.requestConfig.verb !== 'get') return
-    // Speculative prefetches from the preload extension must pass through
-    // untouched — without this, preloading a non-docs link would trigger the
-    // full-page-load fallback below on mere mousedown/hover.
-    if (event.detail.requestConfig.headers['HX-Preloaded'] === 'true') return
-    // Only boosted link navigation needs scoping; explicit hx-get widgets
-    // manage their own requests.
-    if (!event.detail.boosted) return
-    const path: string = event.detail.requestConfig.path
-    if (event.detail.requestConfig.triggeringEvent) {
+    if (
+        event.detail.requestConfig.verb === 'get' &&
+        event.detail.requestConfig.triggeringEvent
+    ) {
         const { ctrlKey, metaKey, shiftKey }: PointerEvent =
             event.detail.requestConfig.triggeringEvent
         const { name: os } = getOS()
         const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey
         if (shiftKey || modifierKey) {
             event.preventDefault()
-            window.open(path, '_blank', 'noopener,noreferrer')
-            return
+            window.open(
+                event.detail.requestConfig.path,
+                '_blank',
+                'noopener,noreferrer'
+            )
         }
-    }
-    // hx-boost intercepts every same-origin link, but only internal docs URLs should
-    // navigate through htmx (for assembler that means /docs/*; isolated and codex own
-    // their whole origin). Anything else — marketing pages on the same domain, the
-    // separate /docs/api app — gets a normal full page load.
-    const docsPath = getPathFromUrl(new URL(path, location.href).pathname)
-    if (!docsPath || isExternalDocsUrl(docsPath)) {
-        event.preventDefault()
-        window.location.assign(path)
     }
 })
 
-// Boosted navigations swap the whole <body>; scroll to top like a normal page load
-document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
-    if (event.target === document.body) {
-        window.scrollTo(0, 0)
+document.body.addEventListener(
+    'htmx:oobBeforeSwap',
+    function (event: HtmxEvent) {
+        // Scroll to the top of the page when the content is swapped
+        if (
+            event.target?.id === 'main-container' ||
+            event.target?.id === 'markdown-content' ||
+            event.target?.id === 'content-container'
+        ) {
+            window.scrollTo(0, 0)
+        }
     }
-})
+)
 
 document.body.addEventListener(
     'htmx:responseError',

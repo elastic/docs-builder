@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.V2;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
@@ -42,6 +43,12 @@ public class IndexViewModel
 	public string? NavigationActiveUrl { get; init; }
 
 	public required string NavigationHtml { get; init; }
+
+	/// <summary>V2 section metadata for the secondary nav bar tabs. Null for V1 builds.</summary>
+	public IReadOnlyList<NavigationSection>? NavV2Sections { get; init; }
+
+	/// <summary>The active section ID for highlighting the current tab in the secondary nav.</summary>
+	public string? ActiveSectionId { get; init; }
 
 	public required string? CurrentVersion { get; init; }
 
@@ -85,6 +92,9 @@ public class IndexViewModel
 
 	/// <summary>Codex sub-header breadcrumb trail (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; set; }
+
+	/// <summary>Pre-computed site root path for HTMX. When set (codex builds), used as data-root-path.</summary>
+	public string? SiteRootPath { get; set; }
 
 	/// <summary>When set, the page performs a client-side redirect to this URL (used for alias pages).</summary>
 	public string? RedirectUrl { get; init; }

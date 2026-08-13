@@ -2,25 +2,43 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 
 namespace Elastic.Documentation.Site.Navigation;
 
 public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
 	: INavigationHtmlWriter
 {
-	private readonly NavigationRenderCache _renderedNavigationCache = new();
+	private readonly ConcurrentDictionary<string, string> _renderedNavigationCache = [];
 
-	public Task<NavigationRenderResult> RenderNavigation(
+	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		INavigationItem currentNavigationItem,
 		Cancel ctx = default)
 	{
 		var navigation = SelectNavigationRoot(currentRootNavigation);
-		return _renderedNavigationCache.GetOrRenderAsync(
-			navigation,
-			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(navigation), ctx));
+		var id = ShortId.Create($"{navigation.Id.GetHashCode()}");
+		if (_renderedNavigationCache.TryGetValue(navigation.Id, out var value))
+		{
+			return new NavigationRenderResult
+			{
+				Html = value,
+				Id = id
+			};
+		}
+		var model = CreateNavigationModel(navigation);
+		value = await ((INavigationHtmlWriter)this).Render(model, ctx);
+		_renderedNavigationCache[navigation.Id] = value;
+		return new NavigationRenderResult
+		{
+			Html = value,
+			Id = id
+		};
 	}
 
 	/// <summary>
@@ -38,11 +56,32 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		return useRequestedRoot ? requestedRoot : siteRoot;
 	}
 
-	private NavigationRenderModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation) =>
-		NavigationRenderModel.Create(
-			tree: navigation,
-			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
-			isUsingNavigationDropdown: context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
-			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
-			isGlobalAssemblyBuild: false);
+	private NavigationViewModel CreateNavigationModel(IRootNavigationItem<INavigationModel, INavigationItem> navigation)
+	{
+		var rootPath = context.SiteRootPath ?? GetDefaultRootPath(context.UrlPathPrefix);
+		var htmx = context.BuildType == BuildType.Codex
+			? new CodexHtmxAttributeProvider(rootPath)
+			: new DefaultHtmxAttributeProvider(rootPath);
+		return new()
+		{
+			Title = navigation.NavigationTitle,
+			TitleUrl = navigation.Url,
+			Tree = navigation,
+			IsPrimaryNavEnabled = context.Configuration.Features.PrimaryNavEnabled,
+			IsUsingNavigationDropdown = context.Configuration.Features.PrimaryNavEnabled || navigation.IsUsingNavigationDropdown,
+			IsGlobalAssemblyBuild = false,
+			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
+			Htmx = htmx,
+			BuildType = context.BuildType,
+			// Isolated serve (e.g. port 3000): reuse V2 sidebar markup/CSS/JS for local styling; tree is still docset TOC only.
+			IsNavV2 = context.BuildType == BuildType.Isolated,
+			Branding = context.Configuration.Branding
+		};
+	}
+
+	private static string GetDefaultRootPath(string? urlPathPrefix)
+	{
+		var prefix = urlPathPrefix?.Trim('/') ?? "";
+		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
+	}
 }

@@ -56,6 +56,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	public ApiLayoutViewModel CreateGlobalLayoutModel()
 	{
+		var rootPath = BuildContext.SiteRootPath ?? GetDefaultRootPath(BuildContext.UrlPathPrefix);
 		var docTitle = Document.Info?.Title ?? "API Documentation";
 		var pageTitle = LayoutPageTitle;
 		var documentTitle = pageTitle is not null
@@ -73,6 +74,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Next = null,
 			NavigationHtml = NavigationHtml,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
+			Htmx = new DefaultHtmxAttributeProvider(rootPath),
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
@@ -91,5 +93,11 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			GitHubDocsUrl = GetGitHubDocsUrl(),
 			GitHubRef = BuildContext.Git.GitHubRef
 		};
+	}
+
+	private static string GetDefaultRootPath(string? urlPathPrefix)
+	{
+		var prefix = urlPathPrefix?.Trim('/') ?? "";
+		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
 	}
 }

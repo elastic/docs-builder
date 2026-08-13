@@ -5,6 +5,25 @@
 	--offset-top: 48px;
 }
 
+/* Custom element default is inline; stretch to the preview chrome row so navy wrapper does not show through. */
+elastic-docs-header {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/*
+ * Preview chrome: fixed bar uses z-[60] in _IsolatedHeader.cshtml (above sidebar z-40 / overlay z-30).
+ * Until the custom element upgrades, keep a visible bar so the strip is not mistaken for “missing”.
+ */
+elastic-docs-header:not(:defined) {
+	display: block;
+	min-height: 48px;
+	background-color: var(--color-ink-navy);
+}
+
+/* Host fills the fixed flex row so .euiHeader can span the full width (avoids ink-navy “void”). */
 elastic-docs-header .euiHeader {
+	width: 100%;
 	padding-inline: calc((100vw - var(--max-layout-width)) / 2 + 8px);
 }
