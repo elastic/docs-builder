@@ -217,6 +217,40 @@ public class GitCheckoutResolutionTests
 	}
 
 	[Fact]
+	public void RegularRepo_PackedRefWithoutLooseRefFile_ResolvesShaFromPackedRefs()
+	{
+		// actions/checkout (and `git gc`) can leave HEAD pointing at a symbolic ref with no
+		// corresponding loose file under refs/heads — the SHA only lives in packed-refs.
+		var fs = new MockFileSystem();
+		fs.AddDirectory("/repo/.git");
+		fs.AddFile("/repo/.git/HEAD", new MockFileData("ref: refs/heads/main\n"));
+		fs.AddFile("/repo/.git/packed-refs", new MockFileData("""
+			# pack-refs with: peeled fully-peeled sorted
+			deadbeef1234567890deadbeef1234567890dead refs/heads/main
+			cafebabe0000000000cafebabe0000000000cafe refs/remotes/origin/main
+			"""));
+		fs.AddFile("/repo/.git/config", new MockFileData("""
+			[core]
+				repositoryformatversion = 0
+			[remote "origin"]
+				url = https://github.com/elastic/test-repo.git
+			[branch "main"]
+				remote = origin
+				merge = refs/heads/main
+			"""));
+
+		var checkout = fs.DirectoryInfo.New("/repo");
+		var scoped = new CheckoutsFileSystem(fs.DirectoryInfo.New("/repo"), inner: fs);
+
+		var result = GitCheckoutInformationFactory.Create(checkout, scoped);
+
+		result.IsAvailable.Should().BeTrue();
+		result.Branch.Should().Be("main");
+		result.Ref.Should().Be("deadbeef1234567890deadbeef1234567890dead",
+			"the SHA must be resolved from packed-refs, never the literal HEAD contents like 'ref: refs/heads/main'");
+	}
+
+	[Fact]
 	public void MockWithNoGitLayout_ReturnsCannedTestData()
 	{
 		// Back-compat: tests that seed no .git at all must continue to receive the canned
