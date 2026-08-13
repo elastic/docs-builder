@@ -66,13 +66,25 @@
 		background: var(--color-grey-10);
 		border-color: var(--color-grey-30);
 	}
-	.hub-hero .hub-hero-eyebrow-arrow {
+	/* Shared arrow -----------------------------------------------------
+	   The site puts an arrow on exactly two kinds of link: one that sends the
+	   reader onward out of a section, and a row that is itself the target. It
+	   never marks an ordinary link, and never a button. Hub links that qualify
+	   use this class.
+
+	   The glyph and the hover slide come from `.link-arrow` in styles.css. The
+	   class is not reused directly because it is nested under `.link`, which
+	   also forces a blue semibold type treatment that a pill or a card would
+	   have to undo. */
+	.hub-arrow {
 		flex-shrink: 0;
-		transition: transform 0.15s ease;
+		width: 1.25em;
+		height: 1.25em;
+		transition: transform 0.15s ease-out;
 	}
-	.hub-hero .hub-hero-eyebrow-link:hover .hub-hero-eyebrow-arrow,
-	.hub-hero .hub-hero-eyebrow-link:focus-visible .hub-hero-eyebrow-arrow {
-		transform: translateX(2px);
+	a:hover .hub-arrow,
+	a:focus-visible .hub-arrow {
+		transform: translateX(4px);
 	}
 	.hub-hero .hub-hero-top {
 		display: flex;
@@ -138,16 +150,16 @@
 		flex-shrink: 0;
 	}
 
-	/* The hero animates its eyebrow arrow and its hover states. Honour a reduced-motion
+	/* The arrow slides and the hero animates its hover states. Honour a reduced-motion
 	   preference. Nothing about the resting appearance changes. */
 	@media (prefers-reduced-motion: reduce) {
 		.hub-hero .hub-hero-eyebrow-link,
-		.hub-hero .hub-hero-eyebrow-arrow,
-		.hub-hero .hub-hero-action {
+		.hub-hero .hub-hero-action,
+		.hub-arrow {
 			transition: none;
 		}
-		.hub-hero .hub-hero-eyebrow-link:hover .hub-hero-eyebrow-arrow,
-		.hub-hero .hub-hero-eyebrow-link:focus-visible .hub-hero-eyebrow-arrow {
+		a:hover .hub-arrow,
+		a:focus-visible .hub-arrow {
 			transform: none;
 		}
 	}
