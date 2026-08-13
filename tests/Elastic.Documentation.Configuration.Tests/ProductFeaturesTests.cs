@@ -179,7 +179,7 @@ public class ProductFeaturesTests
 
 	private static ProductsConfiguration ParseProducts(string yaml)
 	{
-		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new FileSystem());
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();
 		using var reader = new StringReader(yaml);
 		return ProductExtensions.CreateProducts(reader, versionsConfig);
