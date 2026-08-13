@@ -337,7 +337,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task Create_TopLevelIsland_HasDropdownAndNoBackLinks()
+	public void Create_TopLevelIsland_HasDropdownAndNoBackLinks()
 	{
 		// A top-level section (Parent is nav root, grandparent is null) has the dropdown
 		// as its only mechanism — no back-link trail is generated.
