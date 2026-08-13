@@ -33,16 +33,14 @@ public class HeroViewModel : HubDirectiveViewModel
 		if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(url))
 			return;
 
-		// IsAnchor drives the arrow. The href and its link attributes come from the shared
-		// base, which owns the external and cross-link rules.
-		actions.Add(new HeroAction(label, url, IsAnchor: url[0] == '#'));
+		actions.Add(new HeroAction(label, url));
 	}
 }
 
 /// <summary>
 /// One hero call to action. The three actions carry equal weight and render as neutral
-/// buttons, so the option a label came from does not change its appearance.
-/// <paramref name="IsAnchor"/> drives the arrow that marks an in-page jump. Link attributes
-/// come from <see cref="HubDirectiveViewModel.LinkAttributes"/>.
+/// buttons, so the option a label came from does not change its appearance. The href and
+/// its link attributes come from <see cref="HubDirectiveViewModel.LinkAttributes"/>, which
+/// owns the anchor, external, and cross-link rules.
 /// </summary>
-public sealed record HeroAction(string Label, string Url, bool IsAnchor);
+public sealed record HeroAction(string Label, string Url);
