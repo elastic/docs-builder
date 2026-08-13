@@ -216,7 +216,7 @@
 		position: absolute;
 		top: 20px;
 		right: 20px;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 		/* grey-70 reads at 3.31:1 on white, short of the 4.5:1 minimum. ink-light
 		   carries the same quiet weight at 7.03:1 and is what other secondary text
@@ -232,7 +232,7 @@
 	}
 	.hub-get-started .hub-get-started-step-desc {
 		margin: 0;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.45;
 	}
@@ -263,13 +263,13 @@
 		border-left: 1px solid var(--color-grey-20);
 	}
 	.hub-get-started .hub-get-started-option-label {
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 700;
 		color: var(--color-ink-dark);
 	}
 	.hub-get-started .hub-get-started-option-desc {
 		margin: 0;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.45;
 	}
@@ -285,7 +285,7 @@
 		min-height: 48px;
 		margin-top: auto;
 		padding: 0 18px;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 		color: var(--color-ink-dark);
 		background: var(--color-white);
@@ -304,7 +304,7 @@
 	.hub-get-started .hub-get-started-option-link {
 		@apply inline-flex items-center gap-1;
 		align-self: flex-start;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 		color: var(--color-blue-elastic-100, #0b64dd);
 	}
@@ -350,7 +350,7 @@
 		@apply inline-flex items-center gap-1;
 		margin-top: auto;
 		padding-top: 14px;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 		color: var(--color-blue-elastic-100, #0b64dd);
 	}
