@@ -288,6 +288,14 @@
 		color: var(--color-blue-elastic-110);
 	}
 
+	/* Explore {product} — accordion stack ------------------------------ */
+	/* Shares the section max-width, so the accordion rows line up with the zone
+	   heading rather than running wider than it. */
+	.hub-explore {
+		@apply mx-auto w-full max-w-5xl;
+		border-top: 1px solid var(--color-grey-20);
+	}
+
 	.hub-accordion {
 		border-bottom: 1px solid var(--color-grey-20);
 	}
@@ -296,7 +304,9 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 16px;
-		padding: 18px 4px;
+		/* No horizontal padding: the accordion title has to start on the same line as the
+		   section heading, and the toggle icon has to end on the same line as its right edge. */
+		padding: 18px 0;
 		cursor: pointer;
 		list-style: none;
 		user-select: none;
@@ -332,7 +342,7 @@
 		color: var(--color-blue-elastic);
 	}
 	.hub-accordion-body {
-		padding: 4px 4px 28px;
+		padding: 4px 0 28px;
 		container-type: inline-size;
 	}
 	.hub-accordion-intro {
