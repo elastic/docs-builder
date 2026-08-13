@@ -48,15 +48,20 @@
 			</div>
 		}
 		</div>
-		@foreach (var back in Model.BackLinks)
+		@if (Model.BackLinks.Count > 0)
 		{
-			<a href="@back.Url"
-			   class="flex w-full items-center gap-2 h-10 px-4 text-sm font-semibold rounded-sm border-2 border-grey-20 text-ink hover:border-blue-elastic hover:text-blue-elastic no-underline transition-colors">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3.5 shrink-0">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
-				</svg>
-				<span>@back.Title</span>
-			</a>
+			<div class="flex flex-col px-4 py-2 border-b border-grey-20">
+				@foreach (var back in Model.BackLinks)
+				{
+					<a href="@back.Url"
+					   class="flex items-center gap-2 py-1.5 text-sm font-medium text-grey-60 hover:text-blue-elastic no-underline transition-colors">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3.5 shrink-0 opacity-70">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+						</svg>
+						<span>@back.Title</span>
+					</a>
+				}
+			</div>
 		}
 	</div>
 
@@ -69,6 +74,7 @@
 			<li class="flex group/li pr-8 mt-6">
 				<a href="@rootIndex.Url" class="sidebar-link nav-link">@rootIndex.NavigationTitle</a>
 			</li>
+			<li role="separator" class="mt-4 pr-8"><hr class="border-grey-20"></li>
 		}
 		@await RenderPartialAsync(_TocTreeNav.Create(Model.Tree))
 	</ul>
