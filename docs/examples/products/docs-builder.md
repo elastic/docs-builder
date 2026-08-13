@@ -13,7 +13,7 @@ description: docs-builder documentation. Build, validate, and publish Elastic do
 :::
 
 :::{get-started}
-title: Get started in 3 steps
+title: Get started in 4 steps
 intro: Install docs-builder, write your first page, then preview and publish it.
 steps:
   - title: Install docs-builder
@@ -32,6 +32,10 @@ steps:
     link-label: Start writing
   - title: Preview and publish
     description: Serve the site locally with live reload, then publish it.
+    link: /getting-started/serve.md
+    link-label: Serve locally
+  - title: Validate the build
+    description: Check links, syntax, and frontmatter before you open a pull request.
 :::
 
 ::::{card-group}

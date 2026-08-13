@@ -14,7 +14,7 @@
 
 	@if (Model.Steps.Count > 0)
 	{
-		<ol class="hub-get-started-steps">
+		<ol class="hub-get-started-steps" style="--hub-step-columns: @Model.StepColumns">
 			@foreach (var step in Model.Steps)
 			{
 				@if (step.Options.Count > 0)

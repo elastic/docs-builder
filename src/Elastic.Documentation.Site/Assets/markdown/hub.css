@@ -155,8 +155,11 @@
 	}
 
 	/* Get started ------------------------------------------------------ */
+	/* A container, not the viewport: the left sidebar narrows the body, so the step
+	   grid has to answer to the space it actually has. */
 	.hub-get-started {
 		@apply mx-auto w-full max-w-5xl;
+		container-type: inline-size;
 		margin-bottom: 56px;
 		scroll-margin-top: 96px;
 	}
@@ -192,9 +195,15 @@
 		background: transparent;
 	}
 
+	/* The track count is authored, not inferred from the width: the directive counts the
+	   steps that flow in columns and sets --hub-step-columns, so a section of any length
+	   fills its rows evenly instead of leaving a short last row. */
 	.hub-get-started .hub-get-started-steps {
 		@apply grid gap-4;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		grid-template-columns: repeat(
+			var(--hub-step-columns, 2),
+			minmax(0, 1fr)
+		);
 		margin: 0;
 		padding: 0;
 		list-style: none;
@@ -237,10 +246,14 @@
 		line-height: 1.45;
 	}
 
-	/* Step 01 with two equal start options spans the full row. */
-	.hub-get-started .hub-get-started-steps:has(.hub-get-started-step-wide) {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+	/* Below this the tracks are too narrow to hold a step title and a description. */
+	@container (max-width: 640px) {
+		.hub-get-started .hub-get-started-steps {
+			grid-template-columns: 1fr;
+		}
 	}
+
+	/* A step offering equally weighted options spans the full row, whatever the track count. */
 	.hub-get-started .hub-get-started-step-wide {
 		grid-column: 1 / -1;
 		container-type: inline-size;

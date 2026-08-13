@@ -8,7 +8,7 @@ See the [docs-builder documentation hub](../examples/products/docs-builder.md) f
 
 ## Basic
 
-A hub's onboarding section is three steps. The first offers two equally weighted ways to start, and the rest are single links.
+A hub's onboarding section is a numbered list of steps. Use as many as the path needs. The first step often offers two equally weighted ways to start, and the rest are single links.
 
 ```markdown
 :::{get-started}
@@ -52,6 +52,16 @@ A command in a step option goes through the standard code block, so it gets synt
 
 Every field except `title` is optional. The [example hub](../examples/products/docs-builder.md) uses each one once, and shows all three step shapes, so you can start from it and delete what you do not need.
 
+
+## How many steps
+
+There is no fixed number. The layout arranges whatever you write:
+
+- A step carrying `options` spans the full row.
+- The remaining steps share the row, three across when they divide by three, two when they are even, so the last row is never short.
+- Below a narrow width the steps stack into one column.
+
+Keep the list short enough to read as one path. Four steps still scan. Ten do not.
 
 ## Step shapes
 

@@ -104,3 +104,51 @@ type ``get started without a body`` () =
     [<Fact>]
     let ``errors`` () =
         markdown |> hasError "{get-started}"
+
+// The section is not fixed at three steps. The track count follows the steps that flow in
+// columns, so the last row is never short. A step carrying options spans the full row and
+// takes no track.
+type ``get started with four steps`` () =
+    static let markdown = Setup.Markdown """
+:::{get-started}
+title: Get started
+steps:
+  - title: Install
+    options:
+      - label: Source
+        code: dotnet build
+      - label: Container
+        url: /index.md
+  - title: Write
+  - title: Preview
+  - title: Validate
+:::
+"""
+
+    [<Fact>]
+    let ``lays the three remaining steps across three tracks`` () =
+        markdown |> convertsToContainingRawHtml """<ol class="hub-get-started-steps" style="--hub-step-columns: 3">"""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+type ``get started with five steps`` () =
+    static let markdown = Setup.Markdown """
+:::{get-started}
+title: Get started
+steps:
+  - title: One
+  - title: Two
+  - title: Three
+  - title: Four
+:::
+"""
+
+    // Four steps divide evenly into two rows of two, so they take two tracks rather than
+    // three with a single step stranded on the last row.
+    [<Fact>]
+    let ``pairs four steps into two tracks`` () =
+        markdown |> convertsToContainingRawHtml """<ol class="hub-get-started-steps" style="--hub-step-columns: 2">"""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
