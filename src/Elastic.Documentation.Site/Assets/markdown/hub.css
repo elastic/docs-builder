@@ -398,12 +398,12 @@
 		@apply mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1;
 	}
 	.hub-whats-new .hub-wn-footer-text {
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		color: var(--color-ink-light);
 	}
 	.hub-whats-new .hub-wn-upgrade {
 		@apply inline-flex items-center gap-1.5;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 		color: var(--color-blue-elastic-100);
 		text-decoration: none;
@@ -416,7 +416,7 @@
 		flex-shrink: 0;
 	}
 	.hub-whats-new .hub-wn-rn-label {
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 		color: var(--color-ink-light);
 	}
@@ -434,7 +434,7 @@
 		font-weight: 700;
 	}
 	.hub-whats-new .hub-wn-rn-link {
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 		color: var(--color-blue-elastic-100);
 		text-decoration: none;
@@ -475,15 +475,16 @@
 	}
 	.hub-whats-new .hub-wn-card-meta {
 		@apply flex items-center justify-between gap-2;
-		font-size: var(--text-xs);
+		font-size: var(--text-sm);
 	}
 	.hub-whats-new .hub-wn-card-meta-left {
 		@apply inline-flex items-center gap-2;
 	}
+	/* The date is authored, so it keeps the casing the writer chose. Forcing
+	   uppercase shouts, and it mangles a month name in any language. */
 	.hub-whats-new .hub-wn-card-date {
 		font-weight: 600;
 		color: var(--color-ink-light);
-		text-transform: uppercase;
 		letter-spacing: 0.03em;
 	}
 	.hub-whats-new .hub-wn-card-tag {
@@ -501,14 +502,14 @@
 		font-size: var(--text-lg);
 	}
 	.hub-whats-new .hub-wn-card-desc {
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		color: var(--color-ink-light);
 		line-height: 1.45;
 		margin: 0;
 	}
 	.hub-whats-new .hub-wn-card-more {
 		@apply mt-auto inline-flex items-center gap-1.5;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 		color: var(--color-blue-elastic-100);
 	}

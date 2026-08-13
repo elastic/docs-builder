@@ -33,7 +33,7 @@ products:
       - title: Hub pages
         description: A product-scoped landing page composed entirely from directives.
         link: /syntax/hub-pages.md
-        date: AUG 2026
+        date: Aug 2026
         tag: Syntax
         featured: true
 ```
@@ -49,6 +49,8 @@ products:
 
 Each item takes a `title`, a `description`, a `link`, a `date` and a `tag`. Mark one item `featured: true` to span two columns.
 
+The `date` renders as you write it. Use sentence case, for example `Aug 2026`.
+
 Every field except `title` is optional. The example file uses each one once, so you can start from it and delete what you do not need.
 
 ## Inline body
@@ -62,7 +64,7 @@ items:
   - title: Hub pages
     description: A product-scoped landing page.
     link: /syntax/hub-pages.md
-    date: AUG 2026
+    date: Aug 2026
 :::
 ```
 
