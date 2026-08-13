@@ -48,23 +48,17 @@ public class CheckoutsFileSystem : ScopedFileSystem, ICheckoutsFileSystem
 		var rootPath = root.FullName;
 		var roots = new List<string> { rootPath };
 
-		// AppData is disjointness-filtered too: on CI the checkouts directory lives inside AppData
-		// (/home/runner/.local/share/elastic/docs-builder/checkouts/...), so AppData would subsume
-		// root and the ScopedFileSystem constructor would throw.
-		var appData = Paths.ApplicationData.FullName;
-		if (!IsSubPath(appData, rootPath, fs) && !IsSubPath(rootPath, appData, fs))
-			roots.Add(appData);
+		// On CI (and for codex checkouts) the checkouts directory lives inside AppData
+		// (e.g. /home/runner/.local/share/elastic/docs-builder/checkouts/..., or
+		// AppData/codex/clone/<repo>). AddDisjointRoot keeps whichever of the two is the outer
+		// path rather than dropping AppData outright, so sibling AppData directories (e.g.
+		// config-runtime) stay in scope even when root itself is nested inside AppData.
+		roots.AddDisjointRoot(Paths.ApplicationData.FullName, fs);
 
 		if (extraRoots is not null)
 		{
 			foreach (var extra in extraRoots)
-			{
-				if (string.IsNullOrEmpty(extra))
-					continue;
-				// Drop descendants of root (already covered) and ancestors (would subsume root, causing overlap).
-				if (!IsSubPath(extra, rootPath, fs) && !IsSubPath(rootPath, extra, fs) && !roots.Contains(extra, StringComparer.OrdinalIgnoreCase))
-					roots.Add(extra);
-			}
+				roots.AddDisjointRoot(extra, fs);
 		}
 
 		return new ScopedFileSystemOptions([.. roots])
