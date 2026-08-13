@@ -116,6 +116,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, string>? labelToType;
 		Dictionary<string, List<string>>? labelToAreas;
 		Dictionary<string, string>? labelToProducts;
+		Dictionary<string, string>? labelToFeatures;
 		PivotConfiguration? pivot = null;
 
 		if (yamlConfig.Pivot != null)
@@ -216,6 +217,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				}
 			}
 			labelToProducts = BuildLabelToProductsMapping(yamlConfig.Pivot.Products);
+			labelToFeatures = BuildLabelToFeaturesMapping(yamlConfig.Pivot.Features);
 		}
 		else
 		{
@@ -226,6 +228,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			labelToType = null;
 			labelToAreas = null;
 			labelToProducts = null;
+			labelToFeatures = null;
 		}
 
 		// Process lifecycles
@@ -328,6 +331,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			LabelToType = labelToType,
 			LabelToAreas = labelToAreasReadOnly,
 			LabelToProducts = labelToProducts,
+			LabelToFeatures = labelToFeatures,
 			Rules = rules,
 			HighlightLabels = highlightLabels,
 			ProductsConfiguration = productsConfig,
@@ -359,6 +363,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Subtypes = ConvertLenientDictToStringDict(yamlPivot.Subtypes),
 			Areas = ConvertLenientDictToStringDict(yamlPivot.Areas),
 			Products = ConvertLenientDictToStringDict(yamlPivot.Products),
+			Features = ConvertLenientDictToStringDict(yamlPivot.Features),
 			Highlight = JoinLenientList(yamlPivot.Highlight)
 		};
 	}
@@ -1217,5 +1222,28 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		}
 
 		return labelToProducts.Count > 0 ? labelToProducts : null;
+	}
+
+	/// <summary>
+	/// Builds LabelToFeatures mapping by inverting pivot.features entries.
+	/// Each label in a feature entry maps to that feature-id string.
+	/// </summary>
+	private static Dictionary<string, string>? BuildLabelToFeaturesMapping(Dictionary<string, YamlLenientList?>? features)
+	{
+		if (features == null || features.Count == 0)
+			return null;
+
+		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var (featureId, labelList) in features)
+		{
+			if (labelList?.Values == null)
+				continue;
+
+			foreach (var label in labelList.Values)
+				labelToFeatures[label] = featureId;
+		}
+
+		return labelToFeatures.Count > 0 ? labelToFeatures : null;
 	}
 }

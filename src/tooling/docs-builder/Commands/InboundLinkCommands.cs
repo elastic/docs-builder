@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,7 @@ namespace Documentation.Builder.Commands;
 /// </remarks>
 internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector)
 {
-	private readonly LinkIndexService _linkIndexService = new(logFactory, FileSystemFactory.RealRead);
+	private readonly LinkIndexService _linkIndexService = new(logFactory, CheckoutsFileSystem.FromWorkingDirectory());
 
 	/// <summary>Validate all cross-links across every published <c>links.json</c> in the registry.</summary>
 	[NoOptionsInjection]

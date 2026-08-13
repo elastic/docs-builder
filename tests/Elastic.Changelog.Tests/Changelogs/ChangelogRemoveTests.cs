@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -71,8 +72,8 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 	public ChangelogRemoveTests(ITestOutputHelper output) : base(output)
 	{
-		Service = new ChangelogRemoveService(LoggerFactory, null, FileSystem);
-		ServiceWithConfig = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystem);
+		Service = new ChangelogRemoveService(LoggerFactory, FileSystem);
+		ServiceWithConfig = new ChangelogRemoveService(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = CreateChangelogDir();
 	}
 
@@ -457,7 +458,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			currentDirectory: "/empty-project"
 		);
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogRemoveService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new ChangelogRemoveArguments
 		{

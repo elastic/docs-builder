@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
@@ -69,7 +70,7 @@ public class CodexBuildService(
 		var buildContexts = new List<CodexDocumentationSetBuildContext>();
 
 		var environment = context.Configuration.Environment ?? "internal";
-		using var codexLinkIndexReader = new GitLinkIndexReader(environment, FileSystemFactory.AppData, skipFetch: true);
+		using var codexLinkIndexReader = new GitLinkIndexReader(environment, new ApplicationDataFileSystem(), skipFetch: true);
 
 		// Phase 1: Load and parse all documentation sets
 		foreach (var checkout in cloneResult.Checkouts)
@@ -184,15 +185,16 @@ public class CodexBuildService(
 			// Repository clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
 			// discovers .git inside that ceiling (#3115). Using DocsDirectory alone would cap the ceiling
 			// at the docs subtree and return null above repo/.git, breaking GithubEditUrl generation.
-			var buildContext = new BuildContext(
-				context.Collector,
-				fileSystem,
-				fileSystem,
-				configurationContext,
-				ExportOptions.Default,
-				checkout.RepositoryDirectory.FullName,
-				outputPath,
-				git)
+			// The docset file itself is passed explicitly so build reuses the docset clone discovery already
+			// selected (which may prefer a non-default path such as `docs-dev/`), rather than rediscovering
+			// one from the repository root and always landing on `docs/`.
+			var docFs = DocumentationFileSystem.Resolve(checkout.RepositoryDirectory, new DocumentationScopeOptions
+			{
+				Output = outputPath,
+				Git = git,
+				ConfigurationFile = checkout.DocsetFile.FullName,
+			});
+			var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
 			{
 				UrlPathPrefix = pathPrefix,
 				SiteRootPath = siteRootPath,
@@ -410,10 +412,7 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public IDiagnosticsCollector Collector => codexContext.Collector;
 
 	/// <inheritdoc />
-	public ScopedFileSystem ReadFileSystem => codexContext.ReadFileSystem;
-
-	/// <inheritdoc />
-	public ScopedFileSystem WriteFileSystem => codexContext.WriteFileSystem;
+	public DocumentationWriteFileSystem WriteFileSystem => codexContext.WriteFileSystem;
 
 	/// <inheritdoc />
 	public IDirectoryInfo OutputDirectory => codexContext.OutputDirectory;

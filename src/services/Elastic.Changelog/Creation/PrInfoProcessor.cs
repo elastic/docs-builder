@@ -194,6 +194,19 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		else if (input.Products.Count > 0)
 			logger.LogDebug("Using explicitly provided products, ignoring PR labels");
 
+		// Map labels to feature-id if not explicitly provided
+		if (string.IsNullOrWhiteSpace(input.FeatureId) && config.LabelToFeatures != null)
+		{
+			var mappedFeatureId = MapLabelsToFeatureId(prInfo.Labels.ToArray(), config.LabelToFeatures, collector);
+			if (mappedFeatureId != null)
+			{
+				derived.FeatureId = mappedFeatureId;
+				logger.LogInformation("Mapped PR labels to feature-id: {FeatureId}", mappedFeatureId);
+			}
+		}
+		else if (!string.IsNullOrWhiteSpace(input.FeatureId))
+			logger.LogDebug("Using explicitly provided feature-id, ignoring PR labels");
+
 		// Extract linked issues from PR body if config enabled and issues not provided
 		if ((input.ExtractIssues ?? false) && (input.Issues == null || input.Issues.Length == 0))
 		{
@@ -429,6 +442,41 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 		return products;
 	}
+
+	/// <summary>
+	/// Maps PR/issue labels to a single feature-id using the pivot.features mapping.
+	/// When multiple distinct feature-ids match, emits a warning and returns the first (PR label order).
+	/// </summary>
+	internal static string? MapLabelsToFeatureId(
+		string[] labels,
+		IReadOnlyDictionary<string, string> labelToFeaturesMapping,
+		IDiagnosticsCollector collector)
+	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var featureIds = new List<string>();
+
+		foreach (var label in labels)
+		{
+			if (!labelToFeaturesMapping.TryGetValue(label, out var featureId))
+				continue;
+
+			if (!seen.Add(featureId))
+				continue;
+
+			featureIds.Add(featureId);
+		}
+
+		if (featureIds.Count == 0)
+			return null;
+
+		if (featureIds.Count > 1)
+		{
+			collector.EmitWarning(string.Empty,
+				$"Multiple feature-id values matched from labels ({string.Join(", ", featureIds)}). Using first match '{featureIds[0]}'. Provide --feature-id to override.");
+		}
+
+		return featureIds[0];
+	}
 }
 
 /// <summary>
@@ -453,6 +501,7 @@ public record DerivedPrFields
 	public string[]? Areas { get; set; }
 	public bool? Highlight { get; set; }
 	public string[]? Issues { get; set; }
+	public string? FeatureId { get; set; }
 
 	/// <summary>
 	/// Products derived from PR/issue labels via pivot.products mapping.

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using Nullean.ScopedFileSystem;
 using System.Runtime.InteropServices;
@@ -15,6 +16,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
@@ -44,13 +46,10 @@ public class DocumentationWebHost
 	public DocumentationWebHost(ILoggerFactory logFactory,
 		string? path,
 		int port,
-		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
 		IConfigurationContext configurationContext,
 		bool isWatchBuild
 	)
 	{
-		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
 		_ = builder.AddDocumentationServiceDefaults();
 
@@ -71,7 +70,9 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
+		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { InnerWrite = new MockFileSystem() });
+		_writeFileSystem = docFs.Write;
+		Context = new BuildContext(collector, docFs, configurationContext)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
@@ -263,13 +264,15 @@ public class DocumentationWebHost
 		}
 		catch (OperationCanceledException) when (ctx.IsCancellationRequested)
 		{
-			// HTTP request was canceled - return 499 or appropriate status
-			return Results.Problem("Request canceled", statusCode: 499);
+			// Client disconnected — no ProblemDetails JSON; ApiJsonContext is AOT-only.
+			return Results.StatusCode(499);
 		}
 		catch (OperationCanceledException)
 		{
-			// API generation timed out - return 503 with retry info
-			return Results.Problem("API generation in progress, please retry", statusCode: 503);
+			return Results.Text(
+				"API generation in progress, please retry",
+				contentType: "text/plain",
+				statusCode: StatusCodes.Status503ServiceUnavailable);
 		}
 
 		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);

@@ -91,7 +91,9 @@ public class DocumentationSet : INavigationTraversable
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
-			: Context.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Context.DocumentationSourceDirectory.Name}";
+			: Context.DocumentationCheckoutDirectory.Name
+				?? Context.DocumentationSourceDirectory.Parent?.Name
+				?? Context.DocumentationSourceDirectory.Name;
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, "links.json"));
 
@@ -228,12 +230,22 @@ public class DocumentationSet : INavigationTraversable
 	}
 
 	private bool _resolved;
+
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		if (_resolved)
 			return;
 
-		await Parallel.ForEachAsync(MarkdownFiles, ctx, async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
+		// MinimalParseAsync is ~60 % blocked on open() / file I/O; the default
+		// ProcessorCount cap starves the IO queue.  4× gives a wide-enough flight
+		// without runaway RSS growth (each in-flight parse holds a MarkdownDocument).
+		var options = new ParallelOptions
+		{
+			MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount * 4, 32),
+			CancellationToken = ctx
+		};
+		await Parallel.ForEachAsync(MarkdownFiles, options,
+			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
 
 		_resolved = true;
 	}

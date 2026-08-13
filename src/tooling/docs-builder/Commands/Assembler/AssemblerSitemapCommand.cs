@@ -9,6 +9,7 @@ using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -41,7 +42,7 @@ internal sealed class AssemblerSitemapCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealWrite;
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var service = new AssemblerSitemapService(logFactory, configuration, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service,
 			async (s, col, ctx) => await s.GenerateSitemapAsync(col, fs, es, environment, ctx)

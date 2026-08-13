@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Codex;
 using Elastic.Documentation;
@@ -10,6 +11,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -85,10 +87,9 @@ internal sealed class CodexSyncCommand(
 
 	private (CodexContext context, IncrementalDeployService service) LoadContext(FileInfo config)
 	{
-		var fs = FileSystemFactory.RealRead;
-		var configFile = fs.FileInfo.New(config.FullName);
-		var codexConfig = CodexConfiguration.Load(configFile);
-		return (new CodexContext(codexConfig, configFile, collector, fs, FileSystemFactory.RealWrite, null, null),
+		var fs = new CodexFileSystem(config.FullName);
+		var codexConfig = CodexConfiguration.Load(fs.ConfigurationFile);
+		return (new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs),
 			new IncrementalDeployService(logFactory, githubActionsService));
 	}
 }

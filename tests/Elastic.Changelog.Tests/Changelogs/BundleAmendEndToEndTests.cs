@@ -123,7 +123,7 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 			_ = s3.Seed("public-bucket", target.S3Key, await FileSystem.File.ReadAllTextAsync(target.LocalPath, ct));
 
 		ChangelogScope.TryCreateBundle("elasticsearch", out var scope).Should().BeTrue();
-		var reconciler = new RegistryReconciler(NullLoggerFactory.Instance, s3.Client, "public-bucket");
+		var reconciler = new BundleRegistryReconciler(NullLoggerFactory.Instance, s3.Client, "public-bucket");
 		var outcome = await reconciler.ReconcileGroupAsync(scope!, ct);
 
 		outcome.Should().Be(GroupReconcileOutcome.Written);

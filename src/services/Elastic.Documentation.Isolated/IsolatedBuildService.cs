@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -23,7 +24,6 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
-using static System.StringComparison;
 
 namespace Elastic.Documentation.Isolated;
 
@@ -46,9 +46,8 @@ public class IsolatedBuildService(
 
 	public async Task<bool> Build(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem fileSystem,
 		IsolatedBuildOptions options,
-		ScopedFileSystem? writeFileSystem = null,
+		IFileSystem? writeFileSystem = null,
 		Cancel ctx = default
 	)
 	{
@@ -86,8 +85,14 @@ public class IsolatedBuildService(
 
 		try
 		{
-			context = new BuildContext(collector, fileSystem, writeFileSystem ?? fileSystem, configurationContext, exporters, path, output)
+			var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions
 			{
+				Output = options.Output?.FullName,
+				InnerWrite = writeFileSystem
+			});
+			context = new BuildContext(collector, docFs, configurationContext)
+			{
+				AvailableExporters = exporters,
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
 				AllowIndexing = allowIndexing ?? false,
@@ -97,19 +102,21 @@ public class IsolatedBuildService(
 		// On CI, we are running on a merge commit which may have changes against an older
 		// docs folder (this can happen on out-of-date PR's).
 		// At some point in the future we can remove this try catch
-		catch (Exception e) when (runningOnCi && e.Message.StartsWith("Can not locate docset.yml file in", OrdinalIgnoreCase))
+		catch (DocumentationPathException e) when (runningOnCi)
 		{
 			// Derive the default output from `path` so it stays within the write FS scope.
 			// Using Paths.WorkingDirectoryRoot would be wrong when --path points to a different repo.
 			var rootFolder = !string.IsNullOrWhiteSpace(path) ? path : Paths.WorkingDirectoryRoot.FullName;
-			var writeFs = writeFileSystem ?? fileSystem;
-			var outputDirectory = !string.IsNullOrWhiteSpace(output)
-				? writeFs.DirectoryInfo.New(output)
-				: writeFs.DirectoryInfo.New(Path.Join(rootFolder, ".artifacts/docs/html"));
+			var fallbackFs = writeFileSystem ?? new FileSystem();
+			var outputDirectory = fallbackFs.DirectoryInfo.New(output ?? Path.Join(rootFolder, ".artifacts/docs/html"));
 			// we temporarily do not error when pointed to a non-documentation folder.
-			_ = writeFs.Directory.CreateDirectory(outputDirectory.FullName);
+			_ = fallbackFs.Directory.CreateDirectory(outputDirectory.FullName);
 
-			_logger.LogInformation("Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {Message}",
+			// Surfaced as a warning (not swallowed at Information level) so that when the underlying
+			// cause is a real bug — not the stale-merge-commit case this catch was written for —
+			// the --git-dir remedy in e.Message actually reaches whoever is reading the failed run,
+			// rather than being buried above a later, unrelated artifact-upload failure.
+			_logger.LogWarning("Skipping build on CI: {Message} If the docs folder is not actually out of date on a stale merge commit, this indicates a real path-resolution issue.",
 				e.Message);
 
 			await githubActionsService.SetOutputAsync("skip", "true");
@@ -128,7 +135,7 @@ public class IsolatedBuildService(
 		else
 		{
 			using var codexReader = context.Configuration.Registry != DocSetRegistry.Public
-				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
+				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem())
 				: null;
 
 			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(

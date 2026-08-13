@@ -54,10 +54,16 @@ public class HtmlWriter(
 	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
 		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
 
-	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1)
+	/// <inheritdoc />
+	public string RenderApiDescription(string markdown, IFileInfo? source) =>
+		RenderCore(markdown, source, stripFirstHeadingLevel1: true, skipValidation: true);
+
+	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1, bool skipValidation = false)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
-		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		var parsed = skipValidation
+			? DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source)
+			: DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
 		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1);
 	}
 
@@ -88,8 +94,9 @@ public class HtmlWriter(
 		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
-		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable)
 		{
+			var checkoutDirectory = DocumentationSet.Context.DocumentationCheckoutDirectory;
 			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
 			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
 			editUrl = $"https://github.com/{gitHubRepo}/edit/{branch}/{path}";
@@ -152,9 +159,9 @@ public class HtmlWriter(
 		var gitRef = DocumentationSet.Context.Git.Ref;
 		string? gitHubDocsUrl = null;
 		if (gitHubRepo is not null
-			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable"
-			&& DocumentationSet.Context.DocumentationCheckoutDirectory is { } docsCheckoutDir)
+			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
 		{
+			var docsCheckoutDir = DocumentationSet.Context.DocumentationCheckoutDirectory;
 			var relativeDocsPath = Path.GetRelativePath(docsCheckoutDir.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName)
 				.Replace(Path.DirectorySeparatorChar, '/');
 			gitHubDocsUrl = $"https://github.com/{gitHubRepo}/tree/{gitBranch}/{relativeDocsPath}";

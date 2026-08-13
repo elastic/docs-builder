@@ -42,7 +42,7 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 		NavigationTitle = apiOperation.ApiName;
 		Parent = parent;
 		var moniker = ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route);
-		Url = $"{urlPathPrefix?.TrimEnd('/')}/api/{apiUrlSuffix}/{moniker}";
+		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
 		Id = ShortId.Create(Url);
 	}
 

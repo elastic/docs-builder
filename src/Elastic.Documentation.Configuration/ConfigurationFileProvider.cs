@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
@@ -17,7 +18,7 @@ namespace Elastic.Documentation.Configuration;
 
 public partial class ConfigurationFileProvider
 {
-	private readonly IFileSystem _fileSystem;
+	private readonly IAppDataFileSystem _fileSystem;
 	private readonly string _assemblyName;
 	private readonly ILogger<ConfigurationFileProvider> _logger;
 
@@ -37,7 +38,7 @@ public partial class ConfigurationFileProvider
 
 	public ConfigurationFileProvider(
 		ILoggerFactory logFactory,
-		IFileSystem fileSystem,
+		IAppDataFileSystem fileSystem,
 		bool skipPrivateRepositories = false,
 		ConfigurationSource? configurationSource = null
 	)
@@ -272,7 +273,7 @@ public static class ConfigurationFileProviderServiceCollectionExtensions
 	{
 		using var sp = services.BuildServiceProvider();
 		var logFactory = sp.GetRequiredService<ILoggerFactory>();
-		var provider = new ConfigurationFileProvider(logFactory, FileSystemFactory.RealRead, skipPrivateRepositories, configurationSource);
+		var provider = new ConfigurationFileProvider(logFactory, new ConfigurationFileSystem(), skipPrivateRepositories, configurationSource);
 		_ = services.AddSingleton(provider);
 		configure(services, provider);
 		return services;

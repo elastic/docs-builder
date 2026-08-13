@@ -7,6 +7,7 @@ namespace authoring
 open System
 open System.Collections.Concurrent
 open System.IO.Abstractions
+open Elastic.Documentation.FileSystems
 open Elastic.Documentation.Diagnostics
 open Elastic.Markdown
 open Elastic.Markdown.IO
@@ -94,7 +95,7 @@ and MarkdownTestContext =
        ConversionCollector: TestConversionCollector
        Set: DocumentationSet
        Generator: DocumentationGenerator
-       ReadFileSystem: IFileSystem
+       ReadFileSystem: IDocumentationFileSystem
        WriteFileSystem: IFileSystem
     }
 

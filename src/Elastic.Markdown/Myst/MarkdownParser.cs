@@ -63,6 +63,9 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath) =>
 		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, Pipeline);
 
+	public MarkdownDocument ParseApiDescriptionString(string markdown, IFileInfo path) =>
+		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, null, null, Pipeline, skipValidation: true);
+
 	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
 		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
 
@@ -80,7 +83,11 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, null, pipeline);
 
 	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
-		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline)
+		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline) =>
+		ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, originalSourcePath, pipeline, skipValidation: false);
+
+	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
+		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline, bool skipValidation)
 	{
 		var state = new ParserState(build)
 		{
@@ -91,7 +98,8 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			NavigationTraversable = resolvers.NavigationTraversable,
 			CrossLinkResolver = resolvers.CrossLinkResolver,
-			ReleaseNotesResolver = resolvers.ReleaseNotesResolver
+			ReleaseNotesResolver = resolvers.ReleaseNotesResolver,
+			SkipValidation = skipValidation
 		};
 		var context = new ParserContext(state);
 
@@ -212,6 +220,11 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	/// </summary>
 	private static string PreprocessLinkSubstitutions(string markdown, ParserContext context)
 	{
+		// The callback only rewrites links whose URL contains {{ }}. If the document
+		// has no {{ at all, both GetCodeBlockRanges and the Regex.Replace are pure overhead.
+		if (!markdown.Contains("{{", StringComparison.Ordinal))
+			return markdown;
+
 		// Find all code block boundaries to avoid processing links inside subs=false blocks
 		var codeBlockRanges = GetCodeBlockRanges(markdown);
 

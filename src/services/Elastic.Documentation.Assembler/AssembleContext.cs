@@ -11,14 +11,14 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncContext
 {
-	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
+	public CheckoutsFileSystem ReadFileSystem { get; }
+	public DocumentationWriteFileSystem WriteFileSystem { get; }
 
 	public IDiagnosticsCollector Collector { get; }
 
@@ -66,15 +66,14 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 		IConfigurationContext configurationContext,
 		string environment,
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFileSystem,
-		ScopedFileSystem writeFileSystem,
-		string? checkoutDirectory,
-		string? output
+		CheckoutsFileSystem fileSystem,
+		string? checkoutDirectory = null,
+		string? output = null
 	)
 	{
 		Collector = collector;
-		ReadFileSystem = readFileSystem;
-		WriteFileSystem = writeFileSystem;
+		ReadFileSystem = fileSystem;
+		WriteFileSystem = fileSystem.Write;
 
 		Configuration = configuration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
@@ -95,8 +94,8 @@ public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncCont
 		var contentSource = Environment.ContentSource.ToStringFast(true);
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "checkouts", contentSource);
 		CheckoutDirectory = checkoutDirectory is null
-			? FileSystemFactory.AppData.DirectoryInfo.New(defaultCheckoutDirectory)
-			: ReadFileSystem.DirectoryInfo.New(checkoutDirectory);
+			? fileSystem.DirectoryInfo.New(defaultCheckoutDirectory)
+			: fileSystem.DirectoryInfo.New(checkoutDirectory);
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = WriteFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
 

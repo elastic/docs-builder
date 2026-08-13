@@ -19,8 +19,9 @@ public sealed record ScrubberQueueMessage(string MessageId, string Body);
 /// The scrubber Lambda's event processor (elastic/docs-eng-team#688), extracted from
 /// <c>Program.cs</c> so it is testable. Events are triggers, state decides: the handler never
 /// acts on an event's <em>type</em> — an event means only "this key may have changed, look at
-/// it". Every distinct key gets one object-level reconcile against the private bucket, then every
-/// distinct group gets one registry reconcile against the public listing, so out-of-order and
+/// it". Every distinct key gets one object-level reconcile against the private bucket; every
+/// distinct <c>bundle/{product}/</c> group then gets one registry reconcile against the public
+/// listing, and every touched tree gets one shallow-map reconcile. Out-of-order and
 /// at-least-once S3 notifications are harmless and each batch heals accumulated drift.
 /// </summary>
 public sealed class ScrubberProcessor(
@@ -28,9 +29,9 @@ public sealed class ScrubberProcessor(
 	IAmazonS3 s3Client,
 	string publicBucketName,
 	IChangelogContentScrubber scrubber,
-	RegistryReconciler reconciler,
-	ReconcileMetrics? metrics = null,
-	string? privateBucketName = null
+	BundleRegistryReconciler reconciler,
+	ShallowRegistryReconciler shallowReconciler,
+	ReconcileMetrics? metrics = null
 )
 {
 	// Bounds the reread-and-redo loop of post-write source validation. Each redo only triggers
@@ -41,9 +42,13 @@ public sealed class ScrubberProcessor(
 	private readonly ILogger _logger = logFactory.CreateLogger<ScrubberProcessor>();
 	private readonly ReconcileMetrics _metrics = metrics ?? new ReconcileMetrics();
 
-	private sealed class ObjectWork(string sourceBucket)
+	private sealed class ObjectWork(string sourceBucket, bool passThrough)
 	{
 		public string SourceBucket { get; set; } = sourceBucket;
+
+		/// <summary>True for a pool manifest copied verbatim; false for YAML content that is scrubbed.</summary>
+		public bool PassThrough { get; } = passThrough;
+
 		public HashSet<string> MessageIds { get; } = [with(StringComparer.Ordinal)];
 	}
 
@@ -51,9 +56,13 @@ public sealed class ScrubberProcessor(
 	{
 		public ChangelogScope Scope { get; } = scope;
 		public HashSet<string> MessageIds { get; } = [with(StringComparer.Ordinal)];
+	}
 
-		/// <summary>Set by an explicit reconcile message: object-reconcile the union of both buckets' listings first.</summary>
-		public bool FullHeal { get; set; }
+	private sealed class ShallowWork(ChangelogScopeKind kind)
+	{
+		public ChangelogScopeKind Kind { get; } = kind;
+		public Dictionary<string, ChangelogScope> Scopes { get; } = [with(StringComparer.Ordinal)];
+		public HashSet<string> MessageIds { get; } = [with(StringComparer.Ordinal)];
 	}
 
 	/// <summary>
@@ -66,29 +75,11 @@ public sealed class ScrubberProcessor(
 	{
 		var objectWork = new Dictionary<string, ObjectWork>(StringComparer.Ordinal);
 		var groupWork = new Dictionary<string, GroupWork>(StringComparer.Ordinal);
+		var shallowWork = new Dictionary<ChangelogScopeKind, ShallowWork>();
 		var failedIds = new HashSet<string>(StringComparer.Ordinal);
 
 		foreach (var message in messages)
 		{
-			// Explicit reconcile requests (elastic/docs-eng-team#688 Phase 2) are a versioned,
-			// discriminated envelope; anything else is an S3 event notification. A recognized
-			// envelope that fails strict validation is rejected to the DLQ — redelivery cannot
-			// fix a malformed message, but the DLQ alarm makes the sender bug visible.
-			if (ReconcileQueueMessage.TryRead(message.Body, out var reconcile))
-			{
-				if (!reconcile.TryResolveScope(out var scope, out var error))
-				{
-					_logger.LogError("Rejecting reconcile message {MessageId}: {Error}", message.MessageId, error);
-					_ = failedIds.Add(message.MessageId);
-					continue;
-				}
-
-				_logger.LogInformation(
-					"Reconcile message for {Scope} (correlation: {CorrelationId})", scope, reconcile.CorrelationId ?? "none");
-				AddGroup(groupWork, scope, message.MessageId).FullHeal = true;
-				continue;
-			}
-
 			try
 			{
 				var s3Event = S3EventNotification.ParseJson(message.Body);
@@ -96,7 +87,7 @@ public sealed class ScrubberProcessor(
 				{
 					var key = Uri.UnescapeDataString(record.S3.Object.Key.Replace('+', ' '));
 					_logger.LogInformation("Batch names key={Key} (event={EventName})", key, record.EventName?.Value);
-					Classify(message.MessageId, record.S3.Bucket.Name, key, objectWork, groupWork);
+					Classify(message.MessageId, record.S3.Bucket.Name, key, objectWork, groupWork, shallowWork);
 				}
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
@@ -111,7 +102,7 @@ public sealed class ScrubberProcessor(
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				await ReconcileObjectAsync(work.SourceBucket, key, ctx);
+				await ReconcileObjectAsync(work.SourceBucket, key, work.PassThrough, ctx);
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
 			{
@@ -125,13 +116,25 @@ public sealed class ScrubberProcessor(
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				if (work.FullHeal)
-					await HealGroupObjectsAsync(work.Scope, objectWork.Keys, ctx);
 				_ = await reconciler.ReconcileGroupAsync(work.Scope, ctx);
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
 			{
 				_logger.LogError(e, "Group reconcile for {Scope} failed; failing its {Count} contributing message(s)", work.Scope, work.MessageIds.Count);
+				failedIds.UnionWith(work.MessageIds);
+			}
+		}
+
+		foreach (var work in shallowWork.Values)
+		{
+			ctx.ThrowIfCancellationRequested();
+			try
+			{
+				await shallowReconciler.ReconcileAsync(work.Kind, work.Scopes.Values, ctx);
+			}
+			catch (Exception e) when (e is not OperationCanceledException)
+			{
+				_logger.LogError(e, "Shallow map reconcile for the {Kind} tree failed; failing its {Count} contributing message(s)", work.Kind, work.MessageIds.Count);
 				failedIds.UnionWith(work.MessageIds);
 			}
 		}
@@ -145,18 +148,25 @@ public sealed class ScrubberProcessor(
 		string sourceBucket,
 		string key,
 		Dictionary<string, ObjectWork> objectWork,
-		Dictionary<string, GroupWork> groupWork)
+		Dictionary<string, GroupWork> groupWork,
+		Dictionary<ChangelogScopeKind, ShallowWork> shallowWork)
 	{
 		var hasScope = ChangelogScope.TryFromKey(key, out var scope);
 
-		// The registry pass-through is retired: registry keys are never copied or deleted. Old CLI
-		// versions still write private manifests (and Phase 3's cleanup will delete them) — those
-		// events only schedule a reconcile of the group, which derives the public manifest from
-		// public state.
 		if (ChangelogKeys.IsRegistry(key))
 		{
-			if (hasScope)
-				_ = AddGroup(groupWork, scope!, messageId);
+			if (!hasScope)
+				return;
+
+			// The two trees part ways here. Bundle manifests are reconciler-owned: the event only
+			// schedules a group reconcile, so client-authored JSON never reaches the public bucket
+			// for the tree consumers enumerate. Pool manifests stay client-authored pass-through —
+			// `changelog bundle` still enumerates a pool through its manifest today, and 404-probing
+			// only works once entries are guaranteed one-per-PR — until Phase 3 retires them.
+			if (scope!.Kind == ChangelogScopeKind.Bundle)
+				AddGroup(groupWork, scope, messageId);
+			else
+				AddObject(objectWork, key, sourceBucket, messageId, passThrough: true);
 			return;
 		}
 
@@ -173,19 +183,33 @@ public sealed class ScrubberProcessor(
 			return;
 		}
 
+		AddObject(objectWork, key, sourceBucket, messageId, passThrough: false);
+
+		if (!hasScope)
+			return;
+
+		if (scope!.Kind == ChangelogScopeKind.Bundle)
+			AddGroup(groupWork, scope, messageId);
+		AddShallow(shallowWork, scope, messageId);
+	}
+
+	private static void AddObject(
+		Dictionary<string, ObjectWork> objectWork,
+		string key,
+		string sourceBucket,
+		string messageId,
+		bool passThrough)
+	{
 		if (!objectWork.TryGetValue(key, out var work))
 		{
-			work = new ObjectWork(sourceBucket);
+			work = new ObjectWork(sourceBucket, passThrough);
 			objectWork[key] = work;
 		}
 		work.SourceBucket = sourceBucket;
 		_ = work.MessageIds.Add(messageId);
-
-		if (hasScope)
-			_ = AddGroup(groupWork, scope!, messageId);
 	}
 
-	private static GroupWork AddGroup(Dictionary<string, GroupWork> groupWork, ChangelogScope scope, string messageId)
+	private static void AddGroup(Dictionary<string, GroupWork> groupWork, ChangelogScope scope, string messageId)
 	{
 		if (!groupWork.TryGetValue(scope.Prefix, out var work))
 		{
@@ -193,44 +217,26 @@ public sealed class ScrubberProcessor(
 			groupWork[scope.Prefix] = work;
 		}
 		_ = work.MessageIds.Add(messageId);
-		return work;
 	}
 
-	/// <summary>
-	/// The full group heal an explicit reconcile message asks for: object-level reconcile over the
-	/// union of both buckets' group listings — scrub/copy what is live in the private bucket,
-	/// delete what is not — so lost or DLQ-expired scrub events are recoverable by message. Keys
-	/// already reconciled by this batch's own S3 events are skipped.
-	/// </summary>
-	private async Task HealGroupObjectsAsync(ChangelogScope scope, IReadOnlyCollection<string> alreadyReconciled, Cancel ctx)
+	private static void AddShallow(Dictionary<ChangelogScopeKind, ShallowWork> shallowWork, ChangelogScope scope, string messageId)
 	{
-		if (privateBucketName is null)
+		if (!shallowWork.TryGetValue(scope.Kind, out var work))
 		{
-			throw new InvalidOperationException(
-				"A reconcile message arrived but no private bucket is configured (PRIVATE_BUCKET_NAME); cannot perform a full group heal.");
+			work = new ShallowWork(scope.Kind);
+			shallowWork[scope.Kind] = work;
 		}
-
-		var privateObjects = await S3GroupListing.ListImmediateYamlObjectsAsync(s3Client, privateBucketName, scope, ctx);
-		var publicObjects = await S3GroupListing.ListImmediateYamlObjectsAsync(s3Client, publicBucketName, scope, ctx);
-		var keys = new SortedSet<string>(StringComparer.Ordinal);
-		keys.UnionWith(privateObjects.Select(o => o.Key));
-		keys.UnionWith(publicObjects.Select(o => o.Key));
-
-		_logger.LogInformation("Full heal of {Scope}: {Count} key(s) in the union of both buckets", scope, keys.Count);
-
-		foreach (var key in keys.Where(k => !alreadyReconciled.Contains(k)))
-		{
-			ctx.ThrowIfCancellationRequested();
-			await ReconcileObjectAsync(privateBucketName, key, ctx);
-		}
+		work.Scopes[scope.Group] = scope;
+		_ = work.MessageIds.Add(messageId);
 	}
 
 	/// <summary>
 	/// Order-independent object reconcile: the event type is ignored; the private bucket's current
-	/// state decides between scrub-and-copy and delete. A stale <c>ObjectRemoved</c> arriving
-	/// after a recreate re-copies the live object instead of deleting it.
+	/// state decides between copy and delete. A stale <c>ObjectRemoved</c> arriving after a
+	/// recreate re-copies the live object instead of deleting it. YAML content is scrubbed on the
+	/// way through; a pass-through pool manifest is copied verbatim.
 	/// </summary>
-	private async Task ReconcileObjectAsync(string sourceBucket, string key, Cancel ctx)
+	private async Task ReconcileObjectAsync(string sourceBucket, string key, bool passThrough, Cancel ctx)
 	{
 		_metrics.IncrementObjectReconciles();
 
@@ -241,9 +247,17 @@ public sealed class ScrubberProcessor(
 			var snapshot = await TryGetPrivateObject(sourceBucket, key, ctx);
 			if (snapshot is { } source)
 			{
-				var scrubbed = await scrubber.ScrubAsync(key, source.Content, ctx);
-				await PutPublicObject(key, scrubbed, ctx);
-				_logger.LogInformation("Scrubbed and wrote {Key} to public bucket", key);
+				if (passThrough)
+				{
+					await PutPublicObject(key, source.Content, "application/json", ctx);
+					_logger.LogInformation("Copied {Key} to public bucket (pass-through)", key);
+				}
+				else
+				{
+					var scrubbed = await scrubber.ScrubAsync(key, source.Content, ctx);
+					await PutPublicObject(key, scrubbed, "application/yaml", ctx);
+					_logger.LogInformation("Scrubbed and wrote {Key} to public bucket", key);
+				}
 			}
 			else
 			{
@@ -311,13 +325,13 @@ public sealed class ScrubberProcessor(
 		}
 	}
 
-	private async Task PutPublicObject(string key, string content, Cancel ctx) =>
+	private async Task PutPublicObject(string key, string content, string contentType, Cancel ctx) =>
 		_ = await s3Client.PutObjectAsync(new PutObjectRequest
 		{
 			BucketName = publicBucketName,
 			Key = key,
 			ContentBody = content,
-			ContentType = "application/yaml"
+			ContentType = contentType
 		}, ctx);
 
 	private async Task DeletePublicObject(string key, Cancel ctx)

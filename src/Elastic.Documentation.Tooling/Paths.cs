@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Security;
 using Elastic.Documentation.Extensions;
 
 // ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
@@ -17,86 +18,61 @@ public static class Paths
 	public static readonly DirectoryInfo ApplicationData = GetApplicationFolder();
 
 	/// <summary>
-	/// Walks up from <paramref name="startPath"/> until a <c>.git</c> directory or file
-	/// (worktree pointer) is found and returns that ancestor. Returns <paramref name="startPath"/>
-	/// itself when no git root is found within the allowed depth.
-	/// </summary>
-	/// <remarks>
-	/// Depth protection: in release builds the <c>.git</c> anchor must be at most 1 directory
-	/// above <paramref name="startPath"/> — documentation is not expected to live deep inside
-	/// a repo. In debug builds a deeper <c>.git</c> is accepted when a <c>*.slnx</c> file is
-	/// adjacent (developer running the binary from an IDE output directory).
-	/// </remarks>
-	public static string FindGitRoot(string startPath)
-	{
-		var resolved = Path.IsPathRooted(startPath) ? startPath : Path.GetFullPath(startPath);
-		var dir = Directory.Exists(resolved)
-			? new DirectoryInfo(resolved)
-			: new DirectoryInfo(Path.GetDirectoryName(resolved) ?? resolved);
-		var startDir = dir.FullName; // always a directory, used as fallback
-		var depth = 0;
-		while (dir != null)
-		{
-			var hasGit = dir.GetDirectories(".git").Length > 0 || dir.GetFiles(".git").Length > 0;
-			if (hasGit)
-			{
-#if DEBUG
-				if (depth <= 1 || dir.GetFiles("*.slnx").Length > 0)
-					return dir.FullName;
-#else
-				if (depth <= 1)
-					return dir.FullName;
-#endif
-				// .git found but too deep — stop searching
-				return startDir;
-			}
-			depth++;
-			dir = dir.Parent;
-		}
-		return startDir;
-	}
-
-	/// <summary>
 	/// Walks up from <paramref name="startDirectory"/> via <see cref="IFileSystem"/> until
 	/// a <c>.git</c> directory or file (worktree pointer) is found.
 	/// Returns <see langword="null"/> if no git root is found within the allowed depth.
 	/// </summary>
-	/// <param name="startDirectory">Directory to start the upward search from.</param>
-	/// <param name="ceiling">
-	/// Optional upper bound for the search. When provided, the walk may reach <paramref name="ceiling"/>
-	/// but never goes above it, replacing the fixed depth limit with a directory boundary.
-	/// When <see langword="null"/>, the original depth-1 limit applies.
+	/// <param name="startDirectory">Directory to start the upward search from (typically the docset anchor).</param>
+	/// <param name="maxParents">
+	/// Maximum number of parent directories to walk above <paramref name="startDirectory"/>
+	/// (default: 1, i.e. self or one parent). The depth is 0-based: at depth 0 we check
+	/// <paramref name="startDirectory"/> itself; at depth 1 its immediate parent, and so on.
 	/// </param>
 	/// <remarks>
-	/// Without a ceiling the same depth protection as <see cref="FindGitRoot(string)"/> applies.
-	/// With a ceiling the caller guarantees the boundary is trustworthy (e.g. the working directory
-	/// root), so any <c>.git</c> found at or below it is accepted regardless of depth.
+	/// In DEBUG builds a <c>.git</c> found beyond <paramref name="maxParents"/> is still accepted
+	/// when it has an adjacent <c>*.slnx</c> file — this covers the developer case of running a
+	/// binary from an IDE output directory (e.g. <c>bin/Debug/net10.0/</c>) where the solution
+	/// root is several levels up.
 	/// </remarks>
-	public static IDirectoryInfo? FindGitRoot(IDirectoryInfo startDirectory, IDirectoryInfo? ceiling = null)
+	public static IDirectoryInfo? FindGitRoot(IDirectoryInfo startDirectory, int maxParents = 1)
 	{
 		var directory = startDirectory;
 		var depth = 0;
 		while (directory != null)
 		{
-			if (ceiling is not null && !directory.IsSubPathOf(ceiling))
-				return null;
-
-			var hasGit = directory.GetDirectories(".git").Length > 0
-					  || directory.GetFiles(".git").Length > 0;
-			if (hasGit)
+			bool hasGit;
+			try
 			{
-				if (ceiling is not null)
-					return directory;
-#if DEBUG
-				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
-					return directory;
-#else
-				if (depth <= 1)
-					return directory;
-#endif
-				// .git found but too deep
+				hasGit = directory.GetDirectories(".git").Length > 0
+						  || directory.GetFiles(".git").Length > 0;
+			}
+			catch (DirectoryNotFoundException)
+			{
+				// Directory does not exist in the (mock) filesystem — no .git here.
+				// Continue up the tree so the caller can decide.
+				hasGit = false;
+			}
+			catch (SecurityException)
+			{
+				// A ScopedFileSystem is blocking access to this directory (e.g. the scope root
+				// is the anchor itself so the parent is outside scope). Stop searching.
 				return null;
 			}
+
+			if (hasGit)
+			{
+#if DEBUG
+				if (depth <= maxParents || directory.GetFiles("*.slnx").Length > 0)
+					return directory;
+#else
+				if (depth <= maxParents)
+					return directory;
+#endif
+				// .git found but too deep — stop searching
+				return null;
+			}
+			if (depth >= maxParents)
+				return null;
 			depth++;
 			directory = directory.Parent;
 		}
@@ -120,15 +96,8 @@ public static class Paths
 					  || directory.GetFiles(".git").Length > 0;
 			if (hasGit)
 			{
-				// Only accept .git beyond 1 level up in debug when a *.slnx is adjacent
-				// (developer running from IDE output directory such as bin/Debug/net10.0/).
-#if DEBUG
-				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
-					return directory;
-#else
 				if (depth <= 1)
 					return directory;
-#endif
 				// .git found but too deep — stop without adopting it
 				return cwd;
 			}
@@ -213,6 +182,61 @@ public static class Paths
 		var docsFolder = configurationPath.Directory ?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 
 		return (docsFolder, configurationPath);
+	}
+
+	/// <summary>
+	/// Resolves the real git directory from a worktree pointer (<c>.git</c> file containing
+	/// <c>gitdir: &lt;path&gt;</c>). Handles both absolute and relative gitdir paths, and follows
+	/// <c>commondir</c> to the shared object store when present (linked/nested worktree).
+	/// </summary>
+	/// <param name="fileSystem">The filesystem to read through.</param>
+	/// <param name="gitFile">The <c>.git</c> file (worktree pointer) to read.</param>
+	/// <param name="gitDir">
+	/// On success, the resolved git directory (<c>.git/</c> or the worktrees subdirectory's
+	/// parent when a <c>commondir</c> is present).
+	/// </param>
+	/// <returns><see langword="true"/> when the pointer was read and resolved; <see langword="false"/>
+	/// when the file is absent, malformed, or the resolved path does not exist.</returns>
+	public static bool TryReadGitDirPointer(IFileSystem fileSystem, IFileInfo gitFile, out IDirectoryInfo? gitDir)
+	{
+		gitDir = null;
+		if (!fileSystem.File.Exists(gitFile.FullName))
+			return false;
+
+		var text = fileSystem.File.ReadAllText(gitFile.FullName);
+		var firstLineBreak = text.IndexOfAny(['\r', '\n']);
+		var firstLine = (firstLineBreak >= 0 ? text[..firstLineBreak] : text).Trim();
+		if (!firstLine.StartsWith("gitdir:", StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		var rawGitDir = firstLine["gitdir:".Length..].Trim();
+		if (string.IsNullOrEmpty(rawGitDir))
+			return false;
+
+		// Resolve relative paths against the directory that contains the .git file
+		var containingDir = gitFile.Directory?.FullName ?? string.Empty;
+		var resolvedGitDir = fileSystem.Path.IsPathFullyQualified(rawGitDir)
+			? rawGitDir
+			: fileSystem.Path.GetFullPath(fileSystem.Path.Combine(containingDir, rawGitDir));
+
+		if (!fileSystem.Directory.Exists(resolvedGitDir))
+			return false;
+
+		// Follow commondir to reach the shared .git root (linked/nested worktrees)
+		var commonDirFile = fileSystem.Path.Combine(resolvedGitDir, "commondir");
+		if (fileSystem.File.Exists(commonDirFile))
+		{
+			var commonDirRelative = fileSystem.File.ReadAllText(commonDirFile).Trim();
+			var commonDir = fileSystem.Path.IsPathFullyQualified(commonDirRelative)
+				? commonDirRelative
+				: fileSystem.Path.GetFullPath(fileSystem.Path.Combine(resolvedGitDir, commonDirRelative));
+
+			if (fileSystem.Directory.Exists(commonDir))
+				resolvedGitDir = commonDir;
+		}
+
+		gitDir = fileSystem.DirectoryInfo.New(resolvedGitDir);
+		return true;
 	}
 
 	/// <summary>Validates that <paramref name="value"/> is a single path segment with no separators or traversal components.

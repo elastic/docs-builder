@@ -54,4 +54,13 @@ public record DocumentationDocument : SearchDocumentBase
 	/// </summary>
 	[JsonPropertyName("content_last_updated")]
 	public DateTimeOffset ContentLastUpdated { get; set; }
+
+	/// <summary>
+	/// GitHub blob URL for the Markdown source file. Null when git context is unavailable
+	/// (e.g. OpenAPI-exported API reference pages until Elastic.ApiExplorer lands).
+	/// </summary>
+	[Keyword]
+	[JsonPropertyName("source_url")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? SourceUrl { get; set; }
 }

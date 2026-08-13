@@ -16,10 +16,10 @@ using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.IntegrationTests;
 
@@ -47,9 +47,8 @@ public class IncrementalDeployRoundTripTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new DiagnosticsCollector([]);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedWriteFs, null, outputDir);
+		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fs);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs, null, outputDir);
 
 		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
 	}
@@ -60,13 +59,12 @@ public class IncrementalDeployRoundTripTests
 		var outputDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
 		var (fs, s3, xfer, gh, svc) = Arrange(outputDir);
 		var collector = new DiagnosticsCollector([]);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
+		var codexFs = CheckoutsFileSystem.FromWorkingDirectory(fs);
 		// CodexContext only stores configurationPath — it never reads from it —
 		// so we can point to any path without adding it to the mock FS.
 		var codexConfig = new CodexConfiguration { Environment = "dev" };
 		var configFile = fs.FileInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
-		var context = new CodexContext(codexConfig, configFile, collector, scopedFs, scopedWriteFs, null, outputDir);
+		var context = new CodexContext(codexConfig, configFile, collector, codexFs, null, outputDir);
 
 		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
 	}
@@ -227,11 +225,10 @@ public class IncrementalDeployExcludeTests
 
 		var svc = new IncrementalDeployService(new LoggerFactory(), gh, s3, xfer, etagCalculator);
 		var collector = new DiagnosticsCollector([]);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
+		var codexFs2 = CheckoutsFileSystem.FromWorkingDirectory(fs);
 		var codexConfig = new CodexConfiguration { Environment = "dev" };
 		var configFile = fs.FileInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
-		var context = new CodexContext(codexConfig, configFile, collector, scopedFs, scopedWriteFs, null, outputDir);
+		var context = new CodexContext(codexConfig, configFile, collector, codexFs2, null, outputDir);
 
 		var planPath = Path.Join(outputDir, "sync-plan.json");
 		var planOk = await svc.Plan(

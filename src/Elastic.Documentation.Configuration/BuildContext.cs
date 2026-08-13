@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
@@ -22,46 +23,42 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 		.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
 
-	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
-	public IReadOnlySet<Exporter> AvailableExporters { get; }
+	/// <summary>The resolved documentation filesystem. All other path/scope properties are computed from this.</summary>
+	public DocumentationFileSystem FileSystem { get; }
 
-	public IDirectoryInfo? DocumentationCheckoutDirectory { get; }
-	public IDirectoryInfo DocumentationSourceDirectory { get; }
-	public IDirectoryInfo OutputDirectory { get; }
+	/// <summary>
+	/// Read scope. Satisfies <see cref="IDocumentationSetContext"/>.
+	/// Use <see cref="FileSystem"/> directly when the richer type is needed.
+	/// </summary>
+	public IDocumentationFileSystem ReadFileSystem => FileSystem.Read;
+
+	/// <summary>Write scope. Does not permit <c>.git</c> writes.</summary>
+	public DocumentationWriteFileSystem WriteFileSystem => FileSystem.Write;
+
+	public IReadOnlySet<Exporter> AvailableExporters { get; init; }
+
+	public IDirectoryInfo DocumentationCheckoutDirectory => FileSystem.Paths.CheckoutDirectory;
+	public IDirectoryInfo DocumentationSourceDirectory => FileSystem.Paths.SourceDirectory;
+	public IDirectoryInfo OutputDirectory => FileSystem.Paths.OutputDirectory;
+	public IFileInfo ConfigurationPath => FileSystem.Paths.ConfigurationPath;
+	public GitCheckoutInformation Git => FileSystem.Paths.Git;
 
 	public ConfigurationFile Configuration { get; private set; }
-
 	public DocumentationSetFile ConfigurationYaml { get; set; }
 
 	public VersionsConfiguration VersionsConfiguration { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 	public DocumentationEndpoints Endpoints { get; }
-
 	public ProductsConfiguration ProductsConfiguration { get; }
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 	public SearchConfiguration SearchConfiguration { get; }
-
-	public IFileInfo ConfigurationPath { get; }
-
-	public GitCheckoutInformation Git { get; }
-
 	public IEnvironmentVariables Environment { get; }
-
 	public IDiagnosticsCollector Collector { get; }
-
 	public bool Force { get; init; }
-
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
-
-	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
-
 	public GoogleTagManagerConfiguration GoogleTagManager { get; init; }
-
 	public OptimizelyConfiguration Optimizely { get; init; }
-
-	// This property is used for the canonical URL
 	public Uri? CanonicalBaseUrl { get; init; }
 
 	public string? UrlPathPrefix
@@ -73,32 +70,20 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	/// <summary>Site root path for HTMX (e.g. codex root). When set, overrides derivation from UrlPathPrefix.</summary>
 	public string? SiteRootPath { get; init; }
 
+	/// <summary>
+	/// Primary constructor. Pass a resolved <see cref="DocumentationFileSystem"/> from
+	/// <see cref="DocumentationFileSystem.Resolve(IDirectoryInfo?, DocumentationScopeOptions?)"/>.
+	/// </summary>
 	public BuildContext(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem fileSystem,
+		DocumentationFileSystem fileSystem,
 		IConfigurationContext configurationContext,
-		IEnvironmentVariables? environment = null
-	)
-		: this(collector, fileSystem, fileSystem, configurationContext, ExportOptions.Default, null, null, environment: environment)
-	{
-	}
-
-	public BuildContext(
-		IDiagnosticsCollector collector,
-		ScopedFileSystem readFileSystem,
-		ScopedFileSystem writeFileSystem,
-		IConfigurationContext configurationContext,
-		IReadOnlySet<Exporter> availableExporters,
-		string? source = null,
-		string? output = null,
-		GitCheckoutInformation? gitCheckoutInformation = null,
 		IEnvironmentVariables? environment = null
 	)
 	{
 		Collector = collector;
-		ReadFileSystem = readFileSystem;
-		WriteFileSystem = writeFileSystem;
-		AvailableExporters = availableExporters;
+		FileSystem = fileSystem;
+		AvailableExporters = ExportOptions.Default;
 		Environment = environment ?? SystemEnvironmentVariables.Instance;
 		SearchConfiguration = configurationContext.SearchConfiguration;
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
@@ -107,37 +92,14 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 		Endpoints = configurationContext.Endpoints;
 
-		var rootFolder = !string.IsNullOrWhiteSpace(source)
-			? ReadFileSystem.DirectoryInfo.New(source)
-			: ReadFileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName));
+		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
+		Optimizely = new OptimizelyConfiguration { Enabled = false };
 
-		(DocumentationSourceDirectory, ConfigurationPath) = Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
-
-		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory, ceiling: rootFolder);
-
-		OutputDirectory = !string.IsNullOrWhiteSpace(output)
-			? WriteFileSystem.DirectoryInfo.New(output)
-			: WriteFileSystem.DirectoryInfo.New(Path.Join(rootFolder.FullName, Path.Join(".artifacts", "docs", "html")));
-
-		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
-			DocumentationSourceDirectory = ConfigurationPath.Directory!;
-
-		Git = gitCheckoutInformation ?? GitCheckoutInformationFactory.Create(DocumentationCheckoutDirectory, ReadFileSystem);
-
-		// Load and resolve the docset file, or create an empty one if it doesn't exist
 		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, readFileSystem)
+			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, fileSystem.Read)
 			: new DocumentationSetFile();
 
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
-		GoogleTagManager = new GoogleTagManagerConfiguration
-		{
-			Enabled = false
-		};
-		Optimizely = new OptimizelyConfiguration
-		{
-			Enabled = false
-		};
 	}
 
 	/// <summary>Re-reads docset.yml from disk and rebuilds the configuration. Used by the serve command on file changes.</summary>
@@ -145,7 +107,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	{
 		var previousFeatures = Configuration.Features;
 		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem)
+			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem)
 			: new DocumentationSetFile();
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;

@@ -1141,6 +1141,55 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
+	public async Task LoadChangelogConfiguration_WithPivotFeatures_ComputesLabelToFeaturesMapping()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  features:
+			    'feature:new-search-api':
+			      - "feature-flag:new-search-api"
+			      - ":Feature/NewSearchApi"
+			    'feature:legacy': "legacy-flag"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config.LabelToFeatures.Should().NotBeNull();
+			config.LabelToFeatures.Should().ContainKey("feature-flag:new-search-api");
+			config.LabelToFeatures!["feature-flag:new-search-api"].Should().Be("feature:new-search-api");
+			config.LabelToFeatures.Should().ContainKey(":Feature/NewSearchApi");
+			config.LabelToFeatures[":Feature/NewSearchApi"].Should().Be("feature:new-search-api");
+			config.LabelToFeatures.Should().ContainKey("legacy-flag");
+			config.LabelToFeatures["legacy-flag"].Should().Be("feature:legacy");
+			config.Pivot?.Features.Should().NotBeNull();
+			config.Pivot!.Features.Should().ContainKey("feature:new-search-api");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
 	public async Task LoadChangelogConfiguration_WithPivotProducts_ProductSpecWithTarget_PreservesSpec()
 	{
 		// Arrange

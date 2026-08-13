@@ -13,8 +13,11 @@ namespace Elastic.Changelog.Uploading;
 /// </summary>
 /// <remarks>
 /// Stored at <c>bundle/{product}/registry.json</c> (bundle index) or
-/// <c>changelog/{org}/{repo}/{branch}/registry.json</c> (changelog-entry index) in the changelog bundles
-/// bucket. The scrubber Lambda mirrors it verbatim to the public bucket (pass-through).
+/// <c>changelog/{org}/{repo}/{branch}/registry.json</c> (changelog-entry index). Ownership differs
+/// per tree: public bundle indexes are produced by the scrubber Lambda's
+/// <see cref="Reconciliation.BundleRegistryReconciler"/> from public-bucket state, while
+/// changelog-entry indexes remain client-authored and are mirrored verbatim to the public bucket
+/// (pass-through) until Phase 3 of elastic/docs-eng-team#688 retires them.
 /// </remarks>
 public sealed record Registry
 {
@@ -72,20 +75,20 @@ public sealed record RegistryBundle
 	public string? Target { get; init; }
 
 	/// <summary>
-	/// S3 ETag of the bundle object as uploaded to the <em>private</em> bundles bucket (pre-scrub).
-	/// For single-part uploads smaller than
-	/// <see cref="Elastic.Documentation.Integrations.S3.S3EtagCalculator.PartSize"/> this is the MD5 of the body.
+	/// S3 ETag of the object in the bucket this manifest describes. For single-part uploads smaller
+	/// than <see cref="Elastic.Documentation.Integrations.S3.S3EtagCalculator.PartSize"/> this is
+	/// the MD5 of the body.
 	/// </summary>
 	/// <remarks>
-	/// Best-effort identity / change hint only. The public (CDN) object is produced by the changelog
-	/// scrubber Lambda, which rewrites any bundle that contains private references — so for scrubbed
-	/// bundles this value will <em>not</em> match the public object's ETag. Consumers MUST NOT use it
-	/// for integrity checks or HTTP cache validation against the public bucket; use the CDN response's
-	/// own ETag for that. It is safe to use to detect whether a bundle changed between manifest reads.
+	/// Whose ETag this is follows the manifest's producer. Bundle indexes written by the scrubber
+	/// Lambda's <see cref="Reconciliation.BundleRegistryReconciler"/> record the <em>public</em>
+	/// (post-scrub) object's ETag, valid for HTTP cache validation against the CDN. Client-authored
+	/// manifests — changelog-entry indexes, and everything in the private bucket — record the
+	/// <em>private</em> (pre-scrub) upload's ETag: a best-effort change hint that will <em>not</em>
+	/// match the public object for scrubbed content, so consumers MUST NOT use it for integrity
+	/// checks or cache validation there. Either way it is safe for detecting that an entry changed
+	/// between manifest reads.
 	/// </remarks>
-	// The snake_case policy would emit "e_tag"; the documented manifest format — and what the
-	// consumer-side ChangelogRegistryBundle reads — is "etag".
-	[JsonPropertyName("etag")]
 	public required string ETag { get; init; }
 }
 
