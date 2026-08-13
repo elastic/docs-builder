@@ -39,7 +39,7 @@
 		align-items: center;
 		gap: 10px 14px;
 		margin: 0 0 20px;
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		letter-spacing: 0.02em;
 	}
 	.hub-hero .hub-hero-eyebrow-label {
