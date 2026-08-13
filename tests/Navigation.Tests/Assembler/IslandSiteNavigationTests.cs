@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated.Node;
 
@@ -32,7 +33,7 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
-		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
@@ -65,7 +66,7 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
-		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
@@ -118,7 +119,7 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 			"""));
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
-		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 
 		// In isolated build: IsIsland is stored but RendersAsIsland() is false (no parent)
 		var isolatedNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
@@ -170,7 +171,7 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 			"""));
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
-		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
 		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
