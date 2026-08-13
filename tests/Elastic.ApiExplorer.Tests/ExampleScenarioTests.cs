@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.AspNetCore.Html;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -140,6 +141,58 @@ public class ExampleScenarioTests
 		scenarios.Should().ContainSingle();
 		scenarios[0].Title.Should().Be("Examples");
 		scenarios[0].CodeSamples.Should().Equal(samples);
+	}
+
+	[Fact]
+	public void EnsureResponseTabs_FillsStatusTabsWhenScenariosHaveNoResponses()
+	{
+		var samples = new[]
+		{
+			new CodeSample("Console", "DELETE /api/dashboards/{id}", "language-console")
+		};
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [], samples);
+		var responses = new OpenApiResponses
+		{
+			["200"] = new OpenApiResponse { Description = "deleted" },
+			["404"] = new OpenApiResponse
+			{
+				Description = "not found",
+				Content = new Dictionary<string, IOpenApiMediaType>
+				{
+					["application/json"] = new OpenApiMediaType
+					{
+						Schema = new OpenApiSchema { Type = JsonSchemaType.Object }
+					}
+				}
+			}
+		};
+
+		var withTabs = OperationPageModel.EnsureResponseTabs(scenarios, responses);
+
+		withTabs.Should().ContainSingle();
+		withTabs[0].Responses.Select(r => r.StatusCode).Should().Equal("200", "404");
+		withTabs[0].Responses[0].IsNoBody.Should().BeTrue();
+		withTabs[0].Responses[0].HasExampleBody.Should().BeFalse();
+		withTabs[0].Responses[1].IsNoBody.Should().BeFalse();
+		withTabs[0].ShowResponse.Should().BeTrue();
+	}
+
+	[Fact]
+	public void EnsureResponseTabs_DoesNotReplaceExistingResponseExamples()
+	{
+		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/ """{"ok":true}""", null, "200");
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [ok], []);
+		var responses = new OpenApiResponses
+		{
+			["200"] = new OpenApiResponse { Description = "ok" },
+			["400"] = new OpenApiResponse { Description = "bad" }
+		};
+
+		var withTabs = OperationPageModel.EnsureResponseTabs(scenarios, responses);
+
+		withTabs.Should().ContainSingle();
+		withTabs[0].Responses.Should().ContainSingle();
+		withTabs[0].Responses[0].JsonValue.Should().Contain("ok");
 	}
 
 	[Fact]

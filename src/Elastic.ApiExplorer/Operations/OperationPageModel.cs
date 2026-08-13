@@ -28,6 +28,15 @@ public record ExampleResponse
 	public required string StatusCode { get; init; }
 	public string? JsonValue { get; init; }
 	public string? ExternalValue { get; init; }
+
+	/// <summary>
+	/// When true, the OpenAPI response declares no content (e.g. 204). The rail shows
+	/// "No body" instead of "No example".
+	/// </summary>
+	public bool IsNoBody { get; init; }
+
+	public bool HasExampleBody =>
+		JsonValue is not null || !string.IsNullOrEmpty(ExternalValue);
 }
 
 /// <summary>
@@ -112,6 +121,7 @@ public partial record OperationPageModel
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
 	public required IReadOnlyCollection<OperationNavigationItem> Overloads { get; init; }
+	public bool HasMultipleOverloads => Overloads.Count > 1;
 	public required IReadOnlyList<IOpenApiParameter> PathParameters { get; init; }
 	public required IReadOnlyList<ApiQueryParameter> QueryParameters { get; init; }
 	public required string RequestContentType { get; init; }
@@ -137,11 +147,17 @@ public partial record OperationPageModel
 		var builder = new ApiPropertyTreeBuilder(document, options);
 
 		var codeSamples = OpenApiExtensionReader.ParseCodeSamples(operation);
+		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
+		if (codeSamples.Count == 0)
+			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers);
+
 		var requestExamples = MapExamples(
 			operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples,
 			options.RenderMarkdown);
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
-		var scenarios = BuildExampleScenarios(requestExamples, responseExamples, codeSamples);
+		var scenarios = EnsureResponseTabs(
+			BuildExampleScenarios(requestExamples, responseExamples, codeSamples),
+			operation.Responses);
 		var examplesAnchor = scenarios.Count > 0 ? "examples" : null;
 
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
@@ -159,7 +175,7 @@ public partial record OperationPageModel
 			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
-			Servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers,
+			Servers = servers,
 			Overloads = ResolveOverloads(context),
 			PathParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Path).ToArray() ?? [],
 			QueryParameters = (operation.Parameters ?? [])
@@ -415,6 +431,40 @@ public partial record OperationPageModel
 			slug = slug.Replace("--", "-", StringComparison.Ordinal);
 		return string.IsNullOrEmpty(slug) ? $"scenario-{index}" : slug;
 	}
+
+	/// <summary>
+	/// When scenarios have request/code samples but no response example bodies, attach
+	/// status-code tabs from the operation's declared responses so the rail still shows
+	/// "No body" / "No example" instead of omitting the response card.
+	/// </summary>
+	public static IReadOnlyList<ExampleScenario> EnsureResponseTabs(
+		IReadOnlyList<ExampleScenario> scenarios,
+		OpenApiResponses? responses)
+	{
+		if (scenarios.Count == 0 || responses is null || responses.Count == 0)
+			return scenarios;
+
+		if (scenarios.Any(static s => s.Responses.Count > 0))
+			return scenarios;
+
+		var fallback = BuildStatusOnlyResponses(responses);
+		if (fallback.Count == 0)
+			return scenarios;
+
+		return scenarios.Select(s => s with { Responses = fallback }).ToArray();
+	}
+
+	private static IReadOnlyList<ExampleResponse> BuildStatusOnlyResponses(OpenApiResponses responses) =>
+		responses
+			.Where(static pair => pair.Value is not null)
+			.Select(static pair => new ExampleResponse
+			{
+				StatusCode = pair.Key,
+				IsNoBody = pair.Value.Content is null || pair.Value.Content.Count == 0
+			})
+			.OrderBy(static r => StatusSortKey(r.StatusCode))
+			.ThenBy(static r => r.StatusCode, StringComparer.Ordinal)
+			.ToArray();
 
 	private static IReadOnlyList<ExampleDisplay> MapResponseExamples(
 		OpenApiResponses? responses,

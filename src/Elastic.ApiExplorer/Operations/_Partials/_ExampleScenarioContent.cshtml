@@ -57,9 +57,13 @@ else if (Model.ShowRequest && Model.RequestJson is not null)
 					{
 						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(CodeSample.HighlightClassForExampleBody(response.JsonValue), response.JsonValue)))
 					}
-					@if (!string.IsNullOrEmpty(response.ExternalValue))
+					else if (!string.IsNullOrEmpty(response.ExternalValue))
 					{
 						<p class="external-example">External example: <a href="@response.ExternalValue">@response.ExternalValue</a></p>
+					}
+					else
+					{
+						<p class="example-empty">@(response.IsNoBody ? "No body" : "No example")</p>
 					}
 				</div>
 			}

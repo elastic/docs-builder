@@ -1,6 +1,7 @@
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<OperationExamplesPanelModel>
-<aside id="api-examples-panel" class="api-examples-panel sidebar hidden shrink-0 lg:block w-full px-6 lg:px-0">
+@* Visibility/layout at ≥1024px comes from #api-examples-panel rules in api-docs.css (not Tailwind lg:). *@
+<aside id="api-examples-panel" class="api-examples-panel shrink-0 w-full px-6 max-[1023px]:hidden min-[1024px]:px-0">
 	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
 		@if (Model.Scenarios.Count > 0)
 		{
