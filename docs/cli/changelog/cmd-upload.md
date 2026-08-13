@@ -103,9 +103,10 @@ s3://{bucket}/bundle/{product}/{filename}                  # --artifact-type bun
 Changelog entries are written once under the authoring org/repo/branch. A bundle that applies to multiple products is uploaded to multiple keys — one per product.
 
 The command writes YAML objects only — it never writes a `registry.json`. The public
-manifests (`bundle/{product}/registry.json`, `changelog/{org}/{repo}/{branch}/registry.json`)
-are produced exclusively by the scrubber Lambda, reconciled from public bucket state on the S3
-events each upload emits. See
+`bundle/{product}/registry.json` manifests are produced exclusively by the scrubber Lambda,
+reconciled from public bucket state on the S3 events each upload emits; the
+`changelog/{org}/{repo}/{branch}/registry.json` pool manifests are legacy client-authored
+objects that only older CLI versions still write. See
 [Changelog bundle registry](/development/changelog-bundle-registry.md).
 
 When several repositories publish bundles for the same shared product (for example `cloud-serverless`), use a `{repo}-{dateOrVersion}.yaml` bundle filename convention so they don't overwrite each other under `bundle/{product}/`.

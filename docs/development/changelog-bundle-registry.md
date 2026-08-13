@@ -5,8 +5,8 @@ navigation_title: Changelog bundle registry
 # Changelog bundle registry and CDN delivery
 
 This page describes how changelog **bundles** are published to a public, CDN-fronted
-S3 bucket, how the per-product `registry.json` manifest is produced by the **scrubber
-Lambda** (the manifest's sole writer — see
+S3 bucket, how the per-product `registry.json` manifest and the shallow per-tree change
+maps are produced by the **scrubber Lambda** (their sole writer — see
 [elastic/docs-eng-team#688](https://github.com/elastic/docs-eng-team/issues/688)), and the
 `cdn:` mode for the [`{changelog}` directive](/syntax/changelog.md) that consumes
 bundles directly from the CDN instead of from a local folder.
@@ -29,20 +29,21 @@ copies, no cross-repo file syncing.
 flowchart LR
     CI["Client CI<br/>(docs-actions)"] -->|"changelog upload<br/>(YAML objects only)"| Private["Private S3 bucket<br/>bundle/{product}/*.yaml<br/>changelog/{org}/{repo}/{branch}/*.yaml"]
     Private -->|"s3:ObjectCreated / ObjectRemoved<br/>→ SQS"| Scrubber["Changelog scrubber<br/>Lambda"]
-    Scrubber -->|"scrub + copy/delete,<br/>then reconcile registry.json<br/>from public listing"| Public["Public S3 bucket<br/>+ CloudFront CDN<br/>(incl. registry.json)"]
+    Scrubber -->|"scrub + copy/delete,<br/>then reconcile bundle registry.json<br/>+ shallow maps from public listing"| Public["Public S3 bucket<br/>+ CloudFront CDN<br/>(incl. registry.json)"]
     Public -->|"reads via CDN"| Directive["{changelog} directive<br/>(cdn: mode)"]
 ```
 
 1. **Uploader** — `changelog upload --target s3` (invoked by the docs-actions changelog
    upload workflow) writes bundle YAML to `bundle/{product}/{file}` and changelog-entry YAML
    to `changelog/{org}/{repo}/{branch}/{file}` in the **private** bucket. That is all it does:
-   it never writes a registry (there is no private registry at all).
+   it never writes a `registry.json` (see [Ownership per tree](#ownership-per-tree)).
 2. **Scrubber Lambda (the registry's sole producer)** — S3 events from the private bucket are
    *triggers, not instructions*: for each affected key the Lambda reconciles the public object
    against current private-bucket state (present → scrub and copy; absent → delete the public
    copy), then rebuilds the affected group's `registry.json` from the **public bucket's actual
    listing** (`registry = f(state)`, never `f(event)`). Any successful reconcile repairs *all*
-   accumulated drift in the group, not just the change that triggered it.
+   accumulated drift in the group, not just the change that triggered it. The touched tree's
+   [shallow change map](#shallow-maps) is patched from the same listing pass.
 3. **Consumer** — for each product declared under `release_notes` in `docset.yml`, docs-builder
    reads `bundle/{product}/registry.json` from the CDN at build startup and fetches each listed
    bundle; the `{changelog}` directive in `cdn:` mode then renders from the prefetched result.
@@ -55,9 +56,25 @@ cacheable manifest at a predictable key that lists exactly which bundles exist f
 
 ## `registry.json` format
 
-Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{org}/{repo}/{branch}/registry.json`
-(changelog-entry index), **in the public bucket only** — no private registry exists.
-Serialized with `snake_case` keys.
+Both indexes share this schema, serialized with `snake_case` keys.
+
+### Ownership per tree [ownership-per-tree]
+
+The two trees part ways on who writes the manifest
+(the [2026-08-10 update on elastic/docs-eng-team#688](https://github.com/elastic/docs-eng-team/issues/688)
+narrowed reconciliation to the bundle tree):
+
+- **Bundle index** — `bundle/{product}/registry.json`, **public bucket only**, produced
+  exclusively by the scrubber Lambda's `BundleRegistryReconciler`. This is the manifest the
+  `{changelog}` directive and external CDN consumers enumerate, and the subject of the rest of
+  this page.
+- **Changelog-entry index** — `changelog/{org}/{repo}/{branch}/registry.json`, a **legacy
+  client-authored pass-through**: the current `changelog upload` never writes one, but manifests
+  written by older CLI versions are still mirrored verbatim from the private bucket, because
+  [`changelog bundle` entry sourcing](#entry-sourcing) still enumerates a pool through its
+  manifest. It is *not* reconciled — its `producer` is null and its recorded `etag` is the old
+  pre-scrub private-object hash (consumers ignore it). It goes away entirely once release-note
+  discovery starts from PR lists (RFC [elastic/docs-eng-team#698](https://github.com/elastic/docs-eng-team/issues/698)).
 
 ```json
 {
@@ -75,7 +92,7 @@ Serialized with `snake_case` keys.
 | Field | Meaning |
 |---|---|
 | `schema_version` | Bumped when consumers must change their parser. A manifest declaring a *newer* schema than the reconciler understands is reported and left untouched, never downgraded. |
-| `producer` | The reconcile algorithm version that wrote the manifest (`RegistryReconciler.Producer`). A mismatch forces a full metadata recompute and a rewrite even when entries come out identical — this is how metadata-logic fixes roll out to every group. Consumers should ignore it. |
+| `producer` | The reconcile algorithm version that wrote the manifest (`BundleRegistryReconciler.Producer`, currently `changelog-scrubber-reconcile/1`). A mismatch forces a full metadata recompute and a rewrite even when entries come out identical — this is how metadata-logic fixes roll out to every group. Null on legacy client-written manifests. Consumers should ignore it. |
 | `product` | Grouping identifier — the product for a bundle index (`bundle/{product}/…`) or the `{org}/{repo}/{branch}` prefix for a changelog-entry index (`changelog/{org}/{repo}/{branch}/…`). |
 | `generated_at` | UTC timestamp of the last reconcile that wrote the manifest. Never the only thing that changes — a reconcile whose entries are identical skips the write. |
 | `bundles[].file` | Bundle file name, resolved at `bundle/{product}/{file}` (or entry file at `changelog/{org}/{repo}/{branch}/{file}` for the entry index). |
@@ -93,26 +110,58 @@ for a product that was declared under `release_notes` but never published — th
 remove the declaration), while a manifest with an empty `bundles` list would read as a valid
 zero-bundle state. The reconciler deliberately restores the former.
 
+## Shallow per-tree change maps [shallow-maps]
+
+Alongside the per-group manifests, the scrubber maintains one **shallow map per tree**, at the
+tree roots: `bundle/registry.json` and `changelog/registry.json` — not to be confused with the
+per-group `bundle/{product}/registry.json` one level down. Each is a flat JSON object mapping
+every folder (a product, or an `{org}/{repo}/{branch}` pool) to an opaque change token:
+
+```json
+{
+  "elastic/elasticsearch/main": "9c01f2…",
+  "elastic/kibana/main": "3f2ab8…"
+}
+```
+
+The token is a digest over the folder's full sorted file/ETag listing — deliberately *not* the
+last-touched object's ETag, which goes stale when an *older* object is deleted (the newest
+object, and therefore the value, would not change). Consumers must treat it as opaque: compare,
+never parse.
+
+The maps exist for **cache opt-out only**: a consumer that caches a folder's content can GET one
+small object and skip the folder entirely when its token is unchanged. They are not a discovery
+mechanism — they list folders, not files. Consumer-side adoption is tracked in
+[elastic/docs-builder#3801](https://github.com/elastic/docs-builder/pull/3801).
+
+Like the group reconcile, the maps are `f(state)`: touched folders are re-listed and the map is
+patched with optimistic concurrency (`ShallowRegistryReconciler`). An absent or unparseable map
+is rebuilt from a full tree listing — which is also how the maps were seeded on first deploy.
+
 ## Producer details: the scrubber Lambda reconciler
 
-The manifest is produced exclusively by the scrubber Lambda's `RegistryReconciler`
-(`Elastic.Changelog/Reconciliation/`). S3 event notifications are at-least-once and can arrive
-out of order, so the handler never acts on an event's *type* — an event only means "this key
-may have changed":
+The bundle manifest is produced exclusively by the scrubber Lambda's `BundleRegistryReconciler`
+(`Elastic.Changelog/Reconciliation/`; the handler pipeline is `ScrubberProcessor`). S3 event
+notifications are at-least-once and can arrive out of order, so the handler never acts on an
+event's *type* — an event only means "this key may have changed":
 
 1. **Object-level reconcile** — GET the key from the private bucket: present → scrub the
    *current* content and PUT to public; 404 → conditionally delete the public copy. After the
    write, a HEAD re-validates that the private object still matches the snapshot the write was
    derived from, redoing the reconcile if a concurrent invocation raced it.
-2. **Group reconcile** — list the group's public prefix (`/`-delimited so a branch containing
-   `/` doesn't sweep nested pools; paginated), reuse entries whose recorded ETag still matches
-   the listing, GET and recompute the rest (amends always recomputed), and write the manifest
-   back. Within an SQS batch this work is coalesced: one object reconcile per distinct key, one
-   group reconcile per distinct group.
+2. **Group reconcile** (`bundle/{product}/` keys only — the pool tree has none) — list the
+   group's public prefix (paginated), reuse entries whose recorded ETag still matches the
+   listing, GET and recompute the rest (amends always recomputed), and write the manifest back.
+3. **Shallow-map reconcile** — patch the touched tree's
+   [folder→token map](#shallow-maps) from the same public listings.
 
-Registry keys themselves are never copied or deleted — a `registry.json` event from an old CLI
-only schedules a group reconcile. Client-authored JSON therefore never reaches the public
-surface uninspected.
+Within an SQS batch this work is coalesced: one object reconcile per distinct key, one group
+reconcile per distinct group, one shallow-map reconcile per touched tree.
+
+Registry-key events split by tree. A **bundle** manifest is never copied or deleted — the event
+only schedules the group reconcile, so client-authored JSON never reaches the tree consumers
+enumerate. A **pool** manifest is mirrored verbatim (the
+[legacy pass-through](#ownership-per-tree)). Any other `.json` key is skipped with a warning.
 
 ### Concurrency: optimistic, conditional writes
 
@@ -142,28 +191,22 @@ operations, and a reconcile can fail between them. The guarantee is therefore:
 Consumers must tolerate the convergence window: the manifest may briefly reference a bundle
 that is not yet (or no longer) on the public bucket — treat a listed-but-missing bundle as
 non-fatal (skip + warn), not an error. A bundle that fails scrubbing (private references that
-cannot be allowlisted) is never written to the public bucket; its message lands in the DLQ and
-alarms (see the runbook in `elastic/docs-eng-team`), and the manifest — describing actual
-public state — never lists it.
+cannot be allowlisted) is never written to the public bucket; its message lands in the DLQ
+(alerting and the triage/redrive runbook are tracked in
+[elastic/docs-eng-team#692](https://github.com/elastic/docs-eng-team/pull/692)), and the
+manifest — describing actual public state — never lists it.
 
-### Operator tooling: `registry reconcile` and `registry verify`
+### Out-of-band drift repair
 
 Failures no longer surface in any CI log, and drift can also be introduced out-of-band (manual
-S3 operations, lost events). Two CLI commands cover diagnosis and repair — see the
-[CLI reference](/cli/changelog/registry/index.md):
-
-- **`changelog registry verify`** (read-only) compares each group's public manifest against
-  what a reconcile of the current public listing would write, reporting divergence as
-  `Missing` / `Stale` / `Corrupt` / `ObjectDivergent` (`UnsupportedSchema` reported
-  distinctly). Non-zero exit on any divergence — it is the cutover gate and the standing
-  drift-diagnosis tool.
-- **`changelog registry reconcile`** never touches S3 itself: it sends explicit, versioned
-  reconcile messages to the scrubber queue
-  (`{"kind":"reconcile","version":1,"scope":"bundle"|"changelog","group":"…","correlation_id":"…"}`).
-  On receipt the Lambda performs a **full group heal**: object-level reconcile over the union
-  of both buckets' group listings, then the group reconcile — which makes even a lost or
-  DLQ-expired scrub event recoverable. Group discovery enumerates both buckets so orphan
-  public groups are healed too.
+S3 operations, lost events). There is deliberately **no operator CLI**: the planned
+`changelog registry reconcile`/`verify` commands were dropped together with the pool-reconcile
+model ([elastic/docs-builder#3741](https://github.com/elastic/docs-builder/pull/3741), closed
+unmerged — see the 2026-08-10 update on elastic/docs-eng-team#688). Repair rides the normal
+event path instead: any successfully processed event for a group rebuilds its manifest from the
+live listing, so re-running the group's upload with `--skip-etag-check` (which re-PUTs every
+discovered file even when its content hash matches) forces a full re-scrub and reconcile of
+that group.
 
 ### Buckets and infrastructure
 
@@ -178,22 +221,22 @@ Infrastructure lives in `docs-infra` (`aws/elastic-web/us-east-1/elastic-docs-v3
   the Lambda (batch size 10, 5 s batching window — multi-file uploads to one group tend to
   coalesce into a single reconcile).
 - The scrubber role has `s3:GetObject` on private, `s3:GetObject`/`s3:PutObject`/`s3:DeleteObject`
-  on public, and `s3:ListBucket` on both (public for group reconciles, private for full group
-  heals).
-- The registry-operator grant (docs-eng tooling repos only) covers `registry verify`
-  (public `s3:ListBucket`/`s3:GetObject`) and `registry reconcile` (`sqs:SendMessage` on the
-  scrubber queue).
-- CloudWatch alarms watch the DLQ (any message) and the main queue's oldest-message age; the
-  triage/redrive runbook lives in `elastic/docs-eng-team` (`docs/operations/runbooks.md`).
+  on public, and `s3:ListBucket` on the **public** bucket only (group and shallow-map reconciles
+  list public state; the Lambda never lists the private bucket).
+- Queue metrics (main and DLQ) are streamed to the docs-o11y Elastic project
+  (`observability.tf`); the alert rules and the triage/redrive runbook are tracked in
+  [elastic/docs-eng-team#692](https://github.com/elastic/docs-eng-team/pull/692).
 - CloudFront caching is **disabled** (`Managed-CachingDisabled`), so a written manifest is
   visible on the CDN immediately.
 
-## `changelog bundle` entry sourcing (org/repo/branch gate)
+## `changelog bundle` entry sourcing (org/repo/branch gate) [entry-sourcing]
 
 The `changelog bundle` command aggregates individual changelog **entries**. It can read those
 entries from the local folder or fetch the **authoring pool's** published entries from the CDN
 (`changelog/{org}/{repo}/{branch}/registry.json` → `changelog/{org}/{repo}/{branch}/{file}`, via
-`CdnChangelogEntryFetcher`).
+`CdnChangelogEntryFetcher`). The pool manifest it enumerates is the
+[legacy client-authored index](#ownership-per-tree); this enumeration is what keeps the
+pass-through alive until PR-list-driven discovery (RFC elastic/docs-eng-team#698) replaces it.
 
 Under the artifact-root layout, entries are org/repo/branch-scoped — not product-scoped — so CDN
 entry sourcing keys off the resolvable authoring pool (repo with the same precedence as upload:
