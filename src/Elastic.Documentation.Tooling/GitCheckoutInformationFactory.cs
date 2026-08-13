@@ -89,9 +89,12 @@ public static partial class GitCheckoutInformationFactory
 			var refPath = headText["ref:".Length..].Trim();
 			branch = refPath.Replace("refs/heads/", string.Empty);
 			var refFilePath = fileSystem.Path.Join(gitDir.FullName, refPath.Replace('/', fileSystem.Path.DirectorySeparatorChar));
-			gitRef = fileSystem.File.Exists(refFilePath)
-				? fileSystem.File.ReadAllText(refFilePath).Trim()
-				: headText; // symbolic ref not yet written (new empty repo) — use the ref name itself
+			if (fileSystem.File.Exists(refFilePath))
+				gitRef = fileSystem.File.ReadAllText(refFilePath).Trim();
+			else if (TryResolvePackedRef(fileSystem, gitDir, refPath, out var packedSha))
+				gitRef = packedSha; // loose ref file absent — ref lives in packed-refs instead
+			else
+				gitRef = headText; // symbolic ref not yet written (new empty repo) — use the ref name itself
 		}
 		else
 		{
@@ -168,6 +171,39 @@ public static partial class GitCheckoutInformationFactory
 		var gitDirWithoutConfig = fileSystem.Directory.Exists(gitPath)
 			&& !fileSystem.File.Exists(fileSystem.Path.Join(gitPath, "config"));
 		return noGitEntry || gitDirWithoutConfig;
+	}
+
+	/// <summary>
+	/// Resolves a symbolic ref (e.g. <c>refs/heads/main</c>) to a SHA via <c>.git/packed-refs</c>.
+	/// Git packs loose refs into this file (e.g. after <c>git gc</c>, or on checkouts made by
+	/// <c>actions/checkout</c>), so the ref may not exist as a standalone file under <c>refs/</c>
+	/// even though HEAD still points at it.
+	/// </summary>
+	private static bool TryResolvePackedRef(IFileSystem fileSystem, IDirectoryInfo gitDir, string refPath, out string sha)
+	{
+		sha = string.Empty;
+		var packedRefsPath = fileSystem.Path.Join(gitDir.FullName, "packed-refs");
+		if (!fileSystem.File.Exists(packedRefsPath))
+			return false;
+
+		foreach (var line in fileSystem.File.ReadAllLines(packedRefsPath))
+		{
+			// Comment lines start with '#'; peeled-tag annotations start with '^'. Both are skipped.
+			if (line.Length == 0 || line[0] == '#' || line[0] == '^')
+				continue;
+
+			var spaceIndex = line.IndexOf(' ');
+			if (spaceIndex < 0)
+				continue;
+
+			var lineRef = line[(spaceIndex + 1)..].Trim();
+			if (!lineRef.Equals(refPath, StringComparison.Ordinal))
+				continue;
+
+			sha = line[..spaceIndex].Trim();
+			return !string.IsNullOrEmpty(sha);
+		}
+		return false;
 	}
 
 	private static string BranchTrackingRemote(string branch, IniFile config)
