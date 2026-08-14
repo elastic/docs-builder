@@ -28,11 +28,17 @@ public static class SectionTopNavBuilder
 		if (navFile.TableOfContents.Count == 0)
 			return null;
 
-		// Build an index from Identifier → navigation item for fast lookup.
-		// TopLevelItems are IRootNavigationItem at runtime; cast via OfType to access Identifier.
+		// Index plain toc: items by Identifier for fast lookup.
+		// Sections with children now live in the tree as SectionNavigation nodes and
+		// are looked up by title instead.
 		var byIdentifier = topLevel
 			.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+			.Where(item => item is not SectionNavigation)
 			.ToDictionary(item => item.Identifier);
+
+		var sectionsByTitle = topLevel
+			.OfType<SectionNavigation>()
+			.ToDictionary(s => s.Title, StringComparer.OrdinalIgnoreCase);
 
 		var items = new List<TopNavRenderItem>();
 
@@ -44,18 +50,18 @@ public static class SectionTopNavBuilder
 				{
 					items.Add(new TopNavLinkItem(section.Title, section.ExternalUrl!, IsExternal: true));
 				}
-				else
+				else if (sectionsByTitle.TryGetValue(section.Title, out var sectionNav))
 				{
-					var sectionIds = new HashSet<string>();
-					string? tabUrl = null;
+					// Children are now nested under SectionNavigation in the tree.
+					// Collect their IDs for multi-root active-state matching.
+					var sectionIds = sectionNav.NavigationItems
+						.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+						.Select(c => c.Id)
+						.ToHashSet();
 
-					foreach (var childRef in section.Children)
-					{
-						if (!byIdentifier.TryGetValue(childRef.Source, out var navItem))
-							continue;
-						_ = sectionIds.Add(navItem.Id);
-						tabUrl ??= navItem.Index.Url;
-					}
+					var tabUrl = sectionNav.NavigationItems
+						.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+						.FirstOrDefault()?.Index.Url;
 
 					if (tabUrl is not null)
 					{

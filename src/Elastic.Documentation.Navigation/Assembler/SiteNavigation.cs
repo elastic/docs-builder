@@ -74,12 +74,42 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 
 		foreach (var entry in siteNavigationFile.TableOfContents)
 		{
-			var tocRefs = entry is SiteSectionRef section
-				? section.Children
-				: [entry as SiteTableOfContentsRef ?? throw new InvalidOperationException($"Unexpected entry type: {entry.GetType().Name}")];
-
-			foreach (var tocRef in tocRefs)
+			if (entry is SiteSectionRef sectionRef && !sectionRef.IsExternal && sectionRef.Children.Count > 0)
 			{
+				// Section with children becomes a real tree node (island) that groups its
+				// toc roots. FindIslandRoot() and CreateBackLinks then emit the correct
+				// "← Guides" back-link on any page within those roots.
+				var sectionNav = new SectionNavigation(sectionRef.Title);
+				sectionNav.Parent = this;
+
+				var sectionChildren = new List<INavigationItem>();
+				foreach (var childRef in sectionRef.Children)
+				{
+					var childItem = CreateSiteTableOfContentsNavigation(childRef, index++, context, sectionNav, sectionNav);
+					if (childItem is not null)
+					{
+						// Child roots remain individual islands so FindIslandRoot() surfaces
+						// the docset root (not the section) when rendering a deep page.
+						if (childItem is IAssignableIslandNavigation childAssignable)
+							childAssignable.IsIsland = true;
+						sectionChildren.Add(childItem);
+					}
+				}
+
+				// Resolve section URL from first child once children are built.
+				var firstChildUrl = sectionChildren
+					.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+					.FirstOrDefault()?.Index.Url;
+				if (firstChildUrl is not null)
+					sectionNav.Url = firstChildUrl;
+
+				((IAssignableChildrenNavigation)sectionNav).SetNavigationItems(sectionChildren);
+				items.Add(sectionNav);
+			}
+			else
+			{
+				var tocRef = entry as SiteTableOfContentsRef
+					?? throw new InvalidOperationException($"Unexpected entry type: {entry.GetType().Name}");
 				var navItem = CreateSiteTableOfContentsNavigation(tocRef, index++, context, this, null);
 				if (navItem is not null)
 				{
