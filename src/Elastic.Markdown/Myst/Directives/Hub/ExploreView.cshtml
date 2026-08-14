@@ -1,0 +1,12 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.ExploreViewModel>
+
+<div class="hub-zone" @(string.IsNullOrWhiteSpace(Model.Anchor) ? "" : $"id={Model.Anchor}")>
+	<h2 class="hub-zone-title">@Model.Title</h2>
+	@if (!string.IsNullOrWhiteSpace(Model.Intro))
+	{
+		<p class="hub-zone-intro">@Model.Intro</p>
+	}
+</div>
+<div class="hub-explore">
+	@Model.RenderBlock()
+</div>

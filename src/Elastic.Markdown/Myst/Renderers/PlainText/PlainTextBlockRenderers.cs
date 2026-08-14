@@ -286,6 +286,13 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 				renderer.EnsureLine();
 				return;
 
+			// Deliberately contributes nothing. Section, card, and link titles are the tokens
+			// that would let a hub outrank the pages it links to on a specific query.
+			case ExploreBlock:
+			case CardGroupBlock:
+			case LinkCardBlock:
+				return;
+
 			case AgentSkillBlock agentSkillBlock:
 				renderer.EnsureBlockSpacing();
 				renderer.WriteLine("Agent skill available");

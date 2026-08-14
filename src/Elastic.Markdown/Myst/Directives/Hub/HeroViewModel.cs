@@ -4,7 +4,7 @@
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
-public class HeroViewModel : DirectiveViewModel
+public class HeroViewModel : HubDirectiveViewModel
 {
 	public required string? IconKey { get; init; }
 	public required string? IconSvg { get; init; }
@@ -16,9 +16,6 @@ public class HeroViewModel : DirectiveViewModel
 	public required string? SecondaryActionUrl { get; init; }
 	public required string? TertiaryActionLabel { get; init; }
 	public required string? TertiaryActionUrl { get; init; }
-	public required string? SitePathPrefix { get; init; }
-	public string? PrefixUrl(string? url) => DirectiveLinkValidator.ToHref(url, SitePathPrefix);
-
 	public IReadOnlyList<HeroAction> Actions
 	{
 		get
@@ -36,20 +33,14 @@ public class HeroViewModel : DirectiveViewModel
 		if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(url))
 			return;
 
-		var isAnchor = url[0] == '#';
-		// A cross-link resolves to a full URL but still points at documentation this site serves,
-		// so it is not external. Inline links make the same distinction.
-		var isExternal = url.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-			&& !DirectiveLinkValidator.IsResolvedCrossLink((DirectiveBlock)DirectiveBlock, url);
-		actions.Add(new HeroAction(label, url, isAnchor, isExternal));
+		actions.Add(new HeroAction(label, url));
 	}
 }
 
 /// <summary>
 /// One hero call to action. The three actions carry equal weight and render as neutral
-/// buttons, so the option a label came from does not change its appearance.
-/// <paramref name="IsAnchor"/> drives the arrow that marks an in-page jump.
-/// <paramref name="IsExternal"/> follows the same rules as inline links: an external link
-/// opens in a new tab and skips preloading, and only an internal link is worth preloading.
+/// buttons, so the option a label came from does not change its appearance. The href and
+/// its link attributes come from <see cref="HubDirectiveViewModel.LinkAttributes"/>, which
+/// owns the anchor, external, and cross-link rules.
 /// </summary>
-public sealed record HeroAction(string Label, string Url, bool IsAnchor, bool IsExternal);
+public sealed record HeroAction(string Label, string Url);

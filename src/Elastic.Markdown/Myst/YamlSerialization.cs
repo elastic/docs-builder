@@ -81,4 +81,6 @@ internal class ListingFrontMatterConverter : IYamlTypeConverter
 [YamlSerializable(typeof(ChangelogDirectiveConfigYaml))]
 [YamlSerializable(typeof(ChangelogDirectiveBundleConfigYaml))]
 [YamlSerializable(typeof(ListingFrontMatter))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardData))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardLink))]
 public partial class DocsBuilderYamlStaticContext;
