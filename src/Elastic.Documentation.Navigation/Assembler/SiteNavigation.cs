@@ -79,8 +79,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				// Section with children becomes a real tree node (island) that groups its
 				// toc roots. FindIslandRoot() and CreateBackLinks then emit the correct
 				// "← Guides" back-link on any page within those roots.
-				var sectionNav = new SectionNavigation(sectionRef.Title);
-				sectionNav.Parent = this;
+				var sectionNav = new SectionNavigation(sectionRef.Title) { Parent = this };
 
 				var sectionChildren = new List<INavigationItem>();
 				foreach (var childRef in sectionRef.Children)

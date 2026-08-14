@@ -14,18 +14,11 @@ namespace Elastic.Documentation.Navigation.Assembler;
 /// resolve back-link breadcrumbs correctly for pages inside any child root.
 /// </summary>
 [DebuggerDisplay("{Url}")]
-public class SectionNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, IAssignableIslandNavigation
+public class SectionNavigation(string title) : IRootNavigationItem<IDocumentationFile, INavigationItem>, IAssignableIslandNavigation
 {
 	private SectionIndexLeaf? _index;
 
-	public SectionNavigation(string title)
-	{
-		Title = title;
-		Id = ShortId.Create($"section-{title}");
-		Identifier = new Uri($"section://{title.ToLowerInvariant().Replace(' ', '-')}");
-	}
-
-	public string Title { get; }
+	public string Title { get; } = title;
 
 	/// Set by <c>SiteNavigation</c> after children are resolved to the first child's index URL.
 	public string Url { get; internal set; } = "/";
@@ -50,13 +43,13 @@ public class SectionNavigation : IRootNavigationItem<IDocumentationFile, INaviga
 	public int NavigationIndex { get; set; }
 
 	/// <inheritdoc />
-	public string Id { get; }
+	public string Id { get; } = ShortId.Create($"section-{title}");
 
 	/// <inheritdoc />
 	public bool IsUsingNavigationDropdown => false;
 
 	/// <inheritdoc />
-	public Uri Identifier { get; }
+	public Uri Identifier { get; } = new Uri($"section://{title.ToLowerInvariant().Replace(' ', '-')}");
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
