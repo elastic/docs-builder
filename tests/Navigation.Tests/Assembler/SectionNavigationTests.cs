@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
@@ -153,7 +154,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			.FirstOrDefault(l => l.Url.Contains("monitoring"));
 		deepLeaf.Should().NotBeNull("fixture has monitoring/ pages");
 
-		var islandRoot = deepLeaf!.FindIslandRoot();
+		var islandRoot = deepLeaf.FindIslandRoot();
 		islandRoot.Should().BeSameAs(obsNav,
 			"FindIslandRoot must stop at the nearest island (child docset), not at the section");
 	}
@@ -275,15 +276,15 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		var (nav, obsNav, searchNav) = BuildTwoChildSection(output, yaml);
 		var navFile = SiteNavigationFile.Deserialize(yaml);
 
-		var renderModel = Elastic.Documentation.Assembler.Navigation.SectionTopNavBuilder.Build(nav, navFile);
+		var renderModel = SectionTopNavBuilder.Build(nav, navFile);
 
 		renderModel.Should().NotBeNull();
-		renderModel!.Items.Should().HaveCount(1);
+		renderModel.Items.Should().HaveCount(1);
 
-		var tab = renderModel.Items.First().Should().BeOfType<TopNavLinkItem>().Subject;
+		var tab = renderModel.Items[0].Should().BeOfType<TopNavLinkItem>().Subject;
 		tab.Title.Should().Be("Guides");
 		tab.SectionIds.Should().NotBeNull("section with multiple children uses SectionIds");
-		tab.SectionIds!.Should().Contain(obsNav.Id,
+		tab.SectionIds.Should().Contain(obsNav.Id,
 			"observability child ID must be in the tab's SectionIds");
 		tab.SectionIds.Should().Contain(searchNav.Id,
 			"search child ID must be in the tab's SectionIds");

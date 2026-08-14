@@ -105,10 +105,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				((IAssignableChildrenNavigation)sectionNav).SetNavigationItems(sectionChildren);
 				items.Add(sectionNav);
 			}
-			else
+			else if (entry is SiteTableOfContentsRef tocRef)
 			{
-				var tocRef = entry as SiteTableOfContentsRef
-					?? throw new InvalidOperationException($"Unexpected entry type: {entry.GetType().Name}");
 				var navItem = CreateSiteTableOfContentsNavigation(tocRef, index++, context, this, null);
 				if (navItem is not null)
 				{
