@@ -45,6 +45,17 @@ public class GitResolveFileSystem : ScopedFileSystem
 		for (var i = 0; i < maxParents; i++)
 			root = root.Parent ?? root;
 
+#if DEBUG
+		// anchor may come from a ScopedFileSystem (e.g. DocsetScanFileSystem scoped to
+		// .artifacts/migrated) whose scope blocks upward traversal. Use the real filesystem
+		// to call FindGitRoot so the DEBUG .slnx escape hatch in that method can actually fire.
+		var realFs = new FileSystem();
+		var realStart = realFs.DirectoryInfo.New(anchor.FullName);
+		var gitRoot = Configuration.Paths.FindGitRoot(realStart, maxParents: 20);
+		if (gitRoot is not null)
+			root = anchor.FileSystem.DirectoryInfo.New(gitRoot.FullName);
+#endif
+
 		// ScopedFileSystem normalises scope roots via TrimEnd(separator). On Unix, "/" trimmed is "".
 		// An empty scope root makes every path fail the IsWithinRoot check, so guard against it:
 		// if the computed root IS the filesystem root, fall back to the anchor itself.
@@ -64,7 +75,7 @@ public class GitResolveFileSystem : ScopedFileSystem
 
 		return new ScopedFileSystemOptions([.. roots])
 		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
 		};
 	}

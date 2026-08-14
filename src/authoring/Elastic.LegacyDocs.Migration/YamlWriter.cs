@@ -11,6 +11,8 @@ public record TocEntry
 	public string? File { get; init; }
 	public string? Folder { get; init; }
 	public string? Toc { get; init; }
+	public bool Island { get; init; }
+	public List<TocEntry> Children { get; init; } = [];
 }
 
 public static class YamlWriter
@@ -30,17 +32,35 @@ public static class YamlWriter
 	{
 		var sb = new StringBuilder();
 		_ = sb.Append("toc:\n");
+		AppendEntries(sb, entries, indent: 2);
+
+		EnsureDirectoryAndWrite(path, sb.ToString());
+	}
+
+	private static void AppendEntries(StringBuilder sb, List<TocEntry> entries, int indent)
+	{
+		var pad = new string(' ', indent);
 		foreach (var entry in entries)
 		{
 			if (entry.File is not null)
-				_ = sb.Append("  - file: ").Append(entry.File).Append('\n');
+				_ = sb.Append(pad).Append("- file: ").Append(entry.File).Append('\n');
 			else if (entry.Folder is not null)
-				_ = sb.Append("  - folder: ").Append(entry.Folder).Append('\n');
+				_ = sb.Append(pad).Append("- folder: ").Append(entry.Folder).Append('\n');
 			else if (entry.Toc is not null)
-				_ = sb.Append("  - toc: ").Append(entry.Toc).Append('\n');
-		}
+			{
+				_ = sb.Append(pad).Append("- toc: ").Append(entry.Toc).Append('\n');
+				if (entry.Island)
+					_ = sb.Append(pad).Append("  island: true\n");
+			}
+			else
+				continue;
 
-		EnsureDirectoryAndWrite(path, sb.ToString());
+			if (entry.Children.Count > 0)
+			{
+				_ = sb.Append(pad).Append("  children:\n");
+				AppendEntries(sb, entry.Children, indent + 4);
+			}
+		}
 	}
 
 	private static void EnsureDirectoryAndWrite(string path, string content)

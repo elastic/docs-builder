@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration;
 using ProcNet;
 
 namespace Documentation.Migrate;
@@ -13,7 +14,7 @@ internal sealed class ServeCommand
 	/// <param name="ct">Cancellation token</param>
 	public async Task<int> Serve(int port = 3001, CancellationToken ct = default)
 	{
-		var outputDir = Path.Combine(Directory.GetCurrentDirectory(), ".artifacts", "migrated");
+		var outputDir = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "migrated");
 
 		if (!Directory.Exists(outputDir))
 		{
@@ -24,7 +25,10 @@ internal sealed class ServeCommand
 		string[] args = ["run", "--project", "src/tooling/docs-builder", "--", "serve", "--path", outputDir, "--port", $"{port}", "--no-hud"];
 		Console.WriteLine($"dotnet {string.Join(' ', args)}");
 
-		var arguments = new ExecArguments("dotnet", args);
+		var arguments = new ExecArguments("dotnet", args)
+		{
+			WorkingDirectory = Paths.WorkingDirectoryRoot.FullName
+		};
 		try
 		{
 			return await Proc.ExecAsync(arguments, ct);

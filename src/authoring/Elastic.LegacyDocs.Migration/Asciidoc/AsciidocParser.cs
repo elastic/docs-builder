@@ -138,7 +138,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					}
 					else
 					{
-						var section = ParseSection(pendingId, pendingTitle);
+						var section = ParseSection(pendingId, pendingTitle, pendingBlockAttr);
 						doc.Children.Add(section);
 						pendingId = null;
 						pendingTitle = null;
@@ -177,12 +177,14 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 	private Token Current => _tokens[_pos];
 
-	private SectionNode ParseSection(string? id, string? title)
+	private SectionNode ParseSection(string? id, string? title, TokenMetadata? blockAttr = null)
 	{
 		var token = Current;
 		var level = token.Metadata!.Level!.Value;
 		var sectionTitle = SubstituteAttributes(title ?? token.Metadata.Title!);
 		var sectionId = id ?? ExtractInlineAnchor(sectionTitle);
+		var isDiscrete = string.Equals(blockAttr?.BlockStyle, "discrete", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(blockAttr?.BlockStyle, "float", StringComparison.OrdinalIgnoreCase);
 		_pos++;
 
 		var children = new List<IAsciidocNode>();
@@ -231,7 +233,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					break;
 
 				case TokenType.SectionTitle:
-					var childSection = ParseSection(pendingId, null);
+					var childSection = ParseSection(pendingId, null, pendingBlockAttr);
 					children.Add(childSection);
 					pendingId = null;
 					pendingTitle = null;
@@ -267,7 +269,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			}
 		}
 
-		return new SectionNode { Level = level, Title = sectionTitle, Id = sectionId, Children = children };
+		return new SectionNode { Level = level, Title = sectionTitle, Id = sectionId, Children = children, IsDiscrete = isDiscrete };
 	}
 
 	private IAsciidocNode? ParseBlock(string? id, string? title, TokenMetadata? blockAttr)
@@ -1285,7 +1287,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 					_pos++;
 					break;
 				case TokenType.SectionTitle:
-					var section = ParseSection(pendingId, null);
+					var section = ParseSection(pendingId, null, pendingBlockAttr);
 					result.Add(section with { IsIncludeRoot = true });
 					pendingId = null;
 					pendingTitle = null;
@@ -1319,6 +1321,72 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		else
 			_ = _attributes.Remove("docdir");
 		_includeDepth--;
+
+		// Re-nest sections by heading level: a section at level N that follows a section at
+		// level < N in the flat result list becomes a child of that ancestor, replicating
+		// AsciiDoc's natural hierarchical nesting (e.g. migration/index.asciidoc includes a
+		// Level-0 intro file followed by Level-1 version files — those version sections should
+		// be children of the Level-0 section, not top-level siblings).
+		return NestSectionsByLevel(result);
+	}
+
+	private static List<IAsciidocNode> NestSectionsByLevel(List<IAsciidocNode> nodes)
+	{
+		// Fast path: no section can be nested under another (all same level or no L0 present).
+		var hasNestableStructure = false;
+		var firstSectionLevel = int.MaxValue;
+		foreach (var n in nodes)
+		{
+			if (n is not SectionNode s)
+				continue;
+			if (s.Level < firstSectionLevel)
+				firstSectionLevel = s.Level;
+			else if (s.Level > firstSectionLevel)
+			{
+				hasNestableStructure = true;
+				break;
+			}
+		}
+		if (!hasNestableStructure)
+			return nodes;
+
+		// Stack entries: the original section node + extra children accumulated from later siblings.
+		var stack = new List<(SectionNode Section, List<IAsciidocNode> Extra)>();
+		var result = new List<IAsciidocNode>();
+
+		void AddToContext(IAsciidocNode node)
+		{
+			if (stack.Count > 0)
+				stack[^1].Extra.Add(node);
+			else
+				result.Add(node);
+		}
+
+		IAsciidocNode CloseTop()
+		{
+			var (sec, extra) = stack[^1];
+			stack.RemoveAt(stack.Count - 1);
+			return extra.Count == 0 ? sec : sec with { Children = [.. sec.Children, .. extra] };
+		}
+
+		foreach (var node in nodes)
+		{
+			if (node is SectionNode section)
+			{
+				// Close any open sections that are at the same level or deeper.
+				while (stack.Count > 0 && stack[^1].Section.Level >= section.Level)
+					AddToContext(CloseTop());
+				stack.Add((section, []));
+			}
+			else
+			{
+				AddToContext(node);
+			}
+		}
+
+		// Drain remaining open sections.
+		while (stack.Count > 0)
+			AddToContext(CloseTop());
 
 		return result;
 	}
