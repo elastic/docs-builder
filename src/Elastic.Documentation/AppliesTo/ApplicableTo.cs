@@ -99,6 +99,8 @@ public record ApplicableTo
 				AddEntries(entries, "serverless", "observability", Serverless.Observability);
 			if (Serverless.Security is not null)
 				AddEntries(entries, "serverless", "security", Serverless.Security);
+			if (Serverless.VectorDatabase is not null)
+				AddEntries(entries, "serverless", "vector_database", Serverless.VectorDatabase);
 		}
 
 		if (Product is not null)
@@ -258,8 +260,12 @@ public record ServerlessProjectApplicability
 
 	public AppliesCollection? Security { get; set; }
 
+	public AppliesCollection? VectorDatabase { get; set; }
+
 	/// <summary>
-	/// Returns if all projects share the same applicability
+	/// Returns if Elasticsearch, Observability, and Security share the same applicability.
+	/// Vector Database is serverless-only and is not part of this collapse — <c>serverless: ga</c>
+	/// continues to mean the original three project types.
 	/// </summary>
 	public AppliesCollection? AllProjects =>
 		Elasticsearch == Observability && Observability == Security
@@ -298,6 +304,14 @@ public record ServerlessProjectApplicability
 			if (hasContent)
 				_ = sb.Append(", ");
 			_ = sb.Append("security=").Append(Security);
+			hasContent = true;
+		}
+
+		if (VectorDatabase is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("vector_database=").Append(VectorDatabase);
 		}
 
 		return sb.ToString();

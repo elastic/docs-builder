@@ -332,6 +332,7 @@ edot_node: ga 1.0+
 elasticsearch: preview
 security: removed
 observability: deprecated
+vector_database: ga
 ```
 
 ### In-text example
@@ -341,6 +342,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam
 - {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 - {applies_to}`observability: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 - {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+- {applies_to}`vector_database: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
 ## Structured model
 
@@ -363,6 +365,7 @@ applies_to:
     security:
     elasticsearch:
     observability:
+    vector_database:
   product:
     ecctl:
     curator:

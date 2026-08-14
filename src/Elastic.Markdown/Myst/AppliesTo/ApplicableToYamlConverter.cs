@@ -19,7 +19,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	[
 		"stack", "deployment", "serverless", "product", // Applicability categories
 		"ece", "eck", "ess", "ech", "self", // Deployment options ("ech" aliasing to "ess")
-		"elasticsearch", "observability", "security", // Serverless flavors
+		"elasticsearch", "observability", "security", "vector_database", "vector-database", // Serverless flavors
 		.. productKeys
 	];
 
@@ -262,7 +262,9 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			["elasticsearch"] = a => serverlessAvailability.Elasticsearch = a,
 			["observability"] = a => serverlessAvailability.Observability = a,
-			["security"] = a => serverlessAvailability.Security = a
+			["security"] = a => serverlessAvailability.Security = a,
+			["vector_database"] = a => serverlessAvailability.VectorDatabase = a,
+			["vector-database"] = a => serverlessAvailability.VectorDatabase = a
 		};
 
 		foreach (var (key, action) in mapping)
@@ -330,7 +332,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	}
 
 	private static readonly HashSet<string> VersionlessKeys =
-		["ess", "ech", "serverless", "elasticsearch", "observability", "security"];
+		["ess", "ech", "serverless", "elasticsearch", "observability", "security", "vector_database", "vector-database"];
 
 	private static bool TryGetApplicabilityOverTime(Dictionary<object, object?> dictionary, string key, List<(Severity, string)> diagnostics,
 		out AppliesCollection? availability)

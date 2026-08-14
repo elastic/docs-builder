@@ -224,6 +224,9 @@ type ``applies_to inline role formats`` () =
         
         // Elasticsearch preview (no version - no version shown)
         ("elasticsearch: preview", "Serverless Elasticsearch projects: Preview")
+        
+        // Vector Database GA (serverless-only, unversioned)
+        ("vector_database: ga", "Serverless Elasticsearch Vector Database projects: Generally available")
     ]
     
     [<Fact>]

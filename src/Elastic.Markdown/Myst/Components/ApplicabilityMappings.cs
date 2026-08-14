@@ -18,6 +18,7 @@ public static class ApplicabilityMappings
 	public static readonly ApplicabilityDefinition ServerlessElasticsearch = new("Serverless Elasticsearch", "Serverless&nbsp;Elasticsearch projects", VersioningSystemId.ElasticsearchProject);
 	public static readonly ApplicabilityDefinition ServerlessObservability = new("Serverless Observability", "Serverless&nbsp;Observability projects", VersioningSystemId.ObservabilityProject);
 	public static readonly ApplicabilityDefinition ServerlessSecurity = new("Serverless Security", "Serverless&nbsp;Security projects", VersioningSystemId.SecurityProject);
+	public static readonly ApplicabilityDefinition ServerlessVectorDatabase = new("Serverless Vector Database", "Serverless&nbsp;Elasticsearch Vector Database projects", VersioningSystemId.Serverless);
 
 	// Deployment
 	public static readonly ApplicabilityDefinition Ech = new("ECH", "Elastic&nbsp;Cloud&nbsp;Hosted", VersioningSystemId.Ess);

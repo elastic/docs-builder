@@ -55,6 +55,47 @@ applies_to:
             )
         ))
 
+type ``parses serverless vector database project`` () =
+    static let markdown = frontMatter """
+applies_to:
+   serverless:
+      vector_database: ga
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                VectorDatabase=AppliesCollection.op_Explicit "ga"
+            )
+        ))
+
+type ``parses serverless vector database hyphenated alias`` () =
+    static let markdown = frontMatter """
+applies_to:
+   serverless:
+      vector-database: preview
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
+            )
+        ))
+
+type ``parses top level vector_database as serverless project`` () =
+    static let markdown = frontMatter """
+applies_to:
+   vector_database: ga
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                VectorDatabase=AppliesCollection.op_Explicit "ga"
+            )
+        ))
+
 type ``parses serverless projects`` () =
     static let markdown = frontMatter """
 applies_to:
@@ -62,6 +103,7 @@ applies_to:
       security: ga
       elasticsearch: beta
       observability: removed
+      vector_database: preview
 """
     [<Fact>]
     let ``apply matches expected`` () =
@@ -69,7 +111,8 @@ applies_to:
             Serverless=ServerlessProjectApplicability(
                 Security=AppliesCollection.op_Explicit "ga",
                 Elasticsearch=AppliesCollection.op_Explicit "beta",
-                Observability=AppliesCollection.op_Explicit "removed"
+                Observability=AppliesCollection.op_Explicit "removed",
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
             )
         ))
 
@@ -244,6 +287,7 @@ applies_to:
   security: ga
   elasticsearch: beta
   observability: removed
+  vector_database: preview
   product: preview 9.5, removed 9.7
   apm_agent_dotnet: ga 9.0
   ecctl: ga 10.0
@@ -261,7 +305,8 @@ applies_to:
             Serverless=ServerlessProjectApplicability(
                 Security=AppliesCollection.op_Explicit "ga",
                 Elasticsearch=AppliesCollection.op_Explicit "beta",
-                Observability=AppliesCollection.op_Explicit "removed"
+                Observability=AppliesCollection.op_Explicit "removed",
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
             ),
             Stack=AppliesCollection.op_Explicit "ga 9.1.0",
             Product=AppliesCollection.op_Explicit "preview 9.5, removed 9.7",
@@ -449,6 +494,16 @@ applies_to:
     [<Fact>]
     let ``emits error for versioned elasticsearch project`` () =
         markdown |> hasError "Can't specify a version for 'elasticsearch'"
+
+type ``serverless vector database with version emits error`` () =
+    static let markdown = frontMatter """
+applies_to:
+   serverless:
+      vector_database: ga 9.5
+"""
+    [<Fact>]
+    let ``emits error for versioned vector database project`` () =
+        markdown |> hasError "Can't specify a version for 'vector_database'"
 
 type ``deployment ess with version emits error`` () =
     static let markdown = frontMatter """
