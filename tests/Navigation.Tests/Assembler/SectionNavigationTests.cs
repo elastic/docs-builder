@@ -103,7 +103,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public void SectionChildren_AreIslands_WithParent_SectionNavigation()
+	public void SectionChildren_AreNotIslands_SectionIsTheIsland()
 	{
 		// language=yaml
 		var yaml = """
@@ -120,11 +120,12 @@ public class SectionNavigationTests(ITestOutputHelper output)
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
-		obsNav.IsIsland.Should().BeTrue("child docset must be island");
+		// Children are branches within the section island, not individual islands.
+		obsNav.IsIsland.Should().BeFalse("children of a section are not individual islands; the section owns the sidebar");
 		obsNav.Parent.Should().BeSameAs(section, "child docset parent must be SectionNavigation");
-		obsNav.RendersAsIsland().Should().BeTrue();
+		obsNav.RendersAsIsland().Should().BeFalse("child is not an island, even with a parent");
 
-		searchNav.IsIsland.Should().BeTrue();
+		searchNav.IsIsland.Should().BeFalse();
 		searchNav.Parent.Should().BeSameAs(section);
 	}
 
@@ -133,7 +134,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// ──────────────────────────────────────────────────────────────
 
 	[Fact]
-	public void FindIslandRoot_FromDeepPage_ReturnsChildDocset_NotSection()
+	public void FindIslandRoot_FromDeepPage_ReturnsSectionNavigation()
 	{
 		// language=yaml
 		var yaml = """
@@ -146,7 +147,9 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, obsNav, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+
+		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
 		// Pick a deep leaf inside the observability docset via NavigationIndexedByOrder
 		var deepLeaf = nav.NavigationIndexedByOrder.Values
@@ -155,8 +158,8 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		deepLeaf.Should().NotBeNull("fixture has monitoring/ pages");
 
 		var islandRoot = deepLeaf.FindIslandRoot();
-		islandRoot.Should().BeSameAs(obsNav,
-			"FindIslandRoot must stop at the nearest island (child docset), not at the section");
+		islandRoot.Should().BeSameAs(section,
+			"FindIslandRoot walks past child docsets (not islands) and stops at the section island");
 	}
 
 	// ──────────────────────────────────────────────────────────────
@@ -164,7 +167,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// ──────────────────────────────────────────────────────────────
 
 	[Fact]
-	public void BackLink_FromChildIsland_IncludesSection()
+	public void BackLink_FromSectionIsland_IncludesElasticDocs()
 	{
 		// language=yaml
 		var yaml = """
@@ -177,19 +180,23 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, obsNav, _) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(output, yaml);
 
-		// Render model for the observability island sidebar
+		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
+
+		// The section IS the island; render its sidebar and check back-links
 		var renderModel = NavigationRenderModel.Create(
-			tree: obsNav,
+			tree: section,
 			topLevelItems: nav.TopLevelItems,
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: true,
 			isGlobalAssemblyBuild: true);
 
-		// Back-links should include the "Guides" section
-		renderModel.BackLinks.Should().Contain(link => link.Title == "Guides",
-			"the section is the immediate parent and must appear as a back-link");
+		// Only ancestor above the section is SiteNavigation ("Elastic Docs")
+		renderModel.BackLinks.Should().Contain(link => link.Title == "Elastic Docs",
+			"the section's only ancestor is SiteNavigation");
+		renderModel.BackLinks.Should().NotContain(link => link.Title == "Guides",
+			"the section itself is not its own back-link");
 	}
 
 	// ──────────────────────────────────────────────────────────────
@@ -260,7 +267,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// ──────────────────────────────────────────────────────────────
 
 	[Fact]
-	public void SectionTopNavBuilder_BuildsTab_WithChildSectionIds()
+	public void SectionTopNavBuilder_BuildsTab_WithSectionId()
 	{
 		// language=yaml
 		var yaml = """
@@ -273,8 +280,10 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		                   path_prefix: /search
 		           """;
 
-		var (nav, obsNav, searchNav) = BuildTwoChildSection(output, yaml);
+		var (nav, _, _) = BuildTwoChildSection(output, yaml);
 		var navFile = SiteNavigationFile.Deserialize(yaml);
+
+		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
 		var renderModel = SectionTopNavBuilder.Build(nav, navFile);
 
@@ -283,10 +292,9 @@ public class SectionNavigationTests(ITestOutputHelper output)
 
 		var tab = renderModel.Items[0].Should().BeOfType<TopNavLinkItem>().Subject;
 		tab.Title.Should().Be("Guides");
-		tab.SectionIds.Should().NotBeNull("section with multiple children uses SectionIds");
-		tab.SectionIds.Should().Contain(obsNav.Id,
-			"observability child ID must be in the tab's SectionIds");
-		tab.SectionIds.Should().Contain(searchNav.Id,
-			"search child ID must be in the tab's SectionIds");
+		// All section pages have NavigationRoot = sectionNav, so a single SectionId suffices
+		tab.SectionId.Should().Be(section.Id,
+			"active-tab detection matches NavigationRoot.Id == section.Id");
+		tab.SectionIds.Should().BeNull("multi-root SectionIds are not needed when the section is the island");
 	}
 }

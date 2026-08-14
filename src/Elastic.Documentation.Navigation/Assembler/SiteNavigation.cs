@@ -86,13 +86,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				{
 					var childItem = CreateSiteTableOfContentsNavigation(childRef, index++, context, sectionNav, sectionNav);
 					if (childItem is not null)
-					{
-						// Child roots remain individual islands so FindIslandRoot() surfaces
-						// the docset root (not the section) when rendering a deep page.
-						if (childItem is IAssignableIslandNavigation childAssignable)
-							childAssignable.IsIsland = true;
 						sectionChildren.Add(childItem);
-					}
 				}
 
 				// Resolve section URL from first child once children are built.

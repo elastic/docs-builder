@@ -52,23 +52,16 @@ public static class SectionTopNavBuilder
 				}
 				else if (sectionsByTitle.TryGetValue(section.Title, out var sectionNav))
 				{
-					// Children are now nested under SectionNavigation in the tree.
-					// Collect their IDs for multi-root active-state matching.
-					var sectionIds = sectionNav.NavigationItems
-						.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
-						.Select(c => c.Id)
-						.ToHashSet();
-
+					// All pages within the section have NavigationRoot = sectionNav,
+					// so a single SectionId match is sufficient for active-tab detection.
 					var tabUrl = sectionNav.NavigationItems
 						.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
 						.FirstOrDefault()?.Index.Url;
 
 					if (tabUrl is not null)
 					{
-						items.Add(new TopNavLinkItem(section.Title, tabUrl, IsExternal: false)
-						{
-							SectionIds = sectionIds
-						});
+						items.Add(new TopNavLinkItem(section.Title, tabUrl, IsExternal: false,
+							SectionId: sectionNav.Id));
 					}
 				}
 			}
