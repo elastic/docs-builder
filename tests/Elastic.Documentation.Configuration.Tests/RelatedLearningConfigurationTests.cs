@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.FileSystems;
@@ -86,6 +87,36 @@ public class RelatedLearningConfigurationTests
 		var links = config.GetLinksForPage("docs-content", "manage-data/data-store/index-basics.md");
 
 		links.Should().NotContain(l => l.Id == "apm-with-elastic");
+	}
+
+	[Fact]
+	public void LocalConfigMissingCatalog_FallsBackToEmbedded()
+	{
+		var configDir = ConfigurationFileProvider.LocalConfigurationDirectory;
+		var fileSystem = new MockFileSystem(new MockFileSystemOptions
+		{
+			CurrentDirectory = Directory.GetCurrentDirectory()
+		});
+		fileSystem.Directory.CreateDirectory(configDir);
+		foreach (var name in new[]
+		{
+			"versions.yml",
+			"products.yml",
+			"assembler.yml",
+			"navigation.yml",
+			"legacy-url-mappings.yml",
+			"search.yml"
+		})
+			fileSystem.File.WriteAllText(Path.Join(configDir, name), "placeholder: true\n");
+
+		var provider = new ConfigurationFileProvider(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(fileSystem),
+			configurationSource: ConfigurationSource.Local);
+
+		var config = provider.CreateRelatedLearningConfiguration();
+
+		config.Links.Should().HaveCount(4);
 	}
 
 	private static RelatedLearningConfiguration LoadActualCatalog()

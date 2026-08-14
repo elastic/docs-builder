@@ -62,7 +62,7 @@ public partial class ConfigurationFileProvider
 			ConfigurationSource = source;
 		else
 		{
-			string[] spotChecks = ["navigation.yml", "versions.yml", "products.yml", "assembler.yml", "search.yml", "related-learning.yml"];
+			string[] spotChecks = ["navigation.yml", "versions.yml", "products.yml", "assembler.yml", "search.yml"];
 			var defaultSource =
 				fileSystem.Directory.Exists(LocalConfigurationDirectory)
 					&& spotChecks.All(f => fileSystem.File.Exists(Path.Join(LocalConfigurationDirectory, f)))
@@ -107,7 +107,7 @@ public partial class ConfigurationFileProvider
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
 		// reading from synonyms.yml is temporary. If you spot this again as a future reader, feel free to remove it.
 		SearchFile = CreateTemporaryConfigurationFile("search.yml", "synonyms.yml");
-		RelatedLearningFile = CreateTemporaryConfigurationFile("related-learning.yml");
+		RelatedLearningFile = CreateTemporaryConfigurationFile("related-learning.yml", fallbackToEmbedded: true);
 	}
 
 	public bool SkipPrivateRepositories { get; }
@@ -216,16 +216,16 @@ public partial class ConfigurationFileProvider
 
 	}
 
-	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
+	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null, bool fallbackToEmbedded = false)
 	{
-		using var stream = GetLocalOrEmbedded(fileName, fallback);
+		using var stream = GetLocalOrEmbedded(fileName, fallback, fallbackToEmbedded: fallbackToEmbedded);
 		var context = stream.ReadToEnd();
 		var fi = _fileSystem.FileInfo.New(Path.Join(TemporaryDirectory.FullName, fileName));
 		_fileSystem.File.WriteAllText(fi.FullName, context);
 		return fi;
 	}
 
-	private StreamReader GetLocalOrEmbedded(string fileName, string? fallback = null)
+	private StreamReader GetLocalOrEmbedded(string fileName, string? fallback = null, bool fallbackToEmbedded = false)
 	{
 		var localPath = GetLocalPath(fileName);
 		if (ConfigurationSource == ConfigurationSource.Local)
@@ -241,6 +241,8 @@ public partial class ConfigurationFileProvider
 				var reader = _fileSystem.File.OpenText(fallbackPath);
 				return reader;
 			}
+			if (fallbackToEmbedded)
+				return GetEmbeddedStream(fileName, fallback);
 			throw new Exception($"Can not read {fileName} in directory {LocalConfigurationDirectory}");
 		}
 
@@ -258,6 +260,8 @@ public partial class ConfigurationFileProvider
 				var reader = _fileSystem.File.OpenText(fallbackPath);
 				return reader;
 			}
+			if (fallbackToEmbedded)
+				return GetEmbeddedStream(fileName, fallback);
 			throw new Exception($"Can not read {fileName} in directory {AppDataConfigurationDirectory}");
 		}
 		return GetEmbeddedStream(fileName, fallback);
