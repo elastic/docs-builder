@@ -139,8 +139,7 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		// TopNav is now derived from the parent chain. Wire a MockSiteNavigationRoot as the
 		// immediate parent so GlobalLayoutViewModel.TopNav returns the expected value.
 		var siteRoot = new MockSiteNavigationRoot(topNav);
-		var currentNavItem = new StubNavigationItem(currentUrl, root);
-		currentNavItem.Parent = siteRoot;
+		var currentNavItem = new StubNavigationItem(currentUrl, root) { Parent = siteRoot };
 
 		var model = new GlobalLayoutViewModel
 		{
