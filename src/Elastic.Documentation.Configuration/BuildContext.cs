@@ -46,12 +46,6 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public ConfigurationFile Configuration { get; private set; }
 	public DocumentationSetFile ConfigurationYaml { get; set; }
 
-	/// <summary>
-	/// The resolved site-wide top navigation. Only assembler builds set this; when null the layout
-	/// falls back to its built-in links.
-	/// </summary>
-	public TopNavRenderModel? TopNav { get; set; }
-
 	public VersionsConfiguration VersionsConfiguration { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 	public DocumentationEndpoints Endpoints { get; }

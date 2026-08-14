@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Tests.Isolation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -38,9 +39,13 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	{
 		var html = await Render(topNav: null, currentUrl: "/docs/");
 
+		// Built-in links present
 		html.Should().Contain("Release notes").And.Contain("Troubleshoot").And.Contain("Reference");
 		html.Should().NotContain("secondary-nav-dropdown");
 		html.Should().Contain("id=\"htmx-indicator\"");
+		// Flag-off: Docs brand link and justify-between layout match main exactly
+		html.Should().Contain(">Docs<");
+		html.Should().Contain("justify-between").And.NotContain("justify-start");
 	}
 
 	[Fact]
@@ -55,13 +60,21 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task TheBarIsLeftAlignedAndCarriesNoBrandLink()
+	public async Task WithTopNavTheBarIsLeftAlignedAndCarriesNoBrandLink()
 	{
-		foreach (var html in new[] { await Render(TopNav, "/docs/"), await Render(null, "/docs/") })
-		{
-			html.Should().NotContain(">Docs<");
-			html.Should().Contain("justify-start").And.NotContain("justify-between");
-		}
+		var html = await Render(TopNav, "/docs/");
+
+		html.Should().NotContain(">Docs<");
+		html.Should().Contain("justify-start").And.NotContain("justify-between");
+	}
+
+	[Fact]
+	public async Task WithoutTopNavTheBarHasDocsBrandLinkAndIsJustifiedBetween()
+	{
+		var html = await Render(null, "/docs/");
+
+		html.Should().Contain(">Docs<");
+		html.Should().Contain("justify-between").And.NotContain("justify-start");
 	}
 
 	[Fact]
@@ -123,12 +136,17 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 
+		// TopNav is now derived from the parent chain. Wire a MockSiteNavigationRoot as the
+		// immediate parent so GlobalLayoutViewModel.TopNav returns the expected value.
+		var siteRoot = new MockSiteNavigationRoot(topNav);
+		var currentNavItem = new StubNavigationItem(currentUrl, root) { Parent = siteRoot };
+
 		var model = new GlobalLayoutViewModel
 		{
 			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
-			CurrentNavigationItem = new StubNavigationItem(currentUrl, root),
+			CurrentNavigationItem = currentNavItem,
 			Previous = null,
 			Next = null,
 			NavigationHtml = "",
@@ -139,7 +157,6 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
-			TopNav = topNav
 		};
 
 		return await _SecondaryNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
@@ -155,6 +172,25 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 		public bool Hidden => false;
 		public int NavigationIndex { get; set; }
+	}
+
+	/// <summary>
+	/// Stands in for <c>SiteNavigation</c> as the outermost parent so
+	/// <see cref="GlobalLayoutViewModel.TopNav"/> resolves correctly.
+	/// </summary>
+	private sealed class MockSiteNavigationRoot(TopNavRenderModel? topNav)
+		: INodeNavigationItem<INavigationModel, INavigationItem>, ISiteNavigationRoot
+	{
+		public TopNavRenderModel? TopNav { get; } = topNav;
+		public string Id => "mock-site";
+		public string Url => "/";
+		public string NavigationTitle => "Mock Site";
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => null!;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+		public ILeafNavigationItem<INavigationModel> Index => null!;
+		public IReadOnlyCollection<INavigationItem> NavigationItems => [];
 	}
 
 	/// <summary>

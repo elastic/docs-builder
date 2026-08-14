@@ -196,7 +196,6 @@ public class HtmlWriter(
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Optimizely = DocumentationSet.Context.Optimizely,
 			Features = DocumentationSet.Configuration.Features,
-			TopNav = DocumentationSet.Context.TopNav,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			ReportIssueUrl = reportUrl,
 			CurrentVersion = currentBaseVersion,

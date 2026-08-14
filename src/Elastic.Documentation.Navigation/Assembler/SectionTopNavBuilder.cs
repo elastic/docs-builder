@@ -3,22 +3,20 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Navigation.Assembler;
 
-namespace Elastic.Documentation.Assembler.Navigation;
+namespace Elastic.Documentation.Navigation.Assembler;
 
 /// <summary>
 /// Builds a <see cref="TopNavRenderModel"/> from the top-level navigation entries in
-/// <c>navigation.yml</c>. Supports two entry shapes:
+/// <c>navigation_preview.yml</c> when the <c>navigation-preview</c> feature flag is on.
+/// Supports two entry shapes:
 /// <list type="bullet">
 /// <item><c>toc:</c> — a single navigation root, becomes one tab.</item>
 /// <item><c>section:</c> — a named group of toc: refs, becomes one tab whose active state
-///   matches any of the grouped roots. External sections become external-link tabs.</item>
+///   matches the section's navigation root. External sections become external-link tabs.</item>
 /// </list>
 /// Active state is determined by comparing the current page's NavigationRoot.Id to each
-/// tab's stored <see cref="TopNavLinkItem.SectionIds"/> (or <see cref="TopNavLinkItem.SectionId"/>
-/// for single-root tabs).
+/// tab's stored <see cref="TopNavLinkItem.SectionId"/>.
 /// </summary>
 public static class SectionTopNavBuilder
 {

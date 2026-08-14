@@ -107,16 +107,13 @@ public class AssemblerBuildService(
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
-		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
+		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
+		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix, navigationPreviewEnabled);
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
 			return false;
-
-		var topNav = SectionTopNavBuilder.Build(navigation, siteNavigationFile);
-		foreach (var set in assembleSources.AssembleSets.Values)
-			set.BuildContext.TopNav = topNav;
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);

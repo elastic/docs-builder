@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
-using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;

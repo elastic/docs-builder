@@ -5,6 +5,7 @@ import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
@@ -216,6 +217,7 @@ document.addEventListener('htmx:load', function () {
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
+        ['initListing', initListing],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
