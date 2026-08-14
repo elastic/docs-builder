@@ -71,23 +71,22 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 
 		var index = items.Count;
-		foreach (var tocRef in siteNavigationFile.TableOfContents)
-		{
-			var navItem = CreateSiteTableOfContentsNavigation(
-				tocRef,
-				index++,
-				context,
-				this,
-				null
-			);
 
-			if (navItem != null)
+		foreach (var entry in siteNavigationFile.TableOfContents)
+		{
+			var tocRefs = entry is SiteSectionRef section
+				? section.Children
+				: [entry as SiteTableOfContentsRef ?? throw new InvalidOperationException($"Unexpected entry type: {entry.GetType().Name}")];
+
+			foreach (var tocRef in tocRefs)
 			{
-				// Every top-level navigation.yml section owns the sidebar — that is the definition of an island.
-				// The dropdown is how a top-level island renders its way out; see NavigationRenderModel.CreateBackLinks.
-				if (navItem is IAssignableIslandNavigation assignable)
-					assignable.IsIsland = true;
-				items.Add(navItem);
+				var navItem = CreateSiteTableOfContentsNavigation(tocRef, index++, context, this, null);
+				if (navItem is not null)
+				{
+					if (navItem is IAssignableIslandNavigation assignable)
+						assignable.IsIsland = true;
+					items.Add(navItem);
+				}
 			}
 		}
 
