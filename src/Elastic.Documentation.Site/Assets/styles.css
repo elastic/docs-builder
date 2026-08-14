@@ -48,6 +48,8 @@ html {
 body {
 	/* This is still needed because of some usages of ch units and to maintain the previous behavior */
 	font-size: 16px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 :root {
