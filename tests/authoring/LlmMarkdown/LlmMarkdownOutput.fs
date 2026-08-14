@@ -226,7 +226,7 @@ type ``applies_to inline role formats`` () =
         ("elasticsearch: preview", "Serverless Elasticsearch projects: Preview")
         
         // Vector Database GA (serverless-only, unversioned)
-        ("vector_database: ga", "Serverless Elasticsearch Vector Database projects: Generally available")
+        ("vectordb: ga", "Serverless Elasticsearch Vector Database projects: Generally available")
     ]
     
     [<Fact>]

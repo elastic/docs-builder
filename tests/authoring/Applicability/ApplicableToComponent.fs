@@ -183,7 +183,7 @@ type ``serverless vector database`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
 serverless:
-  vector_database: ga
+  vectordb: ga
 ```
 """
 

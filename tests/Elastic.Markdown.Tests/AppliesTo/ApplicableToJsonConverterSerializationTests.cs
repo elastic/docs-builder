@@ -214,7 +214,7 @@ public class ApplicableToJsonConverterSerializationTests
 			[
 			  {
 			    "type": "serverless",
-			    "sub_type": "vector_database",
+			    "sub_type": "vectordb",
 			    "lifecycle": "ga",
 			    "version": "all"
 			  }

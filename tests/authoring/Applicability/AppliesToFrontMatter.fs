@@ -59,7 +59,7 @@ type ``parses serverless vector database project`` () =
     static let markdown = frontMatter """
 applies_to:
    serverless:
-      vector_database: ga
+      vectordb: ga
 """
     [<Fact>]
     let ``apply matches expected`` () =
@@ -69,24 +69,10 @@ applies_to:
             )
         ))
 
-type ``parses serverless vector database hyphenated alias`` () =
+type ``parses top level vectordb as serverless project`` () =
     static let markdown = frontMatter """
 applies_to:
-   serverless:
-      vector-database: preview
-"""
-    [<Fact>]
-    let ``apply matches expected`` () =
-        markdown |> appliesTo (ApplicableTo(
-            Serverless=ServerlessProjectApplicability(
-                VectorDatabase=AppliesCollection.op_Explicit "preview"
-            )
-        ))
-
-type ``parses top level vector_database as serverless project`` () =
-    static let markdown = frontMatter """
-applies_to:
-   vector_database: ga
+   vectordb: ga
 """
     [<Fact>]
     let ``apply matches expected`` () =
@@ -103,7 +89,7 @@ applies_to:
       security: ga
       elasticsearch: beta
       observability: removed
-      vector_database: preview
+      vectordb: preview
 """
     [<Fact>]
     let ``apply matches expected`` () =
@@ -287,7 +273,7 @@ applies_to:
   security: ga
   elasticsearch: beta
   observability: removed
-  vector_database: preview
+  vectordb: preview
   product: preview 9.5, removed 9.7
   apm_agent_dotnet: ga 9.0
   ecctl: ga 10.0
@@ -499,11 +485,11 @@ type ``serverless vector database with version emits error`` () =
     static let markdown = frontMatter """
 applies_to:
    serverless:
-      vector_database: ga 9.5
+      vectordb: ga 9.5
 """
     [<Fact>]
     let ``emits error for versioned vector database project`` () =
-        markdown |> hasError "Can't specify a version for 'vector_database'"
+        markdown |> hasError "Can't specify a version for 'vectordb'"
 
 type ``deployment ess with version emits error`` () =
     static let markdown = frontMatter """

@@ -100,7 +100,7 @@ public record ApplicableTo
 			if (Serverless.Security is not null)
 				AddEntries(entries, "serverless", "security", Serverless.Security);
 			if (Serverless.VectorDatabase is not null)
-				AddEntries(entries, "serverless", "vector_database", Serverless.VectorDatabase);
+				AddEntries(entries, "serverless", "vectordb", Serverless.VectorDatabase);
 		}
 
 		if (Product is not null)
@@ -311,7 +311,7 @@ public record ServerlessProjectApplicability
 		{
 			if (hasContent)
 				_ = sb.Append(", ");
-			_ = sb.Append("vector_database=").Append(VectorDatabase);
+			_ = sb.Append("vectordb=").Append(VectorDatabase);
 		}
 
 		return sb.ToString();
