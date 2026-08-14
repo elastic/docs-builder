@@ -110,6 +110,7 @@ toc:
       - file: applies-switch.md
       - file: automated_settings.md
       - file: buttons.md
+      - file: card-group.md
       - file: changelog.md
       - file: code.md
       - file: comments.md
@@ -117,6 +118,7 @@ toc:
       - file: csv-include.md
       - file: dropdowns.md
       - file: definition-lists.md
+      - file: explore.md
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
@@ -126,6 +128,7 @@ toc:
       - file: images.md
       - file: videos.md
       - file: kbd.md
+      - file: link-card.md
       - file: math.md
       - file: diagrams.md
       - file: lists.md
