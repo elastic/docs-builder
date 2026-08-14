@@ -12,6 +12,7 @@ phantoms:
   - toc: docs-content://release-notes/elasticsearch-clients
   - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
+  - toc: docs-content://products
   - toc: cloud://release-notes
 
 toc:
