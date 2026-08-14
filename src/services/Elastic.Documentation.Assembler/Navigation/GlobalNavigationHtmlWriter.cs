@@ -46,7 +46,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		NavigationRenderModel.Create(
 			tree: group,
 			topLevelItems: globalNavigation.TopLevelItems,
-			isUsingNavigationDropdown: true,
+			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: true,
 			isGlobalAssemblyBuild: true);
 }
