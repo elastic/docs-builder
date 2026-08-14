@@ -865,6 +865,14 @@
         },
         {
           "role": "flag",
+          "name": "no-hud",
+          "type": "boolean",
+          "required": false,
+          "summary": "Disable the diagnostics HUD and background validation builds",
+          "defaultValue": "false"
+        },
+        {
+          "role": "flag",
           "name": "log-level",
           "shortName": "l",
           "type": "enum",

@@ -26,6 +26,7 @@ public static class HotReloadManager
 public sealed class ReloadGeneratorService(
 	ReloadableGeneratorState reloadableGenerator,
 	InMemoryBuildState inMemoryBuildState,
+	bool noHud,
 	ILogger<ReloadGeneratorService> logger
 ) : IHostedService, IDisposable
 {
@@ -52,10 +53,13 @@ public sealed class ReloadGeneratorService(
 		var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
 		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
-		// Start the build loop; only shutdownCt (Ctrl+C / app exit) can cancel a running build.
-		// File-edit triggers enqueue via ScheduleBuild and never interrupt the current build.
-		_backgroundBuildTask = InMemoryBuildState.RunAsync(_serviceCts.Token);
-		InMemoryBuildState.ScheduleBuild(sourcePath);
+		if (!noHud)
+		{
+			// Start the build loop; only shutdownCt (Ctrl+C / app exit) can cancel a running build.
+			// File-edit triggers enqueue via ScheduleBuild and never interrupt the current build.
+			_backgroundBuildTask = InMemoryBuildState.RunAsync(_serviceCts.Token);
+			InMemoryBuildState.ScheduleBuild(sourcePath);
+		}
 
 		var directory = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
 		Logger.LogInformation("Start file watch on: {Directory}", directory);
@@ -99,10 +103,13 @@ public sealed class ReloadGeneratorService(
 			Logger.LogInformation("Reload complete!");
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 
-			// Schedule a validation build after every reload — both content edits and structural changes.
-			// The build loop coalesces rapid triggers: a new request while a build runs queues one more.
-			var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
-			InMemoryBuildState.ScheduleBuild(sourcePath);
+			if (!noHud)
+			{
+				// Schedule a validation build after every reload — both content edits and structural changes.
+				// The build loop coalesces rapid triggers: a new request while a build runs queues one more.
+				var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
+				InMemoryBuildState.ScheduleBuild(sourcePath);
+			}
 		}, token);
 	}
 
