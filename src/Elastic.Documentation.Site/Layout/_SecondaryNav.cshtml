@@ -58,13 +58,8 @@
 							<li class="text-nowrap @stateClass">
 								@if (link.IsExternal)
 								{
-									<a href="@link.Url" target="_blank" rel="noopener noreferrer"
-									   class="inline-flex items-center gap-1">
+									<a href="@link.Url" target="_blank" rel="noopener noreferrer">
 										@link.Title
-										<svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-											<path d="M6 3h7v7M13 3L6.5 9.5M11 10.5V13H3V5h2.5" stroke="currentColor" stroke-width="1.6"
-											      stroke-linecap="round" stroke-linejoin="round"/>
-										</svg>
 										<span class="sr-only">(opens in a new tab)</span>
 									</a>
 								}

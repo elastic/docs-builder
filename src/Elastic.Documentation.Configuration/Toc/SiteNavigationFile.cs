@@ -25,10 +25,12 @@ public interface ISiteNavigationEntry
 
 public record SiteSectionRef(
 	string Title,
-	string? Url,
-	bool External,
+	string? ExternalUrl,
 	IReadOnlyCollection<SiteTableOfContentsRef> Children
-) : ISiteNavigationEntry;
+) : ISiteNavigationEntry
+{
+	public bool IsExternal => ExternalUrl is not null;
+}
 
 [YamlSerializable]
 public class SiteNavigationFile
@@ -216,13 +218,11 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 
 		if (dictionary.TryGetValue("section", out var sectionTitleVal) && sectionTitleVal is string sectionTitle)
 		{
-			var url = dictionary.TryGetValue("url", out var urlVal) && urlVal is string u ? u : null;
-			var external = dictionary.TryGetValue("external", out var extVal) && extVal is string e
-				&& bool.TryParse(e, out var eb) && eb;
+			var externalUrl = dictionary.TryGetValue("external", out var extVal) && extVal is string e && !string.IsNullOrEmpty(e) ? e : null;
 			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj) && childrenObj is List<SiteTableOfContentsRef> refs
 				? refs
 				: [];
-			return new SiteSectionRef(sectionTitle, url, external, children);
+			return new SiteSectionRef(sectionTitle, externalUrl, children);
 		}
 
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string sourceString)

@@ -40,17 +40,14 @@ public static class SectionTopNavBuilder
 		{
 			if (entry is SiteSectionRef section)
 			{
-				if (section.External)
+				if (section.IsExternal)
 				{
-					// External link tab — never active
-					items.Add(new TopNavLinkItem(section.Title, section.Url ?? "#", IsExternal: true));
+					items.Add(new TopNavLinkItem(section.Title, section.ExternalUrl!, IsExternal: true));
 				}
 				else
 				{
-					// Section tab: URL = explicit url: or first resolved child's index URL
-					// Active when current NavigationRoot matches any of the section's toc: children
 					var sectionIds = new HashSet<string>();
-					var tabUrl = section.Url;
+					string? tabUrl = null;
 
 					foreach (var childRef in section.Children)
 					{
