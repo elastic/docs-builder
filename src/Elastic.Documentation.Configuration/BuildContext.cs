@@ -23,7 +23,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 		.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
 
-	/// <summary>The resolved documentation filesystem. All other path/scope properties are computed from this.</summary>
+	/// <summary>Resolved documentation filesystem. All other path/scope properties are computed from this.</summary>
 	public DocumentationFileSystem FileSystem { get; }
 
 	/// <summary>
