@@ -165,7 +165,7 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		: IRootNavigationItem<INavigationModel, INavigationItem>
 	{
 		public string Id => id;
-		public Uri Identifier => new Uri($"section://{id}");
+		public Uri Identifier => new($"section://{id}");
 		public ILeafNavigationItem<INavigationModel> Index => null!;
 		public IReadOnlyCollection<INavigationItem> NavigationItems => [];
 		public string Url => $"/{id}/";
