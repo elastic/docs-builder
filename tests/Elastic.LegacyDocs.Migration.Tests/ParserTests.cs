@@ -346,28 +346,42 @@ public class ParserTests
 		var emitter = new MarkdownEmitter(new MarkdownEmitterOptions { BookPrefix = "test", Version = "1.0" });
 		var pages = PageChunker.Chunk(doc, chunkLevel: 1, emitter);
 
-		var slugs = pages.Select(p => p.Slug).ToList();
+		// Each included file becomes its own page; included-inside-body files are child pages.
+		// Flatten the tree to verify all pages exist regardless of depth.
+		var allPages = Flatten(pages);
+		var slugs = allPages.Select(p => p.Slug).ToList();
 
 		// index (from = Elasticsearch Guide root)
 		slugs.Should().Contain("index");
 
-		// = Search your data → its own page
+		// = Search your data → its own top-level page
 		slugs.Should().Contain("search-with-elasticsearch");
-		var searchYourData = pages.First(p => p.Slug == "search-with-elasticsearch");
+		var searchYourData = allPages.First(p => p.Slug == "search-with-elasticsearch");
 		searchYourData.MarkdownContent.Should().Contain("Intro paragraph");
 		searchYourData.MarkdownContent.Should().Contain("Run a search");        // inline section stays
 		searchYourData.MarkdownContent.Should().NotContain("The search API");   // NOT merged into this page
 
-		// == The search API → its own page
+		// == The search API → child page of search-with-elasticsearch (nested include)
 		slugs.Should().Contain("search-your-data-api");
-		var theSearchApi = pages.First(p => p.Slug == "search-your-data-api");
+		var theSearchApi = allPages.First(p => p.Slug == "search-your-data-api");
 		theSearchApi.MarkdownContent.Should().Contain("API intro");
 		theSearchApi.MarkdownContent.Should().Contain("API Run a search");      // inline stays
 		theSearchApi.MarkdownContent.Should().NotContain("Sort search results"); // NOT merged
 
-		// === Sort search results → its own page (included file, even though === level)
+		// === Sort search results → child page of search-your-data-api (nested include)
 		slugs.Should().Contain("sort-results");
-		var sortResults = pages.First(p => p.Slug == "sort-results");
+		var sortResults = allPages.First(p => p.Slug == "sort-results");
 		sortResults.MarkdownContent.Should().Contain("Sort content");
+	}
+
+	private static List<PageOutput> Flatten(IReadOnlyList<PageOutput> pages)
+	{
+		var result = new List<PageOutput>();
+		foreach (var p in pages)
+		{
+			result.Add(p);
+			result.AddRange(Flatten(p.Children));
+		}
+		return result;
 	}
 }

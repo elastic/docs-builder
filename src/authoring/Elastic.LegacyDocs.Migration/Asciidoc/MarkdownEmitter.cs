@@ -16,6 +16,8 @@ public record MarkdownEmitterOptions
 	public Dictionary<string, string> AnchorToSlugMap { get; init; } = [];
 	public Dictionary<string, string> AnchorToTitleMap { get; init; } = [];
 	public string? PageSlug { get; init; }
+	/// <summary>AST level of the page root; child headings are rebased relative to it.</summary>
+	public int HeadingLevelBase { get; init; }
 }
 
 public static partial class GuideUrlRewriter
@@ -55,6 +57,9 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 
 	public void UpdatePageSlug(string slug) =>
 		options = options with { PageSlug = slug };
+
+	public void UpdateHeadingBase(int level) =>
+		options = options with { HeadingLevelBase = level };
 
 	public string Emit(AsciidocDocument document)
 	{
@@ -106,9 +111,9 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 
 	private void Write(char value) => _ = _sb.Append(value);
 
-	private void WriteLine() => _ = _sb.AppendLine();
+	private void WriteLine() => _ = _sb.Append('\n');
 
-	private void WriteLine(string value) => _ = _sb.AppendLine(value);
+	private void WriteLine(string value) => _ = _sb.Append(value).Append('\n');
 
 	private string CaptureOutput(Action action)
 	{
@@ -194,8 +199,11 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 
 	private void EmitSection(SectionNode section)
 	{
-		var hashes = new string('#', section.Level + 1);
-		if (section.Level == 0 && section.Id is not null)
+		// Clamp to 0: inline sections at a level lower than the page root (e.g. a discrete L1
+		// section inside a L2 page) are rendered as H1 rather than negative-hash counts.
+		var effective = Math.Max(0, section.Level - options.HeadingLevelBase);
+		var hashes = new string('#', effective + 1);
+		if (effective == 0 && section.Id is not null)
 		{
 			WriteLine($"$$${section.Id}$$$");
 			WriteLine();
