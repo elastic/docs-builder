@@ -50,7 +50,7 @@ public class LocalChangeTrackingService(
 		var relativePath = Path.GetRelativePath(root.FullName, buildContext.DocumentationSourceDirectory.FullName);
 		_logger.LogInformation("Using relative path {RelativePath} for validating changes", relativePath);
 		IRepositoryTracker tracker = runningOnCi
-			? new IntegrationGitRepositoryTracker(relativePath)
+			? new IntegrationGitRepositoryTracker(root, buildContext.DocumentationSourceDirectory)
 			: new LocalGitRepositoryTracker(logFactory, collector, root, relativePath);
 		var changed = tracker.GetChangedFiles()
 			.Where(c =>
@@ -68,9 +68,11 @@ public class LocalChangeTrackingService(
 		foreach (var change in deletedAndRenamed)
 		{
 			var lookupPath = change is RenamedGitChange renamed ? renamed.OldFilePath : change.FilePath;
-			var docSetRelativePath = Path.GetRelativePath(buildContext.DocumentationSourceDirectory.FullName, Path.Join(root.FullName, lookupPath));
-			var rootRelativePath = Path.GetRelativePath(root.FullName, Path.Join(root.FullName, lookupPath));
-			if (buildContext.Configuration.IsExcluded(docSetRelativePath.OptionalWindowsReplace()))
+			// Normalize separators to '/' on Windows: redirects.yml keys and the configured
+			// excludes are always forward-slash, but Path.GetRelativePath returns '\' on Windows.
+			var docSetRelativePath = Path.GetRelativePath(buildContext.DocumentationSourceDirectory.FullName, Path.Join(root.FullName, lookupPath)).OptionalWindowsReplace();
+			var rootRelativePath = Path.GetRelativePath(root.FullName, Path.Join(root.FullName, lookupPath)).OptionalWindowsReplace();
+			if (buildContext.Configuration.IsExcluded(docSetRelativePath))
 				continue;
 			if (redirects.ContainsKey(docSetRelativePath))
 				continue;
