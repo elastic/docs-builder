@@ -25,7 +25,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 
 	public RemoveReleaseVersionTests(ITestOutputHelper output) : base(output)
 	{
-		_removeService = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystem);
+		_removeService = new ChangelogRemoveService(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}

@@ -21,6 +21,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
 using Elastic.Markdown.Extensions.CliReference;
 using Elastic.Markdown.Extensions.DetectionRules;
+using Elastic.Markdown.Extensions.Listing;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
 
@@ -73,8 +74,6 @@ public class DocumentationSet : INavigationTraversable
 		CrossLinkResolver = linkResolver;
 		ReleaseNotesResolver = releaseNotesResolver ?? NoopReleaseNotesResolver.Instance;
 		Configuration = context.Configuration;
-		EnabledExtensions = InstantiateExtensions();
-
 		var resolver = new ParserResolvers
 		{
 			CrossLinkResolver = CrossLinkResolver,
@@ -85,13 +84,17 @@ public class DocumentationSet : INavigationTraversable
 		};
 		MarkdownParser = new MarkdownParser(context, resolver);
 
+		EnabledExtensions = InstantiateExtensions();
+
 		var fileFactory = new MarkdownFileFactory(context, MarkdownParser, EnabledExtensions);
 		Navigation = new DocumentationSetNavigation<MarkdownFile>(context.ConfigurationYaml, context, fileFactory, null, null, context.UrlPathPrefix, CrossLinkResolver);
 		VisitNavigation(Navigation);
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
-			: Context.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Context.DocumentationSourceDirectory.Name}";
+			: Context.DocumentationCheckoutDirectory.Name
+				?? Context.DocumentationSourceDirectory.Parent?.Name
+				?? Context.DocumentationSourceDirectory.Name;
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, "links.json"));
 
@@ -228,12 +231,22 @@ public class DocumentationSet : INavigationTraversable
 	}
 
 	private bool _resolved;
+
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		if (_resolved)
 			return;
 
-		await Parallel.ForEachAsync(MarkdownFiles, ctx, async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
+		// MinimalParseAsync is ~60 % blocked on open() / file I/O; the default
+		// ProcessorCount cap starves the IO queue.  4× gives a wide-enough flight
+		// without runaway RSS growth (each in-flight parse holds a MarkdownDocument).
+		var options = new ParallelOptions
+		{
+			MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount * 4, 32),
+			CancellationToken = ctx
+		};
+		await Parallel.ForEachAsync(MarkdownFiles, options,
+			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
 
 		_resolved = true;
 	}
@@ -275,7 +288,7 @@ public class DocumentationSet : INavigationTraversable
 					return new LinkMetadata
 					{
 						Anchors = anchors,
-						Hidden = tuple.Navigation.Hidden
+						Hidden = tuple.Navigation.ExcludeFromIndexing
 					};
 				});
 
@@ -314,6 +327,10 @@ public class DocumentationSet : INavigationTraversable
 		if (HasCliReferenceRef(Context.ConfigurationYaml.TableOfContents))
 			list.Add(new CliReferenceDocsBuilderExtension(Context));
 
+		// Auto-enable listing extension when the TOC contains a listing: entry
+		if (HasListingRef(Context.ConfigurationYaml.TableOfContents))
+			list.Add(new ListingDocsBuilderExtension(Context, MarkdownParser));
+
 		return list.AsReadOnly();
 	}
 
@@ -332,6 +349,26 @@ public class DocumentationSet : INavigationTraversable
 				_ => null
 			};
 			if (children is { Count: > 0 } && HasCliReferenceRef(children))
+				return true;
+		}
+		return false;
+	}
+
+	private static bool HasListingRef(IReadOnlyCollection<ITableOfContentsItem> items)
+	{
+		foreach (var item in items)
+		{
+			if (item is ListingRef)
+				return true;
+
+			var children = item switch
+			{
+				FileRef f => f.Children,
+				FolderRef f => f.Children,
+				IsolatedTableOfContentsRef t => t.Children,
+				_ => null
+			};
+			if (children is { Count: > 0 } && HasListingRef(children))
 				return true;
 		}
 		return false;

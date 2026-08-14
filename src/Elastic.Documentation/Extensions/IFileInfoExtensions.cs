@@ -101,6 +101,10 @@ public static class IDirectoryInfoExtensions
 	public static bool IsSubPathOf(this IDirectoryInfo directory, IDirectoryInfo parentDirectory)
 	{
 		var cmp = IsCaseSensitiveFileSystem ? Ordinal : OrdinalIgnoreCase;
+		// Fast reject: if directory's full path is shorter than parentDirectory's it can't be a
+		// descendant (+1 accounts for a trailing separator on one side but not the other).
+		if (directory.FullName.Length + 1 < parentDirectory.FullName.Length)
+			return false;
 		var parent = directory;
 		do
 		{
@@ -111,6 +115,11 @@ public static class IDirectoryInfoExtensions
 
 		return false;
 	}
+
+	/// <summary>Constructs <see cref="IDirectoryInfo"/> for both paths from <paramref name="fs"/>
+	/// and delegates to <see cref="IsSubPathOf(IDirectoryInfo,IDirectoryInfo)"/>.</summary>
+	public static bool IsSubPath(string path, string parent, IFileSystem fs) =>
+		fs.DirectoryInfo.New(path).IsSubPathOf(fs.DirectoryInfo.New(parent));
 
 	/// Checks if <paramref name="directory"/> has parent directory <paramref name="parentName"/>, defaults to OrdinalIgnoreCase comparison
 	public static bool HasParent(this IDirectoryInfo directory, string parentName, StringComparison comparison = OrdinalIgnoreCase)

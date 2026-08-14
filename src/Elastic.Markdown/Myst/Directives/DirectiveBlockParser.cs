@@ -12,6 +12,7 @@ using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Settings;
@@ -174,6 +175,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{list-sub-pages}") > 0)
 			return new ListSubPagesBlock(this, context);
+
+		if (info.IndexOf("{listing}") > 0)
+			return new ListingBlock(this, context);
 
 		if (info.IndexOf("{table}") > 0)
 			return new TableDirectiveBlock(this, context);

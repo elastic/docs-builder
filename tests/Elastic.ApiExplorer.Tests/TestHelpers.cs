@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -23,20 +24,7 @@ public static class TestHelpers
 {
 	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null)
 	{
-		versionsConfiguration ??= new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack, new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
-				}
-			},
-		};
+		versionsConfiguration ??= CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 0);
 		if (productsConfiguration is null)
 		{
 			var products = new Dictionary<string, Product>
@@ -64,11 +52,51 @@ public static class TestHelpers
 			{
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, fileSystem),
+			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem)),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 			SearchConfiguration = search
 		};
 	}
+
+	public static VersionsConfiguration CreateStackVersionsConfiguration(int currentMajor, int currentMinor = 0, int patch = 0) =>
+		new()
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack, new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(currentMajor, currentMinor, patch),
+						Base = new SemVersion(currentMajor, 0, 0)
+					}
+				}
+			},
+		};
+
+	public static VersionsConfiguration CreateVersionlessConfiguration() =>
+		new()
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Serverless, new VersioningSystem
+					{
+						Id = VersioningSystemId.Serverless,
+						Current = new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0),
+						Base = new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0)
+					}
+				}
+			},
+		};
+
+	public static Product CreateProduct(string id, VersioningSystem versioningSystem, string? displayName = null) =>
+		new()
+		{
+			Id = id,
+			DisplayName = displayName ?? id,
+			VersioningSystem = versioningSystem
+		};
 }

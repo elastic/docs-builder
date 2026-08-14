@@ -18,6 +18,7 @@ using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Settings;
@@ -120,6 +121,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case ListSubPagesBlock listSubPagesBlock:
 				WriteListSubPages(renderer, listSubPagesBlock);
+				return;
+			case ListingBlock listingBlock:
+				WriteListing(renderer, listingBlock);
 				return;
 			case TableDirectiveBlock tableDirectiveBlock:
 				WriteTableDirective(renderer, tableDirectiveBlock);
@@ -246,6 +250,16 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			SubPages = block.SubPages
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteListing(HtmlRenderer renderer, ListingBlock block)
+	{
+		var slice = ListingView.Create(new ListingViewModel
+		{
+			DirectiveBlock = block,
+			Entries = block.Entries
 		});
 		RenderRazorSlice(slice, renderer);
 	}

@@ -5,8 +5,8 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
-using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ReleaseNotes.ChangelogEntryType;
 
@@ -15,7 +15,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the breaking-changes.md changelog file
 /// </summary>
-public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class BreakingChangesMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "breaking-changes.md";

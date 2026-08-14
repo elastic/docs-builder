@@ -49,9 +49,13 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		    lifecycle: ga
 		""";
 
+	// language=json
+	private const string CdnRegistryJson =
+		"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "keep.yaml" }, { "file": "skip.yaml" } ] }""";
+
 	public BundleFilesFilterTests(ITestOutputHelper output) : base(output)
 	{
-		ServiceWithConfig = new(LoggerFactory, ConfigurationContext, FileSystem);
+		ServiceWithConfig = new(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}
@@ -261,7 +265,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task Bundle_WithFiles_ForcesLocalEvenWhenRepoResolves()
+	public async Task Bundle_WithFilesAndForceLocal_SourcesLocalEvenWhenRepoResolves()
 	{
 		var keep = FileSystem.Path.Join(_changelogDir, "keep.yaml");
 		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current.CancellationToken);
@@ -277,22 +281,155 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Config = configPath,
 			Files = [keep],
+			ForceLocal = true,
 			Output = output
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		handler.RequestedPaths.Should().BeEmpty("--files must force local sourcing");
+		handler.RequestedPaths.Should().BeEmpty("--force-local must not reach the CDN");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Keep me");
+	}
+
+	[Fact]
+	public async Task Bundle_WithFiles_RepoResolves_MatchesCdnPoolByFileName()
+	{
+		// Entries exist only in the CDN pool (e.g. a private repo that uploads to S3 without keeping local
+		// copies, with PR/issue references scrubbed from the public copies). The --files filter must still
+		// work by matching the requested paths to pool entries by file name.
+		var configPath = await WriteRepoOnlyConfigAsync();
+		var handler = CdnPoolHandler();
+		var service = ServiceWithCdn(handler);
+
+		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Config = configPath,
+			Files = ["docs/changelog/keep.yaml"],
+			Output = output
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		bundle.Should().Contain("name: keep.yaml");
+		bundle.Should().NotContain("name: skip.yaml");
+	}
+
+	[Fact]
+	public async Task Bundle_WithFiles_CdnPoolMissingRequestedName_FailsBundle()
+	{
+		var configPath = await WriteRepoOnlyConfigAsync();
+		var service = ServiceWithCdn(CdnPoolHandler());
+
+		var input = new BundleChangelogsArguments
+		{
+			Config = configPath,
+			Files = ["never-uploaded.yaml"],
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("not found in the CDN pool") && d.Message.Contains("never-uploaded.yaml"));
+	}
+
+	[Fact]
+	public async Task Bundle_WithProfile_PathListFile_RepoResolves_SourcesFromCdn()
+	{
+		// The cloud scenario from docs-eng-team#734: profile mode with a path list file whose entries exist
+		// only in S3. The list must select pool entries by file name instead of requiring local files.
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configContent = $"""
+			bundle:
+			  output_directory: {outputDir}
+			  repo: elasticsearch
+			  profiles:
+			    release:
+			      output: "bundle.yaml"
+			""";
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var listFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "files.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
+		await FileSystem.File.WriteAllTextAsync(listFile, "keep.yaml\n", TestContext.Current.CancellationToken);
+
+		var handler = CdnPoolHandler();
+		var service = ServiceWithCdn(handler);
+
+		var input = new BundleChangelogsArguments
+		{
+			Config = configPath,
+			Profile = "release",
+			ProfileArgument = "9.3.0",
+			ProfileReport = listFile
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Path.Join(outputDir, "bundle.yaml"), TestContext.Current.CancellationToken);
+		bundle.Should().Contain("name: keep.yaml");
+		bundle.Should().NotContain("name: skip.yaml");
+	}
+
+	private static StubHandler CdnPoolHandler() => new(req =>
+	{
+		var path = req.RequestUri!.AbsolutePath;
+		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+			return new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent(CdnRegistryJson, System.Text.Encoding.UTF8, "application/json")
+			};
+		if (path.EndsWith("keep.yaml", StringComparison.Ordinal))
+			return new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent(EntryKeep, System.Text.Encoding.UTF8, "text/yaml")
+			};
+		if (path.EndsWith("skip.yaml", StringComparison.Ordinal))
+			return new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent(EntrySkip, System.Text.Encoding.UTF8, "text/yaml")
+			};
+		return new HttpResponseMessage(HttpStatusCode.NotFound);
+	});
+
+	private ChangelogBundlingService ServiceWithCdn(StubHandler handler)
+	{
+		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
+		return new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
+	}
+
+	private async Task<string> WriteRepoOnlyConfigAsync()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: elasticsearch
+			""";
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		return configPath;
 	}
 
 	[Fact]
@@ -312,7 +449,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var fetcher = new CdnChangelogEntryFetcher(LoggerFactory, handler, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments

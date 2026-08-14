@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown;
@@ -47,7 +48,7 @@ public class ReloadableGeneratorState : IDisposable
 		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Join(outputPath.FullName, "api"));
 
 		if (context.Configuration.Registry != DocSetRegistry.Public)
-			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData);
+			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem());
 
 		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.
@@ -80,7 +81,7 @@ public class ReloadableGeneratorState : IDisposable
 			_context.ReloadConfiguration();
 			(_codexReader as IDisposable)?.Dispose();
 			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
-				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
+				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem())
 				: null;
 			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		}
@@ -147,60 +148,34 @@ public class ReloadableGeneratorState : IDisposable
 	{
 		if (_isWatchBuild)
 			return false;
-		if (config.OpenApiSpecifications is null && config.ApiConfigurations is null)
+		if (config.ApiConfigurations is null)
 			return false;
 
 		// First run - no timestamps yet
 		if (_openApiSpecLastModified.Count == 0 && _apiMarkdownFilesLastModified.Count == 0)
 			return true;
 
-		// Check legacy OpenAPI specification files
-		if (config.OpenApiSpecifications is not null)
+		foreach (var apiConfig in config.ApiConfigurations.Values)
 		{
-			foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+			// The local spec override, when present. A spec with no local file resolves
+			// remotely and has nothing on disk to watch here.
+			if (apiConfig.LocalSpecFile is { } specFile)
 			{
-				fileInfo.Refresh();
-				if (!_openApiSpecLastModified.TryGetValue(fileInfo.FullName, out var lastModified))
+				specFile.Refresh();
+				if (!_openApiSpecLastModified.TryGetValue(specFile.FullName, out var lastModified))
 					return true; // New file
-				if (fileInfo.LastWriteTimeUtc > lastModified)
+				if (specFile.LastWriteTimeUtc > lastModified)
 					return true; // File modified
 			}
-		}
 
-		// Check new API configuration files (specs and intro/outro markdown files)
-		if (config.ApiConfigurations is not null)
-		{
-			foreach (var apiConfig in config.ApiConfigurations.Values)
+			// Explicit children declared via 'children:'
+			foreach (var childFile in apiConfig.Children)
 			{
-				// Check spec files
-				foreach (var specFile in apiConfig.SpecFiles)
-				{
-					specFile.Refresh();
-					if (!_openApiSpecLastModified.TryGetValue(specFile.FullName, out var lastModified))
-						return true; // New file
-					if (specFile.LastWriteTimeUtc > lastModified)
-						return true; // File modified
-				}
-
-				// Check intro markdown files
-				foreach (var markdownFile in apiConfig.IntroMarkdownFiles)
-				{
-					markdownFile.Refresh();
-					if (!_apiMarkdownFilesLastModified.TryGetValue(markdownFile.FullName, out var lastModified))
-						return true; // New file
-					if (markdownFile.LastWriteTimeUtc > lastModified)
-						return true; // File modified
-				}
-
-				// Check outro markdown files
-				foreach (var markdownFile in apiConfig.OutroMarkdownFiles)
-				{
-					markdownFile.Refresh();
-					if (!_apiMarkdownFilesLastModified.TryGetValue(markdownFile.FullName, out var lastModified))
-						return true; // New file
-					if (markdownFile.LastWriteTimeUtc > lastModified)
-						return true; // File modified
-				}
+				childFile.Refresh();
+				if (!_apiMarkdownFilesLastModified.TryGetValue(childFile.FullName, out var lastModified))
+					return true; // New file
+				if (childFile.LastWriteTimeUtc > lastModified)
+					return true; // File modified
 			}
 		}
 
@@ -212,41 +187,21 @@ public class ReloadableGeneratorState : IDisposable
 		_openApiSpecLastModified.Clear();
 		_apiMarkdownFilesLastModified.Clear();
 
-		// Update legacy OpenAPI specification timestamps
-		if (config.OpenApiSpecifications is not null)
+		if (config.ApiConfigurations is null)
+			return;
+
+		foreach (var apiConfig in config.ApiConfigurations.Values)
 		{
-			foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+			if (apiConfig.LocalSpecFile is { } specFile)
 			{
-				fileInfo.Refresh();
-				_openApiSpecLastModified[fileInfo.FullName] = fileInfo.LastWriteTimeUtc;
+				specFile.Refresh();
+				_openApiSpecLastModified[specFile.FullName] = specFile.LastWriteTimeUtc;
 			}
-		}
 
-		// Update new API configuration timestamps (specs and intro/outro markdown files)
-		if (config.ApiConfigurations is not null)
-		{
-			foreach (var apiConfig in config.ApiConfigurations.Values)
+			foreach (var childFile in apiConfig.Children)
 			{
-				// Update spec file timestamps
-				foreach (var specFile in apiConfig.SpecFiles)
-				{
-					specFile.Refresh();
-					_openApiSpecLastModified[specFile.FullName] = specFile.LastWriteTimeUtc;
-				}
-
-				// Update intro markdown file timestamps
-				foreach (var markdownFile in apiConfig.IntroMarkdownFiles)
-				{
-					markdownFile.Refresh();
-					_apiMarkdownFilesLastModified[markdownFile.FullName] = markdownFile.LastWriteTimeUtc;
-				}
-
-				// Update outro markdown file timestamps
-				foreach (var markdownFile in apiConfig.OutroMarkdownFiles)
-				{
-					markdownFile.Refresh();
-					_apiMarkdownFilesLastModified[markdownFile.FullName] = markdownFile.LastWriteTimeUtc;
-				}
+				childFile.Refresh();
+				_apiMarkdownFilesLastModified[childFile.FullName] = childFile.LastWriteTimeUtc;
 			}
 		}
 	}

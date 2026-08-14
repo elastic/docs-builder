@@ -128,6 +128,30 @@ public class SiteNavigationFileTests
 	}
 
 	[Fact]
+	public void DeserializesIslandOnTocEntry()
+	{
+		// language=yaml
+		var yaml = """
+		           toc:
+		             - toc: observability://
+		               path_prefix: observability
+		               island: true
+		             - toc: security://
+		               path_prefix: security
+		           """;
+
+		var siteNav = SiteNavigationFile.Deserialize(yaml);
+
+		siteNav.TableOfContents.Should().HaveCount(2);
+
+		var observability = siteNav.TableOfContents.ElementAt(0);
+		observability.Island.Should().BeTrue("island: true must be captured on the SiteTableOfContentsRef");
+
+		var security = siteNav.TableOfContents.ElementAt(1);
+		security.Island.Should().BeFalse("island defaults to false when omitted");
+	}
+
+	[Fact]
 	public void ThrowsExceptionForInvalidUri()
 	{
 		// language=yaml

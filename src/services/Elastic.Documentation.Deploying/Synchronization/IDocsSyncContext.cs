@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Diagnostics;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Deploying.Synchronization;
 
@@ -14,8 +14,8 @@ namespace Elastic.Documentation.Deploying.Synchronization;
 /// </summary>
 public interface IDocsSyncContext
 {
-	ScopedFileSystem ReadFileSystem { get; }
-	ScopedFileSystem WriteFileSystem { get; }
+	CheckoutsFileSystem ReadFileSystem { get; }
+	DocumentationWriteFileSystem WriteFileSystem { get; }
 	IDirectoryInfo OutputDirectory { get; }
 	IDiagnosticsCollector Collector { get; }
 

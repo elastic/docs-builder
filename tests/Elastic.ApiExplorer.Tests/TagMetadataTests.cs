@@ -12,10 +12,10 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -285,7 +285,7 @@ public class TagMetadataTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, FileSystemFactory.RealGitRootForPath(null), configurationContext);
+		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
@@ -649,7 +649,7 @@ public class TagMetadataTests
 
 		var firstTag = informationGroup.NavigationItems.OfType<TagNavigationItem>().First();
 		informationGroup.Url.Should().NotBe(firstTag.Url);
-		firstTag.Url.Should().Contain("/tags/");
+		firstTag.Url.Should().Contain("/group/");
 	}
 
 	[Fact]
@@ -835,18 +835,37 @@ public class TagMetadataTests
 		items.Should().HaveCount(1);
 		var tag = items[0].Index.Model.Should().BeOfType<ApiTag>().Subject;
 		tag.Name.Should().Be("only");
-		tag.TagUrlSegment.Should().Be("only");
+		tag.TagUrlSegment.Should().Be("endpoint-only");
 		tag.Description.Should().Be("Solo tag group.");
 	}
 
 	[Fact]
 	public void GenerateTagMoniker_DataStream_Uses_Hyphen()
 	{
-		ApiUrlBuilder.TagMoniker("data stream").Should().Be("data-stream");
+		ApiUrlBuilder.TagMoniker("data stream").Should().Be("endpoint-data-stream");
+	}
+
+	[Theory]
+	[InlineData("bulk", "/_bulk", "operation-bulk")]
+	[InlineData("cat-aliases", "/_cat/aliases", "operation-cat-aliases")]
+	[InlineData(null, "/indices/{index}/_search", "operation-indices-index-_search")]
+	public void OperationMoniker_MatchesBumpShScheme(string? operationId, string route, string expected)
+	{
+		ApiUrlBuilder.OperationMoniker(operationId, route).Should().Be(expected);
+	}
+
+	[Theory]
+	[InlineData("cat", "endpoint-cat")]
+	[InlineData("health_report", "endpoint-health_report")]
+	[InlineData("APM agent configuration", "endpoint-apm-agent-configuration")]
+	[InlineData("Elastic Package Manager (EPM)", "endpoint-elastic-package-manager-epm")]
+	public void TagMoniker_MatchesBumpShScheme(string tagName, string expected)
+	{
+		ApiUrlBuilder.TagMoniker(tagName).Should().Be(expected);
 	}
 
 	[Fact]
-	public async Task Tag_Url_Uses_Tags_Segment()
+	public async Task Tag_Url_Uses_Group_Segment()
 	{
 		var openApiJson = /*lang=json,strict*/ """
 		{
@@ -865,9 +884,42 @@ public class TagMetadataTests
 
 		var alpha = FindTagNavigationItem(navigation, "alpha");
 		alpha.Should().NotBeNull();
-		alpha.Url.Should().EndWith("/api/es/tags/alpha/");
+		alpha.Url.Should().EndWith("/api/doc/es/group/endpoint-alpha");
 
-		alpha.Index.Model.Should().BeOfType<ApiTag>().Which.TagUrlSegment.Should().Be("alpha");
+		alpha.Index.Model.Should().BeOfType<ApiTag>().Which.TagUrlSegment.Should().Be("endpoint-alpha");
+	}
+
+	[Fact]
+	public async Task Operation_Url_Uses_Operation_Segment()
+	{
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "T", "version": "1.0" },
+		  "paths": {
+		    "/search": {
+		      "get": {
+		        "operationId": "search-op",
+		        "tags": ["search"],
+		        "responses": { "200": { "description": "ok" } }
+		      }
+		    }
+		  },
+		  "tags": [ { "name": "search" } ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+
+		var operation = navigation.NavigationItems
+			.OfType<TagNavigationItem>()
+			.Single()
+			.NavigationItems
+			.OfType<OperationNavigationItem>()
+			.Single();
+
+		operation.Url.Should().Be("/api/doc/elasticsearch/operation/operation-search-op");
 	}
 
 	[Fact]

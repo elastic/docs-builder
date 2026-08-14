@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -12,7 +13,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class CreateNavigationFileTests
 {
 	private static ConfigurationFileProvider CreateProvider(MockFileSystem fileSystem) =>
-		new(NullLoggerFactory.Instance, fileSystem, skipPrivateRepositories: true, ConfigurationSource.Embedded);
+		new(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem), skipPrivateRepositories: true, ConfigurationSource.Embedded);
 
 	private static AssemblyConfiguration CreateConfig(params string[] privateRepoNames)
 	{
@@ -149,6 +150,69 @@ public class CreateNavigationFileTests
 		output.Should().NotContain("private-a://");
 		output.Should().NotContain("private-b://");
 		output.Should().Contain("public-repo://middle");
+	}
+
+	[Fact]
+	public void IslandProperty_OnPublicEntry_SurvivesPrivateRepoStripping()
+	{
+		var fileSystem = new MockFileSystem();
+		var provider = CreateProvider(fileSystem);
+
+		// language=yaml
+		var navYaml = """
+		              toc:
+		                - toc: public-repo://reference
+		                  path_prefix: reference
+		                  island: true
+		                  children:
+		                    - toc: private-a://section
+		                      path_prefix: reference/private
+		                    - toc: public-child://nested
+		                      path_prefix: reference/nested
+		              """;
+		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
+
+		var config = CreateConfig("private-a");
+		var result = provider.CreateNavigationFile(config);
+		var output = fileSystem.File.ReadAllText(result.FullName);
+
+		// The public entry and its island: true property are preserved
+		output.Should().Contain("public-repo://reference");
+		output.Should().Contain("island: true", "island: true on a public entry must survive private-repo stripping");
+		output.Should().Contain("public-child://nested");
+		// The private entry is removed
+		output.Should().NotContain("private-a://");
+	}
+
+	[Fact]
+	public void IslandProperty_OnPrivateEntry_IsRemovedWithEntry()
+	{
+		var fileSystem = new MockFileSystem();
+		var provider = CreateProvider(fileSystem);
+
+		// language=yaml
+		var navYaml = """
+		              toc:
+		                - toc: public-repo://reference
+		                  path_prefix: reference
+		                - toc: private-a://section
+		                  path_prefix: section
+		                  island: true
+		                - toc: public-after://other
+		                  path_prefix: other
+		              """;
+		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, navYaml);
+
+		var config = CreateConfig("private-a");
+		var result = provider.CreateNavigationFile(config);
+		var output = fileSystem.File.ReadAllText(result.FullName);
+
+		// The private entry and its island: true property are removed
+		output.Should().NotContain("private-a://");
+		output.Should().NotContain("island: true", "island: true on a private entry is removed with the entry");
+		// Public entries are preserved
+		output.Should().Contain("public-repo://reference");
+		output.Should().Contain("public-after://other");
 	}
 
 	[Fact]

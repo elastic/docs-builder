@@ -10,8 +10,8 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -25,11 +25,11 @@ public class DashboardOpenApiNavigationTests
 	public async Task CreateNavigation_SingleTagOpenApiSpec_HasSidebarItems()
 	{
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(new DiagnosticsCollector([]), FileSystemFactory.RealGitRootForPath(null), configurationContext);
+		var context = new BuildContext(new DiagnosticsCollector([]), DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
 		var fs = new FileSystem();
 		var path = fs.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "dashboard-openapi.json");
 		var fi = fs.FileInfo.New(path);
-		var doc = await OpenApiReader.Create(fi);
+		var doc = await OpenApiReader.Instance.ReadAsync(fi);
 
 		doc.Should().NotBeNull();
 
