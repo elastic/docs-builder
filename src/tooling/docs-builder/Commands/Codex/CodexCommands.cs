@@ -4,7 +4,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using Actions.Core.Services;
 using Documentation.Builder.Http;
 using Elastic.Codex;
 using Elastic.Codex.Building;
@@ -13,7 +12,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
-using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -33,9 +31,7 @@ namespace Documentation.Builder.Commands.Codex;
 internal sealed class CodexCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext,
-	ICoreService githubActionsService,
-	IEnvironmentVariables environmentVariables
+	IConfigurationContext configurationContext
 )
 {
 	/// <summary>Clone all repositories and build the portal in one step.</summary>
@@ -76,8 +72,7 @@ internal sealed class CodexCommands(
 				return cloneResult.Checkouts.Count > 0;
 			});
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
+		var buildService = new CodexBuildService(logFactory, configurationContext);
 		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
@@ -159,8 +154,7 @@ internal sealed class CodexCommands(
 			return 1;
 		}
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
+		var buildService = new CodexBuildService(logFactory, configurationContext);
 		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{

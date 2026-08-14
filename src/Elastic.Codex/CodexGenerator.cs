@@ -38,7 +38,7 @@ public interface ICodexPageRenderer
 public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDirectoryInfo outputDirectory)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexGenerator>();
-	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
+	private readonly IFileSystem _writeFileSystem = outputDirectory.FileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly IDirectoryInfo _outputDirectory = outputDirectory;
 

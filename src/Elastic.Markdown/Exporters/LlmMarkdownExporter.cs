@@ -10,6 +10,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.FileSystems;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -20,7 +21,14 @@ namespace Elastic.Markdown.Exporters;
 /// <summary>
 /// Exports markdown files as LLM-optimized CommonMark using custom renderers
 /// </summary>
-public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
+/// <param name="branded">Omits Elastic boilerplate from generated <c>llms.txt</c> content when set.</param>
+/// <param name="writeFileSystem">
+/// Filesystem to write exported files to. When <see langword="null"/>, falls back to the per-file
+/// <see cref="MarkdownExportFileContext.BuildContext"/>'s write filesystem. Codex builds inject the
+/// codex-wide write filesystem here, since this exporter writes sibling <c>{folder}.md</c> files one
+/// level above a docset's own output directory, which is out of scope for a per-docset filesystem.
+/// </param>
+public class LlmMarkdownExporter(bool branded = false, DocumentationWriteFileSystem? writeFileSystem = null) : IMarkdownExporter
 {
 
 	private const string LlmsTxtTemplate = """
@@ -87,7 +95,7 @@ public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
-		var fs = fileContext.BuildContext.WriteFileSystem;
+		var fs = writeFileSystem ?? fileContext.BuildContext.WriteFileSystem;
 		var llmMarkdown = ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
 		var outputFile = GetLlmOutputFile(fs, fileContext);
 		if (outputFile.Directory is { Exists: false })
