@@ -200,8 +200,8 @@ public class SiteNavigationFileTests
 
 		var guides = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteSectionRef>().Which;
 		guides.Title.Should().Be("Guides");
-		guides.External.Should().BeFalse();
-		guides.Url.Should().BeNull();
+		guides.IsExternal.Should().BeFalse();
+		guides.ExternalUrl.Should().BeNull();
 		guides.Children.Should().HaveCount(2);
 		guides.Children.ElementAt(0).Source.ToString().Should().Be("docs-content://get-started/");
 		guides.Children.ElementAt(1).Source.ToString().Should().Be("docs-content://solutions/");
@@ -217,8 +217,7 @@ public class SiteNavigationFileTests
 		var yaml = """
 		           toc:
 		             - section: APIs
-		               url: https://www.elastic.co/docs/api/
-		               external: true
+		               external: https://www.elastic.co/docs/api/
 		           """;
 
 		var siteNav = SiteNavigationFile.Deserialize(yaml);
@@ -227,8 +226,8 @@ public class SiteNavigationFileTests
 
 		var apis = siteNav.TableOfContents.First().Should().BeOfType<SiteSectionRef>().Which;
 		apis.Title.Should().Be("APIs");
-		apis.External.Should().BeTrue();
-		apis.Url.Should().Be("https://www.elastic.co/docs/api/");
+		apis.IsExternal.Should().BeTrue();
+		apis.ExternalUrl.Should().Be("https://www.elastic.co/docs/api/");
 		apis.Children.Should().BeEmpty();
 	}
 
