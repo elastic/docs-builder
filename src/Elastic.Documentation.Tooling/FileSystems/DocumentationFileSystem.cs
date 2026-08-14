@@ -84,31 +84,18 @@ public class DocumentationFileSystem : ScopedFileSystem, IDocumentationFileSyste
 		var checkoutPath = paths.CheckoutDirectory.FullName;
 		var roots = new List<string> { checkoutPath };
 
-		// AppData is disjointness-filtered: on CI each individual docset checkout lives inside AppData
-		// (/home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>), so AppData would
-		// subsume checkoutPath and trigger ValidateRootsAreDisjoint.
-		var appData = Configuration.Paths.ApplicationData.FullName;
-		if (!IDirectoryInfoExtensions.IsSubPath(appData, checkoutPath, fs)
-			&& !IDirectoryInfoExtensions.IsSubPath(checkoutPath, appData, fs))
-		{
-			roots.Add(appData);
-		}
+		// On CI (and for codex checkouts) the docset checkout lives inside AppData
+		// (e.g. /home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>, or
+		// AppData/codex/clone/<repo>). AddDisjointRoot keeps whichever of the two is the outer
+		// path rather than dropping AppData outright, so sibling AppData directories (e.g.
+		// config-runtime) stay in scope even when the checkout itself is nested inside AppData.
+		roots.AddDisjointRoot(Configuration.Paths.ApplicationData.FullName, fs);
 
 		foreach (var gitDir in paths.GitDirectories)
-		{
-			if (!IDirectoryInfoExtensions.IsSubPath(gitDir, checkoutPath, fs))
-				roots.Add(gitDir);
-		}
+			roots.AddDisjointRoot(gitDir, fs);
 
 		foreach (var extra in paths.ExtraRoots)
-		{
-			if (!string.IsNullOrEmpty(extra)
-				&& !IDirectoryInfoExtensions.IsSubPath(extra, checkoutPath, fs)
-				&& !roots.Contains(extra, StringComparer.OrdinalIgnoreCase))
-			{
-				roots.Add(extra);
-			}
-		}
+			roots.AddDisjointRoot(extra, fs);
 
 		return new ScopedFileSystemOptions([.. roots])
 		{

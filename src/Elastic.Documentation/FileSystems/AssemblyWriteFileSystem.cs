@@ -57,18 +57,14 @@ public class AssemblyWriteFileSystem(
 		var checkoutPath = checkout.FullName;
 		var roots = new List<string> { checkoutPath };
 
-		// AppData is disjointness-filtered: on CI the checkouts directory lives inside AppData
-		// (/home/runner/.local/share/elastic/docs-builder/checkouts/...), so AppData would subsume
-		// checkoutPath and trigger ValidateRootsAreDisjoint.
-		var appData = ApplicationDataPath;
-		if (!IDirectoryInfoExtensions.IsSubPath(appData, checkoutPath, fs)
-			&& !IDirectoryInfoExtensions.IsSubPath(checkoutPath, appData, fs))
-		{
-			roots.Add(appData);
-		}
+		// On CI the checkouts directory lives inside AppData
+		// (/home/runner/.local/share/elastic/docs-builder/checkouts/...). AddDisjointRoot keeps
+		// whichever of the two is the outer path rather than dropping AppData outright, so sibling
+		// AppData directories stay in scope even when the checkout itself is nested inside AppData.
+		roots.AddDisjointRoot(ApplicationDataPath, fs);
 
-		if (output is not null && !IDirectoryInfoExtensions.IsSubPath(output.FullName, checkoutPath, fs))
-			roots.Add(output.FullName);
+		if (output is not null)
+			roots.AddDisjointRoot(output.FullName, fs);
 
 		// MockFileSystem hardcodes its temp path ("C:\temp" on Windows, unix-ified to "/temp/"
 		// elsewhere) instead of calling System.IO.Path.GetTempPath(). AllowedSpecialFolder.Temp uses

@@ -63,18 +63,15 @@ public class DocumentationWriteFileSystem(
 		var checkoutPath = checkout.FullName;
 		var roots = new List<string> { checkoutPath };
 
-		// AppData is disjointness-filtered: on CI each docset checkout lives inside AppData
-		// (/home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>), so AppData would
-		// subsume checkoutPath and trigger ValidateRootsAreDisjoint.
-		var appData = ApplicationDataPath;
-		if (!IDirectoryInfoExtensions.IsSubPath(appData, checkoutPath, fs)
-			&& !IDirectoryInfoExtensions.IsSubPath(checkoutPath, appData, fs))
-		{
-			roots.Add(appData);
-		}
+		// On CI (and for codex checkouts) the docset checkout lives inside AppData
+		// (e.g. /home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>, or
+		// AppData/codex/clone/<repo>). AddDisjointRoot keeps whichever of the two is the outer
+		// path rather than dropping AppData outright, so sibling AppData directories (e.g.
+		// config-runtime) stay in scope even when the checkout itself is nested inside AppData.
+		roots.AddDisjointRoot(ApplicationDataPath, fs);
 
-		if (output is not null && !IDirectoryInfoExtensions.IsSubPath(output.FullName, checkout.FullName, fs))
-			roots.Add(output.FullName);
+		if (output is not null)
+			roots.AddDisjointRoot(output.FullName, fs);
 
 		// MockFileSystem hardcodes its temp path ("C:\temp" on Windows, unix-ified to "/temp/"
 		// elsewhere) instead of calling System.IO.Path.GetTempPath(). AllowedSpecialFolder.Temp uses
