@@ -26,6 +26,19 @@ toc:
       - toc: explore-analyze
       - toc: deploy-manage
       - toc: cloud-account
+      - toc: extend
+        children:
+          - toc: kibana://extend
+            path_prefix: extend/kibana
+          - toc: logstash://extend
+            path_prefix: extend/logstash
+          - toc: beats://extend
+            path_prefix: extend/beats
+          - toc: elasticsearch://extend
+            path_prefix: extend/elasticsearch
+          - toc: integrations://extend
+            path_prefix: extend/integrations
+      - toc: contribute-docs
 
   ########
   # APIs #
@@ -709,21 +722,3 @@ toc:
           - toc: ecctl://release-notes
             path_prefix: release-notes/ecctl
 
-  ##########
-  # EXTEND #
-  ##########
-  - section: Extend
-    children:
-      - toc: extend
-        children:
-          - toc: kibana://extend
-            path_prefix: extend/kibana
-          - toc: logstash://extend
-            path_prefix: extend/logstash
-          - toc: beats://extend
-            path_prefix: extend/beats
-          - toc: elasticsearch://extend
-            path_prefix: extend/elasticsearch
-          - toc: integrations://extend
-            path_prefix: extend/integrations
-      - toc: contribute-docs
