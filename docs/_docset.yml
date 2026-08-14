@@ -122,6 +122,7 @@ toc:
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
+      - file: get-started.md
       - file: hero.md
       - file: hub-pages.md
       - file: icons.md

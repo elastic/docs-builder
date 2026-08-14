@@ -57,6 +57,7 @@
     <Compile Include="Blocks\NestedDirectiveOptions.fs" />
     <Compile Include="Blocks\Hub\Hero.fs" />
     <Compile Include="Blocks\Hub\CardsAndExplore.fs" />
+    <Compile Include="Blocks\Hub\GetStarted.fs" />
     <Compile Include="Applicability\AppliesToFrontMatter.fs" />
     <Compile Include="Applicability\AppliesToDirective.fs" />
     <Compile Include="Applicability\ApplicableToComponent.fs" />
