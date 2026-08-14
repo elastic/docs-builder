@@ -362,6 +362,20 @@ jobs:
           )
         uses: elastic/docs-builder/actions/update-link-index@main
 
+      - name: Explain skipped build
+        if: env.MATCH != 'true' || needs.check.outputs.any_modified == 'false'
+        env:
+          ANY_MODIFIED: ${{ needs.check.outputs.any_modified }}
+        run: |
+          if [[ "${MATCH}" != "true" ]]; then
+            reason="content-source match returned '${MATCH}', so this ref is not selected for a docs build"
+          elif [[ "${ANY_MODIFIED}" == "false" ]]; then
+            reason="changed-file filtering found no matching files for this workflow"
+          else
+            reason="build conditions were not met"
+          fi
+          echo "::notice::Build skipped because ${reason} (match=${MATCH}, any_modified=${ANY_MODIFIED})"
+
       - name: Update deployment status
         uses: actions/github-script@v9
         if: >

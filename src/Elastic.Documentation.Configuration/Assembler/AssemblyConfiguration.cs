@@ -269,7 +269,7 @@ public record AssemblyConfiguration
 	public record ContentSourceMatch(ContentSource? Current, ContentSource? Next, ContentSource? Edge, bool Speculative);
 }
 
-internal static partial class ContentSourceRegex
+public static partial class ContentSourceRegex
 {
 	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase)]
 	public static partial Regex MatchVersionBranch();
