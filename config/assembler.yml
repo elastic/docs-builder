@@ -29,6 +29,18 @@ environments:
     content_source: edge
     google_tag_manager:
       enabled: false
+  # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
+  # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step
+  # in navigation-test.journey.ts should be replaced with a top-nav step).
+  # 'local' exists solely so the CI synthetics job (assembler build -c local)
+  # falls back here instead of 'dev', keeping the flag-off secondary-nav path
+  # testable until the flag is retired.
+  local:
+    uri: http://localhost:4000
+    content_source: current
+    path_prefix: docs
+    feature_flags:
+      WEBSITE_SEARCH: true
   dev:
     uri: http://localhost:4000
     content_source: current
