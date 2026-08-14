@@ -63,7 +63,7 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		_ = renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());
 
 		if (!renderer.ObjectRenderers.Contains<RelatedLearningHtmlRenderer>())
-			_ = renderer.ObjectRenderers.Add(new RelatedLearningHtmlRenderer());
+			renderer.ObjectRenderers.Add(new RelatedLearningHtmlRenderer());
 
 		_ = renderer.ObjectRenderers.Replace<HtmlTableRenderer>(new WrappedTableRenderer());
 	}

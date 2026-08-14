@@ -10,12 +10,10 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.RelatedLearning;
 
-public sealed class RelatedLearningBlock : LeafBlock
+public sealed class RelatedLearningBlock(BlockParser? parser) : LeafBlock(parser)
 {
 	public const string Heading = "Related learning";
 	public const string Anchor = "related-learning-heading";
-
-	public RelatedLearningBlock(BlockParser? parser) : base(parser) { }
 
 	public required IReadOnlyList<RelatedLearningLink> Links { get; init; }
 
@@ -26,7 +24,7 @@ public sealed class RelatedLearningBlock : LeafBlock
 		if (document.Any(static b => b is RelatedLearningBlock))
 			return;
 
-		var heading = new HeadingBlock(null)
+		var heading = new HeadingBlock(null!)
 		{
 			Level = 2,
 			Line = int.MaxValue - 1
@@ -34,7 +32,7 @@ public sealed class RelatedLearningBlock : LeafBlock
 		heading.SetData("header", Heading);
 		heading.SetData("anchor", Anchor);
 		heading.Inline = new ContainerInline();
-		heading.Inline.AppendChild(new LiteralInline(Heading));
+		_ = heading.Inline.AppendChild(new LiteralInline(Heading));
 
 		var list = new RelatedLearningBlock(null)
 		{

@@ -28,7 +28,7 @@ public class RelatedLearningMappedPageTests(ITestOutputHelper output)
 	{
 		Document.Descendants<HeadingBlock>()
 			.Should()
-			.Contain(h => h.GetData("anchor") as string == RelatedLearningBlock.Anchor);
+			.Contain(h => (h.GetData("anchor") as string) == RelatedLearningBlock.Anchor);
 		Document.Descendants<RelatedLearningBlock>().Should().ContainSingle();
 
 		Html.Should().Contain("id=\"related-learning-heading\"");
