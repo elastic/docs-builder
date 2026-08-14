@@ -11,6 +11,7 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -501,6 +502,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case StorybookBlock storybookBlock:
 				WriteStorybookBlock(renderer, storybookBlock);
 				return;
+			case HeroBlock heroBlock:
+				WriteHeroBlock(renderer, heroBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -546,6 +550,32 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.Writer.Write(obj.Directive);
 		renderer.Writer.WriteLine(">");
 		renderer.EnsureLine();
+	}
+
+	// A hub page carries no body prose, so without this the export is an empty shell. The title is
+	// not written here: it becomes the page title, and LlmMarkdownExporter already emits that as
+	// the H1. Writing it again would duplicate the heading.
+	private static void WriteHeroBlock(LlmMarkdownRenderer renderer, HeroBlock heroBlock)
+	{
+		renderer.EnsureBlockSpacing();
+
+		if (!string.IsNullOrEmpty(heroBlock.Description))
+		{
+			renderer.WriteLine(heroBlock.Description);
+			renderer.EnsureLine();
+		}
+
+		WriteHeroAction(renderer, heroBlock.PrimaryActionLabel, heroBlock.PrimaryActionUrl);
+		WriteHeroAction(renderer, heroBlock.SecondaryActionLabel, heroBlock.SecondaryActionUrl);
+		WriteHeroAction(renderer, heroBlock.TertiaryActionLabel, heroBlock.TertiaryActionUrl);
+		renderer.EnsureLine();
+	}
+
+	private static void WriteHeroAction(LlmMarkdownRenderer renderer, string? label, string? url)
+	{
+		if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(url))
+			return;
+		renderer.WriteLine($"- [{label}]({LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url)})");
 	}
 
 	private static void WriteImageBlock(LlmMarkdownRenderer renderer, ImageBlock imageBlock)

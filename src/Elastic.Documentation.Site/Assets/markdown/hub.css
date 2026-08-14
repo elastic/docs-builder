@@ -1,0 +1,170 @@
+/*
+ * Hub-page styling. Class names mirror the directive output:
+ *
+ *   .hub-page    page wrapper, set by RenderHub in _Layout.cshtml
+ *   .hub-content article wrapper inside the content column
+ *   .hub-hero    hero section, light, with a divider below
+ *
+ * Later hub directives append their own sections to this file.
+ */
+
+@layer components {
+	/* Page wrapper: full-width content. Stays white so the page reads
+	   consistently whether the user lands via full navigation or via an
+	   htmx-boosted swap from a regular docs page.
+
+	   The content column supplies the horizontal gutter. No hub section adds one
+	   of its own: a section that did would inset itself alone and break alignment
+	   with the rest below the shared max-width. */
+	.hub-page .hub-content {
+		@apply mb-20 w-full max-w-none p-0;
+	}
+
+	/* Hero ------------------------------------------------------------- */
+	/* Light hero on the page background, separated from the body by a rule
+	   (matches the redesign, no dark band). */
+	.hub-hero {
+		background-color: transparent;
+		color: var(--color-ink-dark);
+		padding: 40px 0 28px;
+		margin-bottom: 44px;
+		border-bottom: 1px solid var(--color-grey-20);
+	}
+	.hub-hero .hub-hero-inner {
+		@apply mx-auto w-full max-w-5xl;
+	}
+	.hub-hero .hub-hero-eyebrow {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px 14px;
+		margin: 0 0 20px;
+		font-size: var(--text-base);
+		letter-spacing: 0.02em;
+	}
+	.hub-hero .hub-hero-eyebrow-label {
+		font-weight: 600;
+		color: var(--color-ink-light);
+	}
+	.hub-hero .hub-hero-eyebrow-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 12px;
+		font-weight: 600;
+		color: var(--color-ink-dark);
+		text-decoration: none;
+		background: var(--color-white);
+		/* grey-70 is the lightest token clearing the 3:1 non-text contrast ratio, which
+		   the border needs because it is what identifies this control. Same reasoning as
+		   the neutral button in button.css. */
+		border: 1px solid var(--color-grey-70);
+		border-radius: 999px;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.hub-hero .hub-hero-eyebrow-link:hover,
+	.hub-hero .hub-hero-eyebrow-link:focus-visible {
+		background: var(--color-grey-10);
+		border-color: var(--color-ink-dark);
+	}
+	/* Shared arrow -----------------------------------------------------
+	   The site puts an arrow on exactly two kinds of link: one that sends the
+	   reader onward out of a section, and a row that is itself the target. It
+	   never marks an ordinary link, and never a button. Hub links that qualify
+	   use this class.
+
+	   The glyph and the hover slide come from `.link-arrow` in styles.css. The
+	   class is not reused directly because it is nested under `.link`, which
+	   also forces a blue semibold type treatment that a pill or a card would
+	   have to undo. */
+	.hub-arrow {
+		flex-shrink: 0;
+		width: 1.25em;
+		height: 1.25em;
+		transition: transform 0.15s ease-out;
+	}
+	a:hover .hub-arrow,
+	a:focus-visible .hub-arrow {
+		transform: translateX(4px);
+	}
+	.hub-hero .hub-hero-top {
+		display: flex;
+		align-items: center;
+		column-gap: 14px;
+		margin-bottom: 16px;
+	}
+	.hub-hero .hub-hero-icon {
+		@apply inline-flex h-13 w-13 shrink-0 items-center justify-center rounded-xl text-2xl font-bold;
+		width: 48px;
+		height: 48px;
+		background-color: var(--color-grey-10);
+		color: var(--color-ink-dark);
+	}
+	/* The letter fallback keeps the fixed chip. A product mark does not: its box hugs
+	   the glyph, so the mark's left edge lines up with the eyebrow and the description
+	   below it. Each icon's viewBox is cropped to its glyph, so there is no transparent
+	   padding left to absorb. Width follows from the glyph's own aspect ratio. */
+	.hub-hero .hub-hero-icon-svg {
+		width: auto;
+		height: 40px;
+		background-color: transparent;
+		border-radius: 0;
+	}
+	.hub-hero .hub-hero-icon-svg svg {
+		width: auto;
+		height: 40px;
+	}
+	.hub-hero .hub-hero-top h1 {
+		font-size: var(--text-4xl);
+		font-weight: 700;
+		line-height: 1.2;
+		letter-spacing: -0.5px;
+		color: var(--color-ink-dark);
+		margin: 0;
+	}
+	.hub-hero .hub-hero-top h1 a.headerlink {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-hero .hub-hero-desc {
+		font-size: var(--text-base);
+		color: var(--color-ink-light);
+		max-width: 760px;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.hub-hero .hub-hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin-top: 24px;
+	}
+	/* The three actions carry equal weight, so they all take the neutral button
+	   treatment from the {button} directive rather than a bespoke hero button. A blue
+	   variant would make each one claim to be the call to action. Only the layout
+	   properties the hero needs are set here: the type, height, colour and radius come
+	   from `.doc-button-neutral`. */
+	.hub-hero .hub-hero-action {
+		gap: 8px;
+	}
+	.hub-hero .hub-hero-action svg {
+		flex-shrink: 0;
+	}
+
+	/* The arrow slides and the hero animates its hover states. Honour a reduced-motion
+	   preference. Nothing about the resting appearance changes. */
+	@media (prefers-reduced-motion: reduce) {
+		.hub-hero .hub-hero-eyebrow-link,
+		.hub-hero .hub-hero-action,
+		.hub-arrow {
+			transition: none;
+		}
+		a:hover .hub-arrow,
+		a:focus-visible .hub-arrow {
+			transform: none;
+		}
+	}
+}
