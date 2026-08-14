@@ -1,40 +1,105 @@
+@using Elastic.Documentation.Configuration.Toc
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@{
+	var topNav = Model.TopNav;
+	// Active tab: compare the current page's NavigationRoot.Id against each tab's SectionId.
+	// The site root (SiteNavigation) has an Id that matches no tab, so homepage gets no active tab.
+	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
+}
 <div class="relative md:sticky md:top-0 md:z-30 bg-grey-10">
 	<nav id="secondary-nav"
 	     class="bg-grey-10 border-b border-grey-20">
+		@* The bar scrolls sideways rather than overflowing the viewport once enough items are
+		   configured. secondary-nav-dropdown.css lets an open dropdown escape that clipping. *@
 		<div class="
-					w-full
-					max-w-(--max-layout-width) flex mx-auto justify-between items-center
+					secondary-nav-scroll-container
+					w-full min-w-0 overflow-x-auto
+					max-w-(--max-layout-width) flex mx-auto justify-start items-center
 					px-4 py-6">
-			<div class="flex gap-2 flex-nowrap items-center font-sans font-semibold text-sm text-ink-light md:text-base">
-				<a href="@Model.Link("/")"
-				   class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
-			</div>
 			<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
-				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
-					<a
-						href="@Model.Link("/release-notes/")"
-						preload="mousedown"
-					>
-						Release notes
-					</a>
-				</li>
-				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
-					<a
-						href="@Model.Link("/troubleshoot/")"
-						preload="mousedown"
-					>
-						Troubleshoot
-					</a>
-				</li>
-				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
-					<a
-						href="@Model.Link("/reference/")"
-						preload="mousedown"
-					>
-						Reference
-					</a>
-				</li>
+				@if (topNav is not null)
+				{
+					@foreach (var item in topNav.Items)
+					{
+						var isActive = item.IsActive(currentSectionId);
+						var stateClass = isActive ? "text-blue-elastic" : "hover:text-blue-elastic active:text-blue-elastic-100";
+						if (item is TopNavDropdownItem dropdown)
+						{
+							<li class="text-nowrap relative @stateClass">
+								<details class="secondary-nav-dropdown">
+									<summary class="inline-flex items-center gap-1 cursor-pointer select-none">
+										<span>@dropdown.Title</span>
+										<svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"
+										     class="secondary-nav-dropdown-chevron">
+											<path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+											      stroke-linejoin="round"/>
+										</svg>
+									</summary>
+									<div class="secondary-nav-dropdown-menu" aria-label="@dropdown.Title">
+										@foreach (var group in dropdown.Groups)
+										{
+											if (group.Label is not null)
+											{
+												<div class="secondary-nav-dropdown-group-label">@group.Label</div>
+											}
+											foreach (var link in group.Links)
+											{
+												<a class="secondary-nav-dropdown-link"
+												   href="@link.Url"
+												   preload="mousedown">@link.Title</a>
+											}
+										}
+									</div>
+								</details>
+							</li>
+						}
+						else if (item is TopNavLinkItem link)
+						{
+							<li class="text-nowrap @stateClass">
+								@if (link.IsExternal)
+								{
+									<a href="@link.Url" target="_blank" rel="noopener noreferrer">
+										@link.Title
+										<span class="sr-only">(opens in a new tab)</span>
+									</a>
+								}
+								else
+								{
+									<a href="@link.Url" preload="mousedown">@link.Title</a>
+								}
+							</li>
+						}
+					}
+				}
+				else
+				{
+					@* No sections configured: keep the built-in links so non-assembler and older
+					   configuration snapshots render exactly as before. *@
+					<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+						<a
+							href="@Model.Link("/release-notes/")"
+							preload="mousedown"
+						>
+							Release notes
+						</a>
+					</li>
+					<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+						<a
+							href="@Model.Link("/troubleshoot/")"
+							preload="mousedown"
+						>
+							Troubleshoot
+						</a>
+					</li>
+					<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+						<a
+							href="@Model.Link("/reference/")"
+							preload="mousedown"
+						>
+							Reference
+						</a>
+					</li>
+				}
 			</ul>
 		</div>
 	</nav>

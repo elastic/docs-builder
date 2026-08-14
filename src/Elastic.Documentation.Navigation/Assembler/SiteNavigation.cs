@@ -71,23 +71,43 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 
 		var index = items.Count;
-		foreach (var tocRef in siteNavigationFile.TableOfContents)
-		{
-			var navItem = CreateSiteTableOfContentsNavigation(
-				tocRef,
-				index++,
-				context,
-				this,
-				null
-			);
 
-			if (navItem != null)
+		foreach (var entry in siteNavigationFile.TableOfContents)
+		{
+			if (entry is SiteSectionRef sectionRef && !sectionRef.IsExternal && sectionRef.Children.Count > 0)
 			{
-				// Every top-level navigation.yml section owns the sidebar — that is the definition of an island.
-				// The dropdown is how a top-level island renders its way out; see NavigationRenderModel.CreateBackLinks.
-				if (navItem is IAssignableIslandNavigation assignable)
-					assignable.IsIsland = true;
-				items.Add(navItem);
+				// Section with children becomes a real tree node (island) that groups its
+				// toc roots. FindIslandRoot() and CreateBackLinks then emit the correct
+				// "← Guides" back-link on any page within those roots.
+				var sectionNav = new SectionNavigation(sectionRef.Title) { Parent = this };
+
+				var sectionChildren = new List<INavigationItem>();
+				foreach (var childRef in sectionRef.Children)
+				{
+					var childItem = CreateSiteTableOfContentsNavigation(childRef, index++, context, sectionNav, sectionNav);
+					if (childItem is not null)
+						sectionChildren.Add(childItem);
+				}
+
+				// Resolve section URL from first child once children are built.
+				var firstChildUrl = sectionChildren
+					.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+					.FirstOrDefault()?.Index.Url;
+				if (firstChildUrl is not null)
+					sectionNav.Url = firstChildUrl;
+
+				((IAssignableChildrenNavigation)sectionNav).SetNavigationItems(sectionChildren);
+				items.Add(sectionNav);
+			}
+			else if (entry is SiteTableOfContentsRef tocRef)
+			{
+				var navItem = CreateSiteTableOfContentsNavigation(tocRef, index++, context, this, null);
+				if (navItem is not null)
+				{
+					if (navItem is IAssignableIslandNavigation assignable)
+						assignable.IsIsland = true;
+					items.Add(navItem);
+				}
 			}
 		}
 

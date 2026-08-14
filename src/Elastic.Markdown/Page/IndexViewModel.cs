@@ -86,6 +86,9 @@ public class IndexViewModel
 	/// <summary>Codex sub-header breadcrumb trail (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; set; }
 
+	/// <summary>The configured site-wide top navigation. Null outside assembler builds.</summary>
+	public TopNavRenderModel? TopNav { get; init; }
+
 	/// <summary>When set, the page performs a client-side redirect to this URL (used for alias pages).</summary>
 	public string? RedirectUrl { get; init; }
 
