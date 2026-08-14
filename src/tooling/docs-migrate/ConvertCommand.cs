@@ -85,7 +85,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 					var fileEntries = await WritePages(pages, versionDir, ct);
 					YamlWriter.WriteTocYaml(Path.Combine(versionDir, "toc.yml"), fileEntries);
-					versionEntries.Add(new TocEntry { Toc = versionLabel });
+					versionEntries.Add(new TocEntry { Toc = versionLabel, Island = true });
 					convertedVersions.Add(versionLabel);
 
 					_logger.LogInformation("Wrote {PageCount} pages for {Prefix}/{Version}",
@@ -182,8 +182,6 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		};
 		var emitter = new MarkdownEmitter(emitterOptions);
 
-		// conf.yaml chunk: N means "chunk at N levels below the document root (= title)".
-		// The AST levels match directly: == is Level 1, === is Level 2, etc.
 		return PageChunker.Chunk(document, book.Chunk, emitter);
 	}
 
@@ -195,7 +193,12 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		{
 			var filename = $"{page.Slug}.md";
 			await File.WriteAllTextAsync(Path.Combine(directory, filename), page.MarkdownContent, ct);
-			entries.Add(new TocEntry { File = filename });
+
+			List<TocEntry> childEntries = [];
+			if (page.Children.Count > 0)
+				childEntries = await WritePages(page.Children, directory, ct);
+
+			entries.Add(new TocEntry { File = filename, Children = childEntries });
 		}
 		return entries;
 	}
@@ -203,6 +206,10 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 	private static void WriteBookVersionIndex(string prefixDir, LegacyBook book, List<string> versions)
 	{
 		var sb = new StringBuilder();
+		_ = sb.AppendLine("---");
+		_ = sb.Append("navigation_title: \"").Append(book.Title).AppendLine("\"");
+		_ = sb.AppendLine("---");
+		_ = sb.AppendLine();
 		_ = sb.Append("# ").Append(book.Title).AppendLine(" — All Versions");
 		_ = sb.AppendLine();
 		_ = sb.AppendLine("| Version | Status |");
@@ -256,8 +263,6 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 	{
 		var sb = new StringBuilder();
 		_ = sb.AppendLine("project: elastic-guide-archive");
-		_ = sb.AppendLine("features:");
-		_ = sb.AppendLine("  guide-nav: true");
 
 		_ = sb.AppendLine("subs:");
 		foreach (var (key, value) in SharedAttributes.ProductNames.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
@@ -267,7 +272,10 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		_ = sb.AppendLine("  - file: index.md");
 
 		foreach (var prefix in tocRefs)
+		{
 			_ = sb.Append("  - toc: ").AppendLine(prefix);
+			_ = sb.AppendLine("    island: true");
+		}
 
 		File.WriteAllText(Path.Combine(outputDir, "docset.yml"), sb.ToString());
 	}

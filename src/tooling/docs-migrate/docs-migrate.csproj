@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\authoring\Elastic.LegacyDocs.Migration\Elastic.LegacyDocs.Migration.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
   </ItemGroup>
 
 </Project>

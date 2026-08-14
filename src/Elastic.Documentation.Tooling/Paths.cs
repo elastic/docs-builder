@@ -72,7 +72,17 @@ public static class Paths
 				return null;
 			}
 			if (depth >= maxParents)
+			{
+#if DEBUG
+				// In DEBUG we keep walking so the acceptance check above can fire for a .git
+				// that has an adjacent .slnx (solution root). Cap at a sane depth to avoid
+				// walking the entire filesystem on pathological inputs.
+				if (depth > 20)
+					return null;
+#else
 				return null;
+#endif
+			}
 			depth++;
 			directory = directory.Parent;
 		}

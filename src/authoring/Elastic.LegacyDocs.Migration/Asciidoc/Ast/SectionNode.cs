@@ -10,6 +10,13 @@ public record SectionNode : IBlockNode
 	public required string Title { get; init; }
 	public string? Id { get; init; }
 	public List<IAsciidocNode> Children { get; init; } = [];
-	/// <summary>True when this section was produced as the top-level result of a ProcessInclude call.</summary>
+	/// <summary>True when this section has a [discrete] or [float] block attribute — never becomes its own page.</summary>
+	public bool IsDiscrete { get; init; }
+	/// <summary>
+	/// True when this section was the top-level result of a ProcessInclude call.
+	/// Used only for Level-0 sections: a Level-0 section that is NOT an include-root is
+	/// the transparent book-root wrapper (becomes the index page); one that IS an include-root
+	/// is a standalone part/book and becomes its own page.
+	/// </summary>
 	public bool IsIncludeRoot { get; init; }
 }
