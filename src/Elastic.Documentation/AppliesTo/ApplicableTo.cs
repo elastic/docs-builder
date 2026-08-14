@@ -263,12 +263,11 @@ public record ServerlessProjectApplicability
 	public AppliesCollection? VectorDatabase { get; set; }
 
 	/// <summary>
-	/// Returns if Elasticsearch, Observability, and Security share the same applicability.
-	/// Vector Database is serverless-only and is not part of this collapse — <c>serverless: ga</c>
-	/// continues to mean the original three project types.
+	/// Returns if all serverless project types share the same applicability.
+	/// <c>serverless: ga</c> expands to Elasticsearch, Observability, Security, and Vector Database.
 	/// </summary>
 	public AppliesCollection? AllProjects =>
-		Elasticsearch == Observability && Observability == Security
+		Elasticsearch == Observability && Observability == Security && Security == VectorDatabase
 			? Elasticsearch
 			: null;
 
@@ -276,7 +275,8 @@ public record ServerlessProjectApplicability
 	{
 		Elasticsearch = AppliesCollection.GenerallyAvailable,
 		Observability = AppliesCollection.GenerallyAvailable,
-		Security = AppliesCollection.GenerallyAvailable
+		Security = AppliesCollection.GenerallyAvailable,
+		VectorDatabase = AppliesCollection.GenerallyAvailable
 	};
 
 	/// <inheritdoc />

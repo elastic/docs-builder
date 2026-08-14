@@ -147,22 +147,17 @@ public class ApplicableToViewModel
 	}
 
 	/// <summary>
-	/// Vector Database is serverless-only and is not part of the generic "all serverless projects" collapse.
-	/// When Elasticsearch, Observability, and Security share a lifecycle, still emit a Vector Database badge if set.
+	/// When all serverless project types share a lifecycle, collapse to a generic Serverless badge.
+	/// Otherwise emit per-project badges, including Vector Database.
 	/// </summary>
 	private void CollectServerless(List<RawApplicabilityItem> rawItems)
 	{
 		if (AppliesTo.Serverless is null)
 			return;
 
-		if (AppliesTo.Serverless.AllProjects is not null)
-		{
-			rawItems.AddRange(CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless));
-			if (AppliesTo.Serverless.VectorDatabase is not null)
-				rawItems.AddRange(CollectFromCollection(AppliesTo.Serverless.VectorDatabase, ApplicabilityMappings.ServerlessVectorDatabase));
-		}
-		else
-			rawItems.AddRange(CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
+		rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
+			? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+			: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
 	}
 
 	private static bool IsGenericGa(AppliesCollection collection)

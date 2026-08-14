@@ -205,7 +205,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			{
 				Elasticsearch = applies,
 				Observability = applies,
-				Security = applies
+				Security = applies,
+				VectorDatabase = applies
 			};
 		}
 		else if (serverless is Dictionary<object, object?> serverlessDictionary)

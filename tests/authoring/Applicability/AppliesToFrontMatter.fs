@@ -51,7 +51,8 @@ applies_to:
             Serverless=ServerlessProjectApplicability(
                 Elasticsearch=expectedAvailability,
                 Observability=expectedAvailability,
-                Security=expectedAvailability
+                Security=expectedAvailability,
+                VectorDatabase=expectedAvailability
             )
         ))
 
