@@ -1,0 +1,15 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+namespace Elastic.LegacyDocs.Migration.Asciidoc.Ast;
+
+public record SectionNode : IBlockNode
+{
+	public required int Level { get; init; }
+	public required string Title { get; init; }
+	public string? Id { get; init; }
+	public List<IAsciidocNode> Children { get; init; } = [];
+	/// <summary>True when this section was produced as the top-level result of a ProcessInclude call.</summary>
+	public bool IsIncludeRoot { get; init; }
+}

@@ -47,7 +47,8 @@ public class DocumentationWebHost
 		string? path,
 		int port,
 		IConfigurationContext configurationContext,
-		bool isWatchBuild
+		bool isWatchBuild,
+		bool noHud = false
 	)
 	{
 		var builder = WebApplication.CreateSlimBuilder();
@@ -77,10 +78,8 @@ public class DocumentationWebHost
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
 
-		// Enable diagnostics panel in serve mode
-		Context.Configuration.Features.DiagnosticsPanelEnabled = true;
+		Context.Configuration.Features.DiagnosticsPanelEnabled = !noHud;
 
-		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
 		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context, isWatchBuild);
@@ -95,7 +94,7 @@ public class DocumentationWebHost
 			.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(3))
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
 			.AddSingleton(_ => InMemoryBuildState)
-			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, logFactory.CreateLogger<ReloadGeneratorService>()));
+			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, noHud, logFactory.CreateLogger<ReloadGeneratorService>()));
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
@@ -308,12 +307,16 @@ public class DocumentationWebHost
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		slug = slug.TrimEnd('/');
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Join(slug, "index.md") : slug;
+		// Path.GetExtension treats version segments like "8.19" as having extension ".19".
+		// Only treat the slug as a bare file path when the extension is a known document type.
+		var slugExt = Path.GetExtension(slug);
+		var hasKnownExtension = slugExt is ".md" or ".html" or ".json" or ".js" or ".css" or ".svg" or ".png" or ".jpg" or ".jpeg" or ".gif" or ".ico" or ".webp";
+		var s = !hasKnownExtension ? Path.Join(slug, "index.md") : slug;
 		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
 		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))
 		{
-			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
+			s = !hasKnownExtension ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
 			fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 			if (!generator.DocumentationSet.Files.TryGetValue(fp, out documentationFile))
 			{
