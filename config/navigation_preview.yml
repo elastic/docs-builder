@@ -634,6 +634,12 @@ toc:
           - toc: docs-content://reference/glossary
             path_prefix: reference/glossary
 
+  ########
+  # APIs #
+  ########
+  - section: APIs
+    external: https://www.elastic.co/docs/api/
+
   ##########
   # EXTEND #
   ##########
