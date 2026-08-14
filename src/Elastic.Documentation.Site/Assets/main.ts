@@ -9,6 +9,7 @@ import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initNavV2 } from './pages-nav-v2'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
 import { initTabs } from './tabs'
@@ -202,6 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
 })
 
 document.addEventListener('htmx:load', function () {
+    const v2Nav = document.querySelector<HTMLElement>('[data-nav-v2]')
     runInitSteps([
         ['loadWebComponents', initWebComponents],
         ['initTocNav', initTocNav],
@@ -212,7 +214,7 @@ document.addEventListener('htmx:load', function () {
         ['initAppliesSwitch', initAppliesSwitch],
         ['initMath', initMath],
         ['initMermaid', initMermaid],
-        ['initNav', initNav],
+        ['initNav', v2Nav ? () => initNavV2(v2Nav) : initNav],
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
