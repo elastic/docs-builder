@@ -120,6 +120,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case GetStartedBlock getStartedBlock:
 				WriteGetStarted(renderer, getStartedBlock);
 				return;
+			case WhatsNewBlock whatsNewBlock:
+				WriteWhatsNew(renderer, whatsNewBlock);
+				return;
 			case PageCardBlock pageCardBlock:
 				WritePageCard(renderer, pageCardBlock);
 				return;
@@ -266,6 +269,17 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			IconSvg = ProductIcons.Get(block.Data.Icon),
 			SitePathPrefix = block.Build.UrlPathPrefix,
 			IsColumn = HubExplore.FindAncestor(block) is not null
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteWhatsNew(HtmlRenderer renderer, WhatsNewBlock block)
+	{
+		var slice = WhatsNewView.Create(new WhatsNewViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data,
+			SitePathPrefix = block.Build.UrlPathPrefix
 		});
 		RenderRazorSlice(slice, renderer);
 	}

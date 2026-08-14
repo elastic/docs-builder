@@ -146,6 +146,7 @@ toc:
       - file: tables.md
       - file: tabs.md
       - file: titles.md
+      - file: whats-new.md
 
   # Examples
   - folder: examples
