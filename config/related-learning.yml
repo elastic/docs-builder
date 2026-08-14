@@ -1,0 +1,21 @@
+links:
+  apm-with-elastic:
+    title: APM with Elastic
+    url: https://www.elastic.co/training/apm-with-elastic
+    pages:
+      - docs-content://solutions/observability/apm/index.md
+  elastic-agent:
+    title: Elastic Agent
+    url: https://www.elastic.co/training/elastic-agent
+    pages:
+      - docs-content://reference/fleet/index.md
+  index-basics:
+    title: Index Basics
+    url: https://www.elastic.co/training/index-basics
+    pages:
+      - docs-content://manage-data/data-store/index-basics.md
+  data-types-and-mappings:
+    title: Data Types and Mappings
+    url: https://www.elastic.co/training/data-types-and-mappings
+    pages:
+      - docs-content://manage-data/data-store/mapping.md

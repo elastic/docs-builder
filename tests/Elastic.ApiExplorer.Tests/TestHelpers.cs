@@ -56,7 +56,7 @@ public static class TestHelpers
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
-			SearchConfiguration = search
+			SearchConfiguration = search,
 		};
 	}
 

@@ -91,6 +91,7 @@ public class LlmMarkdownRenderer : TextRendererBase
 
 		// Add default object renderers for CommonMark elements
 		ObjectRenderers.Add(new LlmHeadingRenderer());
+		ObjectRenderers.Add(new LlmRelatedLearningRenderer());
 		ObjectRenderers.Add(new LlmParagraphRenderer());
 		ObjectRenderers.Add(new LlmDefinitionItemRenderer());
 		ObjectRenderers.Add(new LlmDefinitionListRenderer());

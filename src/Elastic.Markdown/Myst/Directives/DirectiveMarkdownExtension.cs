@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Markdown.Myst.RelatedLearning;
 using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Roles;
 using Markdig;
@@ -60,6 +61,9 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		}
 
 		_ = renderer.ObjectRenderers.Replace<HeadingRenderer>(new SectionedHeadingRenderer());
+
+		if (!renderer.ObjectRenderers.Contains<RelatedLearningHtmlRenderer>())
+			_ = renderer.ObjectRenderers.Add(new RelatedLearningHtmlRenderer());
 
 		_ = renderer.ObjectRenderers.Replace<HtmlTableRenderer>(new WrappedTableRenderer());
 	}

@@ -31,6 +31,7 @@
 @import './markdown/contributors.css';
 @import './markdown/storybook.css';
 @import './markdown/hub.css';
+@import './markdown/related-learning.css';
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
 

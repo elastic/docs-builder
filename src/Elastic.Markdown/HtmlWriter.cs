@@ -214,7 +214,7 @@ public class HtmlWriter(
 			GitHubRef = DocumentationSet.Context.Git.GitHubRef,
 			Branding = DocumentationSet.Configuration.Branding,
 			RedirectUrl = markdown.RedirectUrl,
-			Cta = cta
+			Cta = cta,
 		});
 
 		return new RenderResult
