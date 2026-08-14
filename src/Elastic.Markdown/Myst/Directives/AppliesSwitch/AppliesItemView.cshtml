@@ -1,36 +1,18 @@
-@using Elastic.Markdown.Myst.Components
+@using Elastic.Markdown.Myst.Directives.AppliesSwitch
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.AppliesSwitch.AppliesItemViewModel>
 
-@{
-	var id = $"applies-switch-item-{Model.AppliesSwitchIndex}-{Model.Index}";
+@if (Model.IsDropdown)
+{
+	@* The parent switch view renders the inputs and labels grouped in the
+	   selector overlay; the item only contributes its content pane. *@
+	<div class="applies-switch-content@(Model.Checked ? " applies-switch-content--active" : "")" data-index="@Model.Index" tabindex="0">
+		@Model.RenderBlock()
+	</div>
 }
-
-<input class="applies-switch-input" checked="@(Model.Index == 0 ? "checked" : "")" id="@id" name="applies-switch-set-@Model.AppliesSwitchIndex" type="radio" tabindex="0">
-<label class="applies-switch-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.AppliesSwitchGroupKey" for="@id">
-	@try
-	{
-		@if (Model.AppliesTo is not null)
-		{
-			<span class="applies applies-item">
-				@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
-				{
-					AppliesTo = Model.AppliesTo,
-					Inline = true,
-					ShowTooltip = false,
-					VersionsConfig = Model.BuildContext.VersionsConfiguration
-				}))
-			</span>
-		}
-		else
-		{
-			<span class="applies-switch-fallback">@Model.AppliesToDefinition</span>
-		}
-	}
-	catch
-	{
-		<span class="applies-switch-fallback">@Model.AppliesToDefinition</span>
-	}
-</label>
-<div class="applies-switch-content" tabindex="0">
-	@Model.RenderBlock()
-</div>
+else
+{
+	@await RenderPartialAsync(AppliesItemLabelView.Create(Model))
+	<div class="applies-switch-content" tabindex="0">
+		@Model.RenderBlock()
+	</div>
+}
