@@ -53,6 +53,13 @@ public static class ProductIcons
 					<path fill="rgba(255,255,255,0.85)" d="M0,20 L0,20 C0,26.627 5.373,32 12,32 L13,32 L13,20 L0,20 Z"/>
 				</g>
 			</svg>
+			""",
+		["elastic-stack"] = """
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+				<path fill="#F04E98" d="M0 2.37A2.37 2.37 0 0 1 2.37 0h27.26A2.37 2.37 0 0 1 32 2.37v6.52H0V2.37Z"/>
+				<path fill="#00BFB3" d="M0 20.148h32v-8.296H0v8.296Z"/>
+				<path fill="#07C" d="M0 23.111h32v6.519A2.37 2.37 0 0 1 29.63 32H2.37A2.37 2.37 0 0 1 0 29.63v-6.52Z"/>
+			</svg>
 			"""
 	}.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
