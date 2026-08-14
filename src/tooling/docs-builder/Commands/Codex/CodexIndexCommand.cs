@@ -4,7 +4,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using Actions.Core.Services;
 using Elastic.Codex;
 using Elastic.Codex.Indexing;
 using Elastic.Codex.Sourcing;
@@ -12,7 +11,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
-using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -24,9 +22,7 @@ namespace Documentation.Builder.Commands.Codex;
 internal sealed class CodexIndexCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext,
-	ICoreService githubActionsService,
-	IEnvironmentVariables environmentVariables
+	IConfigurationContext configurationContext
 )
 {
 	/// <summary>Index the built portal documentation into Elasticsearch.</summary>
@@ -58,8 +54,7 @@ internal sealed class CodexIndexCommand(
 			return 1;
 		}
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var service = new CodexIndexService(logFactory, configurationContext, isolatedBuildService);
+		var service = new CodexIndexService(logFactory, configurationContext);
 		serviceInvoker.AddCommand(service, (codexContext, cloneResult, fs, es),
 			static async (s, col, state, c) =>
 				await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
