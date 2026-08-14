@@ -176,9 +176,11 @@ journey('navigation test', ({ page, params }) => {
         expect(state.treeShowsNewGroup).toBe(true)
     })
 
-    step('Navigate to reference via top nav', async () => {
-        await page
-            .locator('#secondary-nav')
+    step('Use dropdown to navigate to reference', async () => {
+        const pagesDropdown = page.locator('#pages-dropdown')
+        const svg = pagesDropdown.locator('svg')
+        await svg.click()
+        await pagesDropdown
             .getByRole('link', { name: 'Reference', exact: true })
             .click()
         await expect(page).toHaveURL(`${host}/docs/reference`)

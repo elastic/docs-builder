@@ -15,8 +15,21 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Assembler;
 
+/// <summary>
+/// Marks the assembled site-wide navigation root, allowing layouts to discover the
+/// configured top nav without knowing the concrete assembler type.
+/// </summary>
+public interface ISiteNavigationRoot
+{
+	/// <summary>
+	/// The site-wide top navigation when the <c>navigation-preview</c> feature flag is on,
+	/// otherwise <c>null</c>. When null the layout falls back to its built-in links.
+	/// </summary>
+	TopNavRenderModel? TopNav { get; }
+}
+
 [DebuggerDisplay("{Url}")]
-public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable
+public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable, ISiteNavigationRoot
 {
 	private readonly string? _sitePrefix;
 
@@ -24,7 +37,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		SiteNavigationFile siteNavigationFile,
 		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
-		string? sitePrefix
+		string? sitePrefix,
+		bool navigationPreviewEnabled = false
 	)
 	{
 		// Normalize sitePrefix to ensure it has a leading slash and no trailing slash
@@ -130,7 +144,14 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Build positional navigation lookup tables from all navigation items in a single traversal
 		NavigationDocumentationFileLookup = [];
 		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
+
+		// Top nav is only built when the navigation-preview flag is on.
+		// Index.Url values are resolved above so SectionTopNavBuilder can read them here.
+		TopNav = navigationPreviewEnabled ? SectionTopNavBuilder.Build(this, siteNavigationFile) : null;
 	}
+
+	/// <inheritdoc cref="ISiteNavigationRoot.TopNav"/>
+	public TopNavRenderModel? TopNav { get; }
 
 	public HashSet<Uri> DeclaredPhantoms { get; }
 
