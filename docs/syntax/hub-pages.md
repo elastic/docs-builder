@@ -57,6 +57,7 @@ Write both deliberately. The search body indexes the hero title and description 
 | [`{card-group}`](card-group.md) | Section heading and card grid. Renders as an accordion inside `{explore}`. |
 | [`{link-card}`](link-card.md) | One card: title, description, and a list of links. Renders as a link column inside `{explore}`. |
 | [`{get-started}`](get-started.md) | Onboarding funnel. An install command, a tutorial link, and numbered steps. |
+| [`{whats-new}`](whats-new.md) | Recency panel. Dated highlight cards, authored once in `hub-whats-new.yml`. |
 | [`{explore}`](explore.md) | The browse-everything section. A stack of collapsible accordions. |
 
 ## Page skeleton

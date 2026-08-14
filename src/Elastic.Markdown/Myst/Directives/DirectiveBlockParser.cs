@@ -153,6 +153,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{get-started}") > 0)
 			return new GetStartedBlock(this, context);
 
+		if (info.IndexOf("{whats-new}") > 0)
+			return new WhatsNewBlock(this, context);
+
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
 

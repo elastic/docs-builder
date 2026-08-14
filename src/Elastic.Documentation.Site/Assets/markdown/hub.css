@@ -370,6 +370,165 @@
 		color: var(--color-blue-elastic-100, #0b64dd);
 	}
 
+	/* What's new ------------------------------------------------------- */
+	.hub-whats-new {
+		@apply mx-auto w-full max-w-5xl;
+		margin-bottom: 56px;
+		scroll-margin-top: 120px;
+	}
+	.hub-whats-new .hub-wn-header {
+		@apply mb-6 flex flex-wrap items-end justify-between gap-4;
+	}
+	.hub-whats-new .hub-wn-title {
+		font-size: var(--text-2xl);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.2;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-intro {
+		color: var(--color-ink-light);
+		margin-top: 8px;
+		max-width: 60ch;
+	}
+	.hub-whats-new .hub-wn-rn {
+		@apply flex flex-shrink-0 flex-wrap items-center gap-x-2 gap-y-1;
+	}
+	.hub-whats-new .hub-wn-footer {
+		@apply mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1;
+	}
+	.hub-whats-new .hub-wn-footer-text {
+		font-size: var(--text-base);
+		color: var(--color-ink-light);
+	}
+	.hub-whats-new .hub-wn-upgrade {
+		@apply inline-flex items-center gap-1.5;
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-whats-new .hub-wn-upgrade:hover,
+	.hub-whats-new .hub-wn-upgrade:focus-visible {
+		text-decoration: underline;
+	}
+	.hub-whats-new .hub-wn-upgrade svg {
+		flex-shrink: 0;
+	}
+	.hub-whats-new .hub-wn-rn-label {
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-ink-light);
+	}
+	.hub-whats-new .hub-wn-rn-list {
+		@apply m-0 flex flex-wrap items-center p-0;
+		list-style: none;
+	}
+	.hub-whats-new .hub-wn-rn-list li {
+		@apply inline-flex items-center;
+	}
+	.hub-whats-new .hub-wn-rn-list li:not(:last-child)::after {
+		content: '·';
+		color: var(--color-grey-40);
+		margin: 0 10px;
+		font-weight: 700;
+	}
+	.hub-whats-new .hub-wn-rn-link {
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-whats-new .hub-wn-rn-link:hover,
+	.hub-whats-new .hub-wn-rn-link:focus-visible {
+		text-decoration: underline;
+	}
+
+	/* What's new card grid */
+	.hub-whats-new .hub-wn-grid {
+		@apply m-0 grid list-none p-0;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 16px;
+	}
+	.hub-whats-new .hub-wn-card {
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-featured {
+		grid-column: span 2;
+	}
+	.hub-whats-new .hub-wn-card-link {
+		@apply flex h-full flex-col gap-2.5;
+		padding: 18px 20px;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 14px;
+		text-decoration: none;
+		color: inherit;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	/* Same hover treatment as every other card that is itself a link. The pale blue this
+	   replaced read at 2.12:1 against white, so the state was barely visible. */
+	.hub-whats-new a.hub-wn-card-link:hover,
+	.hub-whats-new .hub-wn-card-link:focus-visible {
+		border-color: var(--color-grey-80);
+		box-shadow: 0 2px 10px rgb(0 0 0 / 0.06);
+	}
+	.hub-whats-new .hub-wn-card-meta {
+		@apply flex items-center justify-between gap-2;
+		font-size: var(--text-sm);
+	}
+	.hub-whats-new .hub-wn-card-meta-left {
+		@apply inline-flex items-center gap-2;
+	}
+	/* The date is authored, so it keeps the casing the writer chose. Forcing
+	   uppercase shouts, and it mangles a month name in any language. */
+	.hub-whats-new .hub-wn-card-date {
+		font-weight: 600;
+		color: var(--color-ink-light);
+		letter-spacing: 0.03em;
+	}
+	.hub-whats-new .hub-wn-card-tag {
+		color: var(--color-grey-80, #69707d);
+		font-weight: 500;
+	}
+	.hub-whats-new .hub-wn-card-title {
+		font-size: var(--text-base);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.3;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-featured .hub-wn-card-title {
+		font-size: var(--text-lg);
+	}
+	.hub-whats-new .hub-wn-card-desc {
+		font-size: var(--text-base);
+		color: var(--color-ink-light);
+		line-height: 1.45;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-more {
+		@apply mt-auto inline-flex items-center gap-1.5;
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+	}
+	@media (max-width: 900px) {
+		.hub-whats-new .hub-wn-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.hub-whats-new .hub-wn-grid {
+			grid-template-columns: 1fr;
+		}
+		.hub-whats-new .hub-wn-card-featured {
+			grid-column: span 1;
+		}
+	}
+
 	/* Zone (section heading) ------------------------------------------ */
 	.hub-zone {
 		@apply mx-auto w-full max-w-5xl;

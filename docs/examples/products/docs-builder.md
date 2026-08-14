@@ -38,6 +38,10 @@ steps:
     description: Check links, syntax, and frontmatter before you open a pull request.
 :::
 
+:::{whats-new}
+:product: docs-builder
+:::
+
 ::::{card-group}
 :title: Get hands-on
 :id: hands-on
