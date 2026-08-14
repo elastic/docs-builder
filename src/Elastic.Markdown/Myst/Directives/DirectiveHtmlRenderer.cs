@@ -117,6 +117,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case LinkCardBlock linkCardBlock:
 				WriteLinkCard(renderer, linkCardBlock);
 				return;
+			case GetStartedBlock getStartedBlock:
+				WriteGetStarted(renderer, getStartedBlock);
+				return;
 			case PageCardBlock pageCardBlock:
 				WritePageCard(renderer, pageCardBlock);
 				return;
@@ -263,6 +266,43 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			IconSvg = ProductIcons.Get(block.Data.Icon),
 			SitePathPrefix = block.Build.UrlPathPrefix,
 			IsColumn = HubExplore.FindAncestor(block) is not null
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteGetStarted(HtmlRenderer renderer, GetStartedBlock block)
+	{
+		var data = block.Data;
+		var steps = new List<GetStartedStepViewModel>(data.Steps.Length);
+		for (var i = 0; i < data.Steps.Length; i++)
+		{
+			var step = data.Steps[i];
+			steps.Add(new GetStartedStepViewModel
+			{
+				Number = i + 1,
+				Title = step.Title,
+				DescriptionHtml = RenderInlineMarkdown(step.Description),
+				Link = step.Link,
+				LinkLabel = step.LinkLabel,
+				Options = [.. step.Options.Select(option => new GetStartedOptionViewModel
+				{
+					Label = option.Label,
+					DescriptionHtml = RenderInlineMarkdown(option.Description),
+					Code = option.Code,
+					Language = option.Language,
+					Url = option.Url,
+					UrlLabel = option.UrlLabel
+				})]
+			});
+		}
+
+		var slice = GetStartedView.Create(new GetStartedViewModel
+		{
+			DirectiveBlock = block,
+			Title = data.Title,
+			IntroHtml = RenderInlineMarkdown(data.Intro),
+			Steps = steps,
+			SitePathPrefix = block.Build.UrlPathPrefix
 		});
 		RenderRazorSlice(slice, renderer);
 	}

@@ -12,6 +12,32 @@ description: docs-builder documentation. Build, validate, and publish Elastic do
 :tertiary-action: [Explore docs-builder](#explore)
 :::
 
+:::{get-started}
+title: Get started in 4 steps
+intro: Install docs-builder, write your first page, then preview and publish it.
+steps:
+  - title: Install docs-builder
+    options:
+      - label: Build from source
+        description: Clone the repository and build the CLI yourself.
+        code: dotnet build
+        language: sh
+      - label: Run in a container
+        description: No local install needed.
+        url: /getting-started/installation.md
+        url-label: Container setup
+  - title: Write your first page
+    description: Author Markdown, add links, and use the directive set.
+    link: /getting-started/writing-content.md
+    link-label: Start writing
+  - title: Preview and publish
+    description: Serve the site locally with live reload, then publish it.
+    link: /getting-started/serve.md
+    link-label: Serve locally
+  - title: Validate the build
+    description: Check links, syntax, and frontmatter before you open a pull request.
+:::
+
 ::::{card-group}
 :title: Get hands-on
 :id: hands-on

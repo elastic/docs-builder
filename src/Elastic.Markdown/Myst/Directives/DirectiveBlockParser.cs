@@ -150,6 +150,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{link-card}") > 0)
 			return new LinkCardBlock(this, context);
 
+		if (info.IndexOf("{get-started}") > 0)
+			return new GetStartedBlock(this, context);
+
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
 
