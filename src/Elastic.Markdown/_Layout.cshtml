@@ -58,6 +58,35 @@
 			</div>
 		</div>
 	}
+
+	@* Hub pages are composed entirely from directives and own the full content column.
+	   They drop the right-rail table of contents and the prev/next nav, but keep the
+	   pages nav so a reader can move between sibling hubs. *@
+	private async Task RenderHub()
+	{
+		<div class="relative hub-page">
+			<div class="min-h-screen
+						w-full
+						max-w-(--max-layout-width)
+						mx-auto
+						md:px-4
+			">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+					<main id="content-container" class="min-w-0 mx-4 md:col-start-2 md:row-start-1">
+						@* Keeps the markdown-content id, which hljs, smooth-scroll and toc-nav select on,
+						   but not the class. typography.css is unlayered and hub.css sits in @@layer
+						   components, so the class would override every hub rule regardless of
+						   specificity. Hub directives bring their own typography. *@
+						<article id="markdown-content" class="hub-content min-w-0" data-pagefind-body>
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+					</main>
+					@await RenderPartialAsync(_PagesNav.Create(Model))
+				</div>
+			</div>
+		</div>
+	}
 }
 
 @if (RenderHeaderAndFooter)
@@ -86,6 +115,9 @@
 		break;
 	case MarkdownPageLayout.FullSearch:
 		await RenderPartialAsync(_FullSearch.Create(Model));
+		break;
+	case MarkdownPageLayout.Hub:
+		await RenderHub();
 		break;
 	default:
 		await RenderDefault();
