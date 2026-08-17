@@ -59,7 +59,7 @@ const DIMENSION_COMBO_OPTIONS: EuiComboBoxOptionOption<string>[] =
 
 const TOOLTIPS = {
     vectors:
-        'Count every vector you will store in the index, not just documents. One document can produce multiple vectors. For example, one embedding per product image plus one for the description.',
+        'The total number of vectors you plan to store in this index, not the number of documents. A single document can produce several vectors, such as one embedding for each product image and one for the description.',
     dimensions:
         'The length of each vector, set by your embedding model (for example 768 or 1536).',
     elementType:
