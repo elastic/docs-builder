@@ -112,10 +112,12 @@
       <GeneratedStaticFiles Include="_static/isolated.css.map" />
       <GeneratedStaticFiles Include="_static/codex.css" />
       <GeneratedStaticFiles Include="_static/codex.css.map" />
+      <ViteGeneratedFiles Include="_static/asset-*" />
+      <ViteGeneratedFiles Include="_static/chunk-*" />
       <OldHashedBundles Include="_static/*.????????*.js" />
       <OldHashedBundles Include="_static/*.????????*.css" />
     </ItemGroup>
-    <Delete Files="@(GeneratedStaticFiles);@(OldHashedBundles)" ContinueOnError="true" />
+    <Delete Files="@(GeneratedStaticFiles);@(ViteGeneratedFiles);@(OldHashedBundles)" ContinueOnError="true" />
   </Target>
 
   <Target Name="EmbedGeneratedAssets" DependsOnTargets="NpmRunBuild" BeforeTargets="BeforeBuild">

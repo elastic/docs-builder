@@ -15,6 +15,7 @@ const cssEntryNames: Record<string, string> = {
 }
 
 export default defineConfig({
+    base: './',
     plugins: [
         react({ jsxImportSource: '@emotion/react' }),
         svgr(),
@@ -43,6 +44,7 @@ export default defineConfig({
 
                     return `${chunkInfo.name}.js`
                 },
+                chunkFileNames: 'chunk-[name]-[hash].js',
                 assetFileNames: (assetInfo) => {
                     const originalName =
                         assetInfo.names?.[0] ?? assetInfo.name ?? ''
@@ -53,10 +55,10 @@ export default defineConfig({
                     }
 
                     if (originalName.endsWith('.css')) {
-                        return '[name][extname]'
+                        return 'chunk-[name]-[hash][extname]'
                     }
 
-                    return 'assets/[name]-[hash][extname]'
+                    return 'asset-[name]-[hash][extname]'
                 },
             },
         },
