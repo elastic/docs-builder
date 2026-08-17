@@ -158,9 +158,10 @@ public class XReqAuthTests
 
 		var opCount = 0;
 		var pathCount = 0;
+		var opLimitReached = false;
 		foreach (var p in doc.Paths)
 		{
-			if (pathCount >= 3)
+			if (opLimitReached || pathCount >= 3)
 				break;
 			pathCount++;
 			if (p.Value.Operations is null)
@@ -168,7 +169,10 @@ public class XReqAuthTests
 			foreach (var httpOp in p.Value.Operations)
 			{
 				if (opCount >= 5)
-					goto done;
+				{
+					opLimitReached = true;
+					break;
+				}
 				var lines = OpenApiXReqAuthParser.TryGetPrerequisiteLines(
 					httpOp.Value,
 					null,
@@ -179,7 +183,6 @@ public class XReqAuthTests
 				opCount++;
 			}
 		}
-	done:
 		opCount.Should().BeGreaterThan(0, "sample should have at least one operation in the first 3 paths");
 	}
 }

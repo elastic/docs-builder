@@ -10,6 +10,9 @@ using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
+using ListingGroupRef = Elastic.Documentation.Configuration.Toc.ListingGroupRef;
+using ListingRef = Elastic.Documentation.Configuration.Toc.ListingRef;
+using ListingVisual = Elastic.Documentation.Configuration.Toc.ListingVisual;
 
 namespace Elastic.Documentation.Navigation.Isolated.Node;
 
@@ -25,7 +28,7 @@ public interface IDocumentationSetNavigation
 
 [DebuggerDisplay("{Url}")]
 public class DocumentationSetNavigation<TModel>
-	: IDocumentationSetNavigation, IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider
+	: IDocumentationSetNavigation, IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider, IAssignableIslandNavigation
 
 	where TModel : class, IDocumentationFile
 {
@@ -53,6 +56,7 @@ public class DocumentationSetNavigation<TModel>
 		HomeProvider = this;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
+		IsIsland = documentationSet.Island;
 		Git = context.Git;
 		Identifier = new Uri($"{Git.RepositoryName}://");
 		_ = _tableOfContentNodes.TryAdd(Identifier, this);
@@ -150,6 +154,9 @@ public class DocumentationSetNavigation<TModel>
 	public bool IsUsingNavigationDropdown { get; }
 
 	/// <inheritdoc />
+	public bool IsIsland { get; set; }
+
+	/// <inheritdoc />
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
 
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
@@ -176,6 +183,7 @@ public class DocumentationSetNavigation<TModel>
 			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeAccessor),
 			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor),
 			CliReferenceRef cliRef => CreateCliReferenceNavigation(cliRef, index, context, parent, homeAccessor),
+			ListingRef listingRef => CreateListingNavigation(listingRef, index, context, parent, homeAccessor),
 			_ => null
 		};
 
@@ -441,6 +449,8 @@ public class DocumentationSetNavigation<TModel>
 			return null;
 		}
 		tocNavigation.SetNavigationItems(children);
+		if (tocRef.Island)
+			tocNavigation.IsIsland = true;
 
 		return tocNavigation;
 	}
@@ -594,6 +604,127 @@ public class DocumentationSetNavigation<TModel>
 
 		var args = new FileNavigationArgs(syntheticPath, syntheticPath, false, index, parent, homeAccessor);
 		return DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args);
+	}
+
+	private INavigationItem? CreateListingNavigation(
+		ListingRef listingRef,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		INavigationHomeAccessor homeAccessor
+	)
+	{
+		var visual = listingRef.Options.Visual;
+		var listingPath = listingRef.PathRelativeToDocumentationSet;
+		var isIsland = listingRef.Options.Island;
+		if (isIsland && visual == ListingVisual.None)
+		{
+			context.Collector.EmitError(listingRef.Context, $"Listing '{listingPath}' sets island: true with visual: none. Set visual: groups or visual: all so the listing is reachable from the main nav.");
+			return null;
+		}
+
+		// Root folder node for the listing
+		var folderNavigation = new FolderNavigation<TModel>(listingPath, parent, homeAccessor) { NavigationIndex = index };
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
+
+		foreach (var tocItem in listingRef.Children)
+		{
+			switch (tocItem)
+			{
+				case IndexFileRef indexRef:
+					{
+						// Root index page — always visible (it's the "back to" target for island nav)
+						var fileInfo = ResolveFileInfo(context, indexRef.PathRelativeToDocumentationSet);
+						var docFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
+						if (docFile is null)
+							break;
+						var args = new FileNavigationArgs(indexRef.PathRelativeToDocumentationSet, indexRef.PathRelativeToContainer, false, childIndex++, folderNavigation, homeAccessor);
+						children.Add(DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args));
+						break;
+					}
+				case ListingGroupRef groupRef:
+					{
+						// Group node visibility depends on `visual:`.
+						// FolderNavigation.Hidden is derived from its index page's Hidden flag,
+						// so we control group node visibility by setting Hidden on the index leaf.
+						// When this listing is an island the parent nav shows it as a ≫ stub (no subtree),
+						// so group visibility only matters for the island sidebar — driven by visual: as before.
+						var groupHidden = visual is ListingVisual.None;
+						// Derive the group folder path from the first child's parent dir so URL generation works
+						var groupFolderPath = groupRef.PathRelativeToDocumentationSet + "/" + groupRef.GroupKey;
+						var groupFolderNav = new FolderNavigation<TModel>(groupFolderPath, folderNavigation, homeAccessor) { NavigationIndex = childIndex++ };
+						var groupChildren = new List<INavigationItem>();
+						var groupChildIndex = 0;
+
+						foreach (var groupItem in groupRef.Children)
+						{
+							var pathDs = groupItem switch { FileRef fr => fr.PathRelativeToDocumentationSet, _ => groupItem.PathRelativeToDocumentationSet };
+							var pathCont = groupItem switch { FileRef fr => fr.PathRelativeToContainer, _ => groupItem.PathRelativeToContainer };
+
+							// Group index page: hidden matches group-level visibility
+							// Content pages: always hidden from nav, but NOT excluded from indexing (so search still works)
+							bool pageHidden;
+							bool excludeFromIndexing;
+							if (groupItem is IndexFileRef)
+							{
+								pageHidden = groupHidden;
+								excludeFromIndexing = groupHidden; // group index excluded from indexing only when fully hidden
+							}
+							else
+							{
+								pageHidden = visual != ListingVisual.All;
+								excludeFromIndexing = false; // listing pages always indexed
+							}
+
+							var childFileInfo = ResolveFileInfo(context, pathDs);
+							var childDocFile = CreateDocumentationFile(childFileInfo, context.ReadFileSystem, context);
+							if (childDocFile is null)
+								continue;
+
+							var leafArgs = new FileNavigationArgs(pathDs, pathCont, pageHidden, groupChildIndex++, groupFolderNav, homeAccessor,
+								ExcludeFromIndexing: excludeFromIndexing);
+							groupChildren.Add(DocumentationNavigationFactory.CreateFileNavigationLeaf(childDocFile, childFileInfo, leafArgs));
+						}
+
+						if (groupChildren.Count == 0)
+							break;
+						groupFolderNav.SetNavigationItems(groupChildren);
+						children.Add(groupFolderNav);
+						break;
+					}
+				case FileRef fileRef:
+					{
+						// Ungrouped page — hidden from nav, not excluded from indexing
+						var fileInfo = ResolveFileInfo(context, fileRef.PathRelativeToDocumentationSet);
+						var docFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
+						if (docFile is null)
+							break;
+						var args = new FileNavigationArgs(fileRef.PathRelativeToDocumentationSet, fileRef.PathRelativeToContainer, true, childIndex++, folderNavigation, homeAccessor,
+							ExcludeFromIndexing: false);
+						children.Add(DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args));
+						break;
+					}
+				default:
+					{
+						var navItem = ConvertToNavigationItem(tocItem, childIndex++, context, folderNavigation, homeAccessor);
+						if (navItem != null)
+							children.Add(navItem);
+						break;
+					}
+			}
+		}
+
+		if (children.Count == 0)
+		{
+			context.Collector.EmitError(listingRef.Context, $"Listing navigation '{listingPath}' produced no navigation items");
+			return null;
+		}
+
+		folderNavigation.SetNavigationItems(children);
+		if (isIsland)
+			folderNavigation.IsIsland = true;
+		return folderNavigation;
 	}
 
 	// Synthetic path — clean command names (no cmd- prefix) matching CliReferenceDocsBuilderExtension.SyntheticPath

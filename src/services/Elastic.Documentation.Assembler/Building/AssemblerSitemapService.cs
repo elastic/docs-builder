@@ -7,12 +7,12 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Services;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Building;
 
@@ -27,7 +27,7 @@ public class AssemblerSitemapService(
 
 	public async Task<bool> GenerateSitemapAsync(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem fileSystem,
+		CheckoutsFileSystem fileSystem,
 		ElasticsearchIndexOptions es,
 		string? environment = null,
 		Cancel ctx = default
@@ -38,10 +38,7 @@ public class AssemblerSitemapService(
 
 		_logger.LogInformation("Generating sitemap from ES index for environment {Environment}", environment);
 
-		var assembleContext = new AssembleContext(
-			assemblyConfiguration, configurationContext, environment, collector,
-			fileSystem, fileSystem, null, null
-		);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
 
 		var cfg = configurationContext.Endpoints.Elasticsearch;
 		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);

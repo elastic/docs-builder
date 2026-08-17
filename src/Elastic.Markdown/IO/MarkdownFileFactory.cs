@@ -77,30 +77,53 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		return null;
 	}
 
-	private (IFileInfo, DocumentationFile)[] ScanDocumentationFiles(BuildContext build, IDirectoryInfo sourceDirectory) =>
-	[.. build.ReadFileSystem.Directory
-		.EnumerateFiles(sourceDirectory.FullName, "*.*", SearchOption.AllDirectories)
-		.Select(f => build.ReadFileSystem.FileInfo.New(f))
-		.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
-		.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
-		// skip symlinks
-		.Where(f => f.LinkTarget == null)
-		// skip hidden folders
-		.Where(f => !Path.GetRelativePath(sourceDirectory.FullName, f.FullName).StartsWith('.'))
-		.Select<IFileInfo, (IFileInfo,DocumentationFile)>(file =>
-		{
-			var relativePath = Path.GetRelativePath(sourceDirectory.FullName, file.FullName);
-			return file.Extension switch
+	private (IFileInfo, DocumentationFile)[] ScanDocumentationFiles(BuildContext build, IDirectoryInfo sourceDirectory)
+	{
+		// Cache directory-attribute lookups so that a directory shared by many files is only
+		// stat'd once rather than once per file it contains (the old code allocated a fresh
+		// IDirectoryInfo wrapper and triggered a stat for every file).
+		var dirAttrCache = new Dictionary<string, FileAttributes>(StringComparer.Ordinal);
+
+		return [.. build.ReadFileSystem.Directory
+			.EnumerateFiles(sourceDirectory.FullName, "*.*", SearchOption.AllDirectories)
+			// Compute relative path once from the raw string before IFileInfo allocation.
+			// This also lets us do the hidden-folder dot-prefix check with zero metadata syscalls.
+			.Select(path => (path, relative: Path.GetRelativePath(sourceDirectory.FullName, path)))
+			// Skip dot-prefixed paths (Unix hidden dirs) — pure string, no stat
+			.Where(t => !t.relative.StartsWith('.'))
+			// Now create the IFileInfo (triggers stat on first property access)
+			.Select(t => (file: build.ReadFileSystem.FileInfo.New(t.path), t.relative))
+			.Where(t =>
 			{
-				".jpg" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/jpeg")),
-				".jpeg" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/jpeg")),
-				".gif" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/gif")),
-				".svg" => (file, CreateImageFile(file, sourceDirectory, build, relativePath, "image/svg+xml")),
-				".png" => (file, CreateImageFile(file, sourceDirectory, build, relativePath)),
-				".md" => CreateMarkdownTuple(file, build),
-				_ => (file, DefaultFileHandling(file, sourceDirectory))
-			};
-		})];
+				// Single Attributes read covers hidden, system, and symlink (ReparsePoint) checks;
+				// the original code read Attributes twice for the file and twice more via Directory.
+				var fileAttr = t.file.Attributes;
+				if (fileAttr.HasFlag(FileAttributes.Hidden) || fileAttr.HasFlag(FileAttributes.System))
+					return false;
+				// Skip symlinks
+				if (t.file.LinkTarget != null)
+					return false;
+				// Check parent directory attributes with per-directory caching
+				var dirPath = Path.GetDirectoryName(t.file.FullName)!;
+				if (!dirAttrCache.TryGetValue(dirPath, out var dirAttr))
+				{
+					dirAttr = build.ReadFileSystem.DirectoryInfo.New(dirPath).Attributes;
+					dirAttrCache[dirPath] = dirAttr;
+				}
+				return !dirAttr.HasFlag(FileAttributes.Hidden) && !dirAttr.HasFlag(FileAttributes.System);
+			})
+			.Select<(IFileInfo file, string relative), (IFileInfo, DocumentationFile)>(t =>
+				t.file.Extension switch
+				{
+					".jpg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/jpeg")),
+					".jpeg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/jpeg")),
+					".gif" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/gif")),
+					".svg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/svg+xml")),
+					".png" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative)),
+					".md" => CreateMarkdownTuple(t.file, build),
+					_ => (t.file, DefaultFileHandling(t.file, sourceDirectory))
+				})];
+	}
 
 	private DocumentationFile CreateImageFile(IFileInfo file, IDirectoryInfo sourceDirectory, BuildContext context, string relativePath, string mimeType = "image/png")
 	{

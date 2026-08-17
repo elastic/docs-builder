@@ -70,6 +70,7 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `src/Elastic.Documentation.Configuration/` | `dotnet test tests/Elastic.Documentation.Configuration.Tests/` |
 | `src/Elastic.Documentation.Navigation/` | `dotnet test tests/Navigation.Tests/` (prefix dropped) |
 | `src/Elastic.Documentation.Indexing/` | `dotnet test tests/Elastic.Documentation.Indexing.Tests/` |
+| `src/authoring/Elastic.LegacyDocs.Migration/` | `dotnet test tests/Elastic.LegacyDocs.Migration.Tests/` |
 | `src/tooling/essc/` | `dotnet test tests/Elastic.SiteSearch.Tests/` (essc's root namespace is `Elastic.SiteSearch.Cli`) |
 | `src/Elastic.ApiExplorer/` | `dotnet test tests/Elastic.ApiExplorer.Tests/` |
 | `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |

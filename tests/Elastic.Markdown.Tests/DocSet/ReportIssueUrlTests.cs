@@ -7,9 +7,9 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.IO;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -36,12 +36,12 @@ public class ReportIssueUrlTests : IAsyncLifetime
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		var readFileSystem = FileSystemFactory.RealGitRootForPath(null);
-		var writeFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockWriteFs);
+		var invocation = new System.IO.Abstractions.FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		var fs = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { InnerWrite = mockWriteFs });
 		var collector = new TestDiagnosticsCollector(output);
-		var configurationContext = TestHelpers.CreateConfigurationContext(readFileSystem);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fs.Read);
 
-		var context = new BuildContext(collector, readFileSystem, writeFileSystem, configurationContext, ExportOptions.Default)
+		var context = new BuildContext(collector, fs, configurationContext)
 		{
 			Force = false,
 			UrlPathPrefix = UrlPathPrefix,

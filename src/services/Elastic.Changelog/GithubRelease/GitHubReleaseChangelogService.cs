@@ -13,10 +13,10 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.GithubRelease;
 
@@ -80,9 +80,9 @@ public record CreateChangelogsFromReleaseArguments
 public class GitHubReleaseChangelogService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
+	IChangelogFileSystem fileSystem,
 	IGitHubReleaseService? releaseService = null,
 	IGitHubPrService? prService = null,
-	ScopedFileSystem? fileSystem = null,
 	ChangelogBundlingService? bundlingService = null
 ) : IService
 {
@@ -92,11 +92,11 @@ public class GitHubReleaseChangelogService(
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
-	private readonly ChangelogBundlingService _bundlingService = bundlingService ?? new ChangelogBundlingService(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogBundlingService _bundlingService = bundlingService ?? new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
 
 	public async Task<bool> CreateChangelogsFromRelease(
 		IDiagnosticsCollector collector,

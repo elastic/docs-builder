@@ -90,12 +90,16 @@ public class HtmlWriter(
 
 		// For hidden nav items (e.g. individual detection rule pages) there is no rendered nav link,
 		// so JS can't mark anything as current. Point it at the nearest visible ancestor instead.
-		var navActiveUrl = current.Hidden ? parents.FirstOrDefault(p => !p.Hidden)?.Url : null;
+		// Island pages have their own sidebar nav so JS uses window.location directly — skip the parent lookup.
+		var navActiveUrl = current.Hidden && current.FindIslandRoot() is null
+			? parents.FirstOrDefault(p => !p.Hidden)?.Url
+			: null;
 		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
-		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable)
 		{
+			var checkoutDirectory = DocumentationSet.Context.DocumentationCheckoutDirectory;
 			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
 			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
 			editUrl = $"https://github.com/{gitHubRepo}/edit/{branch}/{path}";
@@ -158,9 +162,9 @@ public class HtmlWriter(
 		var gitRef = DocumentationSet.Context.Git.Ref;
 		string? gitHubDocsUrl = null;
 		if (gitHubRepo is not null
-			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable"
-			&& DocumentationSet.Context.DocumentationCheckoutDirectory is { } docsCheckoutDir)
+			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
 		{
+			var docsCheckoutDir = DocumentationSet.Context.DocumentationCheckoutDirectory;
 			var relativeDocsPath = Path.GetRelativePath(docsCheckoutDir.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName)
 				.Replace(Path.DirectorySeparatorChar, '/');
 			gitHubDocsUrl = $"https://github.com/{gitHubRepo}/tree/{gitBranch}/{relativeDocsPath}";
@@ -187,7 +191,7 @@ public class HtmlWriter(
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",
-			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.ExcludeFromIndexing),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Optimizely = DocumentationSet.Context.Optimizely,

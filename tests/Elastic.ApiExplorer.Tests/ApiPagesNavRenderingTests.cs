@@ -12,10 +12,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
-using Elastic.Documentation.Site.Navigation;
-using Nullean.ScopedFileSystem;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -28,7 +27,7 @@ public class ApiPagesNavRenderingTests
 		var fs = new FileSystem();
 		var context = new BuildContext(
 			new DiagnosticsCollector([]),
-			FileSystemFactory.RealGitRootForPath(null),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			TestHelpers.CreateConfigurationContext(fs));
 		var navigationItem = new LandingNavigationItem("/api/doc/elasticsearch/v9/").Index;
 		var model = new ApiLayoutViewModel

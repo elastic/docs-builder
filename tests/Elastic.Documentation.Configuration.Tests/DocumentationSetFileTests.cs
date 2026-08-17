@@ -792,6 +792,169 @@ public class DocumentationSetFileTests
 			.Which.Context.OptionalWindowsReplace().Should().Be(toc);
 	}
 
+	// ──────────────────────────────────────────────────────────────
+	// island: true parsing
+	// ──────────────────────────────────────────────────────────────
+
+	[Fact]
+	public void DocsetRoot_IslandTrue_Deserializes()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           island: true
+		           toc:
+		             - file: index.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.Island.Should().BeTrue("island: true at the docset root must survive deserialization");
+	}
+
+	[Fact]
+	public void DocsetRoot_NoIsland_DefaultsFalse()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.Island.Should().BeFalse("island defaults to false when omitted");
+	}
+
+	[Fact]
+	public void InlineTocEntry_IslandTrue_Deserializes()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		             - toc: reference
+		               island: true
+		           """;
+
+		var result = Deserialize(yaml);
+
+		var tocRef = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		tocRef.PathRelativeToDocumentationSet.Should().Be("reference");
+		tocRef.Island.Should().BeTrue("inline island: true must be captured on IsolatedTableOfContentsRef");
+	}
+
+	[Fact]
+	public void InlineTocEntry_NoIsland_DefaultsFalse()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		             - toc: reference
+		           """;
+
+		var result = Deserialize(yaml);
+
+		var tocRef = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		tocRef.Island.Should().BeFalse("inline island defaults to false when omitted");
+	}
+
+	[Fact]
+	public void NestedTocYml_IslandTrue_PropagatesToRef()
+	{
+		// island: true in a nested toc.yml root propagates to the IsolatedTableOfContentsRef.Island
+		var fileSystem = new MockFileSystem();
+
+		// language=yaml
+		var docsetYaml = """
+		                 project: 'test-project'
+		                 toc:
+		                   - file: index.md
+		                   - toc: reference
+		                 """;
+
+		// language=yaml
+		var referenceTocYaml = """
+		                       island: true
+		                       toc:
+		                         - file: index.md
+		                         - file: page.md
+		                       """;
+
+		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile("/docs/reference/toc.yml", new MockFileData(referenceTocYaml));
+
+		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var collector = new DiagnosticsCollector([]);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+
+		var tocRef = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		tocRef.Island.Should().BeTrue("island: true in the nested toc.yml root propagates to the resolved IsolatedTableOfContentsRef");
+	}
+
+	[Fact]
+	public void InlineTocEntry_IslandTrue_OrSemantics_BothInlineAndTocYml()
+	{
+		// OR semantics: inline island: true + toc.yml island: true both produce Island = true
+		var fileSystem = new MockFileSystem();
+
+		// language=yaml
+		var docsetWithInlineIsland = """
+		                             project: 'test-project'
+		                             toc:
+		                               - file: index.md
+		                               - toc: reference
+		                                 island: true
+		                             """;
+
+		// language=yaml
+		var referenceTocNoIsland = """
+		                           toc:
+		                             - file: index.md
+		                           """;
+
+		// language=yaml
+		var docsetNoInlineIsland = """
+		                           project: 'test-project'
+		                           toc:
+		                             - file: index.md
+		                             - toc: reference
+		                           """;
+
+		// language=yaml
+		var referenceTocWithIsland = """
+		                             island: true
+		                             toc:
+		                               - file: index.md
+		                             """;
+
+		static IsolatedTableOfContentsRef Resolve(string docsetYaml, string tocYml)
+		{
+			var fs = new MockFileSystem();
+			fs.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+			fs.AddFile("/docs/reference/toc.yml", new MockFileData(tocYml));
+			var c = new DiagnosticsCollector([]);
+			var r = DocumentationSetFile.LoadAndResolve(c, fs.FileInfo.New("/docs/docset.yml"), new ScopedFileSystem(fs, "/docs"));
+			return r.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
+		}
+
+		// Only inline island: true → Island = true
+		Resolve(docsetWithInlineIsland, referenceTocNoIsland).Island.Should().BeTrue("inline island: true alone is sufficient");
+
+		// Only toc.yml island: true → Island = true
+		Resolve(docsetNoInlineIsland, referenceTocWithIsland).Island.Should().BeTrue("toc.yml island: true alone is sufficient");
+
+		// Both → Island = true
+		Resolve(docsetWithInlineIsland, referenceTocWithIsland).Island.Should().BeTrue("both set → still island");
+
+		// Neither → Island = false
+		Resolve(docsetNoInlineIsland, referenceTocNoIsland).Island.Should().BeFalse("neither set → not island");
+	}
+
 	[Fact]
 	public void LoadAndResolveSetsPathRelativeToContainerCorrectly()
 	{

@@ -220,6 +220,11 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	/// </summary>
 	private static string PreprocessLinkSubstitutions(string markdown, ParserContext context)
 	{
+		// The callback only rewrites links whose URL contains {{ }}. If the document
+		// has no {{ at all, both GetCodeBlockRanges and the Regex.Replace are pure overhead.
+		if (!markdown.Contains("{{", StringComparison.Ordinal))
+			return markdown;
+
 		// Find all code block boundaries to avoid processing links inside subs=false blocks
 		var codeBlockRanges = GetCodeBlockRanges(markdown);
 
