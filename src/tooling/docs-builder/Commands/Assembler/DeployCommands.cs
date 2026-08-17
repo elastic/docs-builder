@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -43,7 +44,8 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, FileSystemFactory.RealRead, FileSystemFactory.RealWrite, null, null);
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
+		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
 			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, [], ctx)
@@ -64,7 +66,8 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, FileSystemFactory.RealRead, FileSystemFactory.RealWrite, null, null);
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
+		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
 			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
@@ -81,8 +84,7 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
-		var service = new DeployUpdateRedirectsService(logFactory, fs);
+		var service = new DeployUpdateRedirectsService(logFactory, CheckoutsFileSystem.FromWorkingDirectory());
 		serviceInvoker.AddCommand(service, (environment, redirectsFile),
 			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile?.FullName, ctx: ctx)
 		);

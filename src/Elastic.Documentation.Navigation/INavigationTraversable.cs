@@ -35,9 +35,13 @@ public static class NavigationExtensions
 			get
 			{
 				var parents = navigationItem.GetParents();
-				if (parents.Length <= 1)
-					return navigationItem.NavigationTitle.ToLowerInvariant();
-				return parents.Reverse().Skip(1).FirstOrDefault()?.NavigationTitle.ToLowerInvariant();
+				var meaningful = parents
+					.Reverse()
+					.Skip(1)
+					.FirstOrDefault();
+				if (meaningful is not null)
+					return meaningful.NavigationTitle.ToLowerInvariant();
+				return navigationItem.NavigationTitle.ToLowerInvariant();
 			}
 		}
 	}

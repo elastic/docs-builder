@@ -2,11 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -51,17 +53,14 @@ public record AssemblerDocumentationSet
 			Branch = checkout.Repository.GetBranch(env.ContentSource)
 		};
 
-		var buildContext = new BuildContext(
-			context.Collector,
-			context.ReadFileSystem,
-			context.WriteFileSystem,
-			configurationContext,
-			availableExporters,
-			path,
-			output,
-			gitConfiguration
-		)
+		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions
 		{
+			Output = output,
+			Git = gitConfiguration,
+		});
+		var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
+		{
+			AvailableExporters = availableExporters,
 			UrlPathPrefix = env.PathPrefix,
 			Force = true,
 			AllowIndexing = env.AllowIndexing,

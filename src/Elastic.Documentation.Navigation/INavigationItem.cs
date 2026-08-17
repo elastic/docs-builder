@@ -26,7 +26,27 @@ public interface INavigationItem
 	/// Gets or sets the parent navigation item.
 	INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
+	/// <summary>
+	/// Whether this item is hidden from the rendered navigation tree.
+	/// Used by <c>_TocTreeNav.cshtml</c> to skip rendering.
+	/// </summary>
 	bool Hidden { get; }
+
+	/// <summary>
+	/// Whether this item should be excluded from search indexing and the HTML <c>noindex</c> directive.
+	/// Defaults to <see cref="Hidden"/> so existing behavior is preserved.
+	/// Listing pages override this to <c>false</c> — they are hidden from the nav tree but should remain
+	/// indexed and searchable.
+	/// </summary>
+	bool ExcludeFromIndexing => Hidden;
+
+	/// <summary>
+	/// When <c>true</c>, this node roots an island: the parent nav renders it as a <c>≫</c> stub
+	/// and its subtree renders only inside a dedicated island sidebar.
+	/// Combined with <see cref="NavigationItemExtensions.RendersAsIsland"/> (which also checks
+	/// <see cref="Parent"/> is non-null) to suppress island behaviour on a docset root in isolated builds.
+	/// </summary>
+	bool IsIsland => false;
 
 	int NavigationIndex { get; set; }
 }
@@ -61,6 +81,16 @@ public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INaviga
 public interface IAssignableChildrenNavigation
 {
 	void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems);
+}
+
+/// <summary>
+/// Allows external code (e.g. <c>SiteNavigation</c>) to mark a resolved navigation node as an island
+/// after the content set's own isolated build has already finished.
+/// Implemented by every node type that supports <see cref="INavigationItem.IsIsland"/>.
+/// </summary>
+public interface IAssignableIslandNavigation
+{
+	bool IsIsland { get; set; }
 }
 
 public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNavigationItem<TIndex, TChildNavigation>, IAssignableChildrenNavigation

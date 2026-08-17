@@ -20,7 +20,7 @@ public class BundleAmendTests : ChangelogTestBase
 	public BundleAmendTests(ITestOutputHelper output) : base(output)
 	{
 		Service = new(LoggerFactory, FileSystem);
-		BundleService = new(LoggerFactory, null, FileSystem);
+		BundleService = new(LoggerFactory, FileSystem);
 		_changelogDir = CreateChangelogDir();
 	}
 

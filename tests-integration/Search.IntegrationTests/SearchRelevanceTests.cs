@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
@@ -245,7 +246,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	private static (NavigationSearchService Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
 	{
 		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler");
-		var configProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new FileSystem(), configurationSource: ConfigurationSource.Embedded);
+		var configProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(), configurationSource: ConfigurationSource.Embedded);
 		var searchConfig = configProvider.CreateSearchConfiguration();
 
 		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);

@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
@@ -25,7 +26,7 @@ public class StaticWebHost
 	public StaticWebHost(int port, string? path)
 	{
 		_contentRoot = path ?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var fs = FileSystemFactory.RealGitRootForPath(_contentRoot);
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var dir = fs.DirectoryInfo.New(_contentRoot);
 		if (!dir.Exists)
 			throw new Exception($"Can not serve empty directory: {_contentRoot}");

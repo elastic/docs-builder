@@ -8,9 +8,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -60,16 +60,16 @@ public record ChangelogRemoveArguments
 /// </summary>
 public class ChangelogRemoveService(
 	ILoggerFactory logFactory,
+	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	ScopedFileSystem? fileSystem = null,
 	IGitHubReleaseService? releaseService = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRemoveService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
 
 	public async Task<bool> RemoveChangelogs(IDiagnosticsCollector collector, ChangelogRemoveArguments input, Cancel ctx)

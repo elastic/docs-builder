@@ -10,7 +10,6 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using JetBrains.Annotations;
 using Markdig.Syntax;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -70,12 +69,12 @@ $"""
 		var root = FileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/"));
 		// ReSharper disable once VirtualMemberCallInConstructor
 		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts(), extraYaml: GetDocsetExtraYaml());
-
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		var environment = GetEnvironment();
-		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext, environment);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		var context = new BuildContext(Collector, TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()), configurationContext, environment);
 		var linkResolver = new TestCrossLinkResolver();
 		// ReSharper disable once VirtualMemberCallInConstructor
 		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
@@ -85,6 +84,12 @@ $"""
 	}
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
+
+	/// <summary>
+	/// Override to supply an explicit <see cref="GitCheckoutInformation"/> for the build context.
+	/// Returns <see langword="null"/> by default (factory produces canned test data).
+	/// </summary>
+	protected virtual GitCheckoutInformation? GetGitCheckoutInformation() => null;
 
 	/// <summary>
 	/// Override to specify products for the docset configuration.

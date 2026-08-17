@@ -112,6 +112,33 @@ bundle:
 1. This profile fetches the PR list from the GitHub release notes for the version tag specified in the command.
 2. For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is inferred from full release tag name. For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
 
+### Bundle by git commit range [profile-git-range]
+
+If the source of truth for what was shipped in each release is a **git commit range** — for example, a date-promotion deployment that hands off the previously and currently published commit hashes — pass `--start-git-ref` and `--end-git-ref` alongside the profile. The command derives the PR list from the range itself (GitHub compare API + GraphQL `associatedPullRequests`), so no PR list file or promotion report is needed.
+
+Your profile must **not** contain a `products` pattern or `source: github_release`; it contributes output metadata only. For example:
+
+```yaml
+bundle:
+  repo: my-service <1>
+  owner: elastic
+  output_directory: docs/releases
+  profiles:
+    serverless-release:
+      output_products: "cloud-serverless {version}" <2>
+```
+
+1. The authoring repository whose commit range is resolved and whose entry pool is consulted.
+2. Also applied to entries synthesized from PR metadata when the PR's labels map to no product. When the profile has no `output` pattern, the bundle is named `{product}-{version}.yaml` by convention.
+
+```sh
+docs-builder changelog bundle serverless-release 2026-08-13 \
+  --start-git-ref <previous-published-ref> \
+  --end-git-ref <current-published-ref>
+```
+
+For each PR in the range, a checked-in changelog entry (already uploaded to the entry pool) wins; otherwise an entry is synthesized from the PR's title, labels, and release-note text using the same extraction path as `changelog add`. The bundle records the end ref in a `git_ref` metadata field. Refer to [Commit-range mode](/cli/changelog/bundle.md#git-ref-mode) for the full behavior, including the `--dry-run` run report.
+
 ### Bundle by folder or changelog product
 
 If the source of truth for what was shipped in each release is:
