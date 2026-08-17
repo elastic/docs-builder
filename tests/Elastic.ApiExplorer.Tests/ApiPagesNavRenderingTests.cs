@@ -73,7 +73,7 @@ public class ApiPagesNavRenderingTests
 		var fs = new FileSystem();
 		var context = new BuildContext(
 			new DiagnosticsCollector([]),
-			FileSystemFactory.RealGitRootForPath(null),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			TestHelpers.CreateConfigurationContext(fs));
 		var navigationItem = new LandingNavigationItem("/api/doc/elasticsearch/").Index;
 		var model = new ApiLayoutViewModel

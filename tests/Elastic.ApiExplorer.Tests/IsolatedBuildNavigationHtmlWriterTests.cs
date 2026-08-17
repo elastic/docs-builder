@@ -10,9 +10,9 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.Navigation;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -48,7 +48,7 @@ public class IsolatedBuildNavigationHtmlWriterTests
 		var fs = new FileSystem();
 		var context = new BuildContext(
 			new DiagnosticsCollector([]),
-			FileSystemFactory.RealGitRootForPath(null),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			TestHelpers.CreateConfigurationContext(fs));
 		context.Configuration.Features.PrimaryNavEnabled = primaryNavEnabled;
 		return context;
