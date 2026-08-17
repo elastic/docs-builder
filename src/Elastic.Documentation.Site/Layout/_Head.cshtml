@@ -26,7 +26,7 @@
 			break;
 	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
-	<script src="@Model.Static("main.js")" defer></script>
+	<script type="module" src="@Model.Static("main.js")"></script>
 	@if (Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled)
 	{
 		@* In <head> so head-support's merge keeps the identical tag across htmx navigations
