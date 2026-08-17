@@ -47,3 +47,10 @@ runs:
         cache: npm
         cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
         node-version-file: .nvmrc
+
+    - uses: actions/cache@v4
+      with:
+        path: src/Elastic.Documentation.Site/node_modules
+        key: node-modules-${{ runner.os }}-${{ hashFiles('src/Elastic.Documentation.Site/package-lock.json') }}
+        restore-keys: |
+          node-modules-${{ runner.os }}-

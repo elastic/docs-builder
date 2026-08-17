@@ -97,7 +97,7 @@ public class DocumentationWebHost
 			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, noHud, logFactory.CreateLogger<ReloadGeneratorService>()));
 
 		if (IsDotNetWatchBuild())
-			_ = builder.Services.AddHostedService<ParcelWatchService>();
+			_ = builder.Services.AddHostedService<FrontendWatchService>();
 
 		_ = builder.WebHost.UseUrls(hostUrl);
 

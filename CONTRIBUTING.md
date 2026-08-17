@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
-- [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
+- [Node.js 22.16.0 (LTS)](https://nodejs.org/) — see [`.nvmrc`](.nvmrc)
   - [Aspire 9.4.1](https://learn.microsoft.com/en-us/dotnet/aspire/)
 	```bash
 	dotnet workload install aspire
@@ -38,7 +38,7 @@ assembler builds.
 This will monitor code, cshtml template files & static files and reload the application
 if any changes.
 
-Web assets are reloaded through `parcel watch` and don't require a recompilation.
+Web assets are reloaded through `vite build --watch` and do not require a recompilation.
 
 Markdown files are refreshed automatically through livereload
 

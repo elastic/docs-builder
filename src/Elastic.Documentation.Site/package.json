@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "_static/main.js",
-  "source": "Assets/index.js",
   "scripts": {
-    "watch": "parcel watch",
-    "build": "parcel build",
+    "watch": "vite build --watch",
+    "build": "vite build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -31,32 +30,6 @@
     "synthetics:push:api:staging": "FEATURE_ASSEMBLER_API_EXPLORER=true DOCS_ENV=staging npx @elastic/synthetics push ./synthetics/journeys/api-explorer.journey.ts --config=./synthetics/synthetics.config.ts --tags=\"env:staging\"",
     "synthetics:push:edge": "DOCS_ENV=edge npm run synthetics:push -- --tags=\"env:edge\""
   },
-  "targets": {
-    "js": {
-      "distDir": "_static",
-      "source": "Assets/main.ts"
-    },
-    "css": {
-      "distDir": "_static",
-      "source": "Assets/styles.css"
-    },
-    "assembler-css": {
-      "distDir": "_static",
-      "source": "Assets/assembler.css"
-    },
-    "isolated-css": {
-      "distDir": "_static",
-      "source": "Assets/isolated.css"
-    },
-    "codex-css": {
-      "distDir": "_static",
-      "source": "Assets/codex.css"
-    }
-  },
-  "alias": {
-    "@opentelemetry/otlp-exporter-base/browser-http": "@opentelemetry/otlp-exporter-base/build/esm/index-browser-http.js",
-    "uuid": "./node_modules/uuid/dist/index.js"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/elastic/docs-builder.git"
@@ -70,9 +43,7 @@
     "@babel/preset-typescript": "7.28.5",
     "@elastic/synthetics": "1.25.0",
     "@eslint/js": "10.0.1",
-    "@parcel/reporter-bundle-analyzer": "2.16.4",
-    "@parcel/transformer-svg-react": "2.16.4",
-    "@tailwindcss/postcss": "4.3.3",
+    "@tailwindcss/vite": "4.3.3",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
@@ -81,6 +52,7 @@
     "@types/katex": "^0.16.8",
     "@types/lodash": "^4.17.25",
     "@types/testing-library__jest-dom": "6.0.0",
+    "@vitejs/plugin-react": "^5.1.0",
     "babel-jest": "30.4.1",
     "eslint": "10.8.0",
     "globals": "17.9.0",
@@ -89,17 +61,15 @@
     "jest-environment-jsdom": "30.4.1",
     "jest-transform-stub": "2.0.0",
     "moment": "2.30.1",
-    "parcel": "2.16.4",
-    "postcss": "8.5.25",
-    "postcss-import": "16.1.1",
     "prettier": "3.9.6",
     "prettier-plugin-tailwindcss": "0.8.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "svgo": "^4.0.2",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "8.65.0",
+    "vite": "^8.0.0",
+    "vite-plugin-svgr": "^4.5.0",
     "wait-on": "9.1.0"
   },
   "browserslist": [
