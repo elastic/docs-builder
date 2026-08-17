@@ -65,7 +65,7 @@
     "@babel/core": "7.29.6",
     "@babel/preset-env": "7.29.0",
     "@babel/preset-react": "7.28.5",
-    "@babel/preset-typescript": "7.28.5",
+    "@babel/preset-typescript": "8.0.1",
     "@elastic/synthetics": "1.25.0",
     "@eslint/js": "10.0.1",
     "@parcel/reporter-bundle-analyzer": "2.16.4",
