@@ -22,14 +22,10 @@ public class LlmsNavigationEnhancer
 	{
 		var content = new StringBuilder();
 
-		// Get top-level navigation items (excluding hidden ones)
-		var topLevelItems = navigation.TopLevelItems.Where(item => !item.Hidden).ToArray();
+		var guideItems = navigation.TopLevelItems.Where(item => !item.Hidden).ToArray();
 
-		foreach (var topLevelItem in topLevelItems)
+		foreach (var group in guideItems)
 		{
-			if (topLevelItem is not { } group)
-				continue;
-
 			// Create H2 section for the category - use H1 title if available, fallback to navigation title
 			var categoryTitle = GetBestTitle(group);
 			_ = content.AppendLine(CultureInfo.InvariantCulture, $"## {categoryTitle}");

@@ -26,7 +26,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 
 	public BundleReleaseVersionTests(ITestOutputHelper output) : base(output)
 	{
-		_bundlingService = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem);
+		_bundlingService = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}

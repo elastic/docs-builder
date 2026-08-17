@@ -2,20 +2,22 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Buffers;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
 using Actions.Core.Services;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
+using Elastic.Changelog.AllowlistIdentity;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
+using Elastic.Changelog.Migration;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
@@ -23,6 +25,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -46,7 +49,7 @@ internal sealed partial class ChangelogCommands(
 	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
 	private static partial Regex BundleOutputDirectoryRegex();
 
-	private readonly IFileSystem _fileSystem = FileSystemFactory.RealRead;
+	private readonly ChangelogFileSystem _fileSystem = ChangelogFileSystem.FromWorkingDirectory();
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommands>();
 	/// <summary>Create <c>changelog.yml</c> and the changelog/releases directory structure.</summary>
 	/// <remarks>
@@ -355,7 +358,7 @@ internal sealed partial class ChangelogCommands(
 			var repoArg = resolvedRepo.Contains('/') ? resolvedRepo : $"{resolvedOwner}/{resolvedRepo}";
 			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 			IGitHubPrService prService = new GitHubPrService(logFactory);
-			var releaseChangelogService = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
+			var releaseChangelogService = new GitHubReleaseChangelogService(logFactory, configurationContext, _fileSystem, releaseService, prService);
 
 			var releaseInput = new CreateChangelogsFromReleaseArguments
 			{
@@ -375,7 +378,7 @@ internal sealed partial class ChangelogCommands(
 		}
 
 		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
-		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService, env: SystemEnvironmentVariables.Instance);
+		var service = new ChangelogCreationService(logFactory, configurationContext, _fileSystem, githubPrService, env: SystemEnvironmentVariables.Instance);
 
 		// Parse PRs: promotion report (--report), or comma-separated values and file paths (--prs)
 		string[]? parsedPrs = null;
@@ -386,7 +389,7 @@ internal sealed partial class ChangelogCommands(
 				!reportSource.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 				reportSource = NormalizePath(reportSource);
 
-			var reportParser = new PromotionReportParser(logFactory, null);
+			var reportParser = new PromotionReportParser(logFactory, _fileSystem);
 			parsedPrs = await reportParser.ParseReportToPrUrlsAsync(collector, reportSource, ctx);
 			if (parsedPrs == null)
 			{
@@ -420,7 +423,7 @@ internal sealed partial class ChangelogCommands(
 							}
 						}
 					}
-					catch (IOException ex)
+					catch (Exception ex) when (ex is IOException or SecurityException)
 					{
 						collector.EmitError(string.Empty, $"Failed to read PRs from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
@@ -460,7 +463,7 @@ internal sealed partial class ChangelogCommands(
 								allIssues.Add(line.Trim());
 						}
 					}
-					catch (IOException ex)
+					catch (Exception ex) when (ex is IOException or SecurityException)
 					{
 						collector.EmitError(string.Empty, $"Failed to read issues from file '{normalizedPath}': {ex.Message}", ex);
 						return 1;
@@ -569,7 +572,10 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="owner">GitHub repository owner for PR/issue numbers or --release-version. Falls back to <c>bundle.owner</c> or "elastic". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.owner</c> or <c>bundle.profiles.&lt;name&gt;.owner</c>.</param>
 	/// <param name="branch">Branch whose CDN changelog entry pool (<c>changelog/{org}/{repo}/{branch}/...</c>) is sourced from. Falls back to <c>bundle.branch</c> or "main". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.branch</c> or <c>bundle.profiles.&lt;name&gt;.branch</c>.</param>
 	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
-	/// <param name="files">Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. Forces local entry sourcing. This option is not supported in profile-based commands; pass a path list file as the second or third positional argument instead.</param>
+	/// <param name="files">Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. When entries are sourced from the CDN, paths are matched to pool entries by file name and do not need to exist locally; with local sourcing (--force-local, --directory, or bundle.use_local_changelogs) the paths must exist on disk. This option is not supported in profile-based commands; pass a path list file as the second or third positional argument instead.</param>
+	/// <param name="startGitRef">Start ref (exclusive) of a git commit range to bundle, for example the previously published endpoint ref. Must be provided together with --end-git-ref; the start ref is never inferred. The PR list is derived from the range itself (GitHub compare API + GraphQL associatedPullRequests), each PR's entry is sourced pool-first with PR-metadata fallback, and requires GITHUB_TOKEN. Supported in profile-based commands (for example, 'bundle serverless-release 2026-08-13 --start-git-ref abc123 --end-git-ref def456'); mutually exclusive with all other filter options.</param>
+	/// <param name="endGitRef">End ref (inclusive) of the git commit range to bundle — the currently published endpoint ref. Must be provided together with --start-git-ref. Recorded in the bundle output as the <c>git_ref</c> metadata field.</param>
+	/// <param name="dryRun">Resolve the commit range and print the run report (resolved PR list with per-PR entry source: pool, inferred, or missing) as Markdown without writing a bundle. Only valid together with --start-git-ref/--end-git-ref. Supported in profile-based commands.</param>
 	/// <param name="forceLocal">Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config). Allowed in profile-based commands.</param>
 	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
 	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
@@ -601,15 +607,38 @@ internal sealed partial class ChangelogCommands(
 		string? releaseVersion = null,
 		string? repo = null,
 		string? report = null,
+		string? startGitRef = null,
+		string? endGitRef = null,
+		bool dryRun = false,
 		CancellationToken ct = default
 	)
 	{
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundlingService(logFactory, configurationContext);
+		var service = new ChangelogBundlingService(logFactory, _fileSystem, configurationContext);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
+		var isGitRefMode = !string.IsNullOrWhiteSpace(startGitRef) || !string.IsNullOrWhiteSpace(endGitRef);
+
+		if (isGitRefMode && (string.IsNullOrWhiteSpace(startGitRef) || string.IsNullOrWhiteSpace(endGitRef)))
+		{
+			collector.EmitError(string.Empty,
+				"--start-git-ref and --end-git-ref must be provided together; the start ref is never inferred from previous bundles.");
+			return 1;
+		}
+
+		if (dryRun && !isGitRefMode)
+		{
+			collector.EmitError(string.Empty, "--dry-run is only supported when bundling a git commit range (--start-git-ref/--end-git-ref).");
+			return 1;
+		}
+
+		if (isGitRefMode && releaseVersion != null)
+		{
+			collector.EmitError(string.Empty, "--start-git-ref/--end-git-ref and --release-version are mutually exclusive.");
+			return 1;
+		}
 
 		// --release-version mode: resolve the release into a PR list and proceed as if --prs was specified
 		if (releaseVersion != null)
@@ -738,10 +767,12 @@ internal sealed partial class ChangelogCommands(
 				specifiedFilters.Add("--files");
 			if (!string.IsNullOrWhiteSpace(report))
 				specifiedFilters.Add("--report");
+			if (isGitRefMode)
+				specifiedFilters.Add("--start-git-ref/--end-git-ref");
 
 			if (specifiedFilters.Count == 0)
 			{
-				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, --report, --files, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, --report, --files, --start-git-ref/--end-git-ref, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -750,7 +781,7 @@ internal sealed partial class ChangelogCommands(
 
 			if (specifiedFilters.Count > 1)
 			{
-				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, --issues, --report, or --files");
+				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, --issues, --report, --files, or --start-git-ref/--end-git-ref");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -853,7 +884,9 @@ internal sealed partial class ChangelogCommands(
 				Directory = directory?.FullName,
 				Repo = repo,
 				Config = config?.FullName,
-				Description = description
+				Description = description,
+				StartGitRef = startGitRef,
+				EndGitRef = endGitRef
 			};
 			var planResult = await service.PlanBundleAsync(collector, planInput, releaseVersion != null, ctx);
 			if (planResult == null)
@@ -921,7 +954,10 @@ internal sealed partial class ChangelogCommands(
 			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
 			Description = description,
 			ReleaseDate = releaseDate,
-			SuppressReleaseDate = noReleaseDate
+			SuppressReleaseDate = noReleaseDate,
+			StartGitRef = startGitRef,
+			EndGitRef = endGitRef,
+			DryRun = dryRun
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -973,7 +1009,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogRemoveService(logFactory, configurationContext);
+		var service = new ChangelogRemoveService(logFactory, _fileSystem, configurationContext);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
@@ -1169,7 +1205,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="output">Optional: Output directory for rendered files. Defaults to current directory</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
 	/// <param name="dropdowns">Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false</param>
-	/// <param name="noDescriptions">Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false</param>
+	/// <param name="noDescriptions">Optional: Hide changelog descriptions from output. When enabled, entry titles, PR/issue links, impact, and action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false</param>
 	/// <param name="title">Optional: Title to use for section headers in output files. Defaults to version from first bundle</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
@@ -1189,7 +1225,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogRenderingService(logFactory, configurationContext);
+		var service = new ChangelogRenderingService(logFactory, _fileSystem, configurationContext);
 
 		var allFeatureIds = ExpandCommaSeparated(hideFeatures);
 
@@ -1262,7 +1298,7 @@ internal sealed partial class ChangelogCommands(
 
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
-		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
+		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, _fileSystem, releaseService, prService);
 
 		// Validate release date format if provided
 		if (!string.IsNullOrWhiteSpace(releaseDate) && !DateOnly.TryParseExact(releaseDate, "yyyy-MM-dd", out _))
@@ -1313,7 +1349,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundleAmendService(logFactory, configurationContext: configurationContext);
+		var service = new ChangelogBundleAmendService(logFactory, _fileSystem, configurationContext: configurationContext);
 
 		var normalizedAddFiles = add != null
 			? ExpandCommaSeparated(add).Select(NormalizePath).ToList()
@@ -1390,10 +1426,14 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
+		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
-		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService);
+		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService, fileSystem);
 
-		var prBody = await ReadPrBodyFromEnvironmentAsync(ctx);
+		var prBodyFile = environmentVariables.GetEnvironmentVariable("PR_BODY_FILE");
+		var prBody = !string.IsNullOrWhiteSpace(prBodyFile)
+			? await ChangelogPrBodyReader.ReadAsync(prBodyFile, collector, fileSystem, ctx)
+			: environmentVariables.GetEnvironmentVariable("PR_BODY");
 
 		var args = new EvaluatePrArguments
 		{
@@ -1476,7 +1516,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealGitRootForPathWrite(null, outputDir);
+		var fs = RunnerTempFileSystem.ForPrepareArtifact(stagingDir, outputDir);
 		var service = new ChangelogPrepareArtifactService(logFactory, configurationContext, githubActionsService, fs);
 
 		var args = new PrepareArtifactArguments
@@ -1525,7 +1565,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealGitRootForPathWrite(null, metadata);
+		var fs = RunnerTempFileSystem.ForEvaluateArtifact(metadata);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogArtifactEvaluationService(logFactory, prService, githubActionsService, fs);
 
@@ -1558,45 +1598,6 @@ internal sealed partial class ChangelogCommands(
 				result.Add(value);
 		}
 		return result;
-	}
-
-	// PR_BODY can hit GitHub's 65,536-char limit and exceed runner env-var
-	// budgets when passed inline. PR_BODY_FILE lets callers stage the body
-	// in a file under RUNNER_TEMP and pass the path instead, which keeps
-	// the body off the env block entirely. Cap reads at 256 KiB to bound
-	// memory if a caller hands us a hostile path.
-	private const int MaxPrBodyFileBytes = 256 * 1024;
-
-	private async Task<string?> ReadPrBodyFromEnvironmentAsync(CancellationToken ct)
-	{
-		var prBodyFile = environmentVariables.GetEnvironmentVariable("PR_BODY_FILE");
-		if (string.IsNullOrWhiteSpace(prBodyFile))
-			return environmentVariables.GetEnvironmentVariable("PR_BODY");
-
-		var info = _fileSystem.FileInfo.New(prBodyFile);
-		if (!info.Exists)
-		{
-			collector.EmitWarning(string.Empty, $"PR_BODY_FILE points to a missing file: {prBodyFile}");
-			return null;
-		}
-
-		if (info.Length <= MaxPrBodyFileBytes)
-			return await _fileSystem.File.ReadAllTextAsync(prBodyFile, ct);
-
-		collector.EmitHint(string.Empty, $"PR_BODY_FILE exceeds {MaxPrBodyFileBytes} bytes ({info.Length}); truncating.");
-
-		var buffer = ArrayPool<byte>.Shared.Rent(MaxPrBodyFileBytes);
-		try
-		{
-			await using var stream = info.OpenRead();
-			var slice = buffer.AsMemory(0, MaxPrBodyFileBytes);
-			await stream.ReadExactlyAsync(slice, ct);
-			return Encoding.UTF8.GetString(slice.Span);
-		}
-		finally
-		{
-			ArrayPool<byte>.Shared.Return(buffer);
-		}
 	}
 
 	private static string GetPathForConfig(string repoPath, string targetPath)
@@ -1691,7 +1692,7 @@ internal sealed partial class ChangelogCommands(
 		var (resolvedRepo, resolvedOwner, resolvedBranch) = await ResolveUploadRepoOwnerBranch(repo, owner, branch, resolvedConfig, resolvedDirectory, ctx);
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new ChangelogUploadService(logFactory, configurationContext);
+		var service = new ChangelogUploadService(logFactory, _fileSystem, configurationContext);
 		var args = new ChangelogUploadArguments
 		{
 			ArtifactType = parsedArtifactType,
@@ -1706,6 +1707,108 @@ internal sealed partial class ChangelogCommands(
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>Resolve the link allowlist identity of the deployed changelog scrubber.</summary>
+	/// <remarks>
+	/// The scrubber Lambda embeds its link allowlist from <c>config/assembler.yml</c> at build time, so the
+	/// deployed allowlist can differ from any local checkout. The release pipeline attaches a
+	/// <c>changelog-scrubber-allowlist.json</c> asset to the GitHub release after each successful scrubber
+	/// deploy; this command resolves the identity from that asset. Without a <c>--tag</c>, the newest release
+	/// carrying the asset wins — the most recent deploy that passed the gated pipeline. Exits non-zero when
+	/// no identity can be resolved: backfill plans must pin this identity and cannot be approved without it.
+	/// </remarks>
+	/// <param name="tag">Release tag to resolve the identity from (e.g., "v5.7.0"). Defaults to the newest release carrying the identity asset.</param>
+	/// <param name="assembler">Path to a local assembler.yml to compare against the deployed allowlist. Defaults to <c>config/assembler.yml</c> when it exists; a mismatch is reported as a warning, not an error.</param>
+	/// <param name="owner">GitHub owner of the repository whose releases carry the identity asset.</param>
+	/// <param name="repo">GitHub repository whose releases carry the identity asset.</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> ScrubberAllowlist(
+		string? tag = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? assembler = null,
+		string owner = "elastic",
+		string repo = "docs-builder",
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		// Default the local comparison to config/assembler.yml relative to cwd when present.
+		var assemblerPath = assembler?.FullName;
+		if (assemblerPath is null)
+		{
+			var candidate = _fileSystem.Path.Join(Directory.GetCurrentDirectory(), "config", "assembler.yml");
+			if (_fileSystem.File.Exists(candidate))
+				assemblerPath = candidate;
+		}
+
+		var service = new ScrubberAllowlistIdentityService(logFactory, new GitHubReleaseService(logFactory), _fileSystem);
+		var args = new ResolveScrubberAllowlistArguments
+		{
+			Owner = owner,
+			Repo = repo,
+			Tag = tag,
+			AssemblerPath = assemblerPath
+		};
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.ResolveDeployedAsync(c, state, ct) is not null
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>TEMPORARY: One-off migration of published release notes into the S3 bundle store; removed after elastic/docs-eng-team#683.</summary>
+	/// <remarks>
+	/// <para>Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the
+	/// checked-in scope table), maps it to the existing bundle YAML shape, and uploads to
+	/// <c>bundle/{product}/</c> with create-only semantics (<c>If-None-Match: *</c>) — existing keys are
+	/// skipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and
+	/// object ETag) suitable for pasting into the tracking issue.</para>
+	/// <para>Migrates every product in the checked-in scope table by default. The table lives in code
+	/// (<c>MigrateFromWebScope.All</c>: product id → source repo, release-notes path, pinned ref, version
+	/// cutoff) and grows per rollout wave; use <c>--products</c> to narrow a run for tests and pilots.
+	/// Tracked by elastic/docs-eng-team#736.</para>
+	/// </remarks>
+	/// <param name="products">Optional: restrict the run to specific product ids (comma-separated or repeated), e.g. "edot-java". Defaults to every product in the checked-in scope table.</param>
+	/// <param name="s3BucketName">Destination S3 bucket. Required unless --dry-run; when provided with --dry-run, existing keys are still inspected so the report distinguishes would-create from skipped.</param>
+	/// <param name="versions">Optional: restrict the run to specific versions (comma-separated or repeated). Versions above a product's cutoff are always skipped.</param>
+	/// <param name="dryRun">Do everything except the S3 writes and report what would be created.</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> MigrateFromWeb(
+		string[]? products = null,
+		string s3BucketName = "",
+		string[]? versions = null,
+		[DryRun] bool dryRun = false,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		if (!dryRun && string.IsNullOrWhiteSpace(s3BucketName))
+		{
+			collector.EmitError(string.Empty, "--s3-bucket-name is required unless --dry-run is specified.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		var service = new WebMigrationService(logFactory, CheckoutsFileSystem.FromWorkingDirectory().Write);
+		var args = new MigrateFromWebArguments
+		{
+			Products = ExpandCommaSeparated(products),
+			S3BucketName = s3BucketName,
+			DryRun = dryRun,
+			Versions = ExpandCommaSeparated(versions)
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.MigrateFromWeb(c, state, ct)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
@@ -1784,4 +1887,3 @@ internal sealed partial class ChangelogCommands(
 	}
 
 }
-

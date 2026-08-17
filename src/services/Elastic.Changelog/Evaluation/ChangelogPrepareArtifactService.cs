@@ -10,6 +10,7 @@ using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -20,7 +21,7 @@ public class ChangelogPrepareArtifactService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	ICoreService coreService,
-	IFileSystem? fileSystem = null
+	IRunnerTempFileSystem fileSystem
 ) : IService
 {
 	/// <summary>
@@ -29,8 +30,8 @@ public class ChangelogPrepareArtifactService(
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrepareArtifactService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
+	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 
 	public async Task<bool> PrepareArtifact(IDiagnosticsCollector collector, PrepareArtifactArguments input, Cancel ctx)
 	{

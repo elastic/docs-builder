@@ -1,5 +1,8 @@
+import { config } from '../../config'
 import '../../eui-icons-cache'
+import { ModalSearch } from '../ModalSearch/ModalSearch'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
+import { sharedQueryClient } from '../shared/queryClient'
 import { DeploymentInfo, headerButtonCss } from './DeploymentInfo'
 import {
     EuiHeader,
@@ -10,6 +13,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { useRef } from 'react'
 
 interface Props {
@@ -169,6 +173,28 @@ export const Header = ({
                     {
                         items: [logoSection],
                     },
+                    ...(config.buildType === 'isolated'
+                        ? [
+                              {
+                                  items: [
+                                      <QueryClientProvider
+                                          client={sharedQueryClient}
+                                      >
+                                          <div
+                                              css={css`
+                                                  width: min(22rem, 35vw);
+                                              `}
+                                          >
+                                              <ModalSearch
+                                                  size="s"
+                                                  placeholder="Search"
+                                              />
+                                          </div>
+                                      </QueryClientProvider>,
+                                  ],
+                              },
+                          ]
+                        : []),
                     ...(!airGapped
                         ? [
                               {
@@ -183,8 +209,9 @@ export const Header = ({
                                                         ${headerButtonCss(
                                                             euiTheme
                                                         )};
-                                                        margin-inline: ${euiTheme
-                                                            .size.s};
+                                                        margin-inline: ${
+                                                            euiTheme.size.s
+                                                        };
                                                     `}
                                                 >
                                                     <EuiIcon

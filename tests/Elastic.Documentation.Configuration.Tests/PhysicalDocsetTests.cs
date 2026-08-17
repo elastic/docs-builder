@@ -48,10 +48,17 @@ public class PhysicalDocsetTests
 		docSet.Subs.Should().NotBeEmpty();
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
-		docSet.Api.Should().HaveCount(3);
-		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.GetSpecPaths().Should().Contain("elasticsearch-openapi-docs.json");
-		docSet.Api.Should().ContainKey("kibana").WhoseValue.GetSpecPaths().Should().Contain("kibana-openapi.json");
-		docSet.Api.Should().ContainKey("dashboard").WhoseValue.GetSpecPaths().Should().Contain("dashboard-openapi.json");
+		docSet.Api.Should().HaveCount(6);
+
+		docSet.Api["elasticsearch"].SingleEntry!.Spec.Should().Be("elasticsearch.json");
+		docSet.Api["elasticsearch"].SingleEntry!.Repository.Should().Be("elastic/elasticsearch-specification");
+		docSet.Api["elasticsearch-serverless"].SingleEntry!.Repository.Should().Be("elastic/elasticsearch-specification");
+		docSet.Api["kibana"].SingleEntry!.Spec.Should().Be("kibana.yaml");
+		docSet.Api["kibana"].SingleEntry!.Repository.Should().Be("elastic/kibana");
+		docSet.Api["kibana"].SingleEntry!.Children.Should().ContainSingle(c => c.File == "kibana-api-overview.md");
+		docSet.Api["kibana-serverless"].SingleEntry!.Repository.Should().Be("elastic/kibana");
+		docSet.Api["cloud-connect"].SingleEntry!.Repository.Should().Be("elastic/cloud-connected-api");
+		docSet.Api["cloud-serverless"].SingleEntry!.Repository.Should().Be("elastic/serverless-api-specification");
 
 		docSet.TableOfContents.Should().NotBeEmpty();
 

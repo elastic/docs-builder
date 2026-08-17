@@ -12,6 +12,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
@@ -153,14 +154,35 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return allProperties;
 	}
 
+	// A page with no top-level H1 can still declare its title inside a directive, either as a
+	// nested H1 or as {hero}'s :title: option. Hub pages are composed purely from directives,
+	// so this is the only title source they have.
+	private static string? FindNestedTitle(MarkdownDocument document)
+	{
+		if (document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1)?.GetData("header") is string nestedHeading)
+			return nestedHeading;
+
+		var heroTitle = document.Descendants<HeroBlock>().FirstOrDefault()?.Title;
+		return string.IsNullOrWhiteSpace(heroTitle) ? null : heroTitle;
+	}
+
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
 		Title = document
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string ?? Title;
 
+		if (Title == RelativePath)
+			Title = FindNestedTitle(document) ?? Title;
+
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;
+
+		// The hub layout suppresses the page H1, so {hero} is the only thing that can title the
+		// page. Without it the page renders with no title at all and falls back to its file path.
+		if (yamlFrontMatter.Layout == MarkdownPageLayout.Hub && !document.Descendants<HeroBlock>().Any())
+			Collector.EmitError(FilePath, "A page with `layout: hub` requires a {hero} directive. Without it the page renders without a title.");
+
 		if (yamlFrontMatter.NavigationTitle is not null)
 			NavigationTitle = yamlFrontMatter.NavigationTitle;
 		if (yamlFrontMatter.Description is not null)
@@ -201,12 +223,45 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		IReadOnlyDictionary<string, string> subs,
 		out string[] anchors)
 	{
-		var includeBlocks = document.Descendants<IncludeBlock>().ToArray();
-		var includes = includeBlocks
-			.Where(i => i.Found)
-			.Select(i =>
+		// Single traversal — collects typed lists in DFS order.
+		// We also track the last heading seen so that IncludeBlocks can be annotated
+		// with their preceding heading level at discovery time, eliminating any need for
+		// a position index or secondary traversal.
+		// IncludeBlock / StepBlock / ChangelogBlock / SettingsBlock all extend DirectiveBlock,
+		// so one bucket covers them all.
+		List<HeadingBlock> headings = [];
+		List<DirectiveBlock> directives = [];
+		List<InlineAnchor> inlineAnchors = [];
+		// Pairs each IncludeBlock with the heading level that immediately precedes it in
+		// DFS order — recorded inline so we never need to re-traverse.
+		List<(IncludeBlock Block, int? PrecedingHeadingLevel)> includeContexts = [];
+		int? lastHeadingLevel = null;
+		foreach (var node in document.Descendants())
+		{
+			switch (node)
 			{
-				var relativePath = i.IncludePathRelativeToSource;
+				case HeadingBlock h:
+					headings.Add(h);
+					lastHeadingLevel = h.Level;
+					break;
+				case IncludeBlock inc:
+					directives.Add(inc);
+					includeContexts.Add((inc, lastHeadingLevel));
+					break;
+				case DirectiveBlock d:
+					directives.Add(d);
+					break;
+				case InlineAnchor a:
+					inlineAnchors.Add(a);
+					break;
+			}
+		}
+
+		var includes = includeContexts
+			.Where(t => t.Block.Found)
+			.Select(t =>
+			{
+				var relativePath = t.Block.IncludePathRelativeToSource;
 				if (relativePath is null)
 					return null;
 				var doc = documentationFileLookup(relativePath);
@@ -214,7 +269,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 					return null;
 
 				var anchors = snippet.GetAnchors(collector, documentationFileLookup, parser, frontMatter);
-				return new { Block = i, Anchors = anchors };
+				return new { t.Block, Anchors = anchors, t.PrecedingHeadingLevel };
 			})
 			.Where(i => i is not null)
 			.ToArray();
@@ -222,8 +277,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var includedTocs = includes
 			.SelectMany(i =>
 			{
-				// Calculate the heading level context at the include block position
-				var precedingLevel = GetPrecedingHeadingLevel(i!.Block);
+				var precedingLevel = i!.PrecedingHeadingLevel;
 
 				return i.Anchors!.TableOfContentItems
 					.Select(item =>
@@ -243,9 +297,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			})
 			.ToArray();
 
-		// Collect headings from standard markdown
-		var headingTocs = document
-			.Descendants<HeadingBlock>()
+		// Collect headings from standard markdown (already have the list — no second traversal)
+		var headingTocs = headings
 			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
 			.Where(h => h.Item1 is not null)
@@ -264,9 +317,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				};
 			});
 
-		// Collect headings from Stepper steps
-		var stepperTocs = document
-			.Descendants<DirectiveBlock>()
+		// Collect headings from Stepper steps (filter from already-collected directives)
+		var stepperTocs = directives
 			.OfType<StepBlock>()
 			.Where(step => !string.IsNullOrEmpty(step.Title))
 			.Where(step => !IsNestedInOtherDirective(step))
@@ -291,15 +343,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			});
 
 		// Collect headings from Changelog directives
-		var changelogTocs = document
-			.Descendants<DirectiveBlock>()
+		var changelogTocs = directives
 			.OfType<ChangelogBlock>()
 			.SelectMany(changelog => changelog.GeneratedTableOfContent
 				.Select(tocItem => new { TocItem = tocItem, changelog.Line }));
 
 		// Collect settings group headings (h2) from {settings} directives
-		var settingsTocs = document
-			.Descendants<DirectiveBlock>()
+		var settingsTocs = directives
 			.OfType<SettingsBlock>()
 			.Where(settings => !IsNestedInOtherDirective(settings))
 			.SelectMany(settings => settings.GeneratedTableOfContent
@@ -320,7 +370,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.ToList();
 
 		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
-		var directives = document.Descendants<DirectiveBlock>().ToArray();
 		anchors =
 		[
 			..directives
@@ -328,7 +377,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				.Where(l => !string.IsNullOrWhiteSpace(l))
 				.Select(s => s.Slugify())
 				.Concat(directives.SelectMany(b => b.GeneratedAnchors))
-				.Concat(document.Descendants<InlineAnchor>().Select(a => a.Anchor))
+				.Concat(inlineAnchors.Select(a => a.Anchor))
 				.Concat(toc.Select(t => t.Slug))
 				.Where(anchor => !string.IsNullOrEmpty(anchor))
 				.Concat(includedAnchors)
@@ -346,38 +395,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			parent = parent.Parent;
 		}
 		return false;
-	}
-
-	/// <summary>
-	/// Finds the heading level that precedes the given block in the document.
-	/// Used to provide context for included snippets so stepper heading levels
-	/// can be adjusted relative to the parent document's structure.
-	/// </summary>
-	private static int? GetPrecedingHeadingLevel(MarkdownObject block)
-	{
-		// Find the document root
-		var current = block;
-		while (current is ContainerBlock container && container.Parent != null)
-			current = container.Parent;
-
-		if (current is not ContainerBlock root)
-			return null;
-
-		// Find all blocks and locate this one
-		var allBlocks = root.Descendants().ToList();
-		var thisIndex = allBlocks.IndexOf(block);
-
-		if (thisIndex == -1)
-			return null;
-
-		// Look backwards for the most recent heading
-		for (var i = thisIndex - 1; i >= 0; i--)
-		{
-			if (allBlocks[i] is HeadingBlock heading)
-				return heading.Level;
-		}
-
-		return null;
 	}
 
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)

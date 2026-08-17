@@ -53,11 +53,34 @@ suppress:
   - DeepLinkingVirtualFile
 
 api:
-  elasticsearch: elasticsearch-openapi-docs.json
+  # CloudFront remote specs — mirror https://d29hkgsdo66d1n.cloudfront.net/index.json.
+  # No local spec files: each key fetches remotely on serve/build. Paths: /api/<key>/
+  elasticsearch:
+    - spec: elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+  elasticsearch-serverless:
+    - spec: elasticsearch-serverless.json
+      product: serverless-elasticsearch
+      repository: elastic/elasticsearch-specification
   kibana:
-    - file: kibana-api-overview.md
-    - spec: kibana-openapi.json
-  dashboard: dashboard-openapi.json
+    - spec: kibana.yaml
+      product: kibana
+      repository: elastic/kibana
+      children:
+        - file: kibana-api-overview.md
+  kibana-serverless:
+    - spec: kibana-serverless.yaml
+      product: kibana
+      repository: elastic/kibana
+  cloud-connect:
+    - spec: cloud-connect.yml
+      product: ess
+      repository: elastic/cloud-connected-api
+  cloud-serverless:
+    - spec: elastic-cloud-serverless.yml
+      product: cloud-serverless
+      repository: elastic/serverless-api-specification
 
 toc:
   - file: index.md
@@ -87,6 +110,7 @@ toc:
       - file: applies-switch.md
       - file: automated_settings.md
       - file: buttons.md
+      - file: card-group.md
       - file: changelog.md
       - file: code.md
       - file: comments.md
@@ -94,13 +118,18 @@ toc:
       - file: csv-include.md
       - file: dropdowns.md
       - file: definition-lists.md
+      - file: explore.md
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
+      - file: get-started.md
+      - file: hero.md
+      - file: hub-pages.md
       - file: icons.md
       - file: images.md
       - file: videos.md
       - file: kbd.md
+      - file: link-card.md
       - file: math.md
       - file: vector-sizing-calculator.md
       - file: diagrams.md
@@ -118,6 +147,15 @@ toc:
       - file: tables.md
       - file: tabs.md
       - file: titles.md
+      - file: whats-new.md
+
+  # Examples
+  - folder: examples
+    children:
+      - file: index.md
+      - folder: products
+        children:
+          - file: docs-builder.md
 
   # Documentation builds
   - folder: documentation

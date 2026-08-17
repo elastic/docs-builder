@@ -26,10 +26,7 @@ import { useCallback } from 'react'
 
 export type NavigationSearchTrigger = 'keyboard_shortcut' | 'focus' | 'click'
 export type NavigationSearchCloseReason =
-    | 'escape'
-    | 'blur'
-    | 'navigate'
-    | 'clear'
+    'escape' | 'blur' | 'navigate' | 'clear'
 export type NavigationMethod = 'keyboard' | 'mouse'
 export type NavigationDirection = 'up' | 'down'
 

@@ -9,6 +9,7 @@ using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 
@@ -66,7 +67,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	}
 
 	private ChangelogPrEvaluationService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, _mockGitHub, _mockCore, FileSystem);
+		new(LoggerFactory, ConfigurationContext, _mockGitHub, _mockCore, RunnerTempFileSystem);
 
 	private EvaluatePrArguments DefaultArgs(
 		string eventAction = "opened",
@@ -227,7 +228,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
-		result.Should().BeTrue();
+		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-title");
 	}
 
@@ -240,7 +241,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
-		result.Should().BeTrue();
+		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-label");
 		VerifyOutputSet("should-generate", "false");
 		A.CallTo(() => _mockCore.SetOutputAsync("label-table", A<string>.That.Contains("type:feature"))).MustHaveHappened();
@@ -255,7 +256,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
-		result.Should().BeTrue();
+		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-label");
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("@Product:ECH"))).MustHaveHappened();
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("cloud-hosted"))).MustHaveHappened();
@@ -270,7 +271,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
-		result.Should().BeTrue();
+		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-label");
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
 	}
@@ -331,7 +332,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
-		result.Should().BeTrue();
+		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-label");
 	}
 
@@ -531,7 +532,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
-		result.Should().BeTrue();
+		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-label");
 		VerifyOutputSet("should-generate", "false");
 		A.CallTo(() => _mockCore.SetOutputAsync("products", A<string>._)).MustNotHaveHappened();
@@ -761,6 +762,72 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("description", "New aggregation pipeline support");
 	}
 
+	// --- Gate: native error emission for no-label / no-title ---
+
+	[Fact]
+	public async Task EvaluatePr_NoTitle_EmitsErrorAndReturnsFalse()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prTitle: "");
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-title");
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("no title", StringComparison.OrdinalIgnoreCase));
+	}
+
+	[Fact]
+	public async Task EvaluatePr_NoTypeLabel_EmitsErrorAndReturnsFalse()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["unrelated-label"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("label", StringComparison.OrdinalIgnoreCase));
+	}
+
+	[Fact]
+	public async Task EvaluatePr_NoProductLabel_EmitsErrorAndReturnsFalse()
+	{
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
+		var service = CreateService();
+		var args = DefaultArgs(
+			prLabels: ["type:feature"],
+			config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml")
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("label", StringComparison.OrdinalIgnoreCase));
+	}
+
+	[Fact]
+	public async Task EvaluatePr_Success_DoesNotEmitErrors()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs();
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Diagnostics.Should().BeEmpty();
+	}
+
 	// --- CollectExcludeLabels unit tests ---
 
 	[Fact]
@@ -898,7 +965,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
-		result.Should().BeTrue();
+		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-label");
 		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">non-issue"))).MustHaveHappened();
 	}

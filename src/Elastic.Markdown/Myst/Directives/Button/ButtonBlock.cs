@@ -38,11 +38,11 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 {
 	public override string Directive => "button";
 
-	private static readonly HashSet<string> ValidTypes = ["primary", "secondary"];
+	private static readonly HashSet<string> ValidTypes = ["primary", "secondary", "neutral"];
 	private static readonly HashSet<string> ValidAligns = ["left", "center", "right"];
 
 	/// <summary>
-	/// Button variant: "primary" (filled) or "secondary" (outlined).
+	/// Button variant: "primary" (filled), "secondary" (outlined), or "neutral" (outlined, monochrome).
 	/// </summary>
 	public string Type { get; private set; } = "primary";
 
@@ -69,7 +69,7 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 		var type = Prop("type", "variant")?.ToLowerInvariant();
 		if (type != null && !ValidTypes.Contains(type))
 		{
-			this.EmitWarning($"Invalid button type '{type}'. Valid types are: primary, secondary. Defaulting to 'primary'.");
+			this.EmitWarning($"Invalid button type '{type}'. Valid types are: primary, secondary, neutral. Defaulting to 'primary'.");
 			type = "primary";
 		}
 		Type = type ?? "primary";

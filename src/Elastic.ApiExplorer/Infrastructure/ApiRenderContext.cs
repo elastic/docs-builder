@@ -14,6 +14,8 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
+public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected);
+
 public record ApiRenderContext(
 	BuildContext BuildContext,
 	OpenApiDocument Model,
@@ -27,4 +29,6 @@ public record ApiRenderContext(
 
 	/// <summary>Logger for API Explorer rendering (e.g. OpenAPI extension parsing); optional when the host does not provide one.</summary>
 	public ILogger? ApiExplorerLog { get; init; }
+
+	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 }

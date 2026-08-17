@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.Documentation.Site;
@@ -22,7 +23,14 @@ public static class GlobalSections
 }
 
 /// <summary>Configuration injected into the frontend for build-type-specific behavior (OTEL, HTMX).</summary>
-public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath, string ApiBasePath, bool AirGapped = false);
+public record FrontendConfig(
+	string BuildType,
+	string ServiceName,
+	bool TelemetryEnabled,
+	string RootPath,
+	string ApiBasePath,
+	bool AirGapped = false
+);
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
 public record CodexBreadcrumb(string Title, string? Url);
@@ -44,6 +52,25 @@ public record GlobalLayoutViewModel
 
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
+
+	/// <summary>
+	/// The configured top navigation for assembler builds. Derived by walking the
+	/// <see cref="CurrentNavigationItem"/> parent chain to find a
+	/// <see cref="ISiteNavigationRoot"/>. Returns null for isolated/codex builds,
+	/// and for assembler builds where the <c>navigation-preview</c> flag is off.
+	/// </summary>
+	public TopNavRenderModel? TopNav
+	{
+		get
+		{
+			for (var item = (INavigationItem?)CurrentNavigationItem; item is not null; item = item.Parent)
+			{
+				if (item is ISiteNavigationRoot siteRoot)
+					return siteRoot.TopNav;
+			}
+			return null;
+		}
+	}
 
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),

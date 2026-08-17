@@ -16,12 +16,13 @@ public enum Exporter
 	DocumentationState,
 	LinkMetadata,
 	Redirects,
-	Okf
+	Okf,
+	Pagefind
 }
 
 public static class ExportOptions
 {
-	public static HashSet<Exporter> Default { get; } = [Exporter.Html, Exporter.LLMText, Exporter.Configuration, Exporter.DocumentationState, Exporter.LinkMetadata, Exporter.Redirects];
+	public static HashSet<Exporter> Default { get; } = [Exporter.Html, Exporter.LLMText, Exporter.Configuration, Exporter.DocumentationState, Exporter.LinkMetadata, Exporter.Redirects, Exporter.Pagefind];
 	public static HashSet<Exporter> MetadataOnly { get; } = [Exporter.Configuration, Exporter.DocumentationState, Exporter.LinkMetadata, Exporter.Redirects];
 
 	/// <summary>
@@ -29,5 +30,5 @@ public static class ExportOptions
 	/// (and emits diagnostics) without running LLM export, config copy, link-index writes,
 	/// or redirect generation — none of which are meaningful in an in-memory build.
 	/// </summary>
-	public static HashSet<Exporter> Validation { get; } = [Exporter.Html];
+	public static HashSet<Exporter> Validation { get; } = [Exporter.Html, Exporter.Pagefind];
 }

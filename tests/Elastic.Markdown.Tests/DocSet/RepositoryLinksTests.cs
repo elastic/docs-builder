@@ -34,8 +34,8 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 	[Fact]
 	public void Create()
 	{
-		var root = ReadFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var git = GitCheckoutInformationFactory.Create(root, ReadFileSystem, LoggerFactory.CreateLogger(nameof(GitCheckoutInformation)));
+		var root = FileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		var git = GitCheckoutInformationFactory.Create(root, FileSystem.Read, LoggerFactory.CreateLogger(nameof(GitCheckoutInformation)));
 
 		git.Should().NotBeNull();
 		git.Branch.Should().NotBeNullOrWhiteSpace();

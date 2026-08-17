@@ -22,6 +22,7 @@ public record ApiTocItem(string Heading, string Slug, int Level = 2);
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
+	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 }
 
 public abstract class ApiViewModel(ApiRenderContext context)
@@ -37,7 +38,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	protected ApiRenderContext RenderContext { get; } = context ?? throw new ArgumentNullException(nameof(context));
 
 
-	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(MarkdownRenderer, markdown);
+	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
 
 	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
 
@@ -80,6 +81,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
+			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",

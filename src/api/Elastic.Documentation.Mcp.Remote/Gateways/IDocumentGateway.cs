@@ -36,6 +36,7 @@ public record DocumentResult
 	public string[]? AiQuestions { get; init; }
 	public string[]? AiUseCases { get; init; }
 	public DateTimeOffset? LastUpdated { get; init; }
+	public string? SourceUrl { get; init; }
 	public DocumentParent[] Parents { get; init; } = [];
 	public string[] Headings { get; init; } = [];
 	public string[] Links { get; init; } = [];

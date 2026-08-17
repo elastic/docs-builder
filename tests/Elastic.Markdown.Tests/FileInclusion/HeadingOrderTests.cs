@@ -997,3 +997,91 @@ Another step at the beginning.
 		toc[2].Level.Should().Be(2);
 	}
 }
+
+/// <summary>
+/// Exercises GetPrecedingHeadingLevel with multiple includes at different positions in the document.
+/// This directly guards the single-pass position index: if the index is wrong, the stepper levels
+/// in the second include will reflect the first include's heading context instead of the correct one.
+/// </summary>
+public class MultipleIncludesInterleavedWithHeadingsTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+## Section A
+
+:::{include} _snippets/stepper-a.md
+:::
+
+## Section B
+
+:::{include} _snippets/stepper-b.md
+:::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// Stepper snippet — step level depends on preceding heading (## = level 2, step should become level 3)
+		fileSystem.AddFile(@"docs/_snippets/stepper-a.md",
+			"""
+			:::::{stepper}
+
+			::::{step} Step A1
+			content
+			::::
+
+			::::{step} Step A2
+			content
+			::::
+
+			:::::
+			""");
+
+		fileSystem.AddFile(@"docs/_snippets/stepper-b.md",
+			"""
+			:::::{stepper}
+
+			::::{step} Step B1
+			content
+			::::
+
+			::::{step} Step B2
+			content
+			::::
+
+			:::::
+			""");
+	}
+
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void GetPrecedingHeadingLevel_UsesCorrectContextForEachInclude()
+	{
+		var toc = File.PageTableOfContent.Values.ToList();
+
+		// Expected order: Section A, Step A1, Step A2, Section B, Step B1, Step B2
+		toc.Should().HaveCount(6);
+
+		toc[0].Heading.Should().Be("Section A");
+		toc[0].Level.Should().Be(2);
+
+		toc[1].Heading.Should().Be("Step A1");
+		toc[1].IsStepperStep.Should().BeTrue();
+		toc[1].Level.Should().Be(3, "stepper step after h2 should be h3");
+
+		toc[2].Heading.Should().Be("Step A2");
+		toc[2].IsStepperStep.Should().BeTrue();
+		toc[2].Level.Should().Be(3);
+
+		toc[3].Heading.Should().Be("Section B");
+		toc[3].Level.Should().Be(2);
+
+		toc[4].Heading.Should().Be("Step B1");
+		toc[4].IsStepperStep.Should().BeTrue();
+		toc[4].Level.Should().Be(3, "stepper step after second h2 should also be h3");
+
+		toc[5].Heading.Should().Be("Step B2");
+		toc[5].IsStepperStep.Should().BeTrue();
+		toc[5].Level.Should().Be(3);
+	}
+}

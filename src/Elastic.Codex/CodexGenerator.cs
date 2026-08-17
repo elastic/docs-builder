@@ -38,7 +38,7 @@ public interface ICodexPageRenderer
 public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDirectoryInfo outputDirectory)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexGenerator>();
-	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
+	private readonly IFileSystem _writeFileSystem = outputDirectory.FileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly IDirectoryInfo _outputDirectory = outputDirectory;
 
@@ -72,11 +72,9 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 	{
 		_logger.LogInformation("Copying static files to codex output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
-		var embeddedStaticFiles = assembly
-			.GetManifestResourceNames()
-			.ToList();
 
-		foreach (var resourceName in embeddedStaticFiles)
+		foreach (var resourceName in assembly.GetManifestResourceNames()
+			.Where(r => r.StartsWith("Elastic.Documentation.Site._static.", StringComparison.Ordinal)))
 		{
 			await using var resourceStream = assembly.GetManifestResourceStream(resourceName);
 			if (resourceStream == null)

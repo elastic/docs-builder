@@ -1,0 +1,49 @@
+# Content for the {whats-new} panel on hub pages, keyed by product.
+#
+# This file lives at the root of the documentation set, alongside changelog.yml and
+# redirects.yml, so a writer edits it without touching the build tool. A hub page renders
+# a panel from it with one line: `:product: <key>`.
+#
+# The directive reads this file from the current documentation set only. It cannot render
+# another repository's panel.
+products:
+  docs-builder:
+    title: What's new in docs-builder
+    id: whats-new
+    intro: Recent additions to the toolchain and the syntax it understands.
+    # More than one release stream can be listed here.
+    release-links:
+      - label: Release notes
+        url: /data/release-notes/index.md
+      - label: Changelog reference
+        url: /data/release-notes/overview.md
+    upgrade-link:
+      label: Upgrade docs-builder
+      url: /getting-started/installation.md
+    items:
+      - title: Hub pages
+        description: A product-scoped landing page composed entirely from directives.
+        link: /syntax/hub-pages.md
+        date: Aug 2026
+        tag: Syntax
+        featured: true
+      - title: Explore sections
+        description: Collapse a long link list into a stack of accordions.
+        link: /syntax/explore.md
+        date: Aug 2026
+        tag: Syntax
+      - title: Get started sections
+        description: One opinionated onboarding path, with a copyable install command.
+        link: /syntax/get-started.md
+        date: Aug 2026
+        tag: Syntax
+      - title: Link cards
+        description: A card with a title, a description, and a validated link list.
+        link: /syntax/link-card.md
+        date: Aug 2026
+        tag: Syntax
+      - title: Card groups
+        description: Group related cards under a heading, or as one accordion.
+        link: /syntax/card-group.md
+        date: Aug 2026
+        tag: Syntax

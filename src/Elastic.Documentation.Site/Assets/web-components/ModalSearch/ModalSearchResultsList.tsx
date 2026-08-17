@@ -177,6 +177,9 @@ const ModalSearchResultRow = ({
         if (config.buildType === 'codex') {
             return result.parents.map((p) => p.title)
         }
+        if (config.buildType === 'isolated') {
+            return result.parents.slice(1).map((p) => p.title)
+        }
 
         const typePrefix = 'Docs'
         return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
@@ -202,18 +205,22 @@ const ModalSearchResultRow = ({
                 text-decoration: none;
                 cursor: pointer;
                 border-bottom: 1px solid ${euiTheme.colors.borderBaseSubdued};
-                background: ${isSelected
-                    ? euiTheme.colors.backgroundBaseSubdued
-                    : 'transparent'};
+                background: ${
+                    isSelected
+                        ? euiTheme.colors.backgroundBaseSubdued
+                        : 'transparent'
+                };
 
                 &:last-child {
                     border-bottom: none;
                 }
 
                 &:hover:not([data-keyboard-navigating='true']) {
-                    background: ${isSelected
-                        ? euiTheme.colors.backgroundBaseSubdued
-                        : euiTheme.colors.backgroundBaseHighlighted};
+                    background: ${
+                        isSelected
+                            ? euiTheme.colors.backgroundBaseSubdued
+                            : euiTheme.colors.backgroundBaseHighlighted
+                    };
 
                     .title-text {
                         color: ${euiTheme.colors.link};
