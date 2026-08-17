@@ -56,7 +56,7 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 	{
 		get => IsEnabled("assembler-api-explorer");
 		set => _featureFlags["assembler-api-explorer"] = value;
-  }
+	}
 
 	public bool GuideNavEnabled
 	{
