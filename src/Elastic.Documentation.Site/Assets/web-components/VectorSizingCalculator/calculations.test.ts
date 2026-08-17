@@ -217,6 +217,38 @@ describe('validation and quantization availability', () => {
         expect(validate(make({ numDimensions: 5000 })).valid).toBe(false)
     })
 
+    it('rejects negative replica shards', () => {
+        const res = validate(make({ replicas: -1 }))
+        expect(res.valid).toBe(false)
+        expect(res.warning).toContain('Replica shards')
+    })
+
+    it('accepts zero replica shards', () => {
+        expect(validate(make({ replicas: 0 })).valid).toBe(true)
+    })
+
+    it('rejects HNSW m below 2', () => {
+        const res = validate(make({ indexType: 'hnsw', hnswM: 1 }))
+        expect(res.valid).toBe(false)
+        expect(res.warning).toContain('Graph connections')
+    })
+
+    it('ignores HNSW m when index structure is not HNSW', () => {
+        expect(validate(make({ indexType: 'flat', hnswM: 0 })).valid).toBe(true)
+    })
+
+    it('rejects DiskBBQ vectors per cluster below 1', () => {
+        const res = validate(
+            make({
+                indexType: 'disk_bbq',
+                quantization: 'bbq',
+                vectorsPerCluster: 0,
+            })
+        )
+        expect(res.valid).toBe(false)
+        expect(res.warning).toContain('Vectors per cluster')
+    })
+
     it('warns that quantization does not apply to byte vectors', () => {
         const res = validate(
             make({ elementType: 'byte', quantization: 'int8' })

@@ -63,10 +63,21 @@ export function getAvailableQuantizations(
   return options;
 }
 
+const DENSE_VECTOR_PARAMS_LINK =
+  'https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/dense-vector#dense-vector-params';
+
 /** Validate inputs and return any warnings. */
 export function validate(inputs: CalculatorInputs): ValidationResult {
-  const { numVectors, numDimensions, elementType, quantization, indexType } =
-    inputs;
+  const {
+    numVectors,
+    numDimensions,
+    elementType,
+    quantization,
+    indexType,
+    replicas,
+    hnswM,
+    vectorsPerCluster,
+  } = inputs;
 
   if (
     isNaN(numVectors) ||
@@ -82,8 +93,33 @@ export function validate(inputs: CalculatorInputs): ValidationResult {
       valid: false,
       warning:
         'Elasticsearch supports a maximum of 4,096 dimensions for dense_vector fields.',
-      warningLink:
-        'https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/dense-vector#dense-vector-params',
+      warningLink: DENSE_VECTOR_PARAMS_LINK,
+    };
+  }
+
+  if (isNaN(replicas) || replicas < 0) {
+    return {
+      valid: false,
+      warning: 'Replica shards must be 0 or greater.',
+    };
+  }
+
+  if (indexType === 'hnsw' && (isNaN(hnswM) || hnswM < 2)) {
+    return {
+      valid: false,
+      warning: 'Graph connections (m) must be at least 2 for HNSW indexes.',
+      warningLink: DENSE_VECTOR_PARAMS_LINK,
+    };
+  }
+
+  if (
+    indexType === 'disk_bbq' &&
+    (isNaN(vectorsPerCluster) || vectorsPerCluster < 1)
+  ) {
+    return {
+      valid: false,
+      warning: 'Vectors per cluster must be at least 1 for DiskBBQ indexes.',
+      warningLink: DENSE_VECTOR_PARAMS_LINK,
     };
   }
 
