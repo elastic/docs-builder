@@ -104,6 +104,7 @@ public class AssembleSources
 		NavigationTocMappings = FrozenDictionary<Uri, NavigationTocMapping>.Empty;
 		LegacyUrlMappings = context.LegacyUrlMappings;
 		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, context.Environment);
+		CrossLinkResolver = new NoopCrossLinkResolver();
 	}
 
 	private AssembleSources(
