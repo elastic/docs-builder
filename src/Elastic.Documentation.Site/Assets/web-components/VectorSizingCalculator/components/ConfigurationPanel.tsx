@@ -63,7 +63,7 @@ const TOOLTIPS = {
     dimensions:
         'The length of each vector, set by your embedding model (for example 768 or 1536).',
     elementType:
-        'The numeric format used to store each dimension. In most cases use float32 and quantization to reduce memory.',
+        'The numeric format used to store each value in a vector. Use float32 in most cases, since Elasticsearch quantizes float vectors by default to reduce memory.',
     indexStructure:
         'HNSW builds a graph for fast approximate search. Flat is exact brute-force. DiskBBQ stores vectors on disk.',
     graphConnections:
