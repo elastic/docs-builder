@@ -53,7 +53,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public ProductsConfiguration ProductsConfiguration { get; }
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 	public SearchConfiguration SearchConfiguration { get; }
-	public RelatedLearningConfiguration RelatedLearningConfiguration { get; }
+	public RelatedLearningConfiguration RelatedLearningConfiguration { get; init; }
 	public IEnvironmentVariables Environment { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public bool Force { get; init; }

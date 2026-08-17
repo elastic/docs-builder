@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.RelatedLearning;
 using Markdig.Syntax;
@@ -26,6 +27,11 @@ public class RelatedLearningMappedPageTests(ITestOutputHelper output)
 	[Fact]
 	public void InjectsHeadingAndLinks()
 	{
+		File.Repository.Should().Be("docs-content");
+		Set.Context.RelatedLearningConfiguration.GetLinksForPage(File.Repository, File.RelativePath)
+			.Should()
+			.NotBeEmpty();
+
 		Document.Descendants<HeadingBlock>()
 			.Should()
 			.Contain(h => (h.GetData("anchor") as string) == RelatedLearningBlock.Anchor);
@@ -41,6 +47,7 @@ public class RelatedLearningMappedPageTests(ITestOutputHelper output)
 	[Fact]
 	public void AddsHeadingToOnThisPage()
 	{
+		File.Repository.Should().Be("docs-content");
 		File.PageTableOfContent.Should().ContainKey("related-learning-heading");
 		File.PageTableOfContent["related-learning-heading"].Heading.Should().Be("Related learning");
 		File.PageTableOfContent["related-learning-heading"].Level.Should().Be(2);
@@ -82,6 +89,7 @@ public class RelatedLearningWrongRepositoryTests(ITestOutputHelper output)
 	[Fact]
 	public void DoesNotInjectSection()
 	{
+		File.Repository.Should().Be("docs-builder");
 		Document.Descendants<RelatedLearningBlock>().Should().BeEmpty();
 		File.PageTableOfContent.Should().NotContainKey("related-learning-heading");
 		Html.Should().NotContain("class=\"related-learning\"");
@@ -90,11 +98,21 @@ public class RelatedLearningWrongRepositoryTests(ITestOutputHelper output)
 
 public abstract class RelatedLearningPageTest : IAsyncLifetime
 {
+	private static readonly RelatedLearningConfiguration Catalog = RelatedLearningConfigurationExtensions.Parse(
+		"""
+		links:
+		  index-basics:
+		    title: Index Basics
+		    url: https://www.elastic.co/training/index-basics
+		    pages:
+		      - docs-content://manage-data/data-store/index-basics.md
+		""");
+
 	protected MarkdownFile File { get; }
 	protected string Html { get; private set; }
 	protected MarkdownDocument Document { get; private set; }
+	protected DocumentationSet Set { get; }
 	private TestDiagnosticsCollector Collector { get; }
-	private DocumentationSet Set { get; }
 
 	protected RelatedLearningPageTest(ITestOutputHelper output, string relativePath, string content, string repositoryName)
 	{
@@ -117,7 +135,10 @@ public abstract class RelatedLearningPageTest : IAsyncLifetime
 			Ref = "test",
 			RepositoryName = repositoryName
 		};
-		var context = new BuildContext(Collector, TestHelpers.CreateDocumentationFileSystem(fileSystem, root, git), configurationContext);
+		var context = new BuildContext(Collector, TestHelpers.CreateDocumentationFileSystem(fileSystem, root, git), configurationContext)
+		{
+			RelatedLearningConfiguration = Catalog
+		};
 		Set = new DocumentationSet(context, new TestLoggerFactory(output), new TestCrossLinkResolver());
 		File = Set.TryFindDocument(fileSystem.FileInfo.New(relativePath)) as MarkdownFile
 			?? throw new NullReferenceException();
@@ -130,7 +151,9 @@ public abstract class RelatedLearningPageTest : IAsyncLifetime
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
 		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current.CancellationToken);
-		Html = MarkdownFile.CreateHtml(Document);
+		// CreateHtml strips the page H1 from the document it receives — use a second parse for HTML.
+		var htmlDocument = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current.CancellationToken);
+		Html = MarkdownFile.CreateHtml(htmlDocument);
 		await Collector.StopAsync(TestContext.Current.CancellationToken);
 	}
 
