@@ -15,9 +15,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Build.Tests;
 
@@ -27,6 +27,14 @@ namespace Elastic.Documentation.Build.Tests;
 /// </summary>
 public class AssemblerOpenApiBuildStepIntegrationTests
 {
+
+	private static void InitializeGitCheckout(IFileSystem fileSystem, string checkoutRoot)
+	{
+		var gitDir = fileSystem.Path.Join(checkoutRoot, ".git");
+		fileSystem.Directory.CreateDirectory(gitDir);
+		fileSystem.File.WriteAllText(fileSystem.Path.Join(gitDir, "HEAD"), "ref: refs/heads/main\n");
+	}
+
 	[Fact]
 	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent()
 	{
@@ -48,8 +56,6 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			  checkout_strategy: full
 			references: {}
 			""");
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
 		using var scopedWorkspace = new ScopedTempDirectory(fileSystem, "assembler-openapi-integration");
 		var workspaceRoot = scopedWorkspace.Directory;
 		var docsetPath = fileSystem.Path.Join(workspaceRoot.FullName, "docset.yml");
@@ -64,14 +70,15 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			      repository: elastic/elasticsearch-specification
 			""");
 		fileSystem.File.WriteAllText(fileSystem.Path.Join(workspaceRoot.FullName, "index.md"), "# Test\n");
+		InitializeGitCheckout(fileSystem, workspaceRoot.FullName);
 		var outputDirectory = fileSystem.Path.Join(workspaceRoot.FullName, "output");
+		var assembleFs = new CheckoutsFileSystem(workspaceRoot, output: fileSystem.DirectoryInfo.New(outputDirectory), inner: fileSystem);
 		var context = new AssembleContext(
 			assemblyConfig,
 			configurationContext,
 			"staging",
 			collector,
-			readFs,
-			writeFs,
+			assembleFs,
 			workspaceRoot.FullName,
 			outputDirectory);
 		var checkout = new Checkout

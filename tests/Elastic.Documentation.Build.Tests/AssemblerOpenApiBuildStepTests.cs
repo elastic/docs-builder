@@ -15,9 +15,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Build.Tests;
 
@@ -49,17 +49,15 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
 		var tempDirectory = CreateTempDirectory(fileSystem);
 		var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
+		var assembleFs = new CheckoutsFileSystem(tempDirectory, output: fileSystem.DirectoryInfo.New(outputDirectory), inner: fileSystem);
 		var context = new AssembleContext(
 			assemblyConfig,
 			configurationContext,
 			"prod",
 			collector,
-			readFs,
-			writeFs,
+			assembleFs,
 			tempDirectory.FullName,
 			outputDirectory);
 		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
@@ -81,17 +79,15 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
 		var tempDirectory = CreateTempDirectory(fileSystem);
 		var outputDirectory = fileSystem.Path.Join(tempDirectory.FullName, "output");
+		var assembleFs = new CheckoutsFileSystem(tempDirectory, output: fileSystem.DirectoryInfo.New(outputDirectory), inner: fileSystem);
 		var context = new AssembleContext(
 			assemblyConfig,
 			configurationContext,
 			"staging",
 			collector,
-			readFs,
-			writeFs,
+			assembleFs,
 			tempDirectory.FullName,
 			outputDirectory);
 		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
@@ -147,6 +143,14 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
+
+	private static void InitializeGitCheckout(IFileSystem fileSystem, string checkoutRoot)
+	{
+		var gitDir = fileSystem.Path.Join(checkoutRoot, ".git");
+		fileSystem.Directory.CreateDirectory(gitDir);
+		fileSystem.File.WriteAllText(fileSystem.Path.Join(gitDir, "HEAD"), "ref: refs/heads/main\n");
+	}
+
 	private IDirectoryInfo CreateTempDirectory(IFileSystem fileSystem)
 	{
 		var tempDirectory = new ScopedTempDirectory(fileSystem, "assembler-openapi-test");
@@ -162,8 +166,6 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var assemblyConfig = AssemblyConfiguration.Deserialize(MinimalAssemblerYaml);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
 		var scopedCheckoutRoot = new ScopedTempDirectory(fileSystem, "assembler-openapi-owner");
 		_tempDirectories.Add(scopedCheckoutRoot);
 		var checkoutRoot = scopedCheckoutRoot.Directory;
@@ -186,15 +188,16 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 				""";
 		fileSystem.File.WriteAllText(docsetPath, docsetYaml);
 		fileSystem.File.WriteAllText(fileSystem.Path.Join(checkoutRoot.FullName, "index.md"), "# Test\n");
+		InitializeGitCheckout(fileSystem, checkoutRoot.FullName);
 
 		var outputDirectory = fileSystem.Path.Join(checkoutRoot.FullName, "output");
+		var assembleFs = new CheckoutsFileSystem(checkoutRoot, output: fileSystem.DirectoryInfo.New(outputDirectory), inner: fileSystem);
 		var context = new AssembleContext(
 			assemblyConfig,
 			configurationContext,
 			"staging",
 			collector,
-			readFs,
-			writeFs,
+			assembleFs,
 			checkoutRoot.FullName,
 			outputDirectory);
 		var checkout = new Checkout

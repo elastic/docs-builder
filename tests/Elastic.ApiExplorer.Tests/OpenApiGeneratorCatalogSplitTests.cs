@@ -16,6 +16,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
@@ -95,8 +96,6 @@ public class OpenApiGeneratorCatalogSplitTests
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
 		fs.AddFile(configPath, new MockFileData(docsetYaml));
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
 		var products = new ProductsConfiguration
 		{
 			Products = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
@@ -106,15 +105,20 @@ public class OpenApiGeneratorCatalogSplitTests
 		};
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, stack, products);
 
-		return new BuildContext(collector, readFs, writeFs, configurationContext,
-			ExportOptions.Default, source: repoRoot, output: outputRoot,
-			gitCheckoutInformation: new GitCheckoutInformation
+		return new BuildContext(collector,
+			DocumentationFileSystem.Resolve(repoRoot, new DocumentationScopeOptions
 			{
-				Branch = "main",
-				Remote = "https://github.com/elastic/elasticsearch.git",
-				Ref = "refs/heads/main"
-			},
-			configurationFile: readFs.FileInfo.New(configPath))
+				ConfigurationFile = configPath,
+				Output = outputRoot,
+				Git = new GitCheckoutInformation
+				{
+					Branch = "main",
+					Remote = "https://github.com/elastic/elasticsearch.git",
+					Ref = "refs/heads/main"
+				},
+				Inner = fs
+			}),
+			configurationContext)
 		{
 			UrlPathPrefix = "docs"
 		};
