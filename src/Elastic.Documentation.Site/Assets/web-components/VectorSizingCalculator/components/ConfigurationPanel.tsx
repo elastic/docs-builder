@@ -61,7 +61,7 @@ const TOOLTIPS = {
     vectors:
         'The total number of vectors you plan to store in this index, not the number of documents. A single document can produce several vectors, such as one embedding for each product image and one for the description.',
     dimensions:
-        'The length of each vector, set by your embedding model (for example 768 or 1536).',
+        'The number of values in each vector, set by your embedding model.',
     elementType:
         'The numeric format used to store each value in a vector. Use float32 in most cases, since Elasticsearch quantizes float vectors by default to reduce memory.',
     indexStructure:
@@ -69,11 +69,11 @@ const TOOLTIPS = {
     graphConnections:
         'How many neighbors each node connects to in the HNSW graph. Higher values improve recall, but increase memory and build time.',
     quantization:
-        'Compresses vectors to reduce memory. Options depend on element type and index structure.',
+        'Compresses vectors to reduce memory, at some cost to accuracy. Applies to float and bfloat16 vectors only. Available options depend on your index structure.',
     replicas:
         'The number of replica copies, not counting the primary. Each replica holds a full copy of the vector data, so replicas multiply storage and memory. The default is 1.',
     vectorsPerCluster:
-        'The target number of vectors per cluster. Smaller clusters mean more centroids held in RAM. Larger clusters mean more data read per query. The default is 384.',
+        'For DiskBBQ, vectors are grouped into clusters. This value sets how many vectors each cluster holds and affects cluster count and disk use.',
     offHeapRam:
         'Share of the posting lists (cluster vectors) kept in off-heap RAM. Lower values save memory; higher values improve query throughput and latency (all centroids are always fully in RAM).',
     hnswIndexStructure: 'RAM estimates include the HNSW graph.',
