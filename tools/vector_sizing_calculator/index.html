@@ -807,7 +807,6 @@
     ).join('');
 
     // Disk bar chart
-    const maxDisk = Math.max(...diskItems.map(i => i.value), 1);
     $('diskChart').innerHTML = diskItems.map(i => {
       const pct = Math.max((i.value / totalDisk) * 100, 0.5);
       return `<div class="bar-row">

@@ -178,7 +178,7 @@ export function ResultsPanel({
                                 target="_blank"
                                 external
                             >
-                                More info
+                                Learn more
                             </EuiLink>
                         </EuiText>
                     </div>

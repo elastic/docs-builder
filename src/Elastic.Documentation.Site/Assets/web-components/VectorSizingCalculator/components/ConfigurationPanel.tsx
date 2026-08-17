@@ -65,13 +65,13 @@ const TOOLTIPS = {
     elementType:
         'The numeric format used to store each value in a vector. Use float32 in most cases, since Elasticsearch quantizes float vectors by default to reduce memory.',
     indexStructure:
-        'HNSW builds a graph for fast approximate search. Flat is exact brute-force. DiskBBQ stores vectors on disk.',
+        'How vectors are indexed, which drives memory use and search speed. HNSW keeps a graph in memory for fast approximate search. Flat compares every vector for exact results, best at small scale. DiskBBQ reads compressed clusters from disk and needs far less memory than HNSW.',
     graphConnections:
-        'How many neighbors each node connects to in the HNSW graph. Higher values improve recall but increase memory and build time.',
+        'How many neighbors each node connects to in the HNSW graph. Higher values improve recall, but increase memory and build time.',
     quantization:
         'Compresses vectors to reduce memory. Options depend on element type and index structure.',
     replicas:
-        'Number of replica shards (not including the primary). Total index copies = 1 primary + replica shards.',
+        'The number of replica copies, not counting the primary. Each replica holds a full copy of the vector data, so replicas multiply storage and memory. The default is 1.',
     vectorsPerCluster:
         'For DiskBBQ, vectors are grouped into clusters. This value sets how many vectors each cluster holds and affects cluster count and disk use.',
     offHeapRam:
