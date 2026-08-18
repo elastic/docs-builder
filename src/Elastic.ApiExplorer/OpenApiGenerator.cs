@@ -48,8 +48,19 @@ public class OpenApiGenerator(
 
 	public async Task Generate(Cancel ctx = default)
 	{
+		var catalogEntries = await GenerateProducts(ctx).ConfigureAwait(false);
+		if (catalogEntries.Count > 0)
+			await GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>
+	/// Renders every configured API product for this build context and returns catalog entries.
+	/// Does not write the combined API catalog page.
+	/// </summary>
+	public async Task<IReadOnlyList<ApiCatalogEntry>> GenerateProducts(Cancel ctx = default)
+	{
 		if (context.Configuration.ApiConfigurations is null)
-			return;
+			return [];
 
 		var catalogEntries = new List<ApiCatalogEntry>();
 
@@ -57,35 +68,9 @@ public class OpenApiGenerator(
 		{
 			try
 			{
-				var versionedDocuments = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
-				if (versionedDocuments.Count == 0)
-					continue;
-
-				var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
-				var crossVersionIndex = ApiCrossVersionPageIndex.Build(versionedDocuments);
-				var currentMajor = apiConfig.Product.VersioningSystem?.Current.Major
-					?? throw new InvalidOperationException($"Product '{apiConfig.ProductKey}' has no versioning system.");
-				foreach (var versioned in versionedDocuments)
-				{
-					var switcherContext = new ApiVersionSwitcherContext(
-						prefix,
-						monikers,
-						versioned.Version.Moniker,
-						currentMajor,
-						crossVersionIndex,
-						context.UrlPathPrefix);
-					var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
-					await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherContext, ctx)
-						.ConfigureAwait(false);
-				}
-
-				var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main")
-					?? versionedDocuments[0];
-				var title = canonical.Document.Info?.Title
-					?? apiConfig.Product.DisplayName
-					?? prefix;
-				var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
-				catalogEntries.Add(new ApiCatalogEntry(prefix, title, url));
+				var entry = await GenerateProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
+				if (entry is not null)
+					catalogEntries.Add(entry);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
@@ -94,8 +79,54 @@ public class OpenApiGenerator(
 			}
 		}
 
-		if (catalogEntries.Count > 0)
-			await GenerateApiCatalog(catalogEntries, ctx).ConfigureAwait(false);
+		return catalogEntries;
+	}
+
+	/// <summary>
+	/// Writes the combined API catalog page once from entries collected across one or more owners.
+	/// </summary>
+	public Task GenerateCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx = default) =>
+		entries.Count == 0 ? Task.CompletedTask : GenerateApiCatalog(entries, ctx);
+
+	private async Task<ApiCatalogEntry?> GenerateProduct(
+		string prefix,
+		ResolvedApiConfiguration apiConfig,
+		Cancel ctx)
+	{
+		var versionedDocuments = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
+		if (versionedDocuments.Count == 0)
+			return null;
+
+		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
+		var crossVersionIndex = ApiCrossVersionPageIndex.Build(versionedDocuments);
+		int? currentMajor = monikers.Length > 1
+			? (apiConfig.Product.VersioningSystem?.Current.Major
+				?? throw new InvalidOperationException($"Product '{apiConfig.ProductKey}' has no versioning system."))
+			: null;
+
+		foreach (var versioned in versionedDocuments)
+		{
+			var switcherContext = currentMajor.HasValue
+				? new ApiVersionSwitcherContext(
+					prefix,
+					monikers,
+					versioned.Version.Moniker,
+					currentMajor.Value,
+					crossVersionIndex,
+					context.UrlPathPrefix)
+				: null;
+			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
+			await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherContext, ctx)
+				.ConfigureAwait(false);
+		}
+
+		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main")
+			?? versionedDocuments[0];
+		var title = canonical.Document.Info?.Title
+			?? apiConfig.Product.DisplayName
+			?? prefix;
+		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
+		return new ApiCatalogEntry(prefix, title, url);
 	}
 
 	/// <summary>

@@ -24,7 +24,7 @@ jobs:
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@eada3c96a64734dd381cfbda23511034e328ddb0 # v7.6.0
+      - uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -74,7 +74,7 @@ jobs:
           path: src/Elastic.Documentation.Site
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
