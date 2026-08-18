@@ -93,6 +93,20 @@ public class AssembleSources
 		return sources;
 	}
 
+	internal static AssembleSources ForTests(
+		AssembleContext context,
+		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets) => new(context, assembleSets);
+
+	private AssembleSources(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets)
+	{
+		AssembleContext = context;
+		AssembleSets = assembleSets;
+		NavigationTocMappings = FrozenDictionary<Uri, NavigationTocMapping>.Empty;
+		LegacyUrlMappings = context.LegacyUrlMappings;
+		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, context.Environment);
+		CrossLinkResolver = NoopCrossLinkResolver.Instance;
+	}
+
 	private AssembleSources(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,

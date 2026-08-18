@@ -30,7 +30,8 @@ public static class SitemapBuilder
 		IDirectoryInfo outputFolder
 	)
 	{
-		// TODO: Remove this exclusion when API docs are ready for sitemap inclusion
+		// API pages are generated only on staging (assembler-api-explorer flag) and /docs/api/* is still
+		// proxied to bump.sh at the edge (#725). Keep them out of the sitemap until cutover.
 		var filtered = entries
 			.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal))
 			.ToList();

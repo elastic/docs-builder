@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Text;
 using Actions.Core.Services;
@@ -133,6 +134,11 @@ public class AssemblerBuildService(
 
 		if (exporters.Contains(Exporter.Html))
 		{
+			var openApiStopwatch = Stopwatch.StartNew();
+			await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, assembleSources, ctx);
+			openApiStopwatch.Stop();
+			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
+
 			// Build-time sitemap uses current date as placeholder for backwards compatibility.
 			// Production sitemap with correct content_last_updated dates is generated via
 			// `assembler sitemap` after ES indexing, which overwrites this file.

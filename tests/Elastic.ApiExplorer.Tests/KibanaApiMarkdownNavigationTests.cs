@@ -37,8 +37,8 @@ public class KibanaApiMarkdownNavigationTests
 	private static (LandingNavigationItem navigation, SimpleMarkdownNavigationItem introNav) SetupKibanaNavigation()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
-		var introPath = Path.Combine(root, "docs", "api", "kibana", "kibana-api-overview.md");
-		var specPath = Path.Combine(root, "docs", "kibana-openapi.json");
+		var introPath = Path.Combine(root, "tests", "Elastic.ApiExplorer.Tests", "TestData", "kibana-api-overview.md");
+		var specPath = Path.Combine(root, "tests", "Elastic.ApiExplorer.Tests", "TestData", "kibana-openapi-no-x-req-auth-sample.json");
 		var fs = new FileSystem();
 		var introFile = fs.FileInfo.New(introPath);
 		var specFile = fs.FileInfo.New(specPath);
@@ -47,7 +47,7 @@ public class KibanaApiMarkdownNavigationTests
 		{
 			ProductKey = "kibana",
 			Product = new Product { Id = "kibana", DisplayName = "Kibana" },
-			SpecFileName = "kibana-openapi.json",
+			SpecFileName = "kibana-openapi-no-x-req-auth-sample.json",
 			LocalSpecFile = specFile,
 			Children = [introFile]
 		};
