@@ -66,11 +66,12 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task TopNavLinksRenderMobileMenu()
+	public async Task TopNavLinksRenderInMobileDrawer()
 	{
-		var html = await Render(LinkOnlyTopNav, currentUrl: "/docs/reference/some-page", root: new MockSectionRoot(ReferenceSectionId));
+		var html = await RenderPagesNav(LinkOnlyTopNav, currentUrl: "/docs/reference/some-page", root: new MockSectionRoot(ReferenceSectionId));
 
 		html.Should().Contain("secondary-nav-mobile-menu");
+		html.Should().Contain(">Section<");
 		html.Should().Contain("<span>Reference</span>");
 		html.Should().Contain("href=\"/docs/guides/\"");
 		html.Should().Contain("href=\"/docs/reference/\"");
@@ -80,11 +81,23 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task TopNavMobileMenuUsesDocsHomeFallback()
+	public async Task TopNavMobileDrawerUsesDocsHomeFallback()
 	{
-		var html = await Render(LinkOnlyTopNav, currentUrl: "/docs/");
+		var html = await RenderPagesNav(LinkOnlyTopNav, currentUrl: "/docs/");
 
 		html.Should().Contain("<span>Docs Home</span>");
+	}
+
+	[Fact]
+	public async Task MobileDrawerRendersVersionDropdown()
+	{
+		var html = await RenderPagesNav(topNav: null, currentUrl: "/docs/", showVersionDropdown: true);
+
+		html.Should().Contain(">Version<");
+		html.Should().Contain("<version-dropdown");
+		html.Should().Contain("all-versions-url=\"/docs/versions/\"");
+		html.Should().Contain("8.19");
+		html.Should().Contain("items='[]'");
 	}
 
 	[Fact]
@@ -163,6 +176,34 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		string currentUrl,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null)
 	{
+		var model = CreateModel(topNav, currentUrl, root);
+
+		return await _SecondaryNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+	}
+
+	private async Task<string> RenderPagesNav(
+		TopNavRenderModel? topNav,
+		string currentUrl,
+		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
+		bool showVersionDropdown = false)
+	{
+		var model = CreateModel(topNav, currentUrl, root) with
+		{
+			NavigationHtml = "<ul id=\"nav-tree-test\"></ul>",
+			ShowVersionDropdown = showVersionDropdown,
+			AllVersionsUrl = "/docs/versions/",
+			CurrentVersion = "8.19",
+			VersionDropdownSerializedModel = "[]"
+		};
+
+		return await _PagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+	}
+
+	private GlobalLayoutViewModel CreateModel(
+		TopNavRenderModel? topNav,
+		string currentUrl,
+		IRootNavigationItem<INavigationModel, INavigationItem>? root = null)
+	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
@@ -190,7 +231,7 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 		};
 
-		return await _SecondaryNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return model;
 	}
 
 	/// <summary>The secondary nav only reads <see cref="INavigationItem.Url"/> off the current page.</summary>
