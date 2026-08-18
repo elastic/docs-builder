@@ -1,7 +1,5 @@
 import { calculate, validate, getAvailableQuantizations } from './calculations'
-import { ComponentBreakdownTable } from './components/ComponentBreakdownTable'
 import { ConfigurationPanel } from './components/ConfigurationPanel'
-import { ExplainersPanel } from './components/ExplainersPanel'
 import { ResultsPanel } from './components/ResultsPanel'
 import { parseVectorCount } from './parseVectorCount'
 import type {
@@ -134,13 +132,6 @@ export function Calculator() {
                     validation={validation}
                 />
             </div>
-
-            <ComponentBreakdownTable
-                result={result}
-                inputsValid={inputsValid}
-            />
-
-            <ExplainersPanel />
         </div>
     )
 }
