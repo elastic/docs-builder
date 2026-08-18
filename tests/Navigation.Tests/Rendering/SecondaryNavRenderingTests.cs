@@ -80,6 +80,14 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
+	public async Task TopNavMobileMenuUsesDocsHomeFallback()
+	{
+		var html = await Render(LinkOnlyTopNav, currentUrl: "/docs/");
+
+		html.Should().Contain("<span>Docs Home</span>");
+	}
+
+	[Fact]
 	public async Task WithTopNavTheBarIsLeftAlignedAndCarriesNoBrandLink()
 	{
 		var html = await Render(TopNav, "/docs/");
