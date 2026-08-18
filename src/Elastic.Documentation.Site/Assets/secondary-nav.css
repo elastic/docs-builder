@@ -16,7 +16,9 @@
 	}
 
 	.secondary-nav-mobile-menu[open] > summary .secondary-nav-mobile-chevron,
-	.secondary-nav-mobile-submenu[open] > summary .secondary-nav-mobile-chevron {
+	.secondary-nav-mobile-submenu[open]
+		> summary
+		.secondary-nav-mobile-chevron {
 		transform: rotate(180deg);
 	}
 }
