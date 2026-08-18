@@ -75,7 +75,7 @@ const TOOLTIPS = {
     vectorsPerCluster:
         'For DiskBBQ, vectors are grouped into clusters. This value sets how many vectors each cluster holds and affects cluster count and disk use.',
     offHeapRam:
-        'Share of the posting lists (cluster vectors) kept in off-heap RAM. Lower values save memory; higher values improve query throughput and latency (all centroids are always fully in RAM).',
+        'The percentage of clustered vector data, called posting lists, held in off-heap RAM. Supported values are 0 to 10 percent. Lower values save memory. Higher values raise query throughput and lower latency. This estimate assumes all centroids stay in RAM, since performance drops sharply otherwise.',
     hnswIndexStructure: 'RAM estimates include the HNSW graph.',
     diskBbqIndexStructure: 'RAM estimates reflect off-heap cache.',
 }
