@@ -860,6 +860,16 @@ public class DocumentationSetFile : TableOfContentsFile
 		foreach (var file in contentFiles)
 		{
 			var group = fileGroups[file];
+
+			// If listing: frontmatter is absent, infer the group from the parent directory
+			// when that directory is a known group folder (has a group index file).
+			if (string.IsNullOrEmpty(group) && file.Directory is not null)
+			{
+				var parentRel = Path.GetRelativePath(listingDirAbsolute, file.Directory.FullName).Replace('\\', '/');
+				if (groupIndexFiles.ContainsKey(parentRel))
+					group = parentRel;
+			}
+
 			if (!string.IsNullOrEmpty(group))
 			{
 				if (!groupedFiles.ContainsKey(group))
