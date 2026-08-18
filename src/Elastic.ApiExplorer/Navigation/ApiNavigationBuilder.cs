@@ -29,7 +29,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 
 	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null)
 	{
-		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
+		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix);
 		var rootNavigation = new LandingNavigationItem(url);
 
 		var tagMetadataByName = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
@@ -140,25 +140,17 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		// Add schema type pages for shared types
 		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
-		// Collect operation monikers for collision detection
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (var path in openApiDocument.Paths)
-		{
-			foreach (var operation in path.Value.Operations ?? [])
-				_ = operationMonikers.Add(ApiUrlBuilder.OperationMoniker(operation.Value.OperationId, path.Key));
-		}
-
-		// Add intro and outro markdown pages if available
+		// Add explicit children declared via 'children:' below the landing page and before the
+		// generated OpenAPI groups, in declared order.
 		var finalNavigationItems = new List<INavigationItem>();
 		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-		// Add intro pages first
-		if (apiConfig?.IntroMarkdownFiles.Count > 0)
+		if (apiConfig?.Children.Count > 0)
 		{
-			foreach (var introFile in apiConfig.IntroMarkdownFiles)
+			foreach (var childFile in apiConfig.Children)
 			{
-				var introNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, introFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
-				finalNavigationItems.Add(introNavItem);
+				var childNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, childFile, rootNavigation, rootNavigation, markdownSlugs);
+				finalNavigationItems.Add(childNavItem);
 			}
 		}
 
@@ -167,16 +159,6 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			finalNavigationItems.AddRange(topLevelNavigationItems);
 		else if (rootNavigation.NavigationItems.Count > 0)
 			finalNavigationItems.AddRange(rootNavigation.NavigationItems);
-
-		// Add outro pages last
-		if (apiConfig?.OutroMarkdownFiles.Count > 0)
-		{
-			foreach (var outroFile in apiConfig.OutroMarkdownFiles)
-			{
-				var outroNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, outroFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
-				finalNavigationItems.Add(outroNavItem);
-			}
-		}
 
 		// Set the final navigation items
 		if (finalNavigationItems.Count > 0)
@@ -190,7 +172,6 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		IFileInfo markdownFile,
 		LandingNavigationItem rootNavigation,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		HashSet<string> operationMonikers,
 		HashSet<string> markdownSlugs)
 	{
 		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(markdownFile);
@@ -203,9 +184,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				$"File: {markdownFile.FullName}");
 		}
 
-		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName, operationMonikers);
+		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName);
 
-		var url = $"{context.UrlPathPrefix}/api/{apiUrlSuffix}/{slug}/";
+		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix)}/{slug}/";
 		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
 
 		// Create simple navigation item - will be handled by regular documentation system

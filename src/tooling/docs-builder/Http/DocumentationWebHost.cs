@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using Nullean.ScopedFileSystem;
 using System.Runtime.InteropServices;
@@ -15,6 +16,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
@@ -44,13 +46,11 @@ public class DocumentationWebHost
 	public DocumentationWebHost(ILoggerFactory logFactory,
 		string? path,
 		int port,
-		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
 		IConfigurationContext configurationContext,
-		bool isWatchBuild
+		bool isWatchBuild,
+		bool noHud = false
 	)
 	{
-		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
 		_ = builder.AddDocumentationServiceDefaults();
 
@@ -71,15 +71,15 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
+		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { InnerWrite = new MockFileSystem() });
+		_writeFileSystem = docFs.Write;
+		Context = new BuildContext(collector, docFs, configurationContext)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
 
-		// Enable diagnostics panel in serve mode
-		Context.Configuration.Features.DiagnosticsPanelEnabled = true;
+		Context.Configuration.Features.DiagnosticsPanelEnabled = !noHud;
 
-		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
 		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context, isWatchBuild);
@@ -94,7 +94,7 @@ public class DocumentationWebHost
 			.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(3))
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
 			.AddSingleton(_ => InMemoryBuildState)
-			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, logFactory.CreateLogger<ReloadGeneratorService>()));
+			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, noHud, logFactory.CreateLogger<ReloadGeneratorService>()));
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
@@ -263,13 +263,15 @@ public class DocumentationWebHost
 		}
 		catch (OperationCanceledException) when (ctx.IsCancellationRequested)
 		{
-			// HTTP request was canceled - return 499 or appropriate status
-			return Results.Problem("Request canceled", statusCode: 499);
+			// Client disconnected — no ProblemDetails JSON; ApiJsonContext is AOT-only.
+			return Results.StatusCode(499);
 		}
 		catch (OperationCanceledException)
 		{
-			// API generation timed out - return 503 with retry info
-			return Results.Problem("API generation in progress, please retry", statusCode: 503);
+			return Results.Text(
+				"API generation in progress, please retry",
+				contentType: "text/plain",
+				statusCode: StatusCodes.Status503ServiceUnavailable);
 		}
 
 		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
@@ -305,12 +307,16 @@ public class DocumentationWebHost
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		slug = slug.TrimEnd('/');
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Join(slug, "index.md") : slug;
+		// Path.GetExtension treats version segments like "8.19" as having extension ".19".
+		// Only treat the slug as a bare file path when the extension is a known document type.
+		var slugExt = Path.GetExtension(slug);
+		var hasKnownExtension = slugExt is ".md" or ".html" or ".json" or ".js" or ".css" or ".svg" or ".png" or ".jpg" or ".jpeg" or ".gif" or ".ico" or ".webp";
+		var s = !hasKnownExtension ? Path.Join(slug, "index.md") : slug;
 		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
 		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))
 		{
-			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
+			s = !hasKnownExtension ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
 			fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 			if (!generator.DocumentationSet.Files.TryGetValue(fp, out documentationFile))
 			{

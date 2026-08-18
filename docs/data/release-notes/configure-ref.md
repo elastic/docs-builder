@@ -72,10 +72,10 @@ The authoring repo is resolved with the same precedence as `changelog upload`: `
 
 Sourcing is decided per run:
 
-- **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--files` / a path-list filter is used, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
-- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue filters to the downloaded set.
+- **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
+- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue/file filters to the downloaded set. Path-list / `--files` filters match pool entries by file name, so the listed paths do not need to exist locally.
 
-Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml`. Path-list / `--files` filters always force local sourcing because they select files by path on disk.
+Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml` — including path-list / `--files` runs that should read freshly authored files from disk instead of the CDN pool.
 
 Because entries are org/repo/branch-scoped, one repository can produce a bundle for a shared product (for example, `cloud-serverless`) while sourcing its own entries from `changelog/{org}/{repo}/{branch}/`, without that product appearing in the repository's `docset.yml`. The `{changelog}` directive's `:cdn:` mode still consumes product-scoped *bundles*, so a repository that also renders its own release notes declares each product under `release_notes` as before.
 
@@ -253,6 +253,7 @@ Also controls how the `changelog add` command maps GitHub labels to various chan
 | Setting           | Description                                |
 | ----------------- | ------------------------------------------ |
 | `pivot.areas`     | Lists the valid area values. Optionally maps area names to GitHub labels (for example, `"Search Relevance": ":Search Relevance/Search"`). |
+| `pivot.features`  | Maps `feature-id` values to GitHub labels. When a PR or issue has a matching label, `changelog add` sets `feature-id` unless you pass `--feature-id`. If there are multiple feature labels, the first match is used and a warning is emitted. |
 | `pivot.highlight` | Defines labels that set the `highlight` flag on changelogs. |
 | `pivot.products`  | Maps product IDs (and optionally version and lifecycle) to GitHub labels. |
 | `pivot.types`     | Lists the valid type values (at a minimum, `feature`, `bug-fix`, and `breaking-change`). Optionally maps types to GitHub labels (for example, `bug-fix: ">bug"`). You can also optionally define breaking change subtypes. |
@@ -281,6 +282,10 @@ pivot:
       - ":product/elasticsearch"
     'cloud-serverless':
       - ":product/serverless"
+  features:
+    'feature:new-search-api':
+      - "feature-flag:new-search-api"
+      - ":Feature/NewSearchApi"
 ```
 
 ## Products [products]

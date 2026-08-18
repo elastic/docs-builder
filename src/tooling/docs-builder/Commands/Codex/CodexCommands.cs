@@ -4,7 +4,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using Actions.Core.Services;
 using Documentation.Builder.Http;
 using Elastic.Codex;
 using Elastic.Codex.Building;
@@ -12,7 +11,7 @@ using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Isolated;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -32,9 +31,7 @@ namespace Documentation.Builder.Commands.Codex;
 internal sealed class CodexCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext,
-	ICoreService githubActionsService,
-	IEnvironmentVariables environmentVariables
+	IConfigurationContext configurationContext
 )
 {
 	/// <summary>Clone all repositories and build the portal in one step.</summary>
@@ -58,14 +55,11 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
-		var writeFs = FileSystemFactory.RealGitRootForPathWrite(null, output?.FullName);
-
-		var configFile = readFs.FileInfo.New(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
+		var fs = new CodexFileSystem(config.FullName, output?.FullName);
+		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, writeFs, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs, null, output?.FullName);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -78,14 +72,13 @@ internal sealed class CodexCommands(
 				return cloneResult.Checkouts.Count > 0;
 			});
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs), strict,
+		var buildService = new CodexBuildService(logFactory, configurationContext);
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
 				if (state.cloneResult == null)
 					return false;
-				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.readFs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 
@@ -116,13 +109,11 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
-
-		var configFile = readFs.FileInfo.New(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
+		var fs = new CodexFileSystem(config.FullName);
+		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, FileSystemFactory.RealWrite, null, null);
+		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs);
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -150,14 +141,11 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
-		var writeFs = FileSystemFactory.RealGitRootForPathWrite(null, output?.FullName);
-
-		var configFile = readFs.FileInfo.New(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out _))
+		var fs = new CodexFileSystem(config.FullName, output?.FullName);
+		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig, out _))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, writeFs, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs, null, output?.FullName);
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
@@ -166,12 +154,11 @@ internal sealed class CodexCommands(
 			return 1;
 		}
 
-		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs), strict,
+		var buildService = new CodexBuildService(logFactory, configurationContext);
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
-				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.readFs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 
@@ -186,8 +173,7 @@ internal sealed class CodexCommands(
 	[NoOptionsInjection]
 	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
 	{
-		var fs = FileSystemFactory.RealRead;
-		var servePath = path?.FullName ?? fs.Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
+		var servePath = path?.FullName ?? Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
 		var host = new StaticWebHost(port, servePath);
 		await host.RunAsync(ct);

@@ -11,13 +11,14 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -36,8 +37,8 @@ public class KibanaApiMarkdownNavigationTests
 	private static (LandingNavigationItem navigation, SimpleMarkdownNavigationItem introNav) SetupKibanaNavigation()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
-		var introPath = Path.Combine(root, "docs", "kibana-api-overview.md");
-		var specPath = Path.Combine(root, "docs", "kibana-openapi.json");
+		var introPath = Path.Combine(root, "tests", "Elastic.ApiExplorer.Tests", "TestData", "kibana-api-overview.md");
+		var specPath = Path.Combine(root, "tests", "Elastic.ApiExplorer.Tests", "TestData", "kibana-openapi-no-x-req-auth-sample.json");
 		var fs = new FileSystem();
 		var introFile = fs.FileInfo.New(introPath);
 		var specFile = fs.FileInfo.New(specPath);
@@ -45,14 +46,16 @@ public class KibanaApiMarkdownNavigationTests
 		var apiConfig = new ResolvedApiConfiguration
 		{
 			ProductKey = "kibana",
-			IntroMarkdownFiles = [introFile],
-			SpecFiles = [specFile]
+			Product = new Product { Id = "kibana", DisplayName = "Kibana" },
+			SpecFileName = "kibana-openapi-no-x-req-auth-sample.json",
+			LocalSpecFile = specFile,
+			Children = [introFile]
 		};
 
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var context = new BuildContext(collector, FileSystemFactory.RealGitRootForPath(null), configurationContext);
-		var doc = OpenApiReader.Create(specFile).GetAwaiter().GetResult();
+		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
+		var doc = OpenApiReader.Instance.ReadAsync(specFile).GetAwaiter().GetResult();
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		var navigation = generator.CreateNavigation("kibana", doc, apiConfig);
@@ -86,35 +89,21 @@ public class KibanaApiMarkdownNavigationTests
 	{
 		var (_, introNav) = SetupKibanaNavigation();
 
-		introNav.Url.Should().Be("/api/kibana/kibana-api-overview/");
+		introNav.Url.Should().Be("/api/doc/kibana/kibana-api-overview/");
 	}
 
 	[Fact]
-	public void UrlCollisionValidation_ShouldDetectReservedSegments()
+	public void UrlCollisionValidation_ShouldAllowSlugMatchingOperationId()
 	{
-		var actTypes = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("types", "kibana", "/docs/types.md");
-		var actTags = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("tags", "kibana", "/docs/tags.md");
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("search", "kibana", "/docs/search.md");
 
-		actTypes.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*types*");
-		actTags.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with reserved API Explorer segment*tags*");
-	}
-
-	[Fact]
-	public void UrlCollisionValidation_ShouldDetectOperationMonikers()
-	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index" };
-
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("search", "kibana", "/docs/search.md", operationMonikers);
-
-		act.Should().Throw<InvalidOperationException>().WithMessage("*conflicts with existing operation moniker*");
+		act.Should().NotThrow();
 	}
 
 	[Fact]
 	public void UrlCollisionValidation_ShouldAllowValidSlugs()
 	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index" };
-
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("overview", "kibana", "/docs/overview.md", operationMonikers);
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("overview", "kibana", "/docs/overview.md");
 
 		act.Should().NotThrow();
 	}

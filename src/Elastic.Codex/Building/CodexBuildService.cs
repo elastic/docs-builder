@@ -14,7 +14,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.Isolated;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -24,6 +24,7 @@ using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
+using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -36,8 +37,7 @@ namespace Elastic.Codex.Building;
 /// </summary>
 public class CodexBuildService(
 	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext,
-	IsolatedBuildService isolatedBuildService) : IService
+	IConfigurationContext configurationContext) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexBuildService>();
 
@@ -69,7 +69,7 @@ public class CodexBuildService(
 		var buildContexts = new List<CodexDocumentationSetBuildContext>();
 
 		var environment = context.Configuration.Environment ?? "internal";
-		using var codexLinkIndexReader = new GitLinkIndexReader(environment, FileSystemFactory.AppData, skipFetch: true);
+		using var codexLinkIndexReader = new GitLinkIndexReader(environment, new ApplicationDataFileSystem(), skipFetch: true);
 
 		// Phase 1: Load and parse all documentation sets
 		foreach (var checkout in cloneResult.Checkouts)
@@ -96,9 +96,8 @@ public class CodexBuildService(
 		if (exporters is not null && buildContexts.Count > 0)
 		{
 			var firstContext = buildContexts[0].BuildContext;
-			firstContext.Endpoints.BuildType = "codex";
 			firstContext.Endpoints.Environment = environment; // from codex.yml; ensures the correct index (e.g. internal)
-			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext).ToArray();
+			sharedExporters = CreateExporters(context, firstContext, exporters);
 			var startTasks = sharedExporters.Select(async e => await e.StartAsync(ctx));
 			await Task.WhenAll(startTasks);
 		}
@@ -187,16 +186,13 @@ public class CodexBuildService(
 			// The docset file itself is passed explicitly so build reuses the docset clone discovery already
 			// selected (which may prefer a non-default path such as `docs-dev/`), rather than rediscovering
 			// one from the repository root and always landing on `docs/`.
-			var buildContext = new BuildContext(
-				context.Collector,
-				fileSystem,
-				fileSystem,
-				configurationContext,
-				ExportOptions.Default,
-				checkout.RepositoryDirectory.FullName,
-				outputPath,
-				git,
-				configurationFile: checkout.DocsetFile)
+			var docFs = DocumentationFileSystem.Resolve(checkout.RepositoryDirectory, new DocumentationScopeOptions
+			{
+				Output = outputPath,
+				Git = git,
+				ConfigurationFile = checkout.DocsetFile.FullName,
+			});
+			var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
 			{
 				UrlPathPrefix = pathPrefix,
 				SiteRootPath = siteRootPath,
@@ -255,16 +251,37 @@ public class CodexBuildService(
 
 		try
 		{
+			var docContext = buildContext.BuildContext;
+			var documentationSet = buildContext.DocumentationSet;
 			var codexBreadcrumbs = ResolveCodexBreadcrumbs(context, buildContext);
+			var manageLifecycle = sharedExporters is null;
+			var allExporters = sharedExporters ?? CreateExporters(context, docContext, ExportOptions.Default);
 
-			return await isolatedBuildService.BuildDocumentationSet(
-				buildContext.DocumentationSet,
-				null, // Use doc set's navigation for traversal
-				null, // Use default navigation HTML writer (doc set's navigation)
-				ExportOptions.Default,
-				sharedExporters,
-				pageViewFactory: new CodexPageViewFactory(context.Configuration.Title, codexBreadcrumbs),
-				ctx);
+			if (manageLifecycle)
+			{
+				var startTasks = allExporters.Select(async e => await e.StartAsync(ctx));
+				await Task.WhenAll(startTasks);
+			}
+
+			var generator = new DocumentationGenerator(
+				documentationSet,
+				logFactory,
+				documentationSet,
+				markdownExporters: allExporters,
+				pageViewFactory: new CodexPageViewFactory(context.Configuration.Title, codexBreadcrumbs));
+
+			var result = await generator.GenerateAll(ctx);
+
+			if (manageLifecycle)
+			{
+				var finishTasks = allExporters.Select(async e => await e.FinishExportAsync(docContext.OutputDirectory, ctx));
+				_ = await Task.WhenAll(finishTasks);
+
+				var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
+				await Task.WhenAll(stopTasks);
+			}
+
+			return new BuildDocumentationSetResult(docContext.Collector.Errors == 0, result.Redirects);
 		}
 		catch (Exception ex)
 		{
@@ -273,6 +290,25 @@ public class CodexBuildService(
 			_logger.LogError(ex, "Failed to build documentation set {Name}", buildContext.Checkout.Reference.Name);
 			return new BuildDocumentationSetResult(false, new Dictionary<string, LinkRedirect>());
 		}
+	}
+
+	/// <summary>
+	/// Composes markdown exporters for a codex documentation set build. The LLM exporter is special-cased
+	/// because it writes sibling <c>{folder}.md</c> files one level above a docset's own output directory —
+	/// out of scope for a per-docset write filesystem — so it needs the codex-wide write filesystem instead.
+	/// </summary>
+	private IMarkdownExporter[] CreateExporters(CodexContext context, BuildContext docContext, IReadOnlySet<Exporter> exporters)
+	{
+		docContext.Endpoints.BuildType = "codex";
+		if (!exporters.Contains(Exporter.LLMText))
+			return exporters.CreateMarkdownExporters(logFactory, docContext).ToArray();
+
+		// ExportOptions.Default is a shared static HashSet -- copy before mutating, never touch it in place.
+		var withoutLlm = new HashSet<Exporter>(exporters);
+		_ = withoutLlm.Remove(Exporter.LLMText);
+		return withoutLlm.CreateMarkdownExporters(logFactory, docContext)
+			.Append(new LlmMarkdownExporter(writeFileSystem: context.WriteFileSystem))
+			.ToArray();
 	}
 
 	private static void CollectRedirects(
@@ -395,6 +431,13 @@ public record CodexBuildResult(
 	CodexGenerator? CodexGenerator = null);
 
 /// <summary>
+/// Result of building a documentation set, including redirects for aggregation in the codex build.
+/// </summary>
+/// <param name="Success">Whether the build completed without errors.</param>
+/// <param name="Redirects">Redirect mappings from the documentation set, if available.</param>
+public record BuildDocumentationSetResult(bool Success, IReadOnlyDictionary<string, LinkRedirect> Redirects);
+
+/// <summary>
 /// Build context for a single documentation set within the codex.
 /// </summary>
 public record CodexDocumentationSetBuildContext(
@@ -414,10 +457,7 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public IDiagnosticsCollector Collector => codexContext.Collector;
 
 	/// <inheritdoc />
-	public ScopedFileSystem ReadFileSystem => codexContext.ReadFileSystem;
-
-	/// <inheritdoc />
-	public ScopedFileSystem WriteFileSystem => codexContext.WriteFileSystem;
+	public DocumentationWriteFileSystem WriteFileSystem => codexContext.WriteFileSystem;
 
 	/// <inheritdoc />
 	public IDirectoryInfo OutputDirectory => codexContext.OutputDirectory;

@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Refactor;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -40,7 +41,7 @@ internal sealed class RefactorCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new MoveFileService(logFactory, configurationContext);
-		var fs = FileSystemFactory.RealGitRootForPath(path);
+		var fs = DocumentationFileSystem.Resolve(path ?? Paths.WorkingDirectoryRoot.FullName);
 
 		serviceInvoker.AddCommand(service, (source, target, dryRun, path, fs),
 			async static (s, collector, state, ctx) => await s.Move(collector, state.source, state.target, state.dryRun, state.path, state.fs, ctx)
@@ -73,7 +74,7 @@ internal sealed class RefactorCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new FormatService(logFactory, configurationContext);
-		var fs = FileSystemFactory.RealGitRootForPath(path);
+		var fs = DocumentationFileSystem.Resolve(path ?? Paths.WorkingDirectoryRoot.FullName);
 
 		serviceInvoker.AddCommand(service, (path, check, fs),
 			async static (s, collector, state, ctx) => await s.Format(collector, state.path, state.check, state.fs, ctx)

@@ -8,10 +8,10 @@ using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -40,14 +40,14 @@ public sealed class ApiExplorerFixture : IAsyncLifetime
 
 	public async ValueTask InitializeAsync()
 	{
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		// RealGitRootForPath(null) rather than RealRead: it adds the main repo's .git dir as a scope
-		// root when the checkout is a git worktree, which BuildContext needs to read git information.
-		Context = new BuildContext(new DiagnosticsCollector([]), FileSystemFactory.RealGitRootForPath(null), configurationContext);
+		var realFs = new FileSystem();
+		var configurationContext = TestHelpers.CreateConfigurationContext(realFs);
+		var invocation = realFs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		Context = new BuildContext(new DiagnosticsCollector([]), DocumentationFileSystem.Resolve(invocation), configurationContext);
 
 		var fs = new FileSystem();
 		var path = fs.Path.Combine(AppContext.BaseDirectory, "TestData", "api-explorer-fixture.json");
-		Document = await OpenApiReader.Create(fs.FileInfo.New(path))
+		Document = await OpenApiReader.Instance.ReadAsync(fs.FileInfo.New(path))
 			?? throw new InvalidOperationException($"Could not read fixture spec at {path}");
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, Context, PassthroughMarkdownRenderer.Instance);

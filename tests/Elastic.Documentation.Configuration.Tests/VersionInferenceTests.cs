@@ -9,6 +9,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -498,7 +499,7 @@ public class VersionInferenceTests
 		var versionsPath = fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
-		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();
 
 		// Verify all expected versionless systems are marked as versionless
@@ -530,7 +531,7 @@ public class VersionInferenceTests
 		var versionsPath = fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
-		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();
 
 		// Count how many are versionless vs versioned

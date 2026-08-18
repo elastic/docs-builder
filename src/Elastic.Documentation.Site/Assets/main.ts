@@ -5,9 +5,11 @@ import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initSecondaryNav } from './secondary-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
 import { initTabs } from './tabs'
@@ -215,6 +217,7 @@ document.addEventListener('htmx:load', function () {
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
+        ['initListing', initListing],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
@@ -235,6 +238,7 @@ function handleCtaActivation(event: MouseEvent) {
     logCtaEvent('cta_clicked', cta)
 }
 document.addEventListener('click', handleCtaActivation)
+initSecondaryNav()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
 // (right-click / context menu) also fires auxclick but isn't a real engagement.

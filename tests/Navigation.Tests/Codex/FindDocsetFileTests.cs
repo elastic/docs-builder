@@ -6,7 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -16,8 +16,8 @@ public class FindDocsetFileTests
 
 	private static readonly string RepoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "repo");
 
-	private static ScopedFileSystem CreateScopedFs(MockFileSystem mockFs) =>
-		FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs);
+	private static CheckoutsFileSystem CreateScopedFs(MockFileSystem mockFs) =>
+		CheckoutsFileSystem.FromWorkingDirectory(mockFs);
 
 	[Fact]
 	public void StandardPath_Found()

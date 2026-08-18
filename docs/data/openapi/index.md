@@ -12,8 +12,12 @@ The [API Explorer](./api-explorer.md) generates pages for every operation, tag, 
 
 ```yaml
 api:
-  elasticsearch: elasticsearch-openapi.json
-  kibana: kibana-openapi.json
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+  kibana:
+    - spec: kibana-openapi.json
+      product: kibana
 ```
 
 Each product key produces its own section of API documentation with tag grouping, code samples, and schema type pages.

@@ -24,7 +24,7 @@ jobs:
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@eada3c96a64734dd381cfbda23511034e328ddb0 # v7.6.0
+      - uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -56,7 +56,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
@@ -74,7 +74,7 @@ jobs:
           path: src/Elastic.Documentation.Site
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -250,6 +250,11 @@ jobs:
         with:
           name: changelog-scrubber-lambda-binary
 
+      - name: Download allowlist identity
+        uses: actions/download-artifact@v8
+        with:
+          name: changelog-scrubber-allowlist-identity
+
       - name: Create zip
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
@@ -265,12 +270,16 @@ jobs:
             --function-name elastic-docs-v3-changelog-scrubber \
             --zip-file "fileb://${ZIP_FILE}"
 
+      # The allowlist identity is attached only after update-function-code succeeded, so the
+      # presence of this asset on a release attests that the release's allowlist was deployed.
+      # Consumers resolve the deployed identity from the newest release carrying the asset
+      # (`docs-builder changelog scrubber-allowlist`, docs-eng-team#671).
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}" changelog-scrubber-allowlist.json
 
   release:
     needs: 
@@ -289,7 +298,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false

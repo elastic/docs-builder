@@ -48,10 +48,7 @@ public class PhysicalDocsetTests
 		docSet.Subs.Should().NotBeEmpty();
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
-		docSet.Api.Should().HaveCount(3);
-		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.GetSpecPaths().Should().Contain("elasticsearch-openapi-docs.json");
-		docSet.Api.Should().ContainKey("kibana").WhoseValue.GetSpecPaths().Should().Contain("kibana-openapi.json");
-		docSet.Api.Should().ContainKey("dashboard").WhoseValue.GetSpecPaths().Should().Contain("dashboard-openapi.json");
+		docSet.Api.Should().BeNullOrEmpty("API declarations live in docs-content for assembler builds");
 
 		docSet.TableOfContents.Should().NotBeEmpty();
 

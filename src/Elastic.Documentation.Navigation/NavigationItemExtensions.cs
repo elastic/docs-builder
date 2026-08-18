@@ -11,12 +11,39 @@ namespace Elastic.Documentation.Navigation;
 
 public static class NavigationItemExtensions
 {
+	/// <summary>
+	/// Returns <c>true</c> when <paramref name="item"/> has <see cref="INavigationItem.IsIsland"/> set <em>and</em>
+	/// has a parent — the parent check suppresses island behaviour on an isolated docset root, which has no parent
+	/// but would otherwise render as an island in a single-repo serve.
+	/// </summary>
+	public static bool RendersAsIsland(this INavigationItem item) =>
+		item.IsIsland && item.Parent is not null;
+
+	/// <summary>
+	/// Walks <paramref name="item"/> and then its ancestors, returning the first node that
+	/// <see cref="RendersAsIsland"/>, or <c>null</c> if none do.
+	/// </summary>
+	public static INodeNavigationItem<INavigationModel, INavigationItem>? FindIslandRoot(this INavigationItem item)
+	{
+		for (var current = item; current is not null; current = current.Parent)
+		{
+			if (current is INodeNavigationItem<INavigationModel, INavigationItem> node && node.RendersAsIsland())
+				return node;
+		}
+		return null;
+	}
 	public static ILeafNavigationItem<TModel> QueryIndex<TModel>(
 		this IReadOnlyCollection<INavigationItem> items, INodeNavigationItem<INavigationModel, INavigationItem> node, string fallbackPath, out IReadOnlyCollection<INavigationItem> children
 	)
 		where TModel : class, IDocumentationFile
 	{
-		var index = LookupIndex(preferVisible: true);
+		// Path match first — works even when the index leaf is Hidden (e.g. island listing groups
+		// where the index is hidden to suppress it from the main nav tree but must still be the
+		// folder's canonical index so QueryIndex returns it correctly).
+		var index = items.OfType<ILeafNavigationItem<TModel>>()
+			.FirstOrDefault(l => l.Model.SourcePath == fallbackPath);
+
+		index ??= LookupIndex(preferVisible: true);
 		index ??= LookupIndex(preferVisible: false);
 		ArgumentNullException.ThrowIfNull(index);
 

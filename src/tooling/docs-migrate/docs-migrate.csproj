@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>docs-migrate</AssemblyName>
+    <RootNamespace>Documentation.Migrate</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nullean.Argh.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Proc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\authoring\Elastic.LegacyDocs.Migration\Elastic.LegacyDocs.Migration.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
+  </ItemGroup>
+
+</Project>

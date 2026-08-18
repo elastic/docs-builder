@@ -18,6 +18,7 @@ permissions:
   contents: read
   id-token: write
   pull-requests: read
+  deployments: write
 
 # PR number avoids grouping disparate PRs that share the same head.ref (e.g. forks).
 concurrency:
@@ -93,7 +94,7 @@ jobs:
     steps:
       - name: Checkout
         if: github.event_name == 'push'
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -190,7 +191,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      deployments: none
+      deployments: write
       id-token: write
       pull-requests: none
     outputs:
@@ -211,16 +212,14 @@ jobs:
         if: >
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
 
       - name: Create Deployment
-        # disabled: deployments are not enabled on this branch
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
           && (
             github.event_name == 'push'
@@ -293,6 +292,7 @@ jobs:
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
           && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        continue-on-error: true
         run: |
           dotnet run --project src/tooling/docs-builder -- diff validate
 
@@ -364,10 +364,8 @@ jobs:
 
       - name: Update deployment status
         uses: actions/github-script@v9
-        # disabled: deployments are not enabled on this branch
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && always()
           && steps.deployment.outputs.result
         env:
