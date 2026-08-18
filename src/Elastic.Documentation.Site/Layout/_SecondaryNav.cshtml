@@ -12,7 +12,7 @@
 		@if (topNav is not null)
 		{
 			var activeMobileLink = topNav.Items.OfType<TopNavLinkItem>().FirstOrDefault(item => item.IsActive(currentSectionId));
-			var mobileSummary = activeMobileLink?.Title ?? "Sections";
+			var mobileSummary = activeMobileLink?.Title ?? "Docs Home";
 
 			@* navigation-preview: scrollable section-driven top nav.
 			   secondary-nav-dropdown.css lets an open dropdown escape the overflow clipping. *@
