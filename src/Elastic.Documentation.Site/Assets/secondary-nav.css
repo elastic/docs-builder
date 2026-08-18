@@ -1,0 +1,19 @@
+@layer components {
+	.secondary-nav-mobile-menu summary {
+		list-style: none;
+	}
+
+	.secondary-nav-mobile-menu summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.secondary-nav-mobile-chevron {
+		flex-shrink: 0;
+		color: var(--color-grey-60);
+		transition: transform 0.15s ease;
+	}
+
+	.secondary-nav-mobile-menu[open] .secondary-nav-mobile-chevron {
+		transform: rotate(180deg);
+	}
+}

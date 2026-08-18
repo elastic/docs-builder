@@ -96,6 +96,23 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 	}
 
 	[Fact]
+	public void StagingEnvironment_EnablesAssemblerApiExplorerFlag()
+	{
+		var staging = Context.Configuration.Environments["staging"];
+
+		staging.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER")
+			.WhoseValue.Should().BeTrue();
+	}
+
+	[Fact]
+	public void ProdEnvironment_DoesNotEnableAssemblerApiExplorerFlag()
+	{
+		var prod = Context.Configuration.Environments["prod"];
+
+		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");
+	}
+
+	[Fact]
 	public void ReadsVersions()
 	{
 		var config = Context.Configuration;
