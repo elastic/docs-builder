@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -139,7 +140,59 @@ internal static partial class ContentStackMapper
 		if (!string.IsNullOrWhiteSpace(v5Notes))
 			return v5Notes;
 
+		// Strategy 7: main_content.content_l10n (tutorial, tutorial_page, tutorial_chapter,
+		// labs_integration) or main_content.body.content_l10n (blog_v3) — a rich-text JSON AST
+		// (ProseMirror-style { type, children, text }), not an HTML string like the strategies above.
+		var richTextBody = ExtractRichTextBody(data);
+		if (!string.IsNullOrWhiteSpace(richTextBody))
+			return richTextBody;
+
 		return null;
+	}
+
+	private static string? ExtractRichTextBody(JsonElement data)
+	{
+		if (!data.TryGetProperty("main_content", out var mainContent) || mainContent.ValueKind != JsonValueKind.Object)
+			return null;
+
+		if (mainContent.TryGetProperty("content_l10n", out var direct) && direct.ValueKind == JsonValueKind.Object)
+			return RenderRichTextRoot(direct);
+
+		if (mainContent.TryGetProperty("body", out var body) && body.ValueKind == JsonValueKind.Object
+			&& body.TryGetProperty("content_l10n", out var nested) && nested.ValueKind == JsonValueKind.Object)
+			return RenderRichTextRoot(nested);
+
+		return null;
+	}
+
+	/// <summary>
+	/// Renders a ContentStack rich-text (ProseMirror-style) JSON AST — <c>{ type, children: [...], text? }</c>
+	/// — into a lightweight HTML-ish string so it flows through the same <see cref="StripHtml"/> /
+	/// <see cref="ExtractHeadings"/> regex pipeline as the legacy HTML-string strategies above, instead of
+	/// needing a parallel JSON-aware text/heading extractor.
+	/// </summary>
+	private static string RenderRichText(JsonElement node)
+	{
+		if (node.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
+			return textProp.GetString() ?? "";
+
+		if (!node.TryGetProperty("children", out var children) || children.ValueKind != JsonValueKind.Array)
+			return "";
+
+		var inner = string.Concat(children.EnumerateArray().Select(RenderRichText));
+		var type = GetString(node, "type");
+
+		return type switch
+		{
+			"h1" or "h2" or "h3" or "h4" or "h5" or "h6" or "p" or "li" or "ul" or "ol" => $"<{type}>{inner}</{type}>",
+			_ => inner
+		};
+	}
+
+	private static string? RenderRichTextRoot(JsonElement root)
+	{
+		var rendered = RenderRichText(root);
+		return string.IsNullOrWhiteSpace(StripHtml(rendered)) ? null : rendered;
 	}
 
 	private static string? ExtractModularBlocks(JsonElement data)
@@ -231,6 +284,36 @@ internal static partial class ContentStackMapper
 		var intro = GetNestedString(data, "introduction", "paragraph_l10n");
 		if (!string.IsNullOrWhiteSpace(intro))
 			return StripHtml(intro);
+
+		// description_l10n (notebook, series, labs_category, labs_homepage, glossary, examples_landing) —
+		// a plain string on most content types, but a nested rich-text object on labs_integration, so this
+		// simply returns null there (GetString ignores non-string values) and falls through below.
+		var descriptionL10n = GetString(data, "description_l10n");
+		if (!string.IsNullOrWhiteSpace(descriptionL10n))
+			return descriptionL10n;
+
+		// description_l10n.content_simple_l10n (labs_integration)
+		var richDescription = GetNestedRichText(data, "description_l10n", "content_simple_l10n");
+		if (!string.IsNullOrWhiteSpace(richDescription))
+			return StripHtml(richDescription);
+
+		// page_info.subheading_l10n (tutorials_landing, integrations_landing, blog_landing)
+		var subheading = GetNestedString(data, "page_info", "subheading_l10n");
+		if (!string.IsNullOrWhiteSpace(subheading))
+			return subheading;
+
+		// page_info.description.content_simple_l10n (tutorials_landing; often empty on other landing pages)
+		if (data.TryGetProperty("page_info", out var pageInfo) && pageInfo.ValueKind == JsonValueKind.Object)
+		{
+			var pageInfoRichDescription = GetNestedRichText(pageInfo, "description", "content_simple_l10n");
+			if (!string.IsNullOrWhiteSpace(pageInfoRichDescription))
+				return StripHtml(pageInfoRichDescription);
+		}
+
+		// summary_l10n (blog_v3)
+		var summary = GetString(data, "summary_l10n");
+		if (!string.IsNullOrWhiteSpace(summary))
+			return summary;
 
 		// SEO description fallback
 		return GetSeoString(data, "seo_description_l10n") ?? GetSeoString(data, "seo_description");
@@ -354,6 +437,12 @@ internal static partial class ContentStackMapper
 
 	internal static string GetNavigationSection(string url, string? contentTypeUid = null)
 	{
+		// Search Labs is sourced from Contentstack; classify consistently with the label
+		// LabsHtmlExtractor.GetNavigationSection assigns to the same URLs when crawled.
+		if (url.Contains("/search-labs", StringComparison.OrdinalIgnoreCase))
+			return "search-labs";
+		if (url.Contains("/glossary", StringComparison.OrdinalIgnoreCase))
+			return "glossary";
 		if (url.Contains("/blog/", StringComparison.OrdinalIgnoreCase))
 			return "blog";
 		if (url.Contains("/what-is/", StringComparison.OrdinalIgnoreCase))
@@ -463,6 +552,19 @@ internal static partial class ContentStackMapper
 		if (el.TryGetProperty(parent, out var p) && p.ValueKind == JsonValueKind.Object)
 			return GetString(p, child);
 		return null;
+	}
+
+	/// <summary>
+	/// Reads a rich-text (ProseMirror-style) JSON AST nested at <c>el.{parent}.{child}</c> — e.g.
+	/// <c>description_l10n.content_simple_l10n</c> — and renders it via <see cref="RenderRichText"/>.
+	/// </summary>
+	private static string? GetNestedRichText(JsonElement el, string parent, string child)
+	{
+		if (!el.TryGetProperty(parent, out var p) || p.ValueKind != JsonValueKind.Object)
+			return null;
+		if (!p.TryGetProperty(child, out var richTextRoot) || richTextRoot.ValueKind != JsonValueKind.Object)
+			return null;
+		return RenderRichTextRoot(richTextRoot);
 	}
 
 	private static string? GetSeoString(JsonElement data, string field)

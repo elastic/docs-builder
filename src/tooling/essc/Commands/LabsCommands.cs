@@ -70,10 +70,11 @@ internal sealed class LabsSyncOptions
 }
 
 /// <summary>
-/// Crawl elastic.co labs properties (search, security, observability) into <c>labs-*</c> Elasticsearch indices.
+/// Crawl elastic.co labs properties (security, observability) into <c>labs-*</c> Elasticsearch indices.
 /// </summary>
 /// <remarks>
-/// Independent of Contentstack <c>contentstack</c> commands targeting <c>site-*</c> indices.
+/// Independent of Contentstack <c>contentstack</c> commands targeting <c>site-*</c> indices. Search Labs
+/// is sourced from Contentstack (see <c>essc contentstack sync</c>) and is not crawled here.
 /// Discovery starts from published labs sitemap URLs; use <c>--dry-run</c> to validate discovery only.
 /// </remarks>
 internal sealed class LabsCommands(
@@ -134,7 +135,7 @@ internal sealed class LabsCommands(
 		var env = config.ElasticsearchEnvironment;
 		var indexAlias = LabsSiteCrawlPlanner.ResolveLexicalReadAlias(buildType, env);
 
-		AnsiConsole.MarkupLine("[aqua bold]Labs crawl[/] — [dim]search-labs, security-labs, observability-labs[/]");
+		AnsiConsole.MarkupLine("[aqua bold]Labs crawl[/] — [dim]security-labs, observability-labs[/]");
 		AnsiConsole.MarkupLine($"[dim]Elasticsearch:{Markup.Escape(cfg.Uri.ToString())}[/]");
 		AnsiConsole.MarkupLine($"[dim]Incremental cache alias:[/] [white]{Markup.Escape(indexAlias)}[/]");
 		if (force)

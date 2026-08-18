@@ -11,6 +11,7 @@ using Elastic.SiteSearch.Cli.LabsCrawl;
 using Elastic.SiteSearch.Cli.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Nullean.Argh.Hosting;
@@ -56,6 +57,12 @@ csHttpClient.AddStandardResilienceHandler(o =>
 	o.Retry.UseJitter = true;
 	o.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
 	o.Retry.Delay = TimeSpan.FromSeconds(2);
+	// Contentstack's sync endpoint intermittently returns a transient 422 (Unprocessable Entity)
+	// under load — not handled by the default transient-status predicate — which otherwise aborts
+	// the whole sync run before FinalizeAsync. See production run 32113750025.
+	o.Retry.ShouldHandle = args => ValueTask.FromResult(
+		HttpClientResiliencePredicates.IsTransient(args.Outcome) ||
+		args.Outcome.Result?.StatusCode == HttpStatusCode.UnprocessableEntity);
 });
 csHttpClient.AddHttpMessageHandler(() => RateLimitingHandler.CreateForContentStack());
 

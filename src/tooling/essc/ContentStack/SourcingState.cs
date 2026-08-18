@@ -125,17 +125,8 @@ internal static class PageContentTypes
 		"demo_gallery_overview",
 		"timeline",
 		"events_overview",
-		"blog_archive_overview"
-	];
-
-	/// <summary>
-	/// Content types that exist in Contentstack but must never be synced or indexed — e.g. content
-	/// types still being authored that aren't ready to appear in search yet.
-	/// </summary>
-	public static readonly string[] Blocked =
-	[
+		"blog_archive_overview",
 		"blog_landing",
-		"example_link",
 		"glossary",
 		"examples_landing",
 		"integrations_landing",
@@ -150,6 +141,12 @@ internal static class PageContentTypes
 		"tutorial_chapter",
 		"blog_v3"
 	];
+
+	/// <summary>
+	/// Content types that exist in Contentstack but must never be synced or indexed — e.g. content
+	/// types still being authored that aren't ready to appear in search yet.
+	/// </summary>
+	public static readonly string[] Blocked = [];
 
 	/// <summary>
 	/// Content types that are never expected to represent a standalone page — reusable components,
@@ -187,6 +184,7 @@ internal static class PageContentTypes
 		"customer_industry",
 		"customer_use_case",
 		"date_field",
+		"example_link",
 		"featured_split_listing",
 		"features",
 		"footer",
