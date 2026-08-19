@@ -67,7 +67,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	}
 
 	private ChangelogPrEvaluationService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, _mockGitHub, _mockCore, FileSystem);
+		new(LoggerFactory, ConfigurationContext, _mockGitHub, _mockCore, RunnerTempFileSystem);
 
 	private EvaluatePrArguments DefaultArgs(
 		string eventAction = "opened",

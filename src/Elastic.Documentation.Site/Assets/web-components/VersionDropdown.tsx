@@ -85,7 +85,6 @@ const VersionDropdown = ({
                           initialFocusedItemIndex: 0,
                           width: WIDTH,
                           disabled: item.disabled,
-                          size: 's',
                           items: item.children
                               ? convertItems(item.children)
                               : [],
@@ -127,7 +126,6 @@ const VersionDropdown = ({
                 </EuiFlexGroup>
             ),
             width: WIDTH,
-            size: 's',
             items: [
                 ...(items == null
                     ? [
@@ -218,7 +216,6 @@ const VersionDropdown = ({
         >
             <EuiContextMenu
                 initialPanelId={0}
-                size="s"
                 panels={panels()}
                 css={css`
                     max-height: 70vh;
@@ -239,8 +236,9 @@ const VersionDropdown = ({
                         ${useEuiOverflowScroll('y')}
                     }
                     .euiContextMenuPanel__title {
-                        background-color: ${euiTheme.colors
-                            .backgroundBasePlain} !important;
+                        background-color: ${
+                            euiTheme.colors.backgroundBasePlain
+                        } !important;
                     }
                 `}
             />

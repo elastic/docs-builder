@@ -11,9 +11,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Tests.Uploading;
 
@@ -21,7 +21,7 @@ namespace Elastic.Changelog.Tests.Uploading;
 public class ChangelogUploadServiceTests
 {
 	private readonly MockFileSystem _mockFileSystem;
-	private readonly ScopedFileSystem _fileSystem;
+	private readonly ChangelogFileSystem _fileSystem;
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly ChangelogUploadService _service;
 	private readonly TestDiagnosticsCollector _collector;
@@ -33,7 +33,7 @@ public class ChangelogUploadServiceTests
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		_fileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(_mockFileSystem);
+		_fileSystem = ChangelogFileSystem.FromWorkingDirectory(_mockFileSystem);
 		_service = new ChangelogUploadService(NullLoggerFactory.Instance, fileSystem: _fileSystem, s3Client: _s3Client);
 		_collector = new TestDiagnosticsCollector(output);
 		_changelogDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
@@ -707,7 +707,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_BundleArtifactType_UploadsRegistryAlongsideBundle()
+	public async Task Upload_BundleArtifactType_DoesNotWriteRegistry()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
 		_mockFileSystem.Directory.CreateDirectory(bundleDir);
@@ -751,14 +751,16 @@ public class ChangelogUploadServiceTests
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 
+		// The scrubber Lambda is the sole registry producer (docs-eng-team#688 Phase 3):
+		// uploads write YAML objects only, never a registry.json.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
-		)).MustHaveHappenedOnceExactly();
+		)).MustNotHaveHappened();
 	}
 
 	[Fact]
-	public async Task Upload_ChangelogArtifactType_RefreshesRepoScopedRegistry()
+	public async Task Upload_ChangelogArtifactType_DoesNotWriteRegistry()
 	{
 		// language=yaml
 		AddChangelog("entry.yaml", """
@@ -793,14 +795,15 @@ public class ChangelogUploadServiceTests
 
 		result.Should().BeTrue();
 
-		// Changelog uploads refresh the pool-scoped entry index, not a bundle index.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/entry.yaml"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 
+		// The scrubber Lambda is the sole registry producer (docs-eng-team#688 Phase 3):
+		// uploads write YAML objects only, never a registry.json.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key.StartsWith("bundle/", StringComparison.Ordinal)),
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
 		)).MustNotHaveHappened();
 	}

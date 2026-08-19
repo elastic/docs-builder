@@ -7,7 +7,6 @@ using Elastic.Codex.Building;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
@@ -21,8 +20,7 @@ namespace Elastic.Codex.Indexing;
 /// </summary>
 public class CodexIndexService(
 	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext,
-	IsolatedBuildService isolatedBuildService
+	IConfigurationContext configurationContext
 ) : IService
 {
 	/// <summary>
@@ -39,7 +37,7 @@ public class CodexIndexService(
 		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, esOptions, codexContext.Collector, fileSystem, ctx);
 
 		var exporters = new HashSet<Exporter> { Exporter.Elasticsearch };
-		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
+		var buildService = new CodexBuildService(logFactory, configurationContext);
 		var result = await buildService.BuildAll(codexContext, cloneResult, fileSystem, ctx, exporters);
 		return result.DocumentationSets.Count > 0;
 	}

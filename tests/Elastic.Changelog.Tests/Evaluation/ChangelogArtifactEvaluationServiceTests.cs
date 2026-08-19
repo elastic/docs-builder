@@ -24,7 +24,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	private static readonly string MetadataFilePath = Path.Join(Root, "artifact/metadata.json");
 
 	private ChangelogArtifactEvaluationService CreateService() =>
-		new(LoggerFactory, _mockGitHub, _mockCore, FileSystem);
+		new(LoggerFactory, _mockGitHub, _mockCore, RunnerTempFileSystem);
 
 	private static EvaluateArtifactArguments DefaultArgs() =>
 		new()

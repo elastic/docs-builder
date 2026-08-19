@@ -15,10 +15,7 @@ import { useCallback } from 'react'
 
 export type ModalSearchTrigger = 'keyboard_shortcut' | 'focus' | 'click'
 export type ModalSearchCloseReason =
-    | 'escape'
-    | 'blur'
-    | 'navigate'
-    | 'close_button'
+    'escape' | 'blur' | 'navigate' | 'close_button'
 export type NavigationMethod = 'keyboard' | 'mouse'
 export type NavigationDirection = 'up' | 'down'
 

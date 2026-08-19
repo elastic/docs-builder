@@ -8,7 +8,7 @@ products:
     display: 'APM .NET Agent'
     versioning: 'apm-agent-dotnet'
   edot-collector:
-    display: 'Elastic Distribution of OpenTelemetry Collector'
+    display: 'Elastic Agent'
     versioning: 'stack'
     repository: 'elastic-edot-collector'
   docs-builder:

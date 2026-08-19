@@ -52,13 +52,6 @@ suppress:
   - AutolinkElasticCoDocs
   - DeepLinkingVirtualFile
 
-api:
-  elasticsearch: elasticsearch-openapi-docs.json
-  kibana:
-    - file: kibana-api-overview.md
-    - spec: kibana-openapi.json
-  dashboard: dashboard-openapi.json
-
 toc:
   - file: index.md
   - hidden: 404.md
@@ -87,6 +80,7 @@ toc:
       - file: applies-switch.md
       - file: automated_settings.md
       - file: buttons.md
+      - file: card-group.md
       - file: changelog.md
       - file: code.md
       - file: comments.md
@@ -94,13 +88,18 @@ toc:
       - file: csv-include.md
       - file: dropdowns.md
       - file: definition-lists.md
+      - file: explore.md
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
+      - file: get-started.md
+      - file: hero.md
+      - file: hub-pages.md
       - file: icons.md
       - file: images.md
       - file: videos.md
       - file: kbd.md
+      - file: link-card.md
       - file: math.md
       - file: diagrams.md
       - file: lists.md
@@ -117,6 +116,15 @@ toc:
       - file: tables.md
       - file: tabs.md
       - file: titles.md
+      - file: whats-new.md
+
+  # Examples
+  - folder: examples
+    children:
+      - file: index.md
+      - folder: products
+        children:
+          - file: docs-builder.md
 
   # Documentation builds
   - folder: documentation

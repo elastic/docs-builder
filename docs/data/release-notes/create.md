@@ -22,8 +22,8 @@ If you already have automated release notes for GitHub releases, you can use the
 
     ```sh
     docs-builder changelog add \
-    --title "Improve SAML error handling by adding metadata"
-    --type enhancement
+    --title "Improve SAML error handling by adding metadata" \
+    --type enhancement \
     --products "elasticsearch 9.2.8, cloud-serverless 2026-02-02"
     ```
 

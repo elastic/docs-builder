@@ -5,174 +5,178 @@
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
-using static YamlDotNet.Core.ParserExtensions;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
 /// <summary>
-/// YAML converter that provides backward compatibility for API configuration.
-/// Supports legacy string/object formats and new sequence format.
-/// 
-/// Legacy string format: api: { elasticsearch: "elasticsearch-openapi.json" }
-/// Legacy object format: api: { elasticsearch: { spec: "elasticsearch-openapi.json" } }
-/// New sequence format: api: { kibana: [{ file: "intro.md" }, { spec: "kibana-openapi.json" }, { file: "outro.md" }] }
+/// YAML converter for the strict <c>api: &lt;key&gt;</c> schema. Only the RFC sequence shape is
+/// accepted:
+/// <code>
+/// api:
+///   &lt;key&gt;:
+///     - spec: &lt;path&gt;       # optional local override
+///       product: &lt;id&gt;      # required
+///       children:            # optional
+///         - file: getting-started.md
+/// </code>
+/// The legacy scalar ("api: key: path.json"), object ("api: key: { spec: path.json }"), and
+/// intro/spec/outro sequence shapes are rejected with a precise <see cref="YamlException"/> so
+/// docset authors get a clear migration error instead of silent misbehavior.
 /// </summary>
 public class ApiConfigurationConverter : IYamlTypeConverter
 {
-	public bool Accepts(Type type) => type == typeof(ApiConfiguration) || type == typeof(ApiProductSequence);
+	private const string ShapeGuidance =
+		"Use the single-entry sequence form instead:\n" +
+		"  <key>:\n" +
+		"    - spec: <path>       # required; its basename resolves the remote version index\n" +
+		"      product: <id>      # required, must match a products.yml entry\n" +
+		"      repository: <org/repo> # optional; only needed if the spec is published from a\n" +
+		"                              # different repo than the current checkout\n" +
+		"      children:          # optional\n" +
+		"        - file: getting-started.md";
 
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public bool Accepts(Type type) => type == typeof(ApiProductSequence) || type == typeof(ApiProductEntry);
+
+	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer) =>
+		type == typeof(ApiProductSequence) ? ReadSequence(parser) : ReadEntry(parser);
+
+	private ApiProductSequence ReadSequence(IParser parser)
 	{
-		if (type == typeof(ApiProductSequence))
+		if (parser.Current is not SequenceStart)
 		{
-			return ReadApiProductSequence(parser, rootDeserializer);
+			throw new YamlException(parser.Current?.Start ?? Mark.Empty, parser.Current?.End ?? Mark.Empty,
+				$"API configuration for this key must be a sequence with exactly one entry. {ShapeGuidance}");
 		}
 
-		// Legacy ApiConfiguration handling
-		if (parser.Current is Scalar scalar)
-		{
-			// Handle old string format: "elasticsearch-openapi.json"
-			_ = parser.MoveNext();
-			return new ApiConfiguration { Spec = scalar.Value };
-		}
+		_ = parser.MoveNext(); // consume SequenceStart
+		var entries = new List<ApiProductEntry>();
+		while (parser.Current is not SequenceEnd)
+			entries.Add(ReadEntry(parser));
+		_ = parser.MoveNext(); // consume SequenceEnd
 
-		if (parser.Current is MappingStart)
-		{
-			// Handle legacy object format: { spec: "...", template: "...", specs: [...] }
-			_ = parser.MoveNext();
-			var config = new ApiConfiguration();
-
-			while (parser.Current is not MappingEnd)
-			{
-				var key = parser.Consume<Scalar>();
-				switch (key.Value)
-				{
-					case "spec":
-						if (parser.Current is Scalar specValue)
-						{
-							config.Spec = specValue.Value;
-							_ = parser.MoveNext();
-						}
-						else
-						{
-							// Wrong token type - skip safely
-							parser.SkipThisAndNestedEvents();
-						}
-						break;
-					case "template":
-						// Legacy template support - skip for ApiConfiguration parsing
-						parser.SkipThisAndNestedEvents();
-						break;
-					default:
-						// Safely consume unknown values (including nested mappings/sequences)
-						parser.SkipThisAndNestedEvents();
-						break;
-				}
-			}
-
-			_ = parser.MoveNext(); // consume MappingEnd
-			return config;
-		}
-
-		throw new YamlException(parser.Current?.Start ?? Mark.Empty, parser.Current?.End ?? Mark.Empty,
-			"API configuration must be either a string (spec path) or an object with spec field");
+		return new ApiProductSequence { Entries = entries };
 	}
 
-	private ApiProductSequence ReadApiProductSequence(IParser parser, ObjectDeserializer rootDeserializer)
+	private ApiProductEntry ReadEntry(IParser parser)
 	{
-		if (parser.Current is Scalar scalar)
+		if (parser.Current is not MappingStart)
 		{
-			// Convert legacy string format to sequence: "elasticsearch-openapi.json"
-			_ = parser.MoveNext();
-			return new ApiProductSequence
-			{
-				Entries = [new ApiProductEntry { Spec = scalar.Value }]
-			};
+			throw new YamlException(parser.Current?.Start ?? Mark.Empty, parser.Current?.End ?? Mark.Empty,
+				$"Each API entry must be a mapping with 'spec', 'product', and optional 'children' keys. {ShapeGuidance}");
 		}
 
-		if (parser.Current is MappingStart)
-		{
-			// Convert legacy object format to sequence: { spec: "..." }
-			_ = parser.MoveNext();
-			var entries = new List<ApiProductEntry>();
-			string? specPath = null;
+		var entryStart = parser.Current.Start;
+		_ = parser.MoveNext(); // consume MappingStart
 
+		var entry = new ApiProductEntry
+		{
+			Line = (int)entryStart.Line,
+			Column = (int)entryStart.Column
+		};
+
+		while (parser.Current is not MappingEnd)
+		{
+			var key = parser.Consume<Scalar>();
+			switch (key.Value)
+			{
+				case "spec":
+					var specStart = parser.Current?.Start;
+					if (parser.Current is Scalar specValue)
+					{
+						entry.Spec = specValue.Value;
+						_ = parser.MoveNext();
+					}
+					else
+						parser.SkipThisAndNestedEvents();
+					if (specStart.HasValue)
+					{
+						entry.SpecLine = (int)specStart.Value.Line;
+						entry.SpecColumn = (int)specStart.Value.Column;
+					}
+					break;
+				case "product":
+					var productStart = parser.Current?.Start;
+					if (parser.Current is Scalar productValue)
+					{
+						entry.Product = productValue.Value;
+						_ = parser.MoveNext();
+					}
+					else
+						parser.SkipThisAndNestedEvents();
+					if (productStart.HasValue)
+					{
+						entry.ProductLine = (int)productStart.Value.Line;
+						entry.ProductColumn = (int)productStart.Value.Column;
+					}
+					break;
+				case "repository":
+					var repositoryStart = parser.Current?.Start;
+					if (parser.Current is Scalar repositoryValue)
+					{
+						entry.Repository = repositoryValue.Value;
+						_ = parser.MoveNext();
+					}
+					else
+						parser.SkipThisAndNestedEvents();
+					if (repositoryStart.HasValue)
+					{
+						entry.RepositoryLine = (int)repositoryStart.Value.Line;
+						entry.RepositoryColumn = (int)repositoryStart.Value.Column;
+					}
+					break;
+				case "children":
+					entry.Children = ReadChildren(parser);
+					break;
+				case "file":
+					throw new YamlException(key.Start, key.End,
+						$"'file:' entries directly in the api sequence (legacy intro/outro shape) are no longer supported. {ShapeGuidance}");
+				default:
+					// Forward-compatible: ignore unrecognized keys rather than failing the whole build.
+					parser.SkipThisAndNestedEvents();
+					break;
+			}
+		}
+		_ = parser.MoveNext(); // consume MappingEnd
+		return entry;
+	}
+
+	private static List<ApiEntryChild> ReadChildren(IParser parser)
+	{
+		var children = new List<ApiEntryChild>();
+		if (parser.Current is not SequenceStart)
+		{
+			parser.SkipThisAndNestedEvents();
+			return children;
+		}
+
+		_ = parser.MoveNext(); // consume SequenceStart
+		while (parser.Current is not SequenceEnd)
+		{
+			if (parser.Current is not MappingStart)
+			{
+				parser.SkipThisAndNestedEvents();
+				continue;
+			}
+
+			_ = parser.MoveNext(); // consume MappingStart
+			var child = new ApiEntryChild();
 			while (parser.Current is not MappingEnd)
 			{
-				var key = parser.Consume<Scalar>();
-				switch (key.Value)
+				var childKey = parser.Consume<Scalar>();
+				if (childKey.Value == "file" && parser.Current is Scalar fileValue)
 				{
-					case "spec":
-						if (parser.Current is Scalar specValue)
-						{
-							specPath = specValue.Value;
-							_ = parser.MoveNext();
-						}
-						else
-						{
-							parser.SkipThisAndNestedEvents();
-						}
-						break;
-					case "template":
-						// Legacy template support removed - skip entirely
-						parser.SkipThisAndNestedEvents();
-						break;
-					default:
-						parser.SkipThisAndNestedEvents();
-						break;
-				}
-			}
-
-			_ = parser.MoveNext(); // consume MappingEnd
-
-			// Build sequence with spec only
-			if (!string.IsNullOrWhiteSpace(specPath))
-			{
-				entries.Add(new ApiProductEntry { Spec = specPath });
-			}
-
-			return new ApiProductSequence { Entries = entries };
-		}
-
-		if (parser.Current is SequenceStart)
-		{
-			// Handle new sequence format: [{ file: "intro.md" }, { spec: "kibana-openapi.json" }, { file: "outro.md" }]
-			_ = parser.MoveNext(); // consume SequenceStart
-			var entries = new List<ApiProductEntry>();
-
-			while (parser.Current is not SequenceEnd)
-			{
-				if (parser.Current is MappingStart)
-				{
-					var entry = (ApiProductEntry)rootDeserializer(typeof(ApiProductEntry))!;
-					entries.Add(entry);
+					child.File = fileValue.Value;
+					_ = parser.MoveNext();
 				}
 				else
-				{
-					// Skip unexpected tokens
 					parser.SkipThisAndNestedEvents();
-				}
 			}
-
-			_ = parser.MoveNext(); // consume SequenceEnd
-			return new ApiProductSequence { Entries = entries };
+			_ = parser.MoveNext(); // consume MappingEnd
+			children.Add(child);
 		}
-
-		throw new YamlException(parser.Current?.Start ?? Mark.Empty, parser.Current?.End ?? Mark.Empty,
-			"API configuration must be either a string (spec path), an object with spec field, or a sequence of file/spec entries");
+		_ = parser.MoveNext(); // consume SequenceEnd
+		return children;
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
-	{
-		if (value is ApiConfiguration config)
-		{
-			// Always write as object format for consistency
-			serializer(config, typeof(ApiConfiguration));
-		}
-		else if (value is ApiProductSequence sequence)
-		{
-			// Write as sequence format
-			serializer(sequence, typeof(ApiProductSequence));
-		}
-	}
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer(value, type);
 }

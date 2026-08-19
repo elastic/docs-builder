@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
@@ -71,12 +72,46 @@ public static class TestHelpers
 			{
 				Elasticsearch = ElasticsearchEndpoint.Default,
 			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(null), fileSystem),
+			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem(fileSystem)),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = search,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
+	}
+}
+
+/// <summary>
+/// A throwaway directory below <c>.artifacts</c>, removed on dispose. ScopedFileSystem only permits
+/// writes under the working directory root, so the system temp folder is not an option here.
+/// </summary>
+public sealed class ScopedTempDirectory : IDisposable
+{
+	public ScopedTempDirectory(IFileSystem fileSystem, string prefix)
+	{
+		Directory = fileSystem.DirectoryInfo.New(
+			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-temp", $"{prefix}-{Guid.NewGuid():N}"));
+		Directory.Create();
+	}
+
+	public IDirectoryInfo Directory { get; }
+
+	public string FullName => Directory.FullName;
+
+	public void Dispose()
+	{
+		try
+		{
+			Directory.Delete(recursive: true);
+		}
+		catch (IOException)
+		{
+			// a leftover directory under .artifacts must never fail a passing test
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// same
+		}
 	}
 }
 

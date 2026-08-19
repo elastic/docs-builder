@@ -13,16 +13,10 @@ namespace Elastic.Changelog.GitHub;
 /// <summary>
 /// Service for fetching pull request information from GitHub
 /// </summary>
-public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrService
+public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTransport? transport = null) : IGitHubPrService
 {
 	private readonly ILogger<GitHubPrService> _logger = loggerFactory.CreateLogger<GitHubPrService>();
-	private static readonly HttpClient HttpClient = new();
-
-	static GitHubPrService()
-	{
-		HttpClient.DefaultRequestHeaders.Add("User-Agent", "docs-builder");
-		HttpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
-	}
+	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
 	/// <summary>
 	/// Fetches pull request information from GitHub
@@ -43,15 +37,10 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 				return null;
 			}
 
-			// Add GitHub token if available (for rate limiting and private repos)
-			var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-			using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/pulls/{prNumber}");
-			if (!string.IsNullOrEmpty(githubToken))
-				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
+			var url = $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/pulls/{prNumber}";
+			_logger.LogDebug("Fetching PR info from: {ApiUrl}", url);
 
-			_logger.LogDebug("Fetching PR info from: {ApiUrl}", request.RequestUri);
-
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
 				_logger.LogWarning("Failed to fetch PR info. Status: {StatusCode}, Reason: {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
@@ -195,14 +184,10 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 				return null;
 			}
 
-			var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-			using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/issues/{issueNumber}");
-			if (!string.IsNullOrEmpty(githubToken))
-				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
+			var url = $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/issues/{issueNumber}";
+			_logger.LogDebug("Fetching issue info from: {ApiUrl}", url);
 
-			_logger.LogDebug("Fetching issue info from: {ApiUrl}", request.RequestUri);
-
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
 				_logger.LogWarning("Failed to fetch issue info. Status: {StatusCode}, Reason: {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
@@ -250,10 +235,10 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 	{
 		try
 		{
-			using var request = CreateRequest(HttpMethod.Get, $"https://api.github.com/repos/{owner}/{repo}/commits/{sha}");
-			_logger.LogDebug("Fetching commit author from: {ApiUrl}", request.RequestUri);
+			var url = $"https://api.github.com/repos/{owner}/{repo}/commits/{sha}";
+			_logger.LogDebug("Fetching commit author from: {ApiUrl}", url);
 
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
 				_logger.LogWarning("Failed to fetch commit info. Status: {StatusCode}", response.StatusCode);
@@ -277,10 +262,9 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 		try
 		{
 			var url = $"https://api.github.com/repos/{owner}/{repo}/commits?path={Uri.EscapeDataString(filePath)}&sha={Uri.EscapeDataString(branch)}&per_page=1";
-			using var request = CreateRequest(HttpMethod.Get, url);
-			_logger.LogDebug("Fetching last file commit author from: {ApiUrl}", request.RequestUri);
+			_logger.LogDebug("Fetching last file commit author from: {ApiUrl}", url);
 
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
 				_logger.LogWarning("Failed to fetch file commit history. Status: {StatusCode}", response.StatusCode);
@@ -299,15 +283,6 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 			_logger.LogWarning(ex, "Error fetching last file commit author for {FilePath}", filePath);
 			return null;
 		}
-	}
-
-	private static HttpRequestMessage CreateRequest(HttpMethod method, string url)
-	{
-		var request = new HttpRequestMessage(method, url);
-		var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-		if (!string.IsNullOrEmpty(githubToken))
-			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
-		return request;
 	}
 
 	private static (string? owner, string? repo, int? issueNumber) ParseIssueUrl(string issueUrl, string? defaultOwner = null, string? defaultRepo = null)

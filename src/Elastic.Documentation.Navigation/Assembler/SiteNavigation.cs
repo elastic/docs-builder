@@ -15,8 +15,21 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Assembler;
 
+/// <summary>
+/// Marks the assembled site-wide navigation root, allowing layouts to discover the
+/// configured top nav without knowing the concrete assembler type.
+/// </summary>
+public interface ISiteNavigationRoot
+{
+	/// <summary>
+	/// The site-wide top navigation when the <c>navigation-preview</c> feature flag is on,
+	/// otherwise <c>null</c>. When null the layout falls back to its built-in links.
+	/// </summary>
+	TopNavRenderModel? TopNav { get; }
+}
+
 [DebuggerDisplay("{Url}")]
-public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable
+public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable, ISiteNavigationRoot
 {
 	private readonly string? _sitePrefix;
 
@@ -24,7 +37,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		SiteNavigationFile siteNavigationFile,
 		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
-		string? sitePrefix
+		string? sitePrefix,
+		bool navigationPreviewEnabled = false
 	)
 	{
 		// Normalize sitePrefix to ensure it has a leading slash and no trailing slash
@@ -71,18 +85,44 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 
 		var index = items.Count;
-		foreach (var tocRef in siteNavigationFile.TableOfContents)
-		{
-			var navItem = CreateSiteTableOfContentsNavigation(
-				tocRef,
-				index++,
-				context,
-				this,
-				null
-			);
 
-			if (navItem != null)
-				items.Add(navItem);
+		foreach (var entry in siteNavigationFile.TableOfContents)
+		{
+			if (entry is SiteSectionRef sectionRef && !sectionRef.IsExternal && sectionRef.Children.Count > 0)
+			{
+				// Section with children becomes a real tree node (island) that groups its
+				// toc roots. FindIslandRoot() and CreateBackLinks then emit the correct
+				// "← Guides" back-link on any page within those roots.
+				var sectionNav = new SectionNavigation(sectionRef.Title) { Parent = this };
+
+				var sectionChildren = new List<INavigationItem>();
+				foreach (var childRef in sectionRef.Children)
+				{
+					var childItem = CreateSiteTableOfContentsNavigation(childRef, index++, context, sectionNav, sectionNav);
+					if (childItem is not null)
+						sectionChildren.Add(childItem);
+				}
+
+				// Resolve section URL from first child once children are built.
+				var firstChildUrl = sectionChildren
+					.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+					.FirstOrDefault()?.Index.Url;
+				if (firstChildUrl is not null)
+					sectionNav.Url = firstChildUrl;
+
+				((IAssignableChildrenNavigation)sectionNav).SetNavigationItems(sectionChildren);
+				items.Add(sectionNav);
+			}
+			else if (entry is SiteTableOfContentsRef tocRef)
+			{
+				var navItem = CreateSiteTableOfContentsNavigation(tocRef, index++, context, this, null);
+				if (navItem is not null)
+				{
+					if (navItem is IAssignableIslandNavigation assignable)
+						assignable.IsIsland = true;
+					items.Add(navItem);
+				}
+			}
 		}
 
 		var indexNavigation = items.QueryIndex<IDocumentationFile>(this, "/index.md", out var navigationItems);
@@ -104,7 +144,14 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Build positional navigation lookup tables from all navigation items in a single traversal
 		NavigationDocumentationFileLookup = [];
 		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
+
+		// Top nav is only built when the navigation-preview flag is on.
+		// Index.Url values are resolved above so SectionTopNavBuilder can read them here.
+		TopNav = navigationPreviewEnabled ? SectionTopNavBuilder.Build(this, siteNavigationFile) : null;
 	}
+
+	/// <inheritdoc cref="ISiteNavigationRoot.TopNav"/>
+	public TopNavRenderModel? TopNav { get; }
 
 	public HashSet<Uri> DeclaredPhantoms { get; }
 
@@ -234,6 +281,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		root ??= node;
 
 		_ = UnseenNodes.Remove(tocRef.Source);
+		// Apply assembler-level island override (OR semantics — can enable, never disable)
+		if (tocRef.Island && node is IAssignableIslandNavigation islandNode)
+			islandNode.IsIsland = true;
 		// Set the navigation index
 		node.Parent = parent;
 		node.NavigationIndex = index;

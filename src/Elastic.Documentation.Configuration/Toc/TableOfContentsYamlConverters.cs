@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using YamlDotNet.Core;
@@ -73,7 +74,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 					}
 					value = childrenList;
 				}
-				else if (key.Value is "detection_rules" or "exclude" or "deprecated_detection_rules")
+				else if (key.Value is "detection_rules" or "exclude" or "deprecated_detection_rules" or "groups")
 				{
 					// Parse the children list manually
 					var childrenList = new List<string>();
@@ -94,8 +95,10 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			}
 			else if (parser.Accept<MappingStart>(out _))
 			{
-				// This is a nested mapping - skip it
-				parser.SkipThisAndNestedEvents();
+				if (key.Value == "applies_to")
+					value = rootDeserializer(typeof(ApplicableTo));
+				else
+					parser.SkipThisAndNestedEvents();
 			}
 
 			dictionary[key.Value] = value;
@@ -112,6 +115,23 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Capture exclude list for folder auto-discovery
 		var exclude = dictionary.TryGetValue("exclude", out var excludeObj) && excludeObj is string[] excludeArr ? excludeArr : null;
 
+		// Check for listing (listing: <folder>) — a glob-driven auto-discovered nav entry with generated index.
+		// Must come before folder: and file: so those keys can still appear on the entry as children context.
+		if (dictionary.TryGetValue("listing", out var listingPath) && listingPath is string listing)
+		{
+			var glob = dictionary.TryGetValue("glob", out var globObj) && globObj is string globStr ? globStr : null;
+			var extension = dictionary.TryGetValue("extension", out var extObj) && extObj is string extStr ? extStr : null;
+			var groups = dictionary.TryGetValue("groups", out var groupsObj) && groupsObj is string[] groupsArr ? (IReadOnlyCollection<string>)groupsArr : null;
+			var listingVisual = ListingVisual.None;
+			if (dictionary.TryGetValue("visual", out var visualObj) && visualObj is string visualStr)
+				_ = ListingVisualExtensions.TryParse(visualStr, out listingVisual);
+			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			// Reuse the already-captured sort and exclude variables from the outer scope
+			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension, island);
+			return new ListingRef(listing, listing, children, placeholderContext, options);
+		}
+
 		// Check for CLI reference (cli: schema.json, optional folder: supplemental-docs/)
 		// Must come before the folder+file check to prevent folder: from being consumed by that branch
 		if (dictionary.TryGetValue("cli", out var cliSchemaPath) && cliSchemaPath is string cliSchema)
@@ -119,7 +139,8 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			var supplementalFolder = dictionary.TryGetValue("folder", out var f) && f is string fStr ? fStr : null;
 			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
 			var navigationTitle = dictionary.TryGetValue("navigation_title", out var nt) && nt is string navigationTitleStr ? navigationTitleStr : null;
-			return new CliReferenceRef(cliSchema, supplementalFolder, title, navigationTitle, cliSchema, cliSchema, placeholderContext, children);
+			var appliesTo = dictionary.TryGetValue("applies_to", out var at) && at is ApplicableTo a ? a : null;
+			return new CliReferenceRef(cliSchema, supplementalFolder, title, navigationTitle, cliSchema, cliSchema, placeholderContext, children, appliesTo);
 		}
 
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
@@ -178,7 +199,11 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Check for toc reference
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string source)
-			return new IsolatedTableOfContentsRef(source, source, children, placeholderContext);
+		{
+			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			return new IsolatedTableOfContentsRef(source, source, children, placeholderContext, island);
+		}
 
 		return null;
 	}

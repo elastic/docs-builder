@@ -50,6 +50,7 @@ Exactly one of the following filter flags is required:
 - `--release-version` — fetch PR references from a GitHub release tag (e.g. `v9.2.0` or `latest`)
 - `--report` — filter by PRs referenced in a promotion report (URL or local file)
 - `--files` — include specific changelog YAML paths, or a newline-delimited path list file
+- `--start-git-ref` + `--end-git-ref` — derive the PR list from a git commit range (see [Commit-range mode](#git-ref-mode))
 
 `--force-local` is not a filter. It forces local entry sourcing for the run (equivalent to `bundle.use_local_changelogs: true` without editing config) and is allowed in both option-based and profile-based modes.
 
@@ -73,6 +74,43 @@ docs-builder changelog bundle \
   --files "./docs/changelog/a.yaml,./docs/changelog/b.yaml" \
   --output docs/releases/serverless/2026-07-07.yaml \
   --output-products "cloud-serverless 2026-07-07"
+```
+
+## Commit-range mode [git-ref-mode]
+
+`--start-git-ref` and `--end-git-ref` cut a bundle from a **git commit range** instead of an externally supplied PR list. This is the mode date-promotion automation (serverless, Cloud ECH/ECE) uses: the promotion system hands off two commit hashes from a protected branch, and the command derives everything else itself.
+
+```sh
+docs-builder changelog bundle serverless-release 2026-08-13 \
+  --start-git-ref <previous-published-ref> \
+  --end-git-ref <current-published-ref>
+```
+
+Both refs are always required together — the start ref is never inferred from previous bundles. The command:
+
+1. Enumerates the commits in `start..end` via the GitHub compare API (paginated).
+2. Resolves each commit to its merged pull request via GraphQL `associatedPullRequests`. Works for squash and merge commits on protected integration branches; commits with no associated PR are reported, never silently dropped. When a commit is associated with multiple merged PRs, the command warns and picks deterministically (merge-commit match first, then lowest PR number).
+3. Sources each PR's changelog entry with a fixed precedence:
+   - **A checked-in entry from the entry pool wins.** Pool entries are matched by file-name-derived PR numbers (file names survive scrubbing, so this works for private repos whose `prs` references were removed from public copies) or by the entry's `prs` references.
+   - **Otherwise the entry is synthesized from PR metadata** — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. `rules.create` label rules decide inclusion.
+   - **PRs whose metadata cannot be fetched are reported as missing** with a warning.
+4. Records the end ref in the bundle output as the `git_ref` metadata field.
+
+Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. When the profile has no explicit `output` pattern, the bundle name follows the `{product}-{version}.yaml` convention.
+
+Re-running the same range produces the same bundle content; bundling never overwrites changelog entries.
+
+:::{note}
+Commit-range mode requires a `GITHUB_TOKEN` environment variable: the GraphQL API used for commit→PR association does not accept anonymous requests.
+:::
+
+### Dry run
+
+Pass `--dry-run` to resolve the range and print the run report — the resolved PR list with each PR's entry source (`pool`, `inferred (PR body)`, `inferred (title)`, `excluded (rules)`, or `missing`) plus any commits without an associated PR — as Markdown, without writing a bundle. The report is suitable for a release PR body or a CI job summary.
+
+```sh
+docs-builder changelog bundle serverless-release 2026-08-13 \
+  --start-git-ref abc123 --end-git-ref def456 --dry-run
 ```
 
 ## Bundles are self-contained
@@ -370,7 +408,7 @@ In profile mode, pass the same path list as a positional argument:
 docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelog_files.txt
 ```
 
-`--files` / path-list selection always reads the named files from disk (local entry sourcing). It does not fetch entries from the CDN. `rules.bundle` still applies after selection.
+`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN pool entries by file name and do not need to exist locally — useful for private repositories whose entries exist only in S3 and whose public copies have PR/issue references scrubbed, so PR-based filters cannot match. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
 
 ### Force local entry sourcing [changelog-bundle-force-local]
 
@@ -382,7 +420,7 @@ docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/prs.txt 
 ```
 
 `--force-local` is allowed in both option-based and profile-based commands.
-Path-list / `--files` filters already force local sourcing, so `--force-local` is optional in that case.
+Use it with path-list / `--files` filters when the listed files should be read from disk instead of matched against the CDN pool.
 
 ### Hide features [changelog-bundle-hide-features]
 

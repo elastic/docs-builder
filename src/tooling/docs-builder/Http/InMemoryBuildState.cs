@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using Actions.Core;
@@ -14,7 +15,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Documentation.Builder.Http;
 
@@ -62,7 +62,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	// Initialized lazily on first ExecuteBuildAsync so we can scope it to the source path.
 	// Exposed so the serve host can read pagefind index files written by the background build.
 	private string? _writeFsPath;
-	public ScopedFileSystem? WriteFileSystem { get; private set; }
+	public IFileSystem? WriteFileSystem { get; private set; }
 
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();
@@ -164,10 +164,9 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			// Create a diagnostics collector that streams to our channel
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
-			var readFs = FileSystemFactory.RealGitRootForPath(sourcePath);
 			if (WriteFileSystem is null || _writeFsPath != sourcePath)
 			{
-				WriteFileSystem = FileSystemFactory.InMemoryForPath(sourcePath);
+				WriteFileSystem = new MockFileSystem();
 				_writeFsPath = sourcePath;
 			}
 			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
@@ -176,7 +175,6 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 
 			_ = await service.Build(
 				streamingCollector,
-				readFs,
 				new IsolatedBuildOptions
 				{
 					Path = new DirectoryInfo(sourcePath),

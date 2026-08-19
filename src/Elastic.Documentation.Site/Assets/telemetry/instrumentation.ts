@@ -176,7 +176,9 @@ function initializeLogging(
         headers: { ...commonHeaders },
     })
 
-    const batchLogProcessor = new BatchLogRecordProcessor(logExporter)
+    const batchLogProcessor = new BatchLogRecordProcessor({
+        exporter: logExporter,
+    })
     const euidLogProcessor = new EuidLogRecordProcessor()
 
     loggerProvider = new LoggerProvider({

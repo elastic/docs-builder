@@ -45,7 +45,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 	}
 
 	private ChangelogCreationService CreateServiceWithEnv(IEnvironmentVariables env) =>
-		new(LoggerFactory, ConfigurationContext, env: env);
+		new(LoggerFactory, ConfigurationContext, FileSystem, env: env);
 
 	[Fact]
 	public void EnrichFromCI_NotInCI_ReturnsUnchanged()
@@ -167,7 +167,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 	[Fact]
 	public void EnrichFromCI_NullEnv_ReturnsUnchanged()
 	{
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem);
 		var input = DefaultInput() with { Title = "original" };
 
 		var result = service.EnrichFromCI(input);

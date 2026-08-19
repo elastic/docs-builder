@@ -15,10 +15,10 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -40,7 +40,9 @@ public record BundleChangelogsArguments
 
 	/// <summary>
 	/// Explicit changelog YAML paths (or a path-list file) for the <c>--files</c> filter.
-	/// Mutually exclusive with other filter sources. Forces local entry sourcing.
+	/// Mutually exclusive with other filter sources. Follows the standard entry-sourcing gate:
+	/// when entries are sourced from the CDN the paths are matched to pool entries by file name,
+	/// otherwise they must exist on the local filesystem.
 	/// </summary>
 	public string[]? Files { get; init; }
 
@@ -120,6 +122,24 @@ public record BundleChangelogsArguments
 	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
 	/// </summary>
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
+
+	/// <summary>
+	/// Start ref (exclusive) of a git commit range to bundle (<c>--start-git-ref</c>).
+	/// Must be provided together with <see cref="EndGitRef"/>.
+	/// </summary>
+	public string? StartGitRef { get; init; }
+
+	/// <summary>
+	/// End ref (inclusive) of a git commit range to bundle (<c>--end-git-ref</c>); stored as the
+	/// bundle's <c>git_ref</c> metadata. Must be provided together with <see cref="StartGitRef"/>.
+	/// </summary>
+	public string? EndGitRef { get; init; }
+
+	/// <summary>
+	/// When true, resolve the commit range and print the run report (resolved PR list with per-PR
+	/// entry source) without writing a bundle. Only valid together with a git ref range.
+	/// </summary>
+	public bool DryRun { get; init; }
 }
 
 /// <summary>
@@ -145,18 +165,22 @@ public record BundlePlanResult
 /// </summary>
 public partial class ChangelogBundlingService(
 	ILoggerFactory logFactory,
+	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	ScopedFileSystem? fileSystem = null,
 	IGitHubReleaseService? releaseService = null,
-	CdnChangelogEntryFetcher? entryFetcher = null)
+	CdnChangelogEntryFetcher? entryFetcher = null,
+	IGitHubPrService? prService = null,
+	IGitHubCommitRangeService? commitRangeService = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
+	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
+	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
 
 	// Defaults applied when sourcing CDN entries and the org/branch are not otherwise resolvable.
@@ -181,6 +205,9 @@ public partial class ChangelogBundlingService(
 	{
 		try
 		{
+			if (!ValidateGitRefArguments(collector, input))
+				return false;
+
 			// Capture whether the caller explicitly pointed at a local folder before config defaults
 			// fill it in. An explicit --directory always forces local sourcing.
 			var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
@@ -231,15 +258,31 @@ public partial class ChangelogBundlingService(
 			// an org/repo/branch pool (changelog/{org}/{repo}/{branch}/...), so CDN sourcing keys off the
 			// resolvable authoring repo (bundle.repo / --repo), with org and branch defaulting when unset —
 			// not the bundle's target products. Fall back to the local folder when the user forces it
-			// (bundle.use_local_changelogs / --force-local / --files / --directory), the repo is unresolvable,
+			// (bundle.use_local_changelogs / --force-local / --directory), the repo is unresolvable,
 			// or no CDN base is configured. This stays in lockstep with PlanBundleAsync's needs_network decision.
+			// The --files / path-list filter follows the same gate: in CDN mode the requested paths are
+			// matched to pool entries by file name, so private repos whose entries exist only in S3 (with
+			// PR/issue references scrubbed from the public copies) can still bundle by explicit selection.
 			var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false)
-				|| input.ForceLocal
-				|| input.Files is { Length: > 0 };
+				|| input.ForceLocal;
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
 			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
 			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
 			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
+
+			// Commit-range mode replaces the filter pipeline: the PR list is derived from git and
+			// each PR's entry is sourced pool-first with PR-metadata fallback.
+			if (!string.IsNullOrWhiteSpace(input.StartGitRef))
+			{
+				var sourcing = new GitRangeSourcingContext
+				{
+					UseCdn = useCdn,
+					Owner = authoringOwner,
+					Repo = authoringRepo,
+					Branch = authoringBranch
+				};
+				return await BundleFromGitRange(collector, input, config, sourcing, ctx);
+			}
 
 			// Validate input. In CDN mode the local input directory is not read, so its existence
 			// is not required.
@@ -253,14 +296,27 @@ public partial class ChangelogBundlingService(
 			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			var issuesToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			IReadOnlyList<string>? explicitFilePaths = null;
+			IReadOnlyList<string>? requestedEntryNames = null;
 
 			if (input.Files is { Length: > 0 })
 			{
 				var fileFilterLoader = new FileFilterLoader(_fileSystem);
-				var fileFilterResult = await fileFilterLoader.LoadFilesAsync(collector, input.Files, input.Directory, ctx);
-				if (!fileFilterResult.IsValid)
-					return false;
-				explicitFilePaths = fileFilterResult.FilePaths;
+				if (useCdn)
+				{
+					// CDN mode: reduce the requested paths to entry file names (the pool is flat); the
+					// entries do not need to exist locally.
+					var namesResult = await fileFilterLoader.LoadFileNamesAsync(collector, input.Files, ctx);
+					if (!namesResult.IsValid)
+						return false;
+					requestedEntryNames = namesResult.FilePaths;
+				}
+				else
+				{
+					var fileFilterResult = await fileFilterLoader.LoadFilesAsync(collector, input.Files, input.Directory, ctx);
+					if (!fileFilterResult.IsValid)
+						return false;
+					explicitFilePaths = fileFilterResult.FilePaths;
+				}
 			}
 			else if (input.Prs is { Length: > 0 })
 			{
@@ -289,7 +345,8 @@ public partial class ChangelogBundlingService(
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
 
 			// Source and match changelog entries — from the CDN (default) or the local folder.
-			// Explicit --files / path-list selection always loads the named local paths (IncludeAll).
+			// Explicit --files / path-list selection bypasses content filters (IncludeAll): locally it loads
+			// the named paths, in CDN mode it selects pool entries by file name.
 			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
@@ -303,7 +360,18 @@ public partial class ChangelogBundlingService(
 				var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
 				if (contents == null)
 					return false;
-				matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
+				if (requestedEntryNames is not null)
+				{
+					var poolLabel = $"{authoringOwner}/{authoringRepo}/{authoringBranch}";
+					var selected = SelectRequestedCdnEntries(collector, contents, requestedEntryNames, poolLabel);
+					if (selected == null)
+						return false;
+					_logger.LogInformation("Matching {Count} explicitly selected changelog entries from the CDN", selected.Count);
+					var filesCriteria = filterCriteria with { IncludeAll = true };
+					matchResult = entryMatcher.MatchChangelogContents(collector, selected, filesCriteria, ctx);
+				}
+				else
+					matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
 			}
 			else
 			{
@@ -334,137 +402,7 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
-			// Apply rules.bundle secondary filter (three modes: none, global content, per-product context).
-			// Input stage (--input-products, --prs, etc.) and bundle filtering stage are conceptually separate.
-			var filteredEntries = matchResult.Entries;
-			if (config?.Rules?.Bundle != null)
-			{
-				var outputProductIds = input.OutputProducts
-					?.Select(p => p.Product)
-					.Where(p => !string.IsNullOrWhiteSpace(p))
-					.Select(p => p!)
-					.ToList();
-				var mode = config.Rules.Bundle.DetermineFilterMode();
-				filteredEntries = mode switch
-				{
-					BundleFilterMode.NoFiltering => filteredEntries,
-					BundleFilterMode.GlobalContent => ApplyGlobalContentBundleFilter(collector, filteredEntries, config.Rules.Bundle),
-					BundleFilterMode.PerProductContext => ApplyPerProductContextBundleFilter(
-						collector,
-						filteredEntries,
-						config.Rules.Bundle,
-						outputProductIds),
-					_ => filteredEntries
-				};
-			}
-
-			if (filteredEntries.Count == 0)
-			{
-				collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle filter");
-				return false;
-			}
-
-			// Load feature IDs to hide
-			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
-			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
-			if (!featureHidingResult.IsValid)
-				return false;
-
-			// Build bundle
-			var bundleBuilder = new BundleBuilder();
-			var buildResult = bundleBuilder.BuildBundle(
-				collector,
-				filteredEntries,
-				input.OutputProducts,
-				input.Repo,
-				input.Owner,
-				featureHidingResult.FeatureIdsToHide
-			);
-
-			if (!buildResult.IsValid || buildResult.Data == null)
-				return false;
-
-			var bundleData = buildResult.Data;
-			if (input.LinkAllowRepos != null)
-			{
-				if (!LinkAllowlistSanitizer.TryApplyBundle(
-					collector,
-					bundleData,
-					input.LinkAllowRepos,
-					input.Owner ?? "elastic",
-					input.Repo,
-					out var sanitizedBundle,
-					out _))
-					return false;
-				bundleData = sanitizedBundle;
-
-				if (configurationContext != null && input.LinkAllowRepos.Count > 0)
-				{
-					try
-					{
-						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, input.LinkAllowRepos, assembly);
-					}
-					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-					{
-						collector.EmitWarning(
-							string.Empty,
-							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
-					}
-				}
-			}
-
-			// Apply description with placeholder substitution
-			if (!string.IsNullOrEmpty(input.Description))
-			{
-				var version = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Target : null)
-							  ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Target : null);
-				var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
-								?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
-				var owner = input.Owner ?? "elastic";
-				var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
-
-				try
-				{
-					var substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
-						input.Description, version, lifecycle, owner, repo, validateResolvable: true);
-					bundleData = bundleData with { Description = substitutedDescription };
-				}
-				catch (InvalidOperationException ex)
-				{
-					collector.EmitError(string.Empty, $"Description placeholder substitution failed: {ex.Message}");
-					return false;
-				}
-			}
-
-			// Apply release date: CLI override → existing bundle date → auto-populate (unless suppressed)
-			var finalReleaseDate = bundleData.ReleaseDate; // Preserve existing date if present
-			if (!string.IsNullOrEmpty(input.ReleaseDate))
-			{
-				// Explicit CLI override
-				if (DateOnly.TryParseExact(input.ReleaseDate, "yyyy-MM-dd", out var parsedDate))
-				{
-					finalReleaseDate = parsedDate;
-				}
-				else
-				{
-					collector.EmitError(string.Empty, $"Invalid release date format '{input.ReleaseDate}'. Expected YYYY-MM-DD format.");
-					return false;
-				}
-			}
-			else if (finalReleaseDate == null && !input.SuppressReleaseDate)
-			{
-				// Auto-populate with today's date (UTC) if no existing date
-				finalReleaseDate = DateOnly.FromDateTime(DateTime.UtcNow);
-			}
-
-			bundleData = bundleData with { ReleaseDate = finalReleaseDate };
-
-			// Write bundle file
-			await WriteBundleFileAsync(bundleData, outputPath, ctx);
-
-			return true;
+			return await BuildAndWriteBundle(collector, input, config, matchResult.Entries, outputPath, ctx);
 		}
 		catch (IOException ioEx)
 		{
@@ -478,19 +416,172 @@ public partial class ChangelogBundlingService(
 		}
 	}
 
+	/// <summary>
+	/// Shared bundle tail: applies the <c>rules.bundle</c> secondary filter, builds the bundle,
+	/// applies link allowlist/description/release-date/git-ref metadata, and writes the output file.
+	/// </summary>
+	private async Task<bool> BuildAndWriteBundle(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		ChangelogConfiguration? config,
+		IReadOnlyList<MatchedChangelogFile> entries,
+		string outputPath,
+		Cancel ctx)
+	{
+		// Apply rules.bundle secondary filter (three modes: none, global content, per-product context).
+		// Input stage (--input-products, --prs, etc.) and bundle filtering stage are conceptually separate.
+		var filteredEntries = entries;
+		if (config?.Rules?.Bundle != null)
+		{
+			var outputProductIds = input.OutputProducts
+				?.Select(p => p.Product)
+				.Where(p => !string.IsNullOrWhiteSpace(p))
+				.Select(p => p!)
+				.ToList();
+			var mode = config.Rules.Bundle.DetermineFilterMode();
+			filteredEntries = mode switch
+			{
+				BundleFilterMode.NoFiltering => filteredEntries,
+				BundleFilterMode.GlobalContent => ApplyGlobalContentBundleFilter(collector, filteredEntries, config.Rules.Bundle),
+				BundleFilterMode.PerProductContext => ApplyPerProductContextBundleFilter(
+					collector,
+					filteredEntries,
+					config.Rules.Bundle,
+					outputProductIds),
+				_ => filteredEntries
+			};
+		}
+
+		if (filteredEntries.Count == 0)
+		{
+			collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle filter");
+			return false;
+		}
+
+		// Load feature IDs to hide
+		var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
+		var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
+		if (!featureHidingResult.IsValid)
+			return false;
+
+		// Build bundle
+		var bundleBuilder = new BundleBuilder();
+		var buildResult = bundleBuilder.BuildBundle(
+			collector,
+			filteredEntries,
+			input.OutputProducts,
+			input.Repo,
+			input.Owner,
+			featureHidingResult.FeatureIdsToHide
+		);
+
+		if (!buildResult.IsValid || buildResult.Data == null)
+			return false;
+
+		var bundleData = buildResult.Data;
+		if (input.LinkAllowRepos != null)
+		{
+			if (!LinkAllowlistSanitizer.TryApplyBundle(
+				collector,
+				bundleData,
+				input.LinkAllowRepos,
+				input.Owner ?? "elastic",
+				input.Repo,
+				out var sanitizedBundle,
+				out _))
+				return false;
+			bundleData = sanitizedBundle;
+
+			if (configurationContext != null && input.LinkAllowRepos.Count > 0)
+			{
+				try
+				{
+					var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+					var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+					LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, input.LinkAllowRepos, assembly);
+				}
+				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+				{
+					collector.EmitWarning(
+						string.Empty,
+						$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
+				}
+			}
+		}
+
+		// Apply description with placeholder substitution
+		if (!string.IsNullOrEmpty(input.Description))
+		{
+			var version = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Target : null)
+						  ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Target : null);
+			var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
+							?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
+			var owner = input.Owner ?? "elastic";
+			var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
+
+			try
+			{
+				var substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+					input.Description, version, lifecycle, owner, repo, validateResolvable: true);
+				bundleData = bundleData with { Description = substitutedDescription };
+			}
+			catch (InvalidOperationException ex)
+			{
+				collector.EmitError(string.Empty, $"Description placeholder substitution failed: {ex.Message}");
+				return false;
+			}
+		}
+
+		// Apply release date: CLI override → existing bundle date → auto-populate (unless suppressed)
+		var finalReleaseDate = bundleData.ReleaseDate; // Preserve existing date if present
+		if (!string.IsNullOrEmpty(input.ReleaseDate))
+		{
+			// Explicit CLI override
+			if (DateOnly.TryParseExact(input.ReleaseDate, "yyyy-MM-dd", out var parsedDate))
+			{
+				finalReleaseDate = parsedDate;
+			}
+			else
+			{
+				collector.EmitError(string.Empty, $"Invalid release date format '{input.ReleaseDate}'. Expected YYYY-MM-DD format.");
+				return false;
+			}
+		}
+		else if (finalReleaseDate == null && !input.SuppressReleaseDate)
+		{
+			// Auto-populate with today's date (UTC) if no existing date
+			finalReleaseDate = DateOnly.FromDateTime(DateTime.UtcNow);
+		}
+
+		bundleData = bundleData with { ReleaseDate = finalReleaseDate };
+
+		// Commit-range bundles record the published endpoint ref (--end-git-ref) as metadata.
+		if (!string.IsNullOrWhiteSpace(input.EndGitRef))
+			bundleData = bundleData with { GitRef = input.EndGitRef };
+
+		// Write bundle file
+		await WriteBundleFileAsync(bundleData, outputPath, ctx);
+
+		return true;
+	}
+
 	private async Task<BundleChangelogsArguments?> ProcessProfile(IDiagnosticsCollector collector, BundleChangelogsArguments input, ChangelogConfiguration? config, Cancel ctx)
 	{
-		var filterResult = await ProfileFilterResolver.ResolveAsync(
-			collector,
-			input.Profile!,
-			input.ProfileArgument,
-			config,
-			_fileSystem,
-			_logger,
-			ctx,
-			input.ProfileReport,
-			_releaseService
-		);
+		// Commit-range mode derives its PR list from git; the profile only contributes output
+		// metadata (output/output_products/repo/owner/branch/description), not a filter source.
+		var filterResult = !string.IsNullOrWhiteSpace(input.StartGitRef)
+			? ResolveGitRangeProfileFilter(collector, input, config)
+			: await ProfileFilterResolver.ResolveAsync(
+				collector,
+				input.Profile!,
+				input.ProfileArgument,
+				config,
+				_fileSystem,
+				_logger,
+				ctx,
+				input.ProfileReport,
+				_releaseService
+			);
 
 		if (filterResult == null)
 			return null;
@@ -523,6 +614,21 @@ public partial class ChangelogBundlingService(
 					?? config.Bundle.Directory
 					?? _fileSystem.Directory.GetCurrentDirectory();
 				outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
+			}
+			else if (!string.IsNullOrWhiteSpace(input.StartGitRef))
+			{
+				// Commit-range bundles follow the standardized {product}-{version}.yaml naming
+				// convention when the profile sets no explicit output pattern (explicit output:
+				// patterns are being phased out — see elastic/docs-builder#3774).
+				var primaryProduct = ResolvePrimaryProduct(profile, input);
+				if (!string.IsNullOrWhiteSpace(primaryProduct))
+				{
+					var outputDir = config.Bundle.OutputDirectory
+						?? input.OutputDirectory
+						?? config.Bundle.Directory
+						?? _fileSystem.Directory.GetCurrentDirectory();
+					outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{filterResult.Version}.yaml").OptionalWindowsReplace();
+				}
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -598,6 +704,210 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
+	/// <summary>
+	/// Validates the commit-range arguments: both refs together (the start ref is never inferred —
+	/// an explicit RFC-review decision), no other filter source, and <c>--dry-run</c> only in range mode.
+	/// </summary>
+	private static bool ValidateGitRefArguments(IDiagnosticsCollector collector, BundleChangelogsArguments input)
+	{
+		var hasStart = !string.IsNullOrWhiteSpace(input.StartGitRef);
+		var hasEnd = !string.IsNullOrWhiteSpace(input.EndGitRef);
+
+		if (!hasStart && !hasEnd)
+		{
+			if (input.DryRun)
+			{
+				collector.EmitError(string.Empty, "--dry-run is only supported when bundling a git commit range (--start-git-ref/--end-git-ref).");
+				return false;
+			}
+
+			return true;
+		}
+
+		if (hasStart != hasEnd)
+		{
+			collector.EmitError(string.Empty,
+				"--start-git-ref and --end-git-ref must be provided together; the start ref is never inferred from previous bundles.");
+			return false;
+		}
+
+		var conflicting = new List<string>();
+		if (input.All)
+			conflicting.Add("--all");
+		if (input.InputProducts is { Count: > 0 })
+			conflicting.Add("--input-products");
+		if (input.Prs is { Length: > 0 })
+			conflicting.Add("--prs");
+		if (input.Issues is { Length: > 0 })
+			conflicting.Add("--issues");
+		if (input.Files is { Length: > 0 })
+			conflicting.Add("--files");
+		if (!string.IsNullOrWhiteSpace(input.Report))
+			conflicting.Add("--report");
+		if (!string.IsNullOrWhiteSpace(input.ProfileReport))
+			conflicting.Add("a report/list positional argument");
+
+		if (conflicting.Count > 0)
+		{
+			collector.EmitError(string.Empty,
+				$"--start-git-ref/--end-git-ref cannot be combined with other filter sources: {string.Join(", ", conflicting)}. " +
+				"The PR list is derived from the commit range itself.");
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Profile resolution for commit-range mode: the profile contributes output metadata only, so
+	/// filter-producing profile shapes (<c>source: github_release</c>, a <c>products</c> pattern)
+	/// are rejected and the version argument is carried through for placeholder substitution.
+	/// </summary>
+	private static ProfileFilterResult? ResolveGitRangeProfileFilter(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		ChangelogConfiguration? config)
+	{
+		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
+		{
+			collector.EmitError(string.Empty, $"Profile '{input.Profile}' not found in bundle.profiles configuration");
+			return null;
+		}
+
+		if (string.IsNullOrWhiteSpace(input.ProfileArgument))
+		{
+			collector.EmitError(string.Empty,
+				$"Profile '{input.Profile}' requires a version as the second argument when bundling a git commit range");
+			return null;
+		}
+
+		if (string.Equals(profile.Source, "github_release", StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitError(string.Empty,
+				$"Profile '{input.Profile}': 'source: github_release' cannot be combined with --start-git-ref/--end-git-ref. " +
+				"The PR list is derived from the commit range itself.");
+			return null;
+		}
+
+		if (!string.IsNullOrWhiteSpace(profile.Products))
+		{
+			collector.EmitError(string.Empty,
+				$"Profile '{input.Profile}' has a 'products' pattern configured. " +
+				"A git commit range cannot be combined with a products pattern filter; use 'output_products' and 'rules' to shape the bundle.");
+			return null;
+		}
+
+		return new ProfileFilterResult { Version = input.ProfileArgument };
+	}
+
+	/// <summary>How commit-range entries are sourced: the resolved authoring pool and the CDN/local gate.</summary>
+	private sealed record GitRangeSourcingContext
+	{
+		public required bool UseCdn { get; init; }
+		public required string? Owner { get; init; }
+		public required string? Repo { get; init; }
+		public required string? Branch { get; init; }
+	}
+
+	/// <summary>
+	/// Bundles a git commit range: resolves the range to a PR list (compare API +
+	/// <c>associatedPullRequests</c>), sources each PR's entry with the pool-first /
+	/// inferred-from-PR-metadata precedence, and reports PRs and commits that produced no entry.
+	/// In dry-run mode prints the run report instead of writing the bundle.
+	/// </summary>
+	private async Task<bool> BundleFromGitRange(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		ChangelogConfiguration? config,
+		GitRangeSourcingContext sourcing,
+		Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(sourcing.Repo))
+		{
+			collector.EmitError(string.Empty,
+				"Bundling a git commit range requires a resolvable authoring repository. " +
+				"Set bundle.repo in changelog.yml (or pass --repo).");
+			return false;
+		}
+
+		var owner = string.IsNullOrWhiteSpace(sourcing.Owner) ? DefaultOwner : sourcing.Owner;
+		var resolution = await _commitRangeService.ResolvePullRequestsAsync(collector, new CommitRangeArguments
+		{
+			Owner = owner,
+			Repo = sourcing.Repo,
+			StartRef = input.StartGitRef!,
+			EndRef = input.EndGitRef!
+		}, ctx);
+		if (resolution == null)
+			return false;
+
+		var directory = input.Directory!;
+		var outputPath = input.Output ?? _fileSystem.Path.Join(directory, "changelog-bundle.yaml");
+
+		var candidates = sourcing.UseCdn
+			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, ctx)
+			: await ReadLocalEntriesAsync(collector, directory, outputPath, ctx);
+		if (candidates == null)
+			return false;
+
+		var resolver = new GitRangeEntryResolver(_prService, _logger);
+		var result = await resolver.ResolveAsync(collector, resolution, candidates, config, new GitRangeEntryResolutionOptions
+		{
+			Owner = owner,
+			Repo = sourcing.Repo,
+			StartRef = input.StartGitRef!,
+			EndRef = input.EndGitRef!,
+			FallbackProducts = input.OutputProducts
+		}, ctx);
+
+		var report = result.Report.ToMarkdown();
+		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
+
+		if (input.DryRun)
+		{
+			// The report is the dry run's product: print it verbatim for release-PR bodies / job summaries.
+			await Console.Out.WriteLineAsync(report);
+			return result.Success && collector.Errors == 0;
+		}
+
+		if (!result.Success || collector.Errors > 0)
+			return false;
+
+		if (result.Entries.Count == 0)
+		{
+			collector.EmitError(string.Empty,
+				$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo}.");
+			return false;
+		}
+
+		return await BuildAndWriteBundle(collector, input, config, result.Entries, outputPath, ctx);
+	}
+
+	/// <summary>Reads the local changelog directory into (file name, content) pairs for range matching.</summary>
+	private async Task<IReadOnlyList<(string FileName, string Content)>?> ReadLocalEntriesAsync(
+		IDiagnosticsCollector collector,
+		string directory,
+		string outputPath,
+		Cancel ctx)
+	{
+		if (!_fileSystem.Directory.Exists(directory))
+		{
+			collector.EmitError(directory, "Directory does not exist");
+			return null;
+		}
+
+		var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
+		var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(directory, outputPath, ctx);
+		var entries = new List<(string FileName, string Content)>(yamlFiles.Count);
+		foreach (var filePath in yamlFiles)
+		{
+			var content = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
+			entries.Add((_fileSystem.Path.GetFileName(filePath), content));
+		}
+
+		return entries;
+	}
+
 	private BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
 	{
 		// Apply directory: CLI takes precedence. Only use config when --directory not specified.
@@ -652,6 +962,13 @@ public partial class ChangelogBundlingService(
 		var needsNetwork = hasReleaseVersion;
 		var needsGithubToken = hasReleaseVersion;
 
+		// Commit-range bundling always needs the GitHub API (compare + GraphQL + PR metadata fallback).
+		if (!string.IsNullOrWhiteSpace(input.StartGitRef) || !string.IsNullOrWhiteSpace(input.EndGitRef))
+		{
+			needsNetwork = true;
+			needsGithubToken = true;
+		}
+
 		ChangelogConfiguration? config = null;
 		if (!string.IsNullOrWhiteSpace(input.Profile))
 		{
@@ -684,9 +1001,7 @@ public partial class ChangelogBundlingService(
 		// active when the authoring repo resolves (profile/config bundle.repo), the user has not forced
 		// local sourcing, and a CDN base is configured.
 		var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false)
-			|| input.ForceLocal
-			|| input.Files is { Length: > 0 }
-			|| await ProfileFilterForcesLocalAsync(input, ctx);
+			|| input.ForceLocal;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
 		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
@@ -705,6 +1020,19 @@ public partial class ChangelogBundlingService(
 				?? config?.Bundle?.Directory
 				?? _fileSystem.Directory.GetCurrentDirectory();
 			outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
+		}
+		else if (string.IsNullOrWhiteSpace(outputPath) &&
+			!string.IsNullOrWhiteSpace(input.StartGitRef) &&
+			profileDef != null &&
+			!string.IsNullOrWhiteSpace(input.ProfileArgument) &&
+			ResolvePrimaryProduct(profileDef, input) is { } primaryProduct)
+		{
+			// Mirror ProcessProfile's commit-range convention: {product}-{version}.yaml when the
+			// profile sets no explicit output pattern.
+			var outputDir = config?.Bundle?.OutputDirectory
+				?? config?.Bundle?.Directory
+				?? _fileSystem.Directory.GetCurrentDirectory();
+			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{input.ProfileArgument}.yaml").OptionalWindowsReplace();
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
 			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
@@ -824,7 +1152,7 @@ public partial class ChangelogBundlingService(
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}
 
-	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--files</c>/<c>--directory</c>), and a CDN base is configured.</summary>
+	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--directory</c>), and a CDN base is configured.</summary>
 	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
 	{
 		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))
@@ -833,30 +1161,46 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Detects whether a profile positional list file is a changelog path list (which forces local sourcing).
-	/// Used by <see cref="PlanBundleAsync"/> so <c>needs_network</c> matches run-mode without emitting filter diagnostics.
+	/// Selects the CDN-sourced entries whose file names were explicitly requested via <c>--files</c> / a
+	/// path list. Every requested name must exist in the pool: the registry is the source of truth for
+	/// what was uploaded, so a missing name means the entry never reached S3 (or the name is wrong) and
+	/// silently shipping an incomplete bundle is worse than failing the run. Returns <c>null</c> after
+	/// emitting an error when any requested name is missing.
 	/// </summary>
-	private async Task<bool> ProfileFilterForcesLocalAsync(BundleChangelogsArguments input, Cancel ctx)
+	private IReadOnlyList<(string FileName, string Content)>? SelectRequestedCdnEntries(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<(string FileName, string Content)> contents,
+		IReadOnlyList<string> requestedEntryNames,
+		string poolLabel)
 	{
-		if (string.IsNullOrWhiteSpace(input.Profile))
-			return false;
+		var byName = new Dictionary<string, string>(StringComparer.Ordinal);
+		foreach (var (fileName, content) in contents)
+			byName[fileName] = content;
 
-		var listPath = !string.IsNullOrWhiteSpace(input.ProfileReport)
-			? input.ProfileReport
-			: input.ProfileArgument;
-		if (string.IsNullOrWhiteSpace(listPath) || !_fileSystem.File.Exists(listPath))
-			return false;
+		var selected = new List<(string FileName, string Content)>();
+		var missing = new List<string>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var name in requestedEntryNames)
+		{
+			if (!seen.Add(name))
+				continue;
+			if (byName.TryGetValue(name, out var content))
+				selected.Add((name, content));
+			else
+				missing.Add(name);
+		}
 
-		if (_fileSystem.Path.GetExtension(listPath).ToLowerInvariant() is ".html" or ".htm")
-			return false;
+		if (missing.Count > 0)
+		{
+			collector.EmitError(string.Empty,
+				$"Changelog entr{(missing.Count == 1 ? "y" : "ies")} not found in the CDN pool '{poolLabel}': {string.Join(", ", missing)}. " +
+				"Ensure the entries were uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead.");
+			return null;
+		}
 
-		var content = await _fileSystem.File.ReadAllTextAsync(listPath, ctx);
-		var lines = content
-			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-			.Where(l => !string.IsNullOrWhiteSpace(l))
-			.ToArray();
-
-		return lines.Length > 0 && lines.All(FileFilterLoader.IsYamlExtension);
+		_logger.LogInformation("Selected {Selected} of {Total} CDN entries by requested file name for {Pool}",
+			selected.Count, contents.Count, poolLabel);
+		return selected;
 	}
 
 	private bool ValidateInput(IDiagnosticsCollector collector, BundleChangelogsArguments input, bool requireDirectoryExists)

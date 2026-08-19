@@ -2,12 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Configuration;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -34,8 +34,7 @@ internal sealed class ConfigurationCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
-		var service = new ConfigurationCloneService(logFactory, assemblyConfiguration, fs);
+		var service = new ConfigurationCloneService(logFactory, assemblyConfiguration, CheckoutsFileSystem.FromWorkingDirectory());
 		serviceInvoker.AddCommand(service, (gitRef, local), static async (s, collector, state, ctx) =>
 			await s.InitConfigurationToApplicationData(collector, state.gitRef, state.local, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
