@@ -13,13 +13,26 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Exporters.GitDiff;
 
-public sealed class GitDiffMarkdownExporter(ILoggerFactory logFactory) : IMarkdownExporter
+public sealed class GitDiffMarkdownExporter : IMarkdownExporter
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<GitDiffMarkdownExporter>();
+	private readonly ILoggerFactory _logFactory;
+	private readonly ILogger _logger;
+	private readonly Func<string[], string>? _gitCommand;
 	private readonly ConcurrentDictionary<string, BuiltPageInfo> _builtPages = new(StringComparer.OrdinalIgnoreCase);
 	private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _includeIndex = new(StringComparer.OrdinalIgnoreCase);
 	private BuildContext? _buildContext;
 	private string _docsetPrefix = string.Empty;
+
+	public GitDiffMarkdownExporter(ILoggerFactory logFactory) : this(logFactory, null)
+	{
+	}
+
+	internal GitDiffMarkdownExporter(ILoggerFactory logFactory, Func<string[], string>? gitCommand)
+	{
+		_logFactory = logFactory;
+		_gitCommand = gitCommand;
+		_logger = logFactory.CreateLogger<GitDiffMarkdownExporter>();
+	}
 
 	public ValueTask StartAsync(Cancel ctx = default) => ValueTask.CompletedTask;
 
@@ -61,10 +74,11 @@ public sealed class GitDiffMarkdownExporter(ILoggerFactory logFactory) : IMarkdo
 		}
 
 		var changeResult = new GitChangedFileSource(
-			logFactory,
+			_logFactory,
 			_buildContext.DocumentationCheckoutDirectory,
 			_docsetPrefix,
-			_buildContext.Environment
+			_buildContext.Environment,
+			_gitCommand
 		).GetChanges();
 
 		var includeIndex = _includeIndex.ToDictionary(

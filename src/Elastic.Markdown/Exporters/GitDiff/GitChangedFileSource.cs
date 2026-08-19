@@ -13,7 +13,8 @@ internal sealed class GitChangedFileSource(
 	ILoggerFactory logFactory,
 	IDirectoryInfo checkoutDirectory,
 	string docsetPrefix,
-	IEnvironmentVariables environment
+	IEnvironmentVariables environment,
+	Func<string[], string>? gitCommand = null
 )
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GitChangedFileSource>();
@@ -109,7 +110,10 @@ internal sealed class GitChangedFileSource(
 		return changes;
 	}
 
-	private string GitCommand(params string[] args)
+	private string GitCommand(params string[] args) =>
+		gitCommand is not null ? gitCommand(args) : RunGitProcess(args);
+
+	private string RunGitProcess(string[] args)
 	{
 		try
 		{

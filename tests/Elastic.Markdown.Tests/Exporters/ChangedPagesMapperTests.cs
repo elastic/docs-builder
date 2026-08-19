@@ -99,4 +99,26 @@ public class ChangedPagesMapperTests
 
 		export.Pages.Should().ContainSingle(p => p.Url == "/preview/reference");
 	}
+
+	[Fact]
+	public void Map_AddedPage_UsesAddedChangeLabel()
+	{
+		var changes = new[] { new SourceFileChange("docs/guides/start.md", SourceFileChangeType.Added) };
+
+		var export = ChangedPagesMapper.Map("origin/main", "docs", SamplePages, EmptyIncludeIndex, changes);
+
+		export.Pages.Should().ContainSingle(p => p.SourcePath == "guides/start.md" && p.Change == "added");
+	}
+
+	[Fact]
+	public void Map_PathOutsideDocset_IsIgnored()
+	{
+		var changes = new[] { new SourceFileChange("README.md", SourceFileChangeType.Modified) };
+
+		var export = ChangedPagesMapper.Map("origin/main", "docs", SamplePages, EmptyIncludeIndex, changes);
+
+		export.Pages.Should().BeEmpty();
+		export.Deleted.Should().BeEmpty();
+		export.ConfigChanged.Should().BeFalse();
+	}
 }

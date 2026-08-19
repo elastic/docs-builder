@@ -35,4 +35,10 @@ public class GitDiffPathNormalizationTests
 		GitDiffPathNormalization.IsMarkdownPagePath("guides/_snippets/foo.md").Should().BeFalse();
 		GitDiffPathNormalization.IsMarkdownPagePath("guides/page.md").Should().BeTrue();
 	}
+
+	[Fact]
+	public void Normalize_ConvertsWindowsSlashesAndTrimsDotSegments()
+	{
+		GitDiffPathNormalization.Normalize(@".\docs\page.md").Should().Be("docs/page.md");
+	}
 }
