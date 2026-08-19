@@ -19,7 +19,7 @@ public static class CrossLinkFetchDiagnostics
 		collector.EmitError(configurationPath, FormatSummary(crossLinks));
 	}
 
-	internal static string FormatSummary(FetchedCrossLinks crossLinks)
+	private static string FormatSummary(FetchedCrossLinks crossLinks)
 	{
 		var fetchFailures = crossLinks.FetchFailures;
 		var repositories = fetchFailures.Keys.Order(StringComparer.Ordinal).ToArray();

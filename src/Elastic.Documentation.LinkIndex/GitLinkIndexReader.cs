@@ -171,7 +171,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 				!string.IsNullOrEmpty(_environmentVariables.GetEnvironmentVariable("GITHUB_TOKEN"))));
 	}
 
-	internal static string DescribeCloneFailure(string gitStderr, bool onActions, bool hasToken)
+	private static string DescribeCloneFailure(string gitStderr, bool onActions, bool hasToken)
 	{
 		var message = $"Git clone failed: {gitStderr.Trim()}";
 

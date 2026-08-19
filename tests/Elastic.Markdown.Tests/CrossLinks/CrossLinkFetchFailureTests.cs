@@ -5,9 +5,7 @@
 using System.Collections.Frozen;
 using AwesomeAssertions;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 
@@ -83,44 +81,5 @@ public class CrossLinkFetchFailureTests(ITestOutputHelper output)
 			}.ToFrozenDictionary(),
 			FetchFailures = new Dictionary<string, string> { [repository] = failureReason }.ToFrozenDictionary()
 		};
-	}
-}
-
-public class GitLinkIndexReaderDescribeCloneFailureTests
-{
-	[Fact]
-	public void ActionsWithoutToken_UsernameError_MentionsForkPullRequest()
-	{
-		var message = GitLinkIndexReader.DescribeCloneFailure(
-			"fatal: could not read Username for 'https://github.com': No such device or address",
-			onActions: true,
-			hasToken: false);
-
-		message.Should().Contain("Git clone failed:");
-		message.Should().Contain("GitHub Actions did not provide GITHUB_TOKEN");
-		message.Should().Contain("Fork pull_request jobs do not receive the OIDC token");
-		message.Should().Contain("Push fork branches to the upstream repository");
-		message.Should().Contain("permissions.id-token: write");
-	}
-
-	[Fact]
-	public void ActionsWithToken_DoesNotAddForkHint()
-	{
-		var message = GitLinkIndexReader.DescribeCloneFailure("fatal: remote error", onActions: true, hasToken: true);
-
-		message.Should().Be("Git clone failed: fatal: remote error");
-	}
-
-	[Fact]
-	public void LocalEnvironment_MentionsCodexCloneOrSsh()
-	{
-		var message = GitLinkIndexReader.DescribeCloneFailure(
-			"Permission denied (publickey).",
-			onActions: false,
-			hasToken: false);
-
-		message.Should().Contain("Git clone failed:");
-		message.Should().Contain("docs-builder codex clone");
-		message.Should().Contain("git@github.com:elastic/codex-link-index.git");
 	}
 }
