@@ -108,12 +108,9 @@ public class GitChangedFileSourceTests
 	[Fact]
 	public void GetChanges_PrefixesGithubBaseRef()
 	{
-		string Git(string[] args) =>
-			args[0] == "diff" ? "M\u0000docs/page.md\u0000" : string.Empty;
-
 		var result = CreateSource(
 			new FakeEnvironmentVariables(new Dictionary<string, string?> { ["GITHUB_BASE_REF"] = "main" }),
-			Git
+			static args => args[0] == "diff" ? "M\u0000docs/page.md\u0000" : string.Empty
 		).GetChanges();
 
 		result.Base.Should().Be("origin/main");
