@@ -164,6 +164,48 @@ public class GitChangedFileSourceTests
 		diffArgs.Should().Equal("diff", "--name-status", "-z", "HEAD~1", "HEAD");
 	}
 
+	[Fact]
+	public void GetChanges_FallsBackToHeadParentWhenNamedBasesAreMissing()
+	{
+		var calls = new List<string[]>();
+		string Git(string[] args)
+		{
+			calls.Add(args);
+			if (args is ["rev-parse", "--verify", "HEAD^1"])
+				return "abc123";
+			if (args[0] == "diff")
+				return "M\u0000docs/page.md\u0000";
+			return string.Empty;
+		}
+
+		var result = CreateSource(new FakeEnvironmentVariables([]), Git).GetChanges();
+
+		result.Base.Should().Be("HEAD^1");
+		result.Changes.Should().ContainSingle(c => c.Path == "docs/page.md");
+		calls.Any(c => c.SequenceEqual(new[] { "rev-parse", "--verify", "HEAD^1" })).Should().BeTrue();
+		calls.Any(c => c.SequenceEqual(new[] { "diff", "--name-status", "-z", "HEAD^1", "HEAD", "--", "./docs" })).Should().BeTrue();
+	}
+
+	[Fact]
+	public void GetChanges_PrefersMainOverHeadParent()
+	{
+		var calls = new List<string[]>();
+		string Git(string[] args)
+		{
+			calls.Add(args);
+			if (args is ["merge-base", "-a", "HEAD", "main"])
+				return "def456";
+			if (args[0] == "diff")
+				return "M\u0000docs/page.md\u0000";
+			return string.Empty;
+		}
+
+		var result = CreateSource(new FakeEnvironmentVariables([]), Git).GetChanges();
+
+		result.Base.Should().Be("main");
+		calls.Any(c => c.SequenceEqual(new[] { "rev-parse", "--verify", "HEAD^1" })).Should().BeFalse();
+	}
+
 	private static GitChangedFileSource CreateSource(
 		FakeEnvironmentVariables environment,
 		Func<string[], string> gitCommand,

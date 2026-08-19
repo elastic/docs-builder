@@ -54,6 +54,7 @@ Otherwise it resolves the git diff base in this order:
 1. `DOCS_DIFF_BASE` environment variable
 2. `GITHUB_BASE_REF` → `origin/<ref>`
 3. `main`, then `master`, then `origin/HEAD`
+4. `HEAD^1` when that first parent exists
 
 Then it runs `git diff --name-status -z <base> HEAD`.
 

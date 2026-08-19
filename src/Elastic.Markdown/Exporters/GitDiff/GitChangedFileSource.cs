@@ -46,20 +46,27 @@ internal sealed class GitChangedFileSource(
 		foreach (var candidate in new[] { "main", "master" })
 		{
 			var output = GitCommand("merge-base", "-a", "HEAD", candidate);
-			if (output.Length > 0 && !output.StartsWith("fatal", StringComparison.Ordinal))
+			if (IsUsableGitOutput(output))
 				return candidate;
 		}
 
 		var originHead = GitCommand("symbolic-ref", "refs/remotes/origin/HEAD");
-		if (originHead.Length > 0 && !originHead.StartsWith("fatal", StringComparison.Ordinal))
+		if (IsUsableGitOutput(originHead))
 		{
 			var parts = originHead.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 			if (parts.Length >= 2)
 				return $"{parts[^2]}/{parts[^1]}";
 		}
 
+		var headParent = GitCommand("rev-parse", "--verify", "HEAD^1");
+		if (IsUsableGitOutput(headParent))
+			return "HEAD^1";
+
 		return "main";
 	}
+
+	private static bool IsUsableGitOutput(string output) =>
+		output.Length > 0 && !output.StartsWith("fatal", StringComparison.Ordinal);
 
 	private IReadOnlyList<SourceFileChange> RunGitDiff(string diffBase)
 	{
