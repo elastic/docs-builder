@@ -5,7 +5,6 @@
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
-using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -97,7 +96,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			else if (parser.Accept<MappingStart>(out _))
 			{
 				if (key.Value == "applies_to")
-					value = ParseAppliesTo(parser);
+					value = rootDeserializer(typeof(ApplicableTo));
 				else
 					parser.SkipThisAndNestedEvents();
 			}
@@ -207,39 +206,6 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		}
 
 		return null;
-	}
-
-	private static ApplicableTo ParseAppliesTo(IParser parser)
-	{
-		_ = parser.Consume<MappingStart>();
-		var diagnostics = new List<(Severity, string)>();
-		var appliesTo = new ApplicableTo();
-		while (!parser.TryConsume<MappingEnd>(out _))
-		{
-			var applyKey = parser.Consume<Scalar>();
-			if (!parser.Accept<Scalar>(out var applyValue))
-			{
-				parser.SkipThisAndNestedEvents();
-				continue;
-			}
-			_ = parser.MoveNext();
-			switch (applyKey.Value)
-			{
-				case "stack":
-					if (AppliesCollection.TryParse(applyValue.Value, diagnostics, out var stack) && stack is not null)
-						appliesTo = appliesTo with { Stack = stack };
-					break;
-				case "serverless":
-					if (AppliesCollection.TryParse(applyValue.Value, diagnostics, out var sv) && sv is not null)
-						appliesTo = appliesTo with { Serverless = new ServerlessProjectApplicability { Elasticsearch = sv, Observability = sv, Security = sv } };
-					break;
-				case "deployment":
-					if (AppliesCollection.TryParse(applyValue.Value, diagnostics, out var dep) && dep is not null)
-						appliesTo = appliesTo with { Deployment = new DeploymentApplicability { Self = dep, Ece = dep, Eck = dep, Ess = dep } };
-					break;
-			}
-		}
-		return appliesTo;
 	}
 
 	private static IReadOnlyCollection<ITableOfContentsItem> GetChildren(Dictionary<string, object?> dictionary)
