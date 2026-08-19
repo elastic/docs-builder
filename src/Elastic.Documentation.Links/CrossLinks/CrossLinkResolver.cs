@@ -75,6 +75,9 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 	{
 		resolvedUri = null;
 
+		if (fetchedCrossLinks.FetchFailures.ContainsKey(crossLinkUri.Scheme))
+			return false;
+
 		// First, check if the repository is in the declared repositories list, even if it's not in the link references
 		var isDeclaredRepo = fetchedCrossLinks.DeclaredRepositories.Contains(crossLinkUri.Scheme);
 

@@ -15,6 +15,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
       <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+      <InternalsVisibleTo Include="Elastic.Markdown.Tests" />
     </ItemGroup>
 
 </Project>

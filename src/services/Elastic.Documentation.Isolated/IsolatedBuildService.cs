@@ -139,6 +139,7 @@ public class IsolatedBuildService(
 				context.Configuration,
 				codexLinkIndexReader: codexReader);
 			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+			CrossLinkFetchDiagnostics.EmitFetchFailures(context.Collector, context.ConfigurationPath.FullName, crossLinks);
 			IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 				? new CodexAwareUriResolver(crossLinks.CodexRepositories)
 				: null;
