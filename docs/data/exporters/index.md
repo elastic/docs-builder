@@ -25,3 +25,7 @@ An [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-cata
 ### [Plain Text](./plain-text.md)
 
 Stripped-down plain text with all formatting removed. Used internally by other exporters (notably Elasticsearch) for search indexing.
+
+### [Git diff](./git-diff.md)
+
+Maps the git diff to published page URLs and titles. Writes `changed-pages.json` for CI preview comment jobs.

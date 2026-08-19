@@ -15,6 +15,7 @@ namespace Elastic.Documentation.Isolated;
 ///          links/linkmetadata, state/documentationstate, redirect/redirects, okf,
 ///          default (expands to <see cref="ExportOptions.Default"/>),
 ///          metadata (expands to <see cref="ExportOptions.MetadataOnly"/>),
+///          gitdiff (changed-pages.json for CI preview comments),
 ///          none (empty set).
 /// </remarks>
 public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
@@ -59,6 +60,9 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 				case "pagefind":
 					_ = set.Add(Exporter.Pagefind);
 					break;
+				case "gitdiff":
+					_ = set.Add(Exporter.GitDiff);
+					break;
 				case "none":
 					break;
 				case "default":
@@ -71,7 +75,7 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 					break;
 				default:
 					throw new ArgumentException(
-						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, pagefind, default, metadata, none.");
+						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, pagefind, gitdiff, default, metadata, none.");
 			}
 		}
 		result = set;
