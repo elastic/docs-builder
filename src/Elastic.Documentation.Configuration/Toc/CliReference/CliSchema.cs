@@ -81,7 +81,8 @@ public record CliParamSchema(
 	bool Hidden = false,
 	bool Variadic = false,
 	CliDeprecatedSchema? Deprecated = null,
-	List<CliValidationSchema>? Validations = null
+	List<CliValidationSchema>? Validations = null,
+	bool Negatable = false
 );
 
 public record CliDefaultSchema(
