@@ -8,7 +8,7 @@ namespace Elastic.Markdown.Exporters.GitDiff;
 
 internal static class ChangedPagesMapper
 {
-	private static readonly HashSet<string> ConfigFileNames = new(StringComparer.OrdinalIgnoreCase)
+	private static readonly HashSet<string> ConfigFileNames = new(
 	[
 		"docset.yml",
 		"_docset.yml",
@@ -21,7 +21,8 @@ internal static class ChangedPagesMapper
 		"legacy-url-mappings.yml",
 		"assembler.yml",
 		"search.yml",
-	];
+	],
+	StringComparer.OrdinalIgnoreCase);
 
 	public static ChangedPagesExport Map(
 		string diffBase,
