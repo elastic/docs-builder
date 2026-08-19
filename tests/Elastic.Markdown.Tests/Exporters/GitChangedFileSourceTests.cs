@@ -182,8 +182,8 @@ public class GitChangedFileSourceTests
 
 		result.Base.Should().Be("HEAD^1");
 		result.Changes.Should().ContainSingle(c => c.Path == "docs/page.md");
-		calls.Any(c => c.SequenceEqual(new[] { "rev-parse", "--verify", "HEAD^1" })).Should().BeTrue();
-		calls.Any(c => c.SequenceEqual(new[] { "diff", "--name-status", "-z", "HEAD^1", "HEAD", "--", "./docs" })).Should().BeTrue();
+		calls.Any(c => c.SequenceEqual(["rev-parse", "--verify", "HEAD^1"])).Should().BeTrue();
+		calls.Any(c => c.SequenceEqual(["diff", "--name-status", "-z", "HEAD^1", "HEAD", "--", "./docs"])).Should().BeTrue();
 	}
 
 	[Fact]
@@ -203,7 +203,7 @@ public class GitChangedFileSourceTests
 		var result = CreateSource(new FakeEnvironmentVariables([]), Git).GetChanges();
 
 		result.Base.Should().Be("main");
-		calls.Any(c => c.SequenceEqual(new[] { "rev-parse", "--verify", "HEAD^1" })).Should().BeFalse();
+		calls.Any(c => c.SequenceEqual(["rev-parse", "--verify", "HEAD^1"])).Should().BeFalse();
 	}
 
 	private static GitChangedFileSource CreateSource(
