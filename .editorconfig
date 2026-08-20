@@ -204,6 +204,8 @@ csharp_max_initializer_elements_on_line = 5
 csharp_wrap_object_and_collection_initializer_style = chop_if_long
 resharper_wrap_object_and_collection_initializer_style = chop_always
 csharp_wrap_chained_method_calls = chop_if_long
+csharp_wrap_chained_binary_expressions = chop_if_long
+csharp_wrap_before_binary_opsign = true
 resharper_csharp_empty_block_style = together_same_line
 
 # Resharper
