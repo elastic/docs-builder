@@ -9,7 +9,7 @@ spelling_exclusion_path = "./build/exclusion.dic"
 
 [*.{fs,fsx,cs,vb}]
 file_header_template=Licensed to Elasticsearch B.V under one or more agreements.\nElasticsearch B.V licenses this file to you under the Apache 2.0 License.\nSee the LICENSE file in the project root for more information
-max_line_length = 160
+max_line_length = 140
 
 [*.{fs,fsx}]
 indent_style = space
@@ -201,8 +201,10 @@ csharp_preserve_single_line_statements = false
 csharp_preserve_single_line_blocks = true
 csharp_place_simple_initializer_on_single_line = true
 csharp_max_initializer_elements_on_line = 5
-csharp_wrap_object_and_collection_initializer_style = wrap_if_long
+csharp_wrap_object_and_collection_initializer_style = chop_if_long
 resharper_wrap_object_and_collection_initializer_style = chop_always
+csharp_wrap_chained_method_calls = chop_if_long
+resharper_csharp_empty_block_style = together_same_line
 
 # Resharper
 resharper_csharp_braces_for_lock=required_for_multiline
