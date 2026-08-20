@@ -15,6 +15,7 @@ phantoms:
   # Temporary: elastic-agent renames reference/edot-collector → reference/otel-collector (elastic/elastic-agent#16022).
   # Remove this phantom and update the nav entry below once that PR merges.
   - toc: elastic-agent://reference/otel-collector
+    path_prefix: reference/otel-collector
 
 toc:
   #############
