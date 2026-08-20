@@ -24,7 +24,8 @@ public static class ChangelogPrBodyReader
 		string? prBodyFile,
 		IDiagnosticsCollector collector,
 		IRunnerTempFileSystem fileSystem,
-		CancellationToken ct)
+		CancellationToken ct
+	)
 	{
 		if (string.IsNullOrWhiteSpace(prBodyFile))
 			return null;

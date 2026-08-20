@@ -9,5 +9,6 @@ namespace Elastic.Documentation.Extensions;
 
 public static class ShortId
 {
-	public static string Create(params string[] components) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("", components))))[..8];
+	public static string Create(params string[] components) =>
+		Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("", components))))[..8];
 }

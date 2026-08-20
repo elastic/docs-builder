@@ -76,11 +76,7 @@ public class S3IncrementalUploader(
 	{
 		try
 		{
-			var response = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
-			{
-				BucketName = bucketName,
-				Key = key
-			}, ctx);
+			var response = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = bucketName, Key = key }, ctx);
 			return response.ETag.Trim('"');
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)

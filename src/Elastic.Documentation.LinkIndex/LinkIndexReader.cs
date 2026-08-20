@@ -9,7 +9,11 @@ using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.LinkIndex;
 
-public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elastic-docs-link-index", string registryKey = "link-index.json") : ILinkIndexReader
+public class Aws3LinkIndexReader(
+	IAmazonS3 s3Client,
+	string bucketName = "elastic-docs-link-index",
+	string registryKey = "link-index.json"
+) : ILinkIndexReader
 {
 
 	// <summary>
@@ -19,21 +23,14 @@ public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elasti
 	public static Aws3LinkIndexReader CreateAnonymous()
 	{
 		var credentials = new AnonymousAWSCredentials();
-		var config = new AmazonS3Config
-		{
-			RegionEndpoint = Amazon.RegionEndpoint.USEast2
-		};
+		var config = new AmazonS3Config { RegionEndpoint = Amazon.RegionEndpoint.USEast2 };
 		var s3Client = new AmazonS3Client(credentials, config);
 		return new AwsS3LinkIndexReaderWriter(s3Client);
 	}
 
 	public async Task<LinkRegistry> GetRegistry(Cancel cancellationToken = default)
 	{
-		var getObjectRequest = new GetObjectRequest
-		{
-			BucketName = bucketName,
-			Key = registryKey
-		};
+		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = registryKey };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
 		var linkIndex = LinkRegistry.Deserialize(stream);
@@ -41,11 +38,7 @@ public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elasti
 	}
 	public async Task<RepositoryLinks> GetRepositoryLinks(string key, Cancel cancellationToken)
 	{
-		var getObjectRequest = new GetObjectRequest
-		{
-			BucketName = bucketName,
-			Key = key
-		};
+		var getObjectRequest = new GetObjectRequest { BucketName = bucketName, Key = key };
 		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
 		await using var stream = getObjectResponse.ResponseStream;
 		return RepositoryLinks.Deserialize(stream);

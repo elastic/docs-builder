@@ -29,7 +29,8 @@ public class BundleBuilder
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo = null,
 		string? owner = null,
-		HashSet<string>? hideFeatures = null)
+		HashSet<string>? hideFeatures = null
+	)
 	{
 		// Build products list
 		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
@@ -39,11 +40,7 @@ public class BundleBuilder
 
 		if (bundledEntries == null)
 		{
-			return new BundleBuildResult
-			{
-				IsValid = false,
-				Data = null
-			};
+			return new BundleBuildResult { IsValid = false, Data = null };
 		}
 
 		var bundledData = new Bundle
@@ -53,11 +50,7 @@ public class BundleBuilder
 			Entries = bundledEntries
 		};
 
-		return new BundleBuildResult
-		{
-			IsValid = true,
-			Data = bundledData
-		};
+		return new BundleBuildResult { IsValid = true, Data = bundledData };
 	}
 
 	private static List<BundledProduct> BuildProducts(
@@ -65,25 +58,29 @@ public class BundleBuilder
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo,
-		string? owner)
+		string? owner
+	)
 	{
 		List<BundledProduct> bundledProducts;
 
 		if (outputProducts is { Count: > 0 })
 		{
-			bundledProducts = outputProducts
-				.OrderBy(p => p.Product)
-				.ThenBy(p => p.Target ?? string.Empty)
-				.ThenBy(p => p.Lifecycle ?? string.Empty)
-				.Select(p => new BundledProduct
-				{
-					ProductId = p.Product ?? "",
-					Target = p.Target == "*" ? null : p.Target,
-					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
-					Repo = repo,
-					Owner = owner
-				})
-				.ToList();
+			bundledProducts =
+				outputProducts.OrderBy(p => p.Product)
+					.ThenBy(p => p.Target ?? string.Empty)
+					.ThenBy(p => p.Lifecycle ?? string.Empty)
+					.Select(
+						p =>
+							new BundledProduct
+							{
+								ProductId = p.Product ?? "",
+								Target = p.Target == "*" ? null : p.Target,
+								Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
+								Repo = repo,
+								Owner = owner
+							}
+					)
+					.ToList();
 		}
 		else if (entries.Count > 0)
 		{
@@ -99,17 +96,21 @@ public class BundleBuilder
 				}
 			}
 
-			bundledProducts = productVersions
-				.OrderBy(pv => pv.product)
-				.ThenBy(pv => pv.version)
-				.ThenBy(pv => pv.lifecycle?.ToStringFast(true) ?? string.Empty)
-				.Select(pv => new BundledProduct(
-					pv.product,
-					string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
-					pv.lifecycle,
-					repo,
-					owner))
-				.ToList();
+			bundledProducts =
+				productVersions.OrderBy(pv => pv.product)
+					.ThenBy(pv => pv.version)
+					.ThenBy(pv => pv.lifecycle?.ToStringFast(true) ?? string.Empty)
+					.Select(
+						pv =>
+							new BundledProduct(
+								pv.product,
+								string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+								pv.lifecycle,
+								repo,
+								owner
+							)
+					)
+					.ToList();
 		}
 		else
 			bundledProducts = [];
@@ -128,7 +129,10 @@ public class BundleBuilder
 					target = $"{target} {p.Lifecycle.Value.ToStringFast(true)}";
 				return target;
 			}).ToList();
-			collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}");
+			collector.EmitWarning(
+				string.Empty,
+				$"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}"
+			);
 		}
 
 		return bundledProducts;
@@ -139,14 +143,10 @@ public class BundleBuilder
 		if (string.IsNullOrEmpty(value))
 			return null;
 
-		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? result
-			: null;
+		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true) ? result : null;
 	}
 
-	private static List<BundledEntry>? BuildResolvedEntries(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<MatchedChangelogFile> entries)
+	private static List<BundledEntry>? BuildResolvedEntries(IDiagnosticsCollector collector, IReadOnlyList<MatchedChangelogFile> entries)
 	{
 		var resolvedEntries = new List<BundledEntry>();
 		var hasInvalidEntries = false;
@@ -161,11 +161,7 @@ public class BundleBuilder
 
 			var bundledEntry = entry.Data.ToBundledEntry() with
 			{
-				File = new BundledFile
-				{
-					Name = entry.FileName,
-					Checksum = entry.Checksum
-				}
+				File = new BundledFile { Name = entry.FileName, Checksum = entry.Checksum }
 			};
 			resolvedEntries.Add(bundledEntry);
 		}

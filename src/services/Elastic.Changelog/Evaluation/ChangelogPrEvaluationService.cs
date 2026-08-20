@@ -40,8 +40,7 @@ public class ChangelogPrEvaluationService(
 			return await SetOutputs(PrEvaluationResult.Skipped);
 		}
 
-		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx)
-			?? ChangelogConfiguration.Default;
+		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx) ?? ChangelogConfiguration.Default;
 		var changelogDir = config.Bundle?.Directory ?? "docs/changelog";
 
 		// Commit bot loop detection
@@ -57,16 +56,13 @@ public class ChangelogPrEvaluationService(
 
 		// Find existing changelog file for this PR (handles all filename strategies)
 		var existingFilename = FindExistingChangelog(changelogDir, input.PrNumber);
-		var changelogFilePath = existingFilename != null
-			? $"{changelogDir}/{existingFilename}"
-			: null;
+		var changelogFilePath = existingFilename != null ? $"{changelogDir}/{existingFilename}" : null;
 
 		// Manual edit detection (only if a file exists)
 		if (changelogFilePath != null)
 		{
-			var fileAuthor = await gitHubPrService.FetchLastFileCommitAuthorAsync(
-				input.Owner, input.Repo, changelogFilePath, input.HeadRef, ctx
-			);
+			var fileAuthor =
+				await gitHubPrService.FetchLastFileCommitAuthorAsync(input.Owner, input.Repo, changelogFilePath, input.HeadRef, ctx);
 			if (!string.IsNullOrEmpty(fileAuthor) && !string.Equals(fileAuthor, input.BotName, StringComparison.OrdinalIgnoreCase))
 			{
 				_logger.LogInformation("Skipping: changelog file {File} manually edited by {Author}", changelogFilePath, fileAuthor);
@@ -128,14 +124,10 @@ public class ChangelogPrEvaluationService(
 			{
 				// When only one distinct product is configured, assigning it implicitly is
 				// unambiguous — no point requiring contributors to add a redundant label.
-				var distinctSpecs = labelToProducts.Values
-					.Distinct(StringComparer.OrdinalIgnoreCase)
-					.ToList();
+				var distinctSpecs = labelToProducts.Values.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 				if (distinctSpecs.Count == 1)
 				{
-					resolvedProducts = ProductArgument.FormatProductSpecs(
-						ProductArgument.ParseProductSpecs(distinctSpecs[0])
-					);
+					resolvedProducts = ProductArgument.FormatProductSpecs(ProductArgument.ParseProductSpecs(distinctSpecs[0]));
 					_logger.LogInformation("Single product configured; assigning implicitly: {Products}", resolvedProducts);
 				}
 				else
@@ -146,14 +138,19 @@ public class ChangelogPrEvaluationService(
 		if (resolvedType == null)
 		{
 			_logger.LogInformation("No type label found on PR");
-			collector.EmitError(string.Empty, "No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label.");
-			_ = await SetOutputs(
-				PrEvaluationResult.NoLabel, title,
-				resolvedDescription: description,
-				labelTable: BuildLabelTable(config.LabelToType),
-				productLabelTable: productLabelTable,
-				skipLabels: skipLabels
+			collector.EmitError(
+				string.Empty,
+				"No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label."
 			);
+			_ =
+				await SetOutputs(
+					PrEvaluationResult.NoLabel,
+					title,
+					resolvedDescription: description,
+					labelTable: BuildLabelTable(config.LabelToType),
+					productLabelTable: productLabelTable,
+					skipLabels: skipLabels
+				);
 			return false;
 		}
 
@@ -161,23 +158,35 @@ public class ChangelogPrEvaluationService(
 		// available to fill in via inference at 'changelog add' time. Surface this as a
 		// missing-label failure so the contributor sees an actionable hint instead of a hard
 		// error later in the workflow.
-		if (productLabelTable != null
-			&& (config.ProductsConfiguration?.Default is null or { Count: 0 }))
+		if (productLabelTable != null && (config.ProductsConfiguration?.Default is null or { Count: 0 }))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
-			collector.EmitError(string.Empty, "No matching product label found on this PR. Add a label from your changelog.yml pivot.products.");
-			_ = await SetOutputs(
-				PrEvaluationResult.NoLabel, title,
-				resolvedDescription: description,
-				productLabelTable: productLabelTable,
-				skipLabels: skipLabels
+			collector.EmitError(
+				string.Empty,
+				"No matching product label found on this PR. Add a label from your changelog.yml pivot.products."
 			);
+			_ =
+				await SetOutputs(
+					PrEvaluationResult.NoLabel,
+					title,
+					resolvedDescription: description,
+					productLabelTable: productLabelTable,
+					skipLabels: skipLabels
+				);
 			return false;
 		}
 
-		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}", title, resolvedType, resolvedProducts, existingFilename);
+		_logger.LogInformation(
+			"PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}",
+			title,
+			resolvedType,
+			resolvedProducts,
+			existingFilename
+		);
 		return await SetOutputs(
-			PrEvaluationResult.Success, title, resolvedType,
+			PrEvaluationResult.Success,
+			title,
+			resolvedType,
 			resolvedDescription: description,
 			resolvedProducts: resolvedProducts,
 			productLabelTable: productLabelTable,
@@ -199,11 +208,10 @@ public class ChangelogPrEvaluationService(
 		string? productLabelTable = null,
 		string? changelogDir = null,
 		string? existingFilename = null,
-		string? skipLabels = null)
+		string? skipLabels = null
+	)
 	{
-		var statusString = status == PrEvaluationResult.Success
-			? ProceedStatus
-			: status.ToStringFast(true);
+		var statusString = status == PrEvaluationResult.Success ? ProceedStatus : status.ToStringFast(true);
 
 		var shouldGenerate = status == PrEvaluationResult.Success;
 
@@ -216,19 +224,37 @@ public class ChangelogPrEvaluationService(
 		if (resolvedTitle != null)
 			await coreService.SetOutputAsync("title", OutputSanitizer.SanitizeForOutput(resolvedTitle, OutputSanitizer.TitleMaxLength));
 		if (resolvedDescription != null)
-			await coreService.SetOutputAsync("description", OutputSanitizer.SanitizeForOutput(resolvedDescription, OutputSanitizer.DescriptionMaxLength));
+			await coreService.SetOutputAsync(
+				"description",
+				OutputSanitizer.SanitizeForOutput(resolvedDescription, OutputSanitizer.DescriptionMaxLength)
+			);
 		if (resolvedType != null)
 			await coreService.SetOutputAsync("type", OutputSanitizer.SanitizeForOutput(resolvedType, OutputSanitizer.TypeMaxLength));
 		if (resolvedProducts != null)
-			await coreService.SetOutputAsync("products", OutputSanitizer.SanitizeForOutput(resolvedProducts, OutputSanitizer.LabelsMaxLength));
+			await coreService.SetOutputAsync(
+				"products",
+				OutputSanitizer.SanitizeForOutput(resolvedProducts, OutputSanitizer.LabelsMaxLength)
+			);
 		if (labelTable != null)
-			await coreService.SetOutputAsync("label-table", OutputSanitizer.SanitizeForOutput(labelTable, OutputSanitizer.LabelTableMaxLength));
+			await coreService.SetOutputAsync(
+				"label-table",
+				OutputSanitizer.SanitizeForOutput(labelTable, OutputSanitizer.LabelTableMaxLength)
+			);
 		if (productLabelTable != null)
-			await coreService.SetOutputAsync("product-label-table", OutputSanitizer.SanitizeForOutput(productLabelTable, OutputSanitizer.LabelTableMaxLength));
+			await coreService.SetOutputAsync(
+				"product-label-table",
+				OutputSanitizer.SanitizeForOutput(productLabelTable, OutputSanitizer.LabelTableMaxLength)
+			);
 		if (changelogDir != null)
-			await coreService.SetOutputAsync("changelog-dir", OutputSanitizer.SanitizeForOutput(changelogDir, OutputSanitizer.PathMaxLength));
+			await coreService.SetOutputAsync(
+				"changelog-dir",
+				OutputSanitizer.SanitizeForOutput(changelogDir, OutputSanitizer.PathMaxLength)
+			);
 		if (existingFilename != null)
-			await coreService.SetOutputAsync("existing-changelog-filename", OutputSanitizer.SanitizeForOutput(existingFilename, OutputSanitizer.PathMaxLength));
+			await coreService.SetOutputAsync(
+				"existing-changelog-filename",
+				OutputSanitizer.SanitizeForOutput(existingFilename, OutputSanitizer.PathMaxLength)
+			);
 		if (skipLabels != null)
 			await coreService.SetOutputAsync("skip-labels", OutputSanitizer.SanitizeForOutput(skipLabels, OutputSanitizer.LabelsMaxLength));
 
@@ -292,9 +318,9 @@ public class ChangelogPrEvaluationService(
 	}
 
 	internal static bool ContentReferencesPr(string content, string prNumber) =>
-		content.Contains($"/pull/{prNumber}", StringComparison.Ordinal) ||
-		content.Contains($"- \"{prNumber}\"", StringComparison.Ordinal) ||
-		content.Contains($"- '{prNumber}'", StringComparison.Ordinal);
+		content.Contains($"/pull/{prNumber}", StringComparison.Ordinal)
+			|| content.Contains($"- \"{prNumber}\"", StringComparison.Ordinal)
+			|| content.Contains($"- '{prNumber}'", StringComparison.Ordinal);
 
 	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType) =>
 		BuildMappingTable(labelToType, "Label", "Type");

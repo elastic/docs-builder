@@ -16,18 +16,17 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithPrOption_FetchesPrInfoAndDerivesTitle()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Implement new aggregation API",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Implement new aggregation API", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"https://github.com/elastic/elasticsearch/pull/12345",
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(
+			() =>
+				MockGitHubService.FetchPrInfoAsync(
+					"https://github.com/elastic/elasticsearch/pull/12345",
+					null,
+					null,
+					A<CancellationToken>._
+				)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -61,12 +60,15 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"https://github.com/elastic/elasticsearch/pull/12345",
-				null,
-				null,
-				A<CancellationToken>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() =>
+				MockGitHubService.FetchPrInfoAsync(
+					"https://github.com/elastic/elasticsearch/pull/12345",
+					null,
+					null,
+					A<CancellationToken>._
+				)
+		).MustHaveHappenedOnceExactly();
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
@@ -86,18 +88,17 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithUsePrNumber_CreatesFileWithPrNumberAsFilename()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Fix memory leak in search",
-			Labels = ["type:bug"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Fix memory leak in search", Labels = ["type:bug"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"https://github.com/elastic/elasticsearch/pull/140034",
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(
+			() =>
+				MockGitHubService.FetchPrInfoAsync(
+					"https://github.com/elastic/elasticsearch/pull/140034",
+					null,
+					null,
+					A<CancellationToken>._
+				)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -153,30 +154,16 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithMultiplePrsAndUsePrNumber_CreatesOneFilePerPrEachNamedByPrNumber()
 	{
 		// With --use-pr-number and multiple PRs, creates one changelog per PR, each named by its PR number (not one aggregated file)
-		var pr1Info = new GitHubPrInfo
-		{
-			Title = "First PR",
-			Labels = ["type:feature"]
-		};
-		var pr2Info = new GitHubPrInfo
-		{
-			Title = "Second PR",
-			Labels = ["type:bug"]
-		};
+		var pr1Info = new GitHubPrInfo { Title = "First PR", Labels = ["type:feature"] };
+		var pr2Info = new GitHubPrInfo { Title = "Second PR", Labels = ["type:bug"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("1234"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr1Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("1234"), null, null, A<CancellationToken>._)).Returns(
+			pr1Info
+		);
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("5678"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr2Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("5678"), null, null, A<CancellationToken>._)).Returns(
+			pr2Info
+		);
 
 		// language=yaml
 		var configContent =
@@ -223,18 +210,11 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithUseIssueNumberAndBothIssuesAndPrs_UseIssueNumberForFilename()
 	{
 		// When both --issues and --prs are specified, --use-issue-number should still determine the filename
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Release notes test",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Release notes test", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"https://github.com/elastic/kibana/pull/250840",
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync("https://github.com/elastic/kibana/pull/250840", null, null, A<CancellationToken>._)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -296,42 +276,25 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
 	}
 
 	[Fact]
 	public async Task CreateChangelog_WithMultiplePrs_CreatesOneFilePerPr()
 	{
 		// Arrange
-		var pr1Info = new GitHubPrInfo
-		{
-			Title = "First PR feature",
-			Labels = ["type:feature"]
-		};
-		var pr2Info = new GitHubPrInfo
-		{
-			Title = "Second PR bug fix",
-			Labels = ["type:bug"]
-		};
+		var pr1Info = new GitHubPrInfo { Title = "First PR feature", Labels = ["type:feature"] };
+		var pr2Info = new GitHubPrInfo { Title = "Second PR bug fix", Labels = ["type:bug"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("1234"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr1Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("1234"), null, null, A<CancellationToken>._)).Returns(
+			pr1Info
+		);
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("5678"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr2Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("5678"), null, null, A<CancellationToken>._)).Returns(
+			pr2Info
+		);
 
 		// language=yaml
 		var configContent =
@@ -384,42 +347,21 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithPrsFromFile_ProcessesAllPrsFromFile()
 	{
 		// Arrange - Simulate what ChangelogCommand does: read PRs from a file
-		var pr1Info = new GitHubPrInfo
-		{
-			Title = "First PR from file",
-			Labels = ["type:feature"]
-		};
-		var pr2Info = new GitHubPrInfo
-		{
-			Title = "Second PR from file",
-			Labels = ["type:bug"]
-		};
-		var pr3Info = new GitHubPrInfo
-		{
-			Title = "Third PR from file",
-			Labels = ["type:enhancement"]
-		};
+		var pr1Info = new GitHubPrInfo { Title = "First PR from file", Labels = ["type:feature"] };
+		var pr2Info = new GitHubPrInfo { Title = "Second PR from file", Labels = ["type:bug"] };
+		var pr3Info = new GitHubPrInfo { Title = "Third PR from file", Labels = ["type:enhancement"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("1111"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr1Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("1111"), null, null, A<CancellationToken>._)).Returns(
+			pr1Info
+		);
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("2222"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr2Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("2222"), null, null, A<CancellationToken>._)).Returns(
+			pr2Info
+		);
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("3333"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr3Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("3333"), null, null, A<CancellationToken>._)).Returns(
+			pr3Info
+		);
 
 		var tempDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempDir);
@@ -436,10 +378,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		// Read PRs from file (simulating ChangelogCommand behavior)
 		var prsFromFile = await FileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
-		var parsedPrs = prsFromFile
-			.Where(line => !string.IsNullOrWhiteSpace(line))
-			.Select(line => line.Trim())
-			.ToArray();
+		var parsedPrs = prsFromFile.Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()).ToArray();
 
 		// language=yaml
 		var configContent =
@@ -462,6 +401,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = parsedPrs, // PRs read from file
+
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -494,38 +434,23 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithMixedPrsFromFileAndCommaSeparated_ProcessesAllPrs()
 	{
 		// Arrange - Simulate ChangelogCommand handling both file paths and comma-separated PRs
-		var pr1Info = new GitHubPrInfo
-		{
-			Title = "PR from comma-separated",
-			Labels = ["type:feature"]
-		};
-		var pr2Info = new GitHubPrInfo
-		{
-			Title = "PR from file",
-			Labels = ["type:bug"]
-		};
+		var pr1Info = new GitHubPrInfo { Title = "PR from comma-separated", Labels = ["type:feature"] };
+		var pr2Info = new GitHubPrInfo { Title = "PR from file", Labels = ["type:bug"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("1111"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr1Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("1111"), null, null, A<CancellationToken>._)).Returns(
+			pr1Info
+		);
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("2222"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr2Info);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("2222"), null, null, A<CancellationToken>._)).Returns(
+			pr2Info
+		);
 
 		var tempDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with PRs
 		var prsFile = FileSystem.Path.Join(tempDir, "prs.txt");
-		var prsFileContent =
-			"""
+		var prsFileContent = """
 			https://github.com/elastic/elasticsearch/pull/2222
 			""";
 		await FileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
@@ -534,17 +459,15 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var allPrs = new List<string>();
 
 		// Add comma-separated PRs
-		var commaSeparatedPrs =
-			"https://github.com/elastic/elasticsearch/pull/1111".Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var commaSeparatedPrs = "https://github.com/elastic/elasticsearch/pull/1111".Split(
+			',',
+			StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+		);
 		allPrs.AddRange(commaSeparatedPrs);
 
 		// Add PRs from file
 		var prsFromFile = await FileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
-		allPrs.AddRange(
-			prsFromFile
-				.Where(line => !string.IsNullOrWhiteSpace(line))
-				.Select(line => line.Trim())
-		);
+		allPrs.AddRange(prsFromFile.Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()));
 
 		// language=yaml
 		var configContent =
@@ -566,6 +489,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = allPrs.ToArray(), // Mixed PRs from comma-separated and file
+
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -605,18 +529,9 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		//   docs-builder changelog add --concise --use-pr-number --owner elastic --repo cloud --prs 155500
 		// The previous bare-number-in YAML was unparseable by the scrubber Lambda (which has no per-entry
 		// repo context), so the writer must normalize bare numbers to full URLs when owner+repo are known.
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Fix upload failures for extensions with >5GiB",
-			Labels = ["type:bug"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Fix upload failures for extensions with >5GiB", Labels = ["type:bug"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"155500",
-				"elastic",
-				"cloud",
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync("155500", "elastic", "cloud", A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =

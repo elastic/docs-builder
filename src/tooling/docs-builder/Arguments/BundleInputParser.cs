@@ -35,7 +35,10 @@ public static class BundleInputParser
 		{
 			BundleFile = NormalizePath(parts[0]),
 			Repo = parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) ? parts[1] : null,
-			HideLinks = parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]) && parts[2].Equals("hide-links", StringComparison.OrdinalIgnoreCase)
+			HideLinks =
+				parts.Length > 2
+					&& !string.IsNullOrWhiteSpace(parts[2])
+					&& parts[2].Equals("hide-links", StringComparison.OrdinalIgnoreCase)
 		};
 	}
 
@@ -81,9 +84,7 @@ public static class BundleInputParser
 			var afterTilde = trimmedPath[2..];
 			var relativeFromHome = GetRelativePathSegment(afterTilde);
 			// Ensure that combining with homeDirectory cannot drop the base path if the segment is rooted
-			trimmedPath = Path.IsPathRooted(relativeFromHome)
-				? homeDirectory
-				: Path.Join(homeDirectory, relativeFromHome);
+			trimmedPath = Path.IsPathRooted(relativeFromHome) ? homeDirectory : Path.Join(homeDirectory, relativeFromHome);
 		}
 		else if (trimmedPath == "~")
 		{
@@ -116,4 +117,3 @@ public static class BundleInputParser
 		return segment.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 	}
 }
-

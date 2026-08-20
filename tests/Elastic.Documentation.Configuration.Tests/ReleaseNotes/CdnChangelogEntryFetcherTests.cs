@@ -12,7 +12,8 @@ namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 public class CdnChangelogEntryFetcherTests
 {
 	// language=yaml
-	private const string SampleEntry = """
+	private const string SampleEntry =
+		"""
 		title: Sample enhancement
 		type: enhancement
 		products:
@@ -36,14 +37,27 @@ public class CdnChangelogEntryFetcherTests
 	[Fact]
 	public async Task FetchAsync_HappyPath_ReturnsAllEntriesFromRegistry()
 	{
-		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
-				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-b.yaml" } ] }""")
-				: Yaml(SampleEntry));
+		var handler = new StubHandler(
+			req =>
+				req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+					? Json(/*lang=json,strict*/
+						"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-b.yaml" } ] }"""
+					)
+					: Yaml(SampleEntry)
+		);
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries =
+			await fetcher.FetchAsync(
+				BaseUri,
+				"elastic",
+				"elasticsearch",
+				"main",
+				emitError,
+				emitWarning,
+				TestContext.Current.CancellationToken
+			);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -51,27 +65,44 @@ public class CdnChangelogEntryFetcherTests
 		entries.Should().OnlyContain(e => e.Content.Contains("Sample enhancement"));
 		// Artifact-root layout: entries and their registry live under changelog/{org}/{repo}/{branch}/...
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
-		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/main/1-a.yaml", StringComparison.Ordinal));
+		handler.RequestedPaths
+			.Should()
+			.Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/main/1-a.yaml", StringComparison.Ordinal));
 	}
 
 	[Fact]
 	public async Task FetchAsync_BranchWithSlashes_KeepsBranchSeparatorsInPath()
 	{
-		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
-				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elastic/elasticsearch/feature/foo", "bundles": [ { "file": "1-a.yaml" } ] }""")
-				: Yaml(SampleEntry));
+		var handler = new StubHandler(
+			req =>
+				req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+					? Json(/*lang=json,strict*/
+						"""{ "schema_version": 1, "product": "elastic/elasticsearch/feature/foo", "bundles": [ { "file": "1-a.yaml" } ] }"""
+					)
+					: Yaml(SampleEntry)
+		);
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "feature/foo", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries =
+			await fetcher.FetchAsync(
+				BaseUri,
+				"elastic",
+				"elasticsearch",
+				"feature/foo",
+				emitError,
+				emitWarning,
+				TestContext.Current.CancellationToken
+			);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("1-a.yaml");
 		// The branch's '/' stays a real path separator (not percent-encoded into one segment).
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/feature/foo/registry.json");
-		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/feature/foo/1-a.yaml", StringComparison.Ordinal));
+		handler.RequestedPaths
+			.Should()
+			.Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/feature/foo/1-a.yaml", StringComparison.Ordinal));
 	}
 
 	[Theory]
@@ -86,7 +117,16 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", branch, emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries =
+			await fetcher.FetchAsync(
+				BaseUri,
+				"elastic",
+				"elasticsearch",
+				branch,
+				emitError,
+				emitWarning,
+				TestContext.Current.CancellationToken
+			);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("Invalid changelog pool");
@@ -100,7 +140,16 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries =
+			await fetcher.FetchAsync(
+				BaseUri,
+				"elastic",
+				"elasticsearch",
+				"main",
+				emitError,
+				emitWarning,
+				TestContext.Current.CancellationToken
+			);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
@@ -114,7 +163,9 @@ public class CdnChangelogEntryFetcherTests
 		var handler = new StubHandler(req =>
 		{
 			if (req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-missing.yaml" } ] }""");
+				return Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-missing.yaml" } ] }"""
+				);
 			return req.RequestUri!.AbsolutePath.EndsWith("/2-missing.yaml", StringComparison.Ordinal)
 				? new HttpResponseMessage(HttpStatusCode.NotFound)
 				: Yaml(SampleEntry);
@@ -122,12 +173,23 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler, maxAttempts: 3);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries =
+			await fetcher.FetchAsync(
+				BaseUri,
+				"elastic",
+				"elasticsearch",
+				"main",
+				emitError,
+				emitWarning,
+				TestContext.Current.CancellationToken
+			);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("2-missing.yaml");
-		handler.RequestedPaths.Count(p => p.EndsWith("/2-missing.yaml", StringComparison.Ordinal))
-			.Should().Be(3, "the missing entry should be attempted up to the retry budget before failing");
+		handler.RequestedPaths
+			.Count(p => p.EndsWith("/2-missing.yaml", StringComparison.Ordinal))
+			.Should()
+			.Be(3, "the missing entry should be attempted up to the retry budget before failing");
 	}
 
 	[Fact]
@@ -139,17 +201,26 @@ public class CdnChangelogEntryFetcherTests
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" } ] }""");
+				return Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" } ] }"""
+				);
 			if (path.EndsWith("/1-a.yaml", StringComparison.Ordinal))
-				return Interlocked.Increment(ref entryAttempts) == 1
-					? new HttpResponseMessage(HttpStatusCode.NotFound)
-					: Yaml(SampleEntry);
+				return Interlocked.Increment(ref entryAttempts) == 1 ? new HttpResponseMessage(HttpStatusCode.NotFound) : Yaml(SampleEntry);
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries =
+			await fetcher.FetchAsync(
+				BaseUri,
+				"elastic",
+				"elasticsearch",
+				"main",
+				emitError,
+				emitWarning,
+				TestContext.Current.CancellationToken
+			);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -160,12 +231,22 @@ public class CdnChangelogEntryFetcherTests
 	[Fact]
 	public async Task FetchAsync_SchemaVersionTooNew_EmitsError()
 	{
-		var handler = new StubHandler(_ =>
-			Json(/*lang=json,strict*/ """{ "schema_version": 999, "product": "elasticsearch", "bundles": [] }"""));
+		var handler = new StubHandler(
+			_ => Json(/*lang=json,strict*/ """{ "schema_version": 999, "product": "elasticsearch", "bundles": [] }""")
+		);
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries =
+			await fetcher.FetchAsync(
+				BaseUri,
+				"elastic",
+				"elasticsearch",
+				"main",
+				emitError,
+				emitWarning,
+				TestContext.Current.CancellationToken
+			);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
@@ -174,14 +255,27 @@ public class CdnChangelogEntryFetcherTests
 	[Fact]
 	public async Task FetchAsync_UnsafeFileName_EmitsWarningAndSkips()
 	{
-		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
-				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "../escape.yaml" }, { "file": "ok.yaml" } ] }""")
-				: Yaml(SampleEntry));
+		var handler = new StubHandler(
+			req =>
+				req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+					? Json(/*lang=json,strict*/
+						"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "../escape.yaml" }, { "file": "ok.yaml" } ] }"""
+					)
+					: Yaml(SampleEntry)
+		);
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries =
+			await fetcher.FetchAsync(
+				BaseUri,
+				"elastic",
+				"elasticsearch",
+				"main",
+				emitError,
+				emitWarning,
+				TestContext.Current.CancellationToken
+			);
 
 		errors.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("ok.yaml");

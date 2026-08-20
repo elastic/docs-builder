@@ -8,8 +8,8 @@ namespace Elastic.Documentation.Api.Adapters.AskAi;
 
 public class KibanaOptions(IConfiguration configuration)
 {
-	public string Url { get; } = configuration["DOCUMENTATION_KIBANA_URL"]
-		?? throw new InvalidOperationException("DOCUMENTATION_KIBANA_URL not configured");
-	public string ApiKey { get; } = configuration["DOCUMENTATION_KIBANA_APIKEY"]
-		?? throw new InvalidOperationException("DOCUMENTATION_KIBANA_APIKEY not configured");
+	public string Url { get; } = configuration["DOCUMENTATION_KIBANA_URL"] ??
+		throw new InvalidOperationException("DOCUMENTATION_KIBANA_URL not configured");
+	public string ApiKey { get; } = configuration["DOCUMENTATION_KIBANA_APIKEY"] ??
+		throw new InvalidOperationException("DOCUMENTATION_KIBANA_APIKEY not configured");
 }

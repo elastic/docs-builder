@@ -18,17 +18,12 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
 	/// <inheritdoc />
-	public async Task<GitHubReleaseInfo?> FetchReleaseAsync(
-		string owner,
-		string repo,
-		string? version,
-		CancellationToken ctx = default)
+	public async Task<GitHubReleaseInfo?> FetchReleaseAsync(string owner, string repo, string? version, CancellationToken ctx = default)
 	{
 		try
 		{
 			// Build URL: /repos/{owner}/{repo}/releases/latest or /releases/tags/{version}
-			var isLatest = string.IsNullOrWhiteSpace(version) ||
-				version.Equals("latest", StringComparison.OrdinalIgnoreCase);
+			var isLatest = string.IsNullOrWhiteSpace(version) || version.Equals("latest", StringComparison.OrdinalIgnoreCase);
 
 			var url = isLatest
 				? $"https://api.github.com/repos/{owner}/{repo}/releases/latest"
@@ -68,7 +63,8 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 		string owner,
 		string repo,
 		int count,
-		CancellationToken ctx = default)
+		CancellationToken ctx = default
+	)
 	{
 		try
 		{
@@ -78,8 +74,11 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
-				_logger.LogDebug("Failed to fetch releases. Status: {StatusCode}, Reason: {ReasonPhrase}",
-					response.StatusCode, response.ReasonPhrase);
+				_logger.LogDebug(
+					"Failed to fetch releases. Status: {StatusCode}, Reason: {ReasonPhrase}",
+					response.StatusCode,
+					response.ReasonPhrase
+				);
 				return [];
 			}
 
@@ -109,8 +108,12 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 			using var response = await _transport.GetAsync(asset.BrowserDownloadUrl, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
-				_logger.LogDebug("Failed to download asset {AssetName}. Status: {StatusCode}, Reason: {ReasonPhrase}",
-					asset.Name, response.StatusCode, response.ReasonPhrase);
+				_logger.LogDebug(
+					"Failed to download asset {AssetName}. Status: {StatusCode}, Reason: {ReasonPhrase}",
+					asset.Name,
+					response.StatusCode,
+					response.ReasonPhrase
+				);
 				return null;
 			}
 
@@ -135,8 +138,11 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 		using var response = await _transport.GetAsync(url, ctx);
 		if (!response.IsSuccessStatusCode)
 		{
-			_logger.LogDebug("Failed to fetch release info. Status: {StatusCode}, Reason: {ReasonPhrase}",
-				response.StatusCode, response.ReasonPhrase);
+			_logger.LogDebug(
+				"Failed to fetch release info. Status: {StatusCode}, Reason: {ReasonPhrase}",
+				response.StatusCode,
+				response.ReasonPhrase
+			);
 			return null;
 		}
 
@@ -152,22 +158,23 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 		return ToReleaseInfo(releaseData);
 	}
 
-	private static GitHubReleaseInfo ToReleaseInfo(GitHubReleaseResponse releaseData) => new()
-	{
-		TagName = releaseData.TagName ?? string.Empty,
-		Name = releaseData.Name ?? string.Empty,
-		Body = releaseData.Body ?? string.Empty,
-		Prerelease = releaseData.Prerelease,
-		Draft = releaseData.Draft,
-		HtmlUrl = releaseData.HtmlUrl ?? string.Empty,
-		PublishedAt = releaseData.PublishedAt,
-		Assets = releaseData.Assets is { Count: > 0 }
-			? releaseData.Assets
-				.Where(a => a is { Name: not null, BrowserDownloadUrl: not null })
-				.Select(a => new GitHubReleaseAsset { Name = a.Name!, BrowserDownloadUrl = a.BrowserDownloadUrl! })
-				.ToArray()
-			: []
-	};
+	private static GitHubReleaseInfo ToReleaseInfo(GitHubReleaseResponse releaseData) =>
+		new()
+		{
+			TagName = releaseData.TagName ?? string.Empty,
+			Name = releaseData.Name ?? string.Empty,
+			Body = releaseData.Body ?? string.Empty,
+			Prerelease = releaseData.Prerelease,
+			Draft = releaseData.Draft,
+			HtmlUrl = releaseData.HtmlUrl ?? string.Empty,
+			PublishedAt = releaseData.PublishedAt,
+			Assets = releaseData.Assets is { Count: > 0 }
+				? releaseData.Assets
+					.Where(a => a is { Name: not null, BrowserDownloadUrl: not null })
+					.Select(a => new GitHubReleaseAsset { Name = a.Name!, BrowserDownloadUrl = a.BrowserDownloadUrl! })
+					.ToArray()
+				: []
+		};
 
 	private sealed class GitHubReleaseAssetResponse
 	{

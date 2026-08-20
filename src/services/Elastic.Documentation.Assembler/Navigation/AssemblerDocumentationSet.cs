@@ -53,11 +53,7 @@ public record AssemblerDocumentationSet
 			Branch = checkout.Repository.GetBranch(env.ContentSource)
 		};
 
-		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions
-		{
-			Output = output,
-			Git = gitConfiguration,
-		});
+		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { Output = output, Git = gitConfiguration, });
 		var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
 		{
 			AvailableExporters = availableExporters,
@@ -72,12 +68,10 @@ public record AssemblerDocumentationSet
 				Preview = env.GoogleTagManager.Preview,
 				CookiesWin = env.GoogleTagManager.CookiesWin
 			},
-			Optimizely = new OptimizelyConfiguration
-			{
-				Enabled = env.Optimizely.Enabled,
-				Id = env.Optimizely.Id
-			},
-			CanonicalBaseUrl = new Uri("https://www.elastic.co"), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
+			Optimizely = new OptimizelyConfiguration { Enabled = env.Optimizely.Enabled, Id = env.Optimizely.Id },
+			CanonicalBaseUrl =
+				new Uri("https://www.elastic.co"), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
+
 			BuildType = BuildType.Assembler
 		};
 		BuildContext = buildContext;

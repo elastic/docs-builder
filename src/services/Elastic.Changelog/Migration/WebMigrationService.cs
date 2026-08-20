@@ -107,7 +107,12 @@ public class WebMigrationService(
 	/// emitted) when the product fails before the upload phase — the caller continues with the
 	/// remaining products and fails the run at the end.
 	/// </summary>
-	private async Task<List<MigrationKeyResult>?> MigrateProduct(IDiagnosticsCollector collector, MigrateFromWebArguments args, MigrateFromWebScope scope, Cancel ctx)
+	private async Task<List<MigrationKeyResult>?> MigrateProduct(
+		IDiagnosticsCollector collector,
+		MigrateFromWebArguments args,
+		MigrateFromWebScope scope,
+		Cancel ctx
+	)
 	{
 		var sourceUrl = $"https://raw.githubusercontent.com/{scope.Owner}/{scope.Repo}/{scope.Ref}/{scope.Path}";
 		var markdown = await FetchMarkdown(collector, sourceUrl, ctx);
@@ -117,7 +122,10 @@ public class WebMigrationService(
 		var releases = ReleaseNotesPageParser.Parse(collector, markdown, sourceUrl, scope);
 		if (releases.Count == 0)
 		{
-			collector.EmitError(sourceUrl, $"No release sections were parsed from the published release notes for '{scope.ProductId}'; refusing to continue with an empty scope.");
+			collector.EmitError(
+				sourceUrl,
+				$"No release sections were parsed from the published release notes for '{scope.ProductId}'; refusing to continue with an empty scope."
+			);
 			return null;
 		}
 
@@ -146,7 +154,10 @@ public class WebMigrationService(
 			using var response = await client.GetAsync(sourceUrl, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
-				collector.EmitError(sourceUrl, $"Fetching published release notes failed with HTTP {(int)response.StatusCode} ({response.StatusCode}).");
+				collector.EmitError(
+					sourceUrl,
+					$"Fetching published release notes failed with HTTP {(int)response.StatusCode} ({response.StatusCode})."
+				);
 				return null;
 			}
 
@@ -167,7 +178,8 @@ public class WebMigrationService(
 	private static (List<MigratedRelease> InScope, List<MigrationKeyResult> Results) ApplyScopeFilters(
 		IReadOnlyList<MigratedRelease> releases,
 		MigrateFromWebScope scope,
-		IReadOnlyList<string> versions)
+		IReadOnlyList<string> versions
+	)
 	{
 		var cutoff = VersionOrDate.Parse(scope.Cutoff);
 		var selection = versions.Count > 0 ? new HashSet<string>(versions, StringComparer.OrdinalIgnoreCase) : null;
@@ -202,7 +214,11 @@ public class WebMigrationService(
 	/// the local single-part ETag used to distinguish identical from divergent remote content.
 	/// </summary>
 	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms", Justification = "MD5 matches the S3 single-part ETag, used for content comparison only")]
-	private List<StagedBundle> StageBundles(IDiagnosticsCollector collector, MigrateFromWebScope scope, IReadOnlyList<MigratedRelease> releases)
+	private List<StagedBundle> StageBundles(
+		IDiagnosticsCollector collector,
+		MigrateFromWebScope scope,
+		IReadOnlyList<MigratedRelease> releases
+	)
 	{
 		var stagingDir = _fileSystem.Path.Join(_fileSystem.Path.GetTempPath(), "docs-builder-migrate-from-web", scope.ProductId);
 		var staged = new List<StagedBundle>(releases.Count);
@@ -232,12 +248,17 @@ public class WebMigrationService(
 	private async Task<List<MigrationKeyResult>> UploadCreateOnly(
 		MigrateFromWebArguments args,
 		IReadOnlyList<StagedBundle> staged,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// A credential-free dry run: without a bucket there is nothing to compare against, so every
 		// in-scope key is reported as would-create.
 		if (args.DryRun && string.IsNullOrWhiteSpace(args.S3BucketName))
-			return [.. staged.Select(s => new MigrationKeyResult(s.Key, OutcomeWouldCreate, s.LocalETag, "no bucket specified; existence not checked"))];
+			return [
+				.. staged.Select(
+					s => new MigrationKeyResult(s.Key, OutcomeWouldCreate, s.LocalETag, "no bucket specified; existence not checked")
+				)
+			];
 
 		using var defaultClient = s3Client is null ? new AmazonS3Client() : null;
 		var client = s3Client ?? defaultClient!;
@@ -293,11 +314,7 @@ public class WebMigrationService(
 	{
 		try
 		{
-			var response = await client.GetObjectMetadataAsync(new GetObjectMetadataRequest
-			{
-				BucketName = bucketName,
-				Key = key
-			}, ctx);
+			var response = await client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = bucketName, Key = key }, ctx);
 			return response.ETag.Trim('"');
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -330,18 +347,23 @@ public class WebMigrationService(
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"- product: `{scope.ProductId}`");
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"- source: `{scope.Owner}/{scope.Repo}@{scope.Ref}` `{scope.Path}`");
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"- cutoff: `{scope.Cutoff}`");
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"- mode: {(args.DryRun ? "dry-run (no S3 writes)" : $"upload to `{args.S3BucketName}`")}");
+		_ =
+			sb.AppendLine(
+				CultureInfo.InvariantCulture,
+				$"- mode: {(args.DryRun ? "dry-run (no S3 writes)" : $"upload to `{args.S3BucketName}`")}"
+			);
 		_ = sb.AppendLine();
 		_ = sb.AppendLine("| key | outcome | etag | detail |");
 		_ = sb.AppendLine("|---|---|---|---|");
 
 		foreach (var result in results.OrderBy(r => r.Key, StringComparer.Ordinal))
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"| `{result.Key}` | {result.Outcome} | {(result.ETag is null ? "" : $"`{result.ETag}`")} | {result.Detail} |");
+			_ =
+				sb.AppendLine(
+					CultureInfo.InvariantCulture,
+					$"| `{result.Key}` | {result.Outcome} | {(result.ETag is null ? "" : $"`{result.ETag}`")} | {result.Detail} |"
+				);
 
-		var counts = results
-			.GroupBy(r => r.Outcome)
-			.OrderBy(g => g.Key, StringComparer.Ordinal)
-			.Select(g => $"{g.Key} {g.Count()}");
+		var counts = results.GroupBy(r => r.Outcome).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => $"{g.Key} {g.Count()}");
 		_ = sb.AppendLine();
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"totals: {string.Join(", ", counts)}");
 		return sb.ToString();

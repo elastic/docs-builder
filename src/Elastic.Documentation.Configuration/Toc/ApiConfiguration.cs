@@ -185,6 +185,9 @@ public class ResolvedApiConfiguration
 	public IEnumerable<string> GetMarkdownPathsToExclude(string documentationSourceDirectoryFullName)
 	{
 		foreach (var file in Children)
-			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
+			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(
+				Path.DirectorySeparatorChar,
+				'/'
+			);
 	}
 }

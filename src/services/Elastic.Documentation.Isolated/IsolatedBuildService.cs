@@ -81,11 +81,10 @@ public class IsolatedBuildService(
 
 		try
 		{
-			var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions
-			{
-				Output = options.Output?.FullName,
-				InnerWrite = writeFileSystem
-			});
+			var docFs = DocumentationFileSystem.Resolve(
+				path,
+				new DocumentationScopeOptions { Output = options.Output?.FullName, InnerWrite = writeFileSystem }
+			);
 			context = new BuildContext(collector, docFs, configurationContext)
 			{
 				AvailableExporters = exporters,
@@ -112,8 +111,10 @@ public class IsolatedBuildService(
 			// cause is a real bug — not the stale-merge-commit case this catch was written for —
 			// the --git-dir remedy in e.Message actually reaches whoever is reading the failed run,
 			// rather than being buried above a later, unrelated artifact-upload failure.
-			_logger.LogWarning("Skipping build on CI: {Message} If the docs folder is not actually out of date on a stale merge commit, this indicates a real path-resolution issue.",
-				e.Message);
+			_logger.LogWarning(
+				"Skipping build on CI: {Message} If the docs folder is not actually out of date on a stale merge commit, this indicates a real path-resolution issue.",
+				e.Message
+			);
 
 			await githubActionsService.SetOutputAsync("skip", "true");
 			return true;
@@ -137,7 +138,8 @@ public class IsolatedBuildService(
 			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
 				logFactory,
 				context.Configuration,
-				codexLinkIndexReader: codexReader);
+				codexLinkIndexReader: codexReader
+			);
 			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
 			IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 				? new CodexAwareUriResolver(crossLinks.CodexRepositories)
@@ -158,15 +160,22 @@ public class IsolatedBuildService(
 			context.VersionsConfiguration,
 			context.LegacyUrlMappings,
 			set.Configuration,
-			context.Git);
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context,
-			branded: context.Configuration.Branding is not null);
+			context.Git
+		);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, branded: context.Configuration.Branding is not null);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
-
-		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray(), documentInferrer: documentInferrer);
+		var generator = new DocumentationGenerator(
+			set,
+			logFactory,
+			set,
+			null,
+			null,
+			markdownExporters.ToArray(),
+			documentInferrer: documentInferrer
+		);
 		_ = await generator.GenerateAll(ctx);
 
 		if (!skipOpenApi)

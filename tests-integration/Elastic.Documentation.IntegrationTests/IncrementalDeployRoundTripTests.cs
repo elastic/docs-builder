@@ -83,17 +83,21 @@ public class IncrementalDeployRoundTripTests
 	/// The delete ratio (1/6 ≈ 17 %) is below the enforced 0.8 floor for small sync sets, so
 	/// <c>deleteThreshold: 1.0f</c> is passed to allow any deletion ratio.
 	/// </remarks>
-	private static (MockFileSystem fs, IAmazonS3 s3, ITransferUtility xfer, ICoreService gh, IncrementalDeployService svc)
-		Arrange(string outputDir)
+	private static (MockFileSystem fs, IAmazonS3 s3, ITransferUtility xfer, ICoreService gh, IncrementalDeployService svc) Arrange(
+		string outputDir
+	)
 	{
-		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ Path.Join(outputDir, "docs/add1.md"), new MockFileData("# New Document 1") },
-			{ Path.Join(outputDir, "docs/add2.md"), new MockFileData("# New Document 2") },
-			{ Path.Join(outputDir, "docs/add3.md"), new MockFileData("# New Document 3") },
-			{ Path.Join(outputDir, "docs/skip.md"), new MockFileData("# Skipped Document") },
-			{ Path.Join(outputDir, "docs/update.md"), new MockFileData("# Existing Document") },
-		}, new MockFileSystemOptions { CurrentDirectory = outputDir });
+		var fs = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ Path.Join(outputDir, "docs/add1.md"), new MockFileData("# New Document 1") },
+				{ Path.Join(outputDir, "docs/add2.md"), new MockFileData("# New Document 2") },
+				{ Path.Join(outputDir, "docs/add3.md"), new MockFileData("# New Document 3") },
+				{ Path.Join(outputDir, "docs/skip.md"), new MockFileData("# Skipped Document") },
+				{ Path.Join(outputDir, "docs/update.md"), new MockFileData("# Existing Document") },
+			},
+			new MockFileSystemOptions { CurrentDirectory = outputDir }
+		);
 
 		var s3 = A.Fake<IAmazonS3>();
 		var xfer = A.Fake<ITransferUtility>();
@@ -102,24 +106,23 @@ public class IncrementalDeployRoundTripTests
 		// Mocked ETag calculator: skip.md returns SkipETag (matches remote → skip);
 		// all other files return AnyOtherETag (remote has "stale-etag" → update).
 		var etagCalculator = A.Fake<IS3EtagCalculator>();
-		A.CallTo(() => etagCalculator.CalculateS3ETag(A<string>.That.EndsWith("skip.md"), A<Cancel>._))
-			.Returns(SkipETag);
-		A.CallTo(() => etagCalculator.CalculateS3ETag(A<string>.That.Not.EndsWith("skip.md"), A<Cancel>._))
-			.Returns(AnyOtherETag);
+		A.CallTo(() => etagCalculator.CalculateS3ETag(A<string>.That.EndsWith("skip.md"), A<Cancel>._)).Returns(SkipETag);
+		A.CallTo(() => etagCalculator.CalculateS3ETag(A<string>.That.Not.EndsWith("skip.md"), A<Cancel>._)).Returns(AnyOtherETag);
 
-		A.CallTo(() => s3.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
-			.Returns(new ListObjectsV2Response
-			{
-				S3Objects =
-				[
-					new S3Object { Key = "docs/delete.md" },
-					new S3Object { Key = "docs/skip.md", ETag = $"\"{SkipETag}\"" },
-					new S3Object { Key = "docs/update.md", ETag = "\"stale-etag\"" },
-				]
-			});
+		A.CallTo(() => s3.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._)).Returns(new ListObjectsV2Response
+		{
+			S3Objects =
+			[
+				new S3Object { Key = "docs/delete.md" },
+				new S3Object { Key = "docs/skip.md", ETag = $"\"{SkipETag}\"" },
+				new S3Object { Key = "docs/update.md", ETag = "\"stale-etag\"" },
+			]
+		});
 
-		A.CallTo(() => s3.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
-			.Returns(new DeleteObjectsResponse { HttpStatusCode = System.Net.HttpStatusCode.OK });
+		A.CallTo(() => s3.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._)).Returns(new DeleteObjectsResponse
+		{
+			HttpStatusCode = System.Net.HttpStatusCode.OK
+		});
 
 		var svc = new IncrementalDeployService(new LoggerFactory(), gh, s3, xfer, etagCalculator);
 		return (fs, s3, xfer, gh, svc);
@@ -132,22 +135,26 @@ public class IncrementalDeployRoundTripTests
 		ICoreService gh,
 		IncrementalDeployService svc,
 		IDocsSyncContext context,
-		string outputDir)
+		string outputDir
+	)
 	{
 		// Capture the files passed to the upload call
 		var transferredFiles = Array.Empty<string>();
-		A.CallTo(() => xfer.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
-			.Invokes((TransferUtilityUploadDirectoryRequest request, Cancel _) =>
-			{
-				transferredFiles = fs.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
-			});
+		A.CallTo(() => xfer.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).Invokes((
+			TransferUtilityUploadDirectoryRequest request,
+			Cancel _
+		) =>
+		{
+			transferredFiles = fs.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
+		});
 
 		var planPath = Path.Join(outputDir, "sync-plan.json");
 
 		// Act — Plan
 		// deleteThreshold: 1.0 permits any delete ratio (needed because the validator
 		// enforces a 0.8 floor for small sync sets where TotalSyncRequests < 100)
-		var planOk = await svc.Plan(context.Collector, context, "fake-bucket", planPath, deleteThreshold: 1.0f, excludePatterns: [], Cancel.None);
+		var planOk =
+			await svc.Plan(context.Collector, context, "fake-bucket", planPath, deleteThreshold: 1.0f, excludePatterns: [], Cancel.None);
 		planOk.Should().BeTrue("plan should succeed with valid file mix");
 		fs.File.Exists(planPath).Should().BeTrue("plan JSON must be written to the mock filesystem");
 
@@ -159,19 +166,18 @@ public class IncrementalDeployRoundTripTests
 		A.CallTo(() => gh.SetOutputAsync("plan-valid", "true")).MustHaveHappenedOnceExactly();
 
 		// Assert — uploads: 3 adds + 1 update; skip.md and remote-only delete.md not uploaded
-		transferredFiles.Select(Path.GetFileName).Should()
-			.BeEquivalentTo(["add1.md", "add2.md", "add3.md", "update.md"],
-				"skip.md is unchanged (ETag matches) so it is not re-uploaded");
+		transferredFiles.Select(Path.GetFileName)
+			.Should()
+			.BeEquivalentTo(["add1.md", "add2.md", "add3.md", "update.md"], "skip.md is unchanged (ETag matches) so it is not re-uploaded");
 
 		// Assert — deletes: exactly one S3 delete call for docs/delete.md
-		A.CallTo(() => s3.DeleteObjectsAsync(
-				A<DeleteObjectsRequest>.That.Matches(r => r.Objects.Any(o => o.Key == "docs/delete.md")),
-				A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() =>
+				s3.DeleteObjectsAsync(A<DeleteObjectsRequest>.That.Matches(r => r.Objects.Any(o => o.Key == "docs/delete.md")), A<Cancel>._)
+		).MustHaveHappenedOnceExactly();
 
 		// Assert — uploads called once
-		A.CallTo(() => xfer.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => xfer.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 }
 
@@ -195,10 +201,10 @@ public class IncrementalDeployExcludeTests
 		var outputDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
 
 		// Local build output: one regular page, nothing under _preview/
-		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ Path.Join(outputDir, "docs/page.md"), new MockFileData("# Page") },
-		}, new MockFileSystemOptions { CurrentDirectory = outputDir });
+		var fs = new MockFileSystem(
+			new Dictionary<string, MockFileData> { { Path.Join(outputDir, "docs/page.md"), new MockFileData("# Page") }, },
+			new MockFileSystemOptions { CurrentDirectory = outputDir }
+		);
 
 		var s3 = A.Fake<IAmazonS3>();
 		var xfer = A.Fake<ITransferUtility>();
@@ -208,20 +214,21 @@ public class IncrementalDeployExcludeTests
 		A.CallTo(() => etagCalculator.CalculateS3ETag(A<string>._, A<Cancel>._)).Returns(AnyOtherETag);
 
 		// Remote has both a regular page (stale) and a preview object that lives alongside codex output
-		A.CallTo(() => s3.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
-			.Returns(new ListObjectsV2Response
-			{
-				S3Objects =
-				[
-					new S3Object { Key = "docs/page.md", ETag = "\"stale-etag\"" },
-					new S3Object { Key = "_preview/pr-42/index.html" },
-					new S3Object { Key = "403/index.html" },
-					new S3Object { Key = "404/index.html" },
-				]
-			});
+		A.CallTo(() => s3.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._)).Returns(new ListObjectsV2Response
+		{
+			S3Objects =
+			[
+				new S3Object { Key = "docs/page.md", ETag = "\"stale-etag\"" },
+				new S3Object { Key = "_preview/pr-42/index.html" },
+				new S3Object { Key = "403/index.html" },
+				new S3Object { Key = "404/index.html" },
+			]
+		});
 
-		A.CallTo(() => s3.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
-			.Returns(new DeleteObjectsResponse { HttpStatusCode = System.Net.HttpStatusCode.OK });
+		A.CallTo(() => s3.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._)).Returns(new DeleteObjectsResponse
+		{
+			HttpStatusCode = System.Net.HttpStatusCode.OK
+		});
 
 		var svc = new IncrementalDeployService(new LoggerFactory(), gh, s3, xfer, etagCalculator);
 		var collector = new DiagnosticsCollector([]);
@@ -231,14 +238,16 @@ public class IncrementalDeployExcludeTests
 		var context = new CodexContext(codexConfig, configFile, collector, codexFs2, null, outputDir);
 
 		var planPath = Path.Join(outputDir, "sync-plan.json");
-		var planOk = await svc.Plan(
-			context.Collector,
-			context,
-			"fake-bucket",
-			planPath,
-			deleteThreshold: 1.0f,
-			excludePatterns: ["_preview/*", "403/*", "404/*"],
-			Cancel.None);
+		var planOk =
+			await svc.Plan(
+				context.Collector,
+				context,
+				"fake-bucket",
+				planPath,
+				deleteThreshold: 1.0f,
+				excludePatterns: ["_preview/*", "403/*", "404/*"],
+				Cancel.None
+			);
 		planOk.Should().BeTrue("plan should succeed");
 
 		var applyOk = await svc.Apply(context.Collector, context, "fake-bucket", planPath, Cancel.None);
@@ -247,27 +256,46 @@ public class IncrementalDeployExcludeTests
 		// The plan must not contain deletions for any excluded key
 		var planJson = fs.File.ReadAllText(planPath);
 		var plan = SyncPlan.Deserialize(planJson);
-		plan.DeleteRequests.Should().NotContain(r => r.DestinationPath.StartsWith("_preview/", StringComparison.Ordinal),
-			"excluded _preview/* objects must not be queued for deletion");
-		plan.DeleteRequests.Should().NotContain(r => r.DestinationPath.StartsWith("403/", StringComparison.Ordinal),
-			"excluded 403/* objects must not be queued for deletion");
-		plan.DeleteRequests.Should().NotContain(r => r.DestinationPath.StartsWith("404/", StringComparison.Ordinal),
-			"excluded 404/* objects must not be queued for deletion");
+		plan.DeleteRequests
+			.Should()
+			.NotContain(
+				r => r.DestinationPath.StartsWith("_preview/", StringComparison.Ordinal),
+				"excluded _preview/* objects must not be queued for deletion"
+			);
+		plan.DeleteRequests
+			.Should()
+			.NotContain(
+				r => r.DestinationPath.StartsWith("403/", StringComparison.Ordinal),
+				"excluded 403/* objects must not be queued for deletion"
+			);
+		plan.DeleteRequests
+			.Should()
+			.NotContain(
+				r => r.DestinationPath.StartsWith("404/", StringComparison.Ordinal),
+				"excluded 404/* objects must not be queued for deletion"
+			);
 
 		// docs/page.md is not excluded so it should be an update (stale ETag)
 		plan.UpdateRequests.Should().Contain(r => r.DestinationPath == "docs/page.md");
 
 		// No S3 delete calls should include excluded prefixes
-		A.CallTo(() => s3.DeleteObjectsAsync(
-				A<DeleteObjectsRequest>.That.Matches(r => r.Objects.Any(o =>
-					o.Key.StartsWith("_preview/", StringComparison.Ordinal) ||
-					o.Key.StartsWith("403/", StringComparison.Ordinal) ||
-					o.Key.StartsWith("404/", StringComparison.Ordinal))),
-				A<Cancel>._))
-			.MustNotHaveHappened();
+		A.CallTo(
+			() =>
+				s3.DeleteObjectsAsync(
+					A<DeleteObjectsRequest>.That.Matches(
+						r =>
+							r.Objects.Any(
+								o =>
+									o.Key.StartsWith("_preview/", StringComparison.Ordinal) ||
+										o.Key.StartsWith("403/", StringComparison.Ordinal) ||
+										o.Key.StartsWith("404/", StringComparison.Ordinal)
+							)
+					),
+					A<Cancel>._
+				)
+		).MustNotHaveHappened();
 
 		// Excluded patterns are recorded in the plan file
-		plan.ExcludePatterns.Should().BeEquivalentTo(["_preview/*", "403/*", "404/*"],
-			"plan must record which patterns were excluded");
+		plan.ExcludePatterns.Should().BeEquivalentTo(["_preview/*", "403/*", "404/*"], "plan must record which patterns were excluded");
 	}
 }

@@ -26,44 +26,45 @@ public static class DocumentationTooling
 {
 	public static TBuilder AddDocumentationToolingDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
 	{
-		_ = builder.Services
-			.AddGitHubActionsCore()
-			.AddSingleton<IEnvironmentVariables>(SystemEnvironmentVariables.Instance)
-			.AddSingleton<DiagnosticsChannel>()
-			.AddServiceDiscovery()
-			.ConfigureHttpClientDefaults(static client =>
-			{
-				_ = client.AddServiceDiscovery();
-			})
-			.AddSingleton<IDiagnosticsCollector>(sp =>
-			{
-				var logFactory = sp.GetRequiredService<ILoggerFactory>();
-				var githubActionsService = sp.GetRequiredService<ICoreService>();
-				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
-			})
-			.AddSingleton(_ =>
-			{
-				var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
-				return endpoints;
-			})
-			.AddSingleton<IConfigurationContext>(sp =>
-			{
-				var endpoints = sp.GetRequiredService<DocumentationEndpoints>();
-				var configurationFileProvider = sp.GetRequiredService<ConfigurationFileProvider>();
-				var versionsConfiguration = sp.GetRequiredService<VersionsConfiguration>();
-				var products = sp.GetRequiredService<ProductsConfiguration>();
-				var legacyUrlMappings = sp.GetRequiredService<LegacyUrlMappingConfiguration>();
-				var search = sp.GetRequiredService<SearchConfiguration>();
-				return new ConfigurationContext
+		_ =
+			builder.Services
+				.AddGitHubActionsCore()
+				.AddSingleton<IEnvironmentVariables>(SystemEnvironmentVariables.Instance)
+				.AddSingleton<DiagnosticsChannel>()
+				.AddServiceDiscovery()
+				.ConfigureHttpClientDefaults(static client =>
 				{
-					ConfigurationFileProvider = configurationFileProvider,
-					VersionsConfiguration = versionsConfiguration,
-					Endpoints = endpoints,
-					ProductsConfiguration = products,
-					LegacyUrlMappings = legacyUrlMappings,
-					SearchConfiguration = search
-				};
-			});
+					_ = client.AddServiceDiscovery();
+				})
+				.AddSingleton<IDiagnosticsCollector>(sp =>
+				{
+					var logFactory = sp.GetRequiredService<ILoggerFactory>();
+					var githubActionsService = sp.GetRequiredService<ICoreService>();
+					return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
+				})
+				.AddSingleton(_ =>
+				{
+					var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
+					return endpoints;
+				})
+				.AddSingleton<IConfigurationContext>(sp =>
+				{
+					var endpoints = sp.GetRequiredService<DocumentationEndpoints>();
+					var configurationFileProvider = sp.GetRequiredService<ConfigurationFileProvider>();
+					var versionsConfiguration = sp.GetRequiredService<VersionsConfiguration>();
+					var products = sp.GetRequiredService<ProductsConfiguration>();
+					var legacyUrlMappings = sp.GetRequiredService<LegacyUrlMappingConfiguration>();
+					var search = sp.GetRequiredService<SearchConfiguration>();
+					return new ConfigurationContext
+					{
+						ConfigurationFileProvider = configurationFileProvider,
+						VersionsConfiguration = versionsConfiguration,
+						Endpoints = endpoints,
+						ProductsConfiguration = products,
+						LegacyUrlMappings = legacyUrlMappings,
+						SearchConfiguration = search
+					};
+				});
 
 		return builder;
 	}

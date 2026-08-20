@@ -35,10 +35,7 @@ public class ElasticsearchClientAccessor : IDisposable
 	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; }
 	public IReadOnlyCollection<string> DiminishTerms { get; }
 
-	public ElasticsearchClientAccessor(
-		DocumentationEndpoints endpoints,
-		SearchConfiguration searchConfiguration
-	)
+	public ElasticsearchClientAccessor(DocumentationEndpoints endpoints, SearchConfiguration searchConfiguration)
 	{
 		var endpoint = endpoints.Elasticsearch;
 		Endpoint = endpoint;
@@ -50,37 +47,29 @@ public class ElasticsearchClientAccessor : IDisposable
 			.CreateContext(type: endpoints.BuildType, env: endpoints.Environment)
 			.ResolveReadTarget();
 
-		SearchIndex = !string.IsNullOrEmpty(endpoints.SearchIndexOverride)
-			? endpoints.SearchIndexOverride
-			: computedIndex;
+		SearchIndex = !string.IsNullOrEmpty(endpoints.SearchIndexOverride) ? endpoints.SearchIndexOverride : computedIndex;
 
-		RulesetName = searchConfiguration.Rules.Count > 0
-			? $"docs-ruleset-{endpoints.BuildType}-{endpoints.Environment}"
-			: null;
+		RulesetName = searchConfiguration.Rules.Count > 0 ? $"docs-ruleset-{endpoints.BuildType}-{endpoints.Environment}" : null;
 
 		_nodePool = new SingleNodePool(endpoint.Uri);
 		var auth = endpoint.ApiKey is { } apiKey
 			? (AuthorizationHeader)new ApiKey(apiKey)
-			: endpoint is { Username: { } username, Password: { } password }
-				? new BasicAuthentication(username, password)
-				: null!;
+			: endpoint is { Username: { } username, Password: { } password } ? new BasicAuthentication(username, password) : null!;
 
-		_clientSettings = new ElasticsearchClientSettings(
+		_clientSettings =
+			new ElasticsearchClientSettings(
 				_nodePool,
-				sourceSerializer: (_, settings) => new DefaultSourceSerializer(
-					settings,
-					ElasticsearchClientJsonResolver.Default
-					)
-				)
-			.DefaultIndex(SearchIndex)
-			.Authentication(auth)
-			// Unlimited connections so a load surge actually reaches the (serverless) cluster and lets it
-			// autoscale, instead of self-throttling to the transport default (80) and parking requests in
-			// connection-pool wait. The RequestTimeout below is what bounds peak in-flight sockets.
-			.ConnectionLimit(-1)
-			// Fail-fast: the transport default (60s) lets a cold/slow query hang and hold a connection;
-			// 20s sheds genuinely stuck requests while still allowing for serverless cold-start latency.
-			.RequestTimeout(TimeSpan.FromSeconds(20));
+				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, ElasticsearchClientJsonResolver.Default)
+			)
+				.DefaultIndex(SearchIndex)
+				.Authentication(auth)
+				// Unlimited connections so a load surge actually reaches the (serverless) cluster and lets it
+				// autoscale, instead of self-throttling to the transport default (80) and parking requests in
+				// connection-pool wait. The RequestTimeout below is what bounds peak in-flight sockets.
+				.ConnectionLimit(-1)
+				// Fail-fast: the transport default (60s) lets a cold/slow query hang and hold a connection;
+				// 20s sheds genuinely stuck requests while still allowing for serverless cold-start latency.
+				.RequestTimeout(TimeSpan.FromSeconds(20));
 
 		Client = new ElasticsearchClient(_clientSettings);
 	}

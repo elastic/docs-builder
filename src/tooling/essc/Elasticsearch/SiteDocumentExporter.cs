@@ -69,13 +69,11 @@ internal sealed class SiteDocumentExporter : IDisposable
 		var synonymSetName = $"docs-assembler-{environment}";
 		var indexTimeSynonyms = IndexTimeSynonyms.Docs;
 
-		var lexicalContext = SiteMappingContext.SiteDocument
-			.CreateContext(type: buildType, env: environment) with
+		var lexicalContext = SiteMappingContext.SiteDocument.CreateContext(type: buildType, env: environment) with
 		{
 			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
-		var semanticContext = SiteMappingContext.SiteDocumentSemantic
-			.CreateContext(type: buildType, env: environment) with
+		var semanticContext = SiteMappingContext.SiteDocumentSemantic.CreateContext(type: buildType, env: environment) with
 		{
 			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
@@ -87,7 +85,10 @@ internal sealed class SiteDocumentExporter : IDisposable
 			var infra = provider.CreateInfrastructure($"{semanticContext.IndexStrategy!.WriteTarget}-ai-cache");
 			_logger.LogInformation(
 				"AI enrichment enabled — pipeline: {Pipeline}, policy: {Policy}, lookup: {Lookup}",
-				infra.PipelineName, infra.EnrichPolicyName, infra.LookupIndexName);
+				infra.PipelineName,
+				infra.EnrichPolicyName,
+				infra.LookupIndexName
+			);
 
 			semanticContext = semanticContext with
 			{
@@ -106,7 +107,11 @@ internal sealed class SiteDocumentExporter : IDisposable
 				var decision = info.RolledOver ? "NEW" : "EXISTING";
 				_logger.LogInformation(
 					"[{Label}] bootstrap decision: targeting {Decision} index (localHash={LocalHash}, remoteHash={RemoteHash})",
-					info.Label, decision, info.LocalHash, info.RemoteHash);
+					info.Label,
+					decision,
+					info.LocalHash,
+					info.RemoteHash
+				);
 				if (info.Label == "primary")
 					_primaryRolledOver = info.RolledOver;
 				else
@@ -118,7 +123,15 @@ internal sealed class SiteDocumentExporter : IDisposable
 			{
 				_logger.LogInformation(
 					"[{Label}] total={Total} created={Created} updated={Updated} deleted={Deleted} noops={Noops} versionConflicts={VersionConflicts} completed={IsCompleted}",
-					label, p.Total, p.Created, p.Updated, p.Deleted, p.Noops, p.VersionConflicts, p.IsCompleted);
+					label,
+					p.Total,
+					p.Created,
+					p.Updated,
+					p.Deleted,
+					p.Noops,
+					p.VersionConflicts,
+					p.IsCompleted
+				);
 				if (p.Error is { } err)
 					_logger.LogError("[{Label}] reindex error: {Error}", label, err);
 				var processed = p.Created + p.Updated + p.Deleted + p.Noops;
@@ -133,23 +146,28 @@ internal sealed class SiteDocumentExporter : IDisposable
 			{
 				_logger.LogInformation(
 					"[{Label}] total={Total} deleted={Deleted} completed={IsCompleted}",
-					label, p.Total, p.Deleted, p.IsCompleted);
+					label,
+					p.Total,
+					p.Deleted,
+					p.IsCompleted
+				);
 				OnSyncProgress?.Invoke(new SyncProgressInfo($"Delete by query — {label}", p.Total, p.Deleted, p.IsCompleted));
 			},
 			OnPostComplete = _aiEnrichment is not null ? OnPostCompleteAiAsync : null
 		};
 
 		var validator = new SearchResourceValidator(transport, _logger);
-		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
-		{
-			await validator.ValidateAsync(environment, ct);
-			if (_aiEnrichment is not null)
+		_ =
+			_orchestrator.AddPreBootstrapTask(async (_, ct) =>
 			{
-				_logger.LogInformation("Initializing AI enrichment infrastructure...");
-				await _aiEnrichment.InitializeAsync(ct);
-				_logger.LogInformation("AI enrichment infrastructure ready");
-			}
-		});
+				await validator.ValidateAsync(environment, ct);
+				if (_aiEnrichment is not null)
+				{
+					_logger.LogInformation("Initializing AI enrichment infrastructure...");
+					await _aiEnrichment.InitializeAsync(ct);
+					_logger.LogInformation("AI enrichment infrastructure ready");
+				}
+			});
 	}
 
 	private Task OnPostCompleteAiAsync(OrchestratorContext<SiteDocument> context, ITransport _, CancellationToken ct) =>
@@ -159,7 +177,8 @@ internal sealed class SiteDocumentExporter : IDisposable
 			_postSyncAiBudget,
 			_logger,
 			ct,
-			p => OnSyncProgress?.Invoke(SyncProgressConsole.FromAiProgress(p)));
+			p => OnSyncProgress?.Invoke(SyncProgressConsole.FromAiProgress(p))
+		);
 
 	private void ConfigureChannelOptions(
 		string label,
@@ -181,8 +200,7 @@ internal sealed class SiteDocumentExporter : IDisposable
 		{
 			if (response.Items is null)
 			{
-				_logger.LogWarning("[{Label}] export response had no items: {DebugInfo}",
-					label, response.ApiCallDetails.DebugInformation);
+				_logger.LogWarning("[{Label}] export response had no items: {DebugInfo}", label, response.ApiCallDetails.DebugInformation);
 				return;
 			}
 			var sent = response.Items.Count;
@@ -190,8 +208,7 @@ internal sealed class SiteDocumentExporter : IDisposable
 			var indexed = label == "primary"
 				? Interlocked.Add(ref _primaryIndexed, sent - errors)
 				: Interlocked.Add(ref _secondaryIndexed, sent - errors);
-			_logger.LogInformation("[{Label}] indexed {Indexed} items. {Errors} errors. sent: {Sent} items",
-				label, indexed, errors, sent);
+			_logger.LogInformation("[{Label}] indexed {Indexed} items. {Errors} errors. sent: {Sent} items", label, indexed, errors, sent);
 			if (_isFinalizing)
 				OnSyncProgress?.Invoke(new SyncProgressInfo($"Flush — {label}", Total: 0, indexed, IsComplete: false));
 			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
@@ -212,8 +229,14 @@ internal sealed class SiteDocumentExporter : IDisposable
 			_ = Interlocked.Add(ref _rejectedCount, items.Count);
 			foreach (var (doc, responseItem) in items)
 			{
-				_logger.LogError("[{Label}] Server rejection: {Status} {Type} {Reason} for {Path}",
-					label, responseItem.Status, responseItem.Error?.Type, responseItem.Error?.Reason, doc.Path);
+				_logger.LogError(
+					"[{Label}] Server rejection: {Status} {Type} {Reason} for {Path}",
+					label,
+					responseItem.Status,
+					responseItem.Error?.Type,
+					responseItem.Error?.Reason,
+					doc.Path
+				);
 			}
 		};
 	}
@@ -226,13 +249,19 @@ internal sealed class SiteDocumentExporter : IDisposable
 
 		var primaryIndex = await IndexResolution.ResolveConcreteIndexAsync(_transport, context.PrimaryWriteAlias, ctx);
 		PrimaryBootstrap = new IndexBootstrapInfo(context.PrimaryWriteAlias, primaryIndex, _primaryRolledOver);
-		_logger.LogInformation("[primary] target index: {Index} (alias: {Alias})",
-			primaryIndex ?? "<unresolved>", context.PrimaryWriteAlias);
+		_logger.LogInformation(
+			"[primary] target index: {Index} (alias: {Alias})",
+			primaryIndex ?? "<unresolved>",
+			context.PrimaryWriteAlias
+		);
 
 		var secondaryIndex = await IndexResolution.ResolveConcreteIndexAsync(_transport, context.SecondaryWriteAlias, ctx);
 		SecondaryBootstrap = new IndexBootstrapInfo(context.SecondaryWriteAlias, secondaryIndex, _secondaryRolledOver);
-		_logger.LogInformation("[secondary] target index: {Index} (alias: {Alias})",
-			secondaryIndex ?? "<unresolved>", context.SecondaryWriteAlias);
+		_logger.LogInformation(
+			"[secondary] target index: {Index} (alias: {Alias})",
+			secondaryIndex ?? "<unresolved>",
+			context.SecondaryWriteAlias
+		);
 	}
 
 	public async Task ExportAsync(SiteDocument document, Cancel ct = default)
@@ -241,7 +270,6 @@ internal sealed class SiteDocumentExporter : IDisposable
 			return;
 		_ = await _orchestrator.WaitToWriteAsync(document, ct);
 	}
-
 
 	public async ValueTask FinalizeAsync(Cancel ctx = default)
 	{

@@ -25,7 +25,8 @@ public static class ReleaseNotesFixture
 	};
 
 	// language=markdown
-	public const string Markdown = """
+	public const string Markdown =
+		"""
 		---
 		navigation_title: EDOT Java
 		description: Release notes for Elastic Distribution of OpenTelemetry Java.

@@ -25,8 +25,7 @@ public static class VersionIndexBuilder
 
 		foreach (var key in keys)
 		{
-			if (!TryParseKey(key, out var repo, out var version, out var file) ||
-				!TryParseVersion(version, out var major, out var minor))
+			if (!TryParseKey(key, out var repo, out var version, out var file) || !TryParseVersion(version, out var major, out var minor))
 			{
 				invalidKeys.Add(key);
 				continue;
@@ -85,8 +84,10 @@ public static class VersionIndexBuilder
 
 		// NumberStyles.None, so a segment carrying a sign or surrounding whitespace cannot reach the index
 		// under a key that no longer matches the text it was parsed from.
-		if (!int.TryParse(version[..dot], NumberStyles.None, CultureInfo.InvariantCulture, out _) ||
-			!int.TryParse(version[(dot + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out minor))
+		if (
+			!int.TryParse(version[..dot], NumberStyles.None, CultureInfo.InvariantCulture, out _) ||
+			!int.TryParse(version[(dot + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out minor)
+		)
 			return false;
 
 		major = version[..dot];

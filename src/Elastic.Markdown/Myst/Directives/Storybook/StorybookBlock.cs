@@ -15,13 +15,11 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 	private static readonly TimeSpan RegistryFetchTimeout = TimeSpan.FromSeconds(30);
 
 	// Shared across all storybook directives to pool connections; PooledConnectionLifetime bounds DNS staleness in long-lived serve/watch runs.
-	private static readonly HttpClient RegistryHttpClient = new(
-		new SocketsHttpHandler
-		{
-			AutomaticDecompression = DecompressionMethods.All,
-			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-		}
-	)
+	private static readonly HttpClient RegistryHttpClient = new(new SocketsHttpHandler
+	{
+		AutomaticDecompression = DecompressionMethods.All,
+		PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+	})
 	{ Timeout = RegistryFetchTimeout };
 
 	public override string Directive => "storybook";
@@ -162,8 +160,8 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 		// yet, so degrade to the committed default. A committed/static registry (no env fallback) that fails to read is
 		// an authoring error and stays a hard error so typos and broken paths don't silently drop every embed.
 		var fallback = Build.Configuration.StorybookRegistryFallback;
-		var hasEnvironmentFallback = !string.IsNullOrWhiteSpace(fallback)
-			&& !string.Equals(fallback, rawRegistry, StringComparison.Ordinal);
+		var hasEnvironmentFallback = !string.IsNullOrWhiteSpace(fallback) &&
+			!string.Equals(fallback, rawRegistry, StringComparison.Ordinal);
 		if (!hasEnvironmentFallback)
 		{
 			this.EmitError($"storybook registry could not be read: {rawRegistry}", error);
@@ -233,20 +231,21 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 		var schemaVersion = RegistrySchemaVersion(registry.SchemaVersion);
 		if (!schemaVersion.Equals(SupportedRegistrySchemaVersion, StringComparison.Ordinal))
 		{
-			this.EmitError($"storybook registry schemaVersion '{schemaVersion}' is not supported. Expected '{SupportedRegistrySchemaVersion}'.");
+			this.EmitError(
+				$"storybook registry schemaVersion '{schemaVersion}' is not supported. Expected '{SupportedRegistrySchemaVersion}'."
+			);
 			return false;
 		}
 
 		return true;
 	}
 
-	private static string RegistrySchemaVersion(JsonElement schemaVersion) =>
-		schemaVersion.ValueKind switch
-		{
-			JsonValueKind.Number => schemaVersion.GetRawText(),
-			JsonValueKind.String => schemaVersion.GetString() ?? string.Empty,
-			_ => string.Empty
-		};
+	private static string RegistrySchemaVersion(JsonElement schemaVersion) => schemaVersion.ValueKind switch
+	{
+		JsonValueKind.Number => schemaVersion.GetRawText(),
+		JsonValueKind.String => schemaVersion.GetString() ?? string.Empty,
+		_ => string.Empty
+	};
 
 	private static StorybookRegistryStory? FindStory(StorybookRegistry registry, StoryReference reference)
 	{
@@ -260,9 +259,11 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 		var matches = registry.Stories
 			.Where(story => MatchesReferenceScope(story.Key, story.Value, reference))
 			.Select(story => story.Value)
-			.Where(story =>
-				story.DocsId?.Equals(reference.DocsId, StringComparison.OrdinalIgnoreCase) == true
-				|| story.StorybookId?.Equals(reference.DocsId, StringComparison.OrdinalIgnoreCase) == true)
+			.Where(
+				story =>
+					story.DocsId?.Equals(reference.DocsId, StringComparison.OrdinalIgnoreCase) == true ||
+						story.StorybookId?.Equals(reference.DocsId, StringComparison.OrdinalIgnoreCase) == true
+			)
 			.ToArray();
 
 		return matches.Length == 1 ? matches[0] : null;
@@ -271,15 +272,18 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 	private static bool MatchesReferenceScope(string registryId, StorybookRegistryStory story, StoryReference reference)
 	{
 		var parts = registryId.Split(':', 3, StringSplitOptions.TrimEntries);
-		if (!string.IsNullOrWhiteSpace(reference.Project) && (parts.Length != 3 || !parts[0].Equals(reference.Project, StringComparison.OrdinalIgnoreCase)))
+		if (
+			!string.IsNullOrWhiteSpace(reference.Project) &&
+			(parts.Length != 3 || !parts[0].Equals(reference.Project, StringComparison.OrdinalIgnoreCase))
+		)
 			return false;
 
 		if (string.IsNullOrWhiteSpace(reference.Storybook))
 			return true;
 
 		var registryStorybook = parts.Length == 3 ? parts[1] : story.Alias;
-		return registryStorybook?.Equals(reference.Storybook, StringComparison.OrdinalIgnoreCase) == true
-			|| story.Alias?.Equals(reference.Storybook, StringComparison.OrdinalIgnoreCase) == true;
+		return registryStorybook?.Equals(reference.Storybook, StringComparison.OrdinalIgnoreCase) == true ||
+			story.Alias?.Equals(reference.Storybook, StringComparison.OrdinalIgnoreCase) == true;
 	}
 
 	private static bool IsSupportedRenderMode(string renderMode) =>
@@ -311,7 +315,14 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 		return trimmed;
 	}
 
-	private sealed record StoryReference(string? Project, string? Storybook, string DocsId, string? Component, string? StoryName, string RawId)
+	private sealed record StoryReference(
+		string? Project,
+		string? Storybook,
+		string DocsId,
+		string? Component,
+		string? StoryName,
+		string RawId
+	)
 	{
 		public static StoryReference FromId(string rawId, string? project, string? storybook, string? component, string? story)
 		{

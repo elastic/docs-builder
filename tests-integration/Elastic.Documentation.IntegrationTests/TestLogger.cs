@@ -18,8 +18,13 @@ public class TestLogger(ITestOutputHelper? output) : ILogger
 
 	public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Trace;
 
-	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-		output?.WriteLine(formatter(state, exception));
+	public void Log<TState>(
+		LogLevel logLevel,
+		EventId eventId,
+		TState state,
+		Exception? exception,
+		Func<TState, Exception?, string> formatter
+	) => output?.WriteLine(formatter(state, exception));
 }
 
 public class TestLoggerFactory(ITestOutputHelper? output) : ILoggerFactory
@@ -41,8 +46,9 @@ public class TestDiagnosticsOutput(ITestOutputHelper output) : IDiagnosticsOutpu
 	}
 }
 
-public class TestDiagnosticsCollector(ITestOutputHelper? output)
-	: DiagnosticsCollector(output != null ? [new TestDiagnosticsOutput(output)] : [])
+public class TestDiagnosticsCollector(ITestOutputHelper? output) : DiagnosticsCollector(
+	output != null ? [new TestDiagnosticsOutput(output)] : []
+)
 {
 	private readonly List<Diagnostic> _diagnostics = [];
 

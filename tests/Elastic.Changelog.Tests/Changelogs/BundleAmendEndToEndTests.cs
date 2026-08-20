@@ -65,7 +65,9 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 		var parentPath = FileSystem.Path.Join(bundleDir, "elasticsearch-9.3.0.yaml");
 		// A resolved parent whose entry carries a file identity, so the retraction below can match it.
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(parentPath, $"""
+		await FileSystem.File.WriteAllTextAsync(
+			parentPath,
+			$"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -80,16 +82,18 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 			  title: Retracted fix
 			  prs:
 			  - "100"
-			""", ct);
+			""",
+			ct
+		);
 
 		// -- 1. bundle-amend materializes a self-contained amend -----------------------------
 		var amendService = new ChangelogBundleAmendService(LoggerFactory, FileSystem);
-		var amendResult = await amendService.AmendBundle(Collector, new AmendBundleArguments
-		{
-			BundlePath = parentPath,
-			AddFiles = [addedFile],
-			RemoveFiles = [retractedFile]
-		}, ct);
+		var amendResult =
+			await amendService.AmendBundle(
+				Collector,
+				new AmendBundleArguments { BundlePath = parentPath, AddFiles = [addedFile], RemoveFiles = [retractedFile] },
+				ct
+			);
 
 		amendResult.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -108,9 +112,9 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 		var uploadService = new ChangelogUploadService(NullLoggerFactory.Instance, fileSystem: FileSystem, s3Client: s3.Client);
 		var targets = uploadService.DiscoverBundleUploadTargets(uploadCollector, bundleDir);
 
-		targets.Select(t => t.S3Key).Should().BeEquivalentTo(
-			"bundle/elasticsearch/elasticsearch-9.3.0.yaml",
-			"bundle/elasticsearch/elasticsearch-9.3.0.amend-1.yaml");
+		targets.Select(t => t.S3Key)
+			.Should()
+			.BeEquivalentTo("bundle/elasticsearch/elasticsearch-9.3.0.yaml", "bundle/elasticsearch/elasticsearch-9.3.0.amend-1.yaml");
 		uploadCollector.Errors.Should().Be(0);
 		uploadCollector.Warnings.Should().Be(0);
 
@@ -147,13 +151,15 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 		var fetchErrors = new List<string>();
 		var fetchWarnings = new List<string>();
 		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, FileSystem, handler);
-		var bundles = await fetcher.FetchAsync(
-			new Uri("https://cdn.example"),
-			"elasticsearch",
-			version: "9.3.0",
-			fetchErrors.Add,
-			fetchWarnings.Add,
-			ct);
+		var bundles =
+			await fetcher.FetchAsync(
+				new Uri("https://cdn.example"),
+				"elasticsearch",
+				version: "9.3.0",
+				fetchErrors.Add,
+				fetchWarnings.Add,
+				ct
+			);
 
 		fetchErrors.Should().BeEmpty();
 		fetchWarnings.Should().BeEmpty();
@@ -161,7 +167,8 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 		bundles[0].Version.Should().Be("9.3.0");
 		bundles[0].Entries.Select(e => e.Title).Should().BeEquivalentTo(
 			["Late addition"],
-			"the added entry is present and the file-identity retraction removed the original entry");
+			"the added entry is present and the file-identity retraction removed the original entry"
+		);
 	}
 
 	private static HttpResponseMessage Response(string body, string mediaType) =>

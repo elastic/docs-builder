@@ -52,11 +52,9 @@ public class ExternalCommandExecutorRetryTests
 		succeeded.Should().BeFalse();
 		executor.CallCount.Should().Be(5);
 		executor.Diagnostics.Errors.Should().Be(1);
-		executor.RecordedDelays.Should().Equal(
-			TimeSpan.FromSeconds(1),
-			TimeSpan.FromSeconds(2),
-			TimeSpan.FromSeconds(4),
-			TimeSpan.FromSeconds(8));
+		executor.RecordedDelays
+			.Should()
+			.Equal(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8));
 	}
 
 	[Fact]
@@ -92,8 +90,11 @@ public class ExternalCommandExecutorRetryTests
 		return new RetryTestCommandExecutor(new DiagnosticsCollector([]), workingDirectory, exitCodes);
 	}
 
-	private sealed class RetryTestCommandExecutor(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, int[] exitCodes)
-		: ExternalCommandExecutor(collector, workingDirectory)
+	private sealed class RetryTestCommandExecutor(
+		IDiagnosticsCollector collector,
+		IDirectoryInfo workingDirectory,
+		int[] exitCodes
+	) : ExternalCommandExecutor(collector, workingDirectory)
 	{
 		public int CallCount { get; private set; }
 
@@ -106,7 +107,9 @@ public class ExternalCommandExecutorRetryTests
 		protected override int ExecInCore(Dictionary<string, string> environmentVars, string binary, params string[] args)
 		{
 			if (CallCount >= exitCodes.Length)
-				throw new InvalidOperationException($"Unexpected invocation {CallCount + 1}, only {exitCodes.Length} exit codes were scripted");
+				throw new InvalidOperationException(
+					$"Unexpected invocation {CallCount + 1}, only {exitCodes.Length} exit codes were scripted"
+				);
 			return exitCodes[CallCount++];
 		}
 

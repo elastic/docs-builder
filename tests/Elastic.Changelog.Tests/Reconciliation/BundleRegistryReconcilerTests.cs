@@ -21,13 +21,15 @@ public class BundleRegistryReconcilerTests
 	private readonly ReconcileMetrics _metrics = new();
 
 	public BundleRegistryReconcilerTests() =>
-		_reconciler = new BundleRegistryReconciler(
-			NullLoggerFactory.Instance,
-			_s3.Client,
-			PublicBucket,
-			new FakeTimeProvider(FixedNow),
-			retryBaseDelay: TimeSpan.Zero,
-			_metrics);
+		_reconciler =
+			new BundleRegistryReconciler(
+				NullLoggerFactory.Instance,
+				_s3.Client,
+				PublicBucket,
+				new FakeTimeProvider(FixedNow),
+				retryBaseDelay: TimeSpan.Zero,
+				_metrics
+			);
 
 	private static ChangelogScope BundleScope(string product = "elasticsearch")
 	{
@@ -42,7 +44,8 @@ public class BundleRegistryReconcilerTests
 	}
 
 	// language=yaml
-	private static string BundleYaml(string product, string target) => $"""
+	private static string BundleYaml(string product, string target) =>
+		$"""
 		products:
 		  - product: {product}
 		    target: {target}
@@ -57,7 +60,8 @@ public class BundleRegistryReconcilerTests
 		""";
 
 	// language=yaml
-	private const string AmendYaml = """
+	private const string AmendYaml =
+		"""
 		exclude-entries:
 		  - file:
 		      name: 1-feature.yaml
@@ -101,23 +105,24 @@ public class BundleRegistryReconcilerTests
 		var etag2 = SeedBundle(scope, "es-9.2.0.yaml", "9.2.0");
 		_ = SeedBundle(scope, "es-9.3.0.yaml", "9.3.0");
 		_ = SeedBundle(scope, "es-9.4.0.yaml", "9.4.0");
-		SeedManifest(scope,
+		SeedManifest(
+			scope,
 			new RegistryBundle { File = "es-9.2.0.yaml", Target = "9.2.0", ETag = etag2 },
-			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 });
+			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
 		outcome.Should().Be(GroupReconcileOutcome.Written);
 		var manifest = WrittenManifest();
-		manifest.Bundles.Select(b => b.File).Should().Equal(
-			"es-9.4.0.yaml", "es-9.3.0.yaml", "es-9.2.0.yaml", "es-9.1.0.yaml");
+		manifest.Bundles.Select(b => b.File).Should().Equal("es-9.4.0.yaml", "es-9.3.0.yaml", "es-9.2.0.yaml", "es-9.1.0.yaml");
 		manifest.Bundles.Should().OnlyContain(b => b.Target != null);
 		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
 
 		// 1 and 2 were ETag-reused: only the manifest itself plus 3 and 4 were read.
-		_s3.GetsFor(PublicBucket).Should().BeEquivalentTo([
-			scope.RegistryKey, scope.Prefix + "es-9.3.0.yaml", scope.Prefix + "es-9.4.0.yaml"
-		]);
+		_s3.GetsFor(PublicBucket)
+			.Should()
+			.BeEquivalentTo([scope.RegistryKey, scope.Prefix + "es-9.3.0.yaml", scope.Prefix + "es-9.4.0.yaml"]);
 	}
 
 	[Fact]
@@ -125,9 +130,11 @@ public class BundleRegistryReconcilerTests
 	{
 		var scope = BundleScope();
 		var etag1 = SeedBundle(scope, "es-9.1.0.yaml", "9.1.0");
-		SeedManifest(scope,
+		SeedManifest(
+			scope,
 			new RegistryBundle { File = "es-9.2.0.yaml", Target = "9.2.0", ETag = "gone" },
-			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 });
+			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -141,9 +148,11 @@ public class BundleRegistryReconcilerTests
 		var scope = BundleScope();
 		var etag1 = SeedBundle(scope, "es-9.1.0.yaml", "9.1.0");
 		var etag2 = SeedBundle(scope, "es-9.2.0.yaml", "9.2.0");
-		SeedManifest(scope,
+		SeedManifest(
+			scope,
 			new RegistryBundle { File = "es-9.2.0.yaml", Target = "9.2.0", ETag = etag2 },
-			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 });
+			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -175,9 +184,11 @@ public class BundleRegistryReconcilerTests
 		var scope = BundleScope();
 		var parentETag = SeedBundle(scope, "es-9.3.0.yaml", "9.4.0");
 		var amendETag = _s3.Seed(PublicBucket, scope.Prefix + "es-9.3.0.amend-1.yaml", AmendYaml);
-		SeedManifest(scope,
+		SeedManifest(
+			scope,
 			new RegistryBundle { File = "es-9.3.0.yaml", Target = "9.4.0", ETag = parentETag },
-			new RegistryBundle { File = "es-9.3.0.amend-1.yaml", Target = "9.3.0", ETag = amendETag });
+			new RegistryBundle { File = "es-9.3.0.amend-1.yaml", Target = "9.3.0", ETag = amendETag }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -204,7 +215,8 @@ public class BundleRegistryReconcilerTests
 	public async Task ReconcileGroup_MultiProductBundle_MatchesTheGroupProduct()
 	{
 		// language=yaml
-		const string multiProductYaml = """
+		const string multiProductYaml =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
@@ -240,8 +252,12 @@ public class BundleRegistryReconcilerTests
 		// every future reconcile keeps recomputing.
 		var scope = BundleScope();
 		var etag = SeedBundle(scope, "es-9.1.0.yaml", "9.1.0");
-		SeedManifest(scope, producer: null, Registry.CurrentSchemaVersion,
-			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag });
+		SeedManifest(
+			scope,
+			producer: null,
+			Registry.CurrentSchemaVersion,
+			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -379,8 +395,12 @@ public class BundleRegistryReconcilerTests
 		_s3.BeforePut = call =>
 		{
 			if (call == 1)
-				SeedManifest(scope, producer: null, Registry.CurrentSchemaVersion,
-					new RegistryBundle { File = "concurrent.yaml", Target = null, ETag = "cc" });
+				SeedManifest(
+					scope,
+					producer: null,
+					Registry.CurrentSchemaVersion,
+					new RegistryBundle { File = "concurrent.yaml", Target = null, ETag = "cc" }
+				);
 		};
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
@@ -398,8 +418,14 @@ public class BundleRegistryReconcilerTests
 		SeedManifest(scope, producer: null, Registry.CurrentSchemaVersion);
 		// Every attempt loses: a concurrent writer lands between every read and write.
 		var counter = 0;
-		_s3.BeforePut = _ => SeedManifest(scope, producer: null, Registry.CurrentSchemaVersion,
-			new RegistryBundle { File = $"concurrent-{counter++}.yaml", Target = null, ETag = "cc" });
+		_s3.BeforePut =
+			_ =>
+				SeedManifest(
+					scope,
+					producer: null,
+					Registry.CurrentSchemaVersion,
+					new RegistryBundle { File = $"concurrent-{counter++}.yaml", Target = null, ETag = "cc" }
+				);
 
 		var act = async () => await _reconciler.ReconcileGroupAsync(scope, Ctx);
 

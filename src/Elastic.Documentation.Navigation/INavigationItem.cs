@@ -53,20 +53,16 @@ public interface INavigationItem
 
 /// Represents a leaf node in the navigation tree with associated model data.
 /// <typeparam name="TModel">The type attached to the navigation model.</typeparam>
-public interface ILeafNavigationItem<out TModel> : INavigationItem
-	where TModel : INavigationModel
+public interface ILeafNavigationItem<out TModel> : INavigationItem where TModel : INavigationModel
 {
 	/// Gets the navigation model associated with this navigation item.
 	TModel Model { get; }
 }
 
-
 /// Represents a node in the navigation tree that can contain child items.
 /// <typeparam name="TIndex">The type of the index model.</typeparam>
 /// <typeparam name="TChildNavigation">The type of child navigation items.</typeparam>
-public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INavigationItem
-	where TIndex : INavigationModel
-	where TChildNavigation : INavigationItem
+public interface INodeNavigationItem<out TIndex, out TChildNavigation> : INavigationItem where TIndex : INavigationModel where TChildNavigation : INavigationItem
 {
 	/// Gets the unique identifier for this node.
 	string Id { get; }
@@ -93,9 +89,7 @@ public interface IAssignableIslandNavigation
 	bool IsIsland { get; set; }
 }
 
-public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNavigationItem<TIndex, TChildNavigation>, IAssignableChildrenNavigation
-	where TIndex : INavigationModel
-	where TChildNavigation : INavigationItem
+public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNavigationItem<TIndex, TChildNavigation>, IAssignableChildrenNavigation where TIndex : INavigationModel where TChildNavigation : INavigationItem
 {
 	bool IsUsingNavigationDropdown { get; }
 

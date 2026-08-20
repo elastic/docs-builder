@@ -63,14 +63,17 @@ public static partial class ConditionalProcessor
 		return true;
 	}
 
-	private static bool EvaluateCondition(string directive, string condition, IReadOnlyDictionary<string, string> attributes) =>
-		directive.ToLowerInvariant() switch
-		{
-			"ifdef" => EvaluateIfdef(condition, attributes),
-			"ifndef" => EvaluateIfndef(condition, attributes),
-			"ifeval" => EvaluateIfeval(condition, attributes),
-			_ => true
-		};
+	private static bool EvaluateCondition(
+		string directive,
+		string condition,
+		IReadOnlyDictionary<string, string> attributes
+	) => directive.ToLowerInvariant() switch
+	{
+		"ifdef" => EvaluateIfdef(condition, attributes),
+		"ifndef" => EvaluateIfndef(condition, attributes),
+		"ifeval" => EvaluateIfeval(condition, attributes),
+		_ => true
+	};
 
 	private static bool EvaluateIfdef(string condition, IReadOnlyDictionary<string, string> attributes)
 	{
@@ -132,11 +135,14 @@ public static partial class ConditionalProcessor
 	}
 
 	private static string SubstituteAttributes(string text, IReadOnlyDictionary<string, string> attributes) =>
-		AttrRefRegex().Replace(text, match =>
-		{
-			var name = match.Groups[1].Value;
-			return attributes.TryGetValue(name, out var value) ? value : match.Value;
-		});
+		AttrRefRegex().Replace(
+			text,
+			match =>
+			{
+				var name = match.Groups[1].Value;
+				return attributes.TryGetValue(name, out var value) ? value : match.Value;
+			}
+		);
 
 	private static string UnquoteValue(string value)
 	{

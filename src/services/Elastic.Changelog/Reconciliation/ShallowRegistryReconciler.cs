@@ -106,13 +106,15 @@ public sealed class ShallowRegistryReconciler(
 		}
 
 		throw new ReconcileConflictException(
-			$"Shallow map {mapKey} kept changing concurrently after {MaxWriteAttempts} attempts; failing the message for redelivery.");
+			$"Shallow map {mapKey} kept changing concurrently after {MaxWriteAttempts} attempts; failing the message for redelivery."
+		);
 	}
 
 	/// <summary>The S3 key of a tree's shallow map: <c>bundle/registry.json</c> or <c>changelog/registry.json</c>.</summary>
-	public static string TreeRegistryKey(ChangelogScopeKind kind) => kind == ChangelogScopeKind.Bundle
-		? $"{ChangelogKeys.BundlePrefix}{ChangelogKeys.RegistryFileName}"
-		: $"{ChangelogKeys.ChangelogPrefix}{ChangelogKeys.RegistryFileName}";
+	public static string TreeRegistryKey(ChangelogScopeKind kind) =>
+		kind == ChangelogScopeKind.Bundle
+			? $"{ChangelogKeys.BundlePrefix}{ChangelogKeys.RegistryFileName}"
+			: $"{ChangelogKeys.ChangelogPrefix}{ChangelogKeys.RegistryFileName}";
 
 	/// <summary>
 	/// The folder's change token from its current public listing, or null when the folder holds no
@@ -122,12 +124,7 @@ public sealed class ShallowRegistryReconciler(
 	private async Task<string?> ComputeFolderToken(ChangelogScope scope, Cancel ctx)
 	{
 		var files = new SortedDictionary<string, string>(StringComparer.Ordinal);
-		var request = new ListObjectsV2Request
-		{
-			BucketName = publicBucketName,
-			Prefix = scope.Prefix,
-			Delimiter = "/"
-		};
+		var request = new ListObjectsV2Request { BucketName = publicBucketName, Prefix = scope.Prefix, Delimiter = "/" };
 
 		ListObjectsV2Response response;
 		do
@@ -140,7 +137,8 @@ public sealed class ShallowRegistryReconciler(
 					files[file] = NormalizeETag(obj.ETag);
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return files.Count == 0 ? null : TokenOf(files);
 	}
@@ -180,7 +178,8 @@ public sealed class ShallowRegistryReconciler(
 				files[file] = NormalizeETag(obj.ETag);
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		var map = new SortedDictionary<string, string>(StringComparer.Ordinal);
 		foreach (var (group, files) in folders)
@@ -189,8 +188,8 @@ public sealed class ShallowRegistryReconciler(
 	}
 
 	private static bool IsYamlFileName(string file) =>
-		file.Length > 0
-		&& (file.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".yml", StringComparison.OrdinalIgnoreCase));
+		file.Length > 0 &&
+			(file.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".yml", StringComparison.OrdinalIgnoreCase));
 
 	private static string TokenOf(SortedDictionary<string, string> files)
 	{
@@ -208,11 +207,7 @@ public sealed class ShallowRegistryReconciler(
 		string? etag = null;
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = key
-			}, ctx);
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
 
 			etag = response.ETag;
 			await using var stream = response.ResponseStream;
@@ -283,7 +278,10 @@ public sealed class ShallowRegistryReconciler(
 			_metrics.IncrementWriteConflicts();
 			_logger.LogInformation(
 				"Shallow map {Key} changed concurrently (attempt {Attempt}/{Max}); re-listing and retrying",
-				key, attempt, MaxWriteAttempts);
+				key,
+				attempt,
+				MaxWriteAttempts
+			);
 			return false;
 		}
 	}
@@ -295,12 +293,7 @@ public sealed class ShallowRegistryReconciler(
 
 		try
 		{
-			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = key,
-				IfMatch = etag
-			}, ctx);
+			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key, IfMatch = etag }, ctx);
 			_metrics.IncrementShallowRegistryWrites();
 			_logger.LogInformation("Deleted shallow map {Key}: the tree is empty", key);
 			return true;
@@ -315,7 +308,10 @@ public sealed class ShallowRegistryReconciler(
 			_metrics.IncrementWriteConflicts();
 			_logger.LogInformation(
 				"Shallow map {Key} changed concurrently during delete (attempt {Attempt}/{Max}); re-listing and retrying",
-				key, attempt, MaxWriteAttempts);
+				key,
+				attempt,
+				MaxWriteAttempts
+			);
 			return false;
 		}
 	}

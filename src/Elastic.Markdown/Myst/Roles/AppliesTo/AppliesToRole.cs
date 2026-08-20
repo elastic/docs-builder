@@ -63,9 +63,7 @@ public class PreviewRoleParser : RoleParser<AppliesToRole>
 	{
 		content = SemVersion.TryParse(content, out _)
 			? $"product: preview {content}"
-			: SemVersion.TryParse(content + ".0", out var version)
-				? $"product: preview {version}"
-				: "product: preview";
+			: SemVersion.TryParse(content + ".0", out var version) ? $"product: preview {version}" : "product: preview";
 		return new AppliesToRole(role, content, parserContext);
 	}
 

@@ -38,9 +38,7 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 		// which no longer appears in the new keys) so bundles are not misclassified as entries.
 		var isBundlePath = key.StartsWith(ChangelogKeys.BundlePrefix, StringComparison.OrdinalIgnoreCase);
 
-		return isBundlePath
-			? await ScrubBundle(content, ctx)
-			: await ScrubChangelog(content, ctx);
+		return isBundlePath ? await ScrubBundle(content, ctx) : await ScrubChangelog(content, ctx);
 	}
 
 	private async Task<string> ScrubBundle(string content, Cancel ctx)
@@ -89,9 +87,17 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 		};
 
 		await using var collector = new DiagnosticsCollector([]);
-		if (!LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			collector, bundledEntry, allowRepos, "elastic", null,
-			out var sanitized, out var changed))
+		if (
+			!LinkAllowlistSanitizer.TryApplyChangelogEntry(
+				collector,
+				bundledEntry,
+				allowRepos,
+				"elastic",
+				null,
+				out var sanitized,
+				out var changed
+			)
+		)
 			throw new InvalidOperationException($"Failed to apply allowlist to changelog entry; errors: {collector.Errors}");
 
 		if (!changed)

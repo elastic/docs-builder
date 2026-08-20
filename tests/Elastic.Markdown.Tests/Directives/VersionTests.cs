@@ -9,8 +9,9 @@ using Elastic.Markdown.Myst.Directives.Version;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class VersionTests(ITestOutputHelper output, string directive) : DirectiveTest<VersionBlock>(output,
-$$"""
+public abstract class VersionTests(ITestOutputHelper output, string directive) : DirectiveTest<VersionBlock>(
+	output,
+	$$"""
 :::{{{directive}}} 1.0.1-beta1 more information
 Version brief summary
 :::
@@ -50,8 +51,9 @@ public class VersionDeprectatedTests(ITestOutputHelper output) : VersionTests(ou
 	public void SetsTitle() => Block!.Title.Should().Be("Deprecated (1.0.1-beta1): more information");
 }
 
-public abstract class VersionValidationTests(ITestOutputHelper output, string version) : DirectiveTest<VersionBlock>(output,
-$$"""
+public abstract class VersionValidationTests(ITestOutputHelper output, string version) : DirectiveTest<VersionBlock>(
+	output,
+	$$"""
 :::{versionchanged} {{version}} more information
 Version brief summary
 :::
@@ -71,13 +73,13 @@ public class SimpleVersion(ITestOutputHelper output) : VersionValidationTests(ou
 public class MajorVersionOnly(ITestOutputHelper output) : VersionValidationTests(output, "8")
 {
 	[Fact]
-	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.Contain(d => d.Message.Contains("'8' is not a valid version"));
+	public void HasError() =>
+		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("'8' is not a valid version"));
 }
 
 public class BranchVersion(ITestOutputHelper output) : VersionValidationTests(output, "8.x")
 {
 	[Fact]
-	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.Contain(d => d.Message.Contains("'8.x' is not a valid version"));
+	public void HasError() =>
+		Collector.Diagnostics.Should().HaveCount(1).And.Contain(d => d.Message.Contains("'8.x' is not a valid version"));
 }

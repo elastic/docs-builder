@@ -18,25 +18,19 @@ public class ChangelogRenderer(IChangelogFileSystem fileSystem, ILogger logger)
 	/// <summary>
 	/// Renders changelog output based on the specified file type.
 	/// </summary>
-	public async Task RenderAsync(
-		ChangelogFileType fileType,
-		ChangelogRenderContext context,
-		Cancel ctx)
+	public async Task RenderAsync(ChangelogFileType fileType, ChangelogRenderContext context, Cancel ctx)
 	{
 		switch (fileType)
 		{
 			case ChangelogFileType.Asciidoc:
 				await RenderAsciidocAsync(context, ctx);
 				break;
-
 			case ChangelogFileType.Markdown:
 				await RenderMarkdownAsync(context, ctx);
 				break;
-
 			case ChangelogFileType.Gfm:
 				await RenderGfmAsync(context, ctx);
 				break;
-
 			default:
 				throw new ArgumentException($"Unknown changelog file type: {fileType}", nameof(fileType));
 		}

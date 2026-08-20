@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
@@ -63,9 +62,7 @@ public record SchemaPageModel
 				? builder.BuildUnionVariantsForSchemas(openApiSchema.AnyOf, "anyof", rootAncestors) ?? ApiUnionVariants.Empty
 				: null,
 			Properties = builder.BuildPropertyList(openApiSchema, new PropertyTreeScope { Prefix = "", Ancestors = rootAncestors }),
-			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps
-				? builder.Describe(addProps)
-				: null
+			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps ? builder.Describe(addProps) : null
 		};
 	}
 }

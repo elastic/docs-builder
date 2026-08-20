@@ -36,10 +36,7 @@ public class FeatureFlagsTests
 		try
 		{
 			Environment.SetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER", "false");
-			var flags = new FeatureFlags(new Dictionary<string, bool>
-			{
-				["assembler-api-explorer"] = true
-			});
+			var flags = new FeatureFlags(new Dictionary<string, bool> { ["assembler-api-explorer"] = true });
 
 			flags.AssemblerApiExplorerEnabled.Should().BeFalse();
 		}
@@ -52,11 +49,12 @@ public class FeatureFlagsTests
 	[Fact]
 	public void StagingEnvironment_EnablesAssemblerApiExplorer()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem()));
+		var config = AssemblyConfiguration.Create(
+			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
+		);
 		var staging = config.Environments["staging"];
 
-		staging.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER")
-			.WhoseValue.Should().BeTrue();
+		staging.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
 
 		var features = new FeatureFlags([]);
 		foreach (var (key, value) in staging.FeatureFlags)
@@ -67,7 +65,9 @@ public class FeatureFlagsTests
 	[Fact]
 	public void ProdEnvironment_DoesNotEnableAssemblerApiExplorer()
 	{
-		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem()));
+		var config = AssemblyConfiguration.Create(
+			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
+		);
 		var prod = config.Environments["prod"];
 
 		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");

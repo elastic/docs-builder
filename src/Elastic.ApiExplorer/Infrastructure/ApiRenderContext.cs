@@ -20,8 +20,7 @@ public record ApiRenderContext(
 	BuildContext BuildContext,
 	OpenApiDocument Model,
 	StaticFileContentHashProvider StaticFileContentHashProvider
-)
-	: RenderContext<OpenApiDocument>(BuildContext, Model)
+) : RenderContext<OpenApiDocument>(BuildContext, Model)
 {
 	public required string NavigationHtml { get; init; }
 	public required INavigationItem CurrentNavigation { get; init; }

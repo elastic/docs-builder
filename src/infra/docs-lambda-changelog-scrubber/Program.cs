@@ -14,13 +14,12 @@ using Elastic.Changelog.Scrubbing;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Lambda.ChangelogScrubber;
 
-var publicBucketName = Environment.GetEnvironmentVariable("PUBLIC_BUCKET_NAME")
-	?? throw new InvalidOperationException("PUBLIC_BUCKET_NAME environment variable is required");
+var publicBucketName = Environment.GetEnvironmentVariable("PUBLIC_BUCKET_NAME") ??
+	throw new InvalidOperationException("PUBLIC_BUCKET_NAME environment variable is required");
 
 var allowRepos = BuildAllowlist();
 
-await LambdaBootstrapBuilder
-	.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
+await LambdaBootstrapBuilder.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
 	.Build()
 	.RunAsync();
 
@@ -28,8 +27,8 @@ return;
 
 IReadOnlyList<string> BuildAllowlist()
 {
-	using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("assembler.yml")
-		?? throw new InvalidOperationException("Embedded assembler.yml not found");
+	using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("assembler.yml") ??
+		throw new InvalidOperationException("Embedded assembler.yml not found");
 	using var reader = new StreamReader(stream);
 	var yaml = reader.ReadToEnd();
 	var assembly = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
@@ -40,16 +39,13 @@ IReadOnlyList<string> BuildAllowlist()
 // run the state-driven reconcile, translate the failed message ids back out, emit metrics.
 async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 {
-	var region = Amazon.RegionEndpoint.GetBySystemName(
-		Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1");
+	var region = Amazon.RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1");
 	var credentials = new Amazon.Runtime.EnvironmentVariablesAWSCredentials();
 
-	using var s3Client = new AmazonS3Client(credentials, new AmazonS3Config
-	{
-		RegionEndpoint = region,
-		Timeout = TimeSpan.FromSeconds(10),
-		MaxErrorRetry = 2
-	});
+	using var s3Client = new AmazonS3Client(
+		credentials,
+		new AmazonS3Config { RegionEndpoint = region, Timeout = TimeSpan.FromSeconds(10), MaxErrorRetry = 2 }
+	);
 
 	using var logFactory = new LambdaLoggerFactory(context.Logger);
 	var metrics = new ReconcileMetrics();
@@ -63,8 +59,7 @@ async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 
 	EmfMetricsEmitter.Emit(metrics);
 
-	var response = new SQSBatchResponse(
-		[.. failedIds.Select(id => new SQSBatchResponse.BatchItemFailure { ItemIdentifier = id })]);
+	var response = new SQSBatchResponse([.. failedIds.Select(id => new SQSBatchResponse.BatchItemFailure { ItemIdentifier = id })]);
 	if (failedIds.Count > 0)
 		context.Logger.LogInformation("Failed {FailedCount} of {TotalCount} messages", failedIds.Count, ev.Records.Count);
 	return response;

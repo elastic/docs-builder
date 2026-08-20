@@ -50,8 +50,8 @@ public class DocumentToolsTests
 		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current.CancellationToken);
 
 		using var doc = JsonDocument.Parse(json);
-		var hasNonNullSourceUrl = doc.RootElement.TryGetProperty("sourceUrl", out var sourceUrl)
-			&& sourceUrl.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined;
+		var hasNonNullSourceUrl = doc.RootElement.TryGetProperty("sourceUrl", out var sourceUrl) &&
+			sourceUrl.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined;
 		hasNonNullSourceUrl.Should().BeFalse();
 		var response = JsonSerializer.Deserialize(json, McpJsonContext.Default.DocumentResponse);
 		response.Should().NotBeNull();
@@ -60,8 +60,7 @@ public class DocumentToolsTests
 
 	private sealed class StubDocumentGateway(DocumentResult? result) : IDocumentGateway
 	{
-		public Task<DocumentResult?> GetByUrlAsync(string url, CancellationToken ct = default) =>
-			Task.FromResult(result);
+		public Task<DocumentResult?> GetByUrlAsync(string url, CancellationToken ct = default) => Task.FromResult(result);
 
 		public Task<DocumentStructure?> GetStructureAsync(string url, CancellationToken ct = default) =>
 			Task.FromResult<DocumentStructure?>(null);

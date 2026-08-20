@@ -61,7 +61,8 @@ public class ListingBlock(DirectiveBlockParser parser, ParserContext context) : 
 		List<ListingEntry> entries,
 		string? groupKey,
 		string? groupTitle,
-		bool isRoot)
+		bool isRoot
+	)
 	{
 		foreach (var item in node.NavigationItems)
 		{
@@ -72,18 +73,10 @@ public class ListingBlock(DirectiveBlockParser parser, ParserContext context) : 
 					var gTitle = groupNode.NavigationTitle;
 					CollectEntries(groupNode, entries, groupNode.Url, gTitle, isRoot: false);
 					break;
-
 				// Content page leaf — add as a card
 				case ILeafNavigationItem<IDocumentationFile> leaf:
-					entries.Add(new ListingEntry(
-						leaf.NavigationTitle,
-						leaf.Url,
-						leaf.Model.Description,
-						groupKey,
-						groupTitle
-					));
+					entries.Add(new ListingEntry(leaf.NavigationTitle, leaf.Url, leaf.Model.Description, groupKey, groupTitle));
 					break;
-
 				// Folder inside a group — flatten
 				case INodeNavigationItem<INavigationModel, INavigationItem> subNode:
 					CollectEntries(subNode, entries, groupKey, groupTitle, isRoot: false);

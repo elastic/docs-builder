@@ -22,7 +22,8 @@ public class MockNavigationSearchService : INavigationSearchService
 			Type = "doc",
 			Url = "https://www.elastic.co/docs/explore-analyze",
 			Title = "Explore and analyze | Elastic Docs",
-			Description = "Kibana provides a comprehensive suite of tools to help you search, interact with, explore, and analyze your data effectively.",
+			Description =
+				"Kibana provides a comprehensive suite of tools to help you search, interact with, explore, and analyze your data effectively.",
 			Parents = []
 		},
 		new NavigationSearchResultItem
@@ -66,7 +67,8 @@ public class MockNavigationSearchService : INavigationSearchService
 			Type = "doc",
 			Url = "https://www.elastic.co/docs/solutions/search/elasticsearch-basics-quickstart",
 			Title = "Elasticsearch basics quickstart",
-			Description = "Hands-on introduction to fundamental Elasticsearch concepts: indices, documents, mappings, and search via Console syntax.",
+			Description =
+				"Hands-on introduction to fundamental Elasticsearch concepts: indices, documents, mappings, and search via Console syntax.",
 			Parents = []
 		},
 		new NavigationSearchResultItem
@@ -82,28 +84,24 @@ public class MockNavigationSearchService : INavigationSearchService
 
 	public async Task<NavigationSearchResponse> NavigationSearchAsync(NavigationSearchRequest request, CancellationToken ctx = default)
 	{
-		var filteredResults = Results
-			.Where(item =>
+		var filteredResults = Results.Where(
+			item =>
 				item.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
-				item.Description?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) == true)
-			.ToList();
+					item.Description?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) == true
+		).ToList();
 
 		// Apply type filter if specified
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
 			filteredResults = filteredResults.Where(item => item.Type == request.TypeFilter).ToList();
 
 		// Calculate aggregations before filtering
-		var aggregations = Results
-			.Where(item =>
+		var aggregations = Results.Where(
+			item =>
 				item.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
-				item.Description?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) == true)
-			.GroupBy(item => item.Type)
-			.ToDictionary(g => g.Key, g => (long)g.Count());
+					item.Description?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) == true
+		).GroupBy(item => item.Type).ToDictionary(g => g.Key, g => (long)g.Count());
 
-		var pagedResults = filteredResults
-			.Skip((request.PageNumber - 1) * request.PageSize)
-			.Take(request.PageSize)
-			.ToList();
+		var pagedResults = filteredResults.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize).ToList();
 
 		Console.WriteLine($"MockSearchService: Paged results count: {pagedResults.Count}");
 

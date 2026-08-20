@@ -55,9 +55,10 @@ internal sealed class CodexIndexCommand(
 		}
 
 		var service = new CodexIndexService(logFactory, configurationContext);
-		serviceInvoker.AddCommand(service, (codexContext, cloneResult, fs, es),
-			static async (s, col, state, c) =>
-				await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
+		serviceInvoker.AddCommand(
+			service,
+			(codexContext, cloneResult, fs, es),
+			static async (s, col, state, c) => await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
 		);
 
 		return await serviceInvoker.InvokeAsync(ct);

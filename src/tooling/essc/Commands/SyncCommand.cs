@@ -12,18 +12,13 @@ using Spectre.Console;
 
 namespace Elastic.SiteSearch.Cli.Commands;
 
-internal sealed class SyncCommand(
-	ContentStackClient client,
-	SourcingConfiguration config,
-	ILoggerFactory loggerFactory
-)
+internal sealed class SyncCommand(ContentStackClient client, SourcingConfiguration config, ILoggerFactory loggerFactory)
 {
 	private const string StateFile = "sync-state.json";
 	private const int LaneCount = 5;
 
 	private static bool IsInteractive() =>
-		string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) &&
-		AnsiConsole.Profile.Capabilities.Interactive;
+		string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) && AnsiConsole.Profile.Capabilities.Interactive;
 
 	/// <summary>
 	/// Sync published entries from Contentstack and index to Elasticsearch.
@@ -70,8 +65,7 @@ internal sealed class SyncCommand(
 		if (force)
 			store.Delete(StateFile);
 
-		var cursorMap = store.Load(StateFile, StateJsonContext.Default.SyncCursorMap)
-			?? new SyncCursorMap();
+		var cursorMap = store.Load(StateFile, StateJsonContext.Default.SyncCursorMap) ?? new SyncCursorMap();
 
 		var cfg = ResolveEndpoint(endpoint, apiKey);
 
@@ -90,7 +84,8 @@ internal sealed class SyncCommand(
 		if (resumeCount > 0 || deltaCount > 0)
 		{
 			AnsiConsole.MarkupLine(
-				$"[dim]Fresh: [white]{freshCount}[/] | Delta: [white]{deltaCount}[/] | Resume: [white]{resumeCount}[/][/]");
+				$"[dim]Fresh: [white]{freshCount}[/] | Delta: [white]{deltaCount}[/] | Resume: [white]{resumeCount}[/][/]"
+			);
 		}
 
 		AnsiConsole.WriteLine();
@@ -99,14 +94,15 @@ internal sealed class SyncCommand(
 		if (!noIndex)
 		{
 			var transport = ElasticsearchTransportFactory.Create(cfg);
-			exporter = new SiteDocumentExporter(
-				loggerFactory,
-				cfg,
-				transport,
-				config.BuildType,
-				config.ElasticsearchEnvironment,
-				enableAiEnrichment: !noAi
-			);
+			exporter =
+				new SiteDocumentExporter(
+					loggerFactory,
+					cfg,
+					transport,
+					config.BuildType,
+					config.ElasticsearchEnvironment,
+					enableAiEnrichment: !noAi
+				);
 
 			if (!noAi)
 				exporter.ConfigurePostSyncAiBatch(maxAiDocs, maxAiTime);
@@ -116,10 +112,13 @@ internal sealed class SyncCommand(
 				await AnsiConsole.Status()
 					.AutoRefresh(true)
 					.Spinner(Spinner.Known.Dots)
-					.StartAsync("[aqua]Bootstrapping Elasticsearch indices...[/]", async _ =>
-					{
-						await exporter.StartAsync(ct);
-					});
+					.StartAsync(
+						"[aqua]Bootstrapping Elasticsearch indices...[/]",
+						async _ =>
+						{
+							await exporter.StartAsync(ct);
+						}
+					);
 			}
 			else
 			{
@@ -164,15 +163,33 @@ internal sealed class SyncCommand(
 					{
 						var overallTask = ctx.AddTask(
 							$"[aqua]Overall[/] — [white]0[/]/{PageContentTypes.All.Length} types",
-							maxValue: PageContentTypes.All.Length);
+							maxValue: PageContentTypes.All.Length
+						);
 
-						var lanes = Enumerable.Range(0, LaneCount).Select(i =>
-						{
-							var laneTask = ctx.AddTask($"[dim]Lane {i + 1}: idle[/]", maxValue: 100);
-							laneTask.IsIndeterminate = true;
-							return RunLaneAsync(i + 1, laneTask, channel.Reader, cursorMap, runCounts, indexedCounts, skippedCounts,
-								duplicateCounts, localeCounts, pagePer, exporter, store, writeSemaphore, overallTask, ct);
-						}).ToArray();
+						var lanes = Enumerable.Range(0, LaneCount)
+							.Select(i =>
+							{
+								var laneTask = ctx.AddTask($"[dim]Lane {i + 1}: idle[/]", maxValue: 100);
+								laneTask.IsIndeterminate = true;
+								return RunLaneAsync(
+									i + 1,
+									laneTask,
+									channel.Reader,
+									cursorMap,
+									runCounts,
+									indexedCounts,
+									skippedCounts,
+									duplicateCounts,
+									localeCounts,
+									pagePer,
+									exporter,
+									store,
+									writeSemaphore,
+									overallTask,
+									ct
+								);
+							})
+							.ToArray();
 
 						await Task.WhenAll(lanes);
 
@@ -182,10 +199,28 @@ internal sealed class SyncCommand(
 			}
 			else
 			{
-				var lanes = Enumerable.Range(0, LaneCount).Select(i =>
-					RunLaneAsync(i + 1, null, channel.Reader, cursorMap, runCounts, indexedCounts, skippedCounts,
-						duplicateCounts, localeCounts, pagePer, exporter, store, writeSemaphore, null, ct)
-				).ToArray();
+				var lanes = Enumerable.Range(0, LaneCount)
+					.Select(
+						i =>
+							RunLaneAsync(
+								i + 1,
+								null,
+								channel.Reader,
+								cursorMap,
+								runCounts,
+								indexedCounts,
+								skippedCounts,
+								duplicateCounts,
+								localeCounts,
+								pagePer,
+								exporter,
+								store,
+								writeSemaphore,
+								null,
+								ct
+							)
+					)
+					.ToArray();
 				await Task.WhenAll(lanes);
 				AnsiConsole.MarkupLine($"[green]✓[/] All {PageContentTypes.All.Length} content types synced");
 			}
@@ -197,15 +232,20 @@ internal sealed class SyncCommand(
 					await AnsiConsole.Status()
 						.AutoRefresh(true)
 						.Spinner(Spinner.Known.Dots)
-						.StartAsync("[aqua]Finalizing…[/]", async ctx =>
-						{
-							exporter.OnSyncProgress = info => ctx.Status(SyncProgressConsole.FormatStatusMarkup(info));
-							await exporter.FinalizeAsync(ct);
-						});
+						.StartAsync(
+							"[aqua]Finalizing…[/]",
+							async ctx =>
+							{
+								exporter.OnSyncProgress = info => ctx.Status(SyncProgressConsole.FormatStatusMarkup(info));
+								await exporter.FinalizeAsync(ct);
+							}
+						);
 				}
 				else
 				{
-					AnsiConsole.MarkupLine("[aqua]Finalizing…[/] [dim](bulk ingest, rollover, reindex — progress below; flush details in logs)[/]");
+					AnsiConsole.MarkupLine(
+						"[aqua]Finalizing…[/] [dim](bulk ingest, rollover, reindex — progress below; flush details in logs)[/]"
+					);
 					exporter.OnSyncProgress = info =>
 					{
 						if (info.Total == 0 && info.Label.StartsWith("Flush", StringComparison.Ordinal))
@@ -218,7 +258,17 @@ internal sealed class SyncCommand(
 			}
 
 			AnsiConsole.WriteLine();
-			DisplaySummary(cursorMap, runCounts, indexedCounts, skippedCounts, duplicateCounts, localeCounts, exporter, noIndex, store.CacheFolder);
+			DisplaySummary(
+				cursorMap,
+				runCounts,
+				indexedCounts,
+				skippedCounts,
+				duplicateCounts,
+				localeCounts,
+				exporter,
+				noIndex,
+				store.CacheFolder
+			);
 		}
 		finally
 		{
@@ -296,8 +346,7 @@ internal sealed class SyncCommand(
 					laneTask.MaxValue = p.TotalCount;
 					laneTask.Value = p.ItemsSoFar;
 				}
-				laneTask.Description =
-					$"[aqua]Lane {laneId}:[/] {Markup.Escape(contentType)} [dim]({p.ItemsSoFar:N0})[/]";
+				laneTask.Description = $"[aqua]Lane {laneId}:[/] {Markup.Escape(contentType)} [dim]({p.ItemsSoFar:N0})[/]";
 			});
 
 			async Task OnPage(SyncResponse response)
@@ -342,13 +391,7 @@ internal sealed class SyncCommand(
 			}
 
 			var result = isDelta
-				? await client.DeltaSyncAsync(
-					cursor.SyncToken!,
-					maxPages: maxPages,
-					progress: progress,
-					onPage: OnPage,
-					ct: ct
-				)
+				? await client.DeltaSyncAsync(cursor.SyncToken!, maxPages: maxPages, progress: progress, onPage: OnPage, ct: ct)
 				: await client.InitialSyncAsync(
 					resumePaginationToken: cursor.PaginationToken,
 					contentTypeUid: cursor.PaginationToken == null ? contentType : null,
@@ -382,8 +425,7 @@ internal sealed class SyncCommand(
 			if (overallTask is not null)
 			{
 				overallTask.Increment(1);
-				overallTask.Description =
-					$"[aqua]Overall[/] — [white]{(int)overallTask.Value}[/]/{PageContentTypes.All.Length} types";
+				overallTask.Description = $"[aqua]Overall[/] — [white]{(int)overallTask.Value}[/]/{PageContentTypes.All.Length} types";
 			}
 
 			if (laneTask is not null)
@@ -393,7 +435,8 @@ internal sealed class SyncCommand(
 				var pct = totalThisType > 0 ? itemsThisType * 100 / totalThisType : 100;
 				var skippedSuffix = skippedThisType > 0 ? $" [yellow]({skippedThisType:N0} skipped)[/]" : "";
 				AnsiConsole.MarkupLine(
-					$"[dim][[Lane {laneId}]][/]\t[dim]{pct,3}%[/]\t{Markup.Escape(contentType)} — {itemsThisType:N0} fetched, {indexedThisType:N0} indexed{skippedSuffix}");
+					$"[dim][[Lane {laneId}]][/]\t[dim]{pct,3}%[/]\t{Markup.Escape(contentType)} — {itemsThisType:N0} fetched, {indexedThisType:N0} indexed{skippedSuffix}"
+				);
 			}
 		}
 
@@ -436,25 +479,20 @@ internal sealed class SyncCommand(
 			var indexed = indexedCounts.GetValueOrDefault(contentType);
 			var skipped = skippedCounts.GetValueOrDefault(contentType);
 
-			var status = cursor?.SyncToken != null
-				? "[green]✓[/]"
-				: cursor?.PaginationToken != null
-					? "[yellow]partial[/]"
-					: "[grey]—[/]";
+			var status = cursor?.SyncToken != null ? "[green]✓[/]" : cursor?.PaginationToken != null ? "[yellow]partial[/]" : "[grey]—[/]";
 
 			var fetchedDisplay = fetched > 0 ? $"[green]+{fetched:N0}[/]" : "[dim]0[/]";
-			var indexedDisplay = noIndex
-				? "[dim]—[/]"
-				: indexed > 0 ? $"[green]{indexed:N0}[/]" : "[dim]0[/]";
+			var indexedDisplay = noIndex ? "[dim]—[/]" : indexed > 0 ? $"[green]{indexed:N0}[/]" : "[dim]0[/]";
 			var skippedDisplay = skipped > 0 ? $"[yellow]{skipped:N0}[/]" : "[dim]0[/]";
 
-			_ = table.AddRow(
-				new Markup(Markup.Escape(contentType)),
-				new Markup(fetchedDisplay),
-				new Markup(indexedDisplay),
-				new Markup(skippedDisplay),
-				new Markup(status)
-			);
+			_ =
+				table.AddRow(
+					new Markup(Markup.Escape(contentType)),
+					new Markup(fetchedDisplay),
+					new Markup(indexedDisplay),
+					new Markup(skippedDisplay),
+					new Markup(status)
+				);
 		}
 
 		AnsiConsole.Write(table);
@@ -476,10 +514,7 @@ internal sealed class SyncCommand(
 			AnsiConsole.WriteLine();
 		}
 
-		var summaryRows = new List<Markup>
-		{
-			new($"[green]Fetched this run:[/] [white]{totalThisRun:N0}[/]"),
-		};
+		var summaryRows = new List<Markup> { new($"[green]Fetched this run:[/] [white]{totalThisRun:N0}[/]"), };
 
 		if (!noIndex)
 		{
@@ -494,7 +529,8 @@ internal sealed class SyncCommand(
 				{
 					var reindexMissed = exporter.ReindexTotal - exporter.ReindexProcessed;
 					var reindexColor = reindexMissed > 0 || exporter.ReindexError is not null ? "yellow" : "green";
-					var reindexLine = $"[{reindexColor}]Reindexed to semantic:[/] [white]{exporter.ReindexProcessed:N0}/{exporter.ReindexTotal:N0}[/]";
+					var reindexLine =
+						$"[{reindexColor}]Reindexed to semantic:[/] [white]{exporter.ReindexProcessed:N0}/{exporter.ReindexTotal:N0}[/]";
 					if (reindexMissed > 0)
 						reindexLine += $" [yellow]({reindexMissed:N0} missed)[/]";
 					if (exporter.ReindexVersionConflicts > 0)

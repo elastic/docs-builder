@@ -24,6 +24,5 @@ public interface IPageViewFactory
 public class DefaultPageViewFactory : IPageViewFactory
 {
 	/// <inheritdoc />
-	public RazorSlice Create(IndexViewModel viewModel) =>
-		Index.Create(viewModel);
+	public RazorSlice Create(IndexViewModel viewModel) => Index.Create(viewModel);
 }

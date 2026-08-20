@@ -77,8 +77,10 @@ public sealed record MigrateFromWebScope
 		if (unknown.Count > 0)
 		{
 			var known = string.Join(", ", All.Select(s => s.ProductId).Order(StringComparer.Ordinal));
-			collector.EmitError(string.Empty,
-				$"Unknown product id(s) in --products: {string.Join(", ", unknown)}. Products in the checked-in migration scope: {known}. Add an entry to MigrateFromWebScope.All before running the migration.");
+			collector.EmitError(
+				string.Empty,
+				$"Unknown product id(s) in --products: {string.Join(", ", unknown)}. Products in the checked-in migration scope: {known}. Add an entry to MigrateFromWebScope.All before running the migration."
+			);
 			return null;
 		}
 

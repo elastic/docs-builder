@@ -14,7 +14,8 @@ public class CliSupplementalDocTests
 	public void RootPage_PreservesFrontMatterAsMetadata()
 	{
 		var schema = CreateSchema();
-		const string raw = """
+		const string raw =
+			"""
 			---
 			description: Use the Elastic CLI from the command line.
 			applies_to:
@@ -33,7 +34,9 @@ public class CliSupplementalDocTests
 			---
 
 			# elastic
-			""".ReplaceLineEndings("\n");
+			""".ReplaceLineEndings(
+			"\n"
+		);
 
 		markdown.Should().StartWith(expectedStart);
 		markdown.Should().NotContain("description: Use the Elastic CLI from the command line.\n\n");
@@ -43,7 +46,8 @@ public class CliSupplementalDocTests
 	public void RootPage_StripsFrontMatterBeforeParsingDescription()
 	{
 		var schema = CreateSchema();
-		const string raw = """
+		const string raw =
+			"""
 			---
 			description: Metadata description.
 			---
@@ -58,13 +62,14 @@ public class CliSupplementalDocTests
 		markdown.Should().NotContain("\nMetadata description.\n");
 	}
 
-	private static CliSchema CreateSchema() => new(
-		SchemaVersion: 1,
-		Name: "elastic",
-		Description: "Schema description.",
-		GlobalOptions: [],
-		RootDefault: null,
-		Commands: [],
-		Namespaces: []
-	);
+	private static CliSchema CreateSchema() =>
+		new(
+			SchemaVersion: 1,
+			Name: "elastic",
+			Description: "Schema description.",
+			GlobalOptions: [],
+			RootDefault: null,
+			Commands: [],
+			Namespaces: []
+		);
 }

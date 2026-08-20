@@ -170,8 +170,8 @@ public partial class ChangelogBundlingService(
 	IGitHubReleaseService? releaseService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
-	IGitHubCommitRangeService? commitRangeService = null)
-	: IService
+	IGitHubCommitRangeService? commitRangeService = null
+) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
@@ -263,8 +263,7 @@ public partial class ChangelogBundlingService(
 			// The --files / path-list filter follows the same gate: in CDN mode the requested paths are
 			// matched to pool entries by file name, so private repos whose entries exist only in S3 (with
 			// PR/issue references scrubbed from the public copies) can still bundle by explicit selection.
-			var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false)
-				|| input.ForceLocal;
+			var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false) || input.ForceLocal;
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
 			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
 			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
@@ -426,28 +425,24 @@ public partial class ChangelogBundlingService(
 		ChangelogConfiguration? config,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		string outputPath,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Apply rules.bundle secondary filter (three modes: none, global content, per-product context).
 		// Input stage (--input-products, --prs, etc.) and bundle filtering stage are conceptually separate.
 		var filteredEntries = entries;
 		if (config?.Rules?.Bundle != null)
 		{
-			var outputProductIds = input.OutputProducts
-				?.Select(p => p.Product)
-				.Where(p => !string.IsNullOrWhiteSpace(p))
-				.Select(p => p!)
-				.ToList();
+			var outputProductIds = input.OutputProducts?.Select(p => p.Product).Where(p => !string.IsNullOrWhiteSpace(p)).Select(
+				p => p!
+			).ToList();
 			var mode = config.Rules.Bundle.DetermineFilterMode();
 			filteredEntries = mode switch
 			{
 				BundleFilterMode.NoFiltering => filteredEntries,
 				BundleFilterMode.GlobalContent => ApplyGlobalContentBundleFilter(collector, filteredEntries, config.Rules.Bundle),
-				BundleFilterMode.PerProductContext => ApplyPerProductContextBundleFilter(
-					collector,
-					filteredEntries,
-					config.Rules.Bundle,
-					outputProductIds),
+				BundleFilterMode.PerProductContext =>
+					ApplyPerProductContextBundleFilter(collector, filteredEntries, config.Rules.Bundle, outputProductIds),
 				_ => filteredEntries
 			};
 		}
@@ -481,14 +476,17 @@ public partial class ChangelogBundlingService(
 		var bundleData = buildResult.Data;
 		if (input.LinkAllowRepos != null)
 		{
-			if (!LinkAllowlistSanitizer.TryApplyBundle(
-				collector,
-				bundleData,
-				input.LinkAllowRepos,
-				input.Owner ?? "elastic",
-				input.Repo,
-				out var sanitizedBundle,
-				out _))
+			if (
+				!LinkAllowlistSanitizer.TryApplyBundle(
+					collector,
+					bundleData,
+					input.LinkAllowRepos,
+					input.Owner ?? "elastic",
+					input.Repo,
+					out var sanitizedBundle,
+					out _
+				)
+			)
 				return false;
 			bundleData = sanitizedBundle;
 
@@ -504,7 +502,8 @@ public partial class ChangelogBundlingService(
 				{
 					collector.EmitWarning(
 						string.Empty,
-						$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
+						$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}"
+					);
 				}
 			}
 		}
@@ -512,17 +511,23 @@ public partial class ChangelogBundlingService(
 		// Apply description with placeholder substitution
 		if (!string.IsNullOrEmpty(input.Description))
 		{
-			var version = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Target : null)
-						  ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Target : null);
-			var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
-							?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
+			var version = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Target : null) ??
+				(bundleData.Products.Count > 0 ? bundleData.Products[0].Target : null);
+			var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null) ??
+				(bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
 			var owner = input.Owner ?? "elastic";
 			var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
 
 			try
 			{
 				var substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
-					input.Description, version, lifecycle, owner, repo, validateResolvable: true);
+					input.Description,
+					version,
+					lifecycle,
+					owner,
+					repo,
+					validateResolvable: true
+				);
 				bundleData = bundleData with { Description = substitutedDescription };
 			}
 			catch (InvalidOperationException ex)
@@ -565,7 +570,12 @@ public partial class ChangelogBundlingService(
 		return true;
 	}
 
-	private async Task<BundleChangelogsArguments?> ProcessProfile(IDiagnosticsCollector collector, BundleChangelogsArguments input, ChangelogConfiguration? config, Cancel ctx)
+	private async Task<BundleChangelogsArguments?> ProcessProfile(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		ChangelogConfiguration? config,
+		Cancel ctx
+	)
 	{
 		// Commit-range mode derives its PR list from git; the profile only contributes output
 		// metadata (output/output_products/repo/owner/branch/description), not a filter source.
@@ -602,9 +612,7 @@ public partial class ChangelogBundlingService(
 			// For all other profile types, infer it from the base version string.
 			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
 
-			var outputPattern = profile.Output?
-				.Replace("{version}", filterResult.Version)
-				.Replace("{lifecycle}", resolvedLifecycle);
+			var outputPattern = profile.Output?.Replace("{version}", filterResult.Version).Replace("{lifecycle}", resolvedLifecycle);
 			if (!string.IsNullOrWhiteSpace(outputPattern))
 			{
 				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
@@ -637,10 +645,18 @@ public partial class ChangelogBundlingService(
 				var outputProductsPattern = profile.OutputProducts
 					.Replace("{version}", filterResult.Version)
 					.Replace("{lifecycle}", resolvedLifecycle);
-				if (!ProfileFilterResolver.TryParseProfileProducts(outputProductsPattern, out var parsedOutputProducts, out var outputProductsParseError))
+				if (
+					!ProfileFilterResolver.TryParseProfileProducts(
+						outputProductsPattern,
+						out var parsedOutputProducts,
+						out var outputProductsParseError
+					)
+				)
 				{
-					collector.EmitError(string.Empty,
-						$"Profile '{input.Profile}': bundle.output_products could not be parsed: {outputProductsParseError}");
+					collector.EmitError(
+						string.Empty,
+						$"Profile '{input.Profile}': bundle.output_products could not be parsed: {outputProductsParseError}"
+					);
 					return null;
 				}
 
@@ -662,27 +678,34 @@ public partial class ChangelogBundlingService(
 				var hasVersionPlaceholder = descriptionTemplate.Contains("{version}") || descriptionTemplate.Contains("{lifecycle}");
 				var hasOwnerRepoPlaceholder = descriptionTemplate.Contains("{owner}") || descriptionTemplate.Contains("{repo}");
 
-				if (hasVersionPlaceholder &&
-					filterResult.Version == "unknown" &&
-					string.IsNullOrEmpty(profile.OutputProducts))
+				if (hasVersionPlaceholder && filterResult.Version == "unknown" && string.IsNullOrEmpty(profile.OutputProducts))
 				{
-					collector.EmitError(string.Empty,
+					collector.EmitError(
+						string.Empty,
 						$"Profile '{input.Profile}' uses {{version}} or {{lifecycle}} placeholders in description but no version is available for substitution. " +
-						"Either provide a version argument, or add 'output_products' pattern to the profile configuration.");
+							"Either provide a version argument, or add 'output_products' pattern to the profile configuration."
+					);
 					return null;
 				}
 
-				if (hasOwnerRepoPlaceholder &&
-					(string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo)))
+				if (hasOwnerRepoPlaceholder && (string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo)))
 				{
-					collector.EmitError(string.Empty,
+					collector.EmitError(
+						string.Empty,
 						$"Profile '{input.Profile}' uses {{owner}} or {{repo}} placeholders in description but values are not resolvable. " +
-						"Ensure repository metadata is available in the configuration.");
+							"Ensure repository metadata is available in the configuration."
+					);
 					return null;
 				}
 
-				profileDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
-					descriptionTemplate, filterResult.Version, resolvedLifecycle, owner, repo);
+				profileDescription =
+					BundleDescriptionSubstitution.SubstitutePlaceholders(
+						descriptionTemplate,
+						filterResult.Version,
+						resolvedLifecycle,
+						owner,
+						repo
+					);
 			}
 		}
 
@@ -717,7 +740,10 @@ public partial class ChangelogBundlingService(
 		{
 			if (input.DryRun)
 			{
-				collector.EmitError(string.Empty, "--dry-run is only supported when bundling a git commit range (--start-git-ref/--end-git-ref).");
+				collector.EmitError(
+					string.Empty,
+					"--dry-run is only supported when bundling a git commit range (--start-git-ref/--end-git-ref)."
+				);
 				return false;
 			}
 
@@ -726,8 +752,10 @@ public partial class ChangelogBundlingService(
 
 		if (hasStart != hasEnd)
 		{
-			collector.EmitError(string.Empty,
-				"--start-git-ref and --end-git-ref must be provided together; the start ref is never inferred from previous bundles.");
+			collector.EmitError(
+				string.Empty,
+				"--start-git-ref and --end-git-ref must be provided together; the start ref is never inferred from previous bundles."
+			);
 			return false;
 		}
 
@@ -749,9 +777,11 @@ public partial class ChangelogBundlingService(
 
 		if (conflicting.Count > 0)
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"--start-git-ref/--end-git-ref cannot be combined with other filter sources: {string.Join(", ", conflicting)}. " +
-				"The PR list is derived from the commit range itself.");
+					"The PR list is derived from the commit range itself."
+			);
 			return false;
 		}
 
@@ -766,7 +796,8 @@ public partial class ChangelogBundlingService(
 	private static ProfileFilterResult? ResolveGitRangeProfileFilter(
 		IDiagnosticsCollector collector,
 		BundleChangelogsArguments input,
-		ChangelogConfiguration? config)
+		ChangelogConfiguration? config
+	)
 	{
 		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
@@ -776,24 +807,30 @@ public partial class ChangelogBundlingService(
 
 		if (string.IsNullOrWhiteSpace(input.ProfileArgument))
 		{
-			collector.EmitError(string.Empty,
-				$"Profile '{input.Profile}' requires a version as the second argument when bundling a git commit range");
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{input.Profile}' requires a version as the second argument when bundling a git commit range"
+			);
 			return null;
 		}
 
 		if (string.Equals(profile.Source, "github_release", StringComparison.OrdinalIgnoreCase))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"Profile '{input.Profile}': 'source: github_release' cannot be combined with --start-git-ref/--end-git-ref. " +
-				"The PR list is derived from the commit range itself.");
+					"The PR list is derived from the commit range itself."
+			);
 			return null;
 		}
 
 		if (!string.IsNullOrWhiteSpace(profile.Products))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"Profile '{input.Profile}' has a 'products' pattern configured. " +
-				"A git commit range cannot be combined with a products pattern filter; use 'output_products' and 'rules' to shape the bundle.");
+					"A git commit range cannot be combined with a products pattern filter; use 'output_products' and 'rules' to shape the bundle."
+			);
 			return null;
 		}
 
@@ -820,24 +857,26 @@ public partial class ChangelogBundlingService(
 		BundleChangelogsArguments input,
 		ChangelogConfiguration? config,
 		GitRangeSourcingContext sourcing,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (string.IsNullOrWhiteSpace(sourcing.Repo))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				"Bundling a git commit range requires a resolvable authoring repository. " +
-				"Set bundle.repo in changelog.yml (or pass --repo).");
+					"Set bundle.repo in changelog.yml (or pass --repo)."
+			);
 			return false;
 		}
 
 		var owner = string.IsNullOrWhiteSpace(sourcing.Owner) ? DefaultOwner : sourcing.Owner;
-		var resolution = await _commitRangeService.ResolvePullRequestsAsync(collector, new CommitRangeArguments
-		{
-			Owner = owner,
-			Repo = sourcing.Repo,
-			StartRef = input.StartGitRef!,
-			EndRef = input.EndGitRef!
-		}, ctx);
+		var resolution =
+			await _commitRangeService.ResolvePullRequestsAsync(
+				collector,
+				new CommitRangeArguments { Owner = owner, Repo = sourcing.Repo, StartRef = input.StartGitRef!, EndRef = input.EndGitRef! },
+				ctx
+			);
 		if (resolution == null)
 			return false;
 
@@ -851,14 +890,22 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		var resolver = new GitRangeEntryResolver(_prService, _logger);
-		var result = await resolver.ResolveAsync(collector, resolution, candidates, config, new GitRangeEntryResolutionOptions
-		{
-			Owner = owner,
-			Repo = sourcing.Repo,
-			StartRef = input.StartGitRef!,
-			EndRef = input.EndGitRef!,
-			FallbackProducts = input.OutputProducts
-		}, ctx);
+		var result =
+			await resolver.ResolveAsync(
+				collector,
+				resolution,
+				candidates,
+				config,
+				new GitRangeEntryResolutionOptions
+				{
+					Owner = owner,
+					Repo = sourcing.Repo,
+					StartRef = input.StartGitRef!,
+					EndRef = input.EndGitRef!,
+					FallbackProducts = input.OutputProducts
+				},
+				ctx
+			);
 
 		var report = result.Report.ToMarkdown();
 		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
@@ -875,8 +922,10 @@ public partial class ChangelogBundlingService(
 
 		if (result.Entries.Count == 0)
 		{
-			collector.EmitError(string.Empty,
-				$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo}.");
+			collector.EmitError(
+				string.Empty,
+				$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo}."
+			);
 			return false;
 		}
 
@@ -888,7 +937,8 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		string directory,
 		string outputPath,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (!_fileSystem.Directory.Exists(directory))
 		{
@@ -957,7 +1007,8 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		BundleChangelogsArguments input,
 		bool hasReleaseVersion,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var needsNetwork = hasReleaseVersion;
 		var needsGithubToken = hasReleaseVersion;
@@ -987,8 +1038,7 @@ public partial class ChangelogBundlingService(
 			config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 
 		BundleProfile? profileDef = null;
-		if (!string.IsNullOrWhiteSpace(input.Profile) &&
-			config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
+		if (!string.IsNullOrWhiteSpace(input.Profile) && config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
 		{
 			if (string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase))
 			{
@@ -1000,8 +1050,7 @@ public partial class ChangelogBundlingService(
 		// CDN entry sourcing needs network access for the Docker bundle run. Mirror the run-mode gate:
 		// active when the authoring repo resolves (profile/config bundle.repo), the user has not forced
 		// local sourcing, and a CDN base is configured.
-		var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false)
-			|| input.ForceLocal;
+		var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false) || input.ForceLocal;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
 		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
@@ -1013,25 +1062,21 @@ public partial class ChangelogBundlingService(
 		{
 			var version = input.ProfileArgument ?? "unknown";
 			var lifecycle = VersionLifecycleInference.InferLifecycle(version);
-			var outputPattern = profileDef.Output
-				.Replace("{version}", version)
-				.Replace("{lifecycle}", lifecycle);
-			var outputDir = config?.Bundle?.OutputDirectory
-				?? config?.Bundle?.Directory
-				?? _fileSystem.Directory.GetCurrentDirectory();
+			var outputPattern = profileDef.Output.Replace("{version}", version).Replace("{lifecycle}", lifecycle);
+			var outputDir = config?.Bundle?.OutputDirectory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 			outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
 		}
-		else if (string.IsNullOrWhiteSpace(outputPath) &&
-			!string.IsNullOrWhiteSpace(input.StartGitRef) &&
-			profileDef != null &&
-			!string.IsNullOrWhiteSpace(input.ProfileArgument) &&
-			ResolvePrimaryProduct(profileDef, input) is { } primaryProduct)
+		else if (
+			string.IsNullOrWhiteSpace(outputPath)
+			&& !string.IsNullOrWhiteSpace(input.StartGitRef)
+			&& profileDef != null
+			&& !string.IsNullOrWhiteSpace(input.ProfileArgument)
+			&& ResolvePrimaryProduct(profileDef, input) is { } primaryProduct
+		)
 		{
 			// Mirror ProcessProfile's commit-range convention: {product}-{version}.yaml when the
 			// profile sets no explicit output pattern.
-			var outputDir = config?.Bundle?.OutputDirectory
-				?? config?.Bundle?.Directory
-				?? _fileSystem.Directory.GetCurrentDirectory();
+			var outputDir = config?.Bundle?.OutputDirectory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{input.ProfileArgument}.yaml").OptionalWindowsReplace();
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
@@ -1102,14 +1147,17 @@ public partial class ChangelogBundlingService(
 		string? org,
 		string? repo,
 		string? branch,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (string.IsNullOrWhiteSpace(repo))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				"Sourcing changelog entries from the CDN requires a resolvable authoring repository. " +
-				"Set bundle.repo in changelog.yml (or pass --repo), or set bundle.use_local_changelogs: true " +
-				"in changelog.yml / pass --directory to bundle local changelog files.");
+					"Set bundle.repo in changelog.yml (or pass --repo), or set bundle.use_local_changelogs: true " +
+					"in changelog.yml / pass --directory to bundle local changelog files."
+			);
 			return null;
 		}
 
@@ -1121,20 +1169,28 @@ public partial class ChangelogBundlingService(
 		var baseUri = ChangelogCdn.ResolveBaseUri();
 		if (baseUri is null)
 		{
-			collector.EmitError(string.Empty,
-				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+			collector.EmitError(
+				string.Empty,
+				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL."
+			);
 			return null;
 		}
 
 		var fatalFailure = false;
-		var entries = await _entryFetcher.FetchAsync(
-			baseUri,
-			resolvedOrg,
-			repo,
-			resolvedBranch,
-			msg => { fatalFailure = true; collector.EmitError(string.Empty, msg); },
-			msg => collector.EmitWarning(string.Empty, msg),
-			ctx);
+		var entries =
+			await _entryFetcher.FetchAsync(
+				baseUri,
+				resolvedOrg,
+				repo,
+				resolvedBranch,
+				msg =>
+				{
+					fatalFailure = true;
+					collector.EmitError(string.Empty, msg);
+				},
+				msg => collector.EmitWarning(string.Empty, msg),
+				ctx
+			);
 
 		// The fetcher emits an error (via the callback above) for any fatal condition — a registry that
 		// cannot be read, or a registry-listed entry still missing after its retry budget. Either would
@@ -1146,8 +1202,11 @@ public partial class ChangelogBundlingService(
 		foreach (var entry in entries)
 			byName[entry.FileName] = entry.Content;
 
-		_logger.LogInformation("Sourced {Count} changelog entr(ies) from the CDN for {Pool}",
-			byName.Count, $"{resolvedOrg}/{repo}/{resolvedBranch}");
+		_logger.LogInformation(
+			"Sourced {Count} changelog entr(ies) from the CDN for {Pool}",
+			byName.Count,
+			$"{resolvedOrg}/{repo}/{resolvedBranch}"
+		);
 
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}
@@ -1171,7 +1230,8 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<(string FileName, string Content)> contents,
 		IReadOnlyList<string> requestedEntryNames,
-		string poolLabel)
+		string poolLabel
+	)
 	{
 		var byName = new Dictionary<string, string>(StringComparer.Ordinal);
 		foreach (var (fileName, content) in contents)
@@ -1192,14 +1252,20 @@ public partial class ChangelogBundlingService(
 
 		if (missing.Count > 0)
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"Changelog entr{(missing.Count == 1 ? "y" : "ies")} not found in the CDN pool '{poolLabel}': {string.Join(", ", missing)}. " +
-				"Ensure the entries were uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead.");
+					"Ensure the entries were uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead."
+			);
 			return null;
 		}
 
-		_logger.LogInformation("Selected {Selected} of {Total} CDN entries by requested file name for {Pool}",
-			selected.Count, contents.Count, poolLabel);
+		_logger.LogInformation(
+			"Selected {Selected} of {Total} CDN entries by requested file name for {Pool}",
+			selected.Count,
+			contents.Count,
+			poolLabel
+		);
 		return selected;
 	}
 
@@ -1232,14 +1298,19 @@ public partial class ChangelogBundlingService(
 
 		if (specifiedFilters.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, or --files");
+			collector.EmitError(
+				string.Empty,
+				"At least one filter option must be specified: --all, --input-products, --prs, --issues, or --files"
+			);
 			return false;
 		}
 
 		if (specifiedFilters.Count > 1)
 		{
-			collector.EmitError(string.Empty,
-				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, --issues, or --files");
+			collector.EmitError(
+				string.Empty,
+				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, --issues, or --files"
+			);
 			return false;
 		}
 
@@ -1254,16 +1325,18 @@ public partial class ChangelogBundlingService(
 		if (string.IsNullOrEmpty(input.Description))
 			return true;
 
-		var hasPlaceholders = input.Description.Contains("{version}") ||
-							 input.Description.Contains("{lifecycle}") ||
-							 input.Description.Contains("{owner}") ||
-							 input.Description.Contains("{repo}");
+		var hasPlaceholders = input.Description.Contains("{version}")
+			|| input.Description.Contains("{lifecycle}")
+			|| input.Description.Contains("{owner}")
+			|| input.Description.Contains("{repo}");
 
 		if (hasPlaceholders && (input.OutputProducts == null || input.OutputProducts.Count == 0))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				"When using placeholders in bundle description in option-based mode, " +
-				"--output-products must be explicitly specified to ensure predictable substitution values.");
+					"--output-products must be explicitly specified to ensure predictable substitution values."
+			);
 			return false;
 		}
 
@@ -1273,7 +1346,8 @@ public partial class ChangelogBundlingService(
 	private static ChangelogFilterCriteria BuildFilterCriteria(
 		BundleChangelogsArguments input,
 		HashSet<string> prsToMatch,
-		HashSet<string> issuesToMatch)
+		HashSet<string> issuesToMatch
+	)
 	{
 		var productFilters = new List<ProductFilter>();
 		if (input.InputProducts is { Count: > 0 })
@@ -1351,8 +1425,10 @@ public partial class ChangelogBundlingService(
 		pr = pr.Trim();
 
 		// Handle full URL: https://github.com/owner/repo/pull/123
-		if (pr.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			pr.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			pr.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			pr.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			// Use regex to parse URL more reliably
 			var match = GitHubPrUrlRegex().Match(pr);
@@ -1361,8 +1437,7 @@ public partial class ChangelogBundlingService(
 				var owner = match.Groups[1].Value.Trim();
 				var repo = match.Groups[2].Value.Trim();
 				var prPart = match.Groups[3].Value.Trim();
-				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
-					int.TryParse(prPart, out var prNum))
+				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) && int.TryParse(prPart, out var prNum))
 					return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
 			}
 
@@ -1377,8 +1452,7 @@ public partial class ChangelogBundlingService(
 					var owner = segments[1].TrimEnd('/').Trim();
 					var repo = segments[2].TrimEnd('/').Trim();
 					var prPart = segments[4].TrimEnd('/').Trim();
-					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
-						int.TryParse(prPart, out var prNum))
+					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) && int.TryParse(prPart, out var prNum))
 						return $"{owner}/{repo}#{prNum}".ToLowerInvariant();
 				}
 			}
@@ -1408,8 +1482,7 @@ public partial class ChangelogBundlingService(
 		}
 
 		// Handle just a PR number when owner/repo are provided
-		if (int.TryParse(pr, out var prNumber) &&
-			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		if (int.TryParse(pr, out var prNumber) && !string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
 			return $"{defaultOwner}/{defaultRepo}#{prNumber}".ToLowerInvariant();
 
 		// Return as-is for comparison (fallback)
@@ -1420,8 +1493,10 @@ public partial class ChangelogBundlingService(
 	{
 		issue = issue.Trim();
 
-		if (issue.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			issue.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			issue.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			issue.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			var match = GitHubIssueUrlRegex().Match(issue);
 			if (match is { Success: true, Groups.Count: >= 4 })
@@ -1429,8 +1504,7 @@ public partial class ChangelogBundlingService(
 				var owner = match.Groups[1].Value.Trim();
 				var repo = match.Groups[2].Value.Trim();
 				var issuePart = match.Groups[3].Value.Trim();
-				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
-					int.TryParse(issuePart, out var issueNum))
+				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) && int.TryParse(issuePart, out var issueNum))
 					return $"{owner}/{repo}#{issueNum}".ToLowerInvariant();
 			}
 
@@ -1443,8 +1517,7 @@ public partial class ChangelogBundlingService(
 					var owner = segments[1].TrimEnd('/').Trim();
 					var repo = segments[2].TrimEnd('/').Trim();
 					var issuePart = segments[4].TrimEnd('/').Trim();
-					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
-						int.TryParse(issuePart, out var issueNum))
+					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) && int.TryParse(issuePart, out var issueNum))
 						return $"{owner}/{repo}#{issueNum}".ToLowerInvariant();
 				}
 			}
@@ -1472,8 +1545,7 @@ public partial class ChangelogBundlingService(
 			}
 		}
 
-		if (int.TryParse(issue, out var issueNumber) &&
-			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		if (int.TryParse(issue, out var issueNumber) && !string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
 			return $"{defaultOwner}/{defaultRepo}#{issueNumber}".ToLowerInvariant();
 
 		return issue.ToLowerInvariant();
@@ -1482,7 +1554,8 @@ public partial class ChangelogBundlingService(
 	private static IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
-		BundleRules bundleRules)
+		BundleRules bundleRules
+	)
 	{
 		var filtered = new List<MatchedChangelogFile>();
 		var warnedMissingProducts = false;
@@ -1495,16 +1568,24 @@ public partial class ChangelogBundlingService(
 			{
 				if (!warnedMissingProducts)
 				{
-					collector.EmitWarning(entry.FilePath,
-						"[-bundle-global] Changelog has no products declared; product filters are skipped for this entry. See documentation for rules.bundle global mode.");
+					collector.EmitWarning(
+						entry.FilePath,
+						"[-bundle-global] Changelog has no products declared; product filters are skipped for this entry. See documentation for rules.bundle global mode."
+					);
 					warnedMissingProducts = true;
 				}
 				else
-					collector.EmitWarning(entry.FilePath, "[-bundle-global] Changelog has no products declared; product filters are skipped for this entry.");
+					collector.EmitWarning(
+						entry.FilePath,
+						"[-bundle-global] Changelog has no products declared; product filters are skipped for this entry."
+					);
 
 				if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 				{
-					collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter).");
+					collector.EmitWarning(
+						entry.FilePath,
+						$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
+					);
 					continue;
 				}
 
@@ -1514,13 +1595,19 @@ public partial class ChangelogBundlingService(
 
 			if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
 			{
-				collector.EmitWarning(entry.FilePath, $"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (global product filter).");
+				collector.EmitWarning(
+					entry.FilePath,
+					$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (global product filter)."
+				);
 				continue;
 			}
 
 			if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 			{
-				collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter).");
+				collector.EmitWarning(
+					entry.FilePath,
+					$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
+				);
 				continue;
 			}
 
@@ -1534,22 +1621,23 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
-		IReadOnlyList<string>? outputProductIds = null)
+		IReadOnlyList<string>? outputProductIds = null
+	)
 	{
 		// Early validation: validate bundle has some product context
-		if ((outputProductIds == null || outputProductIds.Count == 0) &&
-			!entries.Any(e => e.Data.Products?.Any() == true))
+		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Any() == true))
 		{
-			collector.EmitError(string.Empty,
-				"Bundle has no product context - specify output_products or ensure changelogs declare products");
+			collector.EmitError(
+				string.Empty,
+				"Bundle has no product context - specify output_products or ensure changelogs declare products"
+			);
 			return [];
 		}
 
 		// BUNDLE-LEVEL: Determine rule context product once for entire bundle
 		// Always use alphabetical first for consistency, regardless of source
-		var ruleContextProduct = outputProductIds?.OrderBy(id => id, StringComparer.OrdinalIgnoreCase).FirstOrDefault()
-			?? entries
-				.SelectMany(e => e.Data.Products?.Select(p => p.ProductId) ?? [])
+		var ruleContextProduct = outputProductIds?.OrderBy(id => id, StringComparer.OrdinalIgnoreCase).FirstOrDefault() ??
+			entries.SelectMany(e => e.Data.Products?.Select(p => p.ProductId) ?? [])
 				.Distinct(StringComparer.OrdinalIgnoreCase)
 				.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
 				.FirstOrDefault();
@@ -1567,47 +1655,62 @@ public partial class ChangelogBundlingService(
 			switch (resolveResult.Result)
 			{
 				case ResolveResult.ExcludeMissingProducts:
-					collector.EmitWarning(entry.FilePath, $"[-bundle-missing-products] Excluding '{entry.FileName}' from bundle (no products declared).");
+					collector.EmitWarning(
+						entry.FilePath,
+						$"[-bundle-missing-products] Excluding '{entry.FileName}' from bundle (no products declared)."
+					);
 					ruleStats["excluded_no_products"] = ruleStats.GetValueOrDefault("excluded_no_products") + 1;
 					continue;
-
 				case ResolveResult.ExcludeDisjoint:
-					collector.EmitHint(entry.FilePath, $"[-bundle-disjoint] Excluding '{entry.FileName}' from bundle (disjoint from rule context '{ruleContextProduct}').");
+					collector.EmitHint(
+						entry.FilePath,
+						$"[-bundle-disjoint] Excluding '{entry.FileName}' from bundle (disjoint from rule context '{ruleContextProduct}')."
+					);
 					ruleStats["excluded_disjoint"] = ruleStats.GetValueOrDefault("excluded_disjoint") + 1;
 					continue;
-
 				case ResolveResult.UsePerProduct when resolveResult.Rule != null:
 					// Apply per-product rule
 					ruleStats[ruleContextProduct ?? "unknown"] = ruleStats.GetValueOrDefault(ruleContextProduct ?? "unknown") + 1;
 
 					// Emit hint about ineffective pattern usage (once per bundle, not per entry)
-					if (resolveResult.Rule.MatchProducts == MatchMode.Any &&
-						resolveResult.Rule.IncludeProducts?.Count > 0 &&
-						!ruleStats.ContainsKey("ineffective_pattern_warned"))
+					if (
+						resolveResult.Rule.MatchProducts == MatchMode.Any
+						&& resolveResult.Rule.IncludeProducts?.Count > 0
+						&& !ruleStats.ContainsKey("ineffective_pattern_warned")
+					)
 					{
-						var wouldIncludeAll = resolveResult.Rule.IncludeProducts.Contains(ruleContextProduct ?? "", StringComparer.OrdinalIgnoreCase);
-						collector.EmitHint(string.Empty,
+						var wouldIncludeAll = resolveResult.Rule
+							.IncludeProducts
+							.Contains(ruleContextProduct ?? "", StringComparer.OrdinalIgnoreCase);
+						collector.EmitHint(
+							string.Empty,
 							$"Note: Per-product rule '{ruleContextProduct}' uses 'match_products: any' with 'include_products' which acts as " +
-							$"{(wouldIncludeAll ? "include-all" : "exclude-all")} for this context. " +
-							$"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md");
+								$"{(wouldIncludeAll ? "include-all" : "exclude-all")} for this context. " +
+								$"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md"
+						);
 						ruleStats["ineffective_pattern_warned"] = 1;
 					}
 
 					// 1 — Product filter: use per-product rule
 					if (ShouldExcludeByResolvedProductRule(entryProducts, resolveResult.Rule, out var productReason))
 					{
-						collector.EmitWarning(entry.FilePath, $"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (per-product filter).");
+						collector.EmitWarning(
+							entry.FilePath,
+							$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (per-product filter)."
+						);
 						continue;
 					}
 
 					// 2 — Type/area filter: use per-product blocker
 					if (resolveResult.Rule.Blocker != null && resolveResult.Rule.Blocker.ShouldBlock(entry.Data))
 					{
-						collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (per-product type/area filter).");
+						collector.EmitWarning(
+							entry.FilePath,
+							$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (per-product type/area filter)."
+						);
 						continue;
 					}
 					break;
-
 				case ResolveResult.PassThrough:
 					ruleStats["pass_through"] = ruleStats.GetValueOrDefault("pass_through") + 1;
 					break;
@@ -1621,6 +1724,7 @@ public partial class ChangelogBundlingService(
 		{
 			var message = $"Applied rules - {string.Join(", ", ruleStats.Select(kvp => $"{kvp.Key}: {kvp.Value} entries"))}";
 			if (ruleStats.Count > 2) // More than one rule type being used
+
 			{
 				message += ". Review rules.bundle configuration and documentation if this distribution seems unexpected.";
 			}
@@ -1637,13 +1741,13 @@ public partial class ChangelogBundlingService(
 	private static bool EntryMatchesProductList(
 		IReadOnlyList<string> entryProducts,
 		IReadOnlyList<string> list,
-		MatchMode matchProducts) =>
-		matchProducts switch
-		{
-			MatchMode.All => entryProducts.All(p => list.Contains(p, StringComparer.OrdinalIgnoreCase)),
-			MatchMode.Conjunction => list.All(id => entryProducts.Contains(id, StringComparer.OrdinalIgnoreCase)),
-			_ => entryProducts.Any(p => list.Contains(p, StringComparer.OrdinalIgnoreCase))
-		};
+		MatchMode matchProducts
+	) => matchProducts switch
+	{
+		MatchMode.All => entryProducts.All(p => list.Contains(p, StringComparer.OrdinalIgnoreCase)),
+		MatchMode.Conjunction => list.All(id => entryProducts.Contains(id, StringComparer.OrdinalIgnoreCase)),
+		_ => entryProducts.Any(p => list.Contains(p, StringComparer.OrdinalIgnoreCase))
+	};
 
 	private static bool ShouldExcludeByProductFilter(IReadOnlyList<string> entryProducts, BundleRules bundleRules, out string reason)
 	{
@@ -1665,7 +1769,11 @@ public partial class ChangelogBundlingService(
 		return false;
 	}
 
-	private static bool ShouldExcludeByResolvedProductRule(IReadOnlyList<string> entryProducts, BundlePerProductRule rule, out string reason)
+	private static bool ShouldExcludeByResolvedProductRule(
+		IReadOnlyList<string> entryProducts,
+		BundlePerProductRule rule,
+		out string reason
+	)
 	{
 		if (rule.ExcludeProducts is { Count: > 0 } excludeList)
 		{
@@ -1685,12 +1793,11 @@ public partial class ChangelogBundlingService(
 		return false;
 	}
 
-
-
 	private static ResolveResultWithRule ResolvePerProductBundleRule(
 		IReadOnlyList<string> entryProducts,
 		BundleRules bundleRules,
-		string? ruleContextProduct)
+		string? ruleContextProduct
+	)
 	{
 		if (bundleRules.ByProduct is not { Count: > 0 } byProduct)
 			return ResolveResultWithRule.PassThrough();

@@ -37,8 +37,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx) =>
 		ParseFromFile(path, matter, Pipeline, false, ctx);
 
-	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) =>
-		ParseFromFile(path, null, MinimalPipeline, true, ctx);
+	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) => ParseFromFile(path, null, MinimalPipeline, true, ctx);
 
 	private Task<MarkdownDocument> ParseFromFile(IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, bool skip, Cancel ctx)
 	{
@@ -69,25 +68,57 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
 		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
 
-	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath) =>
-		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, MinimalPipeline);
+	public MarkdownDocument MinimalParseStringAsync(
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		IFileInfo? originalSourcePath
+	) => ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, MinimalPipeline);
 
-	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, null, pipeline);
+	private MarkdownDocument ParseMarkdownStringAsync(
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		MarkdownPipeline pipeline
+	) => ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, null, pipeline);
 
-	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, originalSourcePath, pipeline);
+	private MarkdownDocument ParseMarkdownStringAsync(
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		IFileInfo? originalSourcePath,
+		MarkdownPipeline pipeline
+	) => ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, originalSourcePath, pipeline);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
-		YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, null, pipeline);
+	public static MarkdownDocument ParseMarkdownStringAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		MarkdownPipeline pipeline
+	) => ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, null, pipeline);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
-		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, originalSourcePath, pipeline, skipValidation: false);
+	public static MarkdownDocument ParseMarkdownStringAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		IFileInfo? originalSourcePath,
+		MarkdownPipeline pipeline
+	) => ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, originalSourcePath, pipeline, skipValidation: false);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
-		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline, bool skipValidation)
+	public static MarkdownDocument ParseMarkdownStringAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		IFileInfo? originalSourcePath,
+		MarkdownPipeline pipeline,
+		bool skipValidation
+	)
 	{
 		var state = new ParserState(build)
 		{
@@ -109,8 +140,15 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		return Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 	}
 
-	public static Task<MarkdownDocument> ParseSnippetAsync(BuildContext build, IParserResolvers resolvers, IFileInfo path, IFileInfo parentPath,
-		YamlFrontMatter? matter, Cancel ctx, int? includeLine = null)
+	public static Task<MarkdownDocument> ParseSnippetAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		IFileInfo path,
+		IFileInfo parentPath,
+		YamlFrontMatter? matter,
+		Cancel ctx,
+		int? includeLine = null
+	)
 	{
 		var state = new ParserState(build)
 		{
@@ -128,12 +166,12 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
-
 	private static async Task<MarkdownDocument> ParseAsync(
 		IFileInfo path,
 		MarkdownParserContext context,
 		MarkdownPipeline pipeline,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		string inputMarkdown;
 		if (path.FileSystem is FileSystem)
@@ -161,6 +199,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseFootnotes() // Must match Pipeline to avoid inconsistent footnote handling
+
 				.UseInlineAnchors()
 				.UseHeadingsWithSlugs()
 				.UseDirectives();
@@ -183,6 +222,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseInlineAnchors()
 				.UsePreciseSourceLocation()
 				.UseFootnotes() // Must be before UseDiagnosticLinks to ensure FootnoteLinkParser is inserted correctly
+
 				.UseDiagnosticLinks()
 				.UseAutoLinks()
 				.UseHeadingsWithSlugs()
@@ -228,28 +268,31 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		// Find all code block boundaries to avoid processing links inside subs=false blocks
 		var codeBlockRanges = GetCodeBlockRanges(markdown);
 
-		return LinkPattern().Replace(markdown, match =>
-		{
-			// Check if this link is inside a code block with subs=false
-			if (IsInsideSubsDisabledCodeBlock(match.Index, codeBlockRanges))
-				return match.Value; // Don't process links in subs=false code blocks
-
-			var linkText = match.Groups[1].Value;
-			var linkUrl = match.Groups[2].Value;
-
-			// Only preprocess external links to preserve internal link validation behavior
-			// Check if URL contains substitutions and looks like it might resolve to an external URL
-			if (linkUrl.Contains("{{") && (linkUrl.Contains("http") || linkText.Contains("{{")))
+		return LinkPattern().Replace(
+			markdown,
+			match =>
 			{
-				// Apply substitutions to both link text and URL
-				var processedText = linkText.ReplaceSubstitutions(context);
-				var processedUrl = linkUrl.ReplaceSubstitutions(context);
-				return $"[{processedText}]({processedUrl})";
-			}
+				// Check if this link is inside a code block with subs=false
+				if (IsInsideSubsDisabledCodeBlock(match.Index, codeBlockRanges))
+					return match.Value; // Don't process links in subs=false code blocks
 
-			// Return original match for internal links
-			return match.Value;
-		});
+				var linkText = match.Groups[1].Value;
+				var linkUrl = match.Groups[2].Value;
+
+				// Only preprocess external links to preserve internal link validation behavior
+				// Check if URL contains substitutions and looks like it might resolve to an external URL
+				if (linkUrl.Contains("{{") && (linkUrl.Contains("http") || linkText.Contains("{{")))
+				{
+					// Apply substitutions to both link text and URL
+					var processedText = linkText.ReplaceSubstitutions(context);
+					var processedUrl = linkUrl.ReplaceSubstitutions(context);
+					return $"[{processedText}]({processedUrl})";
+				}
+
+				// Return original match for internal links
+				return match.Value;
+			}
+		);
 	}
 
 	private static List<(int start, int end, bool subsDisabled)> GetCodeBlockRanges(string markdown)
@@ -322,5 +365,4 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 
 		return false;
 	}
-
 }

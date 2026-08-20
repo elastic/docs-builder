@@ -16,9 +16,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Uploading;
 
-public enum ArtifactType { Changelog, Bundle }
+public enum ArtifactType
+{
+	Changelog,
+	Bundle
+}
 
-public enum UploadTargetKind { S3, Elasticsearch }
+public enum UploadTargetKind
+{
+	S3,
+	Elasticsearch
+}
 
 public record ChangelogUploadArguments
 {
@@ -108,7 +116,12 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		_logger.LogInformation("Found {Count} {ArtifactType} upload target(s) from {Directory}", targets.Count, args.ArtifactType, directory);
+		_logger.LogInformation(
+			"Found {Count} {ArtifactType} upload target(s) from {Directory}",
+			targets.Count,
+			args.ArtifactType,
+			directory
+		);
 
 		using var defaultClient = s3Client == null ? new AmazonS3Client() : null;
 		var client = s3Client ?? defaultClient!;
@@ -116,7 +129,12 @@ public class ChangelogUploadService(
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
 		var result = await uploader.Upload(targets, args.SkipEtagCheck, ctx);
 
-		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed", result.Uploaded, result.Skipped, result.Failed);
+		_logger.LogInformation(
+			"Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed",
+			result.Uploaded,
+			result.Skipped,
+			result.Failed
+		);
 
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
@@ -127,38 +145,51 @@ public class ChangelogUploadService(
 		return result.Failed == 0;
 	}
 
-	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir, string? org, string? repo, string? branch)
+	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(
+		IDiagnosticsCollector collector,
+		string changelogDir,
+		string? org,
+		string? repo,
+		string? branch
+	)
 	{
 		// Option AD: entries live once, under the authoring org/repo/branch pool — independent of which
 		// products later consume them. Org, repo, and branch must all resolve (CLI flags > bundle config >
 		// git); a missing/invalid value is fatal because every entry key derives from them.
 		if (!ChangelogKeys.IsValidOrg(org))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"A valid GitHub owner is required to upload changelog entries (resolved: \"{org ?? "<none>"}\"). " +
-				"Set --owner, bundle.owner in changelog.yml, or run inside a checkout with a github.com origin remote.");
+					"Set --owner, bundle.owner in changelog.yml, or run inside a checkout with a github.com origin remote."
+			);
 			return [];
 		}
 
 		if (!ChangelogKeys.IsValidRepo(repo))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"A valid repository identifier is required to upload changelog entries (resolved: \"{repo ?? "<none>"}\"). " +
-				"Set --repo, bundle.repo in changelog.yml, or run inside a checkout with a github.com origin remote.");
+					"Set --repo, bundle.repo in changelog.yml, or run inside a checkout with a github.com origin remote."
+			);
 			return [];
 		}
 
 		if (!ChangelogKeys.IsValidBranch(branch))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"A valid branch is required to upload changelog entries (resolved: \"{branch ?? "<none>"}\"). " +
-				"Set --branch or run inside a checkout with a current branch.");
+					"Set --branch or run inside a checkout with a current branch."
+			);
 			return [];
 		}
 
 		var rootDir = _fileSystem.DirectoryInfo.New(changelogDir);
 
-		var yamlFiles = _fileSystem.Directory.GetFiles(changelogDir, "*.yaml", SearchOption.TopDirectoryOnly)
+		var yamlFiles = _fileSystem.Directory
+			.GetFiles(changelogDir, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(_fileSystem.Directory.GetFiles(changelogDir, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();
 
@@ -185,7 +216,8 @@ public class ChangelogUploadService(
 	{
 		var rootDir = _fileSystem.DirectoryInfo.New(bundleDir);
 
-		var yamlFiles = _fileSystem.Directory.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
+		var yamlFiles = _fileSystem.Directory
+			.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(_fileSystem.Directory.GetFiles(bundleDir, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();
 
@@ -209,9 +241,11 @@ public class ChangelogUploadService(
 				products = ReadProductsFromParentBundle(filePath);
 				if (products.Count == 0)
 				{
-					collector.EmitWarning(filePath,
+					collector.EmitWarning(
+						filePath,
 						"Amend bundle declares no products and its parent bundle is missing or has none; " +
-						"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products.");
+							"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products."
+					);
 					continue;
 				}
 			}
@@ -243,9 +277,7 @@ public class ChangelogUploadService(
 	private List<string> ReadProductsFromParentBundle(string amendFilePath)
 	{
 		var parentPath = BundleAmendMerger.GetParentBundlePath(amendFilePath);
-		return parentPath != null && _fileSystem.File.Exists(parentPath)
-			? ReadProductsFromBundle(parentPath)
-			: [];
+		return parentPath != null && _fileSystem.File.Exists(parentPath) ? ReadProductsFromBundle(parentPath) : [];
 	}
 
 	private List<string> ReadProductsFromBundle(string filePath)
@@ -255,11 +287,7 @@ public class ChangelogUploadService(
 			var content = _fileSystem.File.ReadAllText(filePath);
 			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
 
-			return bundle.Products
-				.Select(p => p.ProductId)
-				.Where(p => !string.IsNullOrWhiteSpace(p))
-				.Distinct()
-				.ToList();
+			return bundle.Products.Select(p => p.ProductId).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().ToList();
 		}
 		catch (Exception ex)
 		{

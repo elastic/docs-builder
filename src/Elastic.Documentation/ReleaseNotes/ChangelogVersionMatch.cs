@@ -30,7 +30,7 @@ public static class ChangelogVersionMatch
 			return false;
 
 		var name = Path.GetFileName(file);
-		return string.Equals(name, value, StringComparison.OrdinalIgnoreCase)
-			|| string.Equals(Path.GetFileNameWithoutExtension(file), value, StringComparison.OrdinalIgnoreCase);
+		return string.Equals(name, value, StringComparison.OrdinalIgnoreCase) ||
+			string.Equals(Path.GetFileNameWithoutExtension(file), value, StringComparison.OrdinalIgnoreCase);
 	}
 }
