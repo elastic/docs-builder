@@ -8,10 +8,10 @@
 	var mobileSummary = activeMobileLink?.Title ?? "Docs Home";
 	var hasMobileDrawerControls = topNavLinks.Length > 0 || Model.ShowVersionDropdown;
 }
-<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
+<aside class="sidebar font-sans bg-white md:bg-transparent fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 md:border-0 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1 flex flex-col min-h-0">
 	<nav
 		id="pages-nav"
-		class="sidebar-nav h-full simple-scrollbar">
+		class="sidebar-nav min-h-0 flex-1 flex flex-col">
 		@if (hasMobileDrawerControls)
 		{
 			<div class="md:hidden border-b border-grey-20 px-4 py-4">
@@ -29,6 +29,9 @@
 								</svg>
 							</summary>
 							<div class="mt-2 rounded-md border border-grey-20 bg-white py-1 text-sm font-semibold shadow-sm">
+								<a href="@Model.Link("/")"
+								   preload="mousedown"
+								   class="block px-3 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
 								@foreach (var link in topNavLinks)
 								{
 									var isActive = link.IsActive(currentSectionId);

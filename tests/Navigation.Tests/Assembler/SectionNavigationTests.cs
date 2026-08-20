@@ -166,7 +166,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// ──────────────────────────────────────────────────────────────
 
 	[Fact]
-	public void BackLink_FromSectionIsland_IncludesElasticDocs()
+	public void BackLink_FromSectionIsland_OmitsDocs()
 	{
 		// language=yaml
 		var yaml = """
@@ -183,7 +183,8 @@ public class SectionNavigationTests(ITestOutputHelper output)
 
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
-		// The section IS the island; render its sidebar and check back-links
+		// The section's only ancestor is SiteNavigation ("Docs");
+		// assembler omits it because the top-bar Docs tab already links home.
 		var renderModel = NavigationRenderModel.Create(
 			tree: section,
 			topLevelItems: nav.TopLevelItems,
@@ -191,9 +192,9 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			isPrimaryNavEnabled: true,
 			isGlobalAssemblyBuild: true);
 
-		// Only ancestor above the section is SiteNavigation ("Elastic Docs")
-		renderModel.BackLinks.Should().Contain(link => link.Title == "Elastic Docs",
-			"the section's only ancestor is SiteNavigation");
+		// Only ancestor above the section is SiteNavigation ("Docs")
+		renderModel.BackLinks.Should().NotContain(link => link.Title == "Docs",
+			"assembler Docs tab in the top bar already links to the site root");
 		renderModel.BackLinks.Should().NotContain(link => link.Title == "Guides",
 			"the section itself is not its own back-link");
 	}
@@ -338,5 +339,82 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		tab.SectionId.Should().Be(section.Id,
 			"active-tab detection matches NavigationRoot.Id == section.Id");
 		tab.SectionIds.Should().BeNull("multi-root SectionIds are not needed when the section is the island");
+	}
+
+	[Fact]
+	public void SectionTopNavBuilder_SkipsStrayTopLevelTocEntries()
+	{
+		// language=yaml
+		var yaml = """
+		           toc:
+		             - section: Guides
+		               children:
+		                 - toc: observability://
+		                   path_prefix: /observability
+		             - toc: serverless-search://
+		               path_prefix: /search
+		           """;
+
+		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var navFile = SiteNavigationFile.Deserialize(yaml);
+
+		var renderModel = SectionTopNavBuilder.Build(nav, navFile);
+
+		renderModel.Should().NotBeNull();
+		renderModel.Items.Should().ContainSingle()
+			.Which.Title.Should().Be("Guides");
+	}
+
+	[Fact]
+	public void TocNavigationTitle_OverridesTheDocsetIndexTitle()
+	{
+		// language=yaml
+		var yaml = """
+		           toc:
+		             - section: Guides
+		               children:
+		                 - toc: observability://
+		                   path_prefix: /observability
+		                   navigation_title: Manage your Cloud account
+		                 - toc: serverless-search://
+		                   path_prefix: /search
+		           """;
+
+		var (_, obsNav, searchNav) = BuildTwoChildSection(output, yaml);
+
+		obsNav.NavigationTitle.Should().Be("Manage your Cloud account");
+		obsNav.NavigationTitleOverride.Should().Be("Manage your Cloud account");
+		searchNav.NavigationTitleOverride.Should().BeNull();
+	}
+
+	[Fact]
+	public void TocNavigationTitle_OverridesNestedTableOfContentsTitle()
+	{
+		// language=yaml
+		var yaml = """
+		           toc:
+		             - toc: platform://cloud-guide
+		               path_prefix: /cloud
+		               navigation_title: Manage your Cloud account
+		           """;
+
+		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var platformCtx = SiteNavigationTestFixture.CreateAssemblerContext(
+			fileSystem, "/checkouts/current/platform", output);
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformCtx.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
+		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(
+			platformDocset, platformCtx, GenericDocumentationFileFactory.Instance);
+		var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var nav = new SiteNavigation(siteNavFile, siteCtx, [platformNav], sitePrefix: "/docs");
+
+		var cloudGuide = nav.NavigationItems.Should().ContainSingle()
+			.Which.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>().Subject;
+		cloudGuide.NavigationTitleOverride.Should().Be("Manage your Cloud account");
+		cloudGuide.NavigationTitle.Should().Be("Manage your Cloud account");
+		cloudGuide.Index.NavigationTitle.Should().Be("Cloud Guide");
 	}
 }
