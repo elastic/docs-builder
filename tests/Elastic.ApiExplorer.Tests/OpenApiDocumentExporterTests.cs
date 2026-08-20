@@ -123,7 +123,7 @@ public class OpenApiDocumentExporterTests
 		doc.Description.Should().NotContain("<div>");
 		doc.Description.Should().NotContain("<span");
 		doc.Description.Should().Contain("- **GET** `/_ping`");
-		var lastNonEmptyLines = doc.Description!.Split('\n', StringSplitOptions.TrimEntries)
+		var lastNonEmptyLines = doc.Description.Split('\n', StringSplitOptions.TrimEntries)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
 			.TakeLast(5)
 			.ToList();

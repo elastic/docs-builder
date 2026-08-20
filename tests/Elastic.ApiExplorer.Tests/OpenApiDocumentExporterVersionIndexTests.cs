@@ -68,7 +68,7 @@ public class OpenApiDocumentExporterVersionIndexTests
 
 			return new HttpResponseMessage(HttpStatusCode.OK)
 			{
-				Content = new StringContent("""{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""", Encoding.UTF8, "application/json")
+				Content = new StringContent(/*lang=json,strict*/ """{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""", Encoding.UTF8, "application/json")
 			};
 		});
 
@@ -76,8 +76,7 @@ public class OpenApiDocumentExporterVersionIndexTests
 	public async Task ExportDocuments_MultiMajorIndex_EmitsMainAndVersionedPaths()
 	{
 		var product = TestHelpers.CreateProduct("elasticsearch", StackVersions.GetVersioningSystem(VersioningSystemId.Stack), "Elasticsearch");
-		var handler = IndexHandler(
-			"""
+		var handler = IndexHandler(/*lang=json,strict*/ """
 			{
 				"elastic/elasticsearch": {
 					"elasticsearch-openapi.json": {
@@ -118,8 +117,7 @@ public class OpenApiDocumentExporterVersionIndexTests
 	{
 		var versionless = TestHelpers.CreateVersionlessConfiguration();
 		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless), "Cloud Serverless");
-		var handler = IndexHandler(
-			"""
+		var handler = IndexHandler(/*lang=json,strict*/ """
 			{
 				"elastic/serverless-api-specification": {
 					"elastic-cloud-serverless.yml": {
