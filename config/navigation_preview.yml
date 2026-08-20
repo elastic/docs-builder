@@ -361,8 +361,8 @@ toc:
                         path_prefix: reference/opentelemetry/edot-cloud-forwarder/azure
                       - toc: opentelemetry://reference/edot-cloud-forwarder/gcp
                         path_prefix: reference/opentelemetry/edot-cloud-forwarder/gcp
-                  - toc: elastic-agent://reference/edot-collector
-                    path_prefix: reference/edot-collector
+                  - toc: elastic-agent://reference/otel-collector
+                    path_prefix: reference/otel-collector
                     island: true
                   - toc: apm-agent-android://reference/edot-android
                     path_prefix: reference/opentelemetry/edot-sdks/android
