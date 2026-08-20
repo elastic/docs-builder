@@ -134,7 +134,13 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			applicableTo.Deployment = deployment;
 
 		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
-			applicableTo.Serverless = serverless;
+		{
+			if (applicableTo.Serverless is not null && dictionary.ContainsKey("serverless"))
+				diagnostics.Add((Severity.Error,
+					"Don't define 'serverless' and top-level serverless project keys together. Use either 'serverless' for all serverless projects, or define individual project keys under 'serverless'."));
+			else
+				applicableTo.Serverless = serverless;
+		}
 
 		if (TryGetProductApplicability(dictionary, diagnostics, out var product))
 			applicableTo.ProductApplicability = product;
