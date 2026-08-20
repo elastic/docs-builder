@@ -136,7 +136,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
 		{
 			if (applicableTo.Serverless is not null)
-				MergeServerlessProjectApplicability(applicableTo.Serverless, serverless);
+				applicableTo.Serverless = MergeServerlessProjectApplicability(applicableTo.Serverless, serverless);
 			else
 				applicableTo.Serverless = serverless;
 		}
@@ -149,15 +149,16 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		return applicableTo;
 	}
 
-	private static void MergeServerlessProjectApplicability(
+	private static ServerlessProjectApplicability MergeServerlessProjectApplicability(
 		ServerlessProjectApplicability target,
-		ServerlessProjectApplicability overrides)
-	{
-		target.Elasticsearch = overrides.Elasticsearch ?? target.Elasticsearch;
-		target.Observability = overrides.Observability ?? target.Observability;
-		target.Security = overrides.Security ?? target.Security;
-		target.VectorDatabase = overrides.VectorDatabase ?? target.VectorDatabase;
-	}
+		ServerlessProjectApplicability overrides) =>
+		target with
+		{
+			Elasticsearch = overrides.Elasticsearch ?? target.Elasticsearch,
+			Observability = overrides.Observability ?? target.Observability,
+			Security = overrides.Security ?? target.Security,
+			VectorDatabase = overrides.VectorDatabase ?? target.VectorDatabase
+		};
 
 	private static void AssignDeploymentType(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
 	{

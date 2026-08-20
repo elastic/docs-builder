@@ -101,6 +101,36 @@ applies_to:
             )
         ))
 
+type ``empty serverless shorthand with top level project override`` () =
+    static let overriddenMarkdown = frontMatter """
+applies_to:
+   serverless:
+   vectordb: preview
+"""
+    static let subsequentMarkdown = frontMatter """
+applies_to:
+   serverless:
+"""
+    [<Fact>]
+    let ``does not mutate shared serverless defaults`` () =
+        let expectedAvailability = AppliesCollection.op_Explicit "all"
+        overriddenMarkdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                Elasticsearch=expectedAvailability,
+                Observability=expectedAvailability,
+                Security=expectedAvailability,
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
+            )
+        ))
+        subsequentMarkdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                Elasticsearch=expectedAvailability,
+                Observability=expectedAvailability,
+                Security=expectedAvailability,
+                VectorDatabase=expectedAvailability
+            )
+        ))
+
 type ``parses serverless projects`` () =
     static let markdown = frontMatter """
 applies_to:
