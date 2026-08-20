@@ -196,7 +196,7 @@ public class ApplicableToJsonConverterSerializationTests
 	}
 
 	[Fact]
-	public void SerializeServerlessVectorDatabaseProducesCorrectJson()
+public void Serialize_ServerlessVectorDatabase_ProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
 		{
