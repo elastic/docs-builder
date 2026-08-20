@@ -58,6 +58,6 @@ The `--products` filter supports wildcards:
 
 When `changelog.yml` defines `bundle.profiles`, use those same profiles with `changelog remove` to remove exactly the changelogs that would be included in a matching bundle.
 
-Profile-based commands discover the changelog configuration automatically: they look for `changelog.yml` in the current directory, then `docs/changelog.yml`.
+Profile-based commands discover the changelog configuration automatically: they look for `changelog.yml` in the current directory, then `docs/changelog.yml`. Profile fields that only affect bundle output (`output`, `output_products`, `hide_features`, `infer_missing_changelogs`) are ignored.
 
 Refer to [](/data/release-notes/bundle.md#changelog-remove) for examples.

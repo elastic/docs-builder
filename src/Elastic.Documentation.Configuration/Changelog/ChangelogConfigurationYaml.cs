@@ -322,6 +322,12 @@ internal sealed record BundleConfigurationYaml
 	public bool? ReleaseDates { get; set; }
 
 	/// <summary>
+	/// When true, git-ref bundling synthesizes changelog entries from GitHub PR metadata when no
+	/// matching changelog YAML is found on the CDN. Defaults to false.
+	/// </summary>
+	public bool? InferMissingChangelogs { get; set; }
+
+	/// <summary>
 	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels.
 	/// </summary>
 	public YamlLenientList? LinkAllowRepos { get; set; }
@@ -385,6 +391,12 @@ internal sealed record BundleProfileYaml
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
 	public bool? ReleaseDates { get; set; }
+
+	/// <summary>
+	/// When true, git-ref bundling synthesizes changelog entries from GitHub PR metadata when no
+	/// matching changelog YAML is found on the CDN. Overrides bundle-level <c>infer_missing_changelogs</c>.
+	/// </summary>
+	public bool? InferMissingChangelogs { get; set; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches

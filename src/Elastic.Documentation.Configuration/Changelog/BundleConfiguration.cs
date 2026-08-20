@@ -65,6 +65,14 @@ public record BundleConfiguration
 	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
+	/// When true, git-ref bundling synthesizes in-memory changelog entries from GitHub PR metadata
+	/// when no matching changelog YAML is found on the CDN (or in the local folder when local
+	/// sourcing is forced). Defaults to false: unmatched PRs are warned and omitted.
+	/// Overridden by CLI <c>--infer</c> or a profile-level setting.
+	/// </summary>
+	public bool? InferMissingChangelogs { get; init; }
+
+	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
@@ -134,6 +142,14 @@ public record BundleProfile
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
 	public bool? ReleaseDates { get; init; }
+
+	/// <summary>
+	/// When true, git-ref bundling synthesizes in-memory changelog entries from GitHub PR metadata
+	/// when no matching changelog YAML is found on the CDN (or in the local folder when local
+	/// sourcing is forced). Overrides <see cref="BundleConfiguration.InferMissingChangelogs"/>.
+	/// Defaults to false when omitted at both levels. Overridden by CLI <c>--infer</c>.
+	/// </summary>
+	public bool? InferMissingChangelogs { get; init; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches

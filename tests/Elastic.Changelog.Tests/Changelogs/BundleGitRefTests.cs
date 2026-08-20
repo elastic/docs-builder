@@ -15,9 +15,8 @@ namespace Elastic.Changelog.Tests.Changelogs;
 
 /// <summary>
 /// Tests for commit-range bundling (<c>changelog bundle --start-git-ref --end-git-ref</c>):
-/// the PR list is derived from the range, each PR's entry follows the pool-first /
-/// inferred-from-PR-metadata precedence, the bundle records <c>git_ref</c>, and dry-run
-/// reports without writing.
+/// the PR list is derived from the range, each PR's entry is sourced from the pool (inferral from
+/// PR metadata is opt-in), the bundle records <c>git_ref</c>, and dry-run reports without writing.
 /// </summary>
 public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
@@ -87,11 +86,12 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		return service;
 	}
 
-	private async Task<string> WriteProfileConfig(string outputDir)
+	private async Task<string> WriteProfileConfig(string outputDir, bool inferMissingChangelogs = false)
 	{
+		var inferYaml = inferMissingChangelogs.ToString().ToLowerInvariant();
 		// language=yaml
 		var configContent =
-			"""
+			$$"""
 			pivot:
 			  types:
 			    feature: ">feature"
@@ -104,6 +104,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			  profiles:
 			    promotion:
 			      output_products: "cloud-hosted {version}"
+			      infer_missing_changelogs: {{inferYaml}}
 			""".Replace("PLACEHOLDER", outputDir);
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
@@ -149,7 +150,8 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			ProfileArgument = "2026-08-13",
 			Config = configPath,
 			StartGitRef = StartRef,
-			EndGitRef = EndRef
+			EndGitRef = EndRef,
+			InferMissingChangelogs = true
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -310,7 +312,8 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			ProfileArgument = "2026-08-13",
 			Config = configPath,
 			StartGitRef = StartRef,
-			EndGitRef = EndRef
+			EndGitRef = EndRef,
+			InferMissingChangelogs = true
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -366,6 +369,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			Rows =
 			[
 				new GitRangePrReportRow { Number = 100, Url = "https://github.com/elastic/widget/pull/100", Source = GitRangePrSourceKind.Pool, EntryFileNames = ["100.yaml"] },
+				new GitRangePrReportRow { Number = 250, Url = "https://github.com/elastic/widget/pull/250", Source = GitRangePrSourceKind.Unmatched },
 				new GitRangePrReportRow { Number = 300, Url = "https://github.com/elastic/widget/pull/300", Source = GitRangePrSourceKind.InferredPrBody, EntryFileNames = ["300.yaml"] },
 				new GitRangePrReportRow { Number = 400, Url = "https://github.com/elastic/widget/pull/400", Source = GitRangePrSourceKind.Missing }
 			],
@@ -375,10 +379,137 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var markdown = report.ToMarkdown();
 
 		markdown.Should().Contain($"`{StartRef}..{EndRef}`");
-		markdown.Should().Contain("| [#100](https://github.com/elastic/widget/pull/100) | pool | `100.yaml` |");
+		markdown.Should().Contain("| [#100](https://github.com/elastic/widget/pull/100) | cdn | `100.yaml` |");
+		markdown.Should().Contain("| [#250](https://github.com/elastic/widget/pull/250) | no changelog | — |");
 		markdown.Should().Contain("| [#300](https://github.com/elastic/widget/pull/300) | inferred (PR body) | `300.yaml` |");
 		markdown.Should().Contain("| [#400](https://github.com/elastic/widget/pull/400) | missing | — |");
 		markdown.Should().Contain("- `deadbeef`");
+	}
+
+	[Fact]
+	public async Task ProfileMode_PoolOnlyDefault_OmitsUnmatchedPrsWithWarning()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+
+		var prService = A.Fake<IGitHubPrService>();
+		var service = Service(PoolHandler(), RangeService(100, 200, 300), prService);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
+			.MustNotHaveHappened();
+
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("No changelog file found for PR: https://github.com/elastic/widget/pull/300"));
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().ContainSingle();
+		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		bundle.Should().Contain("Faster hosted search");
+		bundle.Should().Contain("Sturdier snapshots");
+		bundle.Should().NotContain("300.yaml");
+		bundle.Should().NotContain("Sharper autocomplete");
+	}
+
+	[Fact]
+	public async Task ProfileMode_PoolOnly_AllUnmatched_FailsEmptyFilter()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+
+		var service = Service(PoolHandler(), RangeService(300));
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("No changelog entries could be resolved"));
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("No changelog file found for PR: https://github.com/elastic/widget/pull/300"));
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task ProfileMode_InferMissingChangelogsYaml_SynthesizesUnmatchedPr()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, inferMissingChangelogs: true);
+
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/300", A<string?>._, A<string?>._, A<Cancel>._))
+			.Returns(new GitHubPrInfo
+			{
+				Title = "Sharper autocomplete",
+				Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+				Labels = [">feature"],
+				LinkedIssues = []
+			});
+
+		var service = Service(PoolHandler(), RangeService(100, 300), prService);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			TestContext.Current.CancellationToken);
+		bundle.Should().Contain("Faster hosted search");
+		bundle.Should().Contain("Sharper autocomplete");
+		bundle.Should().Contain("name: 300.yaml");
+	}
+
+	[Fact]
+	public async Task InferWithoutGitRef_Errors()
+	{
+		var service = Service(PoolHandler(), RangeService());
+
+		var input = new BundleChangelogsArguments
+		{
+			Repo = "widget",
+			All = true,
+			InferMissingChangelogs = true
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("--infer is only supported"));
 	}
 
 	[Theory]

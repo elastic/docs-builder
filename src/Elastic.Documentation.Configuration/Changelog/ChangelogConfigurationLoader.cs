@@ -530,6 +530,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						Branch = kvp.Value.Branch,
 						HideFeatures = kvp.Value.HideFeatures?.Values,
 						ReleaseDates = kvp.Value.ReleaseDates,
+						InferMissingChangelogs = kvp.Value.InferMissingChangelogs,
 						Source = kvp.Value.Source
 					});
 		}
@@ -544,6 +545,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Owner = yaml.Owner,
 			Branch = yaml.Branch,
 			ReleaseDates = yaml.ReleaseDates,
+			InferMissingChangelogs = yaml.InferMissingChangelogs,
 			LinkAllowRepos = linkAllowRepos,
 			Profiles = profiles
 		};

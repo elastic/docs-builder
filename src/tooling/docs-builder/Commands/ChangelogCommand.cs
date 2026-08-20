@@ -573,9 +573,10 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="branch">Branch whose CDN changelog entry pool (<c>changelog/{org}/{repo}/{branch}/...</c>) is sourced from. Falls back to <c>bundle.branch</c> or "main". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.branch</c> or <c>bundle.profiles.&lt;name&gt;.branch</c>.</param>
 	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
 	/// <param name="files">Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. When entries are sourced from the CDN, paths are matched to pool entries by file name and do not need to exist locally; with local sourcing (--force-local, --directory, or bundle.use_local_changelogs) the paths must exist on disk. This option is not supported in profile-based commands; pass a path list file as the second or third positional argument instead.</param>
-	/// <param name="startGitRef">Start ref (exclusive) of a git commit range to bundle, for example the previously published endpoint ref. Must be provided together with --end-git-ref; the start ref is never inferred. The PR list is derived from the range itself (GitHub compare API + GraphQL associatedPullRequests), each PR's entry is sourced pool-first with PR-metadata fallback, and requires GITHUB_TOKEN. Supported in profile-based commands (for example, 'bundle serverless-release 2026-08-13 --start-git-ref abc123 --end-git-ref def456'); mutually exclusive with all other filter options.</param>
+	/// <param name="startGitRef">Start ref (exclusive) of a git commit range to bundle, for example the previously published endpoint ref. Must be provided together with --end-git-ref; the start ref is never inferred. The PR list is derived from the range itself (GitHub compare API + GraphQL associatedPullRequests). Each PR's changelog YAML is sourced from the CDN (or the local folder when local sourcing is forced); unmatched PRs are warned and omitted unless --infer or bundle.infer_missing_changelogs is set. Requires GITHUB_TOKEN. Supported in profile-based commands (for example, 'bundle serverless-release 2026-08-13 --start-git-ref abc123 --end-git-ref def456'); mutually exclusive with all other filter options.</param>
 	/// <param name="endGitRef">End ref (inclusive) of the git commit range to bundle — the currently published endpoint ref. Must be provided together with --start-git-ref. Recorded in the bundle output as the <c>git_ref</c> metadata field.</param>
-	/// <param name="dryRun">Resolve the commit range and print the run report (resolved PR list with per-PR entry source: pool, inferred, or missing) as Markdown without writing a bundle. Only valid together with --start-git-ref/--end-git-ref. Supported in profile-based commands.</param>
+	/// <param name="dryRun">Resolve the commit range and print the run report (resolved PR list with per-PR entry source: pool, no changelog, inferred, or missing) as Markdown without writing a bundle. Only valid together with --start-git-ref/--end-git-ref. Supported in profile-based commands.</param>
+	/// <param name="infer">When bundling a git commit range, synthesize in-memory changelog entries from GitHub PR metadata for PRs with no matching changelog YAML on the CDN (or in the local folder when using --force-local). Default: unmatched PRs are warned and omitted like --prs. Equivalent to bundle.infer_missing_changelogs: true without editing config. Allowed in profile-based commands. Only valid together with --start-git-ref/--end-git-ref.</param>
 	/// <param name="forceLocal">Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config). Allowed in profile-based commands.</param>
 	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
 	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
@@ -610,6 +611,7 @@ internal sealed partial class ChangelogCommands(
 		string? startGitRef = null,
 		string? endGitRef = null,
 		bool dryRun = false,
+		bool infer = false,
 		CancellationToken ct = default
 	)
 	{
@@ -631,6 +633,12 @@ internal sealed partial class ChangelogCommands(
 		if (dryRun && !isGitRefMode)
 		{
 			collector.EmitError(string.Empty, "--dry-run is only supported when bundling a git commit range (--start-git-ref/--end-git-ref).");
+			return 1;
+		}
+
+		if (infer && !isGitRefMode)
+		{
+			collector.EmitError(string.Empty, "--infer is only supported when bundling a git commit range (--start-git-ref/--end-git-ref).");
 			return 1;
 		}
 
@@ -957,7 +965,8 @@ internal sealed partial class ChangelogCommands(
 			SuppressReleaseDate = noReleaseDate,
 			StartGitRef = startGitRef,
 			EndGitRef = endGitRef,
-			DryRun = dryRun
+			DryRun = dryRun,
+			InferMissingChangelogs = infer
 		};
 
 		serviceInvoker.AddCommand(service, input,
