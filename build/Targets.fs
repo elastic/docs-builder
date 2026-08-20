@@ -33,25 +33,15 @@ let private version _ =
     printfn $"Informational version: %s{version.AsString}"
     printfn $"Semantic version: %s{version.Normalize()}"
 
-let private format (formatArgs: ParseResults<FormatArgs>) =
-    let includeFiles = formatArgs.TryGetResult FormatArgs.Include |> Option.defaultValue []
-    let includeArgs = 
-        if includeFiles.IsEmpty then []
-        else ["--include"] @ includeFiles
-    exec { run "dotnet" (["format"; "--verbosity"; "quiet"] @ includeArgs) }
+let private format (_formatArgs: ParseResults<FormatArgs>) =
+    exec { run "dotnet" ["curb"; "format"; "."] }
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
-let private lint (lintArgs: ParseResults<LintArgs>) =
-    let includeFiles = lintArgs.TryGetResult LintArgs.Include |> Option.defaultValue []
-    let includeArgs = 
-        if includeFiles.IsEmpty then []
-        else ["--include"] @ includeFiles
-    match exec {
-        exit_code_of "dotnet" (["format"; "--verify-no-changes"] @ includeArgs)
-    } with
-    | 0 -> printfn "There are no dotnet formatting violations, continuing the build."
-    | _ -> failwithf "There are dotnet formatting violations. Call `dotnet format` to fix or specify -c to ./build.sh to skip this check"
+let private lint (_lintArgs: ParseResults<LintArgs>) =
+    match exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
+    | 0 -> printfn "No formatting violations found."
+    | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
 
 let private pristineCheck (arguments:ParseResults<Build>) =
     let skipCheck = arguments.TryGetResult Skip_Dirty_Check |> Option.isSome
@@ -60,10 +50,10 @@ let private pristineCheck (arguments:ParseResults<Build>) =
     | _, true  -> printfn "The checkout folder does not have pending changes, proceeding"
     | _ -> failwithf "The checkout folder has pending changes, aborting. Specify -c to ./build.sh to skip this check"
     
-    match skipCheck, (exec { exit_code_of "dotnet" "format" "--verify-no-changes" }) with
+    match skipCheck, (exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" }) with
     | true, _ -> printfn "Skip formatting checks since -c is specified"
-    | _, 0  -> printfn "There are no dotnet formatting violations, continuing the build."
-    | _ -> failwithf "There are dotnet formatting violations. Call `dotnet format` to fix or specify -c to ./build.sh to skip this check"
+    | _, 0  -> printfn "No formatting violations found."
+    | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
 
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/tooling/docs-builder/docs-builder.csproj" }
