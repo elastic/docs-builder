@@ -117,7 +117,10 @@ public sealed class BundleRegistryReconciler(
 			{
 				_logger.LogWarning(
 					"Public manifest {Key} declares schema_version {Found} > supported {Supported}; leaving it untouched",
-					scope.RegistryKey, newer.SchemaVersion, Registry.CurrentSchemaVersion);
+					scope.RegistryKey,
+					newer.SchemaVersion,
+					Registry.CurrentSchemaVersion
+				);
 				return GroupReconcileOutcome.RefusedNewerSchema;
 			}
 
@@ -140,13 +143,7 @@ public sealed class BundleRegistryReconciler(
 				return GroupReconcileOutcome.Unchanged;
 			}
 
-			var manifest = new Registry
-			{
-				Product = scope.Group,
-				Producer = Producer,
-				GeneratedAt = _time.GetUtcNow(),
-				Bundles = entries
-			};
+			var manifest = new Registry { Product = scope.Group, Producer = Producer, GeneratedAt = _time.GetUtcNow(), Bundles = entries };
 			var json = JsonSerializer.Serialize(manifest, RegistryJsonContext.Default.Registry);
 
 			if (await TryPutManifest(scope, json, existing.ETag, attempt, ctx))
@@ -154,14 +151,19 @@ public sealed class BundleRegistryReconciler(
 				_metrics.IncrementRegistryWrites();
 				_logger.LogInformation(
 					"Wrote public manifest {Key} with {Count} entrie(s) ({Reused} reused, {Recomputed} recomputed)",
-					scope.RegistryKey, entries.Count, reused, entries.Count - reused);
+					scope.RegistryKey,
+					entries.Count,
+					reused,
+					entries.Count - reused
+				);
 				return GroupReconcileOutcome.Written;
 			}
 			await BackOff(attempt, ctx);
 		}
 
 		throw new ReconcileConflictException(
-			$"Public manifest {scope.RegistryKey} kept changing concurrently after {MaxWriteAttempts} attempts; failing the message for redelivery.");
+			$"Public manifest {scope.RegistryKey} kept changing concurrently after {MaxWriteAttempts} attempts; failing the message for redelivery."
+		);
 	}
 
 	/// <summary>
@@ -171,12 +173,7 @@ public sealed class BundleRegistryReconciler(
 	/// </summary>
 	private async Task<IReadOnlyList<S3Object>> ListGroupFiles(ChangelogScope scope, Cancel ctx)
 	{
-		var request = new ListObjectsV2Request
-		{
-			BucketName = publicBucketName,
-			Prefix = scope.Prefix,
-			Delimiter = "/"
-		};
+		var request = new ListObjectsV2Request { BucketName = publicBucketName, Prefix = scope.Prefix, Delimiter = "/" };
 
 		var files = new List<S3Object>();
 		ListObjectsV2Response response;
@@ -192,14 +189,15 @@ public sealed class BundleRegistryReconciler(
 				_metrics.IncrementObjectsListed();
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return files;
 	}
 
 	private static bool IsYamlFileName(string file) =>
-		file.Length > 0
-		&& (file.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".yml", StringComparison.OrdinalIgnoreCase));
+		file.Length > 0 &&
+			(file.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".yml", StringComparison.OrdinalIgnoreCase));
 
 	private sealed record ManifestState(Registry? Manifest, string? ETag, bool Exists, bool Corrupt);
 
@@ -209,11 +207,7 @@ public sealed class BundleRegistryReconciler(
 		string? etag = null;
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = key
-			}, ctx);
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
 
 			etag = response.ETag;
 			await using var stream = response.ResponseStream;
@@ -238,7 +232,8 @@ public sealed class BundleRegistryReconciler(
 		ChangelogScope scope,
 		IReadOnlyList<S3Object> listing,
 		IReadOnlyList<RegistryBundle> reusable,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var byFile = reusable.ToDictionary(b => b.File, b => b, StringComparer.Ordinal);
 		var built = new RegistryBundle?[listing.Count];
@@ -255,9 +250,11 @@ public sealed class BundleRegistryReconciler(
 
 				// Amends are never ETag-skipped: their target depends on the parent bundle too,
 				// and a parent appearing or changing does not touch the amend's own ETag.
-				if (!BundleAmendMerger.IsAmendFile(file)
+				if (
+					!BundleAmendMerger.IsAmendFile(file)
 					&& byFile.TryGetValue(file, out var previous)
-					&& string.Equals(previous.ETag, etag, StringComparison.Ordinal))
+					&& string.Equals(previous.ETag, etag, StringComparison.Ordinal)
+				)
 				{
 					built[i] = previous;
 					_ = Interlocked.Increment(ref reused);
@@ -267,7 +264,8 @@ public sealed class BundleRegistryReconciler(
 				var target = await ComputeTarget(scope, file, ct);
 				_metrics.IncrementEntriesRecomputed();
 				built[i] = new RegistryBundle { File = file, Target = target, ETag = etag };
-			});
+			}
+		);
 
 		// A null slot means the object vanished between the listing and the read; the delete's own
 		// event (or the next reconcile) covers it.
@@ -298,7 +296,10 @@ public sealed class BundleRegistryReconciler(
 		{
 			_logger.LogWarning(
 				"Amend {Prefix}{File} has no parent bundle {Parent} in the public bucket yet; recording a null target",
-				scope.Prefix, file, parentFile);
+				scope.Prefix,
+				file,
+				parentFile
+			);
 			return null;
 		}
 
@@ -309,11 +310,8 @@ public sealed class BundleRegistryReconciler(
 	{
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = scope.Prefix + file
-			}, ctx);
+			using var response =
+				await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = publicBucketName, Key = scope.Prefix + file }, ctx);
 
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
@@ -341,12 +339,11 @@ public sealed class BundleRegistryReconciler(
 	{
 		try
 		{
-			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = scope.RegistryKey,
-				IfMatch = etag
-			}, ctx);
+			_ =
+				await s3Client.DeleteObjectAsync(
+					new DeleteObjectRequest { BucketName = publicBucketName, Key = scope.RegistryKey, IfMatch = etag },
+					ctx
+				);
 			_metrics.IncrementRegistryDeletes();
 			_logger.LogInformation("Deleted public manifest {Key}: the group is empty", scope.RegistryKey);
 			return true;
@@ -361,7 +358,10 @@ public sealed class BundleRegistryReconciler(
 			_metrics.IncrementWriteConflicts();
 			_logger.LogInformation(
 				"Public manifest {Key} changed concurrently during delete (attempt {Attempt}/{Max}); re-listing and retrying",
-				scope.RegistryKey, attempt, MaxWriteAttempts);
+				scope.RegistryKey,
+				attempt,
+				MaxWriteAttempts
+			);
 			return false;
 		}
 	}
@@ -392,7 +392,10 @@ public sealed class BundleRegistryReconciler(
 			_metrics.IncrementWriteConflicts();
 			_logger.LogInformation(
 				"Public manifest {Key} changed concurrently (attempt {Attempt}/{Max}); re-listing and retrying",
-				scope.RegistryKey, attempt, MaxWriteAttempts);
+				scope.RegistryKey,
+				attempt,
+				MaxWriteAttempts
+			);
 			return false;
 		}
 	}
@@ -411,9 +414,7 @@ public sealed class BundleRegistryReconciler(
 	}
 
 	private static List<RegistryBundle> Sort(IEnumerable<RegistryBundle> entries) =>
-		[.. entries
-			.OrderByDescending(b => VersionOrDate.Parse(b.Target ?? string.Empty))
-			.ThenBy(b => b.File, StringComparer.Ordinal)];
+		[.. entries.OrderByDescending(b => VersionOrDate.Parse(b.Target ?? string.Empty)).ThenBy(b => b.File, StringComparer.Ordinal)];
 
 	private static string NormalizeETag(string? etag) => etag?.Trim('"') ?? string.Empty;
 
@@ -424,9 +425,11 @@ public sealed class BundleRegistryReconciler(
 
 		for (var i = 0; i < a.Count; i++)
 		{
-			if (!string.Equals(a[i].File, b[i].File, StringComparison.Ordinal) ||
-				!string.Equals(a[i].Target, b[i].Target, StringComparison.Ordinal) ||
-				!string.Equals(a[i].ETag, b[i].ETag, StringComparison.Ordinal))
+			if (
+				!string.Equals(a[i].File, b[i].File, StringComparison.Ordinal)
+				|| !string.Equals(a[i].Target, b[i].Target, StringComparison.Ordinal)
+				|| !string.Equals(a[i].ETag, b[i].ETag, StringComparison.Ordinal)
+			)
 				return false;
 		}
 

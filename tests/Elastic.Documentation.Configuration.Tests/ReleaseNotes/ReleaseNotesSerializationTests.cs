@@ -17,17 +17,15 @@ public class ReleaseNotesSerializationTests
 		{
 			Title = "- Manual leading dash",
 			Type = ChangelogEntryType.Feature,
-			Products =
-			[
-				new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }
-			]
+			Products = [new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }]
 		};
 
 		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
 
 		(yaml.Contains("title: \"- Manual leading dash\"", StringComparison.Ordinal) ||
-			yaml.Contains("title: '- Manual leading dash'", StringComparison.Ordinal))
-			.Should().BeTrue("title must be a quoted YAML scalar so '-' is not parsed as a list marker");
+			yaml.Contains("title: '- Manual leading dash'", StringComparison.Ordinal)).Should().BeTrue(
+			"title must be a quoted YAML scalar so '-' is not parsed as a list marker"
+		);
 
 		var roundTrip = ReleaseNotesSerialization.DeserializeEntry(yaml);
 		roundTrip.Title.Should().Be("- Manual leading dash");
@@ -40,10 +38,7 @@ public class ReleaseNotesSerializationTests
 		{
 			Title = "Enable numerical id service",
 			Type = ChangelogEntryType.Feature,
-			Products =
-			[
-				new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }
-			]
+			Products = [new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }]
 		};
 
 		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
@@ -59,10 +54,7 @@ public class ReleaseNotesSerializationTests
 		{
 			Title = "- line1\nline2",
 			Type = ChangelogEntryType.Feature,
-			Products =
-			[
-				new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }
-			]
+			Products = [new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }]
 		};
 
 		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
@@ -92,19 +84,16 @@ public class ReleaseNotesSerializationTests
 		{
 			Title = adversarialTitle,
 			Type = ChangelogEntryType.Feature,
-			Products =
-			[
-				new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }
-			]
+			Products = [new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }]
 		};
 
 		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
 		var roundTrip = ReleaseNotesSerialization.DeserializeEntry(yaml);
 
-		roundTrip.Title.Should().Be(adversarialTitle,
-			"adversarial titles must round-trip exactly without leaking into surrounding YAML structure");
-		roundTrip.Type.Should().Be(ChangelogEntryType.Feature,
-			"adversarial title must not change unrelated fields");
+		roundTrip.Title
+			.Should()
+			.Be(adversarialTitle, "adversarial titles must round-trip exactly without leaking into surrounding YAML structure");
+		roundTrip.Type.Should().Be(ChangelogEntryType.Feature, "adversarial title must not change unrelated fields");
 	}
 
 	[Fact]
@@ -115,10 +104,7 @@ public class ReleaseNotesSerializationTests
 			Title = "Plain title",
 			Description = "First line\n---\nfake: document\n...\nclosing marker",
 			Type = ChangelogEntryType.Feature,
-			Products =
-			[
-				new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }
-			]
+			Products = [new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }]
 		};
 
 		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
@@ -137,10 +123,7 @@ public class ReleaseNotesSerializationTests
 		{
 			Title = "Legit\nimpact: attacker-set\naction: rm -rf /",
 			Type = ChangelogEntryType.Feature,
-			Products =
-			[
-				new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }
-			]
+			Products = [new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }]
 		};
 
 		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);

@@ -21,9 +21,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <param name="bundlesFolderPath">The absolute path to the bundles folder.</param>
 	/// <param name="emitWarning">Callback to emit warnings during loading.</param>
 	/// <returns>A list of successfully loaded bundles.</returns>
-	public IReadOnlyList<LoadedBundle> LoadBundles(
-		string bundlesFolderPath,
-		Action<string> emitWarning)
+	public IReadOnlyList<LoadedBundle> LoadBundles(string bundlesFolderPath, Action<string> emitWarning)
 	{
 		var yamlFiles = fileSystem.Directory
 			.EnumerateFiles(bundlesFolderPath, "*.yaml")
@@ -62,7 +60,8 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <returns>A list of successfully loaded bundles.</returns>
 	public IReadOnlyList<LoadedBundle> LoadBundlesFromContent(
 		IReadOnlyList<(string FileName, string Content)> bundles,
-		Action<string> emitWarning)
+		Action<string> emitWarning
+	)
 	{
 		var loadedBundles = new List<LoadedBundle>(bundles.Count);
 
@@ -99,10 +98,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <param name="bundleName">The bundle file name, used in diagnostics.</param>
 	/// <param name="emitWarning">Callback to emit warnings during resolution.</param>
 	/// <returns>A list of resolved changelog entries.</returns>
-	public static List<ChangelogEntry> ResolveEntries(
-		Bundle bundledData,
-		string bundleName,
-		Action<string> emitWarning)
+	public static List<ChangelogEntry> ResolveEntries(Bundle bundledData, string bundleName, Action<string> emitWarning)
 	{
 		var entries = new List<ChangelogEntry>(bundledData.Entries.Count);
 
@@ -116,7 +112,8 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 			var entryName = !string.IsNullOrWhiteSpace(entry.File?.Name) ? entry.File.Name : entry.Title ?? "<unnamed>";
 			emitWarning(
-				$"Bundle '{bundleName}' entry '{entryName}' has no inline content (title and type are required); bundles must inline their entries. Skipping.");
+				$"Bundle '{bundleName}' entry '{entryName}' has no inline content (title and type are required); bundles must inline their entries. Skipping."
+			);
 		}
 
 		return entries;
@@ -129,9 +126,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <param name="entries">The entries to filter.</param>
 	/// <param name="publishBlocker">Optional publish blocker configuration.</param>
 	/// <returns>Filtered list of entries.</returns>
-	public IReadOnlyList<ChangelogEntry> FilterEntries(
-		IReadOnlyList<ChangelogEntry> entries,
-		PublishBlocker? publishBlocker)
+	public IReadOnlyList<ChangelogEntry> FilterEntries(IReadOnlyList<ChangelogEntry> entries, PublishBlocker? publishBlocker)
 	{
 		if (publishBlocker is not { HasBlockingRules: true })
 			return entries;
@@ -149,11 +144,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		if (bundles.Count <= 1)
 			return bundles;
 
-		return bundles
-			.GroupBy(b => b.Version)
-			.Select(MergeBundleGroup)
-			.OrderByDescending(b => VersionOrDate.Parse(b.Version))
-			.ToList();
+		return bundles.GroupBy(b => b.Version).Select(MergeBundleGroup).OrderByDescending(b => VersionOrDate.Parse(b.Version)).ToList();
 	}
 
 	/// <summary>
@@ -191,9 +182,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 		var firstProduct = bundledData.Products[0];
 		// Use explicit Repo if provided, otherwise fall back to ProductId
-		return !string.IsNullOrWhiteSpace(firstProduct.Repo)
-			? firstProduct.Repo
-			: firstProduct.ProductId;
+		return !string.IsNullOrWhiteSpace(firstProduct.Repo) ? firstProduct.Repo : firstProduct.ProductId;
 	}
 
 	/// <summary>
@@ -206,9 +195,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			return "elastic";
 
 		var firstProduct = bundledData.Products[0];
-		return !string.IsNullOrWhiteSpace(firstProduct.Owner)
-			? firstProduct.Owner
-			: "elastic";
+		return !string.IsNullOrWhiteSpace(firstProduct.Owner) ? firstProduct.Owner : "elastic";
 	}
 
 	/// <summary>
@@ -230,10 +217,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		// Use the first bundle's metadata as the base
 		var first = bundlesList[0];
 
-		var descriptions = bundlesList
-			.Select(b => b.Data?.Description)
-			.Where(d => !string.IsNullOrEmpty(d))
-			.ToList();
+		var descriptions = bundlesList.Select(b => b.Data?.Description).Where(d => !string.IsNullOrEmpty(d)).ToList();
 
 		var mergedDescription = descriptions.Count switch
 		{
@@ -242,12 +226,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			_ => string.Join("\n\n", descriptions)
 		};
 
-		var releaseDates = bundlesList
-			.Select(b => b.Data?.ReleaseDate)
-			.Where(d => d.HasValue)
-			.Select(d => d!.Value)
-			.Distinct()
-			.ToList();
+		var releaseDates = bundlesList.Select(b => b.Data?.ReleaseDate).Where(d => d.HasValue).Select(d => d!.Value).Distinct().ToList();
 
 		var mergedReleaseDate = releaseDates.Count switch
 		{
@@ -259,14 +238,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			? first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate }
 			: new Bundle { Description = mergedDescription, ReleaseDate = mergedReleaseDate };
 
-		return new LoadedBundle(
-			first.Version,
-			combinedRepo,
-			first.Owner,
-			mergedData,
-			first.FilePath,
-			mergedEntries
-		);
+		return new LoadedBundle(first.Version, combinedRepo, first.Owner, mergedData, first.FilePath, mergedEntries);
 	}
 
 	/// <summary>
@@ -276,9 +248,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <param name="bundles">The list of loaded bundles including amend files.</param>
 	/// <param name="emitWarning">Callback to emit warnings during entry resolution.</param>
 	/// <returns>A list of bundles with amend file entries merged into their parent bundles.</returns>
-	private List<LoadedBundle> MergeAmendFiles(
-		List<LoadedBundle> bundles,
-		Action<string> emitWarning)
+	private List<LoadedBundle> MergeAmendFiles(List<LoadedBundle> bundles, Action<string> emitWarning)
 	{
 		if (bundles.Count <= 1)
 			return bundles;
@@ -292,9 +262,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		var mergedAmendPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var mergedParents = new Dictionary<string, LoadedBundle>(StringComparer.OrdinalIgnoreCase);
 
-		var amendsByParent = amendBundles
-			.GroupBy(a => GetParentBundlePath(a.FilePath))
-			.Where(group => group.Key != null);
+		var amendsByParent = amendBundles.GroupBy(a => GetParentBundlePath(a.FilePath)).Where(group => group.Key != null);
 
 		foreach (var group in amendsByParent)
 		{
@@ -302,33 +270,21 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			if (!bundlesByPath.TryGetValue(parentPath, out var parentBundle))
 				continue;
 
-			var orderedAmendData = group
-				.OrderBy(a => BundleAmendMerger.GetAmendFileNumber(a.FilePath))
-				.Select(a => a.Data)
-				.ToList();
+			var orderedAmendData = group.OrderBy(a => BundleAmendMerger.GetAmendFileNumber(a.FilePath)).Select(a => a.Data).ToList();
 
 			var mergedEntryList = BundleAmendMerger.MergeEntries(parentBundle.Data.Entries, orderedAmendData);
 			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList };
 			var resolvedEntries = ResolveEntries(mergedBundleData, fileSystem.Path.GetFileName(parentPath), emitWarning);
 
-			mergedParents[parentPath] = new LoadedBundle(
-				parentBundle.Version,
-				parentBundle.Repo,
-				parentBundle.Owner,
-				mergedBundleData,
-				parentPath,
-				resolvedEntries);
+			mergedParents[parentPath] =
+				new LoadedBundle(parentBundle.Version, parentBundle.Repo, parentBundle.Owner, mergedBundleData, parentPath, resolvedEntries);
 
 			foreach (var amend in group)
 				_ = mergedAmendPaths.Add(amend.FilePath);
 		}
 
-		return bundles
-			.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
-			.Select(bundle =>
-				mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle)
-					? mergedBundle
-					: bundle)
+		return bundles.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
+			.Select(bundle => mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle) ? mergedBundle : bundle)
 			.ToList();
 	}
 
@@ -352,5 +308,4 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 	[GeneratedRegex(@"\.amend-\d+\.ya?ml$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();
-
 }

@@ -74,7 +74,12 @@ public class AssemblerAiEnrichService(
 			{
 				_logger.LogInformation(
 					"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",
-					p.Phase, p.Enriched, p.Failed, p.TotalCandidates, p.Message is not null ? $" — {p.Message}" : "");
+					p.Phase,
+					p.Enriched,
+					p.Failed,
+					p.TotalCandidates,
+					p.Message is not null ? $" — {p.Message}" : ""
+				);
 				last = p;
 			}
 		}
@@ -86,7 +91,10 @@ public class AssemblerAiEnrichService(
 		if (last is not null)
 			_logger.LogInformation(
 				"AI enrichment complete: {Enriched} enriched, {Failed} failed, {Candidates} candidates",
-				last.Enriched, last.Failed, last.TotalCandidates);
+				last.Enriched,
+				last.Failed,
+				last.TotalCandidates
+			);
 
 		// Intentionally does not call exporter.StopAsync(): completing a zero-write incremental sync
 		// would delete every document that wasn't re-written this run.

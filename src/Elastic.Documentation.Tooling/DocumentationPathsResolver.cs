@@ -154,10 +154,7 @@ public static class DocumentationPathsResolver
 	/// No docset found, or no <c>.git</c> within <c>MaxParents</c> of the anchor and no
 	/// <c>--git-dir</c> override.
 	/// </exception>
-	public static ResolvedDocumentationPaths Resolve(
-		IDirectoryInfo invocation,
-		DocumentationScopeOptions options,
-		IFileSystem inner)
+	public static ResolvedDocumentationPaths Resolve(IDirectoryInfo invocation, DocumentationScopeOptions options, IFileSystem inner)
 	{
 		// 1-2. Anchor. Scoped to the invocation path only; skipped when the docset is already known.
 		var (source, configuration) = options.ConfigurationFile is { } known
@@ -191,8 +188,8 @@ public static class DocumentationPathsResolver
 		//    the anchor's ancestry — so this is a second instance rather than the same one.
 		//    This step uses a GitResolveFileSystem (for .git-aware scoping) because it reads FILES
 		//    inside .git/ rather than listing directories at the scope root.
-		var git = options.Git ?? GitCheckoutInformationFactory.Create(checkout,
-			new GitResolveFileSystem(source, maxParents, gitDirectories, inner));
+		var git = options.Git ??
+			GitCheckoutInformationFactory.Create(checkout, new GitResolveFileSystem(source, maxParents, gitDirectories, inner));
 
 		// 6. Output. Default is relative to the checkout, not the invocation.
 		//    --path repo/docs and --path repo/ must both write to repo/.artifacts, not repo/docs/.artifacts.
@@ -218,8 +215,7 @@ public static class DocumentationPathsResolver
 	{
 		var scan = new DocsetScanFileSystem(invocation, inner);
 		if (!Paths.TryFindDocsFolderFromRoot(scan, scan.DirectoryInfo.New(invocation.FullName), out var dir, out var file))
-			throw new DocumentationPathException(
-				$"No docset.yml or _docset.yml found in '{invocation.FullName}' or any subfolder.");
+			throw new DocumentationPathException($"No docset.yml or _docset.yml found in '{invocation.FullName}' or any subfolder.");
 		return (dir, file);
 	}
 
@@ -248,7 +244,8 @@ public static class DocumentationPathsResolver
 		IDirectoryInfo source,
 		DocumentationScopeOptions options,
 		int maxParents,
-		IFileSystem inner)
+		IFileSystem inner
+	)
 	{
 		if (options.GitDir is { } configured && inner.NewDirInfo(configured) is { } explicitGitDir)
 		{
@@ -256,9 +253,10 @@ public static class DocumentationPathsResolver
 				throw new DocumentationPathException($"--git-dir '{explicitGitDir.FullName}' does not exist.");
 			if (!inner.File.Exists(inner.Path.Join(explicitGitDir.FullName, "HEAD")))
 				throw new DocumentationPathException(
-					$"--git-dir '{explicitGitDir.FullName}' does not appear to be a valid .git directory (no HEAD file found).");
-			return explicitGitDir.Parent
-				?? throw new DocumentationPathException($"--git-dir '{explicitGitDir.FullName}' has no parent directory.");
+					$"--git-dir '{explicitGitDir.FullName}' does not appear to be a valid .git directory (no HEAD file found)."
+				);
+			return explicitGitDir.Parent ??
+				throw new DocumentationPathException($"--git-dir '{explicitGitDir.FullName}' has no parent directory.");
 		}
 
 		var gitRoot = Paths.FindGitRoot(gitScope.DirectoryInfo.New(source.FullName), maxParents);
@@ -272,8 +270,9 @@ public static class DocumentationPathsResolver
 			return source;
 
 		throw new DocumentationPathException(
-			$"No .git found at '{source.FullName}' or within {maxParents} parent directory(ies). "
-			+ "Pass --git-dir to point at the repository's .git directory explicitly.");
+			$"No .git found at '{source.FullName}' or within {maxParents} parent directory(ies). " +
+				"Pass --git-dir to point at the repository's .git directory explicitly."
+		);
 	}
 
 	private static IReadOnlyList<string> ResolveGitDirectories(IFileSystem gitScope, IDirectoryInfo checkout, IFileSystem inner)
@@ -290,9 +289,7 @@ public static class DocumentationPathsResolver
 			: [];
 	}
 
-	private static IReadOnlyList<string> FilterExtraRoots(
-		IEnumerable<string>? extraRoots,
-		IDirectoryInfo checkout)
+	private static IReadOnlyList<string> FilterExtraRoots(IEnumerable<string>? extraRoots, IDirectoryInfo checkout)
 	{
 		if (extraRoots is null)
 			return [];
@@ -305,9 +302,11 @@ public static class DocumentationPathsResolver
 			if (string.IsNullOrEmpty(root))
 				continue;
 			// Drop descendants of checkout (already in scope) and ancestors (would subsume checkout).
-			if (!IDirectoryInfoExtensions.IsSubPath(root, checkoutPath, fs)
+			if (
+				!IDirectoryInfoExtensions.IsSubPath(root, checkoutPath, fs)
 				&& !IDirectoryInfoExtensions.IsSubPath(checkoutPath, root, fs)
-				&& !result.Contains(root, StringComparer.OrdinalIgnoreCase))
+				&& !result.Contains(root, StringComparer.OrdinalIgnoreCase)
+			)
 			{
 				result.Add(root);
 			}

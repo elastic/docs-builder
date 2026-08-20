@@ -39,9 +39,17 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 			Paths.ValidateSinglePathSegment(repo.Name, nameof(repo.Name));
 			var checkoutFolder = fs.DirectoryInfo.New(Path.Join(context.CheckoutDirectory.FullName, repo.Name));
 			// if we are running locally, always allow repository path overrides. Otherwise, only for docs-builder.
-			if (!string.IsNullOrWhiteSpace(repo.Path) && (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")) || repo.Name == "docs-builder"))
+			if (
+				!string.IsNullOrWhiteSpace(repo.Path) &&
+				(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")) || repo.Name == "docs-builder")
+			)
 			{
-				_logger.LogInformation("{RepositoryName}: Using local override path for {RepositoryName} at {Path}", repo.Name, repo.Name, repo.Path);
+				_logger.LogInformation(
+					"{RepositoryName}: Using local override path for {RepositoryName} at {Path}",
+					repo.Name,
+					repo.Name,
+					repo.Path
+				);
 				checkoutFolder = fs.DirectoryInfo.New(repo.Path);
 			}
 			IGitRepository gitFacade = new SingleCommitOptimizedGitRepository(logFactory, context.Collector, checkoutFolder);
@@ -51,24 +59,16 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 				continue;
 			}
 			var head = gitFacade.GetCurrentCommit();
-			var checkout = new Checkout
-			{
-				Repository = repo,
-				Directory = checkoutFolder,
-				HeadReference = head
-			};
+			var checkout = new Checkout { Repository = repo, Directory = checkoutFolder, HeadReference = head };
 			checkouts.Add(checkout);
 		}
-		return new CheckoutResult
-		{
-			Checkouts = checkouts,
-			LinkRegistrySnapshot = linkRegistry
-		};
+		return new CheckoutResult { Checkouts = checkouts, LinkRegistrySnapshot = linkRegistry };
 	}
 
 	public async Task<CheckoutResult> CloneAll(bool fetchLatest, bool assumeCloned, Cancel ctx = default)
 	{
-		_logger.LogInformation("Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
+		_logger.LogInformation(
+			"Cloning all repositories for environment {EnvironmentName} using '{ContentSourceStrategy}' content sourcing strategy",
 			PublishEnvironment.Name,
 			PublishEnvironment.ContentSource.ToStringFast(true)
 		);
@@ -77,57 +77,66 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
 
-		await Parallel.ForEachAsync(Configuration.AvailableRepositories,
-			new ParallelOptions
+		await Parallel.ForEachAsync(
+			Configuration.AvailableRepositories,
+			new ParallelOptions { CancellationToken = ctx, MaxDegreeOfParallelism = Environment.ProcessorCount },
+			async (repo, c) =>
 			{
-				CancellationToken = ctx,
-				MaxDegreeOfParallelism = Environment.ProcessorCount
-			}, async (repo, c) =>
-			{
-				await Task.Run(() =>
-				{
-					if (!linkRegistry.Repositories.TryGetValue(repo.Key, out var entry))
+				await Task.Run(
+					() =>
 					{
-						context.Collector.EmitError("", $"'{repo.Key}' does not exist in link index");
-						return;
-					}
-					var branch = repo.Value.GetBranch(PublishEnvironment.ContentSource);
-					var gitRef = branch;
-					if (!fetchLatest)
-					{
-						if (!entry.TryGetValue(branch, out var entryInfo))
+						if (!linkRegistry.Repositories.TryGetValue(repo.Key, out var entry))
 						{
-							context.Collector.EmitError("", $"'{repo.Key}' does not have a '{branch}' entry in link index");
+							context.Collector.EmitError("", $"'{repo.Key}' does not exist in link index");
 							return;
 						}
-						gitRef = entryInfo.GitReference;
-					}
+						var branch = repo.Value.GetBranch(PublishEnvironment.ContentSource);
+						var gitRef = branch;
+						if (!fetchLatest)
+						{
+							if (!entry.TryGetValue(branch, out var entryInfo))
+							{
+								context.Collector.EmitError("", $"'{repo.Key}' does not have a '{branch}' entry in link index");
+								return;
+							}
+							gitRef = entryInfo.GitReference;
+						}
 
-					var cloneInformation = RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest, assumeCloned: assumeCloned);
-					checkouts.Add(cloneInformation);
-				}, c);
-			}).ConfigureAwait(false);
-		await context.WriteFileSystem.File.WriteAllTextAsync(
-			Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
-			LinkRegistry.Serialize(linkRegistry),
-			ctx
-		);
-		return new CheckoutResult
-		{
-			Checkouts = checkouts,
-			LinkRegistrySnapshot = linkRegistry
-		};
+						var cloneInformation = RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest, assumeCloned: assumeCloned);
+						checkouts.Add(cloneInformation);
+					},
+					c
+				);
+			}
+		).ConfigureAwait(false);
+		await context.WriteFileSystem
+			.File
+			.WriteAllTextAsync(
+				Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
+				LinkRegistry.Serialize(linkRegistry),
+				ctx
+			);
+		return new CheckoutResult { Checkouts = checkouts, LinkRegistrySnapshot = linkRegistry };
 	}
 
-	public async Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default) => await context.WriteFileSystem.File.WriteAllTextAsync(
-			context.WriteFileSystem.Path.Join(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
-			LinkRegistry.Serialize(linkRegistrySnapshot),
-			ctx
-		);
+	public async Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default) =>
+		await context.WriteFileSystem
+			.File
+			.WriteAllTextAsync(
+				context.WriteFileSystem
+					.Path
+					.Join(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
+				LinkRegistry.Serialize(linkRegistrySnapshot),
+				ctx
+			);
 }
 
-
-public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkoutDirectory, IFileSystem readFileSystem, IDiagnosticsCollector collector)
+public class RepositorySourcer(
+	ILoggerFactory logFactory,
+	IDirectoryInfo checkoutDirectory,
+	IFileSystem readFileSystem,
+	IDiagnosticsCollector collector
+)
 {
 	private readonly ILogger<RepositorySourcer> _logger = logFactory.CreateLogger<RepositorySourcer>();
 
@@ -136,14 +145,20 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 	// </summary>
 	// <param name="repository">The repository to clone.</param>
 	// <param name="gitRef">The git reference to check out. Branch, commit or tag</param>
-	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1, bool appendRepositoryName = true, bool assumeCloned = false)
+	public Checkout CloneRef(
+		Repository repository,
+		string gitRef,
+		bool pull = false,
+		int attempt = 1,
+		bool appendRepositoryName = true,
+		bool assumeCloned = false
+	)
 	{
 		if (appendRepositoryName)
 			Paths.ValidateSinglePathSegment(repository.Name, nameof(repository.Name));
-		var checkoutFolder =
-			 appendRepositoryName
-				? readFileSystem.DirectoryInfo.New(Path.Join(checkoutDirectory.FullName, repository.Name))
-				: checkoutDirectory;
+		var checkoutFolder = appendRepositoryName
+			? readFileSystem.DirectoryInfo.New(Path.Join(checkoutDirectory.FullName, repository.Name))
+			: checkoutDirectory;
 
 		// if we are running locally, allow for repository path override
 		if (!string.IsNullOrWhiteSpace(repository.Path))
@@ -151,20 +166,38 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 			var di = readFileSystem.DirectoryInfo.New(repository.Path);
 			if (!di.Exists)
 			{
-				_logger.LogInformation("{RepositoryName}: Can not find {RepositoryName}@{Commit} at local override path {CheckoutFolder}", repository.Name, repository.Name, gitRef, di.FullName);
+				_logger.LogInformation(
+					"{RepositoryName}: Can not find {RepositoryName}@{Commit} at local override path {CheckoutFolder}",
+					repository.Name,
+					repository.Name,
+					gitRef,
+					di.FullName
+				);
 				collector.EmitError("", $"Can not find  {repository.Name}@{gitRef} at local override path {di.FullName}");
 				return new Checkout { Directory = di, HeadReference = "", Repository = repository };
 			}
 			checkoutFolder = di;
 			assumeCloned = true;
-			_logger.LogInformation("{RepositoryName}: Using override path for {RepositoryName}@{Commit} at {CheckoutFolder}", repository.Name, repository.Name, gitRef, checkoutFolder.FullName);
+			_logger.LogInformation(
+				"{RepositoryName}: Using override path for {RepositoryName}@{Commit} at {CheckoutFolder}",
+				repository.Name,
+				repository.Name,
+				gitRef,
+				checkoutFolder.FullName
+			);
 		}
 
 		IGitRepository git = new SingleCommitOptimizedGitRepository(logFactory, collector, checkoutFolder);
 
 		if (assumeCloned && checkoutFolder.Exists)
 		{
-			_logger.LogInformation("{RepositoryName}: Assuming {RepositoryName}@{Commit} is already checked out to {CheckoutFolder}", repository.Name, repository.Name, gitRef, checkoutFolder.FullName);
+			_logger.LogInformation(
+				"{RepositoryName}: Assuming {RepositoryName}@{Commit} is already checked out to {CheckoutFolder}",
+				repository.Name,
+				repository.Name,
+				gitRef,
+				checkoutFolder.FullName
+			);
 			return new Checkout { Directory = checkoutFolder, HeadReference = git.GetCurrentCommit(), Repository = repository };
 		}
 
@@ -173,8 +206,13 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 			collector.EmitError("", $"Failed to clone repository {repository.Name}@{gitRef} after 3 attempts");
 			return new Checkout { Directory = checkoutFolder, HeadReference = "", Repository = repository };
 		}
-		_logger.LogInformation("{RepositoryName}: Cloning repository {RepositoryName}@{Commit} to {CheckoutFolder}", repository.Name, repository.Name, gitRef,
-			checkoutFolder.FullName);
+		_logger.LogInformation(
+			"{RepositoryName}: Cloning repository {RepositoryName}@{Commit} to {CheckoutFolder}",
+			repository.Name,
+			repository.Name,
+			gitRef,
+			checkoutFolder.FullName
+		);
 		if (!checkoutFolder.Exists)
 		{
 			checkoutFolder.Create();
@@ -190,7 +228,11 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 			}
 			catch (Exception e)
 			{
-				_logger.LogError(e, "{RepositoryName}: Failed to acquire current commit, falling back to recreating from scratch", repository.Name);
+				_logger.LogError(
+					e,
+					"{RepositoryName}: Failed to acquire current commit, falling back to recreating from scratch",
+					repository.Name
+				);
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
 				return CloneRef(repository, gitRef, pull, attempt + 1, appendRepositoryName, assumeCloned);
@@ -205,12 +247,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 			FetchAndCheckout(git, repository, gitRef);
 			if (!pull)
 			{
-				return new Checkout
-				{
-					Directory = checkoutFolder,
-					HeadReference = git.GetCurrentCommit(),
-					Repository = repository,
-				};
+				return new Checkout { Directory = checkoutFolder, HeadReference = git.GetCurrentCommit(), Repository = repository, };
 			}
 			try
 			{
@@ -218,20 +255,20 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 			}
 			catch (Exception e)
 			{
-				_logger.LogError(e, "{RepositoryName}: Failed to update {GitRef} from {Path}, falling back to recreating from scratch",
-					repository.Name, gitRef, checkoutFolder.FullName);
+				_logger.LogError(
+					e,
+					"{RepositoryName}: Failed to update {GitRef} from {Path}, falling back to recreating from scratch",
+					repository.Name,
+					gitRef,
+					checkoutFolder.FullName
+				);
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
 				return CloneRef(repository, gitRef, pull, attempt + 1, appendRepositoryName, assumeCloned);
 			}
 		}
 
-		return new Checkout
-		{
-			Directory = checkoutFolder,
-			HeadReference = git.GetCurrentCommit(),
-			Repository = repository,
-		};
+		return new Checkout { Directory = checkoutFolder, HeadReference = git.GetCurrentCommit(), Repository = repository, };
 	}
 
 	/// <summary>

@@ -19,7 +19,9 @@ public record RedirectFile
 	{
 		var docsetConfigurationPath = context.ConfigurationPath;
 		var redirectFileName = docsetConfigurationPath.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
-		var redirectFileInfo = docsetConfigurationPath.FileSystem.FileInfo.New(Path.Join(docsetConfigurationPath.Directory!.FullName, redirectFileName));
+		var redirectFileInfo = docsetConfigurationPath.FileSystem
+			.FileInfo
+			.New(Path.Join(docsetConfigurationPath.Directory!.FullName, redirectFileName));
 		Source = source ?? redirectFileInfo;
 		Context = context;
 
@@ -67,7 +69,8 @@ public record RedirectFile
 			if (entryValue.Value is YamlScalarNode)
 			{
 				var to = reader.ReadString(entryValue);
-				dictionary.Add(key,
+				dictionary.Add(
+					key,
 					!string.IsNullOrEmpty(to)
 						? to.StartsWith('!')
 							? new LinkRedirect { To = to.TrimStart('!'), Anchors = LinkRedirect.CatchAllAnchors }
@@ -119,8 +122,7 @@ public record RedirectFile
 		if (redirect.To is null && redirect.Many is null or { Length: 0 })
 			return redirect with { To = file };
 
-		return string.IsNullOrEmpty(redirect.To) && redirect.Many is null or { Length: 0 }
-			? null : redirect;
+		return string.IsNullOrEmpty(redirect.To) && redirect.Many is null or { Length: 0 } ? null : redirect;
 	}
 
 	private static LinkSingleRedirect[]? ReadManyRedirects(YamlStreamReader reader, string file, YamlNode node)
@@ -160,10 +162,6 @@ public record RedirectFile
 		if (redirects.Count == 0)
 			return null;
 
-		return
-		[
-			..redirects
-				.Where(r => r.To is not null && r.Anchors is not null && r.Anchors.Count >= 0)
-		];
+		return [.. redirects.Where(r => r.To is not null && r.Anchors is not null && r.Anchors.Count >= 0)];
 	}
 }

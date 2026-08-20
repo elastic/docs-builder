@@ -15,12 +15,13 @@ public static class HotReloadManager
 {
 	public static void ClearCache(Type[]? _) => LiveReloadMiddleware.RefreshWebSocketRequest();
 
-	public static void UpdateApplication(Type[]? _) => Task.Run(async () =>
-	{
-		await Task.Delay(1000);
-		var __ = LiveReloadMiddleware.RefreshWebSocketRequest();
-		Console.WriteLine("UpdateApplication");
-	});
+	public static void UpdateApplication(Type[]? _) =>
+		Task.Run(async () =>
+		{
+			await Task.Delay(1000);
+			var __ = LiveReloadMiddleware.RefreshWebSocketRequest();
+			Console.WriteLine("UpdateApplication");
+		});
 }
 
 public sealed class ReloadGeneratorService(
@@ -32,8 +33,15 @@ public sealed class ReloadGeneratorService(
 {
 	private static readonly FrozenSet<string> AssetExtensions = new[]
 	{
-		".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
-		".yml", ".yaml", ".toml"
+		".png",
+		".jpg",
+		".jpeg",
+		".gif",
+		".svg",
+		".webp",
+		".yml",
+		".yaml",
+		".toml"
 	}.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
 	private FileSystemWatcher? _watcher;
@@ -65,13 +73,14 @@ public sealed class ReloadGeneratorService(
 		Logger.LogInformation("Start file watch on: {Directory}", directory);
 		var watcher = new FileSystemWatcher(directory)
 		{
-			NotifyFilter = NotifyFilters.Attributes
-							| NotifyFilters.CreationTime
-							| NotifyFilters.DirectoryName
-							| NotifyFilters.FileName
-							| NotifyFilters.LastWrite
-							| NotifyFilters.Security
-							| NotifyFilters.Size
+			NotifyFilter =
+				NotifyFilters.Attributes
+					| NotifyFilters.CreationTime
+					| NotifyFilters.DirectoryName
+					| NotifyFilters.FileName
+					| NotifyFilters.LastWrite
+					| NotifyFilters.Security
+					| NotifyFilters.Size
 		};
 
 		watcher.Changed += OnChanged;
@@ -97,20 +106,23 @@ public sealed class ReloadGeneratorService(
 	private void Reload(bool reloadConfiguration = false)
 	{
 		var token = _serviceCts?.Token ?? Cancel.None;
-		_debouncer.Schedule(async ctx =>
-		{
-			await ReloadableGenerator.ReloadAsync(ctx, reloadConfiguration);
-			Logger.LogInformation("Reload complete!");
-			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
-
-			if (!noHud)
+		_debouncer.Schedule(
+			async ctx =>
 			{
-				// Schedule a validation build after every reload — both content edits and structural changes.
-				// The build loop coalesces rapid triggers: a new request while a build runs queues one more.
-				var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
-				InMemoryBuildState.ScheduleBuild(sourcePath);
-			}
-		}, token);
+				await ReloadableGenerator.ReloadAsync(ctx, reloadConfiguration);
+				Logger.LogInformation("Reload complete!");
+				_ = LiveReloadMiddleware.RefreshWebSocketRequest();
+
+				if (!noHud)
+				{
+					// Schedule a validation build after every reload — both content edits and structural changes.
+					// The build loop coalesces rapid triggers: a new request while a build runs queues one more.
+					var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
+					InMemoryBuildState.ScheduleBuild(sourcePath);
+				}
+			},
+			token
+		);
 	}
 
 	public async Task StopAsync(Cancel cancellationToken)
@@ -144,16 +156,18 @@ public sealed class ReloadGeneratorService(
 
 	// Check if a path should be ignored (output directories, hidden folders, etc.)
 	private static bool ShouldIgnorePath(string path) =>
-		path.Contains("/.artifacts/") || path.Contains("\\.artifacts\\") ||
-		path.Contains("/_site/") || path.Contains("\\_site\\") ||
-		path.Contains("/node_modules/") || path.Contains("\\node_modules\\") ||
-		path.Contains("/.git/") || path.Contains("\\.git\\");
+		path.Contains("/.artifacts/")
+			|| path.Contains("\\.artifacts\\")
+			|| path.Contains("/_site/")
+			|| path.Contains("\\_site\\")
+			|| path.Contains("/node_modules/")
+			|| path.Contains("\\node_modules\\")
+			|| path.Contains("/.git/")
+			|| path.Contains("\\.git\\");
 
-	private static bool IsConfigFile(string path) =>
-		path.EndsWith("docset.yml") || path.EndsWith("toc.yml");
+	private static bool IsConfigFile(string path) => path.EndsWith("docset.yml") || path.EndsWith("toc.yml");
 
-	private static bool IsAssetFile(string path) =>
-		AssetExtensions.Contains(Path.GetExtension(path));
+	private static bool IsAssetFile(string path) => AssetExtensions.Contains(Path.GetExtension(path));
 
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
@@ -219,8 +233,7 @@ public sealed class ReloadGeneratorService(
 #endif
 	}
 
-	private void OnError(object sender, ErrorEventArgs e) =>
-		PrintException(e.GetException());
+	private void OnError(object sender, ErrorEventArgs e) => PrintException(e.GetException());
 
 	private void PrintException(Exception? ex)
 	{
@@ -260,15 +273,19 @@ public sealed class ReloadGeneratorService(
 				newCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 				_pendingCts = newCts;
 			}
-			_ = Task.Run(async () =>
-			{
-				try
-				{
-					await Task.Delay(window, newCts.Token);
-					await action(newCts.Token);
-				}
-				catch (OperationCanceledException) { }
-			}, newCts.Token);
+			_ =
+				Task.Run(
+					async () =>
+					{
+						try
+						{
+							await Task.Delay(window, newCts.Token);
+							await action(newCts.Token);
+						}
+						catch (OperationCanceledException) { }
+					},
+					newCts.Token
+				);
 		}
 
 		public void Dispose()

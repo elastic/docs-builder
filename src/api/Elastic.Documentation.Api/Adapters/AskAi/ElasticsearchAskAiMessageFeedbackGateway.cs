@@ -27,7 +27,8 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 	public ElasticsearchAskAiMessageFeedbackGateway(
 		DocumentationEndpoints endpoints,
 		AppEnvironment appEnvironment,
-		ILogger<ElasticsearchAskAiMessageFeedbackGateway> logger)
+		ILogger<ElasticsearchAskAiMessageFeedbackGateway> logger
+	)
 	{
 		_logger = logger;
 		_indexName = $"ask-ai-message-feedback-{appEnvironment.Current.ToStringFast(true)}";
@@ -36,16 +37,12 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 		_nodePool = new SingleNodePool(endpoint.Uri);
 		var auth = endpoint.ApiKey is { } apiKey
 			? (AuthorizationHeader)new ApiKey(apiKey)
-			: endpoint is { Username: { } username, Password: { } password }
-				? new BasicAuthentication(username, password)
-				: null!;
+			: endpoint is { Username: { } username, Password: { } password } ? new BasicAuthentication(username, password) : null!;
 
 		using var clientSettings = new ElasticsearchClientSettings(
-				_nodePool,
-				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, MessageFeedbackJsonContext.Default)
-			)
-			.DefaultIndex(_indexName)
-			.Authentication(auth);
+			_nodePool,
+			sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, MessageFeedbackJsonContext.Default)
+		).DefaultIndex(_indexName).Authentication(auth);
 		_client = new ElasticsearchClient(clientSettings);
 	}
 
@@ -74,9 +71,8 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 
 		_logger.LogDebug("Indexing feedback with ID {FeedbackId} to index {IndexName}", feedbackId, _indexName);
 
-		var response = await _client.IndexAsync<MessageFeedbackDocument>(document, idx => idx
-			.Index(_indexName)
-			.Id(feedbackId.ToString()), ctx);
+		var response =
+			await _client.IndexAsync<MessageFeedbackDocument>(document, idx => idx.Index(_indexName).Id(feedbackId.ToString()), ctx);
 
 		// MessageId and ConversationId are Guid types, so no sanitization needed
 		if (!response.IsValidResponse)
@@ -84,7 +80,8 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 			_logger.LogWarning(
 				"Failed to index message feedback for message {MessageId}: {Error}",
 				record.MessageId,
-				response.ElasticsearchServerError?.Error?.Reason ?? "Unknown error");
+				response.ElasticsearchServerError?.Error?.Reason ?? "Unknown error"
+			);
 		}
 		else
 		{
@@ -94,7 +91,8 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 				record.MessageId,
 				record.ConversationId,
 				response.Id,
-				response.Index);
+				response.Index
+			);
 		}
 	}
 }

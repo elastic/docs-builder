@@ -41,33 +41,23 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 
 		return type switch
 		{
-
 			"conversation_id_set" when innerData.TryGetProperty("conversation_id", out var convId) =>
 				new AskAiEvent.ConversationStart(id, timestamp, convId.GetString()!),
-
 			"message_chunk" when innerData.TryGetProperty("text_chunk", out var textChunk) =>
 				new AskAiEvent.MessageChunk(id, timestamp, textChunk.GetString()!),
-
 			"message_complete" when innerData.TryGetProperty("message_content", out var fullContent) =>
 				new AskAiEvent.MessageComplete(id, timestamp, fullContent.GetString()!),
-
 			"reasoning" =>
 				// Parse reasoning message if available
 				ParseReasoningEvent(id, timestamp, innerData),
-
 			"tool_call" =>
 				// Parse tool call
 				ParseToolCallEvent(id, timestamp, innerData),
-
 			"tool_result" =>
 				// Parse tool result
 				ParseToolResultEvent(id, timestamp, innerData),
-
-			"round_complete" =>
-				new AskAiEvent.ConversationEnd(id, timestamp),
-
-			"conversation_created" =>
-				null, // Skip, already handled by conversation_id_set
+			"round_complete" => new AskAiEvent.ConversationEnd(id, timestamp),
+			"conversation_created" => null, // Skip, already handled by conversation_id_set
 
 			_ => LogUnknownEvent(type, json)
 		};
@@ -82,9 +72,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 	private static AskAiEvent.Reasoning ParseReasoningEvent(string id, long timestamp, JsonElement innerData)
 	{
 		// Agent Builder sends: {"data":{"reasoning":"..."}}
-		var message = innerData.TryGetProperty("reasoning", out var reasoningProp)
-			? reasoningProp.GetString()
-			: null;
+		var message = innerData.TryGetProperty("reasoning", out var reasoningProp) ? reasoningProp.GetString() : null;
 
 		return new AskAiEvent.Reasoning(id, timestamp, message ?? "Thinking...");
 	}
@@ -95,9 +83,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		var toolCallId = innerData.TryGetProperty("tool_call_id", out var tcId) ? tcId.GetString() : id;
 
 		// Serialize the entire results array as the result string
-		var result = innerData.TryGetProperty("results", out var resultsElement)
-			? resultsElement.GetRawText()
-			: "{}";
+		var result = innerData.TryGetProperty("results", out var resultsElement) ? resultsElement.GetRawText() : "{}";
 
 		return new AskAiEvent.ToolResult(id, timestamp, toolCallId ?? id, result);
 	}
@@ -112,8 +98,10 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		if (toolId != null && toolId.Contains("docs", StringComparison.OrdinalIgnoreCase))
 		{
 			// Agent Builder uses "keyword_query" in params
-			if (innerData.TryGetProperty("params", out var paramsElement) &&
-				paramsElement.TryGetProperty("keyword_query", out var keywordQueryProp))
+			if (
+				innerData.TryGetProperty("params", out var paramsElement) &&
+				paramsElement.TryGetProperty("keyword_query", out var keywordQueryProp)
+			)
 			{
 				var searchQuery = keywordQueryProp.GetString();
 				if (!string.IsNullOrEmpty(searchQuery))
@@ -124,9 +112,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 		}
 
 		// Fallback to generic tool call
-		var args = innerData.TryGetProperty("params", out var paramsEl)
-			? paramsEl.GetRawText()
-			: "{}";
+		var args = innerData.TryGetProperty("params", out var paramsEl) ? paramsEl.GetRawText() : "{}";
 
 		return new AskAiEvent.ToolCall(id, timestamp, toolCallId ?? id, toolId ?? "unknown", args);
 	}
@@ -134,8 +120,7 @@ public class AgentBuilderStreamTransformer(ILogger<AgentBuilderStreamTransformer
 	private static AskAiEvent.ErrorEvent ParseErrorEvent(string id, long timestamp, JsonElement root)
 	{
 		// Agent Builder sends: {"error":{"code":"...","message":"...","meta":{...}}}
-		var errorMessage = root.TryGetProperty("error", out var errorProp) &&
-						   errorProp.TryGetProperty("message", out var msgProp)
+		var errorMessage = root.TryGetProperty("error", out var errorProp) && errorProp.TryGetProperty("message", out var msgProp)
 			? msgProp.GetString()
 			: null;
 		return new AskAiEvent.ErrorEvent(id, timestamp, errorMessage ?? "Unknown error occurred");

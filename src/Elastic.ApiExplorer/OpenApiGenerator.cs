@@ -37,7 +37,8 @@ public class OpenApiGenerator(
 	BuildContext context,
 	IMarkdownStringRenderer markdownStringRenderer,
 	VersionIndexClient? versionIndexClient = null,
-	IOpenApiSpecificationReader? openApiReader = null)
+	IOpenApiSpecificationReader? openApiReader = null
+)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
@@ -45,8 +46,11 @@ public class OpenApiGenerator(
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
 
-	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null) =>
-		new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig);
+	public LandingNavigationItem CreateNavigation(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		ResolvedApiConfiguration? apiConfig = null
+	) => new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig);
 
 	public async Task Generate(Cancel ctx = default)
 	{
@@ -76,8 +80,7 @@ public class OpenApiGenerator(
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
-				context.Collector.EmitGlobalError(
-					$"API '{prefix}' could not be generated: {ex.Message}");
+				context.Collector.EmitGlobalError($"API '{prefix}' could not be generated: {ex.Message}");
 			}
 		}
 
@@ -90,10 +93,7 @@ public class OpenApiGenerator(
 	public Task GenerateCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx = default) =>
 		entries.Count == 0 ? Task.CompletedTask : GenerateApiCatalog(entries, ctx);
 
-	private async Task<ApiCatalogEntry?> GenerateProduct(
-		string prefix,
-		ResolvedApiConfiguration apiConfig,
-		Cancel ctx)
+	private async Task<ApiCatalogEntry?> GenerateProduct(string prefix, ResolvedApiConfiguration apiConfig, Cancel ctx)
 	{
 		var versionedDocuments = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
 		if (versionedDocuments.Count == 0)
@@ -102,18 +102,13 @@ public class OpenApiGenerator(
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
 		foreach (var versioned in versionedDocuments)
 		{
-			var switcherItems = ApiVersionSwitcher.Build(
-				context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
+			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
-			await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherItems, ctx)
-				.ConfigureAwait(false);
+			await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherItems, ctx).ConfigureAwait(false);
 		}
 
-		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main")
-			?? versionedDocuments[0];
-		var title = canonical.Document.Info?.Title
-			?? apiConfig.Product.DisplayName
-			?? prefix;
+		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main") ?? versionedDocuments[0];
+		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
 		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
 		return new ApiCatalogEntry(prefix, title, url);
 	}
@@ -125,18 +120,17 @@ public class OpenApiGenerator(
 	internal async Task<IReadOnlyList<VersionedOpenApiDocument>> ResolveDocumentsForProduct(
 		string apiKey,
 		ResolvedApiConfiguration apiConfig,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var versionless = IsVersionlessProduct(apiConfig.Product);
 		if (apiConfig.LocalSpecFile is { } localFile && versionless)
 			return await ResolveLocalMainOnly(localFile).ConfigureAwait(false);
 
-		var versions = await _versionIndexClient.ResolveVersionsAsync(
-			context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
+		var versions =
+			await _versionIndexClient.ResolveVersionsAsync(context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
 
-		var versionsToRender = versionless
-			? versions.Where(v => v.Moniker == "main").ToArray()
-			: [.. versions];
+		var versionsToRender = versionless ? versions.Where(v => v.Moniker == "main").ToArray() : [.. versions];
 
 		if (versionsToRender.Length == 0)
 			return [];
@@ -144,7 +138,8 @@ public class OpenApiGenerator(
 		if (!versionless && versionsToRender.All(v => v.Moniker != "main") && versions.Count > 0)
 		{
 			context.Collector.EmitGlobalWarning(
-				$"Version index for API '{apiKey}' has no 'main' entry; the unversioned path will not be rendered.");
+				$"Version index for API '{apiKey}' has no 'main' entry; the unversioned path will not be rendered."
+			);
 		}
 
 		var results = new List<VersionedOpenApiDocument>(versionsToRender.Length);
@@ -166,28 +161,22 @@ public class OpenApiGenerator(
 		if (document is null)
 			return [];
 
-		return
-		[
+		return [
 			new VersionedOpenApiDocument(
-				new ResolvedApiVersion
-				{
-					Moniker = "main",
-					Version = "main",
-					IsLocal = true,
-					LocalFile = localFile
-				},
-				document)
+				new ResolvedApiVersion { Moniker = "main", Version = "main", IsLocal = true, LocalFile = localFile },
+				document
+			)
 		];
 	}
 
-	private static bool IsVersionlessProduct(Product product) =>
-		product.VersioningSystem?.IsVersionless == true;
+	private static bool IsVersionlessProduct(Product product) => product.VersioningSystem?.IsVersionless == true;
 
 	private async Task<OpenApiDocument?> ResolveDocumentForVersion(
 		string apiKey,
 		ResolvedApiConfiguration apiConfig,
 		ResolvedApiVersion version,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (version.IsLocal)
 			return await _openApiReader.ReadAsync(version.LocalFile!).ConfigureAwait(false);
@@ -199,10 +188,7 @@ public class OpenApiGenerator(
 		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName).ConfigureAwait(false);
 	}
 
-	private static readonly OpenApiDocument CatalogDocument = new()
-	{
-		Info = new OpenApiInfo { Title = "API Explorer", Version = "1.0" }
-	};
+	private static readonly OpenApiDocument CatalogDocument = new() { Info = new OpenApiInfo { Title = "API Explorer", Version = "1.0" } };
 
 	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
 	{
@@ -226,7 +212,8 @@ public class OpenApiGenerator(
 		OpenApiDocument openApiDocument,
 		ResolvedApiConfiguration? apiConfig,
 		IReadOnlyList<ApiVersionSwitcherItem> versionSwitcherItems,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
@@ -249,7 +236,8 @@ public class OpenApiGenerator(
 		ApiRenderContext renderContext,
 		IsolatedBuildNavigationHtmlWriter navigationRenderer,
 		INavigationItem currentNavigation,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
@@ -267,20 +255,20 @@ public class OpenApiGenerator(
 		}
 	}
 
-	private async Task<IFileInfo> Render<T>(INavigationItem current, T page, ApiRenderContext renderContext,
-		IsolatedBuildNavigationHtmlWriter navigationRenderer, Cancel ctx)
-		where T : INavigationModel, IPageRenderer<ApiRenderContext>
+	private async Task<IFileInfo> Render<T>(
+		INavigationItem current,
+		T page,
+		ApiRenderContext renderContext,
+		IsolatedBuildNavigationHtmlWriter navigationRenderer,
+		Cancel ctx
+	) where T : INavigationModel, IPageRenderer<ApiRenderContext>
 	{
 		var outputFile = OutputFile(current);
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
 		var navigationRenderResult = await navigationRenderer.RenderNavigation(current.NavigationRoot, current, ctx);
-		renderContext = renderContext with
-		{
-			CurrentNavigation = current,
-			NavigationHtml = navigationRenderResult.Html
-		};
+		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);
 		return outputFile;

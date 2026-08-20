@@ -63,8 +63,7 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 					YamlWriter.WriteTocYaml(Path.Combine(versionDir, "toc.yml"), fileEntries);
 					versionEntries.Add(new TocEntry { Folder = versionLabel });
 
-					logger.LogInformation("Wrote {PageCount} pages for {Prefix}/{Version}",
-						pages.Count, book.Prefix, versionLabel);
+					logger.LogInformation("Wrote {PageCount} pages for {Prefix}/{Version}", pages.Count, book.Prefix, versionLabel);
 				}
 				catch (Exception ex) when (ex is not OperationCanceledException)
 				{
@@ -86,7 +85,11 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 	}
 
 	private async Task<IReadOnlyList<PageOutput>> ProcessBookVersion(
-		LegacyBook book, BranchRef version, ArchiveGeneratorOptions options, CancellationToken ct)
+		LegacyBook book,
+		BranchRef version,
+		ArchiveGeneratorOptions options,
+		CancellationToken ct
+	)
 	{
 		var versionLabel = version.VersionLabel;
 		var sources = await options.RepoManager.ResolveSourcesAsync(book, version, ct);
@@ -108,27 +111,18 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		var basePath = Path.GetDirectoryName(indexPath) ?? primarySource.LocalPath;
 		var parserOptions = new AsciidocParserOptions
 		{
-			Attributes = new Dictionary<string, string>
-			{
-				["branch"] = versionLabel,
-				["doc-tests-src"] = primarySource.LocalPath
-			}
+			Attributes = new Dictionary<string, string> { ["branch"] = versionLabel, ["doc-tests-src"] = primarySource.LocalPath }
 		};
 		var parser = new AsciidocParser(parserOptions);
 		var document = parser.Parse(content, basePath);
 
-		var emitterOptions = new MarkdownEmitterOptions
-		{
-			BookPrefix = book.Prefix,
-			Version = versionLabel
-		};
+		var emitterOptions = new MarkdownEmitterOptions { BookPrefix = book.Prefix, Version = versionLabel };
 		var emitter = new MarkdownEmitter(emitterOptions);
 
 		return PageChunker.Chunk(document, book.Chunk, emitter);
 	}
 
-	private static async Task<List<TocEntry>> WritePages(
-		IReadOnlyList<PageOutput> pages, string directory, CancellationToken ct)
+	private static async Task<List<TocEntry>> WritePages(IReadOnlyList<PageOutput> pages, string directory, CancellationToken ct)
 	{
 		var entries = new List<TocEntry>();
 		foreach (var page in pages)
@@ -152,16 +146,13 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		if (!string.IsNullOrEmpty(book.Current))
 			_ = selected.Add(book.Current);
 
-		var grouped = branches
-			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
+		var grouped = branches.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.Where(x => x.Parsed.HasValue)
 			.GroupBy(x => x.Parsed!.Value.Major);
 
 		foreach (var group in grouped)
 		{
-			var topTwo = group
-				.OrderByDescending(x => x.Parsed!.Value.Minor)
-				.Take(2);
+			var topTwo = group.OrderByDescending(x => x.Parsed!.Value.Minor).Take(2);
 
 			foreach (var (branch, _) in topTwo)
 				_ = selected.Add(branch.VersionLabel);
@@ -175,18 +166,15 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		if (minMajor is null)
 			return branches.ToList();
 
-		return branches
-			.Where(b =>
-			{
-				var parsed = TryParseMajorMinor(b.VersionLabel);
-				return parsed.HasValue && parsed.Value.Major >= minMajor;
-			})
-			.ToList();
+		return branches.Where(b =>
+		{
+			var parsed = TryParseMajorMinor(b.VersionLabel);
+			return parsed.HasValue && parsed.Value.Major >= minMajor;
+		}).ToList();
 	}
 
 	private static List<BranchRef> SortBranchesDescending(IEnumerable<BranchRef> branches) =>
-		branches
-			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
+		branches.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.OrderByDescending(x => x.Parsed?.Major ?? 0)
 			.ThenByDescending(x => x.Parsed?.Minor ?? 0)
 			.Select(x => x.Branch)

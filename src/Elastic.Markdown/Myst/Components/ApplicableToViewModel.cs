@@ -73,7 +73,6 @@ public class ApplicableToViewModel
 		[p => p.ApmAgentRumJs] = ApplicabilityMappings.ApmAgentRumJs
 	};
 
-
 	public IReadOnlyCollection<ApplicabilityItem> GetApplicabilityItems()
 	{
 		var rawItems = BadgePlacement switch
@@ -92,9 +91,11 @@ public class ApplicableToViewModel
 
 		if (AppliesTo.Serverless is not null)
 		{
-			rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
-				? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
-				: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
+			rawItems.AddRange(
+				AppliesTo.Serverless.AllProjects is not null
+					? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+					: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings)
+			);
 		}
 
 		if (AppliesTo.Stack is not null)
@@ -131,9 +132,11 @@ public class ApplicableToViewModel
 
 		if (AppliesTo.Serverless is not null)
 		{
-			rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
-				? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
-				: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
+			rawItems.AddRange(
+				AppliesTo.Serverless.AllProjects is not null
+					? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+					: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings)
+			);
 		}
 
 		if (AppliesTo.Deployment is not null)
@@ -142,17 +145,12 @@ public class ApplicableToViewModel
 		if (AppliesTo.ProductApplicability is not null)
 			rawItems.AddRange(CollectFromMappings(AppliesTo.ProductApplicability, ProductMappings));
 
-		var noExplicitSupportedOn =
-			AppliesTo.Deployment is null &&
-			AppliesTo.Serverless is null &&
-			AppliesTo.ProductApplicability is null;
+		var noExplicitSupportedOn = AppliesTo.Deployment is null && AppliesTo.Serverless is null && AppliesTo.ProductApplicability is null;
 
 		if (rawItems.Count == 0 && noExplicitSupportedOn && AppliesTo.Stack is not null)
 			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Self));
 
-		return rawItems
-			.Where(i => i.Applicability.Lifecycle != ProductLifecycle.Unavailable)
-			.ToList();
+		return rawItems.Where(i => i.Applicability.Lifecycle != ProductLifecycle.Unavailable).ToList();
 	}
 
 	private static bool IsGenericGa(AppliesCollection collection)
@@ -161,8 +159,8 @@ public class ApplicableToViewModel
 			return false;
 
 		var applicability = collection.First();
-		return applicability.Lifecycle == ProductLifecycle.GenerallyAvailable
-			&& (applicability.Version is null || applicability.Version == AllVersionsSpec.Instance);
+		return applicability.Lifecycle == ProductLifecycle.GenerallyAvailable &&
+			(applicability.Version is null || applicability.Version == AllVersionsSpec.Instance);
 	}
 
 	/// <summary>
@@ -170,19 +168,24 @@ public class ApplicableToViewModel
 	/// </summary>
 	private static IEnumerable<RawApplicabilityItem> CollectFromCollection(
 		AppliesCollection collection,
-		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition) =>
-		collection.Select(applicability => new RawApplicabilityItem(
-			Key: applicabilityDefinition.Key,
-			Applicability: applicability,
-			ApplicabilityDefinition: applicabilityDefinition
-		));
+		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition
+	) =>
+		collection.Select(
+			applicability =>
+				new RawApplicabilityItem(
+					Key: applicabilityDefinition.Key,
+					Applicability: applicability,
+					ApplicabilityDefinition: applicabilityDefinition
+				)
+		);
 
 	/// <summary>
 	/// Collects raw applicability items from mapped collections.
 	/// </summary>
 	private static IReadOnlyCollection<RawApplicabilityItem> CollectFromMappings<T>(
 		T source,
-		Dictionary<Func<T, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> mappings)
+		Dictionary<Func<T, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> mappings
+	)
 	{
 		var items = new List<RawApplicabilityItem>();
 
@@ -200,30 +203,25 @@ public class ApplicableToViewModel
 	/// Groups raw items by key and renders each group using the unified renderer.
 	/// </summary>
 	private IEnumerable<ApplicabilityItem> RenderGroupedItems(IReadOnlyCollection<RawApplicabilityItem> rawItems) =>
-		rawItems
-			.GroupBy(item => item.Key)
-			.Select(group =>
-			{
-				var items = group.ToList();
-				var applicabilityDefinition = items.First().ApplicabilityDefinition;
-				var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
-				var allApplicabilities = items.Select(i => i.Applicability).ToArray();
+		rawItems.GroupBy(item => item.Key).Select(group =>
+		{
+			var items = group.ToList();
+			var applicabilityDefinition = items.First().ApplicabilityDefinition;
+			var versioningSystem = VersionsConfig.GetVersioningSystem(applicabilityDefinition.VersioningSystemId);
+			var allApplicabilities = items.Select(i => i.Applicability).ToArray();
 
-				var renderData = ApplicabilityRenderer.RenderApplicability(
-					allApplicabilities,
-					applicabilityDefinition,
-					versioningSystem);
+			var renderData = ApplicabilityRenderer.RenderApplicability(allApplicabilities, applicabilityDefinition, versioningSystem);
 
-				// Select the closest version to current as the primary display
-				var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(allApplicabilities, versioningSystem.Current);
+			// Select the closest version to current as the primary display
+			var primaryApplicability = ApplicabilitySelector.GetPrimaryApplicability(allApplicabilities, versioningSystem.Current);
 
-				return new ApplicabilityItem(
-					Key: items.First().Key,
-					PrimaryApplicability: primaryApplicability,
-					RenderData: renderData,
-					ApplicabilityDefinition: applicabilityDefinition
-				);
-			});
+			return new ApplicabilityItem(
+				Key: items.First().Key,
+				PrimaryApplicability: primaryApplicability,
+				RenderData: renderData,
+				ApplicabilityDefinition: applicabilityDefinition
+			);
+		});
 
 	/// <summary>
 	/// Intermediate representation before rendering.

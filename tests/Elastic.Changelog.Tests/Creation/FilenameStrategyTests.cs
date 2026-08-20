@@ -10,8 +10,7 @@ namespace Elastic.Changelog.Tests.Creation;
 
 public class FilenameStrategyTests
 {
-	private static CreateChangelogArguments DefaultInput() =>
-		new() { Products = [] };
+	private static CreateChangelogArguments DefaultInput() => new() { Products = [] };
 
 	[Fact]
 	public void ApplyConfigDefaults_FilenamePr_SetsUsePrNumber()

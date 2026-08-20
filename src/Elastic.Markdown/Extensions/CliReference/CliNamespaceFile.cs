@@ -65,8 +65,15 @@ public record CliNamespaceFile : IO.MarkdownFile
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
 		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
-		var body = CliMarkdownGenerator.NamespacePage(_namespace, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
-			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error), _shortcuts);
+		var body = CliMarkdownGenerator.NamespacePage(
+			_namespace,
+			supplemental,
+			_fullPath,
+			_binaryName,
+			_reservedMetaCommands,
+			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error),
+			_shortcuts
+		);
 		// Prepend supplemental front matter so applies_to (or any other field) in ns-*.md overrides the fallback
 		return supplemental?.FrontMatter is { } fm ? $"{fm}\n\n{body}" : body;
 	}

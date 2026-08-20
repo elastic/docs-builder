@@ -261,10 +261,7 @@ public record ServerlessProjectApplicability
 	/// <summary>
 	/// Returns if all projects share the same applicability
 	/// </summary>
-	public AppliesCollection? AllProjects =>
-		Elasticsearch == Observability && Observability == Security
-			? Elasticsearch
-			: null;
+	public AppliesCollection? AllProjects => Elasticsearch == Observability && Observability == Security ? Elasticsearch : null;
 
 	public static ServerlessProjectApplicability All { get; } = new()
 	{

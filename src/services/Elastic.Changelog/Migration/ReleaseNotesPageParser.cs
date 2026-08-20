@@ -52,7 +52,8 @@ public static partial class ReleaseNotesPageParser
 		IDiagnosticsCollector collector,
 		string markdown,
 		string sourceId,
-		MigrateFromWebScope scope)
+		MigrateFromWebScope scope
+	)
 	{
 		var lines = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
 		var releases = new List<MigratedRelease>();
@@ -143,7 +144,10 @@ public static partial class ReleaseNotesPageParser
 			}
 
 			if (dateMatch.Success)
-				collector.EmitWarning(sourceId, $"Could not parse release date '{dateMatch.Groups["date"].Value}' for {version}; keeping the line as description text.");
+				collector.EmitWarning(
+					sourceId,
+					$"Could not parse release date '{dateMatch.Groups["date"].Value}' for {version}; keeping the line as description text."
+				);
 
 			ConsumeContentLine(line);
 		}
@@ -155,7 +159,10 @@ public static partial class ReleaseNotesPageParser
 			{
 				// Unrecognized subsections flow into the description verbatim (heading included) so the
 				// published content is preserved even when it cannot be mapped to typed entries.
-				collector.EmitWarning(sourceId, $"Unrecognized subsection '### {title.Trim()}' under {version}; preserving it in the bundle description.");
+				collector.EmitWarning(
+					sourceId,
+					$"Unrecognized subsection '### {title.Trim()}' under {version}; preserving it in the bundle description."
+				);
 				_entryType = null;
 				_collectingEntries = false;
 				AppendDescriptionLine(line);
@@ -236,17 +243,16 @@ public static partial class ReleaseNotesPageParser
 		}
 	}
 
-	private static ChangelogEntryType? ResolveSectionType(string heading) =>
-		heading.Trim().ToLowerInvariant() switch
-		{
-			"features and enhancements" or "features" or "enhancements" => ChangelogEntryType.Enhancement,
-			"fixes" or "bug fixes" => ChangelogEntryType.BugFix,
-			"breaking changes" => ChangelogEntryType.BreakingChange,
-			"deprecations" => ChangelogEntryType.Deprecation,
-			"known issues" => ChangelogEntryType.KnownIssue,
-			"security" or "security updates" => ChangelogEntryType.Security,
-			_ => null
-		};
+	private static ChangelogEntryType? ResolveSectionType(string heading) => heading.Trim().ToLowerInvariant() switch
+	{
+		"features and enhancements" or "features" or "enhancements" => ChangelogEntryType.Enhancement,
+		"fixes" or "bug fixes" => ChangelogEntryType.BugFix,
+		"breaking changes" => ChangelogEntryType.BreakingChange,
+		"deprecations" => ChangelogEntryType.Deprecation,
+		"known issues" => ChangelogEntryType.KnownIssue,
+		"security" or "security updates" => ChangelogEntryType.Security,
+		_ => null
+	};
 
 	private static bool TryParseReleaseDate(string text, out DateOnly date)
 	{
@@ -282,17 +288,24 @@ public static partial class ReleaseNotesPageParser
 	{
 		var prs = new List<string>();
 
-		var title = PrLinkRegex().Replace(text, m =>
-		{
-			prs.Add(m.Groups["url"].Value);
-			return string.Empty;
-		});
+		var title = PrLinkRegex().Replace(
+			text,
+			m =>
+			{
+				prs.Add(m.Groups["url"].Value);
+				return string.Empty;
+			}
+		);
 
-		title = BarePrRefRegex().Replace(title, m =>
-		{
-			prs.Add($"https://github.com/{scope.Owner}/{scope.Repo}/pull/{m.Groups["number"].Value}");
-			return string.Empty;
-		});
+		title =
+			BarePrRefRegex().Replace(
+				title,
+				m =>
+				{
+					prs.Add($"https://github.com/{scope.Owner}/{scope.Repo}/pull/{m.Groups["number"].Value}");
+					return string.Empty;
+				}
+			);
 
 		return (NormalizeTitle(title), prs);
 	}

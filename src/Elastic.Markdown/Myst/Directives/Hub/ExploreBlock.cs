@@ -25,8 +25,7 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// :::::
 /// </code>
 /// </example>
-public class ExploreBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class ExploreBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "explore";
 
@@ -44,6 +43,5 @@ public class ExploreBlock(DirectiveBlockParser parser, ParserContext context)
 			this.EmitError("{explore} requires a `:title:` option.");
 	}
 
-	public override IEnumerable<string> GeneratedAnchors =>
-		string.IsNullOrWhiteSpace(Anchor) ? [] : [Anchor];
+	public override IEnumerable<string> GeneratedAnchors => string.IsNullOrWhiteSpace(Anchor) ? [] : [Anchor];
 }

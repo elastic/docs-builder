@@ -39,7 +39,9 @@ public record ProductsConfiguration : IProductNameLookup
 		var repositoryName = tokens.Last();
 		if (Products.TryGetValue(repositoryName, out var product))
 			return product;
-		var match = Products.Values.SingleOrDefault(p => p.Repository is not null && p.Repository.Equals(repositoryName, StringComparison.OrdinalIgnoreCase));
+		var match = Products.Values.SingleOrDefault(
+			p => p.Repository is not null && p.Repository.Equals(repositoryName, StringComparison.OrdinalIgnoreCase)
+		);
 		return match;
 	}
 
@@ -86,7 +88,10 @@ public record ProductFeatures
 	/// <summary>All features enabled -- the implicit default when no <c>features</c> map is present in YAML.</summary>
 	public static ProductFeatures All => new() { PublicReference = true, ReleaseNotes = true };
 
-	public static readonly FrozenSet<string> KnownKeys = FrozenSet.ToFrozenSet(["public-reference", "release-notes"], StringComparer.OrdinalIgnoreCase);
+	public static readonly FrozenSet<string> KnownKeys = FrozenSet.ToFrozenSet(
+		["public-reference", "release-notes"],
+		StringComparer.OrdinalIgnoreCase
+	);
 }
 
 [YamlSerializable]
@@ -98,4 +103,3 @@ public record Product
 	public string? Repository { get; init; }
 	public ProductFeatures Features { get; init; } = ProductFeatures.All;
 }
-

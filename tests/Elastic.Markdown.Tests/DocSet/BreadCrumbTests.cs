@@ -19,12 +19,14 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		var allKeys = crossLinks.Keys.ToList();
 
 		var lookup = Path.Join("nested", "index.md");
-		var doc = Generator.DocumentationSet.MarkdownFiles
+		var doc = Generator.DocumentationSet
+			.MarkdownFiles
 			.FirstOrDefault(f => f.SourceFile.FullName.EndsWith(lookup, StringComparison.OrdinalIgnoreCase));
 
 		doc.Should().NotBeNull();
 
-		var deeplyNestedDoc = Generator.DocumentationSet.MarkdownFiles
+		var deeplyNestedDoc = Generator.DocumentationSet
+			.MarkdownFiles
 			.FirstOrDefault(f => f.RelativePath.OptionalWindowsReplace().EndsWith("deeply-nested/foo.md", StringComparison.Ordinal));
 		deeplyNestedDoc.Should().NotBeNull();
 
@@ -38,6 +40,5 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		var parents = navigationTraversable.GetParentsOfMarkdownFile(doc);
 
 		parents.Should().HaveCount(1);
-
 	}
 }

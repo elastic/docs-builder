@@ -85,7 +85,10 @@ public class MultiLayerCacheTests
 		// Arrange
 		var fakeL2 = A.Fake<IDistributedCache>();
 		var cache = new MultiLayerCache(fakeL2, NullLogger<MultiLayerCache>.Instance);
-		var uniqueKey = CacheKey.Create("test", $"test-key-{Guid.NewGuid()}"); // Use unique key to avoid L1 cache pollution from other tests
+		var uniqueKey = CacheKey.Create(
+			"test",
+			$"test-key-{Guid.NewGuid()}"
+		); // Use unique key to avoid L1 cache pollution from other tests
 
 		// Pre-populate L1 by setting a value
 		await cache.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
@@ -98,8 +101,7 @@ public class MultiLayerCacheTests
 		result1.Should().Be("value");
 		result2.Should().Be("value");
 		// L2 should only be called once (during SetAsync), not on subsequent Gets
-		A.CallTo(() => fakeL2.GetAsync(A<CacheKey>._, A<Cancel>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => fakeL2.GetAsync(A<CacheKey>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
@@ -107,9 +109,11 @@ public class MultiLayerCacheTests
 	{
 		// Arrange
 		var fakeL2 = A.Fake<IDistributedCache>();
-		var uniqueKey = CacheKey.Create("test", $"test-key-{Guid.NewGuid()}"); // Use unique key to avoid L1 cache pollution from other tests
-		A.CallTo(() => fakeL2.GetAsync(uniqueKey, A<Cancel>._))
-			.Returns("l2-value");
+		var uniqueKey = CacheKey.Create(
+			"test",
+			$"test-key-{Guid.NewGuid()}"
+		); // Use unique key to avoid L1 cache pollution from other tests
+		A.CallTo(() => fakeL2.GetAsync(uniqueKey, A<Cancel>._)).Returns("l2-value");
 
 		var cache = new MultiLayerCache(fakeL2, NullLogger<MultiLayerCache>.Instance);
 
@@ -121,8 +125,7 @@ public class MultiLayerCacheTests
 		// Assert
 		result1.Should().Be("l2-value");
 		result2.Should().Be("l2-value");
-		A.CallTo(() => fakeL2.GetAsync(uniqueKey, A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => fakeL2.GetAsync(uniqueKey, A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
@@ -131,7 +134,10 @@ public class MultiLayerCacheTests
 		// Arrange
 		var fakeL2 = A.Fake<IDistributedCache>();
 		var cache = new MultiLayerCache(fakeL2, NullLogger<MultiLayerCache>.Instance);
-		var uniqueKey = CacheKey.Create("test", $"test-key-{Guid.NewGuid()}"); // Use unique key to avoid L1 cache pollution from other tests
+		var uniqueKey = CacheKey.Create(
+			"test",
+			$"test-key-{Guid.NewGuid()}"
+		); // Use unique key to avoid L1 cache pollution from other tests
 
 		// Act
 		await cache.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
@@ -141,8 +147,7 @@ public class MultiLayerCacheTests
 
 		// Assert
 		result.Should().Be("value", "L1 should have the value");
-		A.CallTo(() => fakeL2.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => fakeL2.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
@@ -150,8 +155,7 @@ public class MultiLayerCacheTests
 	{
 		// Arrange
 		var fakeL2 = A.Fake<IDistributedCache>();
-		A.CallTo(() => fakeL2.GetAsync(A<CacheKey>._, A<Cancel>._))
-			.Returns((string?)null);
+		A.CallTo(() => fakeL2.GetAsync(A<CacheKey>._, A<Cancel>._)).Returns((string?)null);
 
 		var cache = new MultiLayerCache(fakeL2, NullLogger<MultiLayerCache>.Instance);
 		var key = CacheKey.Create("test", "missing-key");
@@ -180,13 +184,15 @@ public class DynamoDbDistributedCacheTests
 			{
 				["CacheKey"] = new AttributeValue { S = key.Value },
 				["Value"] = new AttributeValue { S = "test-value" },
-				["TTL"] = new AttributeValue { N = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture) }
+				["TTL"] = new AttributeValue
+				{
+					N = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)
+				}
 			},
 			IsItemSet = true
 		};
 
-		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._))
-			.Returns(response);
+		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._)).Returns(response);
 
 		var cache = new DynamoDbDistributedCache(fakeDynamoDb, "test-table", NullLogger<DynamoDbDistributedCache>.Instance);
 
@@ -205,8 +211,7 @@ public class DynamoDbDistributedCacheTests
 		var key = CacheKey.Create("test", "missing-key");
 		var response = new GetItemResponse { IsItemSet = false };
 
-		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._))
-			.Returns(response);
+		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._)).Returns(response);
 
 		var cache = new DynamoDbDistributedCache(fakeDynamoDb, "test-table", NullLogger<DynamoDbDistributedCache>.Instance);
 
@@ -229,14 +234,15 @@ public class DynamoDbDistributedCacheTests
 		await cache.SetAsync(key, "value", TimeSpan.FromMinutes(30), TestContext.Current.CancellationToken);
 
 		// Assert
-		A.CallTo(() => fakeDynamoDb.PutItemAsync(
-			A<PutItemRequest>.That.Matches(r =>
-				r.TableName == "test-table" &&
-				r.Item["CacheKey"].S == key.Value &&
-				r.Item["Value"].S == "value"
-			),
-			A<Cancel>._
-		)).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() =>
+				fakeDynamoDb.PutItemAsync(
+					A<PutItemRequest>.That.Matches(
+						r => r.TableName == "test-table" && r.Item["CacheKey"].S == key.Value && r.Item["Value"].S == "value"
+					),
+					A<Cancel>._
+				)
+		).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
@@ -246,8 +252,7 @@ public class DynamoDbDistributedCacheTests
 		var fakeDynamoDb = A.Fake<IAmazonDynamoDB>();
 		var key = CacheKey.Create("test", "key");
 		var exception = new ResourceNotFoundException("Table not found");
-		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._))
-			.Throws(exception);
+		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._)).Throws(exception);
 
 		var cache = new DynamoDbDistributedCache(fakeDynamoDb, "missing-table", NullLogger<DynamoDbDistributedCache>.Instance);
 
@@ -270,8 +275,7 @@ public class GcpIdTokenProviderCachingIntegrationTests
 		var fakeHandler = A.Fake<HttpMessageHandler>();
 		using var httpClient = new HttpClient(fakeHandler);
 		var fakeHttpClientFactory = A.Fake<IHttpClientFactory>();
-		A.CallTo(() => fakeHttpClientFactory.CreateClient(A<string>._))
-			.Returns(httpClient);
+		A.CallTo(() => fakeHttpClientFactory.CreateClient(A<string>._)).Returns(httpClient);
 
 		var cache = new InMemoryDistributedCache();
 

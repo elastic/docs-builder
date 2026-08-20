@@ -18,9 +18,7 @@ namespace Elastic.Documentation.LinkIndex;
 public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 {
 	private const string LinkIndexOrigin = "elastic/codex-link-index";
-	private static readonly string CloneDirectory = Path.Join(
-		Paths.ApplicationData.FullName,
-		"codex-link-index");
+	private static readonly string CloneDirectory = Path.Join(Paths.ApplicationData.FullName, "codex-link-index");
 
 	private readonly string _environment;
 	private readonly IFileSystem _fileSystem;
@@ -31,7 +29,10 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	public GitLinkIndexReader(string environment, ApplicationDataFileSystem? fileSystem = null, bool skipFetch = false)
 	{
 		if (string.IsNullOrWhiteSpace(environment))
-			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));
+			throw new ArgumentException(
+				"Environment must be specified in the codex configuration (e.g., 'internal', 'security').",
+				nameof(environment)
+			);
 
 		_environment = environment;
 		_fileSystem = fileSystem ?? new ApplicationDataFileSystem();
@@ -64,7 +65,9 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		EnsureSafeRelativePath(_environment, nameof(_environment));
 		var registryPath = Path.Join(CloneDirectory, _environment, "link-index.json");
 		if (!_fileSystem.File.Exists(registryPath))
-			throw new FileNotFoundException($"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {_environment}/link-index.json.");
+			throw new FileNotFoundException(
+				$"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {_environment}/link-index.json."
+			);
 
 		var json = await _fileSystem.File.ReadAllTextAsync(registryPath, cancellationToken);
 		return LinkRegistry.Deserialize(json);
@@ -96,7 +99,8 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			{
 				if (!_fileSystem.Directory.Exists(gitDir))
 					throw new InvalidOperationException(
-						$"Codex link index not found at {CloneDirectory}. Run 'docs-builder codex clone' first.");
+						$"Codex link index not found at {CloneDirectory}. Run 'docs-builder codex clone' first."
+					);
 				_ensuredClone = true;
 				return;
 			}

@@ -12,8 +12,7 @@ namespace Elastic.Markdown.Myst.Directives.Include;
 
 public class LiteralIncludeBlock : IncludeBlock
 {
-	public LiteralIncludeBlock(DirectiveBlockParser parser, ParserContext context) : base(parser, context) =>
-		Literal = true;
+	public LiteralIncludeBlock(DirectiveBlockParser parser, ParserContext context) : base(parser, context) => Literal = true;
 
 	public override string Directive => "literalinclude";
 }
@@ -93,7 +92,10 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (Literal)
 			return;
 
-		if (file.Directory != null && !file.Directory.FullName.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Contains("_snippets"))
+		if (
+			file.Directory != null &&
+			!file.Directory.FullName.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Contains("_snippets")
+		)
 		{
 			this.EmitError($"{{include}} only supports including snippets from `_snippet` folders. `{IncludePath}` is not a snippet");
 			Found = false;

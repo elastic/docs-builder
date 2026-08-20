@@ -67,7 +67,6 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		return match;
 	}
 
-
 	private static void ParseStylingInstructions(LinkInline link, ParserContext context)
 	{
 		if (!link.IsImage)
@@ -99,8 +98,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		link.Title = title.ReplaceSubstitutions(context);
 	}
 
-	private static bool IsInCommentBlock(LinkInline link) =>
-		link.Parent?.ParentBlock is CommentBlock;
+	private static bool IsInCommentBlock(LinkInline link) => link.Parent?.ParentBlock is CommentBlock;
 
 	private static void ValidateAndProcessLink(LinkInline link, InlineProcessor processor, ParserContext context)
 	{
@@ -111,7 +109,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			var replacedUrl = url.ReplaceSubstitutions(processor.GetContext());
 			if (replacedUrl.Contains("{{"))
 			{
-				processor.EmitError(link,
+				processor.EmitError(
+					link,
 					$"The url contains unresolved template expressions: '{replacedUrl}'. Please check if there is an appropriate global or frontmatter subs variable."
 				);
 				return;
@@ -119,7 +118,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 			if (!replacedUrl.StartsWith("http"))
 			{
-				processor.EmitError(link, $"Link is resolved to '{replacedUrl}'. Only external links are allowed to be resolved from template expressions.");
+				processor.EmitError(
+					link,
+					$"Link is resolved to '{replacedUrl}'. Only external links are allowed to be resolved from template expressions."
+				);
 				return;
 			}
 			url = replacedUrl;
@@ -175,17 +177,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return false;
 
 		var hostParts = uri.Host.Split('.');
-		var baseDomain = uri.Host == "localhost"
-			? "localhost"
-			: hostParts.Length >= 2
-				? string.Join('.', hostParts[^2..])
-				: uri.Host;
+		var baseDomain = uri.Host == "localhost" ? "localhost" : hostParts.Length >= 2 ? string.Join('.', hostParts[^2..]) : uri.Host;
 		if (uri.Scheme == "mailto" && baseDomain != "elastic.co")
 		{
-			processor.EmitWarning(
-				link,
-				$"mailto links should be to elastic.co domains. Found {uri.Host} in {link.Url}. "
-			);
+			processor.EmitWarning(link, $"mailto links should be to elastic.co domains. Found {uri.Host} in {link.Url}. ");
 		}
 
 		return true;
@@ -197,9 +192,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (url != null)
 			context.Build.Collector.EmitCrossLink(url);
 
-		if (context.CrossLinkResolver.TryResolve(
-				s => processor.EmitError(link, s),
-				uri, out var resolvedUri))
+		if (context.CrossLinkResolver.TryResolve(s => processor.EmitError(link, s), uri, out var resolvedUri))
 		{
 			link.Url = resolvedUri.ToString();
 			if (resolvedUri.IsAbsoluteUri && context.Build.BuildType == BuildType.Isolated)
@@ -247,17 +240,18 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			{
 				//TODO make this an error once all offending repositories have been updated
 				if (!file.Directory!.FullName.StartsWith(currentMarkdown.ScopeDirectory.FullName + Path.DirectorySeparatorChar))
-					processor.EmitHint(link, $"Image '{url}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'.");
+					processor.EmitHint(
+						link,
+						$"Image '{url}' is referenced out of table of contents scope '{currentMarkdown.ScopeDirectory}'."
+					);
 			}
 		}
-
 
 		var linkMarkdown = context.TryFindDocument(file) as MarkdownFile;
 		if (linkMarkdown is not null)
 		{
 			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(linkMarkdown, out var navigationLookup))
 				link.SetData("TargetNavigationRoot", navigationLookup.NavigationRoot);
-
 		}
 		return linkMarkdown;
 	}
@@ -269,15 +263,18 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 	}
 
 	private static string GetIncludeFromPath(string url, ParserContext context) =>
-		url.StartsWith('/')
-			? context.Build.DocumentationSourceDirectory.FullName
-			: context.MarkdownSourcePath.Directory!.FullName;
+		url.StartsWith('/') ? context.Build.DocumentationSourceDirectory.FullName : context.MarkdownSourcePath.Directory!.FullName;
 
-	private static void ValidateInternalUrl(InlineProcessor processor, string url, string includeFrom, LinkInline link, ParserContext context)
+	private static void ValidateInternalUrl(
+		InlineProcessor processor,
+		string url,
+		string includeFrom,
+		LinkInline link,
+		ParserContext context
+	)
 	{
 		if (string.IsNullOrWhiteSpace(url))
 			return;
-
 
 		var pathOnDisk = Path.GetFullPath(Path.Join(includeFrom, url.TrimStart('/')));
 		// Synthetic files (e.g. generated CLI reference pages) don't exist on disk but ARE registered in the documentation set
@@ -285,17 +282,18 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var existsInSet = context.TryFindDocumentByRelativePath(relativeToSource) is not null;
 		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk) && !existsInSet)
 		{
-			if (context.Configuration.Redirects is not null && context.Configuration.Redirects.TryGetValue(url.TrimStart('/'), out var redirect))
+			if (
+				context.Configuration.Redirects is not null &&
+				context.Configuration.Redirects.TryGetValue(url.TrimStart('/'), out var redirect)
+			)
 			{
 				var name = redirect.To ??
-					(redirect.Many is not null
-					 ? $"one of: {string.Join(", ", redirect.Many.Select(m => m.To))}"
-					 : "unknown"
-					);
+					(redirect.Many is not null ? $"one of: {string.Join(", ", redirect.Many.Select(m => m.To))}" : "unknown");
 				processor.EmitWarning(link, $"Local file `{url}` has a redirect, please update this reference to: {name}");
 			}
-			else if (!url.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-				&& context.Build.ReadFileSystem.File.Exists(pathOnDisk + ".md"))
+			else if (
+				!url.EndsWith(".md", StringComparison.OrdinalIgnoreCase) && context.Build.ReadFileSystem.File.Exists(pathOnDisk + ".md")
+			)
 			{
 				processor.EmitError(link, $"`{url}` is not a valid internal link. Did you forget to add the .md extension?");
 			}
@@ -306,15 +304,24 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		}
 	}
 
-	private static void ProcessLinkText(InlineProcessor processor, LinkInline link, MarkdownFile? markdown, string? anchor, string url, IFileInfo file)
+	private static void ProcessLinkText(
+		InlineProcessor processor,
+		LinkInline link,
+		MarkdownFile? markdown,
+		string? anchor,
+		string url,
+		IFileInfo file
+	)
 	{
 		if (link.FirstChild != null && string.IsNullOrEmpty(anchor))
 			return;
 
 		if (markdown is null && link.FirstChild == null)
 		{
-			processor.EmitWarning(link,
-				$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist.");
+			processor.EmitWarning(
+				link,
+				$"'{url}' could not be resolved to a markdown file while creating an auto text link, '{file.FullName}' does not exist."
+			);
 			return;
 		}
 
@@ -336,7 +343,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		string.IsNullOrWhiteSpace(url)
 			? context.MarkdownSourcePath
 			: url.StartsWith('/')
-				? context.Build.ReadFileSystem.FileInfo.New(Path.Join(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
+				? context.Build
+					.ReadFileSystem
+					.FileInfo
+					.New(Path.Join(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
 				: context.Build.ReadFileSystem.FileInfo.New(Path.Join(context.MarkdownSourcePath.Directory!.FullName, url));
 
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
@@ -350,8 +360,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var newUrl = url;
 		if (linkMarkdown is not null)
 		{
-			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(linkMarkdown, out var navigationLookup)
-				&& !string.IsNullOrEmpty(navigationLookup.Url))
+			if (
+				context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(linkMarkdown, out var navigationLookup) &&
+				!string.IsNullOrEmpty(navigationLookup.Url)
+			)
 			{
 				// Navigation URLs are absolute and start with /
 				// Apply the same prefix handling as UpdateRelativeUrl would for absolute paths
@@ -364,7 +376,6 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		else
 			newUrl = UpdateRelativeUrl(context, url);
 
-
 		if (newUrl.EndsWith(".md"))
 		{
 			newUrl = newUrl.EndsWith($"{Path.DirectorySeparatorChar}index.md")
@@ -376,11 +387,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (newUrl.EndsWith(".toml"))
 			newUrl = newUrl[..^5];
 
-		link.Url = !string.IsNullOrEmpty(anchor)
-			? newUrl == context.CurrentUrlPath
-				? $"#{anchor}"
-				: $"{newUrl}#{anchor}"
-			: newUrl;
+		link.Url = !string.IsNullOrEmpty(anchor) ? newUrl == context.CurrentUrlPath ? $"#{anchor}" : $"{newUrl}#{anchor}" : newUrl;
 	}
 
 	// TODO revisit when we refactor our documentation set graph
@@ -399,7 +406,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			var path = Path.GetFullPath(fi.FileSystem.Path.Join(fi.Directory!.FullName, newUrl));
 			var pathInfo = fi.FileSystem.FileInfo.New(path);
 			pathInfo = pathInfo.EnsureSubPathOf(context.Configuration.ScopeDirectory, newUrl);
-			var relativePath = fi.FileSystem.Path.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName).OptionalWindowsReplace();
+			var relativePath = fi.FileSystem
+				.Path
+				.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName)
+				.OptionalWindowsReplace();
 
 			// if we are trying to resolve a relative url from a _snippet folder ensure we eat the _snippet folder
 			// as it's not part of url by chopping of the extra parent navigation
@@ -442,7 +452,9 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = uri.AbsolutePath;
 			}
 			else
-				context.EmitError($"Failed to acquire navigation for current markdown file '{currentMarkdown.FileName}' while resolving relative url '{url}'.");
+				context.EmitError(
+					$"Failed to acquire navigation for current markdown file '{currentMarkdown.FileName}' while resolving relative url '{url}'."
+				);
 		}
 
 		// When running on Windows, path traversal results must be normalized prior to being used in a URL
@@ -460,10 +472,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		return newUrl;
 	}
 
-	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
-		CrossLinkValidator.IsCrossLink(uri);
+	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) => CrossLinkValidator.IsCrossLink(uri);
 
 	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
-		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase)
-		|| scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
+		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase) || scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
 }

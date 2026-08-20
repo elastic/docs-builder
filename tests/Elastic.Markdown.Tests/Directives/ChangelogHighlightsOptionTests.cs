@@ -60,20 +60,20 @@ static file class ChangelogHighlightsFixtures
 /// <summary>Default (omitted) :highlights: — inline only, no Highlights section.</summary>
 public class ChangelogHighlightsOptionDefaultOffTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHighlightsOptionDefaultOffTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHighlightsOptionDefaultOffTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
+		"""
+		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Fact]
-	public void HighlightsDisabledByDefault() =>
-		Block!.HighlightsEnabled.Should().BeFalse();
+	public void HighlightsDisabledByDefault() => Block!.HighlightsEnabled.Should().BeFalse();
 
 	[Fact]
-	public void OmitsHighlightsSection() =>
-		Html.Should().NotContain("Highlights");
+	public void OmitsHighlightsSection() => Html.Should().NotContain("Highlights");
 
 	[Fact]
 	public void StillRendersHighlightedEntryUnderTypeSection()
@@ -86,8 +86,7 @@ public class ChangelogHighlightsOptionDefaultOffTests : DirectiveTest<ChangelogB
 	}
 
 	[Fact]
-	public void ExcludesSeparatedTypesByDefault() =>
-		Html.Should().NotContain("Breaking changes");
+	public void ExcludesSeparatedTypesByDefault() => Html.Should().NotContain("Breaking changes");
 
 	[Fact]
 	public void TocOmitsHighlights()
@@ -100,21 +99,21 @@ public class ChangelogHighlightsOptionDefaultOffTests : DirectiveTest<ChangelogB
 /// <summary>:highlights: with default type filter — Highlights section plus type sections, no separated types.</summary>
 public class ChangelogHighlightsOptionEnabledTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHighlightsOptionEnabledTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHighlightsOptionEnabledTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:highlights:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
+		"""
+		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Fact]
-	public void HighlightsEnabledWhenFlagPresent() =>
-		Block!.HighlightsEnabled.Should().BeTrue();
+	public void HighlightsEnabledWhenFlagPresent() => Block!.HighlightsEnabled.Should().BeTrue();
 
 	[Fact]
-	public void RendersHighlightsSection() =>
-		Html.Should().Contain("Highlights");
+	public void RendersHighlightsSection() => Html.Should().Contain("Highlights");
 
 	[Fact]
 	public void DuplicatesHighlightedEntryInTypeSection()
@@ -125,8 +124,7 @@ public class ChangelogHighlightsOptionEnabledTests : DirectiveTest<ChangelogBloc
 	}
 
 	[Fact]
-	public void ExcludesSeparatedTypesWithoutTypeAll() =>
-		Html.Should().NotContain("Breaking changes");
+	public void ExcludesSeparatedTypesWithoutTypeAll() => Html.Should().NotContain("Breaking changes");
 
 	[Fact]
 	public void TocIncludesHighlights()
@@ -137,21 +135,22 @@ public class ChangelogHighlightsOptionEnabledTests : DirectiveTest<ChangelogBloc
 	}
 
 	[Fact]
-	public void GeneratedAnchorsIncludeHighlights() =>
-		Block!.GeneratedAnchors.Should().Contain("elasticsearch-9.3.0-highlights");
+	public void GeneratedAnchorsIncludeHighlights() => Block!.GeneratedAnchors.Should().Contain("elasticsearch-9.3.0-highlights");
 }
 
 /// <summary>:highlights: + :type: all — Highlights section and separated types.</summary>
 public class ChangelogHighlightsOptionWithTypeAllTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHighlightsOptionWithTypeAllTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHighlightsOptionWithTypeAllTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:highlights:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
+		"""
+		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Fact]
 	public void RendersHighlightsAndSeparatedTypes()
@@ -165,13 +164,15 @@ public class ChangelogHighlightsOptionWithTypeAllTests : DirectiveTest<Changelog
 /// <summary>:type: all without :highlights: — no Highlights section (breaking change from prior All behavior).</summary>
 public class ChangelogHighlightsOptionTypeAllWithoutFlagTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHighlightsOptionTypeAllWithoutFlagTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHighlightsOptionTypeAllWithoutFlagTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
+		"""
+		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Fact]
 	public void TypeAllAloneDoesNotEmitHighlightsSection()
@@ -186,29 +187,31 @@ public class ChangelogHighlightsOptionTypeAllWithoutFlagTests : DirectiveTest<Ch
 /// <summary>Legacy :type: highlight warns and falls back to default.</summary>
 public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHighlightsLegacyTypeHighlightTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHighlightsLegacyTypeHighlightTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: highlight
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
+		"""
+		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Fact]
-	public void FallsBackToDefaultTypeFilter() =>
-		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
+	public void FallsBackToDefaultTypeFilter() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
 
 	[Fact]
-	public void HighlightsRemainDisabled() =>
-		Block!.HighlightsEnabled.Should().BeFalse();
+	public void HighlightsRemainDisabled() => Block!.HighlightsEnabled.Should().BeFalse();
 
 	[Fact]
-	public void EmitsWarningPointingToHighlightsOption()
-	{
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("Invalid :type: value 'highlight'", StringComparison.Ordinal) &&
-			d.Message.Contains(":highlights:", StringComparison.Ordinal));
-	}
+	public void EmitsWarningPointingToHighlightsOption() =>
+		Collector.Diagnostics
+			.Should()
+			.Contain(
+				d =>
+					d.Message.Contains("Invalid :type: value 'highlight'", StringComparison.Ordinal) &&
+						d.Message.Contains(":highlights:", StringComparison.Ordinal)
+			);
 
 	[Fact]
 	public void RendersDefaultTypeSectionsNotHighlightsOnly()
@@ -222,18 +225,19 @@ public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<Changel
 /// <summary>:highlights: + :description-visibility: keep-descriptions shows bodies in the Highlights section.</summary>
 public class ChangelogHighlightsOptionWithDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHighlightsOptionWithDescriptionsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHighlightsOptionWithDescriptionsTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:highlights:
 		:description-visibility: keep-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
+		"""
+		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Fact]
-	public void ShowsDescriptionInHighlightsSection() =>
-		Html.Should().Contain("This is the highlight description.");
+	public void ShowsDescriptionInHighlightsSection() => Html.Should().Contain("This is the highlight description.");
 }
 
 /// <summary>
@@ -241,16 +245,21 @@ public class ChangelogHighlightsOptionWithDescriptionsTests : DirectiveTest<Chan
 /// </summary>
 public class ChangelogKeepHighlightDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogKeepHighlightDescriptionsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogKeepHighlightDescriptionsTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:highlights:
 		:description-visibility: keep-highlight-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -272,19 +281,19 @@ public class ChangelogKeepHighlightDescriptionsTests : DirectiveTest<ChangelogBl
 		  description: This is the regular feature description.
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void ParsesKeepHighlightDescriptions() =>
 		Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.KeepHighlightDescriptions);
 
 	[Fact]
-	public void ShowsDescriptionInHighlightsSection() =>
-		Html.Should().Contain("This is the highlight description.");
+	public void ShowsDescriptionInHighlightsSection() => Html.Should().Contain("This is the highlight description.");
 
 	[Fact]
-	public void HidesDescriptionsInTypeSections() =>
-		Html.Should().NotContain("This is the regular feature description.");
+	public void HidesDescriptionsInTypeSections() => Html.Should().NotContain("This is the regular feature description.");
 
 	[Fact]
 	public void StillRendersTitlesInTypeSections()
@@ -298,15 +307,20 @@ public class ChangelogKeepHighlightDescriptionsTests : DirectiveTest<ChangelogBl
 /// <summary>keep-highlight-descriptions without :highlights: hides descriptions everywhere.</summary>
 public class ChangelogKeepHighlightDescriptionsWithoutHighlightsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogKeepHighlightDescriptionsWithoutHighlightsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogKeepHighlightDescriptionsWithoutHighlightsTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:description-visibility: keep-highlight-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -328,11 +342,12 @@ public class ChangelogKeepHighlightDescriptionsWithoutHighlightsTests : Directiv
 		  description: This is the regular feature description.
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
-	public void OmitsHighlightsSection() =>
-		Html.Should().NotContain("id=\"elasticsearch-9.3.0-highlights\"");
+	public void OmitsHighlightsSection() => Html.Should().NotContain("id=\"elasticsearch-9.3.0-highlights\"");
 
 	[Fact]
 	public void HidesAllRecordDescriptions()

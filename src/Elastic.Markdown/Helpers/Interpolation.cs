@@ -18,14 +18,14 @@ internal static partial class InterpolationRegex
 
 public static class Interpolation
 {
-	public static string ReplaceSubstitutions(
-		this string input,
-		ParserContext context
-	)
+	public static string ReplaceSubstitutions(this string input, ParserContext context)
 	{
 		var span = input.AsSpan();
-		return span.ReplaceSubstitutions([context.Substitutions, context.ContextSubstitutions], context.Build.Collector, out var replacement)
-			? replacement : input;
+		return span.ReplaceSubstitutions(
+			[context.Substitutions, context.ContextSubstitutions],
+			context.Build.Collector,
+			out var replacement
+		) ? replacement : input;
 	}
 
 	public static bool ReplaceSubstitutions(
@@ -36,8 +36,10 @@ public static class Interpolation
 	)
 	{
 		replacement = null;
-		return properties is not null && properties.Count != 0 &&
-			span.IndexOf("}}") >= 0 && span.ReplaceSubstitutions([properties], collector, out replacement);
+		return properties is not null
+			&& properties.Count != 0
+			&& span.IndexOf("}}") >= 0
+			&& span.ReplaceSubstitutions([properties], collector, out replacement);
 	}
 
 	private static bool ReplaceSubstitutions(
@@ -54,10 +56,9 @@ public static class Interpolation
 		if (properties.Length == 0 || properties.Sum(p => p.Count) == 0)
 			return false;
 
-		var lookups = properties
-			.Select(p => p as Dictionary<string, string> ?? new Dictionary<string, string>(p, StringComparer.OrdinalIgnoreCase))
-			.Select(d => d.GetAlternateLookup<ReadOnlySpan<char>>())
-			.ToArray();
+		var lookups = properties.Select(
+			p => p as Dictionary<string, string> ?? new Dictionary<string, string>(p, StringComparer.OrdinalIgnoreCase)
+		).Select(d => d.GetAlternateLookup<ReadOnlySpan<char>>()).ToArray();
 
 		var matchSubs = InterpolationRegex.MatchSubstitutions().EnumerateMatches(span);
 

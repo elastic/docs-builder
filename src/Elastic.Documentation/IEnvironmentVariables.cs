@@ -39,8 +39,9 @@ public interface IEnvironmentVariables
 	/// When true, MCP Bearer auth middleware validates JWTs. Default false.
 	/// Reads MCP_AUTH_ENABLED (accepts "true", "1").
 	/// </summary>
-	bool McpAuthEnabled => string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "true", StringComparison.OrdinalIgnoreCase) ||
-		string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
+	bool McpAuthEnabled =>
+		string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "true", StringComparison.OrdinalIgnoreCase) ||
+			string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// RSA public key (PEM) for MCP JWT validation. When unset, auth middleware is disabled.
@@ -70,5 +71,4 @@ public interface IEnvironmentVariables
 	/// Reads MCP_SERVER_PROFILE.
 	/// </summary>
 	string McpServerProfile => GetEnvironmentVariable("MCP_SERVER_PROFILE") ?? "public";
-
 }

@@ -24,25 +24,24 @@ try
 		.HealthCheckBuilderExtensions()
 		.AddDocumentationOpenTelemetry(new OtelRegistration(profile.ServiceName)
 		{
-			Tracing = (_, t) => t
-				.WithElasticDefaults()
-				.AddSource(McpToolTelemetry.McpToolSourceName)
-				.AddProcessor(new McpSpanRenameProcessor()),
-			Metrics = (_, m) => m
-				.WithElasticDefaults()
-				.AddMeter(McpToolTelemetry.McpMeterName)
+			Tracing =
+				(_, t) => t.WithElasticDefaults().AddSource(McpToolTelemetry.McpToolSourceName).AddProcessor(new McpSpanRenameProcessor()),
+			Metrics = (_, m) => m.WithElasticDefaults().AddMeter(McpToolTelemetry.McpMeterName)
 		});
 
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
-	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+	if (
+		string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
 		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
-		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
+		&& string.IsNullOrEmpty(builder.Configuration["URLS"])
+	)
 	{
-		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
-		{
-			serverOptions.ListenAnyIP(8080);
-		});
+		_ =
+			builder.WebHost.ConfigureKestrel(serverOptions =>
+			{
+				serverOptions.ListenAnyIP(8080);
+			});
 	}
 
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
@@ -52,10 +51,11 @@ try
 
 	// CreateSlimBuilder disables reflection-based JSON serialization.
 	// McpJsonUtilities registers System.String so the SDK's error responses can serialize.
-	_ = builder.Services.ConfigureHttpJsonOptions(options =>
-	{
-		options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver!);
-	});
+	_ =
+		builder.Services.ConfigureHttpJsonOptions(options =>
+		{
+			options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver!);
+		});
 
 	// Stateless Streamable HTTP transport: each request is an independent POST / — no session
 	// affinity, no Mcp-Session-Id header, no server-initiated push (sampling/elicitation/roots).
@@ -83,14 +83,17 @@ try
 
 	_ = app.Environment.IsDevelopment()
 		? app.UseDeveloperExceptionPage()
-		: app.UseExceptionHandler(err => err.Run(context =>
-		{
-			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-			if (ex != null)
-				logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-			context.Response.StatusCode = 500;
-			return Task.CompletedTask;
-		}));
+		: app.UseExceptionHandler(
+			err =>
+				err.Run(context =>
+				{
+					var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+					if (ex != null)
+						logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+					context.Response.StatusCode = 500;
+					return Task.CompletedTask;
+				})
+		);
 
 	_ = app.UseMiddleware<McpBearerAuthMiddleware>();
 

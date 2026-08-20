@@ -22,22 +22,22 @@ try
 		{
 			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 		})
-		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api")
-		{
-			Tracing = (_, t) => t.AddDocsApiTracing(),
-		})
+		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api") { Tracing = (_, t) => t.AddDocsApiTracing(), })
 		.HealthCheckBuilderExtensions();
 
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
-	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+	if (
+		string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
 		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
-		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
+		&& string.IsNullOrEmpty(builder.Configuration["URLS"])
+	)
 	{
-		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
-		{
-			serverOptions.ListenAnyIP(8080);
-		});
+		_ =
+			builder.WebHost.ConfigureKestrel(serverOptions =>
+			{
+				serverOptions.ListenAnyIP(8080);
+			});
 	}
 
 	builder.Services.AddElasticDocsApiServices(environment);
@@ -54,14 +54,17 @@ try
 
 	_ = app.Environment.IsDevelopment()
 		? app.UseDeveloperExceptionPage()
-		: app.UseExceptionHandler(err => err.Run(context =>
-		{
-			var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-			if (ex != null)
-				logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-			context.Response.StatusCode = 500;
-			return Task.CompletedTask;
-		}));
+		: app.UseExceptionHandler(
+			err =>
+				err.Run(context =>
+				{
+					var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+					if (ex != null)
+						logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+					context.Response.StatusCode = 500;
+					return Task.CompletedTask;
+				})
+		);
 
 	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);
 

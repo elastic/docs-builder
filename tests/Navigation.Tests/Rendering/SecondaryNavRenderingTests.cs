@@ -24,14 +24,13 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	private static readonly TopNavRenderModel TopNav = new([
 		new TopNavLinkItem("Reference", "/docs/reference/", false, SectionId: ReferenceSectionId),
 		new TopNavLinkItem("APIs", "https://www.elastic.co/docs/api/", true),
-		new TopNavDropdownItem("Products", [
-			new TopNavGroup("Stack products", [
-				new TopNavLinkItem("Elasticsearch", "/docs/products/elasticsearch/", false)
-			]),
-			new TopNavGroup(null, [
-				new TopNavLinkItem("All products", "/docs/products/", false)
-			])
-		])
+		new TopNavDropdownItem(
+			"Products",
+			[
+				new TopNavGroup("Stack products", [new TopNavLinkItem("Elasticsearch", "/docs/products/elasticsearch/", false)]),
+				new TopNavGroup(null, [new TopNavLinkItem("All products", "/docs/products/", false)])
+			]
+		)
 	]);
 
 	[Fact]
@@ -114,8 +113,7 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		var product = await Render(TopNav, currentUrl: "/docs/products/elasticsearch/index");
 		var productListItem = product.Split("<li").First(li => li.Contains("Products"));
 		// "hover:text-blue-elastic" present means the inactive CSS variant is applied, not the active one.
-		productListItem.Should().Contain("hover:text-blue-elastic")
-			.And.NotContain("relative text-blue-elastic\"");
+		productListItem.Should().Contain("hover:text-blue-elastic").And.NotContain("relative text-blue-elastic\"");
 	}
 
 	[Fact]
@@ -130,7 +128,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	private async Task<string> Render(
 		TopNavRenderModel? topNav,
 		string currentUrl,
-		IRootNavigationItem<INavigationModel, INavigationItem>? root = null)
+		IRootNavigationItem<INavigationModel, INavigationItem>? root = null
+	)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -165,7 +164,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	/// <summary>The secondary nav only reads <see cref="INavigationItem.Url"/> off the current page.</summary>
 	private sealed record StubNavigationItem(
 		string Url,
-		IRootNavigationItem<INavigationModel, INavigationItem>? Root = null) : INavigationItem
+		IRootNavigationItem<INavigationModel, INavigationItem>? Root = null
+	) : INavigationItem
 	{
 		public string NavigationTitle => "stub";
 		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => Root ?? null!;
@@ -178,8 +178,9 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	/// Stands in for <c>SiteNavigation</c> as the outermost parent so
 	/// <see cref="GlobalLayoutViewModel.TopNav"/> resolves correctly.
 	/// </summary>
-	private sealed class MockSiteNavigationRoot(TopNavRenderModel? topNav)
-		: INodeNavigationItem<INavigationModel, INavigationItem>, ISiteNavigationRoot
+	private sealed class MockSiteNavigationRoot(
+		TopNavRenderModel? topNav
+	) : INodeNavigationItem<INavigationModel, INavigationItem>, ISiteNavigationRoot
 	{
 		public TopNavRenderModel? TopNav { get; } = topNav;
 		public string Id => "mock-site";
@@ -197,8 +198,7 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	/// Minimal root stub — <c>_SecondaryNav.cshtml</c> reads <see cref="INavigationItem.NavigationRoot"/>
 	/// and compares its Id against each tab's SectionId(s).
 	/// </summary>
-	private sealed class MockSectionRoot(string id)
-		: IRootNavigationItem<INavigationModel, INavigationItem>
+	private sealed class MockSectionRoot(string id) : IRootNavigationItem<INavigationModel, INavigationItem>
 	{
 		public string Id => id;
 		public Uri Identifier => new($"section://{id}");

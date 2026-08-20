@@ -26,7 +26,8 @@ public static class ProductExtensions
 				versioningSystem ??= !features.PublicReference
 					? VersioningSystem.None
 					: throw new InvalidOperationException(
-						$"Product '{kvp.Key}' has invalid or missing versioning '{kvp.Value.Versioning ?? kvp.Key}' while 'public-reference' is enabled.");
+						$"Product '{kvp.Key}' has invalid or missing versioning '{kvp.Value.Versioning ?? kvp.Key}' while 'public-reference' is enabled."
+					);
 
 				return new Product
 				{
@@ -36,15 +37,15 @@ public static class ProductExtensions
 					Repository = kvp.Value.Repository ?? kvp.Key,
 					Features = features
 				};
-			});
+			}
+		);
 
-		var publicReferenceProducts = products
-			.Where(kvp => kvp.Value.Features.PublicReference)
-			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
-		var productDisplayNames = productsDto.Products.ToDictionary(
+		var publicReferenceProducts = products.Where(kvp => kvp.Value.Features.PublicReference).ToDictionary(
 			kvp => kvp.Key,
-			kvp => kvp.Value.Display);
+			kvp => kvp.Value
+		);
+
+		var productDisplayNames = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Display);
 
 		return new ProductsConfiguration
 		{
@@ -64,9 +65,7 @@ public static class ProductExtensions
 		if (featuresDto is null)
 			return ProductFeatures.All;
 
-		var unknownKeys = featuresDto.Keys
-			.Where(k => !ProductFeatures.KnownKeys.Contains(k))
-			.ToList();
+		var unknownKeys = featuresDto.Keys.Where(k => !ProductFeatures.KnownKeys.Contains(k)).ToList();
 
 		if (unknownKeys is { Count: > 0 })
 		{

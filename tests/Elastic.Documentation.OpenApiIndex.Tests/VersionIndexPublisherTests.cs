@@ -16,7 +16,7 @@ public class VersionIndexPublisherTests
 	private const string BucketName = "test-bucket";
 
 	/// <summary>The exact serialized index for a bucket holding only <c>elastic/elasticsearch/8.16/openapi.json</c>.</summary>
-	private const string Index816Json = /*lang=json,strict*/ """{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""";
+	private const string Index816Json = /*lang=json,strict*/  """{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""";
 
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly List<PutObjectRequest> _puts = [];
@@ -29,20 +29,24 @@ public class VersionIndexPublisherTests
 	private VersionIndexPublisher CreatePublisher() => new(_s3Client, BucketName);
 
 	private void GivenBucketContains(params string[] keys) =>
-		A.CallTo(() => _s3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
-			.Returns(new ListObjectsV2Response
-			{
-				S3Objects = [.. keys.Select(k => new S3Object { Key = k })],
-				IsTruncated = false
-			});
+		A.CallTo(() => _s3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._)).Returns(new ListObjectsV2Response
+		{
+			S3Objects = [.. keys.Select(k => new S3Object { Key = k })],
+			IsTruncated = false
+		});
 
 	private void GivenNoPublishedIndex() =>
-		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._))
-			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Throws(new AmazonS3Exception("Not Found")
+		{
+			StatusCode = HttpStatusCode.NotFound
+		});
 
 	private void GivenPublishedIndex(string body, string etag = "\"etag-1\"") =>
-		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._))
-			.Returns(new GetObjectResponse { ETag = etag, ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(body)) });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
+		{
+			ETag = etag,
+			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(body))
+		});
 
 	[Fact]
 	public async Task RefreshAsync_NoPublishedIndex_CreatesWithIfNoneMatch()
@@ -92,8 +96,10 @@ public class VersionIndexPublisherTests
 		// in process — it throws, so the handler returns the message to the queue and SQS redelivers it.
 		GivenBucketContains("elastic/elasticsearch/8.16/openapi.json");
 		GivenNoPublishedIndex();
-		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
-			.Throws(new AmazonS3Exception("Precondition Failed") { StatusCode = HttpStatusCode.PreconditionFailed });
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Throws(new AmazonS3Exception("Precondition Failed")
+		{
+			StatusCode = HttpStatusCode.PreconditionFailed
+		});
 
 		var act = () => CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);
 
@@ -127,19 +133,21 @@ public class VersionIndexPublisherTests
 	[Fact]
 	public async Task RefreshAsync_PaginatedListing_CombinesAllPages()
 	{
-		A.CallTo(() => _s3Client.ListObjectsV2Async(A<ListObjectsV2Request>.That.Matches(r => r.ContinuationToken == null), A<Cancel>._))
-			.Returns(new ListObjectsV2Response
-			{
-				S3Objects = [new S3Object { Key = "elastic/elasticsearch/8.16/openapi.json" }],
-				IsTruncated = true,
-				NextContinuationToken = "page-2"
-			});
-		A.CallTo(() => _s3Client.ListObjectsV2Async(A<ListObjectsV2Request>.That.Matches(r => r.ContinuationToken == "page-2"), A<Cancel>._))
-			.Returns(new ListObjectsV2Response
-			{
-				S3Objects = [new S3Object { Key = "elastic/kibana/8.16/kibana.json" }],
-				IsTruncated = false
-			});
+		A.CallTo(
+			() => _s3Client.ListObjectsV2Async(A<ListObjectsV2Request>.That.Matches(r => r.ContinuationToken == null), A<Cancel>._)
+		).Returns(new ListObjectsV2Response
+		{
+			S3Objects = [new S3Object { Key = "elastic/elasticsearch/8.16/openapi.json" }],
+			IsTruncated = true,
+			NextContinuationToken = "page-2"
+		});
+		A.CallTo(
+			() => _s3Client.ListObjectsV2Async(A<ListObjectsV2Request>.That.Matches(r => r.ContinuationToken == "page-2"), A<Cancel>._)
+		).Returns(new ListObjectsV2Response
+		{
+			S3Objects = [new S3Object { Key = "elastic/kibana/8.16/kibana.json" }],
+			IsTruncated = false
+		});
 		GivenNoPublishedIndex();
 
 		await CreatePublisher().RefreshAsync(TestContext.Current.CancellationToken);

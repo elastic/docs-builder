@@ -27,18 +27,16 @@ public static partial class ReleaseNotesSerialization
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	public static partial Regex VersionToTargetRegex();
 
-	private static readonly IDeserializer YamlDeserializer =
-		new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.Build();
+	private static readonly IDeserializer YamlDeserializer = new StaticDeserializerBuilder(new YamlStaticContext()).WithNamingConvention(
+		UnderscoredNamingConvention.Instance
+	).Build();
 
-	private static readonly ISerializer YamlSerializer =
-		new StaticSerializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
-			.WithQuotingNecessaryStrings()
-			.DisableAliases()
-			.Build();
+	private static readonly ISerializer YamlSerializer = new StaticSerializerBuilder(new YamlStaticContext())
+		.WithNamingConvention(UnderscoredNamingConvention.Instance)
+		.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
+		.WithQuotingNecessaryStrings()
+		.DisableAliases()
+		.Build();
 
 	/// <summary>
 	/// Gets the raw YAML deserializer for changelog entry DTOs.
@@ -152,87 +150,84 @@ public static partial class ReleaseNotesSerialization
 
 	#region Manual Mapping Methods
 
-	private static ChangelogEntry ToEntry(ChangelogEntryDto dto) => new()
-	{
-		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
-		Issues = dto.Issues,
-		Type = ParseEntryType(dto.Type),
-		Subtype = ParseEntrySubtype(dto.Subtype),
-		Products = dto.Products?.Select(ToProductReference).ToList(),
-		Areas = dto.Areas,
-		Title = dto.Title ?? "",
-		Description = dto.Description,
-		Impact = dto.Impact,
-		Action = dto.Action,
-		FeatureId = dto.FeatureId,
-		Highlight = dto.Highlight
-	};
+	private static ChangelogEntry ToEntry(ChangelogEntryDto dto) =>
+		new()
+		{
+			Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
+			Issues = dto.Issues,
+			Type = ParseEntryType(dto.Type),
+			Subtype = ParseEntrySubtype(dto.Subtype),
+			Products = dto.Products?.Select(ToProductReference).ToList(),
+			Areas = dto.Areas,
+			Title = dto.Title ?? "",
+			Description = dto.Description,
+			Impact = dto.Impact,
+			Action = dto.Action,
+			FeatureId = dto.FeatureId,
+			Highlight = dto.Highlight
+		};
 
-	private static ChangelogEntry ToEntry(BundledEntry entry) => new()
-	{
-		Prs = entry.Prs,
-		Issues = entry.Issues,
-		Type = entry.Type ?? ChangelogEntryType.Invalid,
-		Subtype = entry.Subtype,
-		Products = entry.Products,
-		Areas = entry.Areas,
-		Title = entry.Title ?? "",
-		Description = entry.Description,
-		Impact = entry.Impact,
-		Action = entry.Action,
-		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight
-	};
+	private static ChangelogEntry ToEntry(BundledEntry entry) =>
+		new()
+		{
+			Prs = entry.Prs,
+			Issues = entry.Issues,
+			Type = entry.Type ?? ChangelogEntryType.Invalid,
+			Subtype = entry.Subtype,
+			Products = entry.Products,
+			Areas = entry.Areas,
+			Title = entry.Title ?? "",
+			Description = entry.Description,
+			Impact = entry.Impact,
+			Action = entry.Action,
+			FeatureId = entry.FeatureId,
+			Highlight = entry.Highlight
+		};
 
-	private static ProductReference ToProductReference(ProductInfoDto dto) => new()
-	{
-		ProductId = dto.Product ?? "",
-		Target = dto.Target,
-		Lifecycle = ParseLifecycle(dto.Lifecycle)
-	};
+	private static ProductReference ToProductReference(ProductInfoDto dto) =>
+		new() { ProductId = dto.Product ?? "", Target = dto.Target, Lifecycle = ParseLifecycle(dto.Lifecycle) };
 
-	private static Bundle ToBundle(BundleDto dto) => new()
-	{
-		Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
-		Description = dto.Description,
-		ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
-		GitRef = dto.GitRef,
-		HideFeatures = dto.HideFeatures ?? [],
-		Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? [],
-		ExcludeEntries = dto.ExcludeEntries?.Select(ToBundledEntry).ToList() ?? []
-	};
+	private static Bundle ToBundle(BundleDto dto) =>
+		new()
+		{
+			Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
+			Description = dto.Description,
+			ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
+			GitRef = dto.GitRef,
+			HideFeatures = dto.HideFeatures ?? [],
+			Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? [],
+			ExcludeEntries = dto.ExcludeEntries?.Select(ToBundledEntry).ToList() ?? []
+		};
 
-	private static BundledProduct ToBundledProduct(BundledProductDto dto) => new()
-	{
-		ProductId = dto.Product ?? "",
-		Target = dto.Target,
-		Lifecycle = ParseLifecycle(dto.Lifecycle),
-		Repo = dto.Repo,
-		Owner = dto.Owner
-	};
+	private static BundledProduct ToBundledProduct(BundledProductDto dto) =>
+		new()
+		{
+			ProductId = dto.Product ?? "",
+			Target = dto.Target,
+			Lifecycle = ParseLifecycle(dto.Lifecycle),
+			Repo = dto.Repo,
+			Owner = dto.Owner
+		};
 
-	private static BundledEntry ToBundledEntry(BundledEntryDto dto) => new()
-	{
-		File = dto.File != null ? ToBundledFile(dto.File) : null,
-		Type = ParseEntryTypeNullable(dto.Type),
-		Title = dto.Title,
-		Products = dto.Products?.Select(ToProductReference).ToList(),
-		Description = dto.Description,
-		Impact = dto.Impact,
-		Action = dto.Action,
-		FeatureId = dto.FeatureId,
-		Highlight = dto.Highlight,
-		Subtype = ParseEntrySubtype(dto.Subtype),
-		Areas = dto.Areas,
-		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
-		Issues = dto.Issues
-	};
+	private static BundledEntry ToBundledEntry(BundledEntryDto dto) =>
+		new()
+		{
+			File = dto.File != null ? ToBundledFile(dto.File) : null,
+			Type = ParseEntryTypeNullable(dto.Type),
+			Title = dto.Title,
+			Products = dto.Products?.Select(ToProductReference).ToList(),
+			Description = dto.Description,
+			Impact = dto.Impact,
+			Action = dto.Action,
+			FeatureId = dto.FeatureId,
+			Highlight = dto.Highlight,
+			Subtype = ParseEntrySubtype(dto.Subtype),
+			Areas = dto.Areas,
+			Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
+			Issues = dto.Issues
+		};
 
-	private static BundledFile ToBundledFile(BundledFileDto dto) => new()
-	{
-		Name = dto.Name ?? "",
-		Checksum = dto.Checksum ?? ""
-	};
+	private static BundledFile ToBundledFile(BundledFileDto dto) => new() { Name = dto.Name ?? "", Checksum = dto.Checksum ?? "" };
 
 	private static ChangelogEntryType ParseEntryType(string? value)
 	{
@@ -269,97 +264,86 @@ public static partial class ReleaseNotesSerialization
 		if (string.IsNullOrEmpty(value))
 			return null;
 
-		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? result
-			: null;
+		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true) ? result : null;
 	}
 
 	private static DateOnly? ParseReleaseDate(string? value) =>
-		DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
-			? date
-			: null;
+		DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
 
 	// Reverse mappings (Domain → DTO) for serialization
 
-	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
-	{
-		Prs = entry.Prs?.ToList(),
-		Issues = entry.Issues?.ToList(),
-		Type = EntryTypeToString(entry.Type),
-		Subtype = EntrySubtypeToString(entry.Subtype),
-		Products = entry.Products?.Select(ToDto).ToList(),
-		Areas = entry.Areas?.ToList(),
-		Title = entry.Title,
-		Description = entry.Description,
-		Impact = entry.Impact,
-		Action = entry.Action,
-		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight
-	};
+	private static ChangelogEntryDto ToDto(ChangelogEntry entry) =>
+		new()
+		{
+			Prs = entry.Prs?.ToList(),
+			Issues = entry.Issues?.ToList(),
+			Type = EntryTypeToString(entry.Type),
+			Subtype = EntrySubtypeToString(entry.Subtype),
+			Products = entry.Products?.Select(ToDto).ToList(),
+			Areas = entry.Areas?.ToList(),
+			Title = entry.Title,
+			Description = entry.Description,
+			Impact = entry.Impact,
+			Action = entry.Action,
+			FeatureId = entry.FeatureId,
+			Highlight = entry.Highlight
+		};
 
-	private static ProductInfoDto ToDto(ProductReference product) => new()
-	{
-		Product = product.ProductId,
-		Target = product.Target,
-		Lifecycle = LifecycleToString(product.Lifecycle)
-	};
+	private static ProductInfoDto ToDto(ProductReference product) =>
+		new() { Product = product.ProductId, Target = product.Target, Lifecycle = LifecycleToString(product.Lifecycle) };
 
-	private static BundleDto ToDto(Bundle bundle) => new()
-	{
-		Products = bundle.Products.Select(ToDto).ToList(),
-		Description = bundle.Description,
-		ReleaseDate = bundle.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-		GitRef = bundle.GitRef,
-		HideFeatures = bundle.HideFeatures.Count > 0 ? bundle.HideFeatures.ToList() : null,
-		Entries = bundle.Entries.Count > 0 ? bundle.Entries.Select(ToDto).ToList() : null,
-		ExcludeEntries = bundle.ExcludeEntries.Count > 0 ? bundle.ExcludeEntries.Select(ToDto).ToList() : null
-	};
+	private static BundleDto ToDto(Bundle bundle) =>
+		new()
+		{
+			Products = bundle.Products.Select(ToDto).ToList(),
+			Description = bundle.Description,
+			ReleaseDate = bundle.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+			GitRef = bundle.GitRef,
+			HideFeatures = bundle.HideFeatures.Count > 0 ? bundle.HideFeatures.ToList() : null,
+			Entries = bundle.Entries.Count > 0 ? bundle.Entries.Select(ToDto).ToList() : null,
+			ExcludeEntries = bundle.ExcludeEntries.Count > 0 ? bundle.ExcludeEntries.Select(ToDto).ToList() : null
+		};
 
-	private static BundledProductDto ToDto(BundledProduct product) => new()
-	{
-		Product = product.ProductId,
-		Target = product.Target,
-		Lifecycle = LifecycleToString(product.Lifecycle),
-		Repo = product.Repo,
-		Owner = product.Owner
-	};
+	private static BundledProductDto ToDto(BundledProduct product) =>
+		new()
+		{
+			Product = product.ProductId,
+			Target = product.Target,
+			Lifecycle = LifecycleToString(product.Lifecycle),
+			Repo = product.Repo,
+			Owner = product.Owner
+		};
 
-	private static BundledEntryDto ToDto(BundledEntry entry) => new()
-	{
-		File = entry.File != null ? ToDto(entry.File) : null,
-		Type = EntryTypeNullableToString(entry.Type),
-		Title = entry.Title,
-		Products = entry.Products?.Select(ToDto).ToList(),
-		Description = entry.Description,
-		Impact = entry.Impact,
-		Action = entry.Action,
-		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight,
-		Subtype = EntrySubtypeToString(entry.Subtype),
-		Areas = entry.Areas?.ToList(),
-		Prs = entry.Prs?.ToList(),
-		Issues = entry.Issues?.ToList()
-	};
+	private static BundledEntryDto ToDto(BundledEntry entry) =>
+		new()
+		{
+			File = entry.File != null ? ToDto(entry.File) : null,
+			Type = EntryTypeNullableToString(entry.Type),
+			Title = entry.Title,
+			Products = entry.Products?.Select(ToDto).ToList(),
+			Description = entry.Description,
+			Impact = entry.Impact,
+			Action = entry.Action,
+			FeatureId = entry.FeatureId,
+			Highlight = entry.Highlight,
+			Subtype = EntrySubtypeToString(entry.Subtype),
+			Areas = entry.Areas?.ToList(),
+			Prs = entry.Prs?.ToList(),
+			Issues = entry.Issues?.ToList()
+		};
 
-	private static BundledFileDto ToDto(BundledFile file) => new()
-	{
-		Name = file.Name,
-		Checksum = file.Checksum
-	};
+	private static BundledFileDto ToDto(BundledFile file) => new() { Name = file.Name, Checksum = file.Checksum };
 
 	// Reverse enum conversion helpers
 
 	private static string? EntryTypeToString(ChangelogEntryType value) =>
 		value != ChangelogEntryType.Invalid ? value.ToStringFast(true) : null;
 
-	private static string? EntryTypeNullableToString(ChangelogEntryType? value) =>
-		value?.ToStringFast(true);
+	private static string? EntryTypeNullableToString(ChangelogEntryType? value) => value?.ToStringFast(true);
 
-	private static string? EntrySubtypeToString(ChangelogEntrySubtype? value) =>
-		value?.ToStringFast(true);
+	private static string? EntrySubtypeToString(ChangelogEntrySubtype? value) => value?.ToStringFast(true);
 
-	private static string? LifecycleToString(Lifecycle? value) =>
-		value?.ToStringFast(true);
+	private static string? LifecycleToString(Lifecycle? value) => value?.ToStringFast(true);
 
 	#endregion
 
@@ -415,14 +399,13 @@ public static partial class ReleaseNotesSerialization
 		};
 	}
 
-	private static MatchMode? ParseMatchMode(string? value) =>
-		value?.ToLowerInvariant() switch
-		{
-			"any" => MatchMode.Any,
-			"all" => MatchMode.All,
-			"conjunction" => MatchMode.Conjunction,
-			_ => null
-		};
+	private static MatchMode? ParseMatchMode(string? value) => value?.ToLowerInvariant() switch
+	{
+		"any" => MatchMode.Any,
+		"all" => MatchMode.All,
+		"conjunction" => MatchMode.Conjunction,
+		_ => null
+	};
 }
 
 /// <summary>

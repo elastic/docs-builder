@@ -20,13 +20,10 @@ public static class LabsSiteCrawlPlanner
 	/// <summary>All unique URLs plus per-sitemap fetch counts (before cross-sitemap deduplication).</summary>
 	public sealed record LabsSitemapDiscoveryResult(
 		IReadOnlyList<SitemapEntry> Urls,
-		IReadOnlyList<(string SitemapUrl, int RawUrlCount)> PerSitemap);
+		IReadOnlyList<(string SitemapUrl, int RawUrlCount)> PerSitemap
+	);
 
-	public static readonly string[] DefaultExcludePaths =
-	[
-		"/guide/",
-		"/downloads/past-releases/"
-	];
+	public static readonly string[] DefaultExcludePaths = ["/guide/", "/downloads/past-releases/"];
 
 	private static readonly string[] LangPrefixes = ["/de/", "/fr/", "/jp/", "/kr/", "/cn/", "/es/", "/pt/"];
 
@@ -41,7 +38,8 @@ public static class LabsSiteCrawlPlanner
 		ISitemapParser sitemapParser,
 		IReadOnlyList<string> sitemaps,
 		IProgress<(int completed, string currentSitemap)> progress,
-		CancellationToken ct)
+		CancellationToken ct
+	)
 	{
 		var allUrlsList = new List<SitemapEntry>();
 		var perSitemap = new List<(string SitemapUrl, int RawUrlCount)>();
@@ -55,10 +53,7 @@ public static class LabsSiteCrawlPlanner
 			progress.Report((completed, currentSitemap));
 		}
 
-		var deduped = allUrlsList
-			.GroupBy(u => u.Location)
-			.Select(g => g.First())
-			.ToList();
+		var deduped = allUrlsList.GroupBy(u => u.Location).Select(g => g.First()).ToList();
 
 		return new LabsSitemapDiscoveryResult(deduped, perSitemap);
 	}
@@ -81,31 +76,33 @@ public static class LabsSiteCrawlPlanner
 	public static List<SitemapEntry> FilterUrls(
 		IReadOnlyList<SitemapEntry> urls,
 		IReadOnlyList<string> exclusions,
-		HashSet<string>? languageFilter) => urls
-			.Where(u =>
+		HashSet<string>? languageFilter
+	) =>
+		urls.Where(u =>
+		{
+			var uri = new Uri(u.Location);
+
+			if (
+				!uri.Host.Equals("www.elastic.co", StringComparison.OrdinalIgnoreCase) &&
+				!uri.Host.Equals("elastic.co", StringComparison.OrdinalIgnoreCase)
+			)
+				return false;
+
+			foreach (var exclusion in exclusions)
 			{
-				var uri = new Uri(u.Location);
-
-				if (!uri.Host.Equals("www.elastic.co", StringComparison.OrdinalIgnoreCase) &&
-					!uri.Host.Equals("elastic.co", StringComparison.OrdinalIgnoreCase))
+				if (uri.AbsolutePath.StartsWith(exclusion, StringComparison.OrdinalIgnoreCase))
 					return false;
+			}
 
-				foreach (var exclusion in exclusions)
-				{
-					if (uri.AbsolutePath.StartsWith(exclusion, StringComparison.OrdinalIgnoreCase))
-						return false;
-				}
+			if (languageFilter is { Count: > 0 })
+			{
+				var lang = GetLanguageFromUrl(u.Location);
+				if (!languageFilter.Contains(lang))
+					return false;
+			}
 
-				if (languageFilter is { Count: > 0 })
-				{
-					var lang = GetLanguageFromUrl(u.Location);
-					if (!languageFilter.Contains(lang))
-						return false;
-				}
-
-				return true;
-			})
-			.ToList();
+			return true;
+		}).ToList();
 
 	public static string GetCategory(string url)
 	{
@@ -137,7 +134,8 @@ public static class LabsSiteCrawlPlanner
 		bool unchanged,
 		bool fair,
 		int maxPages,
-		ILoggerFactory loggerFactory)
+		ILoggerFactory loggerFactory
+	)
 	{
 		var decisionMaker = new CrawlDecisionMaker(loggerFactory.CreateLogger<CrawlDecisionMaker>());
 		var allDecisions = decisionMaker.MakeDecisions(filteredUrls, cache).ToList();
@@ -155,14 +153,10 @@ public static class LabsSiteCrawlPlanner
 
 		var stats = CrawlDecisionMaker.GetStats(allDecisions);
 
-		var allKnownUrls = filteredUrls
-			.Select(u => u.Location)
-			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var allKnownUrls = filteredUrls.Select(u => u.Location).ToHashSet(StringComparer.OrdinalIgnoreCase);
 		var staleUrls = decisionMaker.FindStaleUrls(cache, allKnownUrls).ToList();
 
-		var urlsToCrawl = allDecisions
-			.Where(d => unchanged || d.Reason != CrawlReason.Unchanged)
-			.ToList();
+		var urlsToCrawl = allDecisions.Where(d => unchanged || d.Reason != CrawlReason.Unchanged).ToList();
 
 		if (!fair && maxPages > 0 && urlsToCrawl.Count > maxPages)
 			urlsToCrawl = urlsToCrawl.Take(maxPages).ToList();
@@ -172,9 +166,7 @@ public static class LabsSiteCrawlPlanner
 
 	private static List<CrawlDecision> ApplyCategoryFairness(List<CrawlDecision> decisions, int maxPages)
 	{
-		var byCategory = decisions
-			.GroupBy(d => GetCategory(d.Entry.Location))
-			.ToDictionary(g => g.Key, g => g.ToList());
+		var byCategory = decisions.GroupBy(d => GetCategory(d.Entry.Location)).ToDictionary(g => g.Key, g => g.ToList());
 
 		var categoryCount = byCategory.Count;
 		if (categoryCount == 0)
@@ -183,9 +175,7 @@ public static class LabsSiteCrawlPlanner
 		var result = new List<CrawlDecision>();
 		var remaining = maxPages;
 
-		var sortedCategories = byCategory
-			.OrderByDescending(kvp => kvp.Value.Count)
-			.ToList();
+		var sortedCategories = byCategory.OrderByDescending(kvp => kvp.Value.Count).ToList();
 
 		var taken = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -250,12 +240,7 @@ public static class LabsSiteCrawlPlanner
 
 	/// <summary>Lexical read alias for incremental cache (same index as contentstack sync).</summary>
 	public static string ResolveLexicalReadAlias(string buildType, string environment) =>
-		LabsMappingContext.LabsDocument
-			.CreateContext(type: buildType, env: environment)
-			.ResolveReadTarget();
+		LabsMappingContext.LabsDocument.CreateContext(type: buildType, env: environment).ResolveReadTarget();
 }
 
-public sealed record CrawlPlan(
-	IReadOnlyList<CrawlDecision> UrlsToCrawl,
-	IReadOnlyList<string> StaleUrls,
-	CrawlDecisionStats Stats);
+public sealed record CrawlPlan(IReadOnlyList<CrawlDecision> UrlsToCrawl, IReadOnlyList<string> StaleUrls, CrawlDecisionStats Stats);

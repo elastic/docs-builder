@@ -78,24 +78,43 @@ public partial class DocumentationGenerator
 		Context = docSet.Context;
 
 		// Use the provided inferrer or create a default one
-		_documentInferrer = documentInferrer ?? new DocumentInferrerService(
-			DocumentationSet.Context.ProductsConfiguration,
-			DocumentationSet.Context.VersionsConfiguration,
-			DocumentationSet.Context.LegacyUrlMappings,
-			DocumentationSet.Configuration,
-			DocumentationSet.Context.Git
-		);
+		_documentInferrer =
+			documentInferrer ??
+				new DocumentInferrerService(
+					DocumentationSet.Context.ProductsConfiguration,
+					DocumentationSet.Context.VersionsConfiguration,
+					DocumentationSet.Context.LegacyUrlMappings,
+					DocumentationSet.Configuration,
+					DocumentationSet.Context.Git
+				);
 
-		HtmlWriter = new HtmlWriter(DocumentationSet, _writeFileSystem, new DescriptionGenerator(), pageViewFactory, positionalNavigation, navigationHtmlWriter, legacyUrlMapper, _documentInferrer);
-		_documentationFileExporter =
-			docSet.Context.AvailableExporters.Contains(Exporter.Html)
-				? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
-				  ?? new DocumentationFileExporter(docSet.Context.ReadFileSystem, _writeFileSystem)
-				: new NoopDocumentationFileExporter();
+		HtmlWriter =
+			new HtmlWriter(
+				DocumentationSet,
+				_writeFileSystem,
+				new DescriptionGenerator(),
+				pageViewFactory,
+				positionalNavigation,
+				navigationHtmlWriter,
+				legacyUrlMapper,
+				_documentInferrer
+			);
+		_documentationFileExporter = docSet.Context.AvailableExporters.Contains(Exporter.Html)
+			? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter ??
+				new DocumentationFileExporter(docSet.Context.ReadFileSystem, _writeFileSystem)
+			: new NoopDocumentationFileExporter();
 
 		_logger.LogInformation("Created documentation set for: {DocumentationSetName}", DocumentationSet.Name);
-		_logger.LogInformation("Source directory: {SourcePath} Exists: {SourcePathExists}", docSet.SourceDirectory, docSet.SourceDirectory.Exists);
-		_logger.LogInformation("Output directory: {OutputPath} Exists: {OutputPathExists}", docSet.OutputDirectory, docSet.OutputDirectory.Exists);
+		_logger.LogInformation(
+			"Source directory: {SourcePath} Exists: {SourcePathExists}",
+			docSet.SourceDirectory,
+			docSet.SourceDirectory.Exists
+		);
+		_logger.LogInformation(
+			"Output directory: {OutputPath} Exists: {OutputPathExists}",
+			docSet.OutputDirectory,
+			docSet.OutputDirectory.Exists
+		);
 	}
 
 	private INavigationTraversable PositionalNavigation { get; }
@@ -125,9 +144,11 @@ public partial class DocumentationGenerator
 		var generationState = !generateState ? null : GetPreviousGenerationState();
 
 		// clear the output directory if force is true but never for assembler builds since these build multiple times to the output.
-		if (Context is { BuildType: not BuildType.Assembler, Force: true }
+		if (
+			Context is { BuildType: not BuildType.Assembler, Force: true }
 			// clear the output directory if force is false but generation state is null, except for assembler builds.
-			|| (Context is { BuildType: not BuildType.Assembler, Force: false } && generationState == null))
+			|| (Context is { BuildType: not BuildType.Assembler, Force: false } && generationState == null)
+		)
 		{
 			_logger.LogInformation($"Clearing output directory");
 			DocumentationSet.ClearOutputDirectory();
@@ -163,41 +184,56 @@ public partial class DocumentationGenerator
 		var writeToDisk = Context.AvailableExporters.Contains(Exporter.LinkMetadata);
 		var linkReference = await GenerateLinkReference(writeToDisk, ctx);
 
-		return result with
-		{
-			Redirects = linkReference.Redirects ?? []
-		};
+		return result with { Redirects = linkReference.Redirects ?? [] };
 	}
 
-	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, CompilationMode mode, Cancel ctx)
+	private async Task ProcessDocumentationFiles(
+		HashSet<string> offendingFiles,
+		DateTimeOffset outputSeenChanges,
+		CompilationMode mode,
+		Cancel ctx
+	)
 	{
 		var processedFileCount = 0;
 		var exceptionCount = 0;
 		var totalFileCount = DocumentationSet.Files.Count;
-		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
-		{
-			var processedFiles = Interlocked.Increment(ref processedFileCount);
-			var (fp, doc) = file;
-			try
+		await Parallel.ForEachAsync(
+			DocumentationSet.Files,
+			ctx,
+			async (file, token) =>
 			{
-				await ProcessFile(offendingFiles, doc, outputSeenChanges, mode, token);
-			}
-			catch (Exception e)
-			{
-				var currentCount = Interlocked.Increment(ref exceptionCount);
-				// this is not the main error logging mechanism
-				// if we hit this from too many files fail hard
-				if (currentCount <= 25)
-					Context.Collector.EmitError(fp.RelativePath, "Uncaught exception while processing file", e);
-				else
-					throw;
-			}
+				var processedFiles = Interlocked.Increment(ref processedFileCount);
+				var (fp, doc) = file;
+				try
+				{
+					await ProcessFile(offendingFiles, doc, outputSeenChanges, mode, token);
+				}
+				catch (Exception e)
+				{
+					var currentCount = Interlocked.Increment(ref exceptionCount);
+					// this is not the main error logging mechanism
+					// if we hit this from too many files fail hard
+					if (currentCount <= 25)
+						Context.Collector.EmitError(fp.RelativePath, "Uncaught exception while processing file", e);
+					else
+						throw;
+				}
 
-			if (processedFiles % 100 == 0)
-				_logger.LogInformation(" {Name} -> Processed {ProcessedFiles}/{TotalFileCount} files", Context.Git.RepositoryName, processedFiles, totalFileCount);
-		});
-		_logger.LogInformation(" {Name} -> Processed {ProcessedFileCount}/{TotalFileCount} files", Context.Git.RepositoryName, processedFileCount, totalFileCount);
-
+				if (processedFiles % 100 == 0)
+					_logger.LogInformation(
+						" {Name} -> Processed {ProcessedFiles}/{TotalFileCount} files",
+						Context.Git.RepositoryName,
+						processedFiles,
+						totalFileCount
+					);
+			}
+		);
+		_logger.LogInformation(
+			" {Name} -> Processed {ProcessedFileCount}/{TotalFileCount} files",
+			Context.Git.RepositoryName,
+			processedFileCount,
+			totalFileCount
+		);
 	}
 
 	private void CopyBrandingResources()
@@ -226,8 +262,10 @@ public partial class DocumentationGenerator
 
 			if (!seen.Add(source.Name))
 			{
-				Context.Collector.EmitError(Context.ConfigurationPath.FullName,
-					$"Branding image '{imagePath}' has the same filename as another branding image — use unique filenames to avoid overwriting.");
+				Context.Collector.EmitError(
+					Context.ConfigurationPath.FullName,
+					$"Branding image '{imagePath}' has the same filename as another branding image — use unique filenames to avoid overwriting."
+				);
 				continue;
 			}
 
@@ -248,14 +286,14 @@ public partial class DocumentationGenerator
 		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
 		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
 		var keysNotInUse = definedKeys.Except(inUse)
-				// versions keys are injected
-				.Where(key => !key.StartsWith("version."))
-				// product keys are injected
-				.Where(key => !key.StartsWith("product."))
-				.Where(key => !key.StartsWith('.'))
-				// reserving context namespace
-				.Where(key => !key.StartsWith("context."))
-				.ToArray();
+			// versions keys are injected
+			.Where(key => !key.StartsWith("version."))
+			// product keys are injected
+			.Where(key => !key.StartsWith("product."))
+			.Where(key => !key.StartsWith('.'))
+			// reserving context namespace
+			.Where(key => !key.StartsWith("context."))
+			.ToArray();
 
 		// If we have less than 20 unused keys, emit them separately,
 		// Otherwise emit one hint with all of them for brevity
@@ -282,8 +320,9 @@ public partial class DocumentationGenerator
 
 		_logger.LogInformation($"Copying static files to output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
-		foreach (var a in assembly.GetManifestResourceNames()
-			.Where(r => r.StartsWith("Elastic.Documentation.Site._static.", StringComparison.Ordinal)))
+		foreach (var a in assembly.GetManifestResourceNames().Where(
+			r => r.StartsWith("Elastic.Documentation.Site._static.", StringComparison.Ordinal)
+		))
 		{
 			await using var resourceStream = assembly.GetManifestResourceStream(a);
 			if (resourceStream == null)
@@ -305,27 +344,32 @@ public partial class DocumentationGenerator
 	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$")]
 	private static partial Regex FileNameRegex();
 
-	public static bool IsValidFileName(string strToCheck) =>
-		strToCheck switch
-		{
-			//prior art
-			_ when strToCheck.StartsWith("release-notes/elastic-agent/_snippets/") => true,
-			_ when strToCheck.StartsWith("reference/query-languages/esql/_snippets/") => true,
-			_ when strToCheck.EndsWith(".svg") => true,
-			_ when strToCheck.EndsWith(".gif") => true,
-			_ when strToCheck.EndsWith(".png") => true,
-			_ when strToCheck.EndsWith(".png") => true,
-			"reference/security/prebuilt-rules/audit_policies/windows/README.md" => true,
-			"audit_policies/windows/README.md" => true,
-			"extend/integrations/developer-workflow-fleet-UI.md" => true,
-			"extend/developer-workflow-fleet-UI.md" => true,
-			"reference/elasticsearch/clients/ruby/Helpers.md" => true,
-			"reference/Helpers.md" => true,
-			"explore-analyze/ai-features/llm-guides/connect-to-vLLM.md" => true,
-			_ => FilePathRegex().IsMatch(strToCheck) && FileNameRegex().IsMatch(Path.GetFileName(strToCheck))
-		};
+	public static bool IsValidFileName(string strToCheck) => strToCheck switch
+	{
+		//prior art
+		_ when strToCheck.StartsWith("release-notes/elastic-agent/_snippets/") => true,
+		_ when strToCheck.StartsWith("reference/query-languages/esql/_snippets/") => true,
+		_ when strToCheck.EndsWith(".svg") => true,
+		_ when strToCheck.EndsWith(".gif") => true,
+		_ when strToCheck.EndsWith(".png") => true,
+		_ when strToCheck.EndsWith(".png") => true,
+		"reference/security/prebuilt-rules/audit_policies/windows/README.md" => true,
+		"audit_policies/windows/README.md" => true,
+		"extend/integrations/developer-workflow-fleet-UI.md" => true,
+		"extend/developer-workflow-fleet-UI.md" => true,
+		"reference/elasticsearch/clients/ruby/Helpers.md" => true,
+		"reference/Helpers.md" => true,
+		"explore-analyze/ai-features/llm-guides/connect-to-vLLM.md" => true,
+		_ => FilePathRegex().IsMatch(strToCheck) && FileNameRegex().IsMatch(Path.GetFileName(strToCheck))
+	};
 
-	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, CompilationMode mode, Cancel ctx)
+	private async Task ProcessFile(
+		HashSet<string> offendingFiles,
+		DocumentationFile file,
+		DateTimeOffset outputSeenChanges,
+		CompilationMode mode,
+		Cancel ctx
+	)
 	{
 		// Full builds run HintUnusedSubstitutionKeys(), which needs substitution usage from every file.
 		// CI forces Full mode while still supplying outputSeenChanges from state; skipping unchanged files would miss keys and produce false hints.
@@ -362,7 +406,10 @@ public partial class DocumentationGenerator
 			var relative = Path.GetRelativePath(Context.OutputDirectory.FullName, outputFile.FullName);
 			if (!IsValidFileName(relative))
 			{
-				Context.Collector.EmitError(file.SourceFile.FullName, $"File name {relative} is not valid needs to be lowercase and contain only alphanumeric characters, spaces, dashes, dots, underscores, and plus signs");
+				Context.Collector.EmitError(
+					file.SourceFile.FullName,
+					$"File name {relative} is not valid needs to be lowercase and contain only alphanumeric characters, spaces, dashes, dots, underscores, and plus signs"
+				);
 				return;
 			}
 
@@ -379,20 +426,25 @@ public partial class DocumentationGenerator
 			{
 				foreach (var exporter in _markdownExporters)
 				{
-					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
+					var document =
+						context.MarkdownDocument ??= await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
 					var navigationItem = PositionalNavigation.GetNavigationFor(markdown);
-					_ = await exporter.ExportAsync(new MarkdownExportFileContext
-					{
-						BuildContext = Context,
-						Resolvers = DocumentationSet.MarkdownParser.Resolvers,
-						Document = document,
-						SourceFile = markdown,
-						DefaultOutputFile = outputFile,
-						DocumentationSet = DocumentationSet,
-						PositionaNavigation = PositionalNavigation,
-						NavigationItem = navigationItem,
-						InferenceService = _documentInferrer
-					}, ctx);
+					_ =
+						await exporter.ExportAsync(
+							new MarkdownExportFileContext
+							{
+								BuildContext = Context,
+								Resolvers = DocumentationSet.MarkdownParser.Resolvers,
+								Document = document,
+								SourceFile = markdown,
+								DefaultOutputFile = outputFile,
+								DocumentationSet = DocumentationSet,
+								PositionaNavigation = PositionalNavigation,
+								NavigationItem = navigationItem,
+								InferenceService = _documentInferrer
+							},
+							ctx
+						);
 				}
 			}
 		}
@@ -409,10 +461,18 @@ public partial class DocumentationGenerator
 			: outputFile;
 	}
 
-	private enum CompilationMode { Full, Incremental, Skip }
+	private enum CompilationMode
+	{
+		Full,
+		Incremental,
+		Skip
+	}
 
-	private CompilationMode GetCompilationMode(GenerationState? generationState, out HashSet<string> offendingFiles,
-		out DateTimeOffset outputSeenChanges)
+	private CompilationMode GetCompilationMode(
+		GenerationState? generationState,
+		out HashSet<string> offendingFiles,
+		out DateTimeOffset outputSeenChanges
+	)
 	{
 		offendingFiles = [.. generationState?.InvalidFiles ?? []];
 		outputSeenChanges = generationState?.LastSeenChanges ?? DateTimeOffset.MinValue;
@@ -430,8 +490,11 @@ public partial class DocumentationGenerator
 
 		if (Context.Git != generationState.Git)
 		{
-			_logger.LogInformation("Full compilation: current git context: {CurrentGitContext} differs from previous git context: {PreviousGitContext}",
-				Context.Git, generationState.Git);
+			_logger.LogInformation(
+				"Full compilation: current git context: {CurrentGitContext} differs from previous git context: {PreviousGitContext}",
+				Context.Git,
+				generationState.Git
+			);
 			return CompilationMode.Full;
 		}
 
@@ -449,8 +512,8 @@ public partial class DocumentationGenerator
 		else if (DocumentationSet.LastWrite <= outputSeenChanges)
 		{
 			_logger.LogInformation(
-				"No compilation: no changes since last observed: {LastSeenChanges}. " +
-				"Pass --force to force a full regeneration", generationState.LastSeenChanges
+				"No compilation: no changes since last observed: {LastSeenChanges}. " + "Pass --force to force a full regeneration",
+				generationState.LastSeenChanges
 			);
 			return CompilationMode.Skip;
 		}
@@ -475,7 +538,11 @@ public partial class DocumentationGenerator
 	private async Task GenerateDocumentationState(Cancel ctx)
 	{
 		var stateFile = DocumentationSet.OutputStateFile;
-		_logger.LogInformation("Writing documentation state {LastWrite} to {StateFileName}", DocumentationSet.LastWrite, stateFile.FullName);
+		_logger.LogInformation(
+			"Writing documentation state {LastWrite} to {StateFileName}",
+			DocumentationSet.LastWrite,
+			stateFile.FullName
+		);
 		var badFiles = Context.Collector.OffendingFiles.ToArray();
 		var state = new GenerationState
 		{
@@ -523,5 +590,4 @@ public partial class DocumentationGenerator
 
 		return false;
 	}
-
 }

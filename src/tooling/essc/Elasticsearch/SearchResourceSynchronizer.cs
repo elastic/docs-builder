@@ -33,10 +33,7 @@ namespace Elastic.SiteSearch.Cli.Elasticsearch;
 /// query-rule entries are compared in-order.
 /// </para>
 /// </remarks>
-internal sealed partial class SearchResourceSynchronizer(
-	DistributedTransport source,
-	DistributedTransport destination,
-	ILogger logger)
+internal sealed partial class SearchResourceSynchronizer(DistributedTransport source, DistributedTransport destination, ILogger logger)
 {
 	/// <summary>
 	/// Tries to extract the environment token from a known alias name.
@@ -95,13 +92,14 @@ internal sealed partial class SearchResourceSynchronizer(
 		{
 			throw new InvalidOperationException(
 				$"Synonym set '{name}' not found on source cluster. " +
-				"Ensure docs-builder indexing has run for this environment before syncing.");
+					"Ensure docs-builder indexing has run for this environment before syncing."
+			);
 		}
 
 		// Extract the synonyms_set array
 		var srcRoot = JsonNode.Parse(srcResp.Body ?? "{}");
-		var srcSet = srcRoot?["synonyms_set"]?.AsArray()
-			?? throw new InvalidOperationException($"Synonym set '{name}': unexpected response shape — 'synonyms_set' missing.");
+		var srcSet = srcRoot?["synonyms_set"]?.AsArray() ??
+			throw new InvalidOperationException($"Synonym set '{name}': unexpected response shape — 'synonyms_set' missing.");
 
 		// ── No-op check ────────────────────────────────────────────────────────────
 		var dstResp = await destination.GetAsync<StringResponse>($"_synonyms/{name}", cancellationToken: ct);
@@ -119,13 +117,13 @@ internal sealed partial class SearchResourceSynchronizer(
 		// ── Copy to destination ────────────────────────────────────────────────────
 		// Rebuild the body with only the array (strip result_count etc.)
 		var putBody = $"{{\"synonyms_set\":{srcSet.ToJsonString()}}}";
-		var putResp = await destination.PutAsync<StringResponse>(
-			$"_synonyms/{name}", PostData.String(putBody), ct);
+		var putResp = await destination.PutAsync<StringResponse>($"_synonyms/{name}", PostData.String(putBody), ct);
 		if (!putResp.ApiCallDetails.HasSuccessfulStatusCode)
 		{
 			throw new InvalidOperationException(
 				$"Failed to copy synonym set '{name}' to destination: " +
-				$"{putResp.ApiCallDetails.OriginalException?.Message ?? putResp.ToString()}");
+					$"{putResp.ApiCallDetails.OriginalException?.Message ?? putResp.ToString()}"
+			);
 		}
 
 		logger.LogInformation("Synonym set '{Name}' copied to destination", name);
@@ -139,13 +137,14 @@ internal sealed partial class SearchResourceSynchronizer(
 		{
 			throw new InvalidOperationException(
 				$"Query ruleset '{name}' not found on source cluster. " +
-				"Ensure docs-builder indexing has run for this environment before syncing.");
+					"Ensure docs-builder indexing has run for this environment before syncing."
+			);
 		}
 
 		// Extract the rules array (ordering is significant — no sort)
 		var srcRoot = JsonNode.Parse(srcResp.Body ?? "{}");
-		var srcRules = srcRoot?["rules"]?.AsArray()
-			?? throw new InvalidOperationException($"Query ruleset '{name}': unexpected response shape — 'rules' missing.");
+		var srcRules = srcRoot?["rules"]?.AsArray() ??
+			throw new InvalidOperationException($"Query ruleset '{name}': unexpected response shape — 'rules' missing.");
 
 		// ── No-op check ────────────────────────────────────────────────────────────
 		var dstResp = await destination.GetAsync<StringResponse>($"_query_rules/{name}", cancellationToken: ct);
@@ -153,8 +152,7 @@ internal sealed partial class SearchResourceSynchronizer(
 		{
 			var dstRoot = JsonNode.Parse(dstResp.Body ?? "{}");
 			var dstRules = dstRoot?["rules"]?.AsArray();
-			if (dstRules is not null &&
-				srcRules.ToJsonString() == dstRules.ToJsonString())
+			if (dstRules is not null && srcRules.ToJsonString() == dstRules.ToJsonString())
 			{
 				logger.LogInformation("Query ruleset '{Name}' is already up-to-date on destination — skipping PUT", name);
 				return;
@@ -163,13 +161,13 @@ internal sealed partial class SearchResourceSynchronizer(
 
 		// ── Copy to destination ────────────────────────────────────────────────────
 		var putBody = $"{{\"rules\":{srcRules.ToJsonString()}}}";
-		var putResp = await destination.PutAsync<StringResponse>(
-			$"_query_rules/{name}", PostData.String(putBody), ct);
+		var putResp = await destination.PutAsync<StringResponse>($"_query_rules/{name}", PostData.String(putBody), ct);
 		if (!putResp.ApiCallDetails.HasSuccessfulStatusCode)
 		{
 			throw new InvalidOperationException(
 				$"Failed to copy query ruleset '{name}' to destination: " +
-				$"{putResp.ApiCallDetails.OriginalException?.Message ?? putResp.ToString()}");
+					$"{putResp.ApiCallDetails.OriginalException?.Message ?? putResp.ToString()}"
+			);
 		}
 
 		logger.LogInformation("Query ruleset '{Name}' copied to destination", name);

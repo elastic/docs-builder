@@ -23,10 +23,10 @@ public static class DocumentationMappingExtensions
 	/// </summary>
 	public static MappingsBuilder<DocumentationDocument> AddDocumentationMappings(this MappingsBuilder<DocumentationDocument> m) =>
 		m
-			// applies_to is [Nested] — AddProperty places sub-fields under "properties".
-			// Note: AppliesToEntry properties have no [Keyword] attributes so the generated
-			// AppliesToEntryNestedBuilder pre-types them as Text; AddProperty lets us override to Keyword.
-			.AddProperty("applies_to.type", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
+		// applies_to is [Nested] — AddProperty places sub-fields under "properties".
+		// Note: AppliesToEntry properties have no [Keyword] attributes so the generated
+		// AppliesToEntryNestedBuilder pre-types them as Text; AddProperty lets us override to Keyword.
+		.AddProperty("applies_to.type", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.sub_type", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.lifecycle", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.version", f => f.Version());

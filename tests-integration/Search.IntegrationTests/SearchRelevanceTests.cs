@@ -28,56 +28,88 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 	/// Theory data for search queries mapped to expected first hit URLs.
 	/// Same as SearchIntegrationTests but with detailed explain output on failures.
 	/// </summary>
-	public static TheoryData<string, string, string[]?> SearchQueryTestCases => new()
-	{
-		//TODO these results reflect today's result, we still have some work to do to improve the relevance of the search results
+	public static TheoryData<string, string, string[]?> SearchQueryTestCases =>
+		new()
+		{
+			//TODO these results reflect today's result, we still have some work to do to improve the relevance of the search results
 
-		// Elasticsearch specific queries
-		{ "elasticsearch get started", "/docs/solutions/search/get-started", null },
-		{ "elasticsearch getting started", "/docs/solutions/search/get-started", null },
-		{ "elastic common schema", "/docs/reference/ecs", null },
-		{ "ecs", "/docs/reference/ecs", null },
-		{ "c# client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"] },
-		{ "dotnet client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"] },
-		{ "runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [ "/docs/solutions/security/endpoint-response-actions" ] },
-		{ "data-streams", "/docs/manage-data/data-store/data-streams", null },
-		{ "datastream", "/docs/manage-data/data-store/data-streams", null },
-		{ "data stream", "/docs/manage-data/data-store/data-streams", null },
-		{ "saml sso", "/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication", ["/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"] },
-		{ "templates", "/docs/manage-data/data-store/templates", null},
-		// different results because of the exact match on title, QueryDSL needs to be normalized in the content
-		{ "query dsl", "/docs/explore-analyze/query-filter/languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]},
-		{ "querydsl", "/docs/reference/query-languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]},
-		{ "Agent policy", "/docs/reference/fleet/agent-policy", null},
-		{ "aliases", "/docs/manage-data/data-store/aliases", null},
-		{ "Kibana privilege", "/docs/deploy-manage/users-roles/cluster-or-deployment-auth/kibana-privileges", null},
-		{ "lens", "/docs/explore-analyze/visualize/lens", null},
-		{ "machine learning node", "/docs/deploy-manage/autoscaling/autoscaling-in-ece-and-ech", null },
-		{ "machine learning", "/docs/reference/machine-learning", null},
-		{ "ml", "/docs/reference/machine-learning", null},
-		{ "elasticsearch", "/docs/reference/elasticsearch", null},
-		{ "kibana", "/docs/reference/kibana", null},
-		{ "cloud", "/docs/reference/cloud", null},
-		{ "logstash", "/docs/reference/logstash", null},
-		{ "logstash release", "/docs/release-notes/logstash", null},
-		{ "esql", "/docs/reference/query-languages/esql", null},
-		{ "ES|QL", "/docs/reference/query-languages/esql", null},
-		{ "Output plugins for Logstash", "/docs/reference/logstash/plugins/output-plugins", null},
-		// exact match on title wins but with variations we prefer the more general topic page
-		{ "Sending data to Elastic Cloud Hosted", "/docs/reference/logstash/connecting-to-cloud", ["/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint"]},
-		{ "Send data to Elastic Cloud Hosted", "/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint", ["/docs/reference/logstash/connecting-to-cloud"]},
-
-		{ "universal profiling", "/docs/solutions/observability/infra-and-hosts/universal-profiling", null},
-		{ "agg", "/docs/explore-analyze/query-filter/aggregations", null},
-		{ "a", "/docs/reference/apm/observability/apm", null},
-		{ "index.number_of_replicas", "/docs/reference/elasticsearch/index-settings/index-modules", null},
-		//{ "index.use_time_series_doc_values_format", "/docs/reference/elasticsearch/index-settings/index-modules", null},
-		//universal profiling
-	};
+			// Elasticsearch specific queries
+			{
+				"elasticsearch get started",
+				"/docs/solutions/search/get-started",
+				null
+			},
+			{ "elasticsearch getting started", "/docs/solutions/search/get-started", null },
+			{ "elastic common schema", "/docs/reference/ecs", null },
+			{ "ecs", "/docs/reference/ecs", null },
+			{ "c# client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"] },
+			{
+				"dotnet client",
+				"/docs/reference/elasticsearch/clients/dotnet/installation",
+				["/docs/reference/elasticsearch/clients/dotnet"]
+			},
+			{
+				"runscript",
+				"/docs/api/doc/kibana/operation/operation-runscriptaction",
+				["/docs/solutions/security/endpoint-response-actions"]
+			},
+			{ "data-streams", "/docs/manage-data/data-store/data-streams", null },
+			{ "datastream", "/docs/manage-data/data-store/data-streams", null },
+			{ "data stream", "/docs/manage-data/data-store/data-streams", null },
+			{
+				"saml sso",
+				"/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication",
+				["/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"]
+			},
+			{ "templates", "/docs/manage-data/data-store/templates", null },
+			// different results because of the exact match on title, QueryDSL needs to be normalized in the content
+			{
+				"query dsl",
+				"/docs/explore-analyze/query-filter/languages/querydsl",
+				["/docs/explore-analyze/query-filter/languages/querydsl"]
+			},
+			{ "querydsl", "/docs/reference/query-languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"] },
+			{ "Agent policy", "/docs/reference/fleet/agent-policy", null },
+			{ "aliases", "/docs/manage-data/data-store/aliases", null },
+			{ "Kibana privilege", "/docs/deploy-manage/users-roles/cluster-or-deployment-auth/kibana-privileges", null },
+			{ "lens", "/docs/explore-analyze/visualize/lens", null },
+			{ "machine learning node", "/docs/deploy-manage/autoscaling/autoscaling-in-ece-and-ech", null },
+			{ "machine learning", "/docs/reference/machine-learning", null },
+			{ "ml", "/docs/reference/machine-learning", null },
+			{ "elasticsearch", "/docs/reference/elasticsearch", null },
+			{ "kibana", "/docs/reference/kibana", null },
+			{ "cloud", "/docs/reference/cloud", null },
+			{ "logstash", "/docs/reference/logstash", null },
+			{ "logstash release", "/docs/release-notes/logstash", null },
+			{ "esql", "/docs/reference/query-languages/esql", null },
+			{ "ES|QL", "/docs/reference/query-languages/esql", null },
+			{ "Output plugins for Logstash", "/docs/reference/logstash/plugins/output-plugins", null },
+			// exact match on title wins but with variations we prefer the more general topic page
+			{
+				"Sending data to Elastic Cloud Hosted",
+				"/docs/reference/logstash/connecting-to-cloud",
+				["/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint"]
+			},
+			{
+				"Send data to Elastic Cloud Hosted",
+				"/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint",
+				["/docs/reference/logstash/connecting-to-cloud"]
+			},
+			{ "universal profiling", "/docs/solutions/observability/infra-and-hosts/universal-profiling", null },
+			{ "agg", "/docs/explore-analyze/query-filter/aggregations", null },
+			{ "a", "/docs/reference/apm/observability/apm", null },
+			{ "index.number_of_replicas", "/docs/reference/elasticsearch/index-settings/index-modules", null },
+			//{ "index.use_time_series_doc_values_format", "/docs/reference/elasticsearch/index-settings/index-modules", null},
+			//universal profiling
+		};
 
 	[Theory]
 	[MemberData(nameof(SearchQueryTestCases))]
-	public async Task SearchReturnsExpectedFirstResultWithExplain(string query, string expectedFirstResultUrl, string[]? additionalExpectedUrls)
+	public async Task SearchReturnsExpectedFirstResultWithExplain(
+		string query,
+		string expectedFirstResultUrl,
+		string[]? additionalExpectedUrls
+	)
 	{
 		// Arrange - Create ElasticsearchGateway directly
 		var (gateway, clientAccessor) = CreateFindPageGateway();
@@ -91,9 +123,11 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act - Perform the search via the adapter's autocomplete path
-		var searchResult = await gateway.NavigationSearchAsync(
-			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5 },
-			TestContext.Current.CancellationToken);
+		var searchResult =
+			await gateway.NavigationSearchAsync(
+				new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5 },
+				TestContext.Current.CancellationToken
+			);
 
 		// Log basic results
 		output.WriteLine($"Query: {query}");
@@ -104,8 +138,11 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 
 		if (results.Count == 0)
 		{
-			var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), TestContext.Current.CancellationToken);
-			output.WriteLine($"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString(CultureInfo.InvariantCulture) : $"ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}")}");
+			var countResponse =
+				await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), TestContext.Current.CancellationToken);
+			output.WriteLine(
+				$"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString(CultureInfo.InvariantCulture) : $"ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}")}"
+			);
 		}
 
 		results.Should().NotBeEmpty($"Search for '{query}' should return results (index: {clientAccessor.SearchIndex})");
@@ -118,10 +155,8 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 			output.WriteLine("\n❌ FIRST RESULT MISMATCH - Fetching detailed explanations...\n");
 
 			// Get explain for both the actual top result and the expected result
-			var (topResultExplain, expectedResultExplain) = await gateway.ExplainTopResultAndExpectedAsync(
-				query,
-				expectedFirstResultUrl,
-				TestContext.Current.CancellationToken);
+			var (topResultExplain, expectedResultExplain) =
+				await gateway.ExplainTopResultAndExpectedAsync(query, expectedFirstResultUrl, TestContext.Current.CancellationToken);
 
 			// Output the actual top result explanation
 			output.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -146,7 +181,8 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 
 			// Create a detailed failure message
 			var scoreDiff = topResultExplain.Score - expectedResultExplain.Score;
-			var failureMessage = $@"
+			var failureMessage =
+				$@"
 First result for query '{query}' did not match expectation.
 
 Expected: {expectedFirstResultUrl}
@@ -191,7 +227,10 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 					{
 						output.WriteLine($"   {i + 1}. {results[i].Url} (score: {results[i].Score:F4})");
 					}
-					resultUrls.Should().Contain(expectedUrl, $"Expected URL '{expectedUrl}' should be present on the first page of results for query '{query}'");
+					resultUrls.Should().Contain(
+						expectedUrl,
+						$"Expected URL '{expectedUrl}' should be present on the first page of results for query '{query}'"
+					);
 				}
 			}
 		}
@@ -214,10 +253,8 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		const string expectedUrl = "/docs/reference/elasticsearch/clients/java/getting-started";
 
 		// Act - Use the ExplainTopResultAndExpectedAsync method which gets top result and explains both
-		var (topResultExplain, expectedResultExplain) = await gateway.ExplainTopResultAndExpectedAsync(
-			query,
-			expectedUrl,
-			TestContext.Current.CancellationToken);
+		var (topResultExplain, expectedResultExplain) =
+			await gateway.ExplainTopResultAndExpectedAsync(query, expectedUrl, TestContext.Current.CancellationToken);
 
 		// Assert - Top result should have explanation
 		output.WriteLine($"Query: {query}");
@@ -246,7 +283,11 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	private static (NavigationSearchService Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
 	{
 		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler");
-		var configProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(), configurationSource: ConfigurationSource.Embedded);
+		var configProvider = new ConfigurationFileProvider(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(),
+			configurationSource: ConfigurationSource.Embedded
+		);
 		var searchConfig = configProvider.CreateSearchConfiguration();
 
 		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);
@@ -259,8 +300,11 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			SemanticEnabled = true
 		};
 		var inner = new DefaultSearchService<DocumentationDocument>(
-			clientAccessor.Client, clientAccessor.SearchIndex, queryConfig,
-			NullLogger<DefaultSearchService<DocumentationDocument>>.Instance);
+			clientAccessor.Client,
+			clientAccessor.SearchIndex,
+			queryConfig,
+			NullLogger<DefaultSearchService<DocumentationDocument>>.Instance
+		);
 
 		var gateway = new NavigationSearchService(inner, clientAccessor, NullLogger<NavigationSearchService>.Instance);
 		return (gateway, clientAccessor);

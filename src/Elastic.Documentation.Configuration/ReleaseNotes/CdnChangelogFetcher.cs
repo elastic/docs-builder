@@ -46,12 +46,11 @@ public sealed class CdnChangelogFetcher : IDisposable
 	/// bounds DNS staleness in long-lived <c>serve</c>/watch runs. It is intentionally never disposed — it
 	/// lives for the lifetime of the process.
 	/// </summary>
-	private static readonly HttpClient SharedHttpClient = new(
-		new SocketsHttpHandler
-		{
-			AutomaticDecompression = DecompressionMethods.All,
-			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-		})
+	private static readonly HttpClient SharedHttpClient = new(new SocketsHttpHandler
+	{
+		AutomaticDecompression = DecompressionMethods.All,
+		PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+	})
 	{ Timeout = FetchTimeout };
 
 	private readonly ILogger _logger;
@@ -96,7 +95,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 		string? version,
 		Action<string> emitError,
 		Action<string> emitWarning,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Defense-in-depth mirroring the entry fetcher's pool validation: reject anything the producer
 		// would have refused to upload before building the URI, so normalization (e.g. a ".." product)
@@ -129,7 +129,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 		if (registry.SchemaVersion > SupportedSchemaVersion)
 		{
 			emitError(
-				$"Changelog registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
+				$"Changelog registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder."
+			);
 			return [];
 		}
 
@@ -150,7 +151,9 @@ public sealed class CdnChangelogFetcher : IDisposable
 		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
 		_ = response.EnsureSuccessStatusCode();
 		await using var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
-		return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx).ConfigureAwait(false);
+		return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx).ConfigureAwait(
+			false
+		);
 	}
 
 	private async Task<List<(string FileName, string Content)>> DownloadBundlesAsync(
@@ -159,7 +162,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 		string? version,
 		ChangelogRegistry registry,
 		Action<string> emitWarning,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var selected = SelectBundles(version, registry.Bundles);
 		var tasks = new List<Task<(string FileName, string Content)?>>(selected.Count);
@@ -185,7 +189,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 		string fileName,
 		string? etag,
 		Action<string> emitWarning,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var cached = TryGetCachedBundle(product, fileName, etag);
 		if (cached is not null)
@@ -221,13 +226,9 @@ public sealed class CdnChangelogFetcher : IDisposable
 		if (string.IsNullOrWhiteSpace(version))
 			return [.. bundles];
 
-		var selected = bundles
-			.Where(b => ChangelogVersionMatch.Matches(version, b.Target, b.File))
-			.ToList();
+		var selected = bundles.Where(b => ChangelogVersionMatch.Matches(version, b.Target, b.File)).ToList();
 
-		var selectedFiles = new HashSet<string>(
-			selected.Select(b => b.File).OfType<string>(),
-			StringComparer.OrdinalIgnoreCase);
+		var selectedFiles = new HashSet<string>(selected.Select(b => b.File).OfType<string>(), StringComparer.OrdinalIgnoreCase);
 
 		foreach (var bundle in bundles)
 		{
@@ -306,11 +307,9 @@ public sealed class CdnChangelogFetcher : IDisposable
 		}
 	}
 
-	private static string CacheKey(string product, string fileName, string etag) =>
-		$"changelog-{product}-{fileName}-{etag}";
+	private static string CacheKey(string product, string fileName, string etag) => $"changelog-{product}-{fileName}-{etag}";
 
-	private static string CachePath(string cacheKey) =>
-		Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", cacheKey);
+	private static string CachePath(string cacheKey) => Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", cacheKey);
 
 	/// <summary>
 	/// Disposes the per-instance <see cref="HttpClient"/> created for an injected handler. The shared

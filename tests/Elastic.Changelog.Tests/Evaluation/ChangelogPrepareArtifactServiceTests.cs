@@ -24,7 +24,8 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	private static readonly string OutputDir = Path.Join(Root, "output");
 	private static readonly string ConfigPath = Path.Join(Root, "config/changelog.yml");
 
-	private const string MinimalConfig = """
+	private const string MinimalConfig =
+		"""
 		pivot:
 		  types:
 		    feature: "type:feature"
@@ -42,8 +43,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		    exclude: "changelog:skip"
 		""";
 
-	private ChangelogPrepareArtifactService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, _mockCore, RunnerTempFileSystem);
+	private ChangelogPrepareArtifactService CreateService() => new(LoggerFactory, ConfigurationContext, _mockCore, RunnerTempFileSystem);
 
 	private PrepareArtifactArguments DefaultArgs(
 		string evaluateStatus = "proceed",
@@ -110,13 +110,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = true,
-			HeadRepo = "contributor/repo",
-			CanCommit = true,
-			MaintainerCanModify = true
-		};
+		var args = DefaultArgs() with { IsFork = true, HeadRepo = "contributor/repo", CanCommit = true, MaintainerCanModify = true };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -133,13 +127,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = true,
-			HeadRepo = "contributor/repo",
-			CanCommit = false,
-			MaintainerCanModify = false
-		};
+		var args = DefaultArgs() with { IsFork = true, HeadRepo = "contributor/repo", CanCommit = false, MaintainerCanModify = false };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -161,13 +149,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = null,
-			CanCommit = null,
-			MaintainerCanModify = null,
-			HeadRepo = null
-		};
+		var args = DefaultArgs() with { IsFork = null, CanCommit = null, MaintainerCanModify = null, HeadRepo = null };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -183,11 +165,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			ProductLabelTable = "| Label | Product |\n| --- | --- |",
-			SkipLabels = "changelog:skip,skip-ci"
-		};
+		var args = DefaultArgs() with { ProductLabelTable = "| Label | Product |\n| --- | --- |", SkipLabels = "changelog:skip,skip-ci" };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -300,7 +278,8 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		FileSystem.Directory.CreateDirectory(StagingDir);
 
 		// Create YAML with BOM prefix
-		const string yamlContent = """
+		const string yamlContent =
+			"""
 			title: Test changelog
 			type: feature
 			products:
@@ -318,11 +297,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		ChangelogUtf8Normalization.HasUtf8Bom(stagingBytes).Should().BeTrue("staging file should contain BOM");
 
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			EvaluateStatus = "proceed",
-			GenerateOutcome = "success"
-		};
+		var args = DefaultArgs() with { EvaluateStatus = "proceed", GenerateOutcome = "success" };
 
 		// Act
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);

@@ -58,12 +58,11 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		release.Bundle.Entries[0].Type.Should().Be(ChangelogEntryType.BreakingChange);
 		release.Bundle.Entries[1].Type.Should().Be(ChangelogEntryType.Deprecation);
 
-		ParseFixtureVersion("1.7.0").Bundle.Entries.Should()
-			.Contain(e => e.Type == ChangelogEntryType.Enhancement)
-			.And.Contain(e => e.Type == ChangelogEntryType.KnownIssue);
+		ParseFixtureVersion("1.7.0").Bundle.Entries.Should().Contain(e => e.Type == ChangelogEntryType.Enhancement).And.Contain(
+			e => e.Type == ChangelogEntryType.KnownIssue
+		);
 
-		ParseFixtureVersion("1.4.1").Bundle.Entries.Should()
-			.ContainSingle().Which.Type.Should().Be(ChangelogEntryType.BugFix);
+		ParseFixtureVersion("1.4.1").Bundle.Entries.Should().ContainSingle().Which.Type.Should().Be(ChangelogEntryType.BugFix);
 	}
 
 	[Fact]
@@ -101,8 +100,7 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 	{
 		var entries = ParseFixtureVersion("1.7.0").Bundle.Entries;
 
-		entries.Should().AllSatisfy(e =>
-			e.Products.Should().ContainSingle().Which.ProductId.Should().Be("edot-java"));
+		entries.Should().AllSatisfy(e => e.Products.Should().ContainSingle().Which.ProductId.Should().Be("edot-java"));
 	}
 
 	[Fact]
@@ -149,7 +147,8 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 	[Fact]
 	public void Parse_NonVersionHeading_SkippedWithWarning()
 	{
-		var markdown = """
+		var markdown =
+			"""
 			## Overview [some-anchor]
 			Not release content.
 

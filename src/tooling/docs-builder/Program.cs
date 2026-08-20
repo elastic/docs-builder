@@ -22,10 +22,13 @@ await ArghApp.TryArghIntrinsicCommand(args);
 
 var argh = GlobalCliOptions.TryParseArgh(args, out var cliOptions);
 var builder = Host.CreateApplicationBuilder()
-	.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
-	{
-		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
-	})
+	.AddDocumentationServiceDefaults(
+		cliOptions ?? new GlobalCliOptions(),
+		(s, p) =>
+		{
+			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+		}
+	)
 	.AddDocumentationToolingDefaults()
 	.AddDocumentationOpenTelemetry(new OtelRegistration("docs-builder")
 	{
@@ -33,48 +36,60 @@ var builder = Host.CreateApplicationBuilder()
 		Tracing = (_, t) => t.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName),
 	});
 
-_ = builder.Services.AddArgh(args, app =>
-{
-	_ = app.UseGlobalOptions<GlobalCliOptions>();
+_ =
+	builder.Services.AddArgh(
+		args,
+		app =>
+		{
+			_ = app.UseGlobalOptions<GlobalCliOptions>();
 
-	_ = app.UseMiddleware<InfoLoggerMiddleware>();
-	_ = app.UseMiddleware<StopwatchMiddleware>();
-	_ = app.UseMiddleware<CatchExceptionMiddleware>();
-	_ = app.UseMiddleware<CheckForUpdatesMiddleware>();
+			_ = app.UseMiddleware<InfoLoggerMiddleware>();
+			_ = app.UseMiddleware<StopwatchMiddleware>();
+			_ = app.UseMiddleware<CatchExceptionMiddleware>();
+			_ = app.UseMiddleware<CheckForUpdatesMiddleware>();
 
-	// `docs-builder build` as a named command AND root default (`docs-builder` with no sub-command).
-	_ = app.MapAndRootAlias<IsolatedBuildCommand>();
+			// `docs-builder build` as a named command AND root default (`docs-builder` with no sub-command).
+			_ = app.MapAndRootAlias<IsolatedBuildCommand>();
 
-	_ = app.Map<DiffCommand>();
-	_ = app.Map<RefactorCommands>();
-	_ = app.Map<ServeCommand>();
-	_ = app.Map<IndexCommand>();
-	_ = app.MapNamespace<ChangelogCommands>("changelog");
-	_ = app.MapNamespace<InboundLinkCommands>("inbound-links");
+			_ = app.Map<DiffCommand>();
+			_ = app.Map<RefactorCommands>();
+			_ = app.Map<ServeCommand>();
+			_ = app.Map<IndexCommand>();
+			_ = app.MapNamespace<ChangelogCommands>("changelog");
+			_ = app.MapNamespace<InboundLinkCommands>("inbound-links");
 
-	_ = app.Map<AssembleOneShotCommand>();
+			_ = app.Map<AssembleOneShotCommand>();
 
-	// assembler commands (assemble merged into assembler default)
-	_ = app.MapNamespace<AssemblerCommands>("assembler", g =>
-	{
-		_ = g.MapNamespace<ContentSourceCommands>("content-source");
-		_ = g.MapNamespace<DeployCommands>("deploy");
-		_ = g.MapNamespace<BloomFilterCommands>("bloom-filter");
-		_ = g.MapNamespace<NavigationCommands>("navigation");
-		_ = g.MapNamespace<ConfigurationCommand>("config");
-		_ = g.Map<AssemblerIndexCommand>();
-		_ = g.Map<AssemblerAiEnrichCommand>();
-		_ = g.Map<AssemblerSitemapCommand>();
-	});
+			// assembler commands (assemble merged into assembler default)
+			_ =
+				app.MapNamespace<AssemblerCommands>(
+					"assembler",
+					g =>
+					{
+						_ = g.MapNamespace<ContentSourceCommands>("content-source");
+						_ = g.MapNamespace<DeployCommands>("deploy");
+						_ = g.MapNamespace<BloomFilterCommands>("bloom-filter");
+						_ = g.MapNamespace<NavigationCommands>("navigation");
+						_ = g.MapNamespace<ConfigurationCommand>("config");
+						_ = g.Map<AssemblerIndexCommand>();
+						_ = g.Map<AssemblerAiEnrichCommand>();
+						_ = g.Map<AssemblerSitemapCommand>();
+					}
+				);
 
-	// codex commands
-	_ = app.MapNamespace<CodexCommands>("codex", g =>
-	{
-		_ = g.Map<CodexIndexCommand>();
-		_ = g.Map<CodexUpdateRedirectsCommand>();
-		_ = g.MapNamespace<CodexSyncCommand>("sync");
-	});
-});
+			// codex commands
+			_ =
+				app.MapNamespace<CodexCommands>(
+					"codex",
+					g =>
+					{
+						_ = g.Map<CodexIndexCommand>();
+						_ = g.Map<CodexUpdateRedirectsCommand>();
+						_ = g.MapNamespace<CodexSyncCommand>("sync");
+					}
+				);
+		}
+	);
 
 using var host = builder.Build();
 await host.RunAsync();

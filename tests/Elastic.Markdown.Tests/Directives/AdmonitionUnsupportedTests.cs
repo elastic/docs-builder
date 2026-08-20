@@ -7,15 +7,15 @@ using Elastic.Markdown.Myst.Directives;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class AdmonitionUnsupportedTests(ITestOutputHelper output, string directive)
-	: DirectiveTest<UnsupportedDirectiveBlock>(output,
-$$"""
+public abstract class AdmonitionUnsupportedTests(ITestOutputHelper output, string directive) : DirectiveTest<UnsupportedDirectiveBlock>(
+	output,
+	$$"""
 :::{{{directive}}}
 This is an attention block
 :::
 A regular paragraph.
 """
-	)
+)
 {
 	[Fact]
 	public void ParsesAsUnknown() => Block.Should().NotBeNull();

@@ -5,9 +5,9 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
-using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -29,7 +29,8 @@ public partial class ApiPagesNavRenderingTests
 		var context = new BuildContext(
 			new DiagnosticsCollector([]),
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(fs));
+			TestHelpers.CreateConfigurationContext(fs)
+		);
 		var navigationItem = new LandingNavigationItem("/api/doc/elasticsearch/v9/").Index;
 		var model = new ApiLayoutViewModel
 		{

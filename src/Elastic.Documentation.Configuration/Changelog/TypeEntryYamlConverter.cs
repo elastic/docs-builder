@@ -175,9 +175,7 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 			foreach (var (subKey, subValue) in entry.Subtypes)
 			{
 				emitter.Emit(new Scalar(null, null, subKey, ScalarStyle.Plain, true, false));
-				var joinedValue = subValue?.Values is { Count: > 0 } vals
-					? string.Join(", ", vals)
-					: string.Empty;
+				var joinedValue = subValue?.Values is { Count: > 0 } vals ? string.Join(", ", vals) : string.Empty;
 				emitter.Emit(new Scalar(null, null, joinedValue, ScalarStyle.Plain, true, false));
 			}
 

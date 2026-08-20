@@ -23,10 +23,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public async Task ProjectlessRepositories_DifferentTrees_ProduceDifferentContentHashes()
 	{
 		var docSetNavigations = CreateMockDocSetNavigations(["codex-environments", "ml-team"], includeProject: false);
-		var first = docSetNavigations["codex-environments"]
-			.Should().BeAssignableTo<IRootNavigationItem<INavigationModel, INavigationItem>>().Subject;
-		var second = docSetNavigations["ml-team"]
-			.Should().BeAssignableTo<IRootNavigationItem<INavigationModel, INavigationItem>>().Subject;
+		var first = docSetNavigations["codex-environments"].Should().BeAssignableTo<IRootNavigationItem<INavigationModel, INavigationItem>>().Subject;
+		var second = docSetNavigations["ml-team"].Should().BeAssignableTo<IRootNavigationItem<INavigationModel, INavigationItem>>().Subject;
 
 		first.Id.Should().Be(second.Id);
 
@@ -42,7 +40,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void GroupNavigation_TopLevelItems_ContainsAllGroupMembers()
 	{
 		// Arrange: Create a codex with grouped repos
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "logs", Branch = "main", Group = "observability" }
@@ -56,18 +55,15 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 
 		// Assert: Group navigation's top-level items should contain all 3 repos
 		groupNav.NavigationItems.Should().HaveCount(3);
-		groupNav.NavigationItems.Select(i => i.Url).Should().BeEquivalentTo([
-			"/docs/r/apm-agent",
-			"/docs/r/uptime",
-			"/docs/r/logs"
-		]);
+		groupNav.NavigationItems.Select(i => i.Url).Should().BeEquivalentTo(["/docs/r/apm-agent", "/docs/r/uptime", "/docs/r/logs"]);
 	}
 
 	[Fact]
 	public void GroupNavigation_TopLevelItems_UseIndexH1()
 	{
 		// Arrange: Mock creates index.md with "# {repoName}" so h1 is "apm-agent" and "uptime"
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
 		];
@@ -78,10 +74,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		var groupNav = codexNav.GroupNavigations.First();
 
 		// Assert: Navigation titles use index.md h1, not display_name
-		groupNav.NavigationItems.Select(i => i.NavigationTitle).Should().BeEquivalentTo([
-			"apm-agent",
-			"uptime"
-		]);
+		groupNav.NavigationItems.Select(i => i.NavigationTitle).Should().BeEquivalentTo(["apm-agent", "uptime"]);
 	}
 
 	[Fact]
@@ -112,7 +105,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void GroupedRepo_NavigationRoot_IsGroupNavigation()
 	{
 		// Arrange
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
 		];
@@ -140,7 +134,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void CodexNavigation_TopLevelItems_ShowsGroupLinksAndUngroupedRepos()
 	{
 		// Arrange: Mix of grouped and ungrouped repos
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "standalone1", Branch = "main" },
@@ -169,7 +164,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void AllGroupMembers_ShareSameNavigationRoot()
 	{
 		// Arrange
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "repo1", Branch = "main", Group = "group1" },
 			new CodexDocumentationSetReference { Name = "repo2", Branch = "main", Group = "group1" },
 			new CodexDocumentationSetReference { Name = "repo3", Branch = "main", Group = "group1" }
@@ -193,7 +189,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void DifferentGroups_HaveDifferentNavigationRoots()
 	{
 		// Arrange
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "obs-repo", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "sec-repo", Branch = "main", Group = "security" }
 		];
@@ -215,7 +212,8 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void GroupLandingPage_HasAllMembersAsNavigationItems()
 	{
 		// Arrange
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "a", Branch = "main", Group = "tools" },
 			new CodexDocumentationSetReference { Name = "b", Branch = "main", Group = "tools" },
 			new CodexDocumentationSetReference { Name = "c", Branch = "main", Group = "tools" }
@@ -234,20 +232,16 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		groupNav.Index.NavigationTitle.Should().Be("Tools");
 	}
 
-	private static async Task<NavigationRenderResult> RenderNavigation(
-		IRootNavigationItem<INavigationModel, INavigationItem> navigation)
+	private static async Task<NavigationRenderResult> RenderNavigation(IRootNavigationItem<INavigationModel, INavigationItem> navigation)
 	{
 		var renderModel = NavigationRenderModel.Create(
 			tree: navigation,
 			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>(),
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false
+		);
 		var html = await _TocTree.Create(renderModel).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
-		return new NavigationRenderResult
-		{
-			Html = html,
-			Id = renderModel.ContentHash
-		};
+		return new NavigationRenderResult { Html = html, Id = renderModel.ContentHash };
 	}
 }

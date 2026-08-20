@@ -25,7 +25,8 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 			: new TagExternalDocsDisplay(
 				Tag.ExternalDocs.Url,
 				ApiPropertyTreeBuilder.IsElasticDocsUrl(Tag.ExternalDocs.Url),
-				string.IsNullOrWhiteSpace(Tag.ExternalDocs.Description) ? "Documentation" : Tag.ExternalDocs.Description);
+				string.IsNullOrWhiteSpace(Tag.ExternalDocs.Description) ? "Documentation" : Tag.ExternalDocs.Description
+			);
 
 	/// <inheritdoc />
 	protected override string? LayoutPageTitle => Tag.DisplayName;

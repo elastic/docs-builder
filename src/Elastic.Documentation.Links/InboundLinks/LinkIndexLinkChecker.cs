@@ -38,28 +38,39 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		if (fromRepository == null && toRepository == null)
 		{
-			fromRepository ??= GitCheckoutInformationFactory.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName;
+			fromRepository ??=
+				GitCheckoutInformationFactory.Create(
+					root,
+					fileSystem,
+					logFactory.CreateLogger(nameof(GitCheckoutInformation))
+				).RepositoryName;
 			if (fromRepository == null)
 				throw new Exception("Unable to determine repository name");
 		}
 		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
 		var crossLinks = await fetcher.FetchCrossLinks(ctx);
 		var resolver = new CrossLinkResolver(crossLinks);
-		var filter = new RepositoryFilter
-		{
-			LinksTo = toRepository,
-			LinksFrom = fromRepository
-		};
+		var filter = new RepositoryFilter { LinksTo = toRepository, LinksFrom = fromRepository };
 
 		return ValidateCrossLinks(collector, crossLinks, resolver, filter);
 	}
 
-	public async Task<bool> CheckWithLocalLinksJson(IDiagnosticsCollector collector, string? file = null, string? path = null, Cancel ctx = default)
+	public async Task<bool> CheckWithLocalLinksJson(
+		IDiagnosticsCollector collector,
+		string? file = null,
+		string? path = null,
+		Cancel ctx = default
+	)
 	{
 		file ??= ".artifacts/docs/html/links.json";
-		var root = !string.IsNullOrEmpty(path) ? fileSystem.DirectoryInfo.New(path) : fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var repository = GitCheckoutInformationFactory.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
-						?? throw new Exception("Unable to determine repository name");
+		var root = !string.IsNullOrEmpty(path)
+			? fileSystem.DirectoryInfo.New(path)
+			: fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		var repository = GitCheckoutInformationFactory.Create(
+			root,
+			fileSystem,
+			logFactory.CreateLogger(nameof(GitCheckoutInformation))
+		).RepositoryName ?? throw new Exception("Unable to determine repository name");
 
 		var localLinksJson = fileSystem.FileInfo.New(Path.Join(root.FullName, file));
 
@@ -81,7 +92,6 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 			return false;
 		}
 
-
 		_logger.LogInformation("Validating {File} in {Directory}", file, root.FullName);
 		var fetcher = new LinksIndexCrossLinkFetcher(logFactory, _linkIndexProvider);
 		var crossLinks = await fetcher.FetchCrossLinks(ctx);
@@ -101,11 +111,11 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 			throw;
 		}
 
-		_logger.LogInformation("Validating all cross links to {Repository}:// from all repositories published to link-index.json", repository);
-		var filter = new RepositoryFilter
-		{
-			LinksTo = repository
-		};
+		_logger.LogInformation(
+			"Validating all cross links to {Repository}:// from all repositories published to link-index.json",
+			repository
+		);
+		var filter = new RepositoryFilter { LinksTo = repository };
 
 		return ValidateCrossLinks(collector, crossLinks, resolver, filter);
 	}
@@ -140,19 +150,24 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 				var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{uri.Scheme}/main/links.json";
 				if (crossLinks.LinkIndexEntries.TryGetValue(uri.Scheme, out var linkIndexEntry))
 					linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkIndexEntry.Path}";
-				_ = resolver.TryResolve(s =>
-				{
-					if (s.Contains("is not a valid link in the"))
-					{
-						//
-						var error = $"'elastic/{repository}' links to unknown file: " + s;
-						error = error.Replace("is not a valid link in the", "in the");
-						collector.EmitError(linksJson, error);
-						return;
-					}
+				_ =
+					resolver.TryResolve(
+						s =>
+						{
+							if (s.Contains("is not a valid link in the"))
+							{
+								//
+								var error = $"'elastic/{repository}' links to unknown file: " + s;
+								error = error.Replace("is not a valid link in the", "in the");
+								collector.EmitError(linksJson, error);
+								return;
+							}
 
-					collector.EmitError(repository, s);
-				}, uri, out _);
+							collector.EmitError(repository, s);
+						},
+						uri,
+						out _
+					);
 			}
 		}
 

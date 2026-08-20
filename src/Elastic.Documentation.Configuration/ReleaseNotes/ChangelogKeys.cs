@@ -44,16 +44,13 @@ public static class ChangelogKeys
 	}
 
 	/// <summary>True when <paramref name="product"/> is a valid bundle product segment (<c>[a-zA-Z0-9_-]+</c>).</summary>
-	public static bool IsValidProduct([NotNullWhen(true)] string? product) =>
-		IsValidSegment(product, SegmentKind.Product);
+	public static bool IsValidProduct([NotNullWhen(true)] string? product) => IsValidSegment(product, SegmentKind.Product);
 
 	/// <summary>True when <paramref name="org"/> is a valid GitHub owner segment (<c>[a-zA-Z0-9-]+</c>).</summary>
-	public static bool IsValidOrg([NotNullWhen(true)] string? org) =>
-		IsValidSegment(org, SegmentKind.Org);
+	public static bool IsValidOrg([NotNullWhen(true)] string? org) => IsValidSegment(org, SegmentKind.Org);
 
 	/// <summary>True when <paramref name="repo"/> is a valid repository segment (<c>[a-zA-Z0-9._-]+</c>, not <c>.</c>/<c>..</c>).</summary>
-	public static bool IsValidRepo([NotNullWhen(true)] string? repo) =>
-		IsValidSegment(repo, SegmentKind.RepoOrBranch);
+	public static bool IsValidRepo([NotNullWhen(true)] string? repo) => IsValidSegment(repo, SegmentKind.RepoOrBranch);
 
 	/// <summary>
 	/// True when every <c>/</c>-delimited part of <paramref name="branch"/> is a valid repo-class segment.
@@ -78,25 +75,22 @@ public static class ChangelogKeys
 	/// </summary>
 	public static bool IsSafeFileName([NotNullWhen(true)] string? fileName) =>
 		!string.IsNullOrWhiteSpace(fileName)
-		&& fileName is not ("." or "..")
-		&& !fileName.Contains('/', StringComparison.Ordinal)
-		&& !fileName.Contains('\\', StringComparison.Ordinal);
+			&& fileName is not ("." or "..")
+			&& !fileName.Contains('/', StringComparison.Ordinal)
+			&& !fileName.Contains('\\', StringComparison.Ordinal);
 
 	/// <summary>The artifact-root key of an uploaded bundle file: <c>bundle/{product}/{file}</c>.</summary>
-	public static string BundleFileKey(string product, string fileName) =>
-		$"{BundlePrefix}{product}/{fileName}";
+	public static string BundleFileKey(string product, string fileName) => $"{BundlePrefix}{product}/{fileName}";
 
 	/// <summary>The artifact-root key of an uploaded changelog entry: <c>changelog/{org}/{repo}/{branch}/{file}</c>.</summary>
 	public static string ChangelogFileKey(string org, string repo, string branch, string fileName) =>
 		$"{ChangelogPrefix}{org}/{repo}/{branch}/{fileName}";
 
 	/// <summary>The bundle-index manifest key for a product group: <c>bundle/{product}/registry.json</c>.</summary>
-	public static string BundleRegistryKey(string productGroup) =>
-		$"{BundlePrefix}{productGroup}/{RegistryFileName}";
+	public static string BundleRegistryKey(string productGroup) => $"{BundlePrefix}{productGroup}/{RegistryFileName}";
 
 	/// <summary>The changelog-entry-index manifest key for an <c>{org}/{repo}/{branch}</c> group: <c>changelog/{group}/registry.json</c>.</summary>
-	public static string ChangelogRegistryKey(string poolGroup) =>
-		$"{ChangelogPrefix}{poolGroup}/{RegistryFileName}";
+	public static string ChangelogRegistryKey(string poolGroup) => $"{ChangelogPrefix}{poolGroup}/{RegistryFileName}";
 
 	/// <summary>
 	/// Extracts the product group from a <c>bundle/{product}/{file}</c> key, or null when
@@ -140,8 +134,7 @@ public static class ChangelogKeys
 	}
 
 	/// <summary>The CDN path segments of a product's bundle pool (<c>["bundle", product]</c>), for per-segment URI escaping.</summary>
-	public static IReadOnlyList<string> BundleSegments(string product) =>
-		["bundle", product];
+	public static IReadOnlyList<string> BundleSegments(string product) => ["bundle", product];
 
 	/// <summary>
 	/// The CDN path segments of an org/repo/branch changelog pool — <c>changelog</c>, org, repo, then each
@@ -172,9 +165,7 @@ public static class ChangelogKeys
 	}
 
 	private static bool IsBundleRegistry(string key) =>
-		TryGetRegistryGroup(key, BundlePrefix, out var group)
-		&& group.IndexOf('/') < 0
-		&& IsValidSegment(group, SegmentKind.Product);
+		TryGetRegistryGroup(key, BundlePrefix, out var group) && group.IndexOf('/') < 0 && IsValidSegment(group, SegmentKind.Product);
 
 	private static bool IsChangelogRegistry(string key) =>
 		TryGetRegistryGroup(key, ChangelogPrefix, out var group) && IsValidChangelogGroup(group);
@@ -218,8 +209,7 @@ public static class ChangelogKeys
 		return true;
 	}
 
-	private static bool IsValidSegment(string? segment, SegmentKind kind) =>
-		segment is not null && IsValidSegment(segment.AsSpan(), kind);
+	private static bool IsValidSegment(string? segment, SegmentKind kind) => segment is not null && IsValidSegment(segment.AsSpan(), kind);
 
 	private static bool IsValidSegment(ReadOnlySpan<char> segment, SegmentKind kind)
 	{
@@ -246,5 +236,4 @@ public static class ChangelogKeys
 			_ => false
 		};
 	}
-
 }

@@ -28,8 +28,8 @@ public class KnownIssuesMarkdownRenderer(IChangelogFileSystem fileSystem) : Mark
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-known-issues]");
 
 		// Check if all entries are hidden
-		var allEntriesHidden = knownIssues.Count > 0 && knownIssues.All(entry =>
-			ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+		var allEntriesHidden = knownIssues.Count > 0 &&
+			knownIssues.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 		if (knownIssues.Count > 0)
 		{
@@ -39,8 +39,9 @@ public class KnownIssuesMarkdownRenderer(IChangelogFileSystem fileSystem) : Mark
 			foreach (var areaGroup in groupedByArea)
 			{
 				// Check if all entries in this area group are hidden
-				var allGroupEntriesHidden = areaGroup.All(entry =>
-					ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+				var allGroupEntriesHidden = areaGroup.All(
+					entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context)
+				);
 
 				if (context.Subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
 				{
@@ -70,15 +71,21 @@ public class KnownIssuesMarkdownRenderer(IChangelogFileSystem fileSystem) : Mark
 						_ = sb.AppendLine();
 						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 
-						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
-							? "**Impact**<br>" + entry.Impact
-							: "% **Impact**<br>_Add a description of the impact_");
+						_ =
+							sb.AppendLine(
+								!string.IsNullOrWhiteSpace(entry.Impact)
+									? "**Impact**<br>" + entry.Impact
+									: "% **Impact**<br>_Add a description of the impact_"
+							);
 
 						_ = sb.AppendLine();
 
-						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Action)
-							? "**Action**<br>" + entry.Action
-							: "% **Action**<br>_Add a description of the what action to take_");
+						_ =
+							sb.AppendLine(
+								!string.IsNullOrWhiteSpace(entry.Action)
+									? "**Action**<br>" + entry.Action
+									: "% **Action**<br>_Add a description of the what action to take_"
+							);
 
 						_ = sb.AppendLine("::::");
 					}
@@ -97,7 +104,10 @@ public class KnownIssuesMarkdownRenderer(IChangelogFileSystem fileSystem) : Mark
 						}
 
 						// PR/Issue links with "For more information" pattern - indented for list continuation
-						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true));
+						RenderPrIssueLinks(
+							sb,
+							new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true)
+						);
 
 						// Impact and Action sections - indented for list continuation
 						if (!string.IsNullOrWhiteSpace(entry.Impact))

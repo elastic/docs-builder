@@ -77,7 +77,8 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 			var appliesText = LlmApplicabilityHelper.RenderForLlm(
 				appliesTo.AppliesTo,
 				renderer.BuildContext.VersionsConfiguration,
-				useInlineTag: false);
+				useInlineTag: false
+			);
 			if (!string.IsNullOrEmpty(appliesText))
 			{
 				renderer.EnsureBlockSpacing();
@@ -192,9 +193,7 @@ public class PlainTextTableRenderer : MarkdownObjectRenderer<PlainTextRenderer, 
 		// Get headers from first row
 		if (table.Count > 0 && table[0] is TableRow headerRow)
 		{
-			headers = headerRow.Cast<TableCell>()
-				.Select(cell => RenderCellContent(renderer, cell))
-				.ToArray();
+			headers = headerRow.Cast<TableCell>().Select(cell => RenderCellContent(renderer, cell)).ToArray();
 		}
 
 		// Render each data row as header: value pairs
@@ -244,15 +243,12 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 					renderer.WriteLine(imageBlock.Alt);
 				}
 				return;
-
 			case IncludeBlock includeBlock:
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
-
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
 				return;
-
 			case MathBlock mathBlock:
 				// Output math content as-is for search
 				if (!string.IsNullOrEmpty(mathBlock.Content))
@@ -261,19 +257,15 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 					renderer.WriteLine(mathBlock.Content);
 				}
 				return;
-
 			case TabSetBlock tabSetBlock:
 				WriteTabSetBlock(renderer, tabSetBlock);
 				return;
-
 			case TabItemBlock tabItemBlock:
 				WriteTabItemBlock(renderer, tabItemBlock);
 				return;
-
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
 				return;
-
 			// A hub page exists to answer generic "<product> docs" queries. Index the identity
 			// only. Section and card titles would let the hub compete with the pages it links to
 			// on specific queries, which is the opposite of what it is for.
@@ -285,7 +277,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 					renderer.WriteLine(heroBlock.Description);
 				renderer.EnsureLine();
 				return;
-
 			// Deliberately contributes nothing. Section, card, and link titles are the tokens
 			// that would let a hub outrank the pages it links to on a specific query.
 			case ExploreBlock:
@@ -294,7 +285,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			case GetStartedBlock:
 			case WhatsNewBlock:
 				return;
-
 			case AgentSkillBlock agentSkillBlock:
 				renderer.EnsureBlockSpacing();
 				renderer.WriteLine("Agent skill available");
@@ -379,15 +369,17 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			{
 				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
 				var document = MarkdownParser.ParseSnippetAsync(
-					block.Build, block.Context, snippet, parentPath,
-					block.Context.YamlFrontMatter, Cancel.None, block.Line
+					block.Build,
+					block.Context,
+					snippet,
+					parentPath,
+					block.Context.YamlFrontMatter,
+					Cancel.None,
+					block.Line
 				).GetAwaiter().GetResult();
 				_ = renderer.Render(document);
 			}
-			catch (Exception ex) when (ex is not OutOfMemoryException
-									   and not ThreadAbortException
-									   and not ThreadInterruptedException
-									   and not StackOverflowException)
+			catch (Exception ex) when (ex is not OutOfMemoryException and not ThreadAbortException and not ThreadInterruptedException and not StackOverflowException)
 			{
 				// Skip on error
 			}
@@ -408,10 +400,11 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
-			settings = SettingsBlock.PrepareSettingsForRendering(
-				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
-				block.Context
-			);
+			settings =
+				SettingsBlock.PrepareSettingsForRendering(
+					YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+					block.Context
+				);
 		}
 		catch
 		{
@@ -438,7 +431,13 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		renderer.EnsureLine();
 	}
 
-	private static void WriteSettingPlainText(PlainTextRenderer renderer, SettingsBlock block, Setting setting, string? parentName, string? product)
+	private static void WriteSettingPlainText(
+		PlainTextRenderer renderer,
+		SettingsBlock block,
+		Setting setting,
+		string? parentName,
+		string? product
+	)
 	{
 		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
 		renderer.EnsureLine();
@@ -482,7 +481,13 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		renderer.EnsureBlockSpacing();
 	}
 
-	private static void WriteSettingsMarkdownSnippet(PlainTextRenderer renderer, SettingsBlock block, string? markdown, string? label = null, string? product = null)
+	private static void WriteSettingsMarkdownSnippet(
+		PlainTextRenderer renderer,
+		SettingsBlock block,
+		string? markdown,
+		string? label = null,
+		string? product = null
+	)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
 			return;
@@ -502,7 +507,8 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			settingsSourceFile,
 			block.Context.YamlFrontMatter,
 			block.IncludeFrom,
-			MarkdownParser.Pipeline);
+			MarkdownParser.Pipeline
+		);
 		_ = renderer.Render(document);
 		renderer.EnsureBlockSpacing();
 	}
@@ -522,9 +528,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		}
 
 		// Read CSV data
-		var csvRows = CsvReader.ReadCsvFile(block.CsvFilePath, block.Separator, block.Build.ReadFileSystem)
-			.Take(block.MaxRows)
-			.ToList();
+		var csvRows = CsvReader.ReadCsvFile(block.CsvFilePath, block.Separator, block.Build.ReadFileSystem).Take(block.MaxRows).ToList();
 
 		if (csvRows.Count == 0)
 			return;
@@ -554,7 +558,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 		renderer.EnsureLine();
 	}
-
 }
 
 /// <summary>
