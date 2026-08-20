@@ -13,9 +13,9 @@
   "tasks": [
     {
       "name": "dotnet-lint",
-      "group": "pre-push",
+      "group": "pre-commit",
       "command": "bash",
-      "args": ["./build.sh", "lint", "${push-files}"],
+      "args": ["./build.sh", "lint"],
       "include": ["**/*.cs", "**/*.fs"]
     },
     {

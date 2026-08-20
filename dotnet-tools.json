@@ -36,6 +36,13 @@
         "release-notes"
       ],
       "rollForward": false
+    },
+    "curb-cli": {
+      "version": "0.2.0",
+      "commands": [
+        "curb"
+      ],
+      "rollForward": true
     }
   }
 }
