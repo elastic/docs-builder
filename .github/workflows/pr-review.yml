@@ -1,0 +1,62 @@
+name: PR Review
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+permissions:
+  actions: read
+  contents: read
+  copilot-requests: write
+  issues: read
+  pull-requests: write
+
+jobs:
+  run:
+    if: >-
+      github.event.pull_request.draft == false &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-auto-pr-review') &&
+      (github.event.action != 'labeled' && github.event.action != 'unlabeled' || github.event.label.name == 'skip-auto-pr-review')
+    uses: elastic/ai-github-actions/.github/workflows/gh-aw-pr-review.lock.yml@v0
+    with:
+      allowed-bot-users: "github-actions[bot],dependabot[bot]"
+      intensity: aggressive
+      minimum_severity: nitpick
+      additional-instructions: |
+        This is the elastic/docs-builder repo — Elastic's documentation build toolchain.
+        It processes Markdown from multiple repos into a unified documentation site,
+        validates cross-repo references, and ships as native AOT binaries for CI.
+
+        ## Language and frameworks
+        - C# (.NET) with xUnit v3 + AwesomeAssertions for tests. Do NOT suggest TUnit APIs — the migration hasn't happened yet.
+        - TypeScript/React frontend under src/Elastic.Documentation.Site/.
+        - Test naming convention: Method_Scenario_Expected.
+
+        ## AOT / source-generated JSON (critical)
+        Both CLIs (docs-builder, essc) and the Lambda functions are Native AOT or AOT-compatible.
+        Any new serialized type MUST be registered with [JsonSerializable] on the relevant
+        JsonSerializerContext (see src/Elastic.Documentation/Serialization/SourceGenerationContext.cs).
+        Reflection-based serialization silently passes compile-time but fails at AOT runtime.
+        Flag any use of JsonSerializer without a matching context registration.
+
+        ## Code style rules to enforce
+        - Public async methods: PascalCaseAsync. Private async: PascalCase. Never .Result/.Wait().
+        - Always accept CancellationToken. Use ConfigureAwait(false) in library code.
+        - Max 4 parameters — use a record/options object beyond that.
+        - Boolean parameters must be named at call sites.
+        - Never return null from collections — return [].
+        - Guard clauses first, happy path last.
+        - Max 5–7 branches per method.
+        - No #region. No multi-paragraph docstrings.
+
+        ## Architecture boundaries
+        - Elastic.Documentation is the domain project — don't suggest extracting a .Domain sub-project.
+        - Heavy dependencies belong in Tooling projects, not the core domain.
+        - Never strip attributes (e.g. [CommandIntent], [MutationScope], [RequiresAuth]) from types to satisfy architectural moves.
+        - The shared search contract (src/services/search/Elastic.Documentation.Search.Contract/)
+          must stay dependency-light — both the docs indexer and essc reference it.
+
+        ## Destructive commands
+        Flag any changes to commands tagged [CommandIntent(Intent.Destructive)],
+        [MutationScope(MutationScope.Global)], or [RequiresAuth] — these have high blast radius
+        (mass S3 deletes, repo-wide link rewrites). Similarly flag changes to essc IndicesCommands.cs
+        that affect unify/copy/cleanup/sync-remote against production clusters.
