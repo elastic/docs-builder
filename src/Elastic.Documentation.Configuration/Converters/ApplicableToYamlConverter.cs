@@ -9,7 +9,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-// ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
+// ReSharper disable once CheckNamespace — namespace matches ApplicableTo, not the physical folder
 #pragma warning disable IDE0130
 namespace Elastic.Documentation.AppliesTo;
 
