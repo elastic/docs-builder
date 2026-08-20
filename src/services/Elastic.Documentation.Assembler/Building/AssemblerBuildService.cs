@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Text;
 using Actions.Core.Services;
@@ -107,7 +108,8 @@ public class AssemblerBuildService(
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
-		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
+		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
+		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix, navigationPreviewEnabled);
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
@@ -132,6 +134,11 @@ public class AssemblerBuildService(
 
 		if (exporters.Contains(Exporter.Html))
 		{
+			var openApiStopwatch = Stopwatch.StartNew();
+			await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, assembleSources, ctx);
+			openApiStopwatch.Stop();
+			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
+
 			// Build-time sitemap uses current date as placeholder for backwards compatibility.
 			// Production sitemap with correct content_last_updated dates is generated via
 			// `assembler sitemap` after ES indexing, which overwrites this file.

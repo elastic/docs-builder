@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Markdown.Myst;
@@ -33,7 +34,8 @@ public record CliCommandFile : IO.MarkdownFile
 		string[]? reservedMetaCommands = null,
 		IReadOnlyList<(string Segment, List<CliParamSchema>? Options)>? ancestorNamespaceOptions = null,
 		List<CliParamSchema>? globalOptions = null,
-		List<CliShortcutSchema>? shortcuts = null
+		List<CliShortcutSchema>? shortcuts = null,
+		ApplicableTo? appliesTo = null
 	) : base(sourceFile, rootPath, parser, build)
 	{
 		_command = command;
@@ -45,6 +47,7 @@ public record CliCommandFile : IO.MarkdownFile
 		_globalOptions = globalOptions;
 		_shortcuts = shortcuts;
 		Title = command.Name;
+		FallbackAppliesTo = appliesTo;
 	}
 
 	public override string NavigationTitle => $"[cmd]{_command.Name}";
@@ -68,8 +71,10 @@ public record CliCommandFile : IO.MarkdownFile
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
 		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
-		return CliMarkdownGenerator.CommandPage(_command, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
+		var body = CliMarkdownGenerator.CommandPage(_command, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
 			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error),
 			_ancestorNamespaceOptions, _globalOptions, _shortcuts);
+		// Prepend supplemental front matter so applies_to (or any other field) in cmd-*.md overrides the fallback
+		return supplemental?.FrontMatter is { } fm ? $"{fm}\n\n{body}" : body;
 	}
 }

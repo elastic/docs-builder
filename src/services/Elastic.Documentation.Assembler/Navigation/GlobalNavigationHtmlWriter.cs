@@ -46,7 +46,9 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		NavigationRenderModel.Create(
 			tree: group,
 			topLevelItems: globalNavigation.TopLevelItems,
-			isUsingNavigationDropdown: true,
+			// The top nav (navigation-preview) replaces the sidebar dropdown.
+			// Flag off → dropdown on (matches main); flag on → dropdown off, top nav takes over.
+			isUsingNavigationDropdown: globalNavigation.TopNav is null,
 			isPrimaryNavEnabled: true,
 			isGlobalAssemblyBuild: true);
 }
