@@ -5,7 +5,7 @@
 /**
  * Jest transformer for SVG files.
  * Converts SVG files into React components using @svgr/core,
- * matching the behavior of @parcel/transformer-svg-react.
+ * matching the Vite SVGR plugin behavior.
  *
  * Based on: https://stackoverflow.com/questions/58603201/jest-cannot-load-svg-file
  */
