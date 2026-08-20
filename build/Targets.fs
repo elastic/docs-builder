@@ -34,14 +34,14 @@ let private version _ =
     printfn $"Semantic version: %s{version.Normalize()}"
 
 let private format (_formatArgs: ParseResults<FormatArgs>) =
-    exec { run "dotnet" ["tool"; "run"; "curb"; "format"; "."] }
+    exec { run "dotnet" ["curb"; "format"; "."] }
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
 let private lint (_lintArgs: ParseResults<LintArgs>) =
-    match exec { exit_code_of "dotnet" "tool" "run" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
+    match exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
     | 0 -> printfn "No formatting violations found."
-    | _ -> failwithf "Formatting violations found. Run `dotnet tool run curb format .` to fix, or specify -c to ./build.sh to skip this check"
+    | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
 
 let private pristineCheck (arguments:ParseResults<Build>) =
     let skipCheck = arguments.TryGetResult Skip_Dirty_Check |> Option.isSome
@@ -50,10 +50,10 @@ let private pristineCheck (arguments:ParseResults<Build>) =
     | _, true  -> printfn "The checkout folder does not have pending changes, proceeding"
     | _ -> failwithf "The checkout folder has pending changes, aborting. Specify -c to ./build.sh to skip this check"
     
-    match skipCheck, (exec { exit_code_of "dotnet" "tool" "run" "curb" "check" "." "--cache" ".artifacts/curb.cache" }) with
+    match skipCheck, (exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" }) with
     | true, _ -> printfn "Skip formatting checks since -c is specified"
     | _, 0  -> printfn "No formatting violations found."
-    | _ -> failwithf "Formatting violations found. Run `dotnet tool run curb format .` to fix, or specify -c to ./build.sh to skip this check"
+    | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
 
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/tooling/docs-builder/docs-builder.csproj" }

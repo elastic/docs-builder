@@ -131,7 +131,7 @@ jobs:
         uses: ./.github/actions/bootstrap
 
       - name: Lint
-        run: dotnet tool run curb check .
+        run: dotnet curb check .
 
   build:
     runs-on: ${{ matrix.os }}
