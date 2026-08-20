@@ -84,7 +84,8 @@ public class ApplicableToJsonConverterRoundTripTests
 			{
 				Elasticsearch = AppliesCollection.GenerallyAvailable,
 				Observability = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = AllVersionsSpec.Instance }]),
-				Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"1.0.0" }])
+				Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"1.0.0" }]),
+				VectorDatabase = AppliesCollection.GenerallyAvailable
 			}
 		};
 
@@ -96,6 +97,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Serverless.Elasticsearch.Should().BeEquivalentTo(original.Serverless.Elasticsearch);
 		deserialized.Serverless.Observability.Should().BeEquivalentTo(original.Serverless.Observability);
 		deserialized.Serverless.Security.Should().BeEquivalentTo(original.Serverless.Security);
+		deserialized.Serverless.VectorDatabase.Should().BeEquivalentTo(original.Serverless.VectorDatabase);
 	}
 
 	[Fact]
@@ -240,7 +242,8 @@ public class ApplicableToJsonConverterRoundTripTests
 			{
 				Elasticsearch = AppliesCollection.GenerallyAvailable,
 				Observability = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = AllVersionsSpec.Instance }]),
-				Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"1.0.0" }])
+				Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"1.0.0" }]),
+				VectorDatabase = AppliesCollection.GenerallyAvailable
 			},
 			Product = AppliesCollection.GenerallyAvailable,
 			ProductApplicability = new ProductApplicability
@@ -264,6 +267,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		deserialized.Serverless.Elasticsearch.Should().BeEquivalentTo(original.Serverless.Elasticsearch);
 		deserialized.Serverless.Observability.Should().BeEquivalentTo(original.Serverless.Observability);
 		deserialized.Serverless.Security.Should().BeEquivalentTo(original.Serverless.Security);
+		deserialized.Serverless.VectorDatabase.Should().BeEquivalentTo(original.Serverless.VectorDatabase);
 		deserialized.Product.Should().BeEquivalentTo(original.Product);
 		deserialized.ProductApplicability.Should().NotBeNull();
 		deserialized.ProductApplicability.Ecctl.Should().BeEquivalentTo(original.ProductApplicability.Ecctl);

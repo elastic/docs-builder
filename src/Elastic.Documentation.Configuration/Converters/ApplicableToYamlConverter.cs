@@ -19,7 +19,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	[
 		"stack", "deployment", "serverless", "product", // Applicability categories
 		"ece", "eck", "ess", "ech", "self", // Deployment options ("ech" aliasing to "ess")
-		"elasticsearch", "observability", "security", // Serverless flavors
+		"elasticsearch", "observability", "security", "vectordb", // Serverless flavors
 		.. productKeys
 	];
 
@@ -134,7 +134,9 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			applicableTo.Deployment = deployment;
 
 		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
-			applicableTo.Serverless = serverless;
+			applicableTo.Serverless = applicableTo.Serverless is not null
+				? MergeServerlessProjectApplicability(applicableTo.Serverless, serverless)
+				: serverless;
 
 		if (TryGetProductApplicability(dictionary, diagnostics, out var product))
 			applicableTo.ProductApplicability = product;
@@ -143,6 +145,17 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			applicableTo.Diagnostics = new ApplicabilityDiagnosticsCollection(diagnostics);
 		return applicableTo;
 	}
+
+	private static ServerlessProjectApplicability MergeServerlessProjectApplicability(
+		ServerlessProjectApplicability target,
+		ServerlessProjectApplicability overrides) =>
+		target with
+		{
+			Elasticsearch = overrides.Elasticsearch ?? target.Elasticsearch,
+			Observability = overrides.Observability ?? target.Observability,
+			Security = overrides.Security ?? target.Security,
+			VectorDatabase = overrides.VectorDatabase ?? target.VectorDatabase
+		};
 
 	private static void AssignDeploymentType(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
 	{
@@ -205,7 +218,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			{
 				Elasticsearch = applies,
 				Observability = applies,
-				Security = applies
+				Security = applies,
+				VectorDatabase = applies
 			};
 		}
 		else if (serverless is Dictionary<object, object?> serverlessDictionary)
@@ -262,7 +276,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			["elasticsearch"] = a => serverlessAvailability.Elasticsearch = a,
 			["observability"] = a => serverlessAvailability.Observability = a,
-			["security"] = a => serverlessAvailability.Security = a
+			["security"] = a => serverlessAvailability.Security = a,
+			["vectordb"] = a => serverlessAvailability.VectorDatabase = a
 		};
 
 		foreach (var (key, action) in mapping)
@@ -330,7 +345,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	}
 
 	private static readonly HashSet<string> VersionlessKeys =
-		["ess", "ech", "serverless", "elasticsearch", "observability", "security"];
+		["ess", "ech", "serverless", "elasticsearch", "observability", "security", "vectordb"];
 
 	private static bool TryGetApplicabilityOverTime(Dictionary<object, object?> dictionary, string key, List<(Severity, string)> diagnostics,
 		out AppliesCollection? availability)

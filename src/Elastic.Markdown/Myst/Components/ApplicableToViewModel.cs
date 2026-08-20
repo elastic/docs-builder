@@ -42,7 +42,8 @@ public class ApplicableToViewModel
 	{
 		[s => s.Elasticsearch] = ApplicabilityMappings.ServerlessElasticsearch,
 		[s => s.Observability] = ApplicabilityMappings.ServerlessObservability,
-		[s => s.Security] = ApplicabilityMappings.ServerlessSecurity
+		[s => s.Security] = ApplicabilityMappings.ServerlessSecurity,
+		[s => s.VectorDatabase] = ApplicabilityMappings.ServerlessVectorDatabase
 	};
 
 	private static readonly Dictionary<Func<ProductApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> ProductMappings = new()
@@ -90,12 +91,7 @@ public class ApplicableToViewModel
 	{
 		var rawItems = new List<RawApplicabilityItem>();
 
-		if (AppliesTo.Serverless is not null)
-		{
-			rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
-				? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
-				: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
-		}
+		CollectServerless(rawItems);
 
 		if (AppliesTo.Stack is not null)
 			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
@@ -129,12 +125,7 @@ public class ApplicableToViewModel
 	{
 		var rawItems = new List<RawApplicabilityItem>();
 
-		if (AppliesTo.Serverless is not null)
-		{
-			rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
-				? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
-				: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
-		}
+		CollectServerless(rawItems);
 
 		if (AppliesTo.Deployment is not null)
 			rawItems.AddRange(CollectFromMappings(AppliesTo.Deployment, DeploymentMappings));
@@ -153,6 +144,20 @@ public class ApplicableToViewModel
 		return rawItems
 			.Where(i => i.Applicability.Lifecycle != ProductLifecycle.Unavailable)
 			.ToList();
+	}
+
+	/// <summary>
+	/// When all serverless project types share a lifecycle, collapse to a generic Serverless badge.
+	/// Otherwise emit per-project badges, including Vector Database.
+	/// </summary>
+	private void CollectServerless(List<RawApplicabilityItem> rawItems)
+	{
+		if (AppliesTo.Serverless is null)
+			return;
+
+		rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
+			? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+			: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
 	}
 
 	private static bool IsGenericGa(AppliesCollection collection)
