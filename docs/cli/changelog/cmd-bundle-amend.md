@@ -87,7 +87,7 @@ If the bundle contains the file with a different checksum, the command fails unl
 
 Git-ref bundles created with `--infer` (or `infer_missing_changelogs: true`) can include entries that were synthesized from GitHub PR metadata. Those entries live only in the bundle. Their `file.name` is `{pull-request-number}.yaml`, and there is no changelog YAML on disk or on the CDN whose checksum you can match.
 
-`--remove` still requires a file that exists. Create a dummy file with that name and pass `--force` so the command excludes by filename only. Refer to [](/cli/changelog/cmd-bundle.md#inferred-entries) for the full workflow, including how to replace inferred copy with a real changelog.
+`--remove` still requires a file that exists. Create a dummy file with that name and pass `--force` so the command excludes by filename only. Refer to [](/cli/changelog/bundle.md#inferred-entries) for the full workflow, including how to replace inferred copy with a real changelog.
 
 ### Add multiple changelogs to a bundle
 

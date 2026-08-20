@@ -86,9 +86,15 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		return service;
 	}
 
-	private async Task<string> WriteProfileConfig(string outputDir, bool inferMissingChangelogs = false)
+	private async Task<string> WriteProfileConfig(
+		string outputDir,
+		bool inferMissingChangelogs = false,
+		bool? bundleInferMissingChangelogs = null)
 	{
-		var inferYaml = inferMissingChangelogs.ToString().ToLowerInvariant();
+		var profileInferYaml = inferMissingChangelogs.ToString().ToLowerInvariant();
+		var bundleInferLine = bundleInferMissingChangelogs is { } bundleInfer
+			? $"\n  infer_missing_changelogs: {bundleInfer.ToString().ToLowerInvariant()}"
+			: "";
 		// language=yaml
 		var configContent =
 			$$"""
@@ -100,11 +106,11 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 			bundle:
 			  output_directory: PLACEHOLDER
 			  repo: widget
-			  owner: elastic
+			  owner: elastic{{bundleInferLine}}
 			  profiles:
 			    promotion:
 			      output_products: "cloud-hosted {version}"
-			      infer_missing_changelogs: {{inferYaml}}
+			      infer_missing_changelogs: {{profileInferYaml}}
 			""".Replace("PLACEHOLDER", outputDir);
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
@@ -409,8 +415,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
-		A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.MustNotHaveHappened();
+		A.CallTo(prService).MustNotHaveHappened();
 
 		Collector.Diagnostics.Should().Contain(d =>
 			d.Severity == Severity.Warning &&
@@ -491,6 +496,53 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		bundle.Should().Contain("Faster hosted search");
 		bundle.Should().Contain("Sharper autocomplete");
 		bundle.Should().Contain("name: 300.yaml");
+	}
+
+	[Fact]
+	public async Task ProfileMode_ProfileFalseOverridesBundleTrue_OmitsUnmatchedPr()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(
+			outputDir,
+			inferMissingChangelogs: false,
+			bundleInferMissingChangelogs: true);
+
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/300", A<string?>._, A<string?>._, A<Cancel>._))
+			.Returns(new GitHubPrInfo
+			{
+				Title = "Sharper autocomplete",
+				Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+				Labels = [">feature"],
+				LinkedIssues = []
+			});
+
+		var service = Service(PoolHandler(), RangeService(100, 300), prService);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("No changelog file found for PR: https://github.com/elastic/widget/pull/300"));
+		A.CallTo(prService).MustNotHaveHappened();
+
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			TestContext.Current.CancellationToken);
+		bundle.Should().Contain("Faster hosted search");
+		bundle.Should().NotContain("300.yaml");
+		bundle.Should().NotContain("Sharper autocomplete");
 	}
 
 	[Fact]

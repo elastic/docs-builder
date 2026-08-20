@@ -138,7 +138,7 @@ docs-builder changelog bundle-amend ./docs/releases/cloud-hosted-2026-08-13.yaml
 
 To replace the inferred copy, exclude it that way, then `--add` a real changelog YAML. The added file's on-disk name becomes the new `file.name`.
 
-If you can, author a real changelog (`changelog add`, submit, and upload) so the next git-ref bundle picks it up from the CDN. You can then amend it with a normal `--remove` / `--add` path. Refer to [](/cli/changelog/cmd-bundle-amend.md#inferred-git-ref-entry).
+If you can, author a real changelog (`changelog add`, submit, and upload) so the next git-ref bundle picks it up from the CDN. You can then amend it with a normal `--remove` / `--add` path. Refer to [](/cli/changelog/bundle-amend.md#inferred-git-ref-entry).
 
 ## Bundles are self-contained
 

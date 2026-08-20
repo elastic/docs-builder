@@ -953,8 +953,11 @@ public partial class ChangelogBundlingService(
 			? input.SuppressReleaseDate
 			: input.SuppressReleaseDate || !(config.Bundle.ReleaseDates ?? true);
 
-		var inferMissingChangelogs = input.InferMissingChangelogs
-			|| (config.Bundle.InferMissingChangelogs ?? false);
+		// In profile mode, profile has already resolved inheritance (profile ?? bundle), so skip
+		// re-applying the bundle-level flag — otherwise profile false cannot override bundle true.
+		var inferMissingChangelogs = !string.IsNullOrWhiteSpace(input.Profile)
+			? input.InferMissingChangelogs
+			: input.InferMissingChangelogs || (config.Bundle.InferMissingChangelogs ?? false);
 
 		return input with
 		{
