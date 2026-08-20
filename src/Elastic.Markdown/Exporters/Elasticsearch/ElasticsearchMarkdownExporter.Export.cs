@@ -100,6 +100,8 @@ public partial class ElasticsearchMarkdownExporter
 		doc.Navigation.Depth = navigationItem?.NavigationDepth ?? 20;
 		if (doc.ContentType == "api" && IsVersionedApiPath(doc.Path))
 			doc.Navigation.Depth = 40;
+		if (doc.ContentType == "api" && IsProductLandingPath(doc.Path))
+			doc.Navigation.Depth = IsVersionedApiPath(doc.Path) ? 30 : 10;
 		doc.Navigation.TableOfContents = navigationItem switch
 		{
 			// release-notes get effectively flattened by product, so we to dampen its effect slightly
@@ -133,6 +135,20 @@ public partial class ElasticsearchMarkdownExporter
 				&& parts[1] == "api"
 				&& parts[2] == "doc"
 				&& parts[4].Length > 1
+				&& parts[4][0] == 'v'
+				&& char.IsDigit(parts[4][1]);
+		}
+
+		static bool IsProductLandingPath(string path)
+		{
+			var parts = path.Split('/', RemoveEmptyEntries);
+			if (parts.Length is not (4 or 5))
+				return false;
+			if (parts[0] != "docs" || parts[1] != "api" || parts[2] != "doc")
+				return false;
+			if (parts.Length == 4)
+				return true;
+			return parts[4].Length > 1
 				&& parts[4][0] == 'v'
 				&& char.IsDigit(parts[4][1]);
 		}

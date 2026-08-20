@@ -106,8 +106,11 @@ public class OpenApiDocumentExporterVersionIndexTests
 
 		docs.Select(d => d.Path).Should().BeEquivalentTo(
 		[
+			"/docs/api/doc/elasticsearch",
 			"/docs/api/doc/elasticsearch/operation/operation-ping-main",
+			"/docs/api/doc/elasticsearch/v9",
 			"/docs/api/doc/elasticsearch/v9/operation/operation-ping-9",
+			"/docs/api/doc/elasticsearch/v8",
 			"/docs/api/doc/elasticsearch/v8/operation/operation-ping-8"
 		]);
 	}
@@ -141,8 +144,11 @@ public class OpenApiDocumentExporterVersionIndexTests
 		await foreach (var doc in exporter.ExportDocuments([source], TestContext.Current.CancellationToken))
 			docs.Add(doc);
 
-		docs.Should().ContainSingle();
-		docs[0].Path.Should().Be("/docs/api/doc/cloud-serverless/operation/operation-ping");
+		docs.Select(d => d.Path).Should().BeEquivalentTo(
+		[
+			"/docs/api/doc/cloud-serverless",
+			"/docs/api/doc/cloud-serverless/operation/operation-ping"
+		]);
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

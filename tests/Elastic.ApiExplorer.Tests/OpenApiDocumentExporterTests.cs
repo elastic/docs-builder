@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
 using static System.StringComparison;
@@ -53,11 +54,12 @@ public class OpenApiDocumentExporterTests
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
 		var docs = exporter.ConvertToDocuments(PingSpec(), ElasticsearchContext()).ToArray();
+		var operations = OperationDocs(docs);
 
-		docs.Should().ContainSingle();
-		docs[0].Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-ping");
-		docs[0].Title.Should().Be("Ping - Elasticsearch API");
-		docs[0].Parents.Should().Contain(p => p.Path == "/docs/api/doc/elasticsearch");
+		operations.Should().ContainSingle();
+		operations[0].Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-ping");
+		operations[0].Title.Should().Be("Ping - Elasticsearch API");
+		operations[0].Parents.Should().Contain(p => p.Path == "/docs/api/doc/elasticsearch");
 	}
 
 	[Fact]
@@ -66,11 +68,12 @@ public class OpenApiDocumentExporterTests
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
 		var docs = exporter.ConvertToDocuments(PingSpec(), ElasticsearchContext("8", new SemVersion(8, 19, 0))).ToArray();
+		var operations = OperationDocs(docs);
 
-		docs.Should().ContainSingle();
-		docs[0].Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-ping");
-		docs[0].Title.Should().Be("Ping - Elasticsearch 8.x API");
-		docs[0].Parents.Should().Contain(p => p.Path == "/docs/api/doc/elasticsearch/v8");
+		operations.Should().ContainSingle();
+		operations[0].Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-ping");
+		operations[0].Title.Should().Be("Ping - Elasticsearch 8.x API");
+		operations[0].Parents.Should().Contain(p => p.Path == "/docs/api/doc/elasticsearch/v8");
 	}
 
 	[Fact]
@@ -81,7 +84,7 @@ public class OpenApiDocumentExporterTests
 
 		var docs = exporter.ConvertToDocuments(spec, ElasticsearchContext("8", new SemVersion(8, 18, 0))).ToArray();
 
-		docs.Should().BeEmpty();
+		OperationDocs(docs).Should().BeEmpty();
 	}
 
 	[Fact]
@@ -101,7 +104,45 @@ public class OpenApiDocumentExporterTests
 
 		var docs = exporter.ConvertToDocuments(spec, ElasticsearchContext("8", new SemVersion(8, 19, 0))).ToArray();
 
+		OperationDocs(docs).Should().ContainSingle();
+	}
+
+	[Fact]
+	public void ConvertToDocuments_Main_EmitsProductLanding()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+
+		var docs = exporter.ConvertToDocuments(PingSpec(), ElasticsearchContext()).ToArray();
+
+		docs[0].Path.Should().Be("/docs/api/doc/elasticsearch");
+		docs[0].Title.Should().Be("Elasticsearch API");
+		docs[0].SearchTitle.Should().Be("Elasticsearch API");
+		docs[0].Parents.Should().Equal([new ParentDocument { Title = "API Reference", Path = "/docs/api" }]);
+	}
+
+	[Fact]
+	public void ConvertToDocuments_NumericMoniker_EmitsVersionedLanding()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+
+		var docs = exporter.ConvertToDocuments(PingSpec(), ElasticsearchContext("8", new SemVersion(8, 19, 0))).ToArray();
+
+		docs[0].Path.Should().Be("/docs/api/doc/elasticsearch/v8");
+		docs[0].Title.Should().Be("Elasticsearch 8.x API");
+	}
+
+	[Fact]
+	public void ConvertToDocuments_AddedInAfterCeiling_StillEmitsLanding()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+		var spec = PingSpec("Generally available; Added in 8.19.0");
+
+		var docs = exporter.ConvertToDocuments(spec, ElasticsearchContext("8", new SemVersion(8, 18, 0))).ToArray();
+
 		docs.Should().ContainSingle();
+		docs[0].Path.Should().Be("/docs/api/doc/elasticsearch/v8");
+		docs[0].Title.Should().Be("Elasticsearch 8.x API");
+		OperationDocs(docs).Should().BeEmpty();
 	}
 
 	[Fact]
@@ -118,8 +159,9 @@ public class OpenApiDocumentExporterTests
 
 		var docs = exporter.ConvertToDocuments(spec, ElasticsearchContext()).ToArray();
 
-		docs.Should().ContainSingle();
-		var doc = docs[0];
+		var operations = OperationDocs(docs);
+		operations.Should().ContainSingle();
+		var doc = operations[0];
 		doc.Description.Should().NotContain("<div>");
 		doc.Description.Should().NotContain("<span");
 		doc.Description.Should().Contain("- **GET** `/_ping`");
@@ -129,4 +171,7 @@ public class OpenApiDocumentExporterTests
 			.ToList();
 		lastNonEmptyLines.Any(l => l.StartsWith("- **", InvariantCulture)).Should().BeTrue();
 	}
+
+	private static DocumentationDocument[] OperationDocs(IEnumerable<DocumentationDocument> docs) =>
+		docs.Where(d => d.Path.Contains("/operation/", Ordinal)).ToArray();
 }

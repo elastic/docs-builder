@@ -20,7 +20,7 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Export;
 
 /// <summary>
-/// Converts OpenAPI operations into search documents from the version-index catalog.
+/// Converts OpenAPI specs into search documents from the version-index catalog.
 /// </summary>
 public partial class OpenApiDocumentExporter(
 	VersionsConfiguration versionsConfiguration,
@@ -135,6 +135,9 @@ public partial class OpenApiDocumentExporter(
 		var productLabel = convert.VersionMoniker == "main"
 			? $"{convert.DisplayName} API"
 			: $"{convert.DisplayName} {convert.VersionMoniker}.x API";
+		var inference = documentInferrer?.InferForOpenApi(convert.ProductId);
+
+		yield return CreateProductLanding(openApiDocument, productUrl, productLabel, inference);
 
 		foreach (var path in openApiDocument.Paths)
 		{
@@ -187,7 +190,6 @@ public partial class OpenApiDocumentExporter(
 					.ToArray() ?? [];
 
 				var applies = ExtractApplicableTo(operation.Value);
-				var inference = documentInferrer?.InferForOpenApi(convert.ProductId);
 
 				yield return new DocumentationDocument
 				{
@@ -216,6 +218,44 @@ public partial class OpenApiDocumentExporter(
 				};
 			}
 		}
+	}
+
+	private static DocumentationDocument CreateProductLanding(
+		OpenApiDocument openApiDocument,
+		string productUrl,
+		string productLabel,
+		DocumentInferenceResult? inference)
+	{
+		var bodyBuilder = new StringBuilder();
+		_ = bodyBuilder.AppendLine($"# {productLabel}");
+		var description = openApiDocument.Info?.Description;
+		if (!string.IsNullOrEmpty(description))
+		{
+			_ = bodyBuilder.AppendLine();
+			_ = bodyBuilder.AppendLine(description);
+		}
+
+		return new DocumentationDocument
+		{
+			ContentType = "api",
+			Path = productUrl,
+			Title = productLabel,
+			SearchTitle = productLabel,
+			Body = bodyBuilder.ToString(),
+			Links = [],
+			Parents =
+			[
+				new ParentDocument { Title = "API Reference", Path = "/docs/api" }
+			],
+			Product = inference?.Product?.Id,
+			RelatedProducts = inference?.RelatedProducts.Count > 0
+				? inference.RelatedProducts.Select(p => new IndexedProduct
+				{
+					Id = p.Id,
+					Repository = p.Repository ?? inference.Repository
+				}).ToArray()
+				: null
+		};
 	}
 
 	private static bool ShouldIncludeOperation(OpenApiOperation operation, SemVersion filterCeiling)

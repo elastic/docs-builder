@@ -48,9 +48,10 @@ public class OpenApiOperationIdSearchTitleTests
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
 		var docs = exporter.ConvertToDocuments(CreateBulkSpec(), ElasticsearchMain()).ToArray();
+		var operations = docs.Where(d => d.Path.Contains("/operation/", StringComparison.Ordinal)).ToArray();
 
-		docs.Should().HaveCount(1);
-		var doc = docs[0];
+		operations.Should().HaveCount(1);
+		var doc = operations[0];
 
 		doc.Title.Should().Be("Bulk index or delete documents - Elasticsearch API");
 		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk");
@@ -81,9 +82,10 @@ public class OpenApiOperationIdSearchTitleTests
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
 		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"), ElasticsearchMain()).ToArray();
+		var operations = docs.Where(d => d.Path.Contains("/operation/", StringComparison.Ordinal)).ToArray();
 
-		docs.Should().HaveCount(1);
-		var doc = docs[0];
+		operations.Should().HaveCount(1);
+		var doc = operations[0];
 
 		doc.Title.Should().Be("Bulk index or delete documents - Elasticsearch API");
 		doc.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk");
@@ -97,9 +99,10 @@ public class OpenApiOperationIdSearchTitleTests
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
 		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("   "), ElasticsearchMain()).ToArray();
+		var operations = docs.Where(d => d.Path.Contains("/operation/", StringComparison.Ordinal)).ToArray();
 
-		docs.Should().HaveCount(1);
-		var doc = docs[0];
+		operations.Should().HaveCount(1);
+		var doc = operations[0];
 
 		doc.Title.Should().Be("_bulk - Elasticsearch API");
 	}
