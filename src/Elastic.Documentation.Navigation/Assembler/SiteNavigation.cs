@@ -52,7 +52,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		Phantoms = siteNavigationFile.Phantoms;
 		DeclaredPhantoms = [.. siteNavigationFile.Phantoms.Select(p => new Uri(p.Source))];
 		DeclaredTableOfContents = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
-		NavigationTitle = "Elastic Docs";
+		NavigationTitle = "Docs";
 
 		_nodes = [];
 		foreach (var setNavigation in documentationSetNavigations)
@@ -281,6 +281,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		root ??= node;
 
 		_ = UnseenNodes.Remove(tocRef.Source);
+		if (tocRef.NavigationTitle is not null && node is IAssignableNavigationTitle titled)
+			titled.NavigationTitleOverride = tocRef.NavigationTitle;
 		// Apply assembler-level island override (OR semantics — can enable, never disable)
 		if (tocRef.Island && node is IAssignableIslandNavigation islandNode)
 			islandNode.IsIsland = true;

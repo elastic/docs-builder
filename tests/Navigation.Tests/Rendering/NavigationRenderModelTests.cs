@@ -249,11 +249,12 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		// The island URL is the rules section root
 		rules.Url.Should().Be("/security/rules");
-		// RootIndex title comes from the island node title (isolated build, no primary nav, renders as island)
-		model.RootIndex!.NavigationTitle.Should().Be("index", "TestDocumentationFileFactory uses filename without extension");
-
-		// The tree contains only the non-index pages
-		model.Tree.Should().ContainSingle(n => n.Url == "/security/rules/page");
+		model.RootIndex.Should().BeNull("island overview is the first-level folder, not a detached index row");
+		var overview = model.Tree.Should().ContainSingle().Subject;
+		overview.Kind.Should().Be(NavigationRenderNodeKind.Node);
+		overview.ShowToggle.Should().BeTrue();
+		overview.NavigationTitle.Should().Be("index", "TestDocumentationFileFactory uses filename without extension");
+		overview.NavigationItems.Should().ContainSingle(n => n.Url == "/security/rules/page");
 	}
 
 	[Fact]
@@ -331,9 +332,10 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		// Different tree content (page-a vs page-b) → different content hash
 		model1.ContentHash.Should().NotBe(model2.ContentHash, "different tree pages produce different content hashes");
-		// Also verify the trees actually differ (sanity check for the test setup)
-		model1.Tree.Should().ContainSingle(n => n.Url.EndsWith("page-a", StringComparison.Ordinal));
-		model2.Tree.Should().ContainSingle(n => n.Url.EndsWith("page-b", StringComparison.Ordinal));
+		model1.Tree.Should().ContainSingle()
+			.Which.NavigationItems.Should().ContainSingle(n => n.Url.EndsWith("page-a", StringComparison.Ordinal));
+		model2.Tree.Should().ContainSingle()
+			.Which.NavigationItems.Should().ContainSingle(n => n.Url.EndsWith("page-b", StringComparison.Ordinal));
 	}
 
 	[Fact]

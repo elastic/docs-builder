@@ -13,6 +13,7 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	, INavigationHomeAccessor
 	, INavigationHomeProvider
 	, IAssignableIslandNavigation
+	, IAssignableNavigationTitle
 	where TModel : class, IDocumentationFile
 {
 	public TableOfContentsNavigation(
@@ -58,7 +59,10 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	public string Url => Index.Url;
 
 	/// <inheritdoc />
-	public string NavigationTitle => Index.NavigationTitle;
+	public string? NavigationTitleOverride { get; set; }
+
+	/// <inheritdoc />
+	public string NavigationTitle => NavigationTitleOverride ?? Index.NavigationTitle;
 
 	/// <summary>
 	/// TableOfContentsNavigation's NavigationRoot comes from its HomeProvider.

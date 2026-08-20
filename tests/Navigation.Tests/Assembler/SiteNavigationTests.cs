@@ -57,7 +57,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		navigation.Should().NotBeNull();
 		navigation.Url.Should().Be("/");
-		navigation.NavigationTitle.Should().Be("Elastic Docs");
+		navigation.NavigationTitle.Should().Be("Docs");
 		navigation.NavigationItems.Should().HaveCount(2);
 	}
 

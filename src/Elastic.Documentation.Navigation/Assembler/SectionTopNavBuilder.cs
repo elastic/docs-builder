@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Navigation.Assembler;
 /// <item><c>children:</c> — maps to a <see cref="SectionNavigation"/> tree node; active when the
 ///   current page's NavigationRoot.Id equals the section's Id.</item>
 /// </list>
-/// Plain <c>toc:</c> entries also produce one tab, active when NavigationRoot.Id == item.Id.
+/// Leftover top-level <c>toc:</c> entries are not tabs (they stay in the tree).
 /// Active state is determined by comparing the current page's NavigationRoot.Id to each
 /// tab's stored <see cref="TopNavLinkItem.SectionId"/>.
 /// </summary>
@@ -28,14 +28,8 @@ public static class SectionTopNavBuilder
 		if (navFile.TableOfContents.Count == 0)
 			return null;
 
-		// Index plain toc: items by Identifier for fast lookup.
-		// Sections with children now live in the tree as SectionNavigation nodes and
-		// are looked up by title instead.
-		var byIdentifier = topLevel
-			.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
-			.Where(item => item is not SectionNavigation)
-			.ToDictionary(item => item.Identifier);
-
+		// Sections with children live in the tree as SectionNavigation nodes and
+		// are looked up by title.
 		var sectionsByTitle = topLevel
 			.OfType<SectionNavigation>()
 			.ToDictionary(s => s.Title, StringComparer.OrdinalIgnoreCase);
@@ -74,17 +68,11 @@ public static class SectionTopNavBuilder
 					}
 				}
 			}
-			else if (entry is SiteTableOfContentsRef tocRef)
+			else if (entry is SiteTableOfContentsRef)
 			{
-				// Plain toc: entry — one tab, active when NavigationRoot.Id == item.Id
-				if (byIdentifier.TryGetValue(tocRef.Source, out var navItem))
-				{
-					items.Add(new TopNavLinkItem(
-						navItem.NavigationTitle,
-						navItem.Index.Url,
-						IsExternal: false,
-						SectionId: navItem.Id));
-				}
+				// Preview tabs come from section: entries only. A leftover top-level
+				// toc: (the local docs-builder inject) stays in the tree, not the top bar.
+				continue;
 			}
 		}
 

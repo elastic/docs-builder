@@ -16,14 +16,9 @@ using ListingVisual = Elastic.Documentation.Configuration.Toc.ListingVisual;
 
 namespace Elastic.Documentation.Navigation.Isolated.Node;
 
-public interface IDocumentationSetNavigation
+public interface IDocumentationSetNavigation : IAssignableNavigationTitle
 {
 	IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes { get; }
-
-	/// <summary>
-	/// Optional override for the navigation title. When set, this is used instead of the index page's title.
-	/// </summary>
-	string? NavigationTitleOverride { get; set; }
 }
 
 [DebuggerDisplay("{Url}")]

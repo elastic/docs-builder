@@ -12,7 +12,7 @@ public class FolderNavigation<TModel>(
 	string parentPath,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 	INavigationHomeAccessor homeAccessor)
-	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation, IAssignableIslandNavigation
+	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation, IAssignableIslandNavigation, IAssignableNavigationTitle
 	where TModel : class, IDocumentationFile
 {
 	// Will be set by SetNavigationItems
@@ -23,7 +23,10 @@ public class FolderNavigation<TModel>(
 	public string Url => Index.Url;
 
 	/// <inheritdoc />
-	public string NavigationTitle => Index.NavigationTitle;
+	public string? NavigationTitleOverride { get; set; }
+
+	/// <inheritdoc />
+	public string NavigationTitle => NavigationTitleOverride ?? Index.NavigationTitle;
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => homeAccessor.HomeProvider.NavigationRoot;
