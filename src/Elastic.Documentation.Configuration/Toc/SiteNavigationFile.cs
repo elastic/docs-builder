@@ -146,7 +146,16 @@ public class SiteTableOfContents : List<ISiteNavigationEntry>;
 /// When <c>true</c>, the resolved navigation node is marked as an island from the assembler side.
 /// OR-ed with any <c>island: true</c> the content set already declares — can only enable, never disable.
 /// </param>
-public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCollection<SiteTableOfContentsRef> Children, bool Island = false)
+/// <param name="NavigationTitle">
+/// Optional assembler-side label for this TOC root. When set, replaces the index page title
+/// in the assembled navigation (dropdowns, back-links, sidebar root row). Does not change the page H1.
+/// </param>
+public record SiteTableOfContentsRef(
+	Uri Source,
+	string PathPrefix,
+	IReadOnlyCollection<SiteTableOfContentsRef> Children,
+	bool Island = false,
+	string? NavigationTitle = null)
 	: ISiteNavigationEntry, ITableOfContentsItem
 {
 	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
@@ -281,7 +290,12 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
 				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children, island);
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var titleObj) && titleObj is string title
+				&& !string.IsNullOrWhiteSpace(title)
+				? title
+				: null;
+
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle);
 		}
 
 		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));
@@ -356,7 +370,12 @@ public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
 			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
 				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children, island);
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var titleObj) && titleObj is string title
+				&& !string.IsNullOrWhiteSpace(title)
+				? title
+				: null;
+
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle);
 		}
 
 		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));

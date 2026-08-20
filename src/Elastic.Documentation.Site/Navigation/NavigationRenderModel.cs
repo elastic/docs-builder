@@ -50,8 +50,8 @@ public sealed record NavigationRenderModel
 	public required IReadOnlyList<NavigationDropdownItem> DropdownItems { get; init; }
 	/// <summary>
 	/// Root-first trail out of a nested island.
-	/// Empty when <paramref name="IsUsingNavigationDropdown"/> covers the outermost scope
-	/// (i.e. the render root is itself a top-level section with no island ancestors).
+	/// Empty when the dropdown or assembler Docs tab already covers the site root
+	/// and the render root has no other island ancestors.
 	/// </summary>
 	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
 	/// <summary>
@@ -85,8 +85,15 @@ public sealed record NavigationRenderModel
 			}
 		}
 		var rootIndex = CreateRootIndex(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild);
-		var nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
-		var backLinks = CreateBackLinks(tree, isUsingNavigationDropdown);
+		var nestOverview = rootIndex is not null
+			&& IsIslandSidebar(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild);
+		var nodes = CreateNavigationItems(tree, isTopLevel: !nestOverview).ToList();
+		if (nestOverview)
+		{
+			nodes = NestIslandOverview(rootIndex!, tree.Id, nodes);
+			rootIndex = null;
+		}
+		var backLinks = CreateBackLinks(tree, isUsingNavigationDropdown, omitSiteRoot: isGlobalAssemblyBuild);
 		return new NavigationRenderModel
 		{
 			IsUsingNavigationDropdown = isUsingNavigationDropdown,
@@ -107,12 +114,14 @@ public sealed record NavigationRenderModel
 	/// When the dropdown is enabled, the navigation root is omitted (the dropdown replaces it),
 	/// but top-level ancestor entries are kept — clicking the active dropdown item is hard so
 	/// an explicit back-link is more usable.
+	/// Assembler builds also omit the site root: the secondary-nav "Docs" tab links home.
 	/// Returns empty when the render root has no island ancestry (e.g. a top-level section whose
 	/// only ancestor is the nav root, which the dropdown already replaces).
 	/// </summary>
 	private static IReadOnlyList<IslandBackLink> CreateBackLinks(
 		INavigationItem renderRoot,
-		bool isUsingNavigationDropdown)
+		bool isUsingNavigationDropdown,
+		bool omitSiteRoot)
 	{
 		var immediateParent = renderRoot.Parent;
 		if (immediateParent is null)
@@ -122,8 +131,8 @@ public sealed record NavigationRenderModel
 		var seen = new HashSet<string>(StringComparer.Ordinal);
 		for (var ancestor = immediateParent; ancestor is not null; ancestor = ancestor.Parent)
 		{
-			// Drop the nav root when the dropdown is enabled — the dropdown already represents it
-			if (isUsingNavigationDropdown && ancestor.Parent is null)
+			// Drop the nav root when the dropdown or assembler Docs tab already represents it
+			if ((isUsingNavigationDropdown || omitSiteRoot) && ancestor.Parent is null)
 				continue;
 
 			var include = ReferenceEquals(ancestor, immediateParent)
@@ -187,6 +196,40 @@ public sealed record NavigationRenderModel
 			NavigationTitle = tree.Index.NavigationTitle,
 			Url = tree.Index.Url
 		};
+	}
+
+	/// <summary>
+	/// Nested island sidebars (assembler) and isolated island roots: the overview is a first-level
+	/// folder, not a detached index row above a separator.
+	/// </summary>
+	private static bool IsIslandSidebar(
+		INodeNavigationItem<INavigationModel, INavigationItem> tree,
+		bool isPrimaryNavEnabled,
+		bool isGlobalAssemblyBuild)
+	{
+		if (isGlobalAssemblyBuild)
+			return tree.Parent?.Parent is not null;
+		return !isPrimaryNavEnabled && tree.RendersAsIsland();
+	}
+
+	private static List<NavigationRenderNode> NestIslandOverview(
+		NavigationRenderNode overview,
+		string folderId,
+		List<NavigationRenderNode> children)
+	{
+		if (children.Count == 0)
+			return [overview];
+
+		return
+		[
+			overview with
+			{
+				Kind = NavigationRenderNodeKind.Node,
+				Id = folderId,
+				ShowToggle = true,
+				NavigationItems = children
+			}
+		];
 	}
 
 	private static IEnumerable<NavigationRenderNode> CreateNavigationItems(

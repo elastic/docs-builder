@@ -8,6 +8,7 @@ namespace Elastic.Documentation.Site;
 /// Boosted links use htmx's default whole-body swap with hx-preserve islands, so links no
 /// longer need hx-select-oob. preload stays per-link because the preload extension ignores
 /// ancestor attributes.
+/// Preserve islands include the nav tree (content-hash id) and the global elastic-nav wrapper.
 /// </summary>
 public static class Htmx
 {

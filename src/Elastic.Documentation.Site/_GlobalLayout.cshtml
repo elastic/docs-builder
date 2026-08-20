@@ -9,19 +9,15 @@
 
 <body
 	hx-history="false"
-	hx-indicator="#htmx-indicator"
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())@(Model.Features.AirGappedEnabled ? " air-gapped" : "")"
 	hx-ext="preload, head-support"
 	data-docs-builder-version="@Model.DocsBuilderVersion"
-	hx-boost="true" hx-push-url="true" hx-indicator="#htmx-indicator"
+	hx-boost="true" hx-push-url="true"
 	>
 <svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
 	<defs>
 		<symbol id="icon-chevron-down" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
-		</symbol>
-		<symbol id="icon-chevron-double-down" viewBox="0 0 24 24">
-			<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 4.5-7.5 7.5-7.5-7.5m15 7.5-7.5 7.5-7.5-7.5"/>
 		</symbol>
 	</defs>
 </svg>
@@ -29,18 +25,6 @@
 {
 	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
 	                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-}
-
-@* Assembler (non-air-gapped) renders #htmx-indicator anchored to the secondary nav
-   in _SecondaryNav.cshtml instead of this viewport-fixed variant. *@
-@if (Model.BuildType != BuildType.Assembler || Model.Features.AirGappedEnabled)
-{
-	<div class="w-full fixed top-(--offset-top) left-0 right-0 htmx-indicator" id="htmx-indicator" role="status" hx-preserve>
-		<div class="h-px w-full overflow-hidden">
-			<div class="progress w-full h-full bg-pink-70 left-right"></div>
-		</div>
-		<div class="sr-only">Loading</div>
-	</div>
 }
 
 @(await RenderBodyAsync())
