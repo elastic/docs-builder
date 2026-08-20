@@ -70,8 +70,7 @@
 		border-radius: 4px;
 		box-shadow: none;
 		/* Borealis euiShadowMedium as filter (EuiPopover hasShadow=false). */
-		filter:
-			drop-shadow(0 0 2px rgb(43 57 79 / 0.16))
+		filter: drop-shadow(0 0 2px rgb(43 57 79 / 0.16))
 			drop-shadow(0 3px 10px rgb(43 57 79 / 0.1))
 			drop-shadow(0 6px 14px rgb(43 57 79 / 0.06));
 		font-family: var(--font-body);
