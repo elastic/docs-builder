@@ -5,11 +5,11 @@
 using System.Collections.Frozen;
 using System.Diagnostics;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Navigation;
-using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown;
 using Microsoft.Extensions.Logging;
@@ -21,7 +21,7 @@ namespace Elastic.Documentation.Assembler.Building;
 /// </summary>
 public static class AssemblerOpenApiBuildStep
 {
-	public static async Task BuildAsync(
+	public static async Task<IReadOnlyList<string>> BuildAsync(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
 		AssembleSources assembleSources,
@@ -29,25 +29,24 @@ public static class AssemblerOpenApiBuildStep
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
 		var env = assembleContext.Environment;
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in env.FeatureFlags)
-			features.Set(key, value);
+		var features = env.ToFeatureFlags();
 
 		if (!features.AssemblerApiExplorerEnabled)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: assembler-api-explorer feature flag is disabled");
-			return;
+			return [];
 		}
 
 		var owners = DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
 		if (owners.Count == 0)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: no API declarations found in assembled docsets");
-			return;
+			return [];
 		}
 
 		var stopwatch = Stopwatch.StartNew();
 		var catalogEntries = new List<ApiCatalogEntry>();
+		var generatedUrls = new List<string>();
 		using var versionIndexClient = new VersionIndexClient();
 
 		foreach (var owner in owners)
@@ -61,6 +60,7 @@ public static class AssemblerOpenApiBuildStep
 				versionIndexClient);
 			var entries = await openApiGenerator.GenerateProducts(ctx).ConfigureAwait(false);
 			catalogEntries.AddRange(entries);
+			generatedUrls.AddRange(openApiGenerator.GeneratedPageUrls);
 		}
 
 		if (catalogEntries.Count > 0)
@@ -72,6 +72,7 @@ public static class AssemblerOpenApiBuildStep
 				new DocumentationGenerator(owners[0].Set.DocumentationSet, logFactory).MarkdownStringRenderer,
 				versionIndexClient);
 			await catalogGenerator.GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
+			generatedUrls.AddRange(catalogGenerator.GeneratedPageUrls);
 		}
 
 		stopwatch.Stop();
@@ -79,6 +80,25 @@ public static class AssemblerOpenApiBuildStep
 			"Finished generating OpenAPI pages under {OutputDirectory} in {DurationMs} ms",
 			assembleContext.OutputWithPathPrefixDirectory.FullName,
 			stopwatch.ElapsedMilliseconds);
+		return generatedUrls;
+	}
+
+	public static IReadOnlyList<OpenApiExportSource> DiscoverExportSources(
+		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets,
+		IDiagnosticsCollector collector)
+	{
+		var sources = new List<OpenApiExportSource>();
+		foreach (var owner in DiscoverApiOwners(assembleSets, collector))
+		{
+			var apiConfigurations = owner.Set.BuildContext.Configuration.ApiConfigurations;
+			if (apiConfigurations is null)
+				continue;
+
+			foreach (var (apiKey, apiConfig) in apiConfigurations)
+				sources.Add(new OpenApiExportSource(apiKey, apiConfig, owner.Set.BuildContext.Git));
+		}
+
+		return sources;
 	}
 
 	internal static IReadOnlyList<AssemblerApiOwner> DiscoverApiOwners(

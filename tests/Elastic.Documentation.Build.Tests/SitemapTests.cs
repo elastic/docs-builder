@@ -182,6 +182,34 @@ public class SitemapTests
 	}
 
 	[Fact]
+	public void Generate_IncludesApiDocs_WhenRequested()
+	{
+		var fs = new MockFileSystem();
+		var outputDir = fs.DirectoryInfo.New("/output");
+		var now = DateTimeOffset.UtcNow;
+		var entries = new Dictionary<string, DateTimeOffset>
+		{
+			["/docs/elasticsearch/getting-started"] = now,
+			["/docs/api/"] = now,
+			["/docs/api/doc/elasticsearch/"] = now,
+			["/docs/api/doc/elasticsearch/operation/operation-ping"] = now,
+			["/docs/api/doc/elasticsearch/v8/operation/operation-ping"] = now,
+		};
+
+		SitemapBuilder.Generate(entries, fs, outputDir, includeApiDocs: true);
+
+		var content = fs.File.ReadAllText(fs.Path.Join("/output", "sitemap.xml"));
+		var doc = XDocument.Parse(content);
+		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
+		var locs = doc.Descendants(ns + "loc").Select(e => e.Value).ToList();
+		locs.Should().HaveCount(5);
+		locs.Should().Contain("https://www.elastic.co/docs/api/");
+		locs.Should().Contain("https://www.elastic.co/docs/api/doc/elasticsearch/");
+		locs.Should().Contain("https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ping");
+		locs.Should().Contain("https://www.elastic.co/docs/api/doc/elasticsearch/v8/operation/operation-ping");
+	}
+
+	[Fact]
 	public void BuildSearchBody_FirstPage_HasPitButNoSearchAfter()
 	{
 		// Act

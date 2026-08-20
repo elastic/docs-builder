@@ -22,6 +22,10 @@ namespace Elastic.Markdown.Exporters.Elasticsearch;
 public partial class ElasticsearchMarkdownExporter
 {
 	private IDocumentInferrerService? _inferService;
+	private IReadOnlyList<OpenApiExportSource> _openApiSources = [];
+
+	public void ConfigureOpenApiExport(IReadOnlyList<OpenApiExportSource> sources) =>
+		_openApiSources = sources;
 
 	/// <summary>
 	/// Assigns hash, last updated, and batch index date to a documentation document.
@@ -94,6 +98,8 @@ public partial class ElasticsearchMarkdownExporter
 			doc.SearchTitle = CreateSearchTitle();
 		// if we have no navigation, initialize to 20 since rank_feature would score 0 too high
 		doc.Navigation.Depth = navigationItem?.NavigationDepth ?? 20;
+		if (doc.ContentType == "api" && IsVersionedApiPath(doc.Path))
+			doc.Navigation.Depth = 40;
 		doc.Navigation.TableOfContents = navigationItem switch
 		{
 			// release-notes get effectively flattened by product, so we to dampen its effect slightly
@@ -118,6 +124,18 @@ public partial class ElasticsearchMarkdownExporter
 		// (doc.Type is a fixed CLR/$type discriminator, always "docs" — ContentType is the field
 		// OpenApiDocumentExporter actually sets to "api".)
 		doc.ContentTier = doc.ContentType == "api" ? ContentTiers.Reference : ClassifyContentTier(navigationItem, doc.Path);
+
+		static bool IsVersionedApiPath(string path)
+		{
+			var parts = path.Split('/', RemoveEmptyEntries);
+			return parts.Length >= 5
+				&& parts[0] == "docs"
+				&& parts[1] == "api"
+				&& parts[2] == "doc"
+				&& parts[4].Length > 1
+				&& parts[4][0] == 'v'
+				&& char.IsDigit(parts[4][1]);
+		}
 
 		string CreateSearchTitle()
 		{
@@ -236,13 +254,16 @@ public partial class ElasticsearchMarkdownExporter
 			return true;
 		}
 
-		// this is temporary; once we implement Elastic.ApiExplorer, this should flow through
-		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point
+		if (_openApiSources.Count == 0)
+		{
+			_logger.LogInformation("Skipping OpenAPI export: assembler-api-explorer is disabled or no API sources were discovered");
+			return true;
+		}
+
 		_logger.LogInformation("Exporting OpenAPI documentation to Elasticsearch");
 
-		var exporter = new OpenApiDocumentExporter(_versionsConfiguration, _inferService);
-
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
+		var exporter = new OpenApiDocumentExporter(_versionsConfiguration, _inferService, collector: _collector);
+		await foreach (var doc in exporter.ExportDocuments(_openApiSources, ctx))
 		{
 			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
 

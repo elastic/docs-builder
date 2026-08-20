@@ -74,7 +74,11 @@ public class AssemblerSitemapService(
 				"Consider implementing sitemap index files."
 			);
 
-		var result = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+		var result = SitemapBuilder.Generate(
+			entries,
+			assembleContext.WriteFileSystem,
+			assembleContext.OutputWithPathPrefixDirectory,
+			includeApiDocs: assembleContext.Environment.ToFeatureFlags().AssemblerApiExplorerEnabled);
 
 		if (result.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
 			collector.EmitGlobalWarning(

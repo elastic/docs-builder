@@ -27,14 +27,13 @@ public static class SitemapBuilder
 	public static SitemapResult Generate(
 		IReadOnlyDictionary<string, DateTimeOffset> entries,
 		IFileSystem fileSystem,
-		IDirectoryInfo outputFolder
+		IDirectoryInfo outputFolder,
+		bool includeApiDocs = false
 	)
 	{
-		// API pages are generated only on staging (assembler-api-explorer flag) and /docs/api/* is still
-		// proxied to bump.sh at the edge (#725). Keep them out of the sitemap until cutover.
-		var filtered = entries
-			.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal))
-			.ToList();
+		var filtered = includeApiDocs
+			? entries.ToList()
+			: entries.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal)).ToList();
 
 		if (filtered.Count > MaxEntries)
 			throw new InvalidOperationException(

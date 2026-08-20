@@ -2,175 +2,131 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
-using Elastic.ApiExplorer.Operations;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Search;
-using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using Microsoft.OpenApi;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class OpenApiDocumentExporterTests
 {
-	private static readonly HttpClient HttpClient = new();
-	private const string BaseUrl = "https://www.elastic.co";
+	private static readonly VersionsConfiguration VersionsConfiguration =
+		TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 2);
 
-	[Fact(Skip = "This spams elastic.co, run this manually")]
-	public async Task ExportedDocumentUrlsShouldReturnSuccessStatusCode()
+	private static OpenApiConvertContext ElasticsearchContext(string moniker = "main", SemVersion? ceiling = null) =>
+		new("elasticsearch", moniker, ceiling ?? new SemVersion(9, 2, 0), "Elasticsearch", "elasticsearch");
+
+	private static OpenApiDocument PingSpec(string? xState = null, string? description = null)
 	{
-		// Arrange
-		var versionsConfiguration = new VersionsConfiguration
+		var operation = new OpenApiOperation
 		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			OperationId = "ping",
+			Summary = "Ping",
+			Description = description
+		};
+		if (xState is not null)
+			operation.Extensions = new Dictionary<string, IOpenApiExtension> { ["x-state"] = new JsonNodeExtension(JsonValue.Create(xState)) };
+
+		return new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
 			{
+				["/ping"] = new OpenApiPathItem
 				{
-					VersioningSystemId.Stack,
-					new VersioningSystem
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
 					{
-						Id = VersioningSystemId.Stack,
-						Base = new SemVersion(8, 0, 0),
-						Current = new SemVersion(9, 2, 0)
+						[HttpMethod.Get] = operation
 					}
 				}
 			}
 		};
-
-		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
-		const int limitPerSource = 300; // Get 50 from each source (Elasticsearch and Kibana)
-
-		// Act - Collect all documents, tracking source
-		var documents = new List<(string Url, string Source)>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current.CancellationToken))
-		{
-			if (!string.IsNullOrEmpty(doc.Path))
-			{
-				// Determine source from URL
-				var source = doc.Path.Contains("/elasticsearch/") ? "elasticsearch" : "kibana";
-				documents.Add((doc.Path, source));
-			}
-		}
-
-		// Assert we have documents from both sources
-		documents.Should().NotBeEmpty("the exporter should return at least some documents");
-		var elasticsearchDocs = documents.Where(d => d.Source == "elasticsearch").ToList();
-		var kibanaDocs = documents.Where(d => d.Source == "kibana").ToList();
-
-		elasticsearchDocs.Should().NotBeEmpty("should have Elasticsearch documents");
-		kibanaDocs.Should().NotBeEmpty("should have Kibana documents");
-
-		// Take all documents as sample (already limited)
-		var sample = documents.Select(d => d.Url).ToList();
-
-		// Test each URL in parallel
-		var failures = new ConcurrentBag<(string Url, int StatusCode)>();
-
-		await Parallel.ForEachAsync(sample,
-			new ParallelOptions { MaxDegreeOfParallelism = 10, CancellationToken = TestContext.Current.CancellationToken },
-			async (url, ct) =>
-			{
-				var fullUrl = $"{BaseUrl}{url}";
-
-				try
-				{
-					using var request = new HttpRequestMessage(HttpMethod.Head, fullUrl);
-
-					// Mimic browser headers
-					request.Headers.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-					request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
-					request.Headers.Add("Accept-Language", "en-US,en;q=0.9");
-					request.Headers.Add("Accept-Encoding", "gzip, deflate, br");
-					request.Headers.Add("DNT", "1");
-					request.Headers.Add("Connection", "keep-alive");
-					request.Headers.Add("Upgrade-Insecure-Requests", "1");
-					request.Headers.Add("Sec-Fetch-Dest", "document");
-					request.Headers.Add("Sec-Fetch-Mode", "navigate");
-					request.Headers.Add("Sec-Fetch-Site", "none");
-					request.Headers.Add("Sec-Fetch-User", "?1");
-					request.Headers.Add("Cache-Control", "max-age=0");
-
-					var response = await HttpClient.SendAsync(
-						request,
-						HttpCompletionOption.ResponseHeadersRead,
-						ct
-					);
-
-					if (!response.IsSuccessStatusCode)
-					{
-						failures.Add((url, (int)response.StatusCode));
-					}
-				}
-				catch
-				{
-					failures.Add((url, -1)); // Use -1 to indicate exception
-				}
-			});
-
-		// Assert all URLs returned 200
-		failures.Should().BeEmpty(
-			$"all sampled URLs should return 200 OK, but the following failed: {string.Join(", ", failures.Select(f => $"{f.Url} ({f.StatusCode})"))}"
-		);
 	}
 
 	[Fact]
-	public async Task DescriptionWithHtmlOperationsListShouldTransformToMarkdownAtEnd()
+	public void ConvertToDocuments_Main_UsesUnversionedOperationUrl()
 	{
-		// Arrange
-		var versionsConfiguration = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
-			{
-				{
-					VersioningSystemId.Stack,
-					new VersioningSystem
-					{
-						Id = VersioningSystemId.Stack,
-						Base = new SemVersion(8, 0, 0),
-						Current = new SemVersion(9, 2, 0)
-					}
-				}
-			}
-		};
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
+		var docs = exporter.ConvertToDocuments(PingSpec(), ElasticsearchContext()).ToArray();
 
-		// Act - Get some Elasticsearch documents
-		var documents = new List<DocumentationDocument>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current.CancellationToken))
-		{
-			if (doc.Description != null && doc.Description.Contains("**All methods and paths for this operation:**"))
-			{
-				documents.Add(doc);
-			}
-		}
+		docs.Should().ContainSingle();
+		docs[0].Path.Should().Be("/docs/api/doc/elasticsearch/operation/operation-ping");
+		docs[0].Title.Should().Be("Ping - Elasticsearch API");
+		docs[0].Parents.Should().Contain(p => p.Path == "/docs/api/doc/elasticsearch");
+	}
 
-		// Assert we found at least one document with the pattern
-		documents.Should().NotBeEmpty("there should be at least one document with operation list");
+	[Fact]
+	public void ConvertToDocuments_NumericMoniker_UsesVersionPrefixedUrlAndTitle()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		foreach (var doc in documents)
-		{
-			// Should not contain HTML
-			doc.Description.Should().NotContain("<div>", "HTML should be converted to markdown");
-			doc.Description.Should().NotContain("<span", "HTML should be converted to markdown");
+		var docs = exporter.ConvertToDocuments(PingSpec(), ElasticsearchContext("8", new SemVersion(8, 19, 0))).ToArray();
 
-			// Should contain markdown list items
-			doc.Description.Should().Contain("- **", "should have markdown list items");
-			doc.Description.Should().Contain("`", "paths should be in code blocks");
+		docs.Should().ContainSingle();
+		docs[0].Path.Should().Be("/docs/api/doc/elasticsearch/v8/operation/operation-ping");
+		docs[0].Title.Should().Be("Ping - Elasticsearch 8.x API");
+		docs[0].Parents.Should().Contain(p => p.Path == "/docs/api/doc/elasticsearch/v8");
+	}
 
-			// Check that the markdown list appears at the end
-			var lines = doc.Description.Split('\n', StringSplitOptions.TrimEntries);
-			var lastNonEmptyLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).TakeLast(5).ToList();
+	[Fact]
+	public void ConvertToDocuments_AddedInAfterCeiling_IsExcluded()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+		var spec = PingSpec("Generally available; Added in 8.19.0");
 
-			// At least one of the last few lines should be a Markdown list item
-			var hasMarkdownListAtEnd = lastNonEmptyLines.Any(l => l.StartsWith("- **", InvariantCulture));
-			hasMarkdownListAtEnd.Should().BeTrue(
-				$"markdown list should be at the end of the description. Last lines:\n{string.Join("\n", lastNonEmptyLines)}\n\nFull description:\n{doc.Description}"
-			);
-		}
+		var docs = exporter.ConvertToDocuments(spec, ElasticsearchContext("8", new SemVersion(8, 18, 0))).ToArray();
+
+		docs.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void ParseFilterCeiling_MajorMinor_AppendsPatchZero()
+	{
+		var fallback = new SemVersion(9, 2, 0);
+
+		OpenApiDocumentExporter.ParseFilterCeiling("8.19", fallback).Should().Be(new SemVersion(8, 19, 0));
+		OpenApiDocumentExporter.ParseFilterCeiling("8.19.0", fallback).Should().Be(new SemVersion(8, 19, 0));
+	}
+
+	[Fact]
+	public void ConvertToDocuments_AddedInAtCeiling_IsIncluded()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+		var spec = PingSpec("Generally available; Added in 8.19.0");
+
+		var docs = exporter.ConvertToDocuments(spec, ElasticsearchContext("8", new SemVersion(8, 19, 0))).ToArray();
+
+		docs.Should().ContainSingle();
+	}
+
+	[Fact]
+	public void DescriptionWithHtmlOperationsListShouldTransformToMarkdownAtEnd()
+	{
+		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
+		var description = """
+			**All methods and paths for this operation:**
+			<div>
+			<span class="operation-verb get">GET</span> <span class="operation-path">/_ping</span>
+			</div>
+			""";
+		var spec = PingSpec(description: description);
+
+		var docs = exporter.ConvertToDocuments(spec, ElasticsearchContext()).ToArray();
+
+		docs.Should().ContainSingle();
+		var doc = docs[0];
+		doc.Description.Should().NotContain("<div>");
+		doc.Description.Should().NotContain("<span");
+		doc.Description.Should().Contain("- **GET** `/_ping`");
+		var lastNonEmptyLines = doc.Description!.Split('\n', StringSplitOptions.TrimEntries)
+			.Where(l => !string.IsNullOrWhiteSpace(l))
+			.TakeLast(5)
+			.ToList();
+		lastNonEmptyLines.Any(l => l.StartsWith("- **", InvariantCulture)).Should().BeTrue();
 	}
 }
