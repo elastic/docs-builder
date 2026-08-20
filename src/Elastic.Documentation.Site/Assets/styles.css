@@ -125,12 +125,9 @@ body {
 				max-height 0.3s ease;
 		}
 
-		/* Right rail: 24px is padding, not added to --offset-top, so the gap
-		   stays at rest and while stuck under the topbar. */
 		@media (width >= 1280px) {
 			#toc-nav.sidebar-nav {
 				box-sizing: border-box;
-				padding-top: 24px;
 				padding-bottom: 24px;
 			}
 		}
