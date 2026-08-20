@@ -83,27 +83,23 @@ applies_to:
             )
         ))
 
-type ``serverless shorthand with top level project key emits error`` () =
+type ``serverless shorthand with top level project override`` () =
     static let markdown = frontMatter """
 applies_to:
    serverless: ga
    vectordb: preview
 """
     [<Fact>]
-    let ``does not narrow serverless applicability`` () =
+    let ``overrides only the specified serverless project`` () =
         let expectedAvailability = AppliesCollection.op_Explicit "ga"
         markdown |> appliesTo (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
                 Elasticsearch=expectedAvailability,
                 Observability=expectedAvailability,
                 Security=expectedAvailability,
-                VectorDatabase=expectedAvailability
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
             )
         ))
-
-    [<Fact>]
-    let ``emits error about mixed serverless project keys`` () =
-        markdown |> hasError "Don't define 'serverless' and top-level serverless project keys together"
 
 type ``parses serverless projects`` () =
     static let markdown = frontMatter """

@@ -107,7 +107,8 @@ public class DocumentationDocumentSerializationTests
 				Serverless = new ServerlessProjectApplicability
 				{
 					Elasticsearch = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }]),
-					Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"1.0.0" }])
+					Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"1.0.0" }]),
+					VectorDatabase = AppliesCollection.GenerallyAvailable
 				}
 			}.ToAppliesTo()
 		};
@@ -118,7 +119,7 @@ public class DocumentationDocumentSerializationTests
 
 		root.TryGetProperty("applies_to", out var appliesTo).Should().BeTrue();
 		var appliesArray = appliesTo.EnumerateArray().ToList();
-		appliesArray.Should().HaveCount(2);
+		appliesArray.Should().HaveCount(3);
 
 		// Verify elasticsearch entry
 		var esEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "elasticsearch");
@@ -133,6 +134,13 @@ public class DocumentationDocumentSerializationTests
 		secEntry.GetProperty("type").GetString().Should().Be("serverless");
 		secEntry.GetProperty("lifecycle").GetString().Should().Be("preview");
 		secEntry.GetProperty("version").GetString().Should().Be("1.0+");
+
+		// Verify Vector Database entry
+		var vectorDatabaseEntry = appliesArray.FirstOrDefault(e => e.GetProperty("sub_type").GetString() == "vectordb");
+		vectorDatabaseEntry.ValueKind.Should().NotBe(JsonValueKind.Undefined);
+		vectorDatabaseEntry.GetProperty("type").GetString().Should().Be("serverless");
+		vectorDatabaseEntry.GetProperty("lifecycle").GetString().Should().Be("ga");
+		vectorDatabaseEntry.GetProperty("version").GetString().Should().Be("all");
 	}
 
 	[Fact]

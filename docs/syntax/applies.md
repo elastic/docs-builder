@@ -322,17 +322,17 @@ applies_to:
 
 ```{applies_to}
 stack: preview 9.1+
-serverless: ga
+serverless:
+  elasticsearch: preview
+  security: removed
+  observability: deprecated
+  vectordb: ga
 
 apm_agent_dotnet: ga 1.0+
 apm_agent_java: beta 1.0+
 edot_dotnet: preview 1.0+
 edot_python:
 edot_node: ga 1.0+
-elasticsearch: preview
-security: removed
-observability: deprecated
-vectordb: ga
 ```
 
 ### In-text example
