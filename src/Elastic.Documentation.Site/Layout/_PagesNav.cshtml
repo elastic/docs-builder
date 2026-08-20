@@ -2,11 +2,12 @@
 @using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @{
-	var topNavLinks = Model.TopNav?.Items.OfType<TopNavLinkItem>().ToArray() ?? [];
+	var topNavItems = Model.TopNav?.Items.ToArray() ?? [];
+	var topNavLinks = topNavItems.OfType<TopNavLinkItem>().ToArray();
 	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
 	var activeMobileLink = topNavLinks.FirstOrDefault(item => item.IsActive(currentSectionId));
 	var mobileSummary = activeMobileLink?.Title ?? "Docs Home";
-	var hasMobileDrawerControls = topNavLinks.Length > 0 || Model.ShowVersionDropdown;
+	var hasMobileDrawerControls = topNavItems.Length > 0 || Model.ShowVersionDropdown;
 }
 <aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
 	<nav
@@ -15,7 +16,7 @@
 		@if (hasMobileDrawerControls)
 		{
 			<div class="md:hidden border-b border-grey-20 px-4 py-4">
-				@if (topNavLinks.Length > 0)
+				@if (topNavItems.Length > 0)
 				{
 					<div class="font-sans">
 						<div class="mb-2 text-xs font-bold uppercase tracking-wide text-grey-70">Section</div>
@@ -29,25 +30,56 @@
 								</svg>
 							</summary>
 							<div class="mt-2 rounded-md border border-grey-20 bg-white py-1 text-sm font-semibold shadow-sm">
-								@foreach (var link in topNavLinks)
+								@foreach (var item in topNavItems)
 								{
-									var isActive = link.IsActive(currentSectionId);
-									var mobileStateClass = isActive ? "text-blue-elastic" : "text-ink-light hover:text-blue-elastic active:text-blue-elastic-100";
-									@if (link.IsExternal)
+									if (item is TopNavDropdownItem dropdown)
 									{
-										<a href="@link.Url"
-										   target="_blank"
-										   rel="noopener noreferrer"
-										   class="block px-3 py-2 @mobileStateClass">
-											@link.Title
-											<span class="sr-only">(opens in a new tab)</span>
-										</a>
+										<details class="secondary-nav-mobile-submenu">
+											<summary class="flex cursor-pointer select-none items-center justify-between px-3 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100">
+												<span>@dropdown.Title</span>
+												<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"
+												     class="secondary-nav-mobile-chevron">
+													<path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+													      stroke-linejoin="round"/>
+												</svg>
+											</summary>
+											<div class="border-t border-grey-20 py-1">
+												@foreach (var group in dropdown.Groups)
+												{
+													if (group.Label is not null)
+													{
+														<div class="px-6 pt-2 pb-1 text-xs font-bold text-grey-80">@group.Label</div>
+													}
+													foreach (var link in group.Links)
+													{
+														<a class="block px-6 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100"
+														   href="@link.Url"
+														   preload="mousedown">@link.Title</a>
+													}
+												}
+											</div>
+										</details>
 									}
-									else
+									else if (item is TopNavLinkItem link)
 									{
-										<a href="@link.Url"
-										   preload="mousedown"
-										   class="block px-3 py-2 @mobileStateClass">@link.Title</a>
+										var isActive = link.IsActive(currentSectionId);
+										var mobileStateClass = isActive ? "text-blue-elastic" : "text-ink-light hover:text-blue-elastic active:text-blue-elastic-100";
+										@if (link.IsExternal)
+										{
+											<a href="@link.Url"
+											   target="_blank"
+											   rel="noopener noreferrer"
+											   class="block px-3 py-2 @mobileStateClass">
+												@link.Title
+												<span class="sr-only">(opens in a new tab)</span>
+											</a>
+										}
+										else
+										{
+											<a href="@link.Url"
+											   preload="mousedown"
+											   class="block px-3 py-2 @mobileStateClass">@link.Title</a>
+										}
 									}
 								}
 							</div>

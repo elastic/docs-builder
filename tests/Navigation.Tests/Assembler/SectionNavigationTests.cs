@@ -266,6 +266,49 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	// ──────────────────────────────────────────────────────────────
 
 	[Fact]
+	public void SectionTopNavBuilder_BuildsDropdownTab_WhenDropdownLinksPresent()
+	{
+		// YAML that has both a children section (to give SiteNavigation a valid index)
+		// and a dropdown section to exercise the new dropdown path.
+		// language=yaml
+		var yaml = """
+		           toc:
+		             - section: Guides
+		               children:
+		                 - toc: observability://
+		                   path_prefix: /observability
+		             - section: Products
+		               dropdown:
+		                 - title: Elasticsearch
+		                   url: solutions/search/elasticsearch
+		                 - title: Observability
+		                   url: solutions/observability
+		           """;
+
+		var (navigation, _, _) = BuildTwoChildSection(output, yaml);
+		var navFile = SiteNavigationFile.Deserialize(yaml);
+
+		var renderModel = SectionTopNavBuilder.Build(navigation, navFile);
+
+		renderModel.Should().NotBeNull();
+		renderModel.Items.Should().HaveCount(2, "one Guides tab + one Products dropdown");
+
+		var dropdown = renderModel.Items[1].Should().BeOfType<TopNavDropdownItem>().Subject;
+		dropdown.Title.Should().Be("Products");
+		dropdown.IsActive(currentSectionId: null).Should().BeFalse("dropdown tabs are never active");
+		dropdown.Groups.Should().HaveCount(1, "flat dropdown: items become one ungrouped group");
+
+		var group = dropdown.Groups[0];
+		group.Label.Should().BeNull("flat dropdown has no group label");
+		group.Links.Should().HaveCount(2);
+		group.Links[0].Title.Should().Be("Elasticsearch");
+		group.Links[0].Url.Should().Be("/docs/solutions/search/elasticsearch",
+			"site prefix is prepended to the configured url");
+		group.Links[1].Title.Should().Be("Observability");
+		group.Links[1].Url.Should().Be("/docs/solutions/observability");
+	}
+
+	[Fact]
 	public void SectionTopNavBuilder_BuildsTab_WithSectionId()
 	{
 		// language=yaml

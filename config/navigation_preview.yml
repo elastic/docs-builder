@@ -46,6 +46,20 @@ toc:
   - section: APIs
     external: https://www.elastic.co/docs/api/
 
+  ###########
+  # PRODUCTS #
+  ###########
+  - section: Products
+    dropdown:
+      - title: Elasticsearch
+        url: solutions/search/elasticsearch
+      - title: Observability
+        url: solutions/observability
+      - title: Security
+        url: solutions/security
+      - title: Elastic Cloud
+        url: deploy-manage/deploy/elastic-cloud
+
   #############
   # REFERENCE #
   #############

@@ -23,13 +23,19 @@ public interface ISiteNavigationEntry
 	IReadOnlyCollection<SiteTableOfContentsRef> Children { get; }
 }
 
+/// <summary>A link entry within a <c>dropdown:</c> section.</summary>
+public record SiteDropdownLinkRef(string Title, string Url);
+
 public record SiteSectionRef(
 	string Title,
 	string? ExternalUrl,
-	IReadOnlyCollection<SiteTableOfContentsRef> Children
+	IReadOnlyCollection<SiteTableOfContentsRef> Children,
+	IReadOnlyCollection<SiteDropdownLinkRef> DropdownLinks
 ) : ISiteNavigationEntry
 {
 	public bool IsExternal => ExternalUrl is not null;
+	/// <summary>True when the section carries a dropdown list instead of tree children.</summary>
+	public bool IsDropdown => DropdownLinks.Count > 0;
 }
 
 [YamlSerializable]
@@ -207,6 +213,35 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 					}
 					value = childrenList;
 				}
+				else if (key.Value is "dropdown")
+				{
+					var dropdownList = new List<SiteDropdownLinkRef>();
+					_ = parser.Consume<SequenceStart>();
+					while (!parser.TryConsume<SequenceEnd>(out _))
+					{
+						if (!parser.TryConsume<MappingStart>(out _))
+							continue;
+						string? itemTitle = null;
+						string? itemUrl = null;
+						while (!parser.TryConsume<MappingEnd>(out _))
+						{
+							var itemKey = parser.Consume<Scalar>();
+							if (parser.Accept<Scalar>(out var itemValue))
+							{
+								_ = parser.MoveNext();
+								if (itemKey.Value is "title")
+									itemTitle = itemValue.Value;
+								else if (itemKey.Value is "url")
+									itemUrl = itemValue.Value;
+							}
+							else
+								parser.SkipThisAndNestedEvents();
+						}
+						if (itemTitle is not null && itemUrl is not null)
+							dropdownList.Add(new SiteDropdownLinkRef(itemTitle, itemUrl));
+					}
+					value = dropdownList;
+				}
 				else
 					parser.SkipThisAndNestedEvents();
 			}
@@ -222,7 +257,10 @@ public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
 			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj) && childrenObj is List<SiteTableOfContentsRef> refs
 				? refs
 				: [];
-			return new SiteSectionRef(sectionTitle, externalUrl, children);
+			IReadOnlyCollection<SiteDropdownLinkRef> dropdownLinks = dictionary.TryGetValue("dropdown", out var dropdownObj) && dropdownObj is List<SiteDropdownLinkRef> dLinks
+				? dLinks
+				: [];
+			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks);
 		}
 
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string sourceString)

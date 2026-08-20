@@ -144,6 +144,18 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
+	public async Task DropdownRendersInsideMobileDrawer()
+	{
+		var html = await RenderPagesNav(TopNav, currentUrl: "/docs/");
+
+		html.Should().Contain("secondary-nav-mobile-submenu");
+		html.Should().Contain("<span>Products</span>");
+		html.Should().Contain("class=\"px-6 pt-2 pb-1 text-xs font-bold text-grey-80\">Stack products");
+		html.Should().Contain("href=\"/docs/products/elasticsearch/\"");
+		html.Should().Contain("href=\"/docs/products/\"");
+	}
+
+	[Fact]
 	public async Task TheItemCoveringTheCurrentPageIsMarkedActive()
 	{
 		// Active state is determined by NavigationRoot.Id matching the tab's SectionId.
