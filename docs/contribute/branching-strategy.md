@@ -50,9 +50,8 @@ After it has been established that a repository should publish from a version br
     elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/<repo>/<branch>/links.json
     ```
 5. Rerun the `validate-assembler` check on the PR.
-6. After checks pass and the docs engineering team approves, you can merge the PR.
-
-After these steps are completed, the docs engineering team needs to release a new version of our build tool to complete the process. This process will be decoupled in a future release. After a new version is released, the switch is complete and the production documentation reflects the specified current branch.
+6. After checks pass, merge the PR.
+7. Watch for the prod version-bump deploy in [docs-internal-workflows](https://github.com/elastic/docs-internal-workflows/actions). Merging the assembler PR automatically opens `[bump] [staging]` and `[bump] [prod]` PRs; after they merge, confirm **Prod / Docs / Deploy / version-bump** succeeded. The production documentation then reflects the specified current branch.
 
 ### Update the release process
 

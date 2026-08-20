@@ -8,19 +8,16 @@ When a new version of the Elastic Stack (or another versioned product) is releas
 
 ## Who needs to be involved
 
-Generally, each release requires the following people:
-
-* A member of the **docs team** to perform release prep
-* A member of the **docs engineering** team to support publishing those changes to staging and prod.
-
-Before you start your release, you should identify who from each of these teams will facilitate the release.
+* A member of the **docs team** prepares the docs-builder PR. Writers can self-serve the merge on release day, but the PR needs **docs engineering** approval.
+* After that merge, most of the publish path is **automated** (cron plus auto-opened `[bump]` PRs). Recent examples: [staging](https://github.com/elastic/docs-internal-workflows/pull/750), [prod](https://github.com/elastic/docs-internal-workflows/pull/751).
+* **Docs engineering** supports if that automation fails. The manual steps below are the backup.
 
 ## Release process
 
 Follow these steps to release a new documentation version. There are two phases to releasing a new version: 
 
 * **Release prep**: Prepare the relevant docs-builder changes. This can be done anytime before release day, and can be performed by any member of the docs team.
-* **Release day activities**: Merge your changes and push them to our staging and production environments. These steps must be performed on release day, and require support from docs engineering.
+* **Release day activities**: Merge the docs-builder PR after docs-eng approval (this step is not automated). Cron then publishes staging and prod; use the manual steps only if that does not happen.
 
 
 ### Release prep
@@ -104,40 +101,41 @@ See [`legacy-url-mappings.yml`](../configure/site/legacy-url-mappings.md) for mo
 
 ### Release day activities
 
-Merge your changes and push them to our staging and production environments on release day.
+On release day, merge the docs-builder PR after docs engineering approves it. That merge is manual. After it lands, staging and prod configuration bumps normally run on **cron**. The manual steps in those later stages are backup if the cron path stalls.
 
 :::::{stepper}
 
 ::::{step} [docs-builder PR] Merge the config change
 
-Merge the `versions.yml` changes and any assembler and legacy URL mapping changes. Anyone from the docs team can merge the PR, but it must be approved by docs engineering or docs tech leads.
+Merge the `versions.yml` changes and any assembler and legacy URL mapping changes. Anyone from the docs team can merge the PR, but it must be approved by docs engineering.
 
-Optionally, docs engineering or docs tech leads can invoke the [Synchronize version & config updates](https://github.com/elastic/docs-internal-workflows/actions/workflows/update-assembler-version.yml) action manually on `docs-internal-workflows`, which opens two configuration update PRs: `staging` and `prod`.
-
-This action also runs on a cron job, but can be triggered manually if the change is time-sensitive.
+After the merge, `[bump] [staging]` and `[bump] [prod]` PRs open in [docs-internal-workflows](https://github.com/elastic/docs-internal-workflows/pulls). The next steps are usually handled by cron.
 ::::
 
 ::::{step} Merge the config change to staging
 
-_This action must be performed by docs engineering._
+Cron usually handles this after the staging `[bump]` PR opens.
 
-1. Approve and merge [the `staging` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
-2. Optionally, manually [invoke the release automation to staging](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.staging.yml).
+**Backup** (docs engineering):
+
+1. If the bump PRs did not appear, invoke the [Synchronize version & config updates](https://github.com/elastic/docs-internal-workflows/actions/workflows/update-assembler-version.yml) action. That action also runs on a cron job.
+2. Approve and merge [the `staging` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
+3. Optionally, manually [invoke the release automation to staging](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.staging.yml).
 
    This action also runs on a cron job, but can be triggered manually if the change is time-sensitive.
 
 Before you merge the config change to prod in the next step, make sure that the workflow run is green and wait for 10 to 15 minutes for any alerts to be raised.
-
 ::::
 
 ::::{step} Merge the config change to prod and release to production
 
-_This action must be performed by docs engineering._
+Cron usually handles this after the prod `[bump]` PR opens. Confirm **Prod / Docs / Deploy / version-bump** succeeded.
+
+**Backup** (docs engineering):
 
 1. Approve and merge [the `prod` configuration update PR](https://github.com/elastic/docs-internal-workflows/pulls).
 2. Manually [invoke the release automation to production](https://github.com/elastic/docs-internal-workflows/actions/workflows/assembler-build.prod.yml). Monitor it to make sure that it's green.
 3. Let the requester or docs release coordinator know the docs have been updated.
-
 ::::
 
 ::::{step} Confirm `applies_to` metadata
