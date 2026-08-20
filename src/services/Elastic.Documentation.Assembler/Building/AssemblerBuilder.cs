@@ -17,6 +17,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
+using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Building;
@@ -49,6 +50,7 @@ public class AssemblerBuilder(
 
 		// Create exporters without inferrer - inferrer is created per-repository
 		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context);
+		ConfigureOpenApiSearchExport(markdownExporters, assembleSets);
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
@@ -114,6 +116,18 @@ public class AssemblerBuilder(
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
+	}
+
+	private void ConfigureOpenApiSearchExport(
+		IReadOnlyCollection<IMarkdownExporter> markdownExporters,
+		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets)
+	{
+		if (!context.Environment.ToFeatureFlags().AssemblerApiExplorerEnabled)
+			return;
+
+		var sources = AssemblerOpenApiBuildStep.DiscoverExportSources(assembleSets, context.Collector);
+		foreach (var exporter in markdownExporters.OfType<ElasticsearchMarkdownExporter>())
+			exporter.ConfigureOpenApiExport(sources);
 	}
 
 	private void CollectRedirects(

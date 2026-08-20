@@ -197,6 +197,8 @@ public class OpenApiGeneratorMultiVersionTests
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping", "index.html")).Should().BeTrue();
+		generator.GeneratedPageUrls.Should().Contain(u => u.Contains("/api/doc/elasticsearch/v8/operation/operation-ping", StringComparison.Ordinal));
+		generator.GeneratedPageUrls.Should().Contain(u => u.Contains("/api/doc/elasticsearch", StringComparison.Ordinal) && !u.Contains("/v", StringComparison.Ordinal));
 	}
 
 	private static BuildContext CreateGenerateContext(
