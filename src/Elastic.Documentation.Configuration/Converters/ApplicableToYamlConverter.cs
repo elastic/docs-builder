@@ -134,12 +134,9 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			applicableTo.Deployment = deployment;
 
 		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
-		{
-			if (applicableTo.Serverless is not null)
-				applicableTo.Serverless = MergeServerlessProjectApplicability(applicableTo.Serverless, serverless);
-			else
-				applicableTo.Serverless = serverless;
-		}
+			applicableTo.Serverless = applicableTo.Serverless is not null
+				? MergeServerlessProjectApplicability(applicableTo.Serverless, serverless)
+				: serverless;
 
 		if (TryGetProductApplicability(dictionary, diagnostics, out var product))
 			applicableTo.ProductApplicability = product;
