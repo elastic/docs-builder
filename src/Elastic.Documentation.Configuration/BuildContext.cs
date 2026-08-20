@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
@@ -52,6 +53,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public ProductsConfiguration ProductsConfiguration { get; }
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 	public SearchConfiguration SearchConfiguration { get; }
+	public RelatedLearningConfiguration RelatedLearningConfiguration { get; init; }
 	public IEnvironmentVariables Environment { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public bool Force { get; init; }
@@ -90,6 +92,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ProductsConfiguration = configurationContext.ProductsConfiguration;
 		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
+		RelatedLearningConfiguration = configurationContext.ConfigurationFileProvider.CreateRelatedLearningConfiguration();
 		Endpoints = configurationContext.Endpoints;
 
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };

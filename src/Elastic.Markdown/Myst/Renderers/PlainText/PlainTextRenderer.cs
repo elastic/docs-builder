@@ -82,6 +82,7 @@ public class PlainTextRenderer : TextRendererBase
 		ObjectRenderers.Add(new PlainTextDirectiveRenderer());
 		ObjectRenderers.Add(new PlainTextCodeBlockRenderer());
 		ObjectRenderers.Add(new PlainTextHeadingRenderer());
+		ObjectRenderers.Add(new PlainTextRelatedLearningRenderer());
 		ObjectRenderers.Add(new PlainTextParagraphRenderer());
 		ObjectRenderers.Add(new PlainTextListRenderer());
 		ObjectRenderers.Add(new PlainTextQuoteBlockRenderer());

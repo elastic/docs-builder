@@ -17,6 +17,7 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Storybook;
+using Elastic.Markdown.Myst.RelatedLearning;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
@@ -180,6 +181,16 @@ public class LlmHeadingRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, He
 		renderer.Write(" ");
 		if (obj.Inline is not null)
 			renderer.WriteChildren(obj.Inline);
+	}
+}
+
+public class LlmRelatedLearningRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, RelatedLearningBlock>
+{
+	protected override void Write(LlmMarkdownRenderer renderer, RelatedLearningBlock obj)
+	{
+		renderer.EnsureBlockSpacing();
+		foreach (var link in obj.Links)
+			renderer.WriteLine($"- [{link.Title}]({link.Url})");
 	}
 }
 

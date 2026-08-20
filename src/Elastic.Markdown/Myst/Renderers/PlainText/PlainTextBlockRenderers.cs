@@ -16,6 +16,7 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.RelatedLearning;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
@@ -47,6 +48,19 @@ public class PlainTextHeadingRenderer : MarkdownObjectRenderer<PlainTextRenderer
 		if (obj.Inline is not null)
 			renderer.WriteChildren(obj.Inline);
 		renderer.EnsureLine();
+	}
+}
+
+public class PlainTextRelatedLearningRenderer : MarkdownObjectRenderer<PlainTextRenderer, RelatedLearningBlock>
+{
+	protected override void Write(PlainTextRenderer renderer, RelatedLearningBlock obj)
+	{
+		renderer.EnsureBlockSpacing();
+		foreach (var link in obj.Links)
+		{
+			renderer.Write(link.Title);
+			renderer.EnsureLine();
+		}
 	}
 }
 

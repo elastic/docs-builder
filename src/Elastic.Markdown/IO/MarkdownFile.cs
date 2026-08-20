@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
@@ -19,6 +20,7 @@ using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Myst.RelatedLearning;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
@@ -30,6 +32,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	private readonly IFileInfo _configurationFile;
 
 	private readonly IReadOnlyDictionary<string, string> _globalSubstitutions;
+	private readonly RelatedLearningConfiguration _relatedLearning;
 
 	public MarkdownFile(
 		IFileInfo sourceFile,
@@ -47,6 +50,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		Collector = build.Collector;
 		_configurationFile = build.Configuration.SourceFile;
 		_globalSubstitutions = build.Configuration.Substitutions;
+		_relatedLearning = build.RelatedLearningConfiguration;
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
@@ -145,6 +149,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			_ = await MinimalParseAsync(documentationFileLookup, ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
+		RelatedLearningBlock.Append(document, _relatedLearning.GetLinksForPage(Repository, RelativePath));
 		return document;
 	}
 
@@ -207,6 +212,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
+
+		RelatedLearningBlock.Append(document, _relatedLearning.GetLinksForPage(Repository, RelativePath));
 
 		var toc = GetAnchors(Collector, documentationFileLookup, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 
