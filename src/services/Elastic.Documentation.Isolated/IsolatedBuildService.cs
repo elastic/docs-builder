@@ -68,13 +68,16 @@ public class IsolatedBuildService(
 
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 
-		var runningOnCi = _env.IsRunningOnCI;
 		BuildContext context;
 
 		canonicalBaseUri ??= new Uri("https://docs-v3-preview.elastic.dev");
 
+		var runningOnCi = _env.IsRunningOnCI;
 		if (runningOnCi)
 		{
+			if (!exporters.Contains(Exporter.GitDiff))
+				exporters = new HashSet<Exporter>(exporters) { Exporter.GitDiff };
+
 			_logger.LogInformation("Build running on CI, forcing a full rebuild of the destination folder");
 			force = true;
 		}

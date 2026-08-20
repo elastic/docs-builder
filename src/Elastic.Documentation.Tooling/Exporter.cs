@@ -17,7 +17,9 @@ public enum Exporter
 	LinkMetadata,
 	Redirects,
 	Okf,
-	Pagefind
+	Pagefind,
+	[EnumValue("gitdiff")]
+	GitDiff
 }
 
 public static class ExportOptions

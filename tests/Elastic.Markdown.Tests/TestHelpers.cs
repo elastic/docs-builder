@@ -144,3 +144,11 @@ public static class TestHelpers
 		};
 	}
 }
+
+internal sealed class FakeEnvironmentVariables(Dictionary<string, string?> values) : IEnvironmentVariables
+{
+	public string? GetEnvironmentVariable(string name) =>
+		values.TryGetValue(name, out var value) ? value : null;
+
+	public bool IsRunningOnCI => true;
+}
