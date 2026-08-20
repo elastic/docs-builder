@@ -666,7 +666,7 @@ internal static partial class CliMarkdownGenerator
 			return $"`<{p.Name}>`";
 
 		var isBool = IsBoolFlag(p.Type);
-		var prefix = isBool ? "`--[no-]" : "`--";
+		var prefix = isBool && p.Negatable ? "`--[no-]" : "`--";
 		var shortPart = p.ShortName is not null ? $"`-{p.ShortName}` " : string.Empty;
 
 		return $"{shortPart}{prefix}{p.Name}`";

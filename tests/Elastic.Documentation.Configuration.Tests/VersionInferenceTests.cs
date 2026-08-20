@@ -345,6 +345,7 @@ public class VersionInferenceTests
 			(new ServerlessProjectApplicability { Elasticsearch = AppliesCollection.GenerallyAvailable }, VersioningSystemId.ElasticsearchProject),
 			(new ServerlessProjectApplicability { Observability = AppliesCollection.GenerallyAvailable }, VersioningSystemId.ObservabilityProject),
 			(new ServerlessProjectApplicability { Security = AppliesCollection.GenerallyAvailable }, VersioningSystemId.SecurityProject),
+			(new ServerlessProjectApplicability { VectorDatabase = AppliesCollection.GenerallyAvailable }, VersioningSystemId.Serverless),
 		};
 
 		foreach (var (serverless, expectedId) in testCases)

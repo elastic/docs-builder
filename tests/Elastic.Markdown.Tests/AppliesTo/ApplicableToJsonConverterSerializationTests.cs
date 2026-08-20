@@ -196,6 +196,33 @@ public class ApplicableToJsonConverterSerializationTests
 	}
 
 	[Fact]
+	public void Serialize_ServerlessVectorDatabase_ProducesCorrectJson()
+	{
+		var applicableTo = new ApplicableTo
+		{
+			Serverless = new ServerlessProjectApplicability
+			{
+				VectorDatabase = AppliesCollection.GenerallyAvailable
+			}
+		};
+
+		var json = JsonSerializer.Serialize(applicableTo, _options);
+
+		// language=json
+		json.Should().Be(
+			"""
+			[
+			  {
+			    "type": "serverless",
+			    "sub_type": "vectordb",
+			    "lifecycle": "ga",
+			    "version": "all"
+			  }
+			]
+			""");
+	}
+
+	[Fact]
 	public void SerializeProductProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
