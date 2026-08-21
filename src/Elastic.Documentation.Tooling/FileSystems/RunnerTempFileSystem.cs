@@ -15,7 +15,9 @@ namespace Elastic.Documentation.FileSystems;
 /// <para>
 /// Used by <c>evaluate-pr</c>, <c>evaluate-artifact</c>, and <c>prepare-artifact</c> —
 /// all three operate on paths vended by the CI environment, not a fixed docset or checkout.
-/// Permits <c>.git</c> so changelog configuration can be located by the config loader.
+/// Permits <c>.git</c> so changelog configuration can be located by the config loader,
+/// and <c>.artifacts</c> so CI staging/artifact paths under the conventional build
+/// output directory are writable.
 /// </para>
 /// </summary>
 public class RunnerTempFileSystem(
@@ -49,7 +51,7 @@ public class RunnerTempFileSystem(
 
 		return new ScopedFileSystemOptions([.. roots])
 		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
 		};
 	}

@@ -293,6 +293,38 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	}
 
 	[Fact]
+	public async Task PrepareArtifact_ArtifactsPaths_CopiesYamlAndWritesMetadata()
+	{
+		// Regression: docs-actions stages under .artifacts/changelog-*. Without
+		// .artifacts on the ScopedFileSystem allowlist, CreateDirectory throws
+		// even when generation was skipped.
+		var stagingDir = Path.Join(Root, ".artifacts", "changelog-staging");
+		var outputDir = Path.Join(Root, ".artifacts", "changelog-artifact");
+		await SetupConfig();
+		FileSystem.Directory.CreateDirectory(stagingDir);
+		await FileSystem.File.WriteAllTextAsync(
+			Path.Join(stagingDir, "42.yaml"),
+			"title: test changelog",
+			TestContext.Current.CancellationToken);
+
+		var service = CreateService();
+		var args = DefaultArgs() with
+		{
+			StagingDir = stagingDir,
+			OutputDir = outputDir
+		};
+
+		var result = await service.PrepareArtifact(Collector, args, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		FileSystem.File.Exists(Path.Join(outputDir, "42.yaml")).Should().BeTrue();
+		var json = FileSystem.File.ReadAllText(Path.Join(outputDir, "metadata.json"));
+		var metadata = JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata)!;
+		metadata.Status.Should().Be("success");
+		metadata.ChangelogFilename.Should().Be("42.yaml");
+	}
+
+	[Fact]
 	public async Task PrepareArtifact_WithBomPrefixedYaml_NormalizesOutput()
 	{
 		// Arrange
