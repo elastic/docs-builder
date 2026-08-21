@@ -16,9 +16,11 @@ public readonly record struct CdnChangelogEntry(string FileName, string Content)
 /// <summary>
 /// Fetches the individual (scrubbed) changelog entries for a single authoring org/repo/branch pool from
 /// the public CDN, for the <c>changelog bundle</c> command when sourcing entries from S3 rather than a
-/// local folder. It reads <c>{base}/changelog/{org}/{repo}/{branch}/registry.json</c> to enumerate entries
-/// and downloads each <c>{base}/changelog/{org}/{repo}/{branch}/{file}</c> as raw YAML; the bundle command
-/// then applies its usual filter (products / prs / issues) to the downloaded set.
+/// local folder. <see cref="FetchAsync"/> enumerates via the pool <c>registry.json</c> then downloads
+/// each listed YAML. <see cref="FetchNamedAsync"/> GETs requested basenames only (used by
+/// <c>--files</c> / a path list) and does not read the registry. The bundle command then applies its
+/// usual filter (products / prs / issues) to the downloaded set, except <c>--files</c> which includes
+/// every fetched name.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -39,6 +41,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	private const int DefaultMaxAttempts = 4;
 	private const int BaseRetryDelayMs = 500;
 	private const int MaxRetryDelayMs = 2000;
+	private const int MaxParallelNamedReads = 4;
 
 	/// <summary>
 	/// Bounds an individual registry/entry HTTP request so a stalled CDN connection cannot hang a bundle run.
@@ -175,6 +178,79 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		}
 
 		_logger.LogInformation("Fetched {Count} changelog entry(ies) for {Pool} from {BaseUri}", entries.Count, poolLabel, baseUri);
+		return entries;
+	}
+
+	/// <summary>
+	/// Downloads only the named changelog entries from the authoring pool, without reading
+	/// <c>registry.json</c>. Used by <c>changelog bundle --files</c> / a path list so a stale or
+	/// missing pool listing cannot hide a requested object. A requested name that 404s after the
+	/// retry budget is a hard error (fail-fast, same as a missing local file).
+	/// </summary>
+	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchNamedAsync(
+		Uri baseUri,
+		string org,
+		string repo,
+		string branch,
+		IReadOnlyList<string> fileNames,
+		Action<string> emitError,
+		Action<string> emitWarning,
+		Cancel ctx)
+	{
+		_ = emitWarning;
+		var poolLabel = $"{org}/{repo}/{branch}";
+
+		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
+		{
+			emitError(
+				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'.");
+			return [];
+		}
+
+		var poolSegments = ChangelogKeys.PoolSegments(org, repo, branch);
+		var built = new CdnChangelogEntry?[fileNames.Count];
+		var errors = new string?[fileNames.Count];
+
+		await Parallel.ForEachAsync(
+			Enumerable.Range(0, fileNames.Count),
+			new ParallelOptions { MaxDegreeOfParallelism = MaxParallelNamedReads, CancellationToken = ctx },
+			async (i, ct) =>
+			{
+				var fileName = fileNames[i];
+				if (!ChangelogKeys.IsSafeFileName(fileName))
+				{
+					errors[i] =
+						$"Changelog entry '{fileName}' for '{poolLabel}' is not a valid pool file name.";
+					return;
+				}
+
+				var entryUri = CombineSegments(baseUri, [.. poolSegments, fileName]);
+				var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, poolLabel, ct).ConfigureAwait(false);
+				if (fetched)
+				{
+					built[i] = new CdnChangelogEntry(fileName, content);
+					return;
+				}
+
+				errors[i] =
+					$"Changelog entry '{fileName}' for '{poolLabel}' could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
+					"Ensure the entry was uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead.";
+			}).ConfigureAwait(false);
+
+		var failed = false;
+		for (var i = 0; i < errors.Length; i++)
+		{
+			if (errors[i] is not { } message)
+				continue;
+			emitError(message);
+			failed = true;
+		}
+
+		if (failed)
+			return [];
+
+		var entries = built.Where(e => e is not null).Select(e => e!.Value).ToList();
+		_logger.LogInformation("Fetched {Count} named changelog entry(ies) for {Pool} from {BaseUri}", entries.Count, poolLabel, baseUri);
 		return entries;
 	}
 

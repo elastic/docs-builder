@@ -14,10 +14,9 @@ namespace Elastic.Changelog.Uploading;
 /// <remarks>
 /// Stored at <c>bundle/{product}/registry.json</c> (bundle index) or
 /// <c>changelog/{org}/{repo}/{branch}/registry.json</c> (changelog-entry index). Ownership differs
-/// per tree: public bundle indexes are produced by the scrubber Lambda's
-/// <see cref="Reconciliation.BundleRegistryReconciler"/> from public-bucket state, while
-/// changelog-entry indexes remain client-authored and are mirrored verbatim to the public bucket
-/// (pass-through) until Phase 3 of elastic/docs-eng-team#688 retires them.
+/// per tree: public indexes on both trees are produced by the scrubber Lambda's
+/// <see cref="Reconciliation.BundleRegistryReconciler"/> from public-bucket state. Upload writes
+/// YAML only; it never writes a <c>registry.json</c>.
 /// </remarks>
 public sealed record Registry
 {
@@ -80,14 +79,12 @@ public sealed record RegistryBundle
 	/// the MD5 of the body.
 	/// </summary>
 	/// <remarks>
-	/// Whose ETag this is follows the manifest's producer. Bundle indexes written by the scrubber
+	/// Whose ETag this is follows the manifest's producer. Indexes written by the scrubber
 	/// Lambda's <see cref="Reconciliation.BundleRegistryReconciler"/> record the <em>public</em>
-	/// (post-scrub) object's ETag, valid for HTTP cache validation against the CDN. Client-authored
-	/// manifests — changelog-entry indexes, and everything in the private bucket — record the
-	/// <em>private</em> (pre-scrub) upload's ETag: a best-effort change hint that will <em>not</em>
-	/// match the public object for scrubbed content, so consumers MUST NOT use it for integrity
-	/// checks or cache validation there. Either way it is safe for detecting that an entry changed
-	/// between manifest reads.
+	/// (post-scrub) object's ETag, valid for HTTP cache validation against the CDN. Legacy
+	/// client-authored manifests in the private bucket (no longer produced) recorded the
+	/// <em>private</em> (pre-scrub) upload's ETag. Either way it is safe for detecting that an
+	/// entry changed between manifest reads.
 	/// </remarks>
 	public required string ETag { get; init; }
 }

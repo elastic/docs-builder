@@ -3,8 +3,8 @@
 SQS-triggered Lambda that reads changelog/bundle YAML from the private S3 bucket,
 scrubs private repository references using `LinkAllowlistSanitizer`, writes
 sanitized copies to the public S3 bucket, and is the **sole producer** of the public
-`bundle/{product}/registry.json` manifests and the shallow per-tree change maps,
-reconciled from actual public bucket state
+`bundle/{product}/registry.json` and `changelog/{org}/{repo}/{branch}/registry.json`
+manifests and the shallow per-tree change maps, reconciled from actual public bucket state
 ([elastic/docs-eng-team#688](https://github.com/elastic/docs-eng-team/issues/688)).
 The handler logic lives in `Elastic.Changelog` (`Scrubbing/ScrubberProcessor`,
 `Reconciliation/BundleRegistryReconciler`, `Reconciliation/ShallowRegistryReconciler`);
@@ -46,19 +46,18 @@ The `bootstrap` binary should be available under:
 S3 events are *triggers, not instructions* — the event type is ignored and current bucket
 state decides (events are at-least-once and can arrive out of order). Work is coalesced per
 SQS batch: one object reconcile per distinct key, one registry reconcile per distinct
-`bundle/{product}/` group, one shallow-map reconcile per touched tree.
+group (`bundle/{product}/` or `changelog/{org}/{repo}/{branch}/`), one shallow-map reconcile
+per touched tree.
 
 - **`.yaml`/`.yml` keys**: object-level reconcile — GET the key from the private bucket;
   present → scrub the current content and PUT to public, absent → conditionally delete the
   public copy. A post-write HEAD re-validates the source and redoes the work if a concurrent
-  invocation raced it. A `bundle/{product}/` key then gets its group's `registry.json`
-  reconciled from the public listing, and the touched tree's shallow folder→token map is
-  patched.
-- **Registry keys** (`ChangelogKeys.IsRegistry`): the trees part ways. A bundle manifest is
-  never copied or deleted — the event only schedules the group reconcile, so client-authored
-  JSON never reaches the tree consumers enumerate. A changelog pool manifest is mirrored
-  verbatim (legacy pass-through: `changelog bundle` still enumerates a pool through its
-  manifest until PR-list discovery replaces it).
+  invocation raced it. The key's group then gets its `registry.json` reconciled from the
+  public listing, and the touched tree's shallow folder→token map is patched.
+- **Registry keys** (`ChangelogKeys.IsRegistry`): never copied or deleted — the event only
+  schedules the group reconcile, so client-authored JSON never reaches the tree consumers
+  enumerate. Pool listings are listing-only (`target` is null); bundle listings record
+  each file's `target`.
 - **Other `.json` keys**: skipped with a warning; other extensions are skipped silently.
 
 Registry and shallow-map writes use conditional PUT/DELETE (`If-Match` / `If-None-Match: *`)

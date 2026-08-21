@@ -321,7 +321,9 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/registry.json", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/skip.yaml", StringComparison.Ordinal));
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
@@ -344,7 +346,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("not found in the CDN pool") && d.Message.Contains("never-uploaded.yaml"));
+			d.Severity == Severity.Error && d.Message.Contains("could not be fetched") && d.Message.Contains("never-uploaded.yaml"));
 	}
 
 	[Fact]
@@ -384,7 +386,9 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/registry.json", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/skip.yaml", StringComparison.Ordinal));
 		var bundle = await FileSystem.File.ReadAllTextAsync(
 			FileSystem.Path.Join(outputDir, "bundle.yaml"), TestContext.Current.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");

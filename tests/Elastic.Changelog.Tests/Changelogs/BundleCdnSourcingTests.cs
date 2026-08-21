@@ -68,18 +68,25 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	private string OutputPath() =>
 		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 
+	private static string[] BothPrs =>
+	[
+		"https://github.com/elastic/elasticsearch/pull/100",
+		"https://github.com/elastic/elasticsearch/pull/999"
+	];
+
 	[Fact]
-	public async Task OptionMode_RepoResolvable_SourcesAllEntriesFromRepoPoolOnCdn()
+	public async Task OptionMode_RepoResolvable_SourcesMatchingPrsFromRepoPoolOnCdn()
 	{
 		// Under the artifact-root layout the CDN entry pool is keyed by the authoring repo, not the
-		// target product. A resolvable repo (here via --repo) is what enables CDN sourcing.
+		// target product. A resolvable repo (here via --repo) is what enables CDN sourcing. --prs
+		// downloads the pool via registry.json then matches filename digits or YAML prs:.
 		var handler = RegistryHandler();
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = BothPrs,
 			Output = output,
 			Repo = "elasticsearch"
 		};
@@ -89,7 +96,6 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		// Entries are sourced from the authoring pool, with org/branch defaulting: changelog/{org}/{repo}/{branch}/...
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
@@ -108,7 +114,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = BothPrs,
 			Output = output,
 			Owner = "acme-corp",
 			Repo = "elasticsearch",
@@ -133,7 +139,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = BothPrs,
 			Output = output,
 			Repo = "acme-corp/widget"
 		};
@@ -230,7 +236,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = BothPrs,
 			Output = OutputPath(),
 			Repo = "elasticsearch"
 		};
@@ -260,7 +266,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = BothPrs,
 			Output = OutputPath(),
 			Repo = "elasticsearch"
 		};
@@ -320,6 +326,127 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Alpha");
 		bundle.Should().NotContain("Bravo");
+	}
+
+	[Fact]
+	public async Task OptionMode_All_OnCdn_ErrorsAndDoesNotFetch()
+	{
+		var handler = RegistryHandler();
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Output = OutputPath(),
+			Repo = "elasticsearch"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("--force-local"));
+		handler.RequestedPaths.Should().BeEmpty("CDN --all must fail before any fetch");
+	}
+
+	[Fact]
+	public async Task OptionMode_InputProductsOnly_OnCdn_ErrorsAndDoesNotFetch()
+	{
+		var handler = RegistryHandler();
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
+
+		var input = new BundleChangelogsArguments
+		{
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Output = OutputPath(),
+			Repo = "elasticsearch"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("--force-local"));
+		handler.RequestedPaths.Should().BeEmpty("CDN product-only filters must fail before any fetch");
+	}
+
+	[Fact]
+	public async Task OptionMode_Prs_MatchesFilenameDigitsWhenYamlPrsEmpty()
+	{
+		const string scrubbed = """
+			title: Scrubbed
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			""";
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345.yaml" }, { "file": "1735-foo.yaml" } ] }""");
+			if (path.EndsWith("12345.yaml", StringComparison.Ordinal))
+				return Yaml(scrubbed);
+			if (path.EndsWith("1735-foo.yaml", StringComparison.Ordinal))
+				return Yaml(scrubbed + "\nprs:\n  - https://github.com/elastic/elasticsearch/pull/99999\n");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Output = output,
+			Repo = "elasticsearch"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		bundle.Should().Contain("name: 12345.yaml");
+		bundle.Should().NotContain("name: 1735-foo.yaml");
+	}
+
+	[Fact]
+	public async Task OptionMode_Prs_MatchesTimestampFileViaYamlPrs()
+	{
+		const string timestamped = """
+			title: Timestamped
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/12345
+			""";
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1735-foo.yaml" } ] }""");
+			if (path.EndsWith("1735-foo.yaml", StringComparison.Ordinal))
+				return Yaml(timestamped);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Output = output,
+			Repo = "elasticsearch"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		bundle.Should().Contain("name: 1735-foo.yaml");
 	}
 
 	private static HttpResponseMessage Json(string body) =>

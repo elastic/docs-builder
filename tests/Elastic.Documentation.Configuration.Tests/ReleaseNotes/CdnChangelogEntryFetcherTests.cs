@@ -188,6 +188,42 @@ public class CdnChangelogEntryFetcherTests
 		warnings.Should().ContainSingle().Which.Should().Contain("escape.yaml");
 	}
 
+	[Fact]
+	public async Task FetchNamedAsync_HappyPath_GetsOnlyRequestedFilesWithoutRegistry()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/keep.yaml", StringComparison.Ordinal)
+				? Yaml(SampleEntry)
+				: new HttpResponseMessage(HttpStatusCode.NotFound));
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNamedAsync(
+			BaseUri, "elastic", "elasticsearch", "main", ["keep.yaml"], emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		entries.Select(e => e.FileName).Should().BeEquivalentTo("keep.yaml");
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/registry.json", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
+	}
+
+	[Fact]
+	public async Task FetchNamedAsync_MissingAfterRetries_EmitsError()
+	{
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
+		var (errors, _, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler, maxAttempts: 3);
+		var entries = await fetcher.FetchNamedAsync(
+			BaseUri, "elastic", "elasticsearch", "main", ["never-uploaded.yaml"], emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		entries.Should().BeEmpty();
+		errors.Should().ContainSingle().Which.Should().Contain("never-uploaded.yaml");
+		handler.RequestedPaths.Count(p => p.EndsWith("/never-uploaded.yaml", StringComparison.Ordinal))
+			.Should().Be(3);
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 

@@ -122,28 +122,29 @@ public class ScrubberProcessorTests
 	}
 
 	[Fact]
-	public async Task Process_PoolRegistryKeyEvents_ArePassedThroughVerbatim()
+	public async Task Process_PoolRegistryKeyEvents_NeverCopyOrDelete_OnlyTriggerAGroupReconcile()
 	{
-		// Pool manifests stay client-authored until Phase 3: `changelog bundle` still enumerates a
-		// pool through its manifest, so the private copy is mirrored verbatim — never scrubbed,
-		// never reconciled.
+		// Pool manifests are reconciler-owned, same as bundles: the event only schedules a listing
+		// reconcile. Client JSON in the private bucket must never reach the public key.
 		const string poolRegistry = "changelog/elastic/kibana/main/registry.json";
-		const string content = /*lang=json,strict*/ """{"schema_version":1,"bundles":[{"file":"100.yaml"}]}""";
-		_ = _s3.Seed(PrivateBucket, poolRegistry, content);
+		_ = _s3.Seed(PrivateBucket, poolRegistry, /*lang=json,strict*/ """{"schema_version":1,"bundles":[{"file":"stale.yaml"}]}""");
+		_ = _s3.Seed(PublicBucket, "changelog/elastic/kibana/main/100.yaml", "scrubbed: entry");
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", poolRegistry)], Ctx);
 
 		failed.Should().BeEmpty();
-		_s3.ContentOf(PublicBucket, poolRegistry).Should().Be(content, "pass-through must not transform the manifest");
-		_metrics.GroupReconciles.Should().Be(0, "pool manifests are not reconciled");
-		_s3.Puts.Single(p => p.Key == poolRegistry).ContentType.Should().Be("application/json");
+		var manifest = PublicManifest(poolRegistry);
+		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
+		manifest.Product.Should().Be("elastic/kibana/main");
+		manifest.Bundles.Select(b => b.File).Should().Equal("100.yaml");
+		manifest.Bundles.Should().OnlyContain(b => b.Target == null);
+		_s3.GetsFor(PrivateBucket).Should().BeEmpty("the private pool registry content must never be read");
 	}
 
 	[Fact]
-	public async Task Process_PoolRegistryKeyEvents_WithPrivateGone_DeleteThePublicCopy()
+	public async Task Process_PoolRegistryKeyEvents_EmptyPublicGroup_DeletesTheManifest()
 	{
-		// State decides for pass-through keys too: Phase 3's private-manifest cleanup deletes will
-		// propagate and remove the public pool manifests with them.
+		// A registry-key event with no public YAML is an empty-group reconcile: absent ≠ empty.
 		const string poolRegistry = "changelog/elastic/kibana/main/registry.json";
 		_ = _s3.Seed(PublicBucket, poolRegistry, "{}");
 
@@ -154,7 +155,7 @@ public class ScrubberProcessorTests
 	}
 
 	[Fact]
-	public async Task Process_PoolYamlEvents_ScrubAndUpdateTheShallowMap_ButWriteNoPoolManifest()
+	public async Task Process_PoolYamlEvents_ScrubAndReconcileThePoolManifest()
 	{
 		_ = _s3.Seed(PrivateBucket, "changelog/elastic/kibana/main/100.yaml", "entry");
 
@@ -162,9 +163,11 @@ public class ScrubberProcessorTests
 
 		failed.Should().BeEmpty();
 		_s3.ContentOf(PublicBucket, "changelog/elastic/kibana/main/100.yaml").Should().Be("scrubbed: entry");
-		_s3.Exists(PublicBucket, "changelog/elastic/kibana/main/registry.json")
-			.Should().BeFalse("the reconciler no longer produces pool manifests");
-		_metrics.GroupReconciles.Should().Be(0);
+		var manifest = PublicManifest("changelog/elastic/kibana/main/registry.json");
+		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
+		manifest.Bundles.Select(b => b.File).Should().Equal("100.yaml");
+		manifest.Bundles.Should().OnlyContain(b => b.Target == null);
+		_metrics.GroupReconciles.Should().Be(1);
 
 		var map = ShallowMap("changelog/registry.json");
 		map.Should().ContainKey("elastic/kibana/main");

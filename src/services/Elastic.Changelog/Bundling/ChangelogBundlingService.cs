@@ -346,7 +346,7 @@ public partial class ChangelogBundlingService(
 
 			// Source and match changelog entries — from the CDN (default) or the local folder.
 			// Explicit --files / path-list selection bypasses content filters (IncludeAll): locally it loads
-			// the named paths, in CDN mode it selects pool entries by file name.
+			// the named paths, in CDN mode it GETs those pool objects by file name (no registry listing).
 			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
@@ -357,21 +357,32 @@ public partial class ChangelogBundlingService(
 			}
 			else if (useCdn)
 			{
-				var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
-				if (contents == null)
+				if (requestedEntryNames is null && prsToMatch.Count == 0 && issuesToMatch.Count == 0)
+				{
+					collector.EmitError(string.Empty,
+						"CDN entry sourcing requires a PR, issue, or file identity (--prs, --issues, --files, a URL/path list, or --start-git-ref). " +
+						"--all and product-only filters are not supported on the CDN yet; pass --force-local to read the local folder.");
 					return false;
+				}
+
+				IReadOnlyList<(string FileName, string Content)>? contents;
 				if (requestedEntryNames is not null)
 				{
-					var poolLabel = $"{authoringOwner}/{authoringRepo}/{authoringBranch}";
-					var selected = SelectRequestedCdnEntries(collector, contents, requestedEntryNames, poolLabel);
-					if (selected == null)
+					contents = await FetchCdnNamedEntriesAsync(
+						collector, authoringOwner, authoringRepo, authoringBranch, requestedEntryNames, ctx);
+					if (contents == null)
 						return false;
-					_logger.LogInformation("Matching {Count} explicitly selected changelog entries from the CDN", selected.Count);
+					_logger.LogInformation("Matching {Count} explicitly selected changelog entries from the CDN", contents.Count);
 					var filesCriteria = filterCriteria with { IncludeAll = true };
-					matchResult = entryMatcher.MatchChangelogContents(collector, selected, filesCriteria, ctx);
+					matchResult = entryMatcher.MatchChangelogContents(collector, contents, filesCriteria, ctx);
 				}
 				else
+				{
+					contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
+					if (contents == null)
+						return false;
 					matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
+				}
 			}
 			else
 			{
@@ -1152,55 +1163,64 @@ public partial class ChangelogBundlingService(
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}
 
+	/// <summary>
+	/// Downloads only the requested entry names from the CDN pool (no registry listing). Returns
+	/// <c>null</c> after emitting an error when any requested name cannot be fetched.
+	/// </summary>
+	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnNamedEntriesAsync(
+		IDiagnosticsCollector collector,
+		string? org,
+		string? repo,
+		string? branch,
+		IReadOnlyList<string> fileNames,
+		Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(repo))
+		{
+			collector.EmitError(string.Empty,
+				"Sourcing changelog entries from the CDN requires a resolvable authoring repository. " +
+				"Set bundle.repo in changelog.yml (or pass --repo), or set bundle.use_local_changelogs: true " +
+				"in changelog.yml / pass --directory to bundle local changelog files.");
+			return null;
+		}
+
+		var resolvedOrg = string.IsNullOrWhiteSpace(org) ? DefaultOwner : org;
+		var resolvedBranch = string.IsNullOrWhiteSpace(branch) ? DefaultBranch : branch;
+
+		var baseUri = ChangelogCdn.ResolveBaseUri();
+		if (baseUri is null)
+		{
+			collector.EmitError(string.Empty,
+				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+			return null;
+		}
+
+		var fatalFailure = false;
+		var entries = await _entryFetcher.FetchNamedAsync(
+			baseUri,
+			resolvedOrg,
+			repo,
+			resolvedBranch,
+			fileNames,
+			msg => { fatalFailure = true; collector.EmitError(string.Empty, msg); },
+			msg => collector.EmitWarning(string.Empty, msg),
+			ctx);
+
+		if (fatalFailure)
+			return null;
+
+		_logger.LogInformation("Sourced {Count} named changelog entr(ies) from the CDN for {Pool}",
+			entries.Count, $"{resolvedOrg}/{repo}/{resolvedBranch}");
+
+		return entries.Select(e => (e.FileName, e.Content)).ToList();
+	}
+
 	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--directory</c>), and a CDN base is configured.</summary>
 	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
 	{
 		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))
 			return false;
 		return ChangelogCdn.ResolveBaseUri() is not null;
-	}
-
-	/// <summary>
-	/// Selects the CDN-sourced entries whose file names were explicitly requested via <c>--files</c> / a
-	/// path list. Every requested name must exist in the pool: the registry is the source of truth for
-	/// what was uploaded, so a missing name means the entry never reached S3 (or the name is wrong) and
-	/// silently shipping an incomplete bundle is worse than failing the run. Returns <c>null</c> after
-	/// emitting an error when any requested name is missing.
-	/// </summary>
-	private IReadOnlyList<(string FileName, string Content)>? SelectRequestedCdnEntries(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<(string FileName, string Content)> contents,
-		IReadOnlyList<string> requestedEntryNames,
-		string poolLabel)
-	{
-		var byName = new Dictionary<string, string>(StringComparer.Ordinal);
-		foreach (var (fileName, content) in contents)
-			byName[fileName] = content;
-
-		var selected = new List<(string FileName, string Content)>();
-		var missing = new List<string>();
-		var seen = new HashSet<string>(StringComparer.Ordinal);
-		foreach (var name in requestedEntryNames)
-		{
-			if (!seen.Add(name))
-				continue;
-			if (byName.TryGetValue(name, out var content))
-				selected.Add((name, content));
-			else
-				missing.Add(name);
-		}
-
-		if (missing.Count > 0)
-		{
-			collector.EmitError(string.Empty,
-				$"Changelog entr{(missing.Count == 1 ? "y" : "ies")} not found in the CDN pool '{poolLabel}': {string.Join(", ", missing)}. " +
-				"Ensure the entries were uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead.");
-			return null;
-		}
-
-		_logger.LogInformation("Selected {Selected} of {Total} CDN entries by requested file name for {Pool}",
-			selected.Count, contents.Count, poolLabel);
-		return selected;
 	}
 
 	private bool ValidateInput(IDiagnosticsCollector collector, BundleChangelogsArguments input, bool requireDirectoryExists)

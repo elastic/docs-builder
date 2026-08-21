@@ -43,13 +43,13 @@ Supply filter flags directly when you don't have a profile configured or need a 
 
 Exactly one of the following filter flags is required:
 
-- `--all` — include every changelog in the directory
-- `--input-products` — match by product, target date, and lifecycle (e.g. `"elasticsearch * *"`)
-- `--prs` — filter by PR URLs or a newline-delimited file of PR URLs
-- `--issues` — filter by issue URLs or a newline-delimited file of issue URLs
+- `--all` — include every changelog in the directory (local sourcing only; on the CDN this errors and asks for `--force-local`)
+- `--input-products` — match by product, target date, and lifecycle (e.g. `"elasticsearch * *"`). On the CDN this also requires a PR, issue, or file identity; product-only CDN runs error and ask for `--force-local`.
+- `--prs` — filter by PR URLs or a newline-delimited file of PR URLs. An entry matches when **leading filename digits** equal the PR number **or** YAML `prs:` contains it (the same join git-ref uses). Empty `prs:` is fine when the filename carries the PR (for example `12345.yaml` after public scrubbing).
+- `--issues` — filter by issue URLs or a newline-delimited file of issue URLs (YAML `issues:` on the downloaded pool)
 - `--release-version` — fetch PR references from a GitHub release tag (e.g. `v9.2.0` or `latest`)
 - `--report` — filter by PRs referenced in a promotion report (URL or local file)
-- `--files` — include specific changelog YAML paths, or a newline-delimited path list file
+- `--files` — include specific changelog YAML paths, or a newline-delimited path list file. On the CDN this GETs those basenames only and does not read `registry.json`.
 - `--start-git-ref` + `--end-git-ref` — derive the PR list from a git commit range (see [Commit-range mode](#git-ref-mode))
 
 `--force-local` is not a filter. It forces local entry sourcing for the run (equivalent to `bundle.use_local_changelogs: true` without editing config) and is allowed in both option-based and profile-based modes.
@@ -408,7 +408,7 @@ In profile mode, pass the same path list as a positional argument:
 docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelog_files.txt
 ```
 
-`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN pool entries by file name and do not need to exist locally — useful for private repositories whose entries exist only in S3 and whose public copies have PR/issue references scrubbed, so PR-based filters cannot match. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
+`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are **GET by file name** and do not need to exist locally — the pool `registry.json` is not read. This is useful for private repositories whose entries exist only in S3. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
 
 ### Force local entry sourcing [changelog-bundle-force-local]
 
