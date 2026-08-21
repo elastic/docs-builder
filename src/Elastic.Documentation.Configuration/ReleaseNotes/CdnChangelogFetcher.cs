@@ -12,6 +12,15 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
+/// One named parent bundle plus its amend sidecars, fetched from the product bundle tree
+/// (<c>bundle/{product}/</c>) without downloading the rest of the catalog.
+/// </summary>
+public readonly record struct CdnNamedBundle(
+	string FileName,
+	string Content,
+	IReadOnlyList<CdnChangelogEntry> AmendSidecars);
+
+/// <summary>
 /// Fetches changelog bundles for a single product from the public CDN. It reads
 /// <c>{base}/bundle/{product}/registry.json</c> to enumerate bundles, downloads each
 /// <c>{base}/bundle/{product}/{file}</c>, and parses them via
@@ -162,6 +171,97 @@ public sealed class CdnChangelogFetcher : IDisposable
 		}
 
 		return _bundleLoader.LoadBundlesFromContent(contents, emitWarning);
+	}
+
+	/// <summary>
+	/// Fetches a single parent bundle and its listed <c>{name}.amend-N.yaml</c> sidecars from the
+	/// product tree. Reads <c>bundle/{product}/registry.json</c> (the scrubber-maintained bundle
+	/// index, not the changelog-entry pool) so sibling amends can be enumerated without downloading
+	/// the rest of the catalog. Returns <c>null</c> after emitting an error when the registry cannot
+	/// be read, the file is not listed, or a listed parent/amend cannot be fetched.
+	/// </summary>
+	public async Task<CdnNamedBundle?> FetchNamedBundleAsync(
+		Uri baseUri,
+		string product,
+		string fileName,
+		Action<string> emitError,
+		Cancel ctx)
+	{
+		if (!ChangelogKeys.IsValidProduct(product))
+		{
+			emitError($"Invalid changelog product '{product}': must be non-empty ASCII letters, digits, '_' or '-'.");
+			return null;
+		}
+
+		if (!ChangelogKeys.IsSafeFileName(fileName))
+		{
+			emitError($"Invalid changelog bundle file name '{fileName}'.");
+			return null;
+		}
+
+		var registryUri = Combine(baseUri, [.. ChangelogKeys.BundleSegments(product), ChangelogKeys.RegistryFileName]);
+
+		ChangelogRegistry? registry;
+		try
+		{
+			_logger.LogInformation("Fetching changelog registry {RegistryUri}", registryUri);
+			var registryText = await FetchTextAsync(registryUri, ctx).ConfigureAwait(false);
+			registry = JsonSerializer.Deserialize(registryText, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			emitError($"Could not fetch changelog registry for product '{product}' from {registryUri}: {ex.Message}");
+			return null;
+		}
+
+		if (registry is null)
+		{
+			emitError($"Changelog registry for product '{product}' at {registryUri} was empty or unparseable.");
+			return null;
+		}
+
+		if (registry.SchemaVersion > SupportedSchemaVersion)
+		{
+			emitError(
+				$"Changelog registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
+			return null;
+		}
+
+		var listed = registry.Bundles
+			.Where(b => ChangelogKeys.IsSafeFileName(b.File))
+			.ToList();
+
+		var parentEntry = listed.Find(b => string.Equals(b.File, fileName, StringComparison.OrdinalIgnoreCase));
+		if (parentEntry?.File is null)
+		{
+			emitError($"Bundle '{fileName}' is not listed in the changelog registry for product '{product}'.");
+			return null;
+		}
+
+		var parent = await DownloadOrCacheBundleAsync(baseUri, product, parentEntry.File, parentEntry.ETag, emitError, ctx)
+			.ConfigureAwait(false);
+		if (parent is null)
+			return null;
+
+		var amendEntries = listed
+			.Where(b => b.File is not null
+				&& BundleAmendMerger.IsAmendFile(b.File)
+				&& string.Equals(BundleAmendMerger.GetParentBundlePath(b.File), parent.Value.FileName, StringComparison.OrdinalIgnoreCase))
+			.OrderBy(b => BundleAmendMerger.GetAmendFileNumber(b.File!))
+			.ToList();
+
+		var amends = new List<CdnChangelogEntry>(amendEntries.Count);
+		foreach (var amend in amendEntries)
+		{
+			ctx.ThrowIfCancellationRequested();
+			var fetched = await DownloadOrCacheBundleAsync(baseUri, product, amend.File!, amend.ETag, emitError, ctx)
+				.ConfigureAwait(false);
+			if (fetched is null)
+				return null;
+			amends.Add(new CdnChangelogEntry(fetched.Value.FileName, fetched.Value.Content));
+		}
+
+		return new CdnNamedBundle(parent.Value.FileName, parent.Value.Content, amends);
 	}
 
 	/// <summary>
