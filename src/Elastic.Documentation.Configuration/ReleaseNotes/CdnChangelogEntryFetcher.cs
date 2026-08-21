@@ -14,11 +14,21 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 public readonly record struct CdnChangelogEntry(string FileName, string Content);
 
 /// <summary>
+/// Result of fetching a subset of changelog entries by file name from a CDN pool.
+/// </summary>
+/// <param name="Entries">Successfully downloaded entries.</param>
+/// <param name="MissingFromRegistry">Requested names that the pool registry does not list.</param>
+public readonly record struct CdnNamedFetchResult(
+	IReadOnlyList<CdnChangelogEntry> Entries,
+	IReadOnlyList<string> MissingFromRegistry);
+
+/// <summary>
 /// Fetches the individual (scrubbed) changelog entries for a single authoring org/repo/branch pool from
-/// the public CDN, for the <c>changelog bundle</c> command when sourcing entries from S3 rather than a
-/// local folder. It reads <c>{base}/changelog/{org}/{repo}/{branch}/registry.json</c> to enumerate entries
-/// and downloads each <c>{base}/changelog/{org}/{repo}/{branch}/{file}</c> as raw YAML; the bundle command
-/// then applies its usual filter (products / prs / issues) to the downloaded set.
+/// the public CDN, for the <c>changelog bundle</c> and <c>changelog bundle-amend</c> commands when sourcing
+/// entries from S3 rather than a local folder. It reads <c>{base}/changelog/{org}/{repo}/{branch}/registry.json</c>
+/// to enumerate entries and downloads <c>{base}/changelog/{org}/{repo}/{branch}/{file}</c> as raw YAML.
+/// <c>changelog bundle</c> downloads the full pool then filters; <c>changelog bundle-amend</c> downloads
+/// only the requested file names.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -106,45 +116,11 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		Action<string> emitWarning,
 		Cancel ctx)
 	{
-		var poolLabel = $"{org}/{repo}/{branch}";
-
-		// Defense-in-depth: org/repo come from config and branch from config or CLI on the consumer side.
-		// Reject anything the producer would have refused to upload before building the URI, so it cannot
-		// normalize a "../" into a different changelog pool than intended.
-		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
-		{
-			emitError(
-				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'.");
+		var loaded = await TryLoadRegistryAsync(baseUri, org, repo, branch, emitError, ctx).ConfigureAwait(false);
+		if (loaded is null)
 			return [];
-		}
 
-		var poolSegments = ChangelogKeys.PoolSegments(org, repo, branch);
-		var registryUri = CombineSegments(baseUri, [.. poolSegments, ChangelogKeys.RegistryFileName]);
-
-		ChangelogRegistry? registry;
-		try
-		{
-			registry = await FetchRegistryAsync(registryUri, ctx).ConfigureAwait(false);
-		}
-		catch (Exception ex) when (ex is not OperationCanceledException)
-		{
-			emitError($"Could not fetch changelog entry registry for '{poolLabel}' from {registryUri}: {ex.Message}");
-			return [];
-		}
-
-		if (registry is null)
-		{
-			emitError($"Changelog entry registry for '{poolLabel}' at {registryUri} was empty or unparseable.");
-			return [];
-		}
-
-		if (registry.SchemaVersion > SupportedSchemaVersion)
-		{
-			emitError(
-				$"Changelog entry registry for '{poolLabel}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
-			return [];
-		}
-
+		var (poolLabel, poolSegments, registry) = loaded.Value;
 		var entries = new List<CdnChangelogEntry>(registry.Bundles.Count);
 		foreach (var entry in registry.Bundles)
 		{
@@ -176,6 +152,122 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 
 		_logger.LogInformation("Fetched {Count} changelog entry(ies) for {Pool} from {BaseUri}", entries.Count, poolLabel, baseUri);
 		return entries;
+	}
+
+	/// <summary>
+	/// Downloads only the requested changelog entries from the authoring pool. Reads the pool registry
+	/// once, then GETs each requested name that the registry lists. Names missing from the registry are
+	/// returned in <see cref="CdnNamedFetchResult.MissingFromRegistry"/> rather than treated as fatal
+	/// so callers such as <c>bundle-amend --force</c> can fall back to name-only matching.
+	/// Returns <c>null</c> after emitting an error when the registry cannot be read or a registry-listed
+	/// entry cannot be fetched.
+	/// </summary>
+	public async Task<CdnNamedFetchResult?> FetchNamedAsync(
+		Uri baseUri,
+		string org,
+		string repo,
+		string branch,
+		IReadOnlyList<string> fileNames,
+		Action<string> emitError,
+		Cancel ctx)
+	{
+		var loaded = await TryLoadRegistryAsync(baseUri, org, repo, branch, emitError, ctx).ConfigureAwait(false);
+		if (loaded is null)
+			return null;
+
+		var (poolLabel, poolSegments, registry) = loaded.Value;
+		var listed = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var entry in registry.Bundles)
+		{
+			if (!string.IsNullOrWhiteSpace(entry.File))
+				_ = listed.Add(entry.File);
+		}
+
+		var entries = new List<CdnChangelogEntry>();
+		var missing = new List<string>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var fileName in fileNames)
+		{
+			ctx.ThrowIfCancellationRequested();
+			if (string.IsNullOrWhiteSpace(fileName) || !seen.Add(fileName))
+				continue;
+
+			if (!listed.Contains(fileName))
+			{
+				missing.Add(fileName);
+				continue;
+			}
+
+			if (!ChangelogKeys.IsSafeFileName(fileName))
+			{
+				emitError($"Changelog entry '{fileName}' for '{poolLabel}' has an invalid file name.");
+				return null;
+			}
+
+			var entryUri = CombineSegments(baseUri, [.. poolSegments, fileName]);
+			var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, poolLabel, ctx).ConfigureAwait(false);
+			if (!fetched)
+			{
+				emitError(
+					$"Changelog entry '{fileName}' for '{poolLabel}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
+					"The scrubbed copy may not have propagated to the CDN yet; retry shortly, and if it persists check the changelog scrubber pipeline.");
+				return null;
+			}
+
+			entries.Add(new CdnChangelogEntry(fileName, content));
+		}
+
+		_logger.LogInformation(
+			"Fetched {Count} requested changelog entry(ies) for {Pool} from {BaseUri} ({Missing} missing from registry)",
+			entries.Count, poolLabel, baseUri, missing.Count);
+		return new CdnNamedFetchResult(entries, missing);
+	}
+
+	private async Task<(string PoolLabel, IReadOnlyList<string> PoolSegments, ChangelogRegistry Registry)?> TryLoadRegistryAsync(
+		Uri baseUri,
+		string org,
+		string repo,
+		string branch,
+		Action<string> emitError,
+		Cancel ctx)
+	{
+		var poolLabel = $"{org}/{repo}/{branch}";
+
+		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
+		{
+			emitError(
+				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'.");
+			return null;
+		}
+
+		var poolSegments = ChangelogKeys.PoolSegments(org, repo, branch);
+		var registryUri = CombineSegments(baseUri, [.. poolSegments, ChangelogKeys.RegistryFileName]);
+
+		ChangelogRegistry? registry;
+		try
+		{
+			registry = await FetchRegistryAsync(registryUri, ctx).ConfigureAwait(false);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			emitError($"Could not fetch changelog entry registry for '{poolLabel}' from {registryUri}: {ex.Message}");
+			return null;
+		}
+
+		if (registry is null)
+		{
+			emitError($"Changelog entry registry for '{poolLabel}' at {registryUri} was empty or unparseable.");
+			return null;
+		}
+
+		if (registry.SchemaVersion > SupportedSchemaVersion)
+		{
+			emitError(
+				$"Changelog entry registry for '{poolLabel}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
+			return null;
+		}
+
+		return (poolLabel, poolSegments, registry);
 	}
 
 	/// <summary>

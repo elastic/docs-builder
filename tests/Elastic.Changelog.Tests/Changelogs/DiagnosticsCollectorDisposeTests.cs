@@ -78,7 +78,7 @@ public class DiagnosticsCollectorDisposeTests
 		var collector = new DiagnosticsCollector([]);
 		collector.EmitWarning(string.Empty, "queued");
 
-		Func<Task> act = () => ((IDiagnosticsCollector)collector).WaitForDrain();
+		var act = () => ((IDiagnosticsCollector)collector).WaitForDrain();
 		_ = await act.Should().ThrowAsync<InvalidOperationException>();
 	}
 

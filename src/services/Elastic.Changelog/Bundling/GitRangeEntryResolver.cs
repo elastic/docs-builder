@@ -38,6 +38,13 @@ public record GitRangeEntryResolutionOptions
 	/// to any product (typically the profile's <c>output_products</c>). Wildcards are ignored.
 	/// </summary>
 	public IReadOnlyList<ProductArgument>? FallbackProducts { get; init; }
+
+	/// <summary>
+	/// When true, synthesize an in-memory entry from GitHub PR metadata if no matching changelog
+	/// YAML is found on the CDN (or in the local folder when local sourcing is forced).
+	/// When false (the default), unmatched PRs are warned and omitted like <c>--prs</c>.
+	/// </summary>
+	public bool InferMissingChangelogs { get; init; }
 }
 
 /// <summary>How a pull request's changelog entry was sourced for a commit-range bundle.</summary>
@@ -45,6 +52,9 @@ public enum GitRangePrSourceKind
 {
 	/// <summary>A checked-in entry existed in the entry pool (CDN or local directory).</summary>
 	Pool,
+
+	/// <summary>No pool entry and inferral is off; the PR is omitted (not notable / no YAML).</summary>
+	Unmatched,
 
 	/// <summary>Synthesized from PR metadata, including release-note text extracted from the PR body.</summary>
 	InferredPrBody,
@@ -97,7 +107,8 @@ public record GitRangeBundleReport
 		{
 			var source = row.Source switch
 			{
-				GitRangePrSourceKind.Pool => "pool",
+				GitRangePrSourceKind.Pool => "cdn",
+				GitRangePrSourceKind.Unmatched => "no changelog",
 				GitRangePrSourceKind.InferredPrBody => "inferred (PR body)",
 				GitRangePrSourceKind.InferredTitle => "inferred (title)",
 				GitRangePrSourceKind.Excluded => "excluded (rules)",
@@ -129,12 +140,12 @@ public record GitRangeEntryResolutionResult
 }
 
 /// <summary>
-/// Resolves the changelog entries for the pull requests of a commit range, applying the RFC's
-/// sourcing precedence per PR: a checked-in entry from the pool (matched by file-name-derived PR
-/// numbers — file names survive scrubbing — or by the entry's <c>prs</c> references) wins over an
-/// entry synthesized from PR metadata via the same extraction path <c>changelog add</c> uses
-/// (release-note text from the PR body, label-mapped type/areas/products); PRs whose metadata
-/// cannot be fetched are reported as missing rather than silently dropped.
+/// Resolves the changelog entries for the pull requests of a commit range. A checked-in entry from
+/// the pool (matched by file-name-derived PR numbers — file names survive scrubbing — or by the
+/// entry's <c>prs</c> references) wins. When <see cref="GitRangeEntryResolutionOptions.InferMissingChangelogs"/>
+/// is true, a pool miss synthesizes an entry from PR metadata via the same extraction path
+/// <c>changelog add</c> uses; otherwise the PR is warned and omitted like <c>--prs</c>. PRs whose
+/// metadata cannot be fetched (inferral on) are reported as missing rather than silently dropped.
 /// </summary>
 public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 {
@@ -186,6 +197,13 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 					Source = GitRangePrSourceKind.Pool,
 					EntryFileNames = fileNames
 				});
+				continue;
+			}
+
+			if (!options.InferMissingChangelogs)
+			{
+				collector.EmitWarning(string.Empty, $"No changelog file found for PR: {pr.Url}");
+				rows.Add(Row(pr, GitRangePrSourceKind.Unmatched));
 				continue;
 			}
 

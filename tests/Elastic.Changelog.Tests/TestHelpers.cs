@@ -46,7 +46,11 @@ public class TestLogger(ITestOutputHelper? output) : ILogger
 		public void Dispose() { }
 	}
 
-	public IDisposable BeginScope<TState>(TState state) where TState : notnull => new NullScope();
+	public IDisposable BeginScope<TState>(TState state) where TState : notnull
+	{
+		_ = state;
+		return new NullScope();
+	}
 
 	public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Trace;
 
@@ -58,15 +62,23 @@ public class TestLoggerProvider(ITestOutputHelper? output) : ILoggerProvider
 {
 	public void Dispose() => GC.SuppressFinalize(this);
 
-	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
+	public ILogger CreateLogger(string categoryName)
+	{
+		_ = categoryName;
+		return new TestLogger(output);
+	}
 }
 
 public class TestLoggerFactory(ITestOutputHelper? output) : ILoggerFactory
 {
 	public void Dispose() => GC.SuppressFinalize(this);
 
-	public void AddProvider(ILoggerProvider provider) { }
+	public void AddProvider(ILoggerProvider provider) => _ = provider;
 
-	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
+	public ILogger CreateLogger(string categoryName)
+	{
+		_ = categoryName;
+		return new TestLogger(output);
+	}
 }
 

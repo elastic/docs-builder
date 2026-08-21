@@ -52,6 +52,13 @@ public record BundleChangelogsArguments
 	/// </summary>
 	public bool ForceLocal { get; init; }
 
+	/// <summary>
+	/// When true, git-ref bundling synthesizes in-memory changelog entries from GitHub PR metadata
+	/// when no matching changelog YAML is found on the CDN (CLI <c>--infer</c>). Combined with
+	/// <c>bundle.infer_missing_changelogs</c> / profile override; default is false.
+	/// </summary>
+	public bool InferMissingChangelogs { get; init; }
+
 	public string? Owner { get; init; }
 	public string? Repo { get; init; }
 
@@ -183,9 +190,8 @@ public partial class ChangelogBundlingService(
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
 
-	// Defaults applied when sourcing CDN entries and the org/branch are not otherwise resolvable.
-	private const string DefaultOwner = "elastic";
-	private const string DefaultBranch = "main";
+	private const string DefaultOwner = ChangelogEntrySourcing.DefaultOwner;
+	private const string DefaultBranch = ChangelogEntrySourcing.DefaultBranch;
 
 	/// <summary>
 	/// UTF-8 encoding without BOM for writing YAML files.
@@ -268,10 +274,10 @@ public partial class ChangelogBundlingService(
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
 			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
 			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
-			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
+			var useCdn = ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
 
 			// Commit-range mode replaces the filter pipeline: the PR list is derived from git and
-			// each PR's entry is sourced pool-first with PR-metadata fallback.
+			// each PR's entry is sourced pool-first (PR-metadata inferral is opt-in via --infer).
 			if (!string.IsNullOrWhiteSpace(input.StartGitRef))
 			{
 				var sourcing = new GitRangeSourcingContext
@@ -595,6 +601,7 @@ public partial class ChangelogBundlingService(
 		string[]? mergedHideFeatures = null;
 		string? profileDescription = null;
 		var profileSuppressReleaseDate = false;
+		var inferMissingChangelogs = input.InferMissingChangelogs;
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
@@ -653,6 +660,8 @@ public partial class ChangelogBundlingService(
 			branch = profile.Branch ?? config.Bundle.Branch;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
+			inferMissingChangelogs = input.InferMissingChangelogs
+				|| (profile.InferMissingChangelogs ?? config.Bundle.InferMissingChangelogs ?? false);
 
 			// Handle profile-specific description with placeholder substitution
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
@@ -700,7 +709,8 @@ public partial class ChangelogBundlingService(
 			Branch = branch,
 			HideFeatures = mergedHideFeatures,
 			Description = profileDescription,
-			SuppressReleaseDate = profileSuppressReleaseDate
+			SuppressReleaseDate = profileSuppressReleaseDate,
+			InferMissingChangelogs = inferMissingChangelogs
 		};
 	}
 
@@ -718,6 +728,12 @@ public partial class ChangelogBundlingService(
 			if (input.DryRun)
 			{
 				collector.EmitError(string.Empty, "--dry-run is only supported when bundling a git commit range (--start-git-ref/--end-git-ref).");
+				return false;
+			}
+
+			if (input.InferMissingChangelogs)
+			{
+				collector.EmitError(string.Empty, "--infer is only supported when bundling a git commit range (--start-git-ref/--end-git-ref).");
 				return false;
 			}
 
@@ -811,8 +827,8 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// Bundles a git commit range: resolves the range to a PR list (compare API +
-	/// <c>associatedPullRequests</c>), sources each PR's entry with the pool-first /
-	/// inferred-from-PR-metadata precedence, and reports PRs and commits that produced no entry.
+	/// <c>associatedPullRequests</c>), sources each PR's entry pool-first, optionally synthesizes
+	/// from PR metadata when inferral is on, and reports PRs and commits that produced no entry.
 	/// In dry-run mode prints the run report instead of writing the bundle.
 	/// </summary>
 	private async Task<bool> BundleFromGitRange(
@@ -857,7 +873,8 @@ public partial class ChangelogBundlingService(
 			Repo = sourcing.Repo,
 			StartRef = input.StartGitRef!,
 			EndRef = input.EndGitRef!,
-			FallbackProducts = input.OutputProducts
+			FallbackProducts = input.OutputProducts,
+			InferMissingChangelogs = input.InferMissingChangelogs
 		}, ctx);
 
 		var report = result.Report.ToMarkdown();
@@ -935,6 +952,12 @@ public partial class ChangelogBundlingService(
 			? input.SuppressReleaseDate
 			: input.SuppressReleaseDate || !(config.Bundle.ReleaseDates ?? true);
 
+		// In profile mode, profile has already resolved inheritance (profile ?? bundle), so skip
+		// re-applying the bundle-level flag — otherwise profile false cannot override bundle true.
+		var inferMissingChangelogs = !string.IsNullOrWhiteSpace(input.Profile)
+			? input.InferMissingChangelogs
+			: input.InferMissingChangelogs || (config.Bundle.InferMissingChangelogs ?? false);
+
 		return input with
 		{
 			Directory = directory,
@@ -944,6 +967,7 @@ public partial class ChangelogBundlingService(
 			Branch = branch,
 			Description = description,
 			SuppressReleaseDate = suppressReleaseDate,
+			InferMissingChangelogs = inferMissingChangelogs,
 			LinkAllowRepos = config.Bundle.LinkAllowRepos
 		};
 	}
@@ -962,7 +986,7 @@ public partial class ChangelogBundlingService(
 		var needsNetwork = hasReleaseVersion;
 		var needsGithubToken = hasReleaseVersion;
 
-		// Commit-range bundling always needs the GitHub API (compare + GraphQL + PR metadata fallback).
+		// Commit-range bundling always needs the GitHub API (compare + GraphQL).
 		if (!string.IsNullOrWhiteSpace(input.StartGitRef) || !string.IsNullOrWhiteSpace(input.EndGitRef))
 		{
 			needsNetwork = true;
@@ -1004,7 +1028,7 @@ public partial class ChangelogBundlingService(
 			|| input.ForceLocal;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
-		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
+		if (ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
 			needsNetwork = true;
 
 		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults.
@@ -1150,14 +1174,6 @@ public partial class ChangelogBundlingService(
 			byName.Count, $"{resolvedOrg}/{repo}/{resolvedBranch}");
 
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
-	}
-
-	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--directory</c>), and a CDN base is configured.</summary>
-	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
-	{
-		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))
-			return false;
-		return ChangelogCdn.ResolveBaseUri() is not null;
 	}
 
 	/// <summary>

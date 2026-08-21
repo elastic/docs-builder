@@ -54,6 +54,8 @@ Exactly one of the following filter flags is required:
 
 `--force-local` is not a filter. It forces local entry sourcing for the run (equivalent to `bundle.use_local_changelogs: true` without editing config) and is allowed in both option-based and profile-based modes.
 
+`--infer` is not a filter. It is allowed in both option-based and profile-based modes, but only together with `--start-git-ref`/`--end-git-ref`. Equivalent to `bundle.infer_missing_changelogs: true`.
+
 ```sh
 # Bundle all changelogs in docs/changelog/
 docs-builder changelog bundle --all --directory docs/changelog
@@ -90,10 +92,10 @@ Both refs are always required together — the start ref is never inferred from 
 
 1. Enumerates the commits in `start..end` via the GitHub compare API (paginated).
 2. Resolves each commit to its merged pull request via GraphQL `associatedPullRequests`. Works for squash and merge commits on protected integration branches; commits with no associated PR are reported, never silently dropped. When a commit is associated with multiple merged PRs, the command warns and picks deterministically (merge-commit match first, then lowest PR number).
-3. Sources each PR's changelog entry with a fixed precedence:
-   - **A checked-in entry from the entry pool wins.** Pool entries are matched by file-name-derived PR numbers (file names survive scrubbing, so this works for private repos whose `prs` references were removed from public copies) or by the entry's `prs` references.
-   - **Otherwise the entry is synthesized from PR metadata** — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. `rules.create` label rules decide inclusion.
-   - **PRs whose metadata cannot be fetched are reported as missing** with a warning.
+3. Sources each PR's changelog YAML from the **CDN** (default) or the **local folder** (`--force-local`, `--directory`, or `bundle.use_local_changelogs`):
+   - Entries are matched by file-name-derived PR numbers (file names survive scrubbing, so this works for private repos whose `prs` references were removed from public CDN copies) or by the entry's `prs` references.
+   - PRs with no matching changelog YAML are **warned and omitted**, the same as `--prs`. A missing changelog is valid when the change is not notable. The run succeeds as long as at least one matching entry remains.
+   - Pass `--infer` (or set `bundle.infer_missing_changelogs: true` / `bundle.profiles.<name>.infer_missing_changelogs: true`) to **synthesize** an in-memory entry from GitHub PR metadata instead — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. `rules.create` label rules decide inclusion. PRs whose metadata cannot be fetched are reported as missing with a warning.
 4. Records the end ref in the bundle output as the `git_ref` metadata field.
 
 Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. When the profile has no explicit `output` pattern, the bundle name follows the `{product}-{version}.yaml` convention.
@@ -106,12 +108,34 @@ Commit-range mode requires a `GITHUB_TOKEN` environment variable: the GraphQL AP
 
 ### Dry run
 
-Pass `--dry-run` to resolve the range and print the run report — the resolved PR list with each PR's entry source (`pool`, `inferred (PR body)`, `inferred (title)`, `excluded (rules)`, or `missing`) plus any commits without an associated PR — as Markdown, without writing a bundle. The report is suitable for a release PR body or a CI job summary.
+Pass `--dry-run` to resolve the range and print the run report — the resolved PR list with each PR's entry source (`cdn`, `no changelog`, `inferred (PR body)`, `inferred (title)`, `excluded (rules)`, or `missing`) plus any commits without an associated PR — as Markdown, without writing a bundle. The report is suitable for a release PR body or a CI job summary. `cdn` means a matching changelog YAML was found (from the public CDN, or from the local folder when you force local sourcing). By default, unmatched PRs appear as `no changelog`; `inferred` rows appear only when `--infer` (or the equivalent YAML) is set.
 
 ```sh
 docs-builder changelog bundle serverless-release 2026-08-13 \
   --start-git-ref abc123 --end-git-ref def456 --dry-run
 ```
+
+To include synthesized copy for PRs that have no matching changelog YAML on the CDN:
+
+```sh
+docs-builder changelog bundle serverless-release 2026-08-13 \
+  --start-git-ref abc123 --end-git-ref def456 --infer
+```
+
+### Inferred entries and bundle-amend [inferred-entries]
+
+An inferred entry is embedded in the bundle like any other changelog: full `title`, `type`, `products`, and the rest of the fields. Its `file.name` is `{pull-request-number}.yaml` (for example `300.yaml` for PR 300). That name is what the `--dry-run` report lists in the Entry column. `docs-builder` does not write a changelog YAML file for that PR to disk, S3, or the CDN.
+
+`changelog bundle-amend --remove` excludes by file name. Pass `--force` when there is no source YAML (inferred entries have none on disk or on the CDN) so matching is by filename only:
+
+```sh
+docs-builder changelog bundle-amend ./docs/releases/cloud-hosted-2026-08-13.yaml \
+  --remove 300.yaml --force
+```
+
+To replace the inferred copy, exclude it that way, then `--add` a real changelog YAML (from the CDN, or from disk with `--force-local`). The added file's name becomes the new `file.name`.
+
+If you can, author a real changelog (`changelog add`, submit, and upload) so the next git-ref bundle picks it up from the CDN. You can then amend it with a normal `--remove` / `--add` path. Refer to [](/cli/changelog/bundle-amend.md#inferred-git-ref-entry).
 
 ## Bundles are self-contained
 
@@ -408,7 +432,7 @@ In profile mode, pass the same path list as a positional argument:
 docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelog_files.txt
 ```
 
-`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN pool entries by file name and do not need to exist locally — useful for private repositories whose entries exist only in S3 and whose public copies have PR/issue references scrubbed, so PR-based filters cannot match. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
+`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN entries by file name and do not need to exist locally — useful for private repositories whose entries exist only in S3 and whose public copies have PR/issue references scrubbed, so PR-based filters cannot match. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
 
 ### Force local entry sourcing [changelog-bundle-force-local]
 
@@ -420,7 +444,7 @@ docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/prs.txt 
 ```
 
 `--force-local` is allowed in both option-based and profile-based commands.
-Use it with path-list / `--files` filters when the listed files should be read from disk instead of matched against the CDN pool.
+Use it with path-list / `--files` filters when the listed files should be read from disk instead of matched against the CDN.
 
 ### Hide features [changelog-bundle-hide-features]
 
