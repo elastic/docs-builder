@@ -265,12 +265,12 @@ Content for removed version
 		var expectedKeys = new Dictionary<string, string>
 		{
 			// These are the actual SHA256-based hashes that should never change
-			// (unless the version format actually changes)
+			// unless the normalized applicability meaning intentionally changes.
 			{ "stack: ga 9.1", "applies-A8B9CC9C" },
 			{ "stack: preview 9.0", "applies-66AECC4E" },
 			{ "ess: ga 8.11", "applies-9CA8543E" },
 			{ "deployment: { ece: ga 9.0, ess: ga 9.1 }", "applies-51C670D4" },
-			{ "serverless: all", "applies-A34B17C6" }
+			{ "serverless: all", "applies-E100A717" }
 		};
 
 		foreach (var (definition, expectedKey) in expectedKeys)
@@ -279,7 +279,7 @@ Content for removed version
 
 			actualKey.Should().Be(expectedKey,
 				$"The sync key for '{definition}' must match the expected value. " +
-				$"If this fails, the hash algorithm has changed and will break sync IDs across builds!");
+				$"If this fails unexpectedly, the hash algorithm or normalized applicability output has changed and will break sync IDs across builds!");
 
 			// Also verify multiple invocations in this run produce the same key
 			var keys = Enumerable.Range(0, 5)

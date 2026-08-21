@@ -74,6 +74,7 @@ public class ProductVersionInferrerService(ProductsConfiguration productsConfigu
 				{ Elasticsearch: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ElasticsearchProject],
 				{ Observability: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.ObservabilityProject],
 				{ Security: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.SecurityProject],
+				{ VectorDatabase: not null } => VersionsConfiguration.VersioningSystems[VersioningSystemId.Serverless],
 				_ => null
 			};
 			if (versioning is not null)

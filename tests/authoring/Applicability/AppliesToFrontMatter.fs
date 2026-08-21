@@ -51,7 +51,83 @@ applies_to:
             Serverless=ServerlessProjectApplicability(
                 Elasticsearch=expectedAvailability,
                 Observability=expectedAvailability,
-                Security=expectedAvailability
+                Security=expectedAvailability,
+                VectorDatabase=expectedAvailability
+            )
+        ))
+
+type ``parses serverless vector database project`` () =
+    static let markdown = frontMatter """
+applies_to:
+   serverless:
+      vectordb: ga
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                VectorDatabase=AppliesCollection.op_Explicit "ga"
+            )
+        ))
+
+type ``parses top level vectordb as serverless project`` () =
+    static let markdown = frontMatter """
+applies_to:
+   vectordb: ga
+"""
+    [<Fact>]
+    let ``apply matches expected`` () =
+        markdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                VectorDatabase=AppliesCollection.op_Explicit "ga"
+            )
+        ))
+
+type ``serverless shorthand with top level project override`` () =
+    static let markdown = frontMatter """
+applies_to:
+   serverless: ga
+   vectordb: preview
+"""
+    [<Fact>]
+    let ``overrides only the specified serverless project`` () =
+        let expectedAvailability = AppliesCollection.op_Explicit "ga"
+        markdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                Elasticsearch=expectedAvailability,
+                Observability=expectedAvailability,
+                Security=expectedAvailability,
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
+            )
+        ))
+
+type ``empty serverless shorthand with top level project override`` () =
+    static let overriddenMarkdown = frontMatter """
+applies_to:
+   serverless:
+   vectordb: preview
+"""
+    static let subsequentMarkdown = frontMatter """
+applies_to:
+   serverless:
+"""
+    [<Fact>]
+    let ``does not mutate shared serverless defaults`` () =
+        let expectedAvailability = AppliesCollection.op_Explicit "all"
+        overriddenMarkdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                Elasticsearch=expectedAvailability,
+                Observability=expectedAvailability,
+                Security=expectedAvailability,
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
+            )
+        ))
+        subsequentMarkdown |> appliesTo (ApplicableTo(
+            Serverless=ServerlessProjectApplicability(
+                Elasticsearch=expectedAvailability,
+                Observability=expectedAvailability,
+                Security=expectedAvailability,
+                VectorDatabase=expectedAvailability
             )
         ))
 
@@ -62,6 +138,7 @@ applies_to:
       security: ga
       elasticsearch: beta
       observability: removed
+      vectordb: preview
 """
     [<Fact>]
     let ``apply matches expected`` () =
@@ -69,7 +146,8 @@ applies_to:
             Serverless=ServerlessProjectApplicability(
                 Security=AppliesCollection.op_Explicit "ga",
                 Elasticsearch=AppliesCollection.op_Explicit "beta",
-                Observability=AppliesCollection.op_Explicit "removed"
+                Observability=AppliesCollection.op_Explicit "removed",
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
             )
         ))
 
@@ -244,6 +322,7 @@ applies_to:
   security: ga
   elasticsearch: beta
   observability: removed
+  vectordb: preview
   product: preview 9.5, removed 9.7
   apm_agent_dotnet: ga 9.0
   ecctl: ga 10.0
@@ -261,7 +340,8 @@ applies_to:
             Serverless=ServerlessProjectApplicability(
                 Security=AppliesCollection.op_Explicit "ga",
                 Elasticsearch=AppliesCollection.op_Explicit "beta",
-                Observability=AppliesCollection.op_Explicit "removed"
+                Observability=AppliesCollection.op_Explicit "removed",
+                VectorDatabase=AppliesCollection.op_Explicit "preview"
             ),
             Stack=AppliesCollection.op_Explicit "ga 9.1.0",
             Product=AppliesCollection.op_Explicit "preview 9.5, removed 9.7",
@@ -449,6 +529,16 @@ applies_to:
     [<Fact>]
     let ``emits error for versioned elasticsearch project`` () =
         markdown |> hasError "Can't specify a version for 'elasticsearch'"
+
+type ``serverless vector database with version emits error`` () =
+    static let markdown = frontMatter """
+applies_to:
+   serverless:
+      vectordb: ga 9.5
+"""
+    [<Fact>]
+    let ``emits error for versioned vector database project`` () =
+        markdown |> hasError "Can't specify a version for 'vectordb'"
 
 type ``deployment ess with version emits error`` () =
     static let markdown = frontMatter """

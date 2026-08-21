@@ -62,7 +62,7 @@ public record CliCommandFile : IO.MarkdownFile
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
 		var markdown = BuildMarkdown();
-		return Task.FromResult(MarkdownParser.ParseStringAsync(markdown, SourceFile, null));
+		return Task.FromResult(MarkdownParser.ParseStringAsync(markdown, SourceFile, YamlFrontMatter));
 	}
 
 	private string BuildMarkdown()
