@@ -431,7 +431,7 @@ This prevents silent data loss where changelog entries would be quietly omitted 
 
 To fix this, re-create the bundle with `docs-builder changelog bundle` so every entry is embedded.
 
-`bundle-amend --remove` only applies when the source changelog file is still available (for example, to drop an entry from the effective bundle before you delete the file with `changelog remove`).
+`bundle-amend --remove` excludes an entry from the effective bundle. When the changelog exists on the CDN (or still on disk), the command matches it by file name and checksum. Use `--force` to match by file name only when the checksum differs or no YAML can be sourced.
 
 ## Example
 

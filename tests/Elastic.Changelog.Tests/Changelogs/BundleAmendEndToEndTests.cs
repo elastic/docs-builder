@@ -88,7 +88,8 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 		{
 			BundlePath = parentPath,
 			AddFiles = [addedFile],
-			RemoveFiles = [retractedFile]
+			RemoveFiles = [retractedFile],
+			ForceLocal = true
 		}, ct);
 
 		amendResult.Should().BeTrue();

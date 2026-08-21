@@ -183,9 +183,8 @@ public partial class ChangelogBundlingService(
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
 
-	// Defaults applied when sourcing CDN entries and the org/branch are not otherwise resolvable.
-	private const string DefaultOwner = "elastic";
-	private const string DefaultBranch = "main";
+	private const string DefaultOwner = ChangelogEntrySourcing.DefaultOwner;
+	private const string DefaultBranch = ChangelogEntrySourcing.DefaultBranch;
 
 	/// <summary>
 	/// UTF-8 encoding without BOM for writing YAML files.
@@ -272,7 +271,7 @@ public partial class ChangelogBundlingService(
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
 			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
 			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
-			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
+			var useCdn = ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
 
 			// Commit-range mode replaces the filter pipeline: the PR list is derived from git and
 			// each PR's entry is sourced pool-first with PR-metadata fallback.
@@ -1028,7 +1027,7 @@ public partial class ChangelogBundlingService(
 			|| input.ForceLocal;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
-		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
+		if (ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
 			needsNetwork = true;
 
 		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults: the
@@ -1490,14 +1489,6 @@ public partial class ChangelogBundlingService(
 		if (!string.Equals(prRepo, authoringRepo, StringComparison.OrdinalIgnoreCase))
 			return false;
 		return int.TryParse(normalized[(hashIndex + 1)..], out prNumber) && prNumber > 0;
-	}
-
-	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--directory</c>), and a CDN base is configured.</summary>
-	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
-	{
-		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))
-			return false;
-		return ChangelogCdn.ResolveBaseUri() is not null;
 	}
 
 	/// <summary>
