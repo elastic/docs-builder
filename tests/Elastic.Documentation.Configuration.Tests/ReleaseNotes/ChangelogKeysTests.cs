@@ -260,4 +260,34 @@ public class ChangelogKeysTests
 	[InlineData("changelog/elastic/elastic search/main/registry.json")]
 	public void IsRegistry_InvalidKeys_ReturnsFalse(string key) =>
 		ChangelogKeys.IsRegistry(key).Should().BeFalse();
+
+	[Theory]
+	[InlineData("/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
+	[InlineData("bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
+	[InlineData("https://cdn.example/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
+	[InlineData("https://cdn.example/prefix/bundle/kibana/9.3.0.yaml", "kibana", "9.3.0.yaml")]
+	[InlineData("/bundle/elasticsearch/9.3.0.amend-1.yaml", "elasticsearch", "9.3.0.amend-1.yaml")]
+	public void TryParseBundleLocator_BundlePaths_ReturnsProductAndFile(string input, string product, string fileName)
+	{
+		var parsed = ChangelogKeys.TryParseBundleLocator(input, out var parsedProduct, out var parsedFile);
+		parsed.Should().BeTrue();
+		parsedProduct.Should().Be(product);
+		parsedFile.Should().Be(fileName);
+	}
+
+	[Theory]
+	[InlineData("/changelog/elastic/kibana/main/entry.yaml")]
+	[InlineData("https://cdn.example/changelog/elastic/kibana/main/entry.yaml")]
+	[InlineData("/bundle/elasticsearch")]
+	[InlineData("not-a-path")]
+	[InlineData("bundle/foo.bar/9.3.0.yaml")]
+	[InlineData("/bundle/elasticsearch/a/b.yaml")]
+	[InlineData("")]
+	[InlineData(null)]
+	public void TryParseBundleLocator_NonBundlePaths_ReturnsFalse(string? input)
+	{
+		ChangelogKeys.TryParseBundleLocator(input, out var product, out var fileName).Should().BeFalse();
+		product.Should().BeNull();
+		fileName.Should().BeNull();
+	}
 }
