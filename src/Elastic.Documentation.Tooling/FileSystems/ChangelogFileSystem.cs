@@ -10,13 +10,14 @@ namespace Elastic.Documentation.FileSystems;
 
 /// <summary>
 /// Scope for changelog commands: the git root of the target repository.
-/// Allows reading <c>.git</c> metadata (remote URL, branch); does not include
-/// AppData or build artifacts — changelog operates only within the repo working tree.
+/// Allows reading <c>.git</c> metadata (remote URL, branch) and writing under
+/// the conventional <c>.artifacts</c> CI staging directory. Does not include
+/// AppData — changelog operates only within the repo working tree.
 /// </summary>
 public class ChangelogFileSystem(IDirectoryInfo root, IFileSystem? inner = null)
 	: ScopedFileSystem(inner ?? Physical, new ScopedFileSystemOptions([root.FullName])
 	{
-		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
+		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
 	}),
 	IChangelogFileSystem
