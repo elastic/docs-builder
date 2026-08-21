@@ -10,9 +10,9 @@ namespace Elastic.SiteSearch.Cli.LabsCrawl;
 /// <summary>Labs-only sitemap URLs and crawl planning (vendored from site crawler logic).</summary>
 public static class LabsSiteCrawlPlanner
 {
+	// search-labs is sourced from Contentstack (see essc contentstack sync) and is no longer crawled here.
 	public static readonly string[] LabsSitemapUrls =
 	[
-		"https://www.elastic.co/search-labs/sitemap.xml",
 		"https://www.elastic.co/security-labs/sitemap.xml",
 		"https://www.elastic.co/observability-labs/sitemap.xml"
 	];
@@ -32,7 +32,6 @@ public static class LabsSiteCrawlPlanner
 
 	private static readonly (string Pattern, string Label)[] PathEntries =
 	[
-		("/search-labs/", "/search-labs/"),
 		("/security-labs/", "/security-labs/"),
 		("/observability-labs/", "/observability-labs/")
 	];

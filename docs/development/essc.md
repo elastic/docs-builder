@@ -17,11 +17,16 @@ existing interface.
 
 Current sources:
 
-| Source       | Namespace           | Description                                          |
-| ------------ | ------------------- | ---------------------------------------------------- |
-| Contentstack | `contentstack`      | elastic.co marketing, blog, product, and event pages |
-| Labs         | `labs`              | Search, security, and observability labs properties  |
-| Legacy docs  | `guide` _(planned)_ | `/guide` legacy documentation                        |
+| Source       | Namespace           | Description                                                             |
+| ------------ | ------------------- | ------------------------------------------------------------------------ |
+| Contentstack | `contentstack`      | elastic.co marketing, blog, product, event, and Search Labs pages       |
+| Labs         | `labs`              | Security and observability labs properties                             |
+| Legacy docs  | `guide` _(planned)_ | `/guide` legacy documentation                                           |
+
+Search Labs (`/search-labs/*` — blog, tutorials, notebooks, integrations) is sourced from
+Contentstack rather than crawled: it moved off the `labs` HTML crawler and is now indexed by
+`contentstack sync` alongside the rest of the marketing site. Security Labs and Observability Labs
+are still crawled by `labs sync`.
 
 ## Installation
 

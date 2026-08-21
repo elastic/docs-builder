@@ -250,6 +250,102 @@ public class ContentStackMappingTests
 		doc.Hash.Should().NotBeNullOrEmpty();
 	}
 
+	/// <summary>Covers: tutorial, tutorial_page, tutorial_chapter, labs_integration (rich-text JSON AST body + description)</summary>
+	[Fact]
+	public void RichTextPage_Maps_ProseMirrorBodyAndDescription()
+	{
+		var item = LoadFixture("rich_text_page.json", "labs_integration");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Path.Should().Be("/search-labs/integrations/amazon-bedrock");
+		doc.Section.Should().Be("search-labs");
+		doc.Body.Should().Contain("Amazon Bedrock makes leading foundation models available");
+		doc.Body.Should().Contain("RAG using Bedrock");
+		doc.Body.Should().NotContain("<p>");
+		doc.Body.Should().NotContain("<h3>");
+		doc.Headings.Should().Contain("Blogs to get started");
+		doc.Description.Should().Contain("fully managed service offering foundation models");
+		doc.Hash.Should().NotBeNullOrEmpty();
+	}
+
+	/// <summary>Covers: blog_v3 (rich-text body nested under main_content.body.content_l10n + summary_l10n description)</summary>
+	[Fact]
+	public void BlogV3_Maps_NestedRichTextBodyAndSummary()
+	{
+		var item = LoadFixture("rich_text_blog_v3.json", "blog_v3");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Path.Should().Be("/search-labs/blog/hybrid-search-with-elasticsearch");
+		doc.Section.Should().Be("search-labs");
+		doc.Body.Should().Contain("Hybrid search combines BM25 lexical scoring");
+		doc.Body.Should().NotContain("<p>");
+		doc.Headings.Should().Contain("Why hybrid search");
+		doc.Description.Should().Be("Combine lexical and semantic search for better relevance.");
+		doc.PublishedDate.Should().NotBeNull();
+	}
+
+	/// <summary>Covers: tutorials_landing, integrations_landing, blog_landing (page_info.subheading_l10n description, no body)</summary>
+	[Fact]
+	public void LandingPage_Maps_SubheadingDescription_NoBody()
+	{
+		var item = LoadFixture("landing_page.json", "tutorials_landing");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Path.Should().Be("/search-labs/tutorials");
+		doc.Section.Should().Be("search-labs");
+		doc.Description.Should().Be("Long-form guides to get you started");
+		// No main_content on landing pages — body falls back to the description.
+		doc.Body.Should().Be(doc.Description);
+	}
+
+	/// <summary>Covers: notebook, series, labs_category, labs_homepage, glossary, examples_landing (plain description_l10n, no body)</summary>
+	[Fact]
+	public void DescriptionOnly_Maps_PlainDescription_NoBody()
+	{
+		var item = LoadFixture("description_only.json", "notebook");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Section.Should().Be("search-labs");
+		doc.Description.Should().Contain("Learn how to build a RAG system");
+		doc.Body.Should().Be(doc.Description);
+		doc.Headings.Should().BeEmpty();
+	}
+
+	/// <summary>Empty page_info.description.content_simple_l10n must not win over the SEO fallback.</summary>
+	[Fact]
+	public void ToSiteDocument_LandingPage_WithEmptyRichDescription_FallsBackToSeo()
+	{
+		var item = LoadFromJson(/*lang=json,strict*/ """
+			{ "title": "Integrations", "url": "/search-labs/integrations", "locale": "en-us",
+			  "page_info": { "description": { "content_simple_l10n": { "type": "doc", "children": [] } } },
+			  "seo": { "seo_description_l10n": "Browse Search Labs integrations." } }
+			""", "integrations_landing");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Description.Should().Be("Browse Search Labs integrations.");
+	}
+
+	/// <summary>page_info.description.content_simple_l10n is used when there's no subheading_l10n.</summary>
+	[Fact]
+	public void ToSiteDocument_GlossaryPage_UsesPageInfoRichTextDescription_WhenNoSubheading()
+	{
+		var item = LoadFromJson(/*lang=json,strict*/ """
+			{ "title": "Glossary", "url": "/glossary", "locale": "en-us",
+			  "page_info": { "description": { "content_simple_l10n": { "type": "doc",
+			    "children": [ { "type": "p", "children": [ { "text": "All the terms, concepts, and abbreviations." } ] } ] } } } }
+			""", "glossary");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Description.Should().Contain("terms, concepts, and abbreviations");
+		doc.Section.Should().Be("glossary");
+	}
+
 	// --- Body projection helper tests ---
 
 	[Fact]
@@ -292,6 +388,9 @@ public class ContentStackMappingTests
 	[Fact]
 	public void GetNavigationSection_Classifies_Known_Paths()
 	{
+		ContentStackMapper.GetNavigationSection("/search-labs").Should().Be("search-labs");
+		ContentStackMapper.GetNavigationSection("/search-labs/blog/some-post").Should().Be("search-labs");
+		ContentStackMapper.GetNavigationSection("/glossary").Should().Be("glossary");
 		ContentStackMapper.GetNavigationSection("/blog/some-post").Should().Be("blog");
 		ContentStackMapper.GetNavigationSection("/what-is/elasticsearch").Should().Be("concept");
 		ContentStackMapper.GetNavigationSection("/webinars/live-event").Should().Be("webinar");

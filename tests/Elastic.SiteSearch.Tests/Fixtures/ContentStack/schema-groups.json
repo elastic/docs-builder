@@ -51,6 +51,26 @@
       "body_strategy": "paragraph_l10n (short text)",
       "content_types": ["customer_tile"]
     },
+    "rich_text_page": {
+      "fixture": "rich_text_page.json",
+      "body_strategy": "main_content.content_l10n (ProseMirror-style JSON AST) + description_l10n.content_simple_l10n (rich-text description)",
+      "content_types": ["tutorial", "tutorial_page", "tutorial_chapter", "labs_integration"]
+    },
+    "rich_text_blog_v3": {
+      "fixture": "rich_text_blog_v3.json",
+      "body_strategy": "main_content.body.content_l10n (rich-text nested one level deeper than other rich-text types) + summary_l10n description",
+      "content_types": ["blog_v3"]
+    },
+    "landing_page": {
+      "fixture": "landing_page.json",
+      "body_strategy": "No body content - page_info.subheading_l10n / page_info.description.content_simple_l10n description fallback only",
+      "content_types": ["tutorials_landing", "integrations_landing", "blog_landing"]
+    },
+    "description_only": {
+      "fixture": "description_only.json",
+      "body_strategy": "description_l10n (plain string) - no body content, falls back to description",
+      "content_types": ["notebook", "series", "labs_category", "labs_homepage", "glossary", "examples_landing"]
+    },
     "minimal_page": {
       "fixture": "minimal_page.json",
       "body_strategy": "No body content - title/url/seo only",
