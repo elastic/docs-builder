@@ -47,7 +47,7 @@ public class CliSupplementalDocTests
 		var supplemental = CliSupplementalDoc.Parse(raw);
 
 		supplemental.Should().NotBeNull();
-		supplemental!.FrontMatter.Should().NotBeNullOrWhiteSpace();
+		supplemental.FrontMatter.Should().NotBeNullOrWhiteSpace();
 		supplemental.FrontMatter.Should().Contain("applies_to:");
 		supplemental.FrontMatter.Should().Contain("stack: preview");
 	}
@@ -90,8 +90,8 @@ public class CliSupplementalDocTests
 		var supplemental = CliSupplementalDoc.Parse(raw);
 		var markdown = CliMarkdownGenerator.RootPage(schema, supplemental).ReplaceLineEndings("\n");
 
-		markdown.Should().Contain("\n# elastic\n\nUser-facing supplemental description.\n");
-		markdown.Should().NotContain("\nMetadata description.\n");
+		markdown.Should().Contain("# elastic\n\nUser-facing supplemental description.\n");
+		markdown.Should().NotContain("Metadata description.");
 	}
 
 	private static CliSchema CreateSchema() => new(
