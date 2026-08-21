@@ -147,7 +147,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 				return null;
 			}
 
-			if (!MatchesFilter(yamlDto, criteria, matchedPrs, matchedIssues))
+			if (!MatchesFilter(yamlDto, fileName, criteria, matchedPrs, matchedIssues))
 				return null;
 
 			// Add to seen set
@@ -180,6 +180,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 
 	private static bool MatchesFilter(
 		ChangelogEntryDto data,
+		string fileName,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs,
 		HashSet<string> matchedIssues)
@@ -191,7 +192,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			return MatchesProductFilter(data, criteria.ProductFilters);
 
 		if (criteria.PrsToMatch.Count > 0)
-			return MatchesPrFilter(data, criteria, matchedPrs);
+			return MatchesPrFilter(data, fileName, criteria, matchedPrs);
 
 		if (criteria.IssuesToMatch.Count > 0)
 			return MatchesIssueFilter(data, criteria, matchedIssues);
@@ -225,9 +226,22 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 
 	private static bool MatchesPrFilter(
 		ChangelogEntryDto data,
+		string fileName,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs)
 	{
+		var fileNumbers = ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
+		foreach (var pr in criteria.PrsToMatch)
+		{
+			var normalizedPrToMatch = ChangelogBundlingService.NormalizePrForComparison(pr, criteria.DefaultOwner, criteria.DefaultRepo);
+			if (ChangelogPrIdentity.TryParseNumberFromNormalized(normalizedPrToMatch, out var prNumber)
+				&& fileNumbers.Contains(prNumber))
+			{
+				_ = matchedPrs.Add(pr);
+				return true;
+			}
+		}
+
 		var prs = data.Prs ?? (data.Pr != null ? [data.Pr] : null);
 		if (prs is not { Count: > 0 })
 			return false;

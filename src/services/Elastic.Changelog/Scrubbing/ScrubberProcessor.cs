@@ -20,9 +20,10 @@ public sealed record ScrubberQueueMessage(string MessageId, string Body);
 /// <c>Program.cs</c> so it is testable. Events are triggers, state decides: the handler never
 /// acts on an event's <em>type</em> — an event means only "this key may have changed, look at
 /// it". Every distinct key gets one object-level reconcile against the private bucket; every
-/// distinct <c>bundle/{product}/</c> group then gets one registry reconcile against the public
-/// listing, and every touched tree gets one shallow-map reconcile. Out-of-order and
-/// at-least-once S3 notifications are harmless and each batch heals accumulated drift.
+/// distinct group then gets one registry reconcile against the public listing (bundle
+/// <c>target</c> metadata; pool listing-only), and every touched tree gets one
+/// shallow-map reconcile. Out-of-order and at-least-once S3 notifications are harmless
+/// and each batch heals accumulated drift.
 /// </summary>
 public sealed class ScrubberProcessor(
 	ILoggerFactory logFactory,
@@ -46,7 +47,7 @@ public sealed class ScrubberProcessor(
 	{
 		public string SourceBucket { get; set; } = sourceBucket;
 
-		/// <summary>True for a pool manifest copied verbatim; false for YAML content that is scrubbed.</summary>
+		/// <summary>True to copy JSON verbatim; false to scrub YAML. Registry keys no longer use this path.</summary>
 		public bool PassThrough { get; } = passThrough;
 
 		public HashSet<string> MessageIds { get; } = [with(StringComparer.Ordinal)];
@@ -158,15 +159,9 @@ public sealed class ScrubberProcessor(
 			if (!hasScope)
 				return;
 
-			// The two trees part ways here. Bundle manifests are reconciler-owned: the event only
-			// schedules a group reconcile, so client-authored JSON never reaches the public bucket
-			// for the tree consumers enumerate. Pool manifests stay client-authored pass-through —
-			// `changelog bundle` still enumerates a pool through its manifest today, and 404-probing
-			// only works once entries are guaranteed one-per-PR — until Phase 3 retires them.
-			if (scope!.Kind == ChangelogScopeKind.Bundle)
-				AddGroup(groupWork, scope, messageId);
-			else
-				AddObject(objectWork, key, sourceBucket, messageId, passThrough: true);
+			// Both trees are reconciler-owned: the event only schedules a group reconcile, so
+			// client-authored JSON never reaches the public bucket consumers enumerate.
+			AddGroup(groupWork, scope!, messageId);
 			return;
 		}
 
@@ -188,9 +183,8 @@ public sealed class ScrubberProcessor(
 		if (!hasScope)
 			return;
 
-		if (scope!.Kind == ChangelogScopeKind.Bundle)
-			AddGroup(groupWork, scope, messageId);
-		AddShallow(shallowWork, scope, messageId);
+		AddGroup(groupWork, scope!, messageId);
+		AddShallow(shallowWork, scope!, messageId);
 	}
 
 	private static void AddObject(
@@ -234,7 +228,7 @@ public sealed class ScrubberProcessor(
 	/// Order-independent object reconcile: the event type is ignored; the private bucket's current
 	/// state decides between copy and delete. A stale <c>ObjectRemoved</c> arriving after a
 	/// recreate re-copies the live object instead of deleting it. YAML content is scrubbed on the
-	/// way through; a pass-through pool manifest is copied verbatim.
+	/// way through. Pass-through remains for unused JSON copy of non-registry keys.
 	/// </summary>
 	private async Task ReconcileObjectAsync(string sourceBucket, string key, bool passThrough, Cancel ctx)
 	{

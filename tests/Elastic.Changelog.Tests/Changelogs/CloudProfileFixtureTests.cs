@@ -97,9 +97,15 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
+		var localDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
+		FileSystem.Directory.CreateDirectory(localDir);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(localDir, "1-feature.yaml"), FeatureEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(localDir, "2-docs.yaml"), DocsEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(localDir, "3-other.yaml"), OtherProductEntry, TestContext.Current.CancellationToken);
+
 		// language=yaml
 		var configContent =
-			"""
+			$$"""
 			products:
 			  available:
 			    - cloud-hosted
@@ -114,9 +120,11 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 			  bundle:
 			    exclude_types: "docs"
 			bundle:
+			  directory: {{localDir}}
 			  output_directory: PLACEHOLDER
 			  repo: widget
 			  owner: elastic
+			  use_local_changelogs: true
 			  release_dates: false
 			  link_allow_repos:
 			    - elastic/elasticsearch
@@ -147,10 +155,9 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		// Entries are sourced once from the authoring pool (changelog/{org}/{repo}/{branch}/...), not from
-		// any product-scoped path. Owner comes from bundle.owner; branch defaults to "main".
-		handler.RequestedPaths.Should().Contain($"/changelog/elastic/{AuthoringRepo}/main/registry.json");
-		handler.RequestedPaths.Should().NotContain(p => p.Contains("/cloud-hosted/changelog/", StringComparison.Ordinal));
+		// Product-only CDN sourcing is deferred; this fixture forces local so it still covers
+		// exclude_types, link-allowlist scrubbing, and release_dates: false.
+		handler.RequestedPaths.Should().BeEmpty("use_local_changelogs must not reach the CDN");
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle("the monthly profile writes a single bundle file");

@@ -268,17 +268,53 @@ public class BundleRegistryReconcilerTests
 	}
 
 	[Fact]
-	public async Task ReconcileGroup_ChangelogScope_IsRejected()
+	public async Task ReconcileGroup_ChangelogScope_WritesListingOnlyManifest()
 	{
-		// Pool manifests are not reconciled: they stay client-authored pass-through until Phase 3
-		// retires them, so a changelog scope reaching the group reconciler is a programming error.
-		var scope = ChangelogScopeFor("elastic", "repo", "main");
-		_ = _s3.Seed(PublicBucket, scope.Prefix + "entry-a.yaml", "a: 1");
+		var scope = ChangelogScopeFor("elastic", "kibana", "main");
+		_ = _s3.Seed(PublicBucket, scope.Prefix + "100.yaml", "title: a");
+		_ = _s3.Seed(PublicBucket, scope.Prefix + "1735-foo.yaml", "title: b");
 
-		var act = async () => await _reconciler.ReconcileGroupAsync(scope, Ctx);
+		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
-		_ = await act.Should().ThrowAsync<ArgumentException>();
-		_s3.Puts.Should().BeEmpty();
+		outcome.Should().Be(GroupReconcileOutcome.Written);
+		var content = _s3.ContentOf(PublicBucket, scope.RegistryKey);
+		var manifest = JsonSerializer.Deserialize(content, RegistryJsonContext.Default.Registry)!;
+		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
+		manifest.Product.Should().Be("elastic/kibana/main");
+		manifest.Bundles.Select(b => b.File).Should().Equal("100.yaml", "1735-foo.yaml");
+		manifest.Bundles.Should().OnlyContain(b => b.Target == null);
+		_s3.GetsFor(PublicBucket).Should().BeEquivalentTo([scope.RegistryKey],
+			"pool listings do not GET YAML to compute a target");
+	}
+
+	[Fact]
+	public async Task ReconcileGroup_ChangelogScope_HealsYamlMissingFromStaleClientManifest()
+	{
+		var scope = ChangelogScopeFor("elastic", "kibana", "main");
+		_ = _s3.Seed(PublicBucket, scope.Prefix + "100.yaml", "title: a");
+		_ = _s3.Seed(PublicBucket, scope.Prefix + "200.yaml", "title: b");
+		SeedManifest(scope, producer: null, schemaVersion: Registry.CurrentSchemaVersion,
+			new RegistryBundle { File = "100.yaml", Target = null, ETag = "stale" });
+
+		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
+
+		outcome.Should().Be(GroupReconcileOutcome.Written);
+		var content = _s3.ContentOf(PublicBucket, scope.RegistryKey);
+		var manifest = JsonSerializer.Deserialize(content, RegistryJsonContext.Default.Registry)!;
+		manifest.Bundles.Select(b => b.File).Should().Equal("100.yaml", "200.yaml");
+		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
+	}
+
+	[Fact]
+	public async Task ReconcileGroup_ChangelogScope_EmptyGroup_DeletesTheManifest()
+	{
+		var scope = ChangelogScopeFor("elastic", "kibana", "main");
+		SeedManifest(scope, producer: BundleRegistryReconciler.Producer, schemaVersion: Registry.CurrentSchemaVersion);
+
+		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
+
+		outcome.Should().Be(GroupReconcileOutcome.Deleted);
+		_s3.Exists(PublicBucket, scope.RegistryKey).Should().BeFalse();
 	}
 
 	[Fact]

@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// <summary>
 /// Consumer-side view of the <c>bundle/{product}/registry.json</c> manifest (or the
 /// <c>changelog/{org}/{repo}/{branch}/registry.json</c> entry index) published alongside scrubbed changelog content.
-/// Mirrors the producer's shape (see the changelog upload service) but is intentionally lenient: only
+/// Mirrors the producer's shape (the scrubber Lambda's registry reconciler) but is intentionally lenient: only
 /// the fields the <c>changelog</c> directive needs to enumerate bundles are declared, and nothing is
 /// <c>required</c> so a partially-written or future-versioned manifest still deserializes.
 /// </summary>
@@ -43,7 +43,10 @@ public sealed record ChangelogRegistryBundle
 	public string? ETag { get; init; }
 }
 
+// Dictionary<string, string> is the shallow per-tree map (bundle/registry.json): folder → opaque
+// change token, maintained by the scrubber's ShallowRegistryReconciler.
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(ChangelogRegistry))]
 [JsonSerializable(typeof(ChangelogRegistryBundle))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
 internal sealed partial class ChangelogRegistryJsonContext : JsonSerializerContext;

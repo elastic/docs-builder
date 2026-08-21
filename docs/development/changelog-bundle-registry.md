@@ -29,7 +29,7 @@ copies, no cross-repo file syncing.
 flowchart LR
     CI["Client CI<br/>(docs-actions)"] -->|"changelog upload<br/>(YAML objects only)"| Private["Private S3 bucket<br/>bundle/{product}/*.yaml<br/>changelog/{org}/{repo}/{branch}/*.yaml"]
     Private -->|"s3:ObjectCreated / ObjectRemoved<br/>→ SQS"| Scrubber["Changelog scrubber<br/>Lambda"]
-    Scrubber -->|"scrub + copy/delete,<br/>then reconcile bundle registry.json<br/>+ shallow maps from public listing"| Public["Public S3 bucket<br/>+ CloudFront CDN<br/>(incl. registry.json)"]
+    Scrubber -->|"scrub + copy/delete,<br/>then reconcile bundle and pool registry.json<br/>+ shallow maps from public listing"| Public["Public S3 bucket<br/>+ CloudFront CDN<br/>(incl. registry.json)"]
     Public -->|"reads via CDN"| Directive["{changelog} directive<br/>(cdn: mode)"]
 ```
 
@@ -60,21 +60,18 @@ Both indexes share this schema, serialized with `snake_case` keys.
 
 ### Ownership per tree [ownership-per-tree]
 
-The two trees part ways on who writes the manifest
-(the [2026-08-10 update on elastic/docs-eng-team#688](https://github.com/elastic/docs-eng-team/issues/688)
-narrowed reconciliation to the bundle tree):
+The two trees share a producer and differ only in what each listing records:
 
 - **Bundle index** — `bundle/{product}/registry.json`, **public bucket only**, produced
-  exclusively by the scrubber Lambda's `BundleRegistryReconciler`. This is the manifest the
-  `{changelog}` directive and external CDN consumers enumerate, and the subject of the rest of
-  this page.
-- **Changelog-entry index** — `changelog/{org}/{repo}/{branch}/registry.json`, a **legacy
-  client-authored pass-through**: the current `changelog upload` never writes one, but manifests
-  written by older CLI versions are still mirrored verbatim from the private bucket, because
-  [`changelog bundle` entry sourcing](#entry-sourcing) still enumerates a pool through its
-  manifest. It is *not* reconciled — its `producer` is null and its recorded `etag` is the old
-  pre-scrub private-object hash (consumers ignore it). It goes away entirely once release-note
-  discovery starts from PR lists (RFC [elastic/docs-eng-team#698](https://github.com/elastic/docs-eng-team/issues/698)).
+  exclusively by the scrubber Lambda's `BundleRegistryReconciler`. Each entry records a
+  `target` (version or date) so the `{changelog}` directive and external CDN consumers can
+  enumerate bundles. This is the subject of most of the rest of this page.
+- **Changelog-entry index** — `changelog/{org}/{repo}/{branch}/registry.json`, **public
+  bucket only**, produced by the same reconciler from the public YAML listing. It is
+  **listing-only** (`target` is always null). `changelog bundle --prs` and git-ref still
+  download this listing first (the public CDN cannot `ListObjects`); `--files` / a path
+  list GETs named objects and does not read it. Upload never writes this file. Stale
+  leftover client JSON is healed on the next YAML or registry-key event.
 
 ```json
 {
@@ -149,19 +146,19 @@ event's *type* — an event only means "this key may have changed":
    *current* content and PUT to public; 404 → conditionally delete the public copy. After the
    write, a HEAD re-validates that the private object still matches the snapshot the write was
    derived from, redoing the reconcile if a concurrent invocation raced it.
-2. **Group reconcile** (`bundle/{product}/` keys only — the pool tree has none) — list the
-   group's public prefix (paginated), reuse entries whose recorded ETag still matches the
-   listing, GET and recompute the rest (amends always recomputed), and write the manifest back.
+2. **Group reconcile** (`bundle/{product}/` and `changelog/{org}/{repo}/{branch}/` keys) —
+   list the group's public prefix (paginated), reuse entries whose recorded ETag still
+   matches the listing, GET and recompute bundle targets (pool listings skip the YAML GET
+   and record a null `target`), and write the manifest back.
 3. **Shallow-map reconcile** — patch the touched tree's
    [folder→token map](#shallow-maps) from the same public listings.
 
 Within an SQS batch this work is coalesced: one object reconcile per distinct key, one group
 reconcile per distinct group, one shallow-map reconcile per touched tree.
 
-Registry-key events split by tree. A **bundle** manifest is never copied or deleted — the event
-only schedules the group reconcile, so client-authored JSON never reaches the tree consumers
-enumerate. A **pool** manifest is mirrored verbatim (the
-[legacy pass-through](#ownership-per-tree)). Any other `.json` key is skipped with a warning.
+Registry-key events never copy or delete the JSON object — the event only schedules the
+group reconcile, so client-authored JSON never reaches the tree consumers enumerate. Any
+other `.json` key is skipped with a warning.
 
 ### Concurrency: optimistic, conditional writes
 
@@ -235,8 +232,11 @@ The `changelog bundle` command aggregates individual changelog **entries**. It c
 entries from the local folder or fetch the **authoring pool's** published entries from the CDN
 (`changelog/{org}/{repo}/{branch}/registry.json` → `changelog/{org}/{repo}/{branch}/{file}`, via
 `CdnChangelogEntryFetcher`). The pool manifest it enumerates is the
-[legacy client-authored index](#ownership-per-tree); this enumeration is what keeps the
-pass-through alive until PR-list-driven discovery (RFC elastic/docs-eng-team#698) replaces it.
+[Lambda-owned listing](#ownership-per-tree). `--prs` and git-ref download that listing, then
+match by **filename-derived PR numbers or YAML `prs:`** (the same join git-ref uses). `--files`
+/ a path list GETs those basenames only and does not read the registry. CDN `--all` and
+product-only filters (no PR, issue, or file identity) are not supported yet — pass
+`--force-local`. Local `--all` is unchanged.
 
 Under the artifact-root layout, entries are org/repo/branch-scoped — not product-scoped — so CDN
 entry sourcing keys off the resolvable authoring pool (repo with the same precedence as upload:

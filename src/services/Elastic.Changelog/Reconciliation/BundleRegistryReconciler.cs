@@ -45,11 +45,10 @@ public sealed class ReconcileConflictException(string message) : Exception(messa
 /// the change that triggered it.
 /// </summary>
 /// <remarks>
-/// Scoped to the <c>bundle/{product}/</c> tree only: the <c>{changelog}</c> directive and external
-/// CDN consumers need to enumerate bundles, and dates (serverless) are not derivable client-side.
-/// The <c>changelog/…</c> pool manifests are deliberately <em>not</em> reconciled — release-note
-/// discovery starts from PR lists, so those manifests stay client-authored pass-through until
-/// Phase 3 retires them entirely.
+/// Applies to both trees. Bundle manifests record a <c>target</c> per file (the
+/// <c>{changelog}</c> directive enumerates by version/date). Pool manifests are listing-only:
+/// <c>target</c> is always null — <c>changelog bundle --prs</c> and git-ref still need a complete
+/// candidate listing because the public CDN cannot <c>ListObjects</c>.
 /// </remarks>
 public sealed class BundleRegistryReconciler(
 	ILoggerFactory logFactory,
@@ -85,9 +84,6 @@ public sealed class BundleRegistryReconciler(
 	/// </summary>
 	public async Task<GroupReconcileOutcome> ReconcileGroupAsync(ChangelogScope scope, Cancel ctx)
 	{
-		if (scope.Kind != ChangelogScopeKind.Bundle)
-			throw new ArgumentException($"Group reconcile applies to the bundle tree only; got '{scope}'.", nameof(scope));
-
 		_metrics.IncrementGroupReconciles();
 
 		for (var attempt = 1; attempt <= MaxWriteAttempts; attempt++)
@@ -253,9 +249,10 @@ public sealed class BundleRegistryReconciler(
 				var file = obj.Key[scope.Prefix.Length..];
 				var etag = NormalizeETag(obj.ETag);
 
-				// Amends are never ETag-skipped: their target depends on the parent bundle too,
-				// and a parent appearing or changing does not touch the amend's own ETag.
-				if (!BundleAmendMerger.IsAmendFile(file)
+				// Bundle amends are never ETag-skipped: their target depends on the parent bundle too,
+				// and a parent appearing or changing does not touch the amend's own ETag. Pool
+				// listings have no target, so every YAML is ETag-skippable.
+				if ((scope.Kind == ChangelogScopeKind.Changelog || !BundleAmendMerger.IsAmendFile(file))
 					&& byFile.TryGetValue(file, out var previous)
 					&& string.Equals(previous.ETag, etag, StringComparison.Ordinal))
 				{
@@ -264,7 +261,9 @@ public sealed class BundleRegistryReconciler(
 					return;
 				}
 
-				var target = await ComputeTarget(scope, file, ct);
+				var target = scope.Kind == ChangelogScopeKind.Bundle
+					? await ComputeTarget(scope, file, ct)
+					: null;
 				_metrics.IncrementEntriesRecomputed();
 				built[i] = new RegistryBundle { File = file, Target = target, ETag = etag };
 			});

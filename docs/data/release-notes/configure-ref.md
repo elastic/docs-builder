@@ -73,7 +73,7 @@ The authoring repo is resolved with the same precedence as `changelog upload`: `
 Sourcing is decided per run:
 
 - **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
-- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue/file filters to the downloaded set. Path-list / `--files` filters match pool entries by file name, so the listed paths do not need to exist locally.
+- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). `--prs`, `--issues`, `--report`, `--release-version`, a URL list, and git-ref fetch `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then apply the same PR join locally and on the CDN: **filename-derived PR numbers or YAML `prs:`**. Path-list / `--files` GETs those pool objects by file name and does not read the registry. CDN `--all` and product-only filters (no PR, issue, or file identity) error; pass `--force-local` to read the local folder. Local `--all` is unchanged.
 
 Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml` — including path-list / `--files` runs that should read freshly authored files from disk instead of the CDN pool.
 

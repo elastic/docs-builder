@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// <c>changelog/{org}/{repo}/{branch}/{file}</c>, and each grouping has a <c>registry.json</c>
 /// manifest at its root. Centralizes key construction, group extraction, and per-segment
 /// validation so the producer (<c>ChangelogUploadService</c>), the scrubber Lambda gate,
-/// the registry builder, and the CDN fetchers cannot drift apart.
+/// the registry reconciler, and the CDN fetchers cannot drift apart.
 /// </summary>
 /// <remarks>
 /// Segment character classes, from strictest to loosest: org is a GitHub login
