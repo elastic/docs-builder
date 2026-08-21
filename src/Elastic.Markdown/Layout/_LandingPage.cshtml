@@ -63,21 +63,31 @@
 					<a href="#solutions-use-cases">Solutions and use cases</a>
 				</h2>
 			</div>
-			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
+			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+				<div class="rounded-2xl border-1 border-grey-20 p-6 bg-white flex gap-4 items-start">
+					<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-8 shrink-0"/>
+					<div class="flex flex-col min-w-0">
 						<p class="font-sans font-bold text-xl">Elasticsearch</p>
-						<p class="mt-2">Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.</p>
+						<p class="mt-2">Build search and analytics across structured data, logs, metrics, documents, and vectors as part of the broader stack.</p>
 						<div class="grid grid-cols-1 mt-6 gap-2">
 							<a href="@Model.Link("/solutions/search")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold">9.0+ (latest @Model.CurrentVersion) docs</a>
 							<a href="https://www.elastic.co/guide/en/elasticsearch/reference/index.html" class="text-sm text-grey-90 hover:text-grey-110 font-sans font-semibold" hx-disable="true">Previous versions</a>
 						</div>
 					</div>
 				</div>
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
+				<div class="rounded-2xl border-1 border-grey-20 p-6 bg-white flex gap-4 items-start">
+					<img loading="lazy" alt="Vector Database logo" src="@Model.Static("vector-database-logo-color-64px.svg")" class="size-8 shrink-0"/>
+					<div class="flex flex-col min-w-0">
+						<p class="font-sans font-bold text-xl">Vector Database</p>
+						<p class="mt-2">Build your primary workload around embeddings: semantic search, RAG, or AI retrieval, with built-in models and vector-optimized defaults.</p>
+						<div class="grid grid-cols-1 mt-6 gap-2">
+							<a href="@Model.Link("/solutions/vector-database")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold">View docs</a>
+						</div>
+					</div>
+				</div>
+				<div class="rounded-2xl border-1 border-grey-20 p-6 bg-white flex gap-4 items-start">
+					<img loading="lazy" alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-8 shrink-0"/>
+					<div class="flex flex-col min-w-0">
 						<p class="font-sans font-bold text-xl">Observability</p>
 						<p class="mt-2">Resolve problems with open, flexible, and unified observability powered by advanced machine learning and analytics.</p>
 						<div class="grid grid-cols-1 mt-6 gap-2">
@@ -86,9 +96,9 @@
 						</div>
 					</div>
 				</div>
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
+				<div class="rounded-2xl border-1 border-grey-20 p-6 bg-white flex gap-4 items-start">
+					<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-8 shrink-0"/>
+					<div class="flex flex-col min-w-0">
 						<p class="font-sans font-bold text-xl">Security</p>
 						<p class="mt-2">Detect, investigate, and respond to threats with AI-driven security analytics to protect your organization at scale.</p>
 						<div class="grid grid-cols-1 mt-6 gap-2">
