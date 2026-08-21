@@ -1824,4 +1824,33 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().Be(0);
 		config.Bundle!.UseLocalChangelogs.Should().BeTrue();
 	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_InferMissingChangelogs_ParsesBundleAndProfile()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  infer_missing_changelogs: false
+			  profiles:
+			    promotion:
+			      infer_missing_changelogs: true
+			    inherit:
+			      output: "inherit.yaml"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.InferMissingChangelogs.Should().BeFalse();
+		config.Bundle.Profiles!["promotion"].InferMissingChangelogs.Should().BeTrue();
+		config.Bundle.Profiles["inherit"].InferMissingChangelogs.Should().BeNull();
+	}
 }

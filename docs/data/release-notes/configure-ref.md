@@ -46,8 +46,9 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 
 | Setting                   | Description |
 | ------------------------- | ----------- |
-| `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
+| `bundle.branch`           | Branch whose CDN changelog entries (`changelog/{org}/{repo}/{branch}/...`) are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
+| `bundle.infer_missing_changelogs` | When `true`, git-ref bundling synthesizes in-memory changelog entries from GitHub PR metadata when no matching changelog YAML is found on the CDN (or in the local folder when local sourcing is forced). Default `false`: unmatched PRs are warned and omitted like `--prs`. Override with `--infer` or a profile-level setting. |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
@@ -73,9 +74,9 @@ The authoring repo is resolved with the same precedence as `changelog upload`: `
 Sourcing is decided per run:
 
 - **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
-- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue/file filters to the downloaded set. Path-list / `--files` filters match pool entries by file name, so the listed paths do not need to exist locally.
+- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue/file filters to the downloaded set. Path-list / `--files` filters match CDN entries by file name, so the listed paths do not need to exist locally.
 
-Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml` — including path-list / `--files` runs that should read freshly authored files from disk instead of the CDN pool.
+Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml` — including path-list / `--files` runs that should read freshly authored files from disk instead of the CDN.
 
 Because entries are org/repo/branch-scoped, one repository can produce a bundle for a shared product (for example, `cloud-serverless`) while sourcing its own entries from `changelog/{org}/{repo}/{branch}/`, without that product appearing in the repository's `docset.yml`. The `{changelog}` directive's `:cdn:` mode still consumes product-scoped *bundles*, so a repository that also renders its own release notes declares each product under `release_notes` as before.
 
@@ -122,6 +123,10 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 `hide_features`
 :   Feature IDs to mark as hidden in the bundle.
 :   When the bundle is rendered, entries with matching `feature-id` values are commented out.
+
+`infer_missing_changelogs`
+:   Overrides [bundle.infer_missing_changelogs](#bundle-basic).
+:   When `true`, git-ref bundling synthesizes entries from GitHub PR metadata for PRs with no matching changelog YAML on the CDN (or in the local folder when local sourcing is forced). Default is omit-with-warning. CLI `--infer` turns this on for a single run.
 
 `output`
 :   The output filename pattern for the bundle file.

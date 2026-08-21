@@ -128,8 +128,8 @@ bundle:
       output_products: "cloud-serverless {version}" <2>
 ```
 
-1. The authoring repository whose commit range is resolved and whose entry pool is consulted.
-2. Also applied to entries synthesized from PR metadata when the PR's labels map to no product. When the profile has no `output` pattern, the bundle is named `{product}-{version}.yaml` by convention.
+1. The authoring repository whose commit range is resolved and whose uploaded changelog entries (CDN, or local folder when local sourcing is forced) are consulted.
+2. Also applied to entries synthesized from PR metadata when inferral is on (`--infer` or `infer_missing_changelogs: true`) and the PR's labels map to no product. When the profile has no `output` pattern, the bundle is named `{product}-{version}.yaml` by convention.
 
 ```sh
 docs-builder changelog bundle serverless-release 2026-08-13 \
@@ -137,7 +137,7 @@ docs-builder changelog bundle serverless-release 2026-08-13 \
   --end-git-ref <current-published-ref>
 ```
 
-For each PR in the range, a checked-in changelog entry (already uploaded to the entry pool) wins; otherwise an entry is synthesized from the PR's title, labels, and release-note text using the same extraction path as `changelog add`. The bundle records the end ref in a `git_ref` metadata field. Refer to [Commit-range mode](/cli/changelog/bundle.md#git-ref-mode) for the full behavior, including the `--dry-run` run report.
+For each PR in the range, a matching changelog YAML on the CDN (or in the local folder when you force local sourcing) is included. PRs with no matching changelog are warned and omitted (the change may not be notable), matching `--prs`. Pass `--infer` or set `infer_missing_changelogs: true` on the bundle or profile to synthesize an entry from the PR's title, labels, and release-note text using the same extraction path as `changelog add`. Inferred entries are stored only in the bundle, with a synthetic `file.name` of `{pull-request-number}.yaml` — they are not uploaded to the CDN. [](/cli/changelog/bundle.md#inferred-entries) covers how to update or remove one. The bundle records the end ref in a `git_ref` metadata field. Refer to [Commit-range mode](/cli/changelog/bundle.md#git-ref-mode) for the full behavior, including the `--dry-run` run report.
 
 ### Bundle by folder or changelog product
 
@@ -305,6 +305,8 @@ docs-builder changelog bundle-amend \
 ```
 
 This creates an amend file with `exclude-entries` that is merged when the bundle is rendered.
+
+`--remove` needs a changelog file on disk so it can match name and checksum. Inferred git-ref entries have no such file; use `--force` with a dummy path named `{pull-request-number}.yaml`. Refer to [](/cli/changelog/bundle-amend.md#inferred-git-ref-entry).
 
 When bundles are turned into docs (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
 The changelogs from all matching amend files are combined with the parent bundle's changelogs and the result is rendered as a single release.
