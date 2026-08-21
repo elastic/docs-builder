@@ -3341,7 +3341,7 @@
               "name": "add",
               "type": "array",
               "required": false,
-              "summary": "Optional: Changelog YAML paths to add. Repeat --add or pass a comma-separated list in one value (for example, --add \u0022file1.yaml,file2.yaml\u0022). Supports tilde (~) expansion and relative paths.",
+              "summary": "Optional: Changelog YAML paths to add. Repeat --add or pass a comma-separated list in one value (for example, --add \u0022file1.yaml,file2.yaml\u0022). Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN (the default when bundle.repo or the parent bundle\u0027s repo resolves), paths are matched by file name and do not need to exist locally; with local sourcing (--force-local or bundle.use_local_changelogs) the paths must exist on disk.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3350,7 +3350,7 @@
               "name": "remove",
               "type": "array",
               "required": false,
-              "summary": "Optional: Changelog YAML paths to exclude from the effective bundle. Repeat --remove or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.",
+              "summary": "Optional: Changelog YAML paths to exclude from the effective bundle. Repeat --remove or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN, paths are matched by file name and do not need to exist locally; with local sourcing the paths must exist on disk unless --force is used to exclude by file name.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3359,7 +3359,15 @@
               "name": "force",
               "type": "boolean",
               "required": false,
-              "summary": "Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.",
+              "summary": "Optional: When removing, match by file name even if the bundle checksum differs from the sourced changelog, or when no YAML can be sourced (inferred git-ref entries).",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "force-local",
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: Force local entry sourcing for this run (equivalent to bundle.use_local_changelogs: true without editing config).",
               "defaultValue": "false"
             },
             {

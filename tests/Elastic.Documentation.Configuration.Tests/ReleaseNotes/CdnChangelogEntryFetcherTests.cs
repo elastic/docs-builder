@@ -188,6 +188,71 @@ public class CdnChangelogEntryFetcherTests
 		warnings.Should().ContainSingle().Which.Should().Contain("escape.yaml");
 	}
 
+	[Fact]
+	public async Task FetchNamedAsync_DownloadsOnlyRequestedEntries()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "keep.yaml" }, { "file": "skip.yaml" } ] }""")
+				: Yaml(SampleEntry));
+		var (errors, warnings, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var result = await fetcher.FetchNamedAsync(
+			BaseUri, "elastic", "elasticsearch", "main", ["keep.yaml"],
+			emitError, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		result.Should().NotBeNull();
+		result!.Value.Entries.Select(e => e.FileName).Should().BeEquivalentTo("keep.yaml");
+		result.Value.MissingFromRegistry.Should().BeEmpty();
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/keep.yaml", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/skip.yaml", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task FetchNamedAsync_NameNotInRegistry_ReportsMissingWithoutFetchingIt()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "keep.yaml" } ] }""")
+				: Yaml(SampleEntry));
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var result = await fetcher.FetchNamedAsync(
+			BaseUri, "elastic", "elasticsearch", "main", ["never-uploaded.yaml"],
+			emitError, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		result.Should().NotBeNull();
+		result!.Value.Entries.Should().BeEmpty();
+		result.Value.MissingFromRegistry.Should().Equal("never-uploaded.yaml");
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/never-uploaded.yaml", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task FetchNamedAsync_ListedEntryMissing_EmitsError()
+	{
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" } ] }""");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler, maxAttempts: 2);
+		var result = await fetcher.FetchNamedAsync(
+			BaseUri, "elastic", "elasticsearch", "main", ["1-a.yaml"],
+			emitError, TestContext.Current.CancellationToken);
+
+		result.Should().BeNull();
+		errors.Should().ContainSingle().Which.Should().Contain("1-a.yaml");
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 

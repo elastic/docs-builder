@@ -286,13 +286,15 @@ To apply additional filtering by the changelog type, areas, or products, add [bu
 ## Amend bundles [changelog-bundle-amend]
 
 When you need to add changelogs to an existing bundle, you can use the `docs-builder changelog bundle-amend` command, which creates _amend bundles_.
-For example:
+The parent bundle path must be a local file (the amend sidecar is written next to it). `--add` and `--remove` accept the same CDN paths as `changelog bundle --files` when the authoring repo resolves. For example:
 
 ```sh
 docs-builder changelog bundle-amend \
   ./docs/releases/9.3.0.yaml \
-  --add "./docs/changelog/138723.yaml,./docs/changelog/1770424335.yaml"
+  --add /changelog/elastic/kibana/main/138723.yaml
 ```
+
+To read local changelog files from disk instead of the CDN, pass `--force-local`.
 
 Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
 
@@ -301,12 +303,12 @@ To remove entries from an existing bundle without editing the parent file, use `
 ```sh
 docs-builder changelog bundle-amend \
   ./docs/releases/9.3.0.yaml \
-  --remove "./docs/changelog/138723.yaml"
+  --remove /changelog/elastic/kibana/main/138723.yaml
 ```
 
 This creates an amend file with `exclude-entries` that is merged when the bundle is rendered.
 
-`--remove` needs a changelog file on disk so it can match name and checksum. Inferred git-ref entries have no such file; use `--force` with a dummy path named `{pull-request-number}.yaml`. Refer to [](/cli/changelog/bundle-amend.md#inferred-git-ref-entry).
+`--remove` matches the sourced changelog (CDN or local) by name and checksum. Inferred git-ref entries have no such file; pass `--force` with the basename `{pull-request-number}.yaml`. Refer to [](/cli/changelog/bundle-amend.md#inferred-git-ref-entry).
 
 When bundles are turned into docs (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
 The changelogs from all matching amend files are combined with the parent bundle's changelogs and the result is rendered as a single release.

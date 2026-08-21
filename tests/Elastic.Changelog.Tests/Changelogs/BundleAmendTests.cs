@@ -318,7 +318,8 @@ public class BundleAmendTests : ChangelogTestBase
 		var input = new AmendBundleArguments
 		{
 			BundlePath = bundlePath,
-			AddFiles = [newFile]
+			AddFiles = [newFile],
+			ForceLocal = true
 		};
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
@@ -355,7 +356,8 @@ public class BundleAmendTests : ChangelogTestBase
 		var input = new AmendBundleArguments
 		{
 			BundlePath = bundlePath,
-			RemoveFiles = [changelogFile]
+			RemoveFiles = [changelogFile],
+			ForceLocal = true
 		};
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);

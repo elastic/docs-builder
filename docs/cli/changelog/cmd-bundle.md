@@ -126,17 +126,14 @@ docs-builder changelog bundle serverless-release 2026-08-13 \
 
 An inferred entry is embedded in the bundle like any other changelog: full `title`, `type`, `products`, and the rest of the fields. Its `file.name` is `{pull-request-number}.yaml` (for example `300.yaml` for PR 300). That name is what the `--dry-run` report lists in the Entry column. `docs-builder` does not write a changelog YAML file for that PR to disk, S3, or the CDN.
 
-`changelog bundle-amend --add` and `--remove` both require a path to a file that exists. There is no source YAML to pass unless you create a stand-in file whose **name** matches `file.name`.
-
-To exclude an inferred entry, create a dummy file with that name and pass `--force` so matching is by filename only (the dummy file's checksum will not match the bundle):
+`changelog bundle-amend --remove` excludes by file name. Pass `--force` when there is no source YAML (inferred entries have none on disk or on the CDN) so matching is by filename only:
 
 ```sh
-touch /tmp/300.yaml
 docs-builder changelog bundle-amend ./docs/releases/cloud-hosted-2026-08-13.yaml \
-  --remove /tmp/300.yaml --force
+  --remove 300.yaml --force
 ```
 
-To replace the inferred copy, exclude it that way, then `--add` a real changelog YAML. The added file's on-disk name becomes the new `file.name`.
+To replace the inferred copy, exclude it that way, then `--add` a real changelog YAML (from the CDN, or from disk with `--force-local`). The added file's name becomes the new `file.name`.
 
 If you can, author a real changelog (`changelog add`, submit, and upload) so the next git-ref bundle picks it up from the CDN. You can then amend it with a normal `--remove` / `--add` path. Refer to [](/cli/changelog/bundle-amend.md#inferred-git-ref-entry).
 
