@@ -16,6 +16,10 @@ namespace Elastic.Documentation.FileSystems;
 /// Used by <c>evaluate-pr</c>, <c>evaluate-artifact</c>, and <c>prepare-artifact</c> —
 /// all three operate on paths vended by the CI environment, not a fixed docset or checkout.
 /// Permits <c>.git</c> so changelog configuration can be located by the config loader.
+/// Permits <c>.artifacts</c> so <c>prepare-artifact</c> can write the staging dirs that
+/// <c>elastic/docs-actions</c> passes (<c>.artifacts/changelog-staging</c> /
+/// <c>.artifacts/changelog-artifact</c>). Those paths are descendants of the working root,
+/// so they are not added as extra roots and must be allowlisted as hidden folders.
 /// </para>
 /// </summary>
 public class RunnerTempFileSystem(
@@ -49,7 +53,7 @@ public class RunnerTempFileSystem(
 
 		return new ScopedFileSystemOptions([.. roots])
 		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
 		};
 	}

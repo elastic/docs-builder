@@ -104,6 +104,39 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		A.CallTo(() => _mockCore.SetOutputAsync("status", "success")).MustHaveHappened();
 	}
 
+	// Regression: docs-actions stages under `.artifacts/...` inside the checkout.
+	// Those paths are descendants of the working root (not added as extra roots), so
+	// RunnerTempFileSystem must allow the `.artifacts` hidden folder or prepare-artifact
+	// fails with "path must not traverse hidden directories" (elastic/cloud changelog-submit).
+	[Fact]
+	public async Task PrepareArtifact_DotArtifactsPaths_CopiesYamlAndWritesMetadata()
+	{
+		var artifactsStaging = Path.Join(Root, ".artifacts", "changelog-staging");
+		var artifactsOutput = Path.Join(Root, ".artifacts", "changelog-artifact");
+
+		RunnerTempFileSystem.Directory.CreateDirectory(artifactsStaging);
+		await RunnerTempFileSystem.File.WriteAllTextAsync(
+			Path.Join(artifactsStaging, "42.yaml"),
+			"title: test changelog");
+		await SetupConfig();
+
+		var service = CreateService();
+		var args = DefaultArgs() with
+		{
+			StagingDir = artifactsStaging,
+			OutputDir = artifactsOutput
+		};
+
+		var result = await service.PrepareArtifact(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		RunnerTempFileSystem.File.Exists(Path.Join(artifactsOutput, "42.yaml")).Should().BeTrue();
+		var json = RunnerTempFileSystem.File.ReadAllText(Path.Join(artifactsOutput, "metadata.json"));
+		var metadata = JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata)!;
+		metadata.Status.Should().Be("success");
+		metadata.ChangelogFilename.Should().Be("42.yaml");
+	}
+
 	[Fact]
 	public async Task PrepareArtifact_ForkFields_PersistedInMetadata()
 	{
