@@ -114,10 +114,12 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		var artifactsStaging = Path.Join(Root, ".artifacts", "changelog-staging");
 		var artifactsOutput = Path.Join(Root, ".artifacts", "changelog-artifact");
 
+		var ct = TestContext.Current.CancellationToken;
 		RunnerTempFileSystem.Directory.CreateDirectory(artifactsStaging);
 		await RunnerTempFileSystem.File.WriteAllTextAsync(
 			Path.Join(artifactsStaging, "42.yaml"),
-			"title: test changelog");
+			"title: test changelog",
+			ct);
 		await SetupConfig();
 
 		var service = CreateService();
@@ -127,7 +129,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 			OutputDir = artifactsOutput
 		};
 
-		var result = await service.PrepareArtifact(Collector, args, CancellationToken.None);
+		var result = await service.PrepareArtifact(Collector, args, ct);
 
 		result.Should().BeTrue();
 		RunnerTempFileSystem.File.Exists(Path.Join(artifactsOutput, "42.yaml")).Should().BeTrue();
