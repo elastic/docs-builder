@@ -71,8 +71,13 @@ public class ReloadableGeneratorState : IDisposable
 	{
 		// Content-only changes (e.g. .md edits) don't need a full rebuild:
 		// RenderLayout -> ParseFullAsync reads fresh content from disk on each request.
+		// API overlay files are an exception: they are baked into generated HTML, so mark
+		// refs stale and let EnsureApiReferencesAsync re-check timestamps on the next /api request.
 		if (!reloadConfiguration && _cachedCrossLinks is not null)
+		{
+			_apiReferencesStale = true;
 			return;
+		}
 
 		SourcePath.Refresh();
 		OutputPath.Refresh();
