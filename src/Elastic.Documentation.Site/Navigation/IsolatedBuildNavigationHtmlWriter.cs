@@ -8,7 +8,10 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
+public class IsolatedBuildNavigationHtmlWriter(
+	BuildContext context,
+	IRootNavigationItem<INavigationModel, INavigationItem> siteRoot,
+	bool suppressNavigationDropdown = false)
 	: INavigationHtmlWriter
 {
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
@@ -48,7 +51,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		// Top-level items always come from the docset root (siteRoot) so the dropdown
 		// correctly lists all sections even when renderRoot is a nested island.
 		var topLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
-		var isUsingDropdown = context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown;
+		var isUsingDropdown = !suppressNavigationDropdown
+			&& (context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown);
 		return NavigationRenderModel.Create(
 			tree: renderRoot,
 			topLevelItems: topLevelItems,

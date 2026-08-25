@@ -62,6 +62,15 @@ public static partial class ApiUrlBuilder
 		return $"endpoint-{s}";
 	}
 
+	public static string PageUrl(string productRoot, ApiPageVersionTarget pageTarget) =>
+		pageTarget.Kind switch
+		{
+			ApiPageVersionTargetKind.Operation => $"{productRoot}/operation/{pageTarget.Identity}",
+			ApiPageVersionTargetKind.Tag => $"{productRoot}/group/{pageTarget.Identity}",
+			ApiPageVersionTargetKind.Schema => $"{productRoot}/types/{pageTarget.Identity}",
+			_ => $"{productRoot}/"
+		};
+
 	[GeneratedRegex(@"\s*\(([^)]+)\)")]
 	private static partial Regex ParentheticalSuffixPattern();
 }
