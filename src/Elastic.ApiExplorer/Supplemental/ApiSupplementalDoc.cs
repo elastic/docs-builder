@@ -35,8 +35,8 @@ internal sealed partial record ApiSupplementalDoc(
 
 		var sections = SplitSections(trimmed);
 		string? description = null;
-		var parameterOverrides = EmptyOverrides();
-		var requestBodyOverrides = EmptyOverrides();
+		var parameterOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var requestBodyOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		var postSections = new List<ApiSupplementalSection>();
 
 		foreach (var (heading, body) in sections)
@@ -70,10 +70,7 @@ internal sealed partial record ApiSupplementalDoc(
 	}
 
 	private static ApiSupplementalDoc Empty(string? frontMatter, string? description) =>
-		new(frontMatter, description, EmptyOverrides(), EmptyOverrides(), []);
-
-	private static Dictionary<string, string> EmptyOverrides() =>
-		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		new(frontMatter, description, [], [], []);
 
 	private static bool IsParametersHeading(string heading) =>
 		heading.Equals("Parameters", StringComparison.OrdinalIgnoreCase)
