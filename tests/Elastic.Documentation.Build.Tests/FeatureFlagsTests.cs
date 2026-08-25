@@ -50,16 +50,12 @@ public class FeatureFlagsTests
 	}
 
 	[Fact]
-	public void StagingEnvironment_EnablesAssemblerApiExplorer()
-	{
+	public void StagingEnvironment_EnablesAssemblerApiExplorer() =>
 		AssertEnvironmentEnablesAssemblerApiExplorer("staging");
-	}
 
 	[Fact]
-	public void PreviewEnvironment_EnablesAssemblerApiExplorer()
-	{
+	public void PreviewEnvironment_EnablesAssemblerApiExplorer() =>
 		AssertEnvironmentEnablesAssemblerApiExplorer("preview");
-	}
 
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{

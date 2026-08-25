@@ -96,16 +96,12 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 	}
 
 	[Fact]
-	public void StagingEnvironment_EnablesAssemblerApiExplorerFlag()
-	{
+	public void StagingEnvironment_EnablesAssemblerApiExplorerFlag() =>
 		AssertEnvironmentEnablesAssemblerApiExplorer("staging");
-	}
 
 	[Fact]
-	public void PreviewEnvironment_EnablesAssemblerApiExplorerFlag()
-	{
+	public void PreviewEnvironment_EnablesAssemblerApiExplorerFlag() =>
 		AssertEnvironmentEnablesAssemblerApiExplorer("preview");
-	}
 
 	private void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{
