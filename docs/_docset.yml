@@ -38,6 +38,15 @@ subs:
 features:
   primary-nav: false
 
+# Local fixture for ApiExplorer and supplemental files. The URL key must not collide
+# with docs-content's `elasticsearch` key: assembler preview still builds this checkout
+# even though the repo is `skip: true` in assembler.yml.
+# Isolated serve (no `--watch`): /api/doc/docs-builder-elasticsearch/
+api:
+  docs-builder-elasticsearch:
+    - spec: elasticsearch-openapi-docs.json
+      product: elasticsearch
+
 cta:
   docs-builder:
     button:
