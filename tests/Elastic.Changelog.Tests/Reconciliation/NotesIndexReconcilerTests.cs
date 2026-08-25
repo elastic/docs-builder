@@ -56,7 +56,7 @@ public class NotesIndexReconcilerTests
 	{
 		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(NoteYaml);
 		dto.Products.Should().NotBeNullOrEmpty("YAML has products");
-		dto.Products![0].Target.Should().Be("9.0.0");
+		dto.Products?[0].Target.Should().Be("9.0.0");
 	}
 
 	[Fact]

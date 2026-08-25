@@ -358,7 +358,7 @@ public class ScrubberProcessorTests
 	public async Task Process_ClientUploadedNotesIndex_IsRejectedWithNoPublicWrite()
 	{
 		// The notes index is reconciler-owned; a client that uploads notes-*.json must be blocked.
-		_s3.Seed(PrivateBucket, "changelog/elastic/kibana/notes-9.0.0.json", """{"notes":[]}""");
+		_s3.Seed(PrivateBucket, "changelog/elastic/kibana/notes-9.0.0.json", /*lang=json,strict*/ """{"notes":[]}""");
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "changelog/elastic/kibana/notes-9.0.0.json")], Ctx);
 
