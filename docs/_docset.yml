@@ -38,6 +38,14 @@ subs:
 features:
   primary-nav: false
 
+# Isolated `docs-builder serve` / `build` only. This repo is `skip: true` in assembler.yml,
+# so assembler does not publish these pages. The local spec overrides remote resolution.
+# Run serve without `--watch`, then open /api/doc/elasticsearch/
+api:
+  elasticsearch:
+    - spec: elasticsearch-openapi-docs.json
+      product: elasticsearch
+
 cta:
   docs-builder:
     button:

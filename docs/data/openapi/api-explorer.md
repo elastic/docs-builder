@@ -226,14 +226,17 @@ api:
 
 ## When the API Explorer runs
 
-The API Explorer generates documentation in two scenarios:
+The API Explorer generates documentation in these scenarios:
 
 - **`docs-builder build`**: API docs are generated as part of the standard build. Use `--skip-api` to skip generation for faster iteration on content.
 - **`docs-builder serve`**: API docs are generated on startup and regenerated automatically when spec files change.
+- **Assembler builds**: API docs are generated when the `ASSEMBLER_API_EXPLORER` feature flag is on. That flag is on for the `staging` and `preview` environments. Production stays off until cutover.
 
 :::{note}
 API generation is skipped when running `docs-builder serve --watch`. This is a performance optimization for `dotnet watch` workflows. Run `serve` without `--watch` to include API docs in your local preview.
 :::
+
+This repository's own `_docset.yml` declares a local `elasticsearch` API that reads `elasticsearch-openapi-docs.json`. Use that entry to preview ApiExplorer and supplemental files during isolated `docs-builder serve`. Assembler skips this repo (`skip: true` in `assembler.yml`), so those pages are not published.
 
 ## Link to API pages in navigation
 

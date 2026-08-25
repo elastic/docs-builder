@@ -180,11 +180,63 @@ public class ResolvedApiConfiguration
 	public List<IFileInfo> Children { get; init; } = [];
 
 	/// <summary>
-	/// Gets all child Markdown file paths that should be excluded from normal HTML generation.
+	/// The <c>api/&lt;key&gt;/</c> directory for this product, whether or not it exists yet.
+	/// Supplemental <c>op-*.md</c> / <c>tag-*.md</c> files are discovered from here.
+	/// </summary>
+	public IDirectoryInfo? ApiContentDirectory { get; init; }
+
+	/// <summary>
+	/// Whether <paramref name="fileName"/> is an auto-discovered supplemental file
+	/// (<c>op-*.md</c> or <c>tag-*.md</c>), including version-suffixed names.
+	/// </summary>
+	public static bool IsSupplementalFileName(string fileName)
+	{
+		var name = Path.GetFileName(fileName);
+		return name.StartsWith("op-", StringComparison.OrdinalIgnoreCase)
+			|| name.StartsWith("tag-", StringComparison.OrdinalIgnoreCase);
+	}
+
+	/// <summary>
+	/// Markdown paths that must not be rendered by the normal HTML pipeline:
+	/// explicit <c>children:</c> pages and convention supplemental files.
 	/// </summary>
 	public IEnumerable<string> GetMarkdownPathsToExclude(string documentationSourceDirectoryFullName)
 	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var file in Children)
-			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
+		{
+			var relative = ToRelativeMarkdownPath(file, documentationSourceDirectoryFullName);
+			if (seen.Add(relative))
+				yield return relative;
+		}
+
+		if (ApiContentDirectory is not { Exists: true } dir)
+			yield break;
+
+		foreach (var file in dir.EnumerateFiles("*.md"))
+		{
+			if (!IsSupplementalFileName(file.Name))
+				continue;
+			var relative = ToRelativeMarkdownPath(file, documentationSourceDirectoryFullName);
+			if (seen.Add(relative))
+				yield return relative;
+		}
 	}
+
+	/// <summary>Top-level Markdown files under <see cref="ApiContentDirectory"/>, when the folder exists.</summary>
+	public IEnumerable<IFileInfo> EnumerateApiMarkdownFiles()
+	{
+		if (ApiContentDirectory is not { } dir)
+			yield break;
+
+		dir.Refresh();
+		if (!dir.Exists)
+			yield break;
+
+		foreach (var file in dir.EnumerateFiles("*.md"))
+			yield return file;
+	}
+
+	private static string ToRelativeMarkdownPath(IFileInfo file, string documentationSourceDirectoryFullName) =>
+		Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
 }

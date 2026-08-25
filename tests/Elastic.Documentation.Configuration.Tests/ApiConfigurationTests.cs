@@ -588,10 +588,97 @@ public class ConfigurationFileApiTests
 		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
 	}
 
+	[Fact]
+	public void EmitsError_WhenChildFileUsesSupplementalName()
+	{
+		var docSetFile = new DocumentationSetFile
+		{
+			Api = new Dictionary<string, ApiProductSequence>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntry
+						{
+							Spec = "elasticsearch-openapi.json",
+							Product = "elasticsearch",
+							Children = [new ApiEntryChild { File = "op-search.md" }]
+						}
+					]
+				}
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(docSetFile, extraMarkdownFiles: ["op-search.md"]);
+
+		collector.Errors.Should().Be(1);
+		config.ApiConfigurations!["elasticsearch"].Children.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void GetMarkdownPathsToExclude_IncludesChildrenAndSupplementalFiles()
+	{
+		var docSetFile = new DocumentationSetFile
+		{
+			Api = new Dictionary<string, ApiProductSequence>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntry
+						{
+							Spec = "elasticsearch-openapi.json",
+							Product = "elasticsearch",
+							Children = [new ApiEntryChild { File = "getting-started.md" }]
+						}
+					]
+				}
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(
+			docSetFile,
+			extraMarkdownFiles: ["op-search.md", "tag-documents.md", "random-notes.md"]);
+
+		collector.Errors.Should().Be(0);
+		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs");
+		var excluded = config.ApiConfigurations!["elasticsearch"]
+			.GetMarkdownPathsToExclude(docsRoot)
+			.ToArray();
+
+		excluded.Should().Contain("api/elasticsearch/getting-started.md");
+		excluded.Should().Contain("api/elasticsearch/op-search.md");
+		excluded.Should().Contain("api/elasticsearch/tag-documents.md");
+		excluded.Should().NotContain("api/elasticsearch/random-notes.md");
+	}
+
+	[Fact]
+	public void ApiContentDirectory_IsSetToApiKeyFolder()
+	{
+		var docSetFile = new DocumentationSetFile
+		{
+			Api = new Dictionary<string, ApiProductSequence>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries = [new ApiProductEntry { Spec = "elasticsearch-openapi.json", Product = "elasticsearch" }]
+				}
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(docSetFile);
+
+		collector.Errors.Should().Be(0);
+		config.ApiConfigurations!["elasticsearch"].ApiContentDirectory.Should().NotBeNull();
+		config.ApiConfigurations["elasticsearch"].ApiContentDirectory!.Name.Should().Be("elasticsearch");
+	}
+
 	private static readonly string[] DefaultProductIds = ["elasticsearch", "kibana"];
 
 	private static (ConfigurationFile Config, DiagnosticsCollector Collector) CreateConfiguration(
-		DocumentationSetFile docSet, string[]? extraProducts = null, bool withLocalSpecFile = true)
+		DocumentationSetFile docSet, string[]? extraProducts = null, bool withLocalSpecFile = true, string[]? extraMarkdownFiles = null)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -604,6 +691,8 @@ public class ConfigurationFileApiTests
 		};
 		if (withLocalSpecFile)
 			files[Path.Join(root, "docs", "elasticsearch-openapi.json")] = new MockFileData("{}");
+		foreach (var name in extraMarkdownFiles ?? [])
+			files[Path.Join(root, "docs", "api", "elasticsearch", name)] = new MockFileData("# extra");
 		var fileSystem = new MockFileSystem(files, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);

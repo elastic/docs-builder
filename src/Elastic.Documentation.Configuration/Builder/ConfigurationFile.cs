@@ -564,6 +564,8 @@ public record ConfigurationFile
 		}
 
 		var children = ResolveApiChildren(productKey, entry.Children, context);
+		var apiContentDirectory = context.ReadFileSystem.DirectoryInfo.New(
+			Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
 
 		return new ResolvedApiConfiguration
 		{
@@ -572,7 +574,8 @@ public record ConfigurationFile
 			SpecFileName = specFileName,
 			LocalSpecFile = localSpecFile,
 			Repository = repository,
-			Children = children
+			Children = children,
+			ApiContentDirectory = apiContentDirectory
 		};
 	}
 
@@ -617,6 +620,13 @@ public record ConfigurationFile
 			{
 				context.EmitError(context.ConfigurationPath,
 					$"Child page '{child.File}' for API '{productKey}' does not exist under 'api/{productKey}/'.");
+				continue;
+			}
+
+			if (ResolvedApiConfiguration.IsSupplementalFileName(childFile.Name))
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"Child page '{child.File}' for API '{productKey}' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:.");
 				continue;
 			}
 
