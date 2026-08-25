@@ -164,6 +164,24 @@ IEnvironmentVariables? env = null
 
 			input = ApplyConfigDefaults(input, config);
 
+			// Validate PR citation format (same rule as `add`: numeric refs require --owner/--repo)
+			if (input.Prs is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultiplePrFormat(collector, input.Prs, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidatePrFormat(collector, input.Prs?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			// Validate issue citation format
+			if (input.Issues is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultipleIssueFormat(collector, input.Issues, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidateIssueFormat(collector, input.Issues?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
 			if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed: false))
 				return false;
 

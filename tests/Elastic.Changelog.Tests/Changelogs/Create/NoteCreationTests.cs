@@ -128,6 +128,50 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 	}
 
 	[Fact]
+	public async Task CreateNote_NumericPrWithoutOwnerRepo_ReturnsError()
+	{
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Title = "Known limitation",
+			Type = "known-issue",
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }],
+			Prs = ["12345"],
+			Output = CreateOutputDirectory(),
+			IsNote = true
+		};
+
+		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+	}
+
+	[Fact]
+	public async Task CreateNote_NumericIssueWithoutOwnerRepo_ReturnsError()
+	{
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Title = "Known limitation",
+			Type = "known-issue",
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }],
+			Issues = ["456"],
+			Output = CreateOutputDirectory(),
+			IsNote = true
+		};
+
+		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+	}
+
+	[Fact]
 	public async Task CreateNote_WithPrs_AllowedWithoutError()
 	{
 		var service = CreateService();
