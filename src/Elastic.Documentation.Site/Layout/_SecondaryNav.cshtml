@@ -8,18 +8,22 @@
 	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
 	var docsHomeUrl = Model.Link("/");
 
-	string? IconSlug(string title) => title switch
+	string? IconId(string title) => title switch
 	{
-		"Guides" => "guides",
-		"Reference" => "reference",
-		"Troubleshoot" => "troubleshoot",
-		"Products" => "products",
-		"APIs" => "apis",
-		"Release notes" => "release-notes",
+		"Guides" => "documentation",
+		"Reference" => "list-bullet",
+		"Troubleshoot" => "wrench",
+		"Products" => "grid",
+		"APIs" => "code",
+		"Release notes" => "refresh-time",
 		_ => null
 	};
 
-	string IconSrc(string slug) => Model.Static($"secondary-nav-{slug}.svg");
+	IHtmlContent NavIcon(string id, string extraClass = "")
+	{
+		var cls = string.IsNullOrEmpty(extraClass) ? "secondary-nav-icon" : $"secondary-nav-icon {extraClass}";
+		return new HtmlString($"<span class=\"{cls}\" aria-hidden=\"true\"><svg viewBox=\"0 0 16 16\"><use href=\"#icon-{id}\"/></svg></span>");
+	}
 }
 <div id="secondary-nav-host" class="relative md:sticky md:top-0 md:z-30 bg-white">
 	<nav id="secondary-nav">
@@ -37,27 +41,19 @@
 					{
 						var isActive = item.IsActive(currentSectionId);
 						var itemClass = isActive ? "secondary-nav-item secondary-nav-item--active" : "secondary-nav-item";
-						var iconSlug = IconSlug(item.Title);
+						var iconId = IconId(item.Title);
 						if (item is TopNavDropdownItem dropdown)
 						{
 							<li class="@itemClass">
 								<details class="secondary-nav-dropdown">
 									<summary class="secondary-nav-item__hit">
 										<span class="secondary-nav-item__content secondary-nav-item__content--dropdown">
-											@if (iconSlug is not null)
+											@if (iconId is not null)
 											{
-												var iconSrc = IconSrc(iconSlug);
-												<span class="secondary-nav-icon" style="--secondary-nav-icon: url('@iconSrc')" aria-hidden="true">
-													<img src="@iconSrc" alt="" width="16" height="16">
-												</span>
+												@NavIcon(iconId)
 											}
 											<span>@dropdown.Title</span>
-											@{
-												var chevronSrc = IconSrc("chevron");
-											}
-											<span class="secondary-nav-icon secondary-nav-icon--sm secondary-nav-dropdown-chevron" style="--secondary-nav-icon: url('@chevronSrc')" aria-hidden="true">
-												<img src="@chevronSrc" alt="" width="10" height="5">
-											</span>
+											@NavIcon("chevron-down", "secondary-nav-icon--sm secondary-nav-dropdown-chevron")
 										</span>
 									</summary>
 									<div class="secondary-nav-dropdown-menu" aria-label="@dropdown.Title">
@@ -86,23 +82,17 @@
 							<li class="@itemClass" data-section-ids="@sectionIdsAttr">
 								@if (link.IsExternal)
 								{
-									var externalSrc = IconSrc("external");
 									<a href="@link.Url"
 									   target="_blank"
 									   rel="noopener noreferrer"
 									   class="secondary-nav-item__hit">
 										<span class="secondary-nav-item__content">
-											@if (iconSlug is not null)
+											@if (iconId is not null)
 											{
-												var iconSrc = IconSrc(iconSlug);
-												<span class="secondary-nav-icon" style="--secondary-nav-icon: url('@iconSrc')" aria-hidden="true">
-													<img src="@iconSrc" alt="" width="16" height="16">
-												</span>
+												@NavIcon(iconId)
 											}
 											<span>@link.Title</span>
-											<span class="secondary-nav-icon secondary-nav-icon--sm secondary-nav-icon--external" style="--secondary-nav-icon: url('@externalSrc')" aria-hidden="true">
-												<img src="@externalSrc" alt="" width="8" height="8">
-											</span>
+											@NavIcon("external", "secondary-nav-icon--sm secondary-nav-icon--external")
 										</span>
 										<span class="sr-only">(opens in a new tab)</span>
 									</a>
@@ -113,12 +103,9 @@
 									   preload="mousedown"
 									   class="secondary-nav-item__hit">
 										<span class="secondary-nav-item__content">
-											@if (iconSlug is not null)
+											@if (iconId is not null)
 											{
-												var iconSrc = IconSrc(iconSlug);
-												<span class="secondary-nav-icon" style="--secondary-nav-icon: url('@iconSrc')" aria-hidden="true">
-													<img src="@iconSrc" alt="" width="16" height="16">
-												</span>
+												@NavIcon(iconId)
 											}
 											<span>@link.Title</span>
 										</span>
@@ -152,12 +139,7 @@
 						   preload="mousedown"
 						   class="secondary-nav-item__hit">
 							<span class="secondary-nav-item__content">
-								@{
-									var releaseNotesSrc = IconSrc("release-notes");
-								}
-								<span class="secondary-nav-icon" style="--secondary-nav-icon: url('@releaseNotesSrc')" aria-hidden="true">
-									<img src="@releaseNotesSrc" alt="" width="16" height="16">
-								</span>
+								@NavIcon("refresh-time")
 								<span>Release notes</span>
 							</span>
 						</a>
@@ -167,12 +149,7 @@
 						   preload="mousedown"
 						   class="secondary-nav-item__hit">
 							<span class="secondary-nav-item__content">
-								@{
-									var troubleshootSrc = IconSrc("troubleshoot");
-								}
-								<span class="secondary-nav-icon" style="--secondary-nav-icon: url('@troubleshootSrc')" aria-hidden="true">
-									<img src="@troubleshootSrc" alt="" width="16" height="16">
-								</span>
+								@NavIcon("wrench")
 								<span>Troubleshoot</span>
 							</span>
 						</a>
@@ -182,12 +159,7 @@
 						   preload="mousedown"
 						   class="secondary-nav-item__hit">
 							<span class="secondary-nav-item__content">
-								@{
-									var referenceSrc = IconSrc("reference");
-								}
-								<span class="secondary-nav-icon" style="--secondary-nav-icon: url('@referenceSrc')" aria-hidden="true">
-									<img src="@referenceSrc" alt="" width="16" height="16">
-								</span>
+								@NavIcon("list-bullet")
 								<span>Reference</span>
 							</span>
 						</a>

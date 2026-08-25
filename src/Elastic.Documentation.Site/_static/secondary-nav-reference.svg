@@ -1,6 +1,0 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="12" height="16" viewBox="0 0 12 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="Glyph">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M2 1C2 0.447716 2.44771 0 3 0H7.70711L12 4.29289V13C12 13.5523 11.5523 14 11 14H3C2.44772 14 2 13.5523 2 13V1ZM7 1L3 1V13H11V5H8C7.44772 5 7 4.55228 7 4V1ZM8 1.70711L10.2929 4H8V1.70711Z" fill="#1D2A3E"/>
-<path d="M1 15V2H0V15C2.01331e-09 15.5523 0.447715 16 1 16H10V15H1Z" fill="#1D2A3E"/>
-</g>
-</svg>

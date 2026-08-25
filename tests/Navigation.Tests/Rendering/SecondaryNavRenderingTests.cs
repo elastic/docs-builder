@@ -47,6 +47,9 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 
 		// Built-in links present
 		html.Should().Contain("Release notes").And.Contain("Troubleshoot").And.Contain("Reference");
+		html.Should().Contain("href=\"#icon-refresh-time\"");
+		html.Should().Contain("href=\"#icon-wrench\"");
+		html.Should().Contain("href=\"#icon-list-bullet\"");
 		html.Should().NotContain("secondary-nav-dropdown");
 		html.Should().NotContain("id=\"htmx-indicator\"");
 		html.Should().Contain("id=\"secondary-nav-host\"");
@@ -113,15 +116,18 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task ConfiguredItemsRenderFigmaIcons()
+	public async Task ConfiguredItemsRenderEuiIcons()
 	{
 		var html = await Render(TopNav, currentUrl: "/docs/");
 
-		html.Should().Contain("secondary-nav-reference.svg");
-		html.Should().Contain("secondary-nav-apis.svg");
-		html.Should().Contain("secondary-nav-products.svg");
-		html.Should().Contain("secondary-nav-chevron.svg");
-		html.Should().Contain("secondary-nav-external.svg");
+		html.Should().Contain("href=\"#icon-list-bullet\"");
+		html.Should().Contain("href=\"#icon-code\"");
+		html.Should().Contain("href=\"#icon-grid\"");
+		html.Should().Contain("href=\"#icon-chevron-down\"");
+		html.Should().Contain("href=\"#icon-external\"");
+
+		var linkOnly = await Render(LinkOnlyTopNav, currentUrl: "/docs/");
+		linkOnly.Should().Contain("href=\"#icon-documentation\"");
 	}
 
 	[Fact]

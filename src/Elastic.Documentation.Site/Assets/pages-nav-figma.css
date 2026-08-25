@@ -299,7 +299,7 @@ aside.sidebar:has(#pages-nav):hover
 .pages-nav-v2__content {
 	padding-top: 0;
 	padding-left: 8px;
-	padding-right: 8px;
+	padding-right: 4px;
 }
 
 #pages-nav .pages-nav-v2__content ul[id^='nav-tree'] {
@@ -315,6 +315,25 @@ aside.sidebar:has(#pages-nav):hover
 	width: 100%;
 	margin: 0;
 	padding: 0;
+}
+
+#pages-nav .pages-nav-v2__heading {
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	margin: 8px 8px 0;
+	padding: 8px 12px 6px;
+	cursor: text;
+}
+
+#pages-nav .pages-nav-v2__heading-text {
+	display: block;
+	font-family: var(--font-body);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 20px;
+	color: #516381;
+	text-transform: uppercase;
 }
 
 #pages-nav li.current::before {
@@ -402,12 +421,13 @@ aside.sidebar:has(#pages-nav):hover
 	min-width: 0;
 }
 
-#pages-nav .nav-folder-chevron {
+#pages-nav .nav-folder-chevron,
+#pages-nav .nav-island-arrow {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 16px;
-	height: 16px;
+	width: 12px;
+	height: 12px;
 	margin-inline-start: auto;
 	flex-shrink: 0;
 	color: #98a2b3;
@@ -415,10 +435,18 @@ aside.sidebar:has(#pages-nav):hover
 	pointer-events: none;
 }
 
+#pages-nav .nav-island-arrow svg {
+	display: block;
+	width: 12px;
+	height: 12px;
+	fill: currentColor;
+}
+
 #pages-nav .nav-chevron {
-	width: 16px;
-	height: 16px;
-	stroke: #98a2b3;
+	width: 12px;
+	height: 12px;
+	fill: currentColor;
+	stroke: none;
 	color: #98a2b3;
 	/* Tailwind v4 @apply -rotate-90 uses the rotate property; override that, not transform. */
 	rotate: -90deg;

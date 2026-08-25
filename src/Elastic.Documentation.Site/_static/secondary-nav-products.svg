@@ -1,8 +1,0 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="Glyph">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M5 8C5.55228 8 6 8.44772 6 9V13C6 13.5523 5.55228 14 5 14H1C0.447715 14 4.0266e-09 13.5523 0 13V9C6.4426e-08 8.44772 0.447715 8 1 8H5ZM1 13H5V9H1V13Z" fill="#516381"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M13 8C13.5523 8 14 8.44772 14 9V13C14 13.5523 13.5523 14 13 14H9C8.44772 14 8 13.5523 8 13V9C8 8.44772 8.44772 8 9 8H13ZM9 13H13V9H9V13Z" fill="#516381"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M5 0C5.55228 6.4426e-08 6 0.447715 6 1V5C6 5.55228 5.55228 6 5 6H1C0.447715 6 4.0266e-09 5.55228 0 5V1C6.4426e-08 0.447715 0.447715 4.0266e-09 1 0H5ZM1 5H5V1H1V5Z" fill="#516381"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M13 0C13.5523 6.4426e-08 14 0.447715 14 1V5C14 5.55228 13.5523 6 13 6H9C8.44772 6 8 5.55228 8 5V1C8 0.447715 8.44772 4.0266e-09 9 0H13ZM9 5H13V1H9V5Z" fill="#516381"/>
-</g>
-</svg>

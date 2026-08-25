@@ -1,8 +1,0 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="12" height="15" viewBox="0 0 12 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="Glyph">
-<path d="M4 15H3V12H4V15Z" fill="#0B64DD"/>
-<path d="M7 7H8V8H5V7H6V6H5.5V5H7V7Z" fill="#0B64DD"/>
-<path d="M6.5 3C6.77614 3 7 3.22386 7 3.5C7 3.77614 6.77614 4 6.5 4C6.22386 4 6 3.77614 6 3.5C6 3.22386 6.22386 3 6.5 3Z" fill="#0B64DD"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M5 13H10V11H2C1.44772 11 1 11.4477 1 12C1 12.5523 1.44772 13 2 13V14C0.89543 14 0 13.1046 0 12V2C0 0.89543 0.89543 0 2 0H12V11H11V13H12V14H5V13ZM2 1C1.44772 1 1 1.44772 1 2V10.2695C1.29437 10.0991 1.63536 10 2 10V1ZM3 10H11V1H3V10Z" fill="#0B64DD"/>
-</g>
-</svg>
