@@ -262,7 +262,7 @@ public class ChangelogBackfillServiceTests
 		var prFiles = _mockFileSystem.AllFiles
 			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal))
 			.Where(f => !f.Contains("bundles", StringComparison.Ordinal))
-			.Where(f => Path.GetFileName(f) is var n && !n.StartsWith("note-") && !n.StartsWith("notes-"))
+			.Where(f => Path.GetFileName(f) is var n && !n.StartsWith("note-", StringComparison.Ordinal) && !n.StartsWith("notes-", StringComparison.Ordinal))
 			.Select(Path.GetFileName)
 			.ToList();
 
