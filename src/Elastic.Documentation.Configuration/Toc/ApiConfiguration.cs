@@ -210,10 +210,7 @@ public class ResolvedApiConfiguration
 				yield return relative;
 		}
 
-		if (ApiContentDirectory is not { Exists: true } dir)
-			yield break;
-
-		foreach (var file in dir.EnumerateFiles("*.md"))
+		foreach (var file in EnumerateApiMarkdownFiles())
 		{
 			if (!IsSupplementalFileName(file.Name))
 				continue;

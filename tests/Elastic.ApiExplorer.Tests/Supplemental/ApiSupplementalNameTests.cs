@@ -21,11 +21,10 @@ public class ApiSupplementalNameTests
 		string fileName, ApiSupplementalKind kind, string stem, int? version)
 	{
 		ApiSupplementalName.TryParse(fileName, out var parsed).Should().BeTrue();
-		parsed.Should().NotBeNull();
-		parsed.Value.Kind.Should().Be(kind);
-		parsed.Value.Stem.Should().Be(stem);
-		parsed.Value.VersionMajor.Should().Be(version);
-		parsed.Value.IsVersionSuffixed.Should().Be(version is not null);
+		parsed.Kind.Should().Be(kind);
+		parsed.Stem.Should().Be(stem);
+		parsed.VersionMajor.Should().Be(version);
+		parsed.IsVersionSuffixed.Should().Be(version is not null);
 	}
 
 	[Theory]
@@ -37,18 +36,15 @@ public class ApiSupplementalNameTests
 	[InlineData("op-search.txt")]
 	public void TryParse_NonConventionFile_ReturnsFalse(string fileName)
 	{
-		ApiSupplementalName.TryParse(fileName, out var parsed).Should().BeFalse();
-		parsed.Should().BeNull();
-		ApiSupplementalName.IsConventionFileName(fileName).Should().BeFalse();
+		ApiSupplementalName.TryParse(fileName, out _).Should().BeFalse();
 	}
 
 	[Theory]
 	[InlineData("APM agent configuration", "apm-agent-configuration")]
 	[InlineData("health_report", "health_report")]
 	[InlineData("ml anomaly", "ml-anomaly")]
-	public void TagFileStem_UsesSharedTagSlug(string tagName, string expectedStem)
+	public void TagSlug_MatchesExpectedFileStem(string tagName, string expectedStem)
 	{
-		ApiSupplementalName.TagFileStem(tagName).Should().Be(expectedStem);
 		ApiUrlBuilder.TagSlug(tagName).Should().Be(expectedStem);
 		ApiUrlBuilder.TagMoniker(tagName).Should().Be($"endpoint-{expectedStem}");
 	}

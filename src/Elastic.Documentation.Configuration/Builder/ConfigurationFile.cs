@@ -563,9 +563,9 @@ public record ConfigurationFile
 			repository = candidate;
 		}
 
-		var children = ResolveApiChildren(productKey, entry.Children, context);
 		var apiContentDirectory = context.ReadFileSystem.DirectoryInfo.New(
 			Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
+		var children = ResolveApiChildren(productKey, entry.Children, context, apiContentDirectory);
 
 		return new ResolvedApiConfiguration
 		{
@@ -581,13 +581,14 @@ public record ConfigurationFile
 
 	/// Children resolve only under 'api/&lt;key&gt;/'; escaping paths and symlinks are rejected the
 	/// same way branding image paths are (see <see cref="ValidateBrandingImage"/>).
-	private static List<IFileInfo> ResolveApiChildren(string productKey, List<ApiEntryChild> children, IDocumentationSetContext context)
+	private static List<IFileInfo> ResolveApiChildren(
+		string productKey,
+		List<ApiEntryChild> children,
+		IDocumentationSetContext context,
+		IDirectoryInfo childrenDirectory)
 	{
 		if (children.Count == 0)
 			return [];
-
-		var childrenDirectory = context.ReadFileSystem.DirectoryInfo.New(
-			Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
 
 		var resolved = new List<IFileInfo>();
 		foreach (var child in children)

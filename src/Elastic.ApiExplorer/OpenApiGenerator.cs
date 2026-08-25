@@ -255,14 +255,7 @@ public class OpenApiGenerator(
 		OpenApiDocument openApiDocument,
 		ResolvedApiConfiguration? apiConfig)
 	{
-		var folder = apiConfig?.ApiContentDirectory;
-		if (folder is null && apiConfig is not null)
-		{
-			folder = context.ReadFileSystem.DirectoryInfo.New(
-				Path.Join(context.DocumentationSourceDirectory.FullName, "api", apiConfig.ProductKey));
-		}
-
-		var result = ApiSupplementalDiscovery.Discover(folder, openApiDocument);
+		var result = ApiSupplementalDiscovery.Discover(apiConfig?.ApiContentDirectory, openApiDocument);
 		if (result.Operations.Count == 0 && result.Tags.Count == 0 && result.Unmatched.Count == 0)
 			return result;
 

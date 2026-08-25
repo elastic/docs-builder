@@ -48,6 +48,7 @@ public partial class DocumentationGenerator
 	private readonly IDocumentationFileExporter _documentationFileExporter;
 	private readonly IMarkdownExporter[] _markdownExporters;
 	private readonly IDocumentInferrerService _documentInferrer;
+	private HashSet<string>? _apiMarkdownExcludePaths;
 	private HtmlWriter HtmlWriter { get; }
 
 	public DocumentationSet DocumentationSet { get; }
@@ -502,26 +503,32 @@ public partial class DocumentationGenerator
 	}
 
 	/// <summary>
-	/// Checks if a file path is registered as an explicit <c>children:</c> page in any API
-	/// configuration. These files render via the API pipeline rather than normal HTML generation.
+	/// True when the file is an API <c>children:</c> page or a convention supplemental file.
+	/// Those files skip the normal HTML pipeline.
 	/// </summary>
 	private bool IsApiMarkdownFile(string relativePath)
 	{
 		var normalized = relativePath.Replace(Path.DirectorySeparatorChar, '/');
+		return ApiMarkdownExcludePaths.Contains(normalized);
+	}
 
-		if (Context.Configuration.ApiConfigurations == null)
-			return false;
+	private HashSet<string> ApiMarkdownExcludePaths =>
+		_apiMarkdownExcludePaths ??= BuildApiMarkdownExcludePaths();
 
+	private HashSet<string> BuildApiMarkdownExcludePaths()
+	{
+		var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (Context.Configuration.ApiConfigurations is null)
+			return set;
+
+		var docsRoot = Context.DocumentationSourceDirectory.FullName;
 		foreach (var apiConfig in Context.Configuration.ApiConfigurations.Values)
 		{
-			foreach (var childPath in apiConfig.GetMarkdownPathsToExclude(Context.DocumentationSourceDirectory.FullName))
-			{
-				if (string.Equals(normalized, childPath, StringComparison.OrdinalIgnoreCase))
-					return true;
-			}
+			foreach (var path in apiConfig.GetMarkdownPathsToExclude(docsRoot))
+				_ = set.Add(path);
 		}
 
-		return false;
+		return set;
 	}
 
 }

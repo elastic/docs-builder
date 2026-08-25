@@ -2,9 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
-using Elastic.ApiExplorer.Infrastructure;
 
 namespace Elastic.ApiExplorer.Supplemental;
 
@@ -28,11 +26,9 @@ public readonly record struct ApiSupplementalFileName(
 /// </summary>
 public static partial class ApiSupplementalName
 {
-	public static bool IsConventionFileName(string fileName) => TryParse(fileName, out _);
-
-	public static bool TryParse(string fileName, [NotNullWhen(true)] out ApiSupplementalFileName? parsed)
+	public static bool TryParse(string fileName, out ApiSupplementalFileName parsed)
 	{
-		parsed = null;
+		parsed = default;
 		var match = FileNamePattern().Match(fileName);
 		if (!match.Success)
 			return false;
@@ -55,9 +51,6 @@ public static partial class ApiSupplementalName
 		parsed = new ApiSupplementalFileName(kind, stem, version);
 		return true;
 	}
-
-	/// <summary>File stem for a tag, identical to the URL slug without the <c>endpoint-</c> prefix.</summary>
-	public static string TagFileStem(string tagName) => ApiUrlBuilder.TagSlug(tagName);
 
 	[GeneratedRegex(@"^(op|tag)-(.+?)(?:\.v(\d+))?\.md$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex FileNamePattern();
