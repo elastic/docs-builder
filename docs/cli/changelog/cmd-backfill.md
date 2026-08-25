@@ -7,7 +7,9 @@ For each product in scope the command:
 1. Fetches the release-notes Markdown — from `elastic.co/docs/release-notes/{path}.md` (site source) or `raw.githubusercontent.com/{owner}/{repo}/{ref}/{path}` (repo source).
 2. Parses each `## {version}` section into typed entries. Unrecognized `### …` subsections whose body is bullets become `Other`-typed entries; prose subsections are preserved in the bundle description.
 3. Writes bundle YAML to `{output}/{product}/changelog/bundles/{version}.yaml`.
-4. Prints a per-product report including entry counts and no-PR rates.
+4. Writes per-entry YAML files: `{pr}.yaml` for entries that reference a pull request, `note-{slug}.yaml` for entries with no PR reference.
+5. Writes `notes-{target}.json` per version listing all `note-*.yaml` files for that target (the notes registry).
+6. Prints a per-product report including entry counts and no-PR rates.
 
 The primary use case is measuring how much published release-notes content cannot be traced back to a PR — determining how much historical content needs the PR-less "note" format from [docs-eng-team#789](https://github.com/elastic/docs-eng-team/issues/789).
 
@@ -27,13 +29,15 @@ Runs cover the whole table unless narrowed with `--products`.
 ## Output layout
 
 ```
-{output}/{product}/changelog/bundles/{version}.yaml
-{output}/{product}/changelog/{pr}.yaml           # (planned: entry files)
-{output}/{product}/changelog/note-{slug}.yaml    # (planned: PR-less entries)
-{output}/{product}/changelog/notes-{target}.json # (planned: notes registry)
+{output}/{product}/changelog/bundles/{version}.yaml  # bundle — upload with changelog upload
+{output}/{product}/changelog/{pr}.yaml               # entry file for a PR-traced entry
+{output}/{product}/changelog/note-{slug}.yaml        # entry file for a PR-less entry
+{output}/{product}/changelog/notes-{target}.json     # notes registry for a version
 ```
 
 The `bundles/` leaf is a flat directory shaped for `changelog upload --artifact-type bundle --directory {product}/changelog/bundles`.
+
+PR numbers are deduplicated across versions (first-wins). Same-version slug collisions append `-2`, `-3`; cross-version slug collisions append the sanitized version string. Every `notes-{target}.json` registry only references files whose `target` matches that version — the prototype bug where a registry could point to a note file belonging to a different version is fixed here.
 
 ## Outcomes per product
 
