@@ -60,7 +60,7 @@ public class ReloadableGeneratorState : IDisposable
 	// Track OpenAPI spec file modification times to detect changes
 	private readonly Dictionary<string, DateTimeOffset> _openApiSpecLastModified = [];
 
-	// Track api/<key>/*.md modification times so serve reloads on overlay edits.
+	// Track API markdown modification times so serve reloads on overlay and children: edits.
 	private readonly Dictionary<string, DateTimeOffset> _apiMarkdownFilesLastModified = [];
 
 	private volatile bool _apiReferencesStale = true;
@@ -197,7 +197,7 @@ public class ReloadableGeneratorState : IDisposable
 
 		foreach (var apiConfig in config.ApiConfigurations.Values)
 		{
-			foreach (var file in apiConfig.EnumerateApiMarkdownFiles())
+			foreach (var file in apiConfig.EnumerateApiMarkdownFiles().Concat(apiConfig.Children))
 			{
 				file.Refresh();
 				current[file.FullName] = file.LastWriteTimeUtc;
