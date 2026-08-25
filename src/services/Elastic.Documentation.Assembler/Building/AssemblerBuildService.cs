@@ -134,20 +134,20 @@ public class AssemblerBuildService(
 
 		if (exporters.Contains(Exporter.Html))
 		{
+			var features = assembleContext.Environment.ToFeatureFlags();
 			var openApiStopwatch = Stopwatch.StartNew();
-			await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, assembleSources, ctx);
+			var apiUrls = await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, assembleSources, ctx);
 			openApiStopwatch.Stop();
 			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
 
-			// Build-time sitemap uses current date as placeholder for backwards compatibility.
-			// Production sitemap with correct content_last_updated dates is generated via
-			// `assembler sitemap` after ES indexing, which overwrites this file.
 			var urls = navigation.NavigationItems
 				.SelectMany(SitemapNavigationHelper.Flatten)
 				.Select(n => n.Url)
 				.Distinct();
 			var now = DateTimeOffset.UtcNow;
 			var entries = urls.ToDictionary(u => u, _ => now);
+			foreach (var apiUrl in apiUrls)
+				_ = entries.TryAdd(apiUrl, now);
 
 			if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
 				collector.EmitGlobalWarning(
@@ -155,7 +155,11 @@ public class AssemblerBuildService(
 					"Consider implementing sitemap index files."
 				);
 
-			var sitemapResult = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+			var sitemapResult = SitemapBuilder.Generate(
+				entries,
+				assembleContext.WriteFileSystem,
+				assembleContext.OutputWithPathPrefixDirectory,
+				includeApiDocs: features.AssemblerApiExplorerEnabled);
 
 			if (sitemapResult.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
 				collector.EmitGlobalWarning(

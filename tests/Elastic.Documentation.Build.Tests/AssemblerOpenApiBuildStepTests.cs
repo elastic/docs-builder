@@ -62,12 +62,13 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			outputDirectory);
 		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
 
-		await AssemblerOpenApiBuildStep.BuildAsync(
+		var urls = await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
 			TestContext.Current.CancellationToken);
 
+		urls.Should().BeEmpty();
 		fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
 			.Should().BeFalse("OpenAPI generation must not run when the feature flag is disabled");
 	}
@@ -92,14 +93,32 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			outputDirectory);
 		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
 
-		await AssemblerOpenApiBuildStep.BuildAsync(
+		var urls = await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
 			TestContext.Current.CancellationToken);
 
+		urls.Should().BeEmpty();
 		fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
 			.Should().BeFalse("OpenAPI generation must not run without API declarations");
+	}
+
+	[Fact]
+	public void DiscoverExportSources_MapsApiKeysToExportSources()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var withApi = CreateDocumentationSet("docs-content", "elasticsearch", collector);
+		var assembleSets = new Dictionary<string, AssemblerDocumentationSet>
+		{
+			[withApi.Checkout.Repository.Name] = withApi
+		}.ToFrozenDictionary();
+
+		var sources = AssemblerOpenApiBuildStep.DiscoverExportSources(assembleSets, collector);
+
+		sources.Should().ContainSingle();
+		sources[0].ApiKey.Should().Be("elasticsearch");
+		sources[0].Git.Should().Be(withApi.BuildContext.Git);
 	}
 
 	[Fact]

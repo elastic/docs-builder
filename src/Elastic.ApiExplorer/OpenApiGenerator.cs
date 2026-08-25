@@ -44,6 +44,9 @@ public class OpenApiGenerator(
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
+	private readonly List<string> _generatedPageUrls = [];
+
+	public IReadOnlyList<string> GeneratedPageUrls => _generatedPageUrls;
 
 	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null) =>
 		new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig);
@@ -283,6 +286,7 @@ public class OpenApiGenerator(
 		};
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);
+		_generatedPageUrls.Add(current.Url);
 		return outputFile;
 
 		IFileInfo OutputFile(INavigationItem currentNavigation)
