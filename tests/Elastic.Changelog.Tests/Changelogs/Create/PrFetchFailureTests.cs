@@ -243,9 +243,10 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		// Act
 		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert: mirrors the PR path — under --strict-fetch the bulk fetch failure escalates to an error
-		// (non-zero exit), but the best-effort files are still written so they can be inspected.
-		result.Should().BeTrue();
+		// Assert: under --strict-fetch the bulk fetch failure escalates to an error.
+		// No files are written because filename derivation requires a PR number;
+		// the caller must use 'changelog note' for issue-only entries.
+		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d =>
 			d.Severity == Severity.Error &&

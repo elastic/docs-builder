@@ -238,6 +238,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// <summary>
 	/// Fetches a single explicitly-requested entry. A 404 is surfaced immediately (not retried) because the
 	/// caller knows the entry should exist; 5xx and transport errors use the normal retry budget.
+	/// Permanent client errors (4xx other than 404) also fail immediately without retry.
 	/// </summary>
 	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchNamedEntryAsync(Uri uri, string fileName, string poolLabel, Cancel ctx)
 	{
@@ -257,6 +258,10 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
+				// Permanent client errors (4xx — 404 is handled above as notFound) must not be retried.
+				if (ex is HttpRequestException { StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError })
+					return (false, string.Empty, ex.Message);
+
 				lastError = ex.Message;
 				if (attempt >= _maxAttempts)
 					break;

@@ -47,8 +47,11 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		if (!fileSystem.Directory.Exists(outputDir))
 			_ = fileSystem.Directory.CreateDirectory(outputDir);
 
-		// Generate filename
+		// Generate filename — returns null and emits an error when no PR number is derivable.
 		var filename = GenerateFilename(collector, input);
+		if (filename == null)
+			return false;
+
 		var filePath = fileSystem.Path.Join(outputDir, filename);
 
 		// Write UTF-8 text without BOM using explicit encoding instance.
@@ -62,7 +65,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
 	private const int MaxFilenameLength = 200;
 
-	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
+	private string? GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
 		if (input.Prs is { Length: > 0 })
 		{
@@ -88,8 +91,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			"Could not derive a PR number from the provided --prs values. " +
 			"Changelog entries must be anchored to a PR number. " +
 			"For items with no PR use 'changelog note' instead.");
-		// Return a placeholder; the caller checks the collector for errors.
-		return "changelog.yaml";
+		return null;
 	}
 
 	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input)
