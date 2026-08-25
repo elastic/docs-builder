@@ -28,7 +28,8 @@ public class ScrubberProcessorTests
 		// The real scrub pass has its own tests; here it just marks content so assertions can
 		// tell a scrubbed write from a raw copy.
 		_ = A.CallTo(() => _scrubber.ScrubAsync(A<string>._, A<string>._, A<Cancel>._))
-			.ReturnsLazily((string _, string content, Cancel _) => Task.FromResult("scrubbed: " + content));
+			.ReturnsLazily((string _, string content, Cancel _) =>
+				Task.FromResult(new ScrubResult { Content = "scrubbed: " + content }));
 
 		var reconciler = new BundleRegistryReconciler(
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
@@ -271,6 +272,54 @@ public class ScrubberProcessorTests
 		failed.Should().BeEmpty();
 		_s3.ContentOf(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml").Should().Be("scrubbed: v2");
 		_metrics.ObjectReconcileRetries.Should().Be(1);
+	}
+
+	[Fact]
+	public async Task Process_CanonicalKeyEntry_WritesToCanonicalPublicKey()
+	{
+		// Scrubber says the private key 12345-fix.yaml should be written to public as 12345.yaml.
+		const string privateKey = "changelog/elastic/elasticsearch/main/12345-fix.yaml";
+		const string canonicalKey = "changelog/elastic/elasticsearch/main/12345.yaml";
+		_ = _s3.Seed(PrivateBucket, privateKey, "entry-content");
+		_ = A.CallTo(() => _scrubber.ScrubAsync(privateKey, A<string>._, A<Cancel>._))
+			.ReturnsLazily((string _, string content, Cancel _) =>
+				Task.FromResult(new ScrubResult { Content = "scrubbed: " + content, CanonicalKey = canonicalKey }));
+
+		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", privateKey)], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.ContentOf(PublicBucket, canonicalKey).Should().Be("scrubbed: entry-content",
+			"canonical key must receive the scrubbed content");
+		_s3.Exists(PublicBucket, privateKey).Should().BeFalse(
+			"private (non-canonical) key must not appear in the public bucket");
+	}
+
+	[Fact]
+	public async Task Process_MultiPrEntry_WritesMarkersForNonPrimaryPrs()
+	{
+		// Scrubber returns markers for PRs 200 and 300 pointing to the primary PR 100.
+		const string privateKey = "changelog/elastic/elasticsearch/main/100.yaml";
+		_ = _s3.Seed(PrivateBucket, privateKey, "multi-pr-content");
+		_ = A.CallTo(() => _scrubber.ScrubAsync(privateKey, A<string>._, A<Cancel>._))
+			.ReturnsLazily((string _, string content, Cancel _) =>
+				Task.FromResult(new ScrubResult
+				{
+					Content = "scrubbed: " + content,
+					Markers =
+					[
+						("changelog/elastic/elasticsearch/main/200.yaml", "link: \"100\"\n"),
+						("changelog/elastic/elasticsearch/main/300.yaml", "link: \"100\"\n")
+					]
+				}));
+
+		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", privateKey)], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.ContentOf(PublicBucket, privateKey).Should().Be("scrubbed: multi-pr-content");
+		_s3.ContentOf(PublicBucket, "changelog/elastic/elasticsearch/main/200.yaml").Should().Be("link: \"100\"\n",
+			"marker for PR 200 must be written to public bucket");
+		_s3.ContentOf(PublicBucket, "changelog/elastic/elasticsearch/main/300.yaml").Should().Be("link: \"100\"\n",
+			"marker for PR 300 must be written to public bucket");
 	}
 
 	[Fact]

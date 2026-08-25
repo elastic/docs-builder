@@ -313,9 +313,19 @@ public sealed class ScrubberProcessor(
 				}
 				else
 				{
-					var scrubbed = await scrubber.ScrubAsync(key, source.Content, ctx);
-					await PutPublicObject(key, scrubbed, "application/yaml", ctx);
-					_logger.LogInformation("Scrubbed and wrote {Key} to public bucket", key);
+					var scrubResult = await scrubber.ScrubAsync(key, source.Content, ctx);
+					var publicKey = scrubResult.CanonicalKey ?? key;
+					await PutPublicObject(publicKey, scrubResult.Content, "application/yaml", ctx);
+					if (scrubResult.CanonicalKey is not null)
+						_logger.LogInformation("Scrubbed {Key} → canonical public key {CanonicalKey}", key, scrubResult.CanonicalKey);
+					else
+						_logger.LogInformation("Scrubbed and wrote {Key} to public bucket", key);
+
+					foreach (var (markerKey, markerContent) in scrubResult.Markers)
+					{
+						await PutPublicObject(markerKey, markerContent, "application/yaml", ctx);
+						_logger.LogInformation("Wrote marker {MarkerKey} → {PrimaryKey}", markerKey, publicKey);
+					}
 				}
 			}
 			else

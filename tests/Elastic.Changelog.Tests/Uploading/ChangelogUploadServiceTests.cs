@@ -11,7 +11,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -806,5 +808,121 @@ public class ChangelogUploadServiceTests
 			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
 		)).MustNotHaveHappened();
+	}
+
+	// --- Canonical key derivation tests
+
+	[Fact]
+	public void DeriveCanonicalFileNameAndMarkers_FullPrUrl_UsesMinPrAsCanonicalKey()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"]
+		};
+
+		var (canonicalFileName, markers) = ChangelogUploadService.DeriveCanonicalFileNameAndMarkers("12345-fix.yaml", entry);
+
+		canonicalFileName.Should().Be("12345.yaml");
+		markers.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void DeriveCanonicalFileNameAndMarkers_MultiPrEntry_ReturnsMinAndMarkersForRest()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs =
+			[
+				"https://github.com/elastic/elasticsearch/pull/300",
+				"https://github.com/elastic/elasticsearch/pull/100",
+				"https://github.com/elastic/elasticsearch/pull/200"
+			]
+		};
+
+		var (canonicalFileName, markers) = ChangelogUploadService.DeriveCanonicalFileNameAndMarkers("100.yaml", entry);
+
+		canonicalFileName.Should().Be("100.yaml", "min PR is 100");
+		markers.Should().HaveCount(2);
+		markers.Should().Contain(m => m.FileName == "200.yaml");
+		markers.Should().Contain(m => m.FileName == "300.yaml");
+
+		foreach (var (_, markerContent) in markers)
+		{
+			var markerEntry = ReleaseNotesSerialization.DeserializeEntry(markerContent);
+			markerEntry.Link.Should().Be("100");
+		}
+	}
+
+	[Fact]
+	public void DeriveCanonicalFileNameAndMarkers_NoPrs_FallsBackToFileName()
+	{
+		var entry = new ChangelogEntry { Title = "No PRs" };
+
+		var (canonicalFileName, markers) = ChangelogUploadService.DeriveCanonicalFileNameAndMarkers("some-note.yaml", entry);
+
+		canonicalFileName.Should().Be("some-note.yaml");
+		markers.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void DiscoverUploadTargets_EntryWithFullPrUrl_UsesCanonicalKey()
+	{
+		// language=yaml
+		AddChangelog("12345-fix.yaml", """
+			title: Fix search performance
+			type: bug-fix
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/12345
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", "main");
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("changelog/elastic/elasticsearch/main/12345.yaml",
+			"canonical key is derived from PR number, not the authored filename");
+		_collector.Warnings.Should().Be(0);
+	}
+
+	[Fact]
+	public void DiscoverUploadTargets_NoteFile_PassesThroughVerbatim()
+	{
+		// language=yaml
+		AddChangelog("note-slow-rollover.yaml", """
+			title: Known issue with rollover
+			type: known-issue
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", "main");
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("changelog/elastic/elasticsearch/main/note-slow-rollover.yaml",
+			"note-* files are their own anchor and use verbatim filenames");
+	}
+
+	[Fact]
+	public void DiscoverUploadTargets_MultiPrEntry_AddsMarkerTargets()
+	{
+		// language=yaml
+		AddChangelog("100.yaml", """
+			title: Multi-PR feature
+			type: feature
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			  - https://github.com/elastic/elasticsearch/pull/200
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", "main");
+
+		targets.Should().HaveCount(2, "one primary + one marker");
+		targets.Should().Contain(t => t.S3Key == "changelog/elastic/elasticsearch/main/100.yaml" && t.InlineContent == null,
+			"primary entry has a local file");
+		var marker = targets.SingleOrDefault(t => t.S3Key == "changelog/elastic/elasticsearch/main/200.yaml");
+		marker.Should().NotBeNull();
+		marker!.InlineContent.Should().NotBeNullOrEmpty("marker has inline content, no local file");
+		var markerEntry = ReleaseNotesSerialization.DeserializeEntry(marker.InlineContent!);
+		markerEntry.Link.Should().Be("100");
 	}
 }
