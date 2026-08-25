@@ -121,6 +121,21 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		return true;
 	}
 
+	public bool ValidateNoteProducts(IDiagnosticsCollector collector, CreateChangelogArguments input)
+	{
+		foreach (var product in input.Products)
+		{
+			if (string.IsNullOrWhiteSpace(product.Target) || product.Target == "*")
+			{
+				collector.EmitError(string.Empty,
+					$"Product '{product.Product}' must have a specific target for 'changelog note'. " +
+					"Use --products 'product target lifecycle' with a concrete target value (for example, '9.2.0' or '2026-05-15').");
+				return false;
+			}
+		}
+		return true;
+	}
+
 	/// <summary>
 	/// Validates input values against configuration.
 	/// </summary>

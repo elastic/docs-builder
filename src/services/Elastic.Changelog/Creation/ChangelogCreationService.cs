@@ -62,6 +62,9 @@ public record CreateChangelogArguments
 	/// unauthorized GITHUB_TOKEN would otherwise silently produce unfiltered, title-less changelogs.
 	/// </summary>
 	public bool StrictFetch { get; init; }
+
+	public bool IsNote { get; init; }
+	public string? NoteName { get; init; }
 }
 
 /// <summary>
@@ -142,6 +145,44 @@ IEnvironmentVariables? env = null
 		catch (UnauthorizedAccessException uaEx)
 		{
 			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
+	public async Task<bool> CreateNote(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
+	{
+		try
+		{
+			input = EnrichFromCI(input);
+
+			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			if (config == null)
+			{
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
+				return false;
+			}
+
+			input = ApplyConfigDefaults(input, config);
+
+			if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed: false))
+				return false;
+
+			if (!_validator.ValidateNoteProducts(collector, input))
+				return false;
+
+			if (!_validator.ValidateAgainstConfiguration(collector, input, config))
+				return false;
+
+			return await _fileWriter.WriteNoteAsync(input, config, ctx);
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error creating note: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied creating note: {uaEx.Message}", uaEx);
 			return false;
 		}
 	}

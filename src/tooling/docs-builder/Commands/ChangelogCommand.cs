@@ -526,6 +526,178 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
+	/// <summary>Create a <c>note-*.yml</c> changelog fragment for items that have no associated PR.</summary>
+	/// <remarks>
+	/// Use this command for release notes that are not tied to a specific pull request — for example, a
+	/// known-issue entry or a cross-cutting change that spans many PRs. Every product listed must have a
+	/// concrete <c>target</c> (not a wildcard); <c>--prs</c> and <c>--issues</c> are still accepted as
+	/// optional citations but do not affect the output filename.
+	/// </remarks>
+	/// <param name="name">Explicit slug for the note filename. Defaults to a slug derived from the title.</param>
+	/// <param name="products">Products in format "product target lifecycle, ..." (for example, "elasticsearch 9.2.0 ga"). Target is required for all products.</param>
+	/// <param name="action">Optional action text.</param>
+	/// <param name="areas">Optional area tags.</param>
+	/// <param name="concise">Omit schema reference comments from the generated YAML.</param>
+	/// <param name="config">Path to the changelog.yml configuration file.</param>
+	/// <param name="description">Entry description.</param>
+	/// <param name="noExtractReleaseNotes">Skip extracting release note text from PR/issue descriptions.</param>
+	/// <param name="noExtractIssues">Skip extracting linked issues/PRs from PR/issue body.</param>
+	/// <param name="featureId">Optional feature ID.</param>
+	/// <param name="highlight">Mark the entry as a highlight.</param>
+	/// <param name="impact">Optional impact text.</param>
+	/// <param name="issues">Optional issue URLs (cited but not used as anchor).</param>
+	/// <param name="owner">GitHub owner. Falls back to <c>bundle.owner</c> or "elastic".</param>
+	/// <param name="output">Output directory.</param>
+	/// <param name="prs">Optional PR URLs (cited but not used as anchor).</param>
+	/// <param name="repo">GitHub repository name.</param>
+	/// <param name="stripTitlePrefix">Strip a repo-name prefix from the title.</param>
+	/// <param name="strictFetch">Treat GitHub fetch failures as errors.</param>
+	/// <param name="subtype">Entry subtype.</param>
+	/// <param name="title">Entry title (required).</param>
+	/// <param name="type">Entry type (required).</param>
+	/// <param name="ct"></param>
+	[NoOptionsInjection]
+	public async Task<int> Note(
+		string? name = null,
+		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? products = null,
+		string? action = null,
+		string[]? areas = null,
+		bool concise = false,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		string? description = null,
+		bool noExtractReleaseNotes = false,
+		bool noExtractIssues = false,
+		string? featureId = null,
+		bool? highlight = null,
+		string? impact = null,
+		string[]? issues = null,
+		string? owner = null,
+		string? output = null,
+		string[]? prs = null,
+		string? repo = null,
+		bool stripTitlePrefix = false,
+		bool strictFetch = false,
+		string? subtype = null,
+		string? title = null,
+		string? type = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+			.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
+		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
+		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
+		var extractReleaseNotes = noExtractReleaseNotes ? false : (bool?)null;
+		var extractIssues = noExtractIssues ? false : (bool?)null;
+
+		string[]? parsedPrs = null;
+		if (prs is { Length: > 0 })
+		{
+			var allPrs = new List<string>();
+			foreach (var trimmedValue in prs.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.Trim()))
+			{
+				var normalizedPath = NormalizePath(trimmedValue);
+				if (_fileSystem.File.Exists(normalizedPath))
+				{
+					try
+					{
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
+						foreach (var line in fileLines)
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+								allPrs.Add(line.Trim());
+						}
+					}
+					catch (Exception ex) when (ex is IOException or SecurityException)
+					{
+						collector.EmitError(string.Empty, $"Failed to read PRs from file '{normalizedPath}': {ex.Message}", ex);
+						return 1;
+					}
+				}
+				else
+				{
+					allPrs.AddRange(trimmedValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+				}
+			}
+			parsedPrs = allPrs.ToArray();
+		}
+
+		string[]? parsedIssues = null;
+		if (issues is { Length: > 0 })
+		{
+			var allIssues = new List<string>();
+			foreach (var trimmedValue in issues.Where(i => !string.IsNullOrWhiteSpace(i)).Select(i => i.Trim()))
+			{
+				var normalizedPath = NormalizePath(trimmedValue);
+				if (_fileSystem.File.Exists(normalizedPath))
+				{
+					try
+					{
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
+						foreach (var line in fileLines)
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+								allIssues.Add(line.Trim());
+						}
+					}
+					catch (Exception ex) when (ex is IOException or SecurityException)
+					{
+						collector.EmitError(string.Empty, $"Failed to read issues from file '{normalizedPath}': {ex.Message}", ex);
+						return 1;
+					}
+				}
+				else
+				{
+					allIssues.AddRange(trimmedValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+				}
+			}
+			parsedIssues = allIssues.ToArray();
+		}
+
+		var resolvedProducts = (IReadOnlyList<ProductArgument>?)products ?? [];
+
+		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
+		var service = new ChangelogCreationService(logFactory, configurationContext, _fileSystem, githubPrService, env: SystemEnvironmentVariables.Instance);
+
+		var input = new CreateChangelogArguments
+		{
+			Title = title,
+			Type = type,
+			Products = resolvedProducts,
+			Subtype = subtype,
+			Areas = areas ?? [],
+			Prs = parsedPrs,
+			Owner = resolvedOwner,
+			Repo = resolvedRepo,
+			Issues = parsedIssues ?? [],
+			Description = description,
+			Impact = impact,
+			Action = action,
+			FeatureId = featureId,
+			Highlight = highlight,
+			Output = resolvedOutput,
+			Config = config?.FullName,
+			StripTitlePrefix = stripTitlePrefixResolved,
+			ExtractReleaseNotes = extractReleaseNotes,
+			ExtractIssues = extractIssues,
+			Concise = concise,
+			StrictFetch = strictFetch,
+			IsNote = true,
+			NoteName = name
+		};
+
+		serviceInvoker.AddCommand(service, input,
+			async static (s, collector, state, ctx) => await s.CreateNote(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
 	/// <summary>Aggregate changelog entries matching a filter into a single bundle YAML.</summary>
 	/// <remarks>
 	/// <para><b>Profile-based commands</b> (<c>bundle &lt;profile&gt; &lt;version|report&gt; [report] [--plan]</c>): filters, paths, repo metadata,
