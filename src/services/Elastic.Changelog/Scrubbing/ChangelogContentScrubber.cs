@@ -85,7 +85,8 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			Issues = entry.Issues,
 			Areas = entry.Areas,
 			Highlight = entry.Highlight,
-			Subtype = entry.Subtype
+			Subtype = entry.Subtype,
+			Link = entry.Link
 		};
 
 		await using var collector = new DiagnosticsCollector([]);
@@ -107,7 +108,8 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			Impact = sanitized.Impact,
 			Action = sanitized.Action,
 			Prs = sanitized.Prs,
-			Issues = sanitized.Issues
+			Issues = sanitized.Issues,
+			Link = entry.Link
 		};
 
 		var result = ReleaseNotesSerialization.SerializeEntry(scrubEntry);

@@ -165,7 +165,8 @@ public static partial class ReleaseNotesSerialization
 		Impact = dto.Impact,
 		Action = dto.Action,
 		FeatureId = dto.FeatureId,
-		Highlight = dto.Highlight
+		Highlight = dto.Highlight,
+		Link = dto.Link
 	};
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) => new()
@@ -181,7 +182,8 @@ public static partial class ReleaseNotesSerialization
 		Impact = entry.Impact,
 		Action = entry.Action,
 		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight
+		Highlight = entry.Highlight,
+		Link = entry.Link
 	};
 
 	private static ProductReference ToProductReference(ProductInfoDto dto) => new()
@@ -225,7 +227,8 @@ public static partial class ReleaseNotesSerialization
 		Subtype = ParseEntrySubtype(dto.Subtype),
 		Areas = dto.Areas,
 		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
-		Issues = dto.Issues
+		Issues = dto.Issues,
+		Link = dto.Link
 	};
 
 	private static BundledFile ToBundledFile(BundledFileDto dto) => new()
@@ -294,7 +297,8 @@ public static partial class ReleaseNotesSerialization
 		Impact = entry.Impact,
 		Action = entry.Action,
 		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight
+		Highlight = entry.Highlight,
+		Link = entry.Link
 	};
 
 	private static ProductInfoDto ToDto(ProductReference product) => new()
@@ -338,7 +342,8 @@ public static partial class ReleaseNotesSerialization
 		Subtype = EntrySubtypeToString(entry.Subtype),
 		Areas = entry.Areas?.ToList(),
 		Prs = entry.Prs?.ToList(),
-		Issues = entry.Issues?.ToList()
+		Issues = entry.Issues?.ToList(),
+		Link = entry.Link
 	};
 
 	private static BundledFileDto ToDto(BundledFile file) => new()
