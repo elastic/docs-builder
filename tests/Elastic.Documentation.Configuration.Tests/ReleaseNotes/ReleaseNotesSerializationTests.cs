@@ -150,4 +150,42 @@ public class ReleaseNotesSerializationTests
 		roundTrip.Impact.Should().BeNull();
 		roundTrip.Action.Should().BeNull();
 	}
+
+	[Fact]
+	public void SerializeDeserialize_MarkerEntry_LinkRoundTrips()
+	{
+		// A marker is link: only — no title, type, products.
+		var yaml = "link: \"12345\"\n";
+
+		var entry = ReleaseNotesSerialization.DeserializeEntry(yaml);
+
+		entry.Link.Should().Be("12345");
+		entry.IsMarker.Should().BeTrue();
+		entry.Title.Should().Be("", "title is empty when absent");
+		entry.Type.Should().Be(ChangelogEntryType.Invalid);
+	}
+
+	[Fact]
+	public void SerializeEntry_WithLink_LinkRoundTrips()
+	{
+		var entry = new ChangelogEntry { Link = "99999" };
+
+		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
+		var roundTrip = ReleaseNotesSerialization.DeserializeEntry(yaml);
+
+		roundTrip.Link.Should().Be("99999");
+		roundTrip.IsMarker.Should().BeTrue();
+	}
+
+	[Fact]
+	public void IsMarker_NullLink_ReturnsFalse()
+	{
+		var entry = new ChangelogEntry
+		{
+			Title = "A real entry",
+			Type = ChangelogEntryType.Feature
+		};
+
+		entry.IsMarker.Should().BeFalse();
+	}
 }

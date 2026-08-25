@@ -227,7 +227,8 @@ public static partial class ReleaseNotesSerialization
 		Subtype = ParseEntrySubtype(dto.Subtype),
 		Areas = dto.Areas,
 		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
-		Issues = dto.Issues
+		Issues = dto.Issues,
+		Link = dto.Link
 	};
 
 	private static BundledFile ToBundledFile(BundledFileDto dto) => new()
@@ -341,7 +342,8 @@ public static partial class ReleaseNotesSerialization
 		Subtype = EntrySubtypeToString(entry.Subtype),
 		Areas = entry.Areas?.ToList(),
 		Prs = entry.Prs?.ToList(),
-		Issues = entry.Issues?.ToList()
+		Issues = entry.Issues?.ToList(),
+		Link = entry.Link
 	};
 
 	private static BundledFileDto ToDto(BundledFile file) => new()
