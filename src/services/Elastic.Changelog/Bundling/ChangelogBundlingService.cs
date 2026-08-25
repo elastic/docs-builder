@@ -1301,24 +1301,25 @@ public partial class ChangelogBundlingService(
 		if (!useCdn)
 			return entries;
 
-		var noteTarget = ResolveNoteTarget(input);
-		if (string.IsNullOrWhiteSpace(noteTarget))
-			return entries;
-
-		var noteEntries = await FetchCdnNotesAsync(collector, org, repo, noteTarget, ctx);
-		if (noteEntries == null)
-			return null;
-
-		if (noteEntries.Count == 0)
+		var noteTargets = ResolveNoteTargets(input);
+		if (noteTargets.Count == 0)
 			return entries;
 
 		// Dedup by checksum: a note body identical to a PR entry (edge case) should appear once.
 		var seen = new HashSet<string>(entries.Select(e => e.Checksum), StringComparer.OrdinalIgnoreCase);
 		var combined = new List<MatchedChangelogFile>(entries);
-		foreach (var note in noteEntries)
+
+		foreach (var noteTarget in noteTargets)
 		{
-			if (seen.Add(note.Checksum))
-				combined.Add(note);
+			var noteEntries = await FetchCdnNotesAsync(collector, org, repo, noteTarget, ctx);
+			if (noteEntries == null)
+				return null;
+
+			foreach (var note in noteEntries)
+			{
+				if (seen.Add(note.Checksum))
+					combined.Add(note);
+			}
 		}
 		return combined;
 	}
@@ -1442,20 +1443,19 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Returns the first explicit, non-wildcard target from <see cref="BundleChangelogsArguments.OutputProducts"/>,
-	/// or <c>null</c> when no unambiguous target is available. Notes are only fetched when the target
-	/// is known — otherwise the CDN notes index cannot be addressed.
+	/// Returns all distinct, explicit, non-wildcard targets from <see cref="BundleChangelogsArguments.OutputProducts"/>.
+	/// Notes are fetched for every resolved target so multi-target bundles are fully covered.
+	/// Returns an empty list when no concrete targets are available.
 	/// </summary>
-	private static string? ResolveNoteTarget(BundleChangelogsArguments input)
+	private static IReadOnlyList<string> ResolveNoteTargets(BundleChangelogsArguments input)
 	{
 		if (input.OutputProducts is not { Count: > 0 })
-			return null;
-		foreach (var p in input.OutputProducts)
-		{
-			if (!string.IsNullOrWhiteSpace(p.Target) && p.Target != "*")
-				return p.Target;
-		}
-		return null;
+			return [];
+		return input.OutputProducts
+			.Where(p => !string.IsNullOrWhiteSpace(p.Target) && p.Target != "*")
+			.Select(p => p.Target!)
+			.Distinct(StringComparer.Ordinal)
+			.ToList();
 	}
 
 	private static ChangelogFilterCriteria BuildFilterCriteria(
