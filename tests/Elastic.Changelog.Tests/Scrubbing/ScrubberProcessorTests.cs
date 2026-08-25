@@ -34,8 +34,10 @@ public class ScrubberProcessorTests
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
 		var shallowReconciler = new ShallowRegistryReconciler(
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
+		var notesReconciler = new NotesIndexReconciler(
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, sourceBucketName: PrivateBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
 		_processor = new ScrubberProcessor(
-			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, shallowReconciler, _metrics);
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, shallowReconciler, notesReconciler, _metrics);
 	}
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;
@@ -350,6 +352,44 @@ public class ScrubberProcessorTests
 
 		failed.Should().BeEmpty();
 		_metrics.GroupReconciles.Should().Be(1);
+	}
+
+	[Fact]
+	public async Task Process_ClientUploadedNotesIndex_IsRejectedWithNoPublicWrite()
+	{
+		// The notes index is reconciler-owned; a client that uploads notes-*.json must be blocked.
+		_s3.Seed(PrivateBucket, "changelog/elastic/kibana/notes-9.0.0.json", """{"notes":[]}""");
+
+		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "changelog/elastic/kibana/notes-9.0.0.json")], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, "changelog/elastic/kibana/notes-9.0.0.json").Should().BeFalse();
+		// No reconcile triggered — only logging
+		_metrics.GroupReconciles.Should().Be(0);
+	}
+
+	[Fact]
+	public async Task Process_NoteFile_ScrubbedAndNotesReconcileTriggered()
+	{
+		// language=yaml
+		var noteYaml = """
+			title: Known rollover issue
+			type: known-issue
+			products:
+			  - product: elasticsearch
+			    target: 9.0.0
+			""";
+		_s3.Seed(PrivateBucket, "changelog/elastic/elasticsearch/main/note-rollover.yml", noteYaml);
+
+		var failed = await _processor.ProcessAsync(
+			[Message("ObjectCreated:Put", "changelog/elastic/elasticsearch/main/note-rollover.yml")], Ctx);
+
+		failed.Should().BeEmpty();
+		// The note was scrubbed and copied to the public bucket
+		_s3.ContentOf(PublicBucket, "changelog/elastic/elasticsearch/main/note-rollover.yml")
+			.Should().StartWith("scrubbed:");
+		// The notes index was written (reconciler read the note and produced notes-9.0.0.json)
+		_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/notes-9.0.0.json").Should().BeTrue();
 	}
 
 	// language=yaml
