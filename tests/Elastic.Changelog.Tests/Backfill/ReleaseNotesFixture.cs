@@ -21,6 +21,7 @@ public static class ReleaseNotesFixture
 		Owner = "elastic",
 		Repo = "elastic-otel-java",
 		Ref = "9a61ce4faaf08e272c433a083bcc6f0e96d80e0a",
+		RepoPath = "docs/release-notes/index.md",
 		Cutoff = "1.10.0"
 	};
 

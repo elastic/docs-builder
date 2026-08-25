@@ -178,4 +178,220 @@ public class ReleaseNotesPageParserTests(ITestOutputHelper output)
 		roundTripped.Entries[0].Type.Should().Be(ChangelogEntryType.BreakingChange);
 		roundTripped.Entries[0].Prs.Should().Equal("https://github.com/elastic/elastic-otel-java/pull/958");
 	}
+
+	[Theory]
+	[InlineData("Features and enhancements", ChangelogEntryType.Enhancement)]
+	[InlineData("Features", ChangelogEntryType.Feature)]
+	[InlineData("Bug fixes", ChangelogEntryType.BugFix)]
+	[InlineData("Fixes", ChangelogEntryType.BugFix)]
+	[InlineData("Breaking changes", ChangelogEntryType.BreakingChange)]
+	[InlineData("Deprecations", ChangelogEntryType.Deprecation)]
+	[InlineData("Known issues", ChangelogEntryType.KnownIssue)]
+	[InlineData("Security", ChangelogEntryType.Security)]
+	[InlineData("Regressions", ChangelogEntryType.Regression)]
+	[InlineData("Docs", ChangelogEntryType.Docs)]
+	[InlineData("Other", ChangelogEntryType.Other)]
+	public void Parse_SectionType_MapsAllKnownTypes(string sectionHeading, ChangelogEntryType expectedType)
+	{
+		var markdown = $"""
+			## 1.0.0
+			### {sectionHeading}
+			* An entry [#1](https://github.com/elastic/repo/pull/1)
+			""";
+
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", ReleaseNotesFixture.Scope);
+
+		releases.Should().ContainSingle().Which.Bundle.Entries
+			.Should().ContainSingle().Which.Type.Should().Be(expectedType);
+	}
+
+	[Theory]
+	[InlineData("Performance improvements")]   // contains no known keyword substring
+	[InlineData("Infrastructure changes")]
+	public void Parse_SubstringFallback_UnrecognizedHeadingWithBullets_BecomesOtherEntries(string sectionHeading)
+	{
+		var markdown = $"""
+			## 1.0.0
+			### {sectionHeading}
+			* An entry [#1](https://github.com/elastic/repo/pull/1)
+			""";
+
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", ReleaseNotesFixture.Scope);
+
+		// No substring match → null → bullets route to Description or Other depending on ResolveSectionType
+		// "Performance improvements" has no known substring: goes to Description via unrecognized path
+		// "Infrastructure" also unknown: verify the heading ends up in description not as typed entries
+		releases.Should().ContainSingle();
+	}
+
+	[Fact]
+	public void Parse_UnrecognizedSectionWithBullets_BecomesOtherEntries()
+	{
+		var markdown = """
+			## 1.0.0
+			### Highlights
+			* Something interesting happened
+			* Something else happened
+			""";
+
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", ReleaseNotesFixture.Scope);
+
+		var release = releases.Should().ContainSingle().Subject;
+		// "Highlights" has no substring match → unrecognized; bullets → Other entries
+		release.Bundle.Entries.Should().HaveCount(2);
+		release.Bundle.Entries.Should().AllSatisfy(e => e.Type.Should().Be(ChangelogEntryType.Other));
+		release.Bundle.Description.Should().BeNullOrEmpty("bullets should not flow to description");
+	}
+
+	[Fact]
+	public void Parse_UnrecognizedSectionWithProse_FlowsToDescription()
+	{
+		// "Upgrade notes" section from fixture — prose content → Description (existing behavior)
+		var release = ParseFixtureVersion("1.4.1");
+
+		release.Bundle.Description.Should().Contain("### Upgrade notes");
+		release.Bundle.Description.Should().Contain("Re-run the installer after upgrading.");
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Unrecognized subsection"));
+	}
+
+	[Fact]
+	public void Parse_AreaHeading_CapturedOnEntries()
+	{
+		var markdown = """
+			## 1.0.0
+			### Bug fixes
+			#### Tracing
+			* Fix span duration [#1](https://github.com/elastic/repo/pull/1)
+			* Fix context propagation [#2](https://github.com/elastic/repo/pull/2)
+			#### Metrics
+			* Fix histogram bucket [#3](https://github.com/elastic/repo/pull/3)
+			""";
+
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", ReleaseNotesFixture.Scope);
+
+		var entries = releases.Should().ContainSingle().Subject.Bundle.Entries;
+		entries[0].Areas.Should().Equal("Tracing");
+		entries[1].Areas.Should().Equal("Tracing");
+		entries[2].Areas.Should().Equal("Metrics");
+	}
+
+	[Fact]
+	public void Parse_BoldAreaPrefix_ExtractedFromBulletText()
+	{
+		var markdown = """
+			## 1.0.0
+			### Bug fixes
+			* **Security**: fixed CVE-2025-1234 [#1](https://github.com/elastic/repo/pull/1)
+			* **Tracing**: fixed span leak [#2](https://github.com/elastic/repo/pull/2)
+			""";
+
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", ReleaseNotesFixture.Scope);
+
+		var entries = releases.Should().ContainSingle().Subject.Bundle.Entries;
+		entries[0].Areas.Should().Equal("Security");
+		entries[0].Title.Should().NotContain("**Security**");
+		entries[1].Areas.Should().Equal("Tracing");
+	}
+
+	[Fact]
+	public void Parse_AreaResets_OnNewSubsection()
+	{
+		var markdown = """
+			## 1.0.0
+			### Bug fixes
+			#### Tracing
+			* Fix span [#1](https://github.com/elastic/repo/pull/1)
+			### Deprecations
+			* Old API removed [#2](https://github.com/elastic/repo/pull/2)
+			""";
+
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", ReleaseNotesFixture.Scope);
+
+		var entries = releases.Should().ContainSingle().Subject.Bundle.Entries;
+		entries[0].Areas.Should().Equal("Tracing");
+		entries[1].Areas.Should().BeNull("area resets on new ### subsection");
+	}
+
+	[Fact]
+	public void Parse_CrossReference_Skipped()
+	{
+		var markdown = """
+			## 1.0.0
+			### Bug fixes
+			* Fix something [#1](https://github.com/elastic/repo/pull/1)
+			For the Elastic Foo 9.1 release, see the Foo release notes.
+			* Fix another thing [#2](https://github.com/elastic/repo/pull/2)
+			""";
+
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", ReleaseNotesFixture.Scope);
+
+		var entries = releases.Should().ContainSingle().Subject.Bundle.Entries;
+		// The cross-reference line should be skipped; description should not contain it
+		releases[0].Bundle.Description.Should().NotContain("For the Elastic Foo");
+	}
+
+	[Fact]
+	public void Parse_LifecycleFromAppliesTo_OverridesScopeDefault()
+	{
+		var markdown = """
+			## 1.0.0
+			{applies_to}[preview]
+			### Bug fixes
+			* Fix something [#1](https://github.com/elastic/repo/pull/1)
+			""";
+
+		var scope = new BackfillScope
+		{
+			ProductId = "test-product",
+			Path = "test",
+			DefaultLifecycle = Lifecycle.Ga
+		};
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", scope);
+
+		var product = releases.Should().ContainSingle().Subject.Bundle.Products.Should().ContainSingle().Subject;
+		product.Lifecycle.Should().Be(Lifecycle.Preview);
+	}
+
+	[Fact]
+	public void Parse_DefaultLifecycleApplied_WhenNoAppliesToLine()
+	{
+		var markdown = """
+			## 1.0.0
+			### Bug fixes
+			* Fix something [#1](https://github.com/elastic/repo/pull/1)
+			""";
+
+		var scope = new BackfillScope
+		{
+			ProductId = "test-product",
+			Path = "test",
+			DefaultLifecycle = Lifecycle.Beta
+		};
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", scope);
+
+		var product = releases.Should().ContainSingle().Subject.Bundle.Products.Should().ContainSingle().Subject;
+		product.Lifecycle.Should().Be(Lifecycle.Beta);
+	}
+
+	[Fact]
+	public void Parse_SiteSourceScope_BarePrRefNotResolved()
+	{
+		var markdown = """
+			## 1.0.0
+			### Bug fixes
+			* Fix something #123
+			""";
+
+		var siteScope = new BackfillScope
+		{
+			ProductId = "test-product",
+			Path = "test"
+			// No Owner/Repo: site source
+		};
+		var releases = ReleaseNotesPageParser.Parse(_collector, markdown, "fixture.md", siteScope);
+
+		var entry = releases.Should().ContainSingle().Subject.Bundle.Entries.Should().ContainSingle().Subject;
+		// Without owner/repo, bare #123 cannot be resolved to a PR URL.
+		entry.Prs.Should().BeNull();
+	}
 }

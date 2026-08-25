@@ -4,9 +4,12 @@
 
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
@@ -56,10 +59,11 @@ public sealed record BackfillProductResult(
 /// Sourced from scrape-release-notes.py (scripts/, untracked prototype, 2026-08-25).
 /// Writes to disk only; publishing stays the job of <c>changelog upload</c>.
 /// </summary>
-public class ChangelogBackfillService(
+public partial class ChangelogBackfillService(
 	ILoggerFactory logFactory,
 	ScopedFileSystem fileSystem,
-	HttpMessageHandler? httpMessageHandler = null
+	HttpMessageHandler? httpMessageHandler = null,
+	TimeProvider? timeProvider = null
 ) : IService
 {
 	private const string OutcomeOk = "ok";
@@ -249,37 +253,171 @@ public class ChangelogBackfillService(
 		return new BackfillProductResult(scope.ProductId, url, OutcomeOk, inScope.Count, inScope.Count, filesWritten, noPr, dupPr, "");
 	}
 
+	[GeneratedRegex(@"/pull/(?<number>\d+)$")]
+	private static partial Regex PrNumberFromUrlRegex();
+
 	private (int FilesWritten, int NoPrEntries, int DuplicatePrRefs) WriteBundles(
 		IDiagnosticsCollector collector,
 		BackfillArguments args,
 		BackfillScope scope,
 		IReadOnlyList<MigratedRelease> releases)
 	{
-		var bundleDir = Path.Join(args.Output, scope.ProductId, "changelog", "bundles");
+		var changelogDir = Path.Join(args.Output, scope.ProductId, "changelog");
+		var bundleDir = Path.Join(changelogDir, "bundles");
 		var filesWritten = 0;
+		var noPrEntries = 0;
+		var dupPrRefs = 0;
+
+		// Cross-version first-wins dedup for PR numbers and note slugs.
+		var seenPrNumbers = new HashSet<string>(StringComparer.Ordinal);
+		// Key: "slug|version" → count of uses within that version (for same-version collision counter).
+		var slugVersionCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+		// All note file names ever claimed (across versions), for global uniqueness.
+		var claimedNoteFiles = new HashSet<string>(StringComparer.Ordinal);
+
+		var now = (timeProvider ?? TimeProvider.System).GetUtcNow();
 
 		try
 		{
 			_ = fileSystem.Directory.CreateDirectory(bundleDir);
+			_ = fileSystem.Directory.CreateDirectory(changelogDir);
+
 			foreach (var release in releases)
 			{
 				var yaml = ReleaseNotesSerialization.SerializeBundle(release.Bundle);
 				var filePath = Path.Join(bundleDir, $"{SanitizeFileName(release.Version)}.yaml");
 				fileSystem.File.WriteAllText(filePath, yaml);
 				filesWritten++;
+
+				var noteFilesForVersion = new List<string>();
+				foreach (var entry in release.Bundle.Entries ?? [])
+				{
+					var firstPr = entry.Prs is { Count: > 0 } prs ? prs[0] : null;
+					if (firstPr is not null)
+					{
+						var prNumberMatch = PrNumberFromUrlRegex().Match(firstPr);
+						if (prNumberMatch.Success)
+						{
+							var prNumber = prNumberMatch.Groups["number"].Value;
+							if (!seenPrNumbers.Add(prNumber))
+							{
+								dupPrRefs++;
+								_logger.LogDebug("Duplicate PR #{PrNumber} for {Product} {Version}; skipping", prNumber, scope.ProductId, release.Version);
+								continue;
+							}
+
+							var entryYaml = SerializeEntry(entry, scope, release.Version);
+							fileSystem.File.WriteAllText(Path.Join(changelogDir, $"{prNumber}.yaml"), entryYaml);
+							filesWritten++;
+						}
+					}
+					else
+					{
+						noPrEntries++;
+						var noteFile = AllocateNoteFileName(entry.Title ?? string.Empty, release.Version, slugVersionCounts, claimedNoteFiles);
+						if (noteFile is null)
+						{
+							_logger.LogDebug("Could not generate slug for PR-less entry in {Product} {Version}: {Title}", scope.ProductId, release.Version, entry.Title);
+							continue;
+						}
+
+						noteFilesForVersion.Add(noteFile);
+						var entryYaml = SerializeEntry(entry, scope, release.Version);
+						fileSystem.File.WriteAllText(Path.Join(changelogDir, noteFile), entryYaml);
+						filesWritten++;
+					}
+				}
+
+				if (noteFilesForVersion.Count > 0)
+				{
+					var registry = new NotesRegistry
+					{
+						GeneratedAt = now,
+						Target = release.Version,
+						Notes = noteFilesForVersion.Order(StringComparer.Ordinal).ToList()
+					};
+					var registryJson = JsonSerializer.Serialize(registry, BackfillJsonContext.Default.NotesRegistry);
+					fileSystem.File.WriteAllText(Path.Join(changelogDir, $"notes-{SanitizeFileName(release.Version)}.json"), registryJson);
+					filesWritten++;
+				}
 			}
 		}
 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
 		{
-			collector.EmitError(bundleDir, $"Could not write backfill bundles: {ex.Message}", ex);
+			collector.EmitError(changelogDir, $"Could not write backfill output: {ex.Message}", ex);
 		}
 
-		return (filesWritten, 0, 0);
+		if (noPrEntries > 0)
+		{
+			var total = releases.Sum(r => r.Bundle.Entries?.Count ?? 0);
+			collector.EmitHint(args.Output,
+				$"{scope.ProductId}: {noPrEntries}/{total} entries had no PR reference; written as note-*.yaml.");
+		}
+
+		return (filesWritten, noPrEntries, dupPrRefs);
+	}
+
+	private static string? AllocateNoteFileName(
+		string title,
+		string version,
+		Dictionary<string, int> slugVersionCounts,
+		HashSet<string> claimedNoteFiles)
+	{
+		if (string.IsNullOrWhiteSpace(title))
+			return null;
+
+		var slug = ChangelogTextUtilities.GenerateSlug(title, maxWords: 8);
+		if (string.IsNullOrEmpty(slug))
+			return null;
+
+		var versionKey = $"{slug}|{version}";
+		var candidate = $"note-{slug}.yaml";
+
+		if (claimedNoteFiles.Add(candidate))
+		{
+			slugVersionCounts[versionKey] = 1;
+			return candidate;
+		}
+
+		if (!slugVersionCounts.TryGetValue(versionKey, out var value))
+		{
+			// Cross-version collision: append sanitized version suffix.
+			candidate = $"note-{slug}-{SanitizeSlugSegment(version)}.yaml";
+			_ = claimedNoteFiles.Add(candidate);
+			value = 1;
+			slugVersionCounts[versionKey] = value;
+			return candidate;
+		}
+
+		// Same-version collision: increment counter suffix.
+		var count = value + 1;
+		slugVersionCounts[versionKey] = count;
+		candidate = $"note-{slug}-{count}.yaml";
+		_ = claimedNoteFiles.Add(candidate);
+		return candidate;
+	}
+
+	private static string SerializeEntry(BundledEntry bundled, BackfillScope scope, string version)
+	{
+		var entry = new ChangelogEntry
+		{
+			Type = bundled.Type ?? ChangelogEntryType.Other,
+			Title = bundled.Title ?? string.Empty,
+			Areas = bundled.Areas,
+			Prs = bundled.Prs,
+			Issues = bundled.Issues,
+			Products = [new ProductReference { ProductId = scope.ProductId, Target = version }]
+		};
+		return ReleaseNotesSerialization.SerializeEntry(entry);
 	}
 
 	private static string SanitizeFileName(string version) =>
-		// Replace characters unsafe in file names; versions are generally safe but guard anyway.
 		string.Join('_', version.Split(Path.GetInvalidFileNameChars()));
+
+	private static string SanitizeSlugSegment(string value) =>
+		string.Join('-', value.Split(Path.GetInvalidFileNameChars()))
+			.Replace('.', '-')
+			.Trim('-');
 
 	/// <summary>Formats the run report as a markdown table suitable for pasting into the tracking issue.</summary>
 	public static string FormatReport(IReadOnlyList<BackfillProductResult> results)

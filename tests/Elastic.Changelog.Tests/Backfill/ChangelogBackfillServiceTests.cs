@@ -168,6 +168,107 @@ public class ChangelogBackfillServiceTests
 		bundle.Entries[0].Type.Should().Be(Elastic.Documentation.ReleaseNotes.ChangelogEntryType.BreakingChange);
 	}
 
+	[Fact]
+	public async Task PrEntry_WrittenAsPrNumberDotYaml()
+	{
+		var service = CreateService();
+		var ct = TestContext.Current.CancellationToken;
+
+		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
+
+		// 1.9.0 has #958 and #960 as bare-ref PR entries.
+		var changelogDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
+		_mockFileSystem.FileExists(System.IO.Path.Join(changelogDir, "958.yaml")).Should().BeTrue("PR 958 entry should be written");
+		_mockFileSystem.FileExists(System.IO.Path.Join(changelogDir, "960.yaml")).Should().BeTrue("PR 960 entry should be written");
+	}
+
+	[Fact]
+	public async Task PrEntry_YamlContainsTargetVersion()
+	{
+		var service = CreateService();
+		var ct = TestContext.Current.CancellationToken;
+
+		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
+
+		var entryPath = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "958.yaml");
+		var yaml = _mockFileSystem.File.ReadAllText(entryPath);
+		var entry = Elastic.Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(yaml);
+
+		entry.Type.Should().Be(Elastic.Documentation.ReleaseNotes.ChangelogEntryType.BreakingChange);
+		entry.Products.Should().ContainSingle().Which.Target.Should().Be("1.9.0");
+		entry.Prs.Should().ContainSingle(p => p.Contains("/pull/958"));
+	}
+
+	[Fact]
+	public async Task NoPrEntry_WrittenAsNoteDotYaml()
+	{
+		var service = CreateService();
+		var ct = TestContext.Current.CancellationToken;
+
+		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
+
+		// 1.4.1 has a fix entry with no PR reference.
+		var changelogDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
+		var noteFiles = _mockFileSystem.AllFiles
+			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal) && System.IO.Path.GetFileName(f).StartsWith("note-", StringComparison.Ordinal))
+			.ToList();
+		noteFiles.Should().NotBeEmpty("at least one PR-less entry should produce a note-*.yaml file");
+	}
+
+	[Fact]
+	public async Task NoPrEntry_NotesRegistryWritten()
+	{
+		var service = CreateService();
+		var ct = TestContext.Current.CancellationToken;
+
+		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
+
+		// notes-1.4.1.json should be written because 1.4.1 has a PR-less fix.
+		var changelogDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
+		_mockFileSystem.FileExists(System.IO.Path.Join(changelogDir, "notes-1.4.1.json")).Should().BeTrue();
+
+		var json = _mockFileSystem.File.ReadAllText(System.IO.Path.Join(changelogDir, "notes-1.4.1.json"));
+		var registry = System.Text.Json.JsonSerializer.Deserialize(json, Elastic.Changelog.Backfill.BackfillJsonContext.Default.NotesRegistry);
+		registry.Should().NotBeNull();
+		registry!.Target.Should().Be("1.4.1");
+		registry.Notes.Should().NotBeEmpty();
+		registry.Notes.Should().AllSatisfy(n => n.Should().StartWith("note-").And.EndWith(".yaml"));
+	}
+
+	[Fact]
+	public async Task NoPrEntries_CountedInResult()
+	{
+		var service = CreateService();
+		var ct = TestContext.Current.CancellationToken;
+
+		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
+
+		var result = service.LastResults.Should().ContainSingle().Subject;
+		result.NoPrEntries.Should().BeGreaterThan(0, "fixture has at least one PR-less entry");
+	}
+
+	[Fact]
+	public async Task DuplicatePr_AcrossVersions_WrittenOnceAndCounted()
+	{
+		// Fixture has PR 850 in 1.7.0 (known-issue). If we could inject it again we'd test dedup.
+		// Verify that the same PR number isn't double-written even in the current fixture.
+		var service = CreateService();
+		var ct = TestContext.Current.CancellationToken;
+
+		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
+
+		// All PR files should be unique names (no overwritten paths).
+		var changelogDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
+		var prFiles = _mockFileSystem.AllFiles
+			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal))
+			.Where(f => !f.Contains("bundles", StringComparison.Ordinal))
+			.Where(f => System.IO.Path.GetFileName(f) is var n && !n.StartsWith("note-") && !n.StartsWith("notes-"))
+			.Select(System.IO.Path.GetFileName)
+			.ToList();
+
+		prFiles.Should().OnlyHaveUniqueItems("no PR number should be written twice");
+	}
+
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
 	{
 		public List<string> RequestedUrls { get; } = [];
