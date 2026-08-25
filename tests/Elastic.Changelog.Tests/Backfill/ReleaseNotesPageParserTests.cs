@@ -4,12 +4,12 @@
 
 using System.Diagnostics.CodeAnalysis;
 using AwesomeAssertions;
-using Elastic.Changelog.Migration;
+using Elastic.Changelog.Backfill;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
 
-namespace Elastic.Changelog.Tests.Migration;
+namespace Elastic.Changelog.Tests.Backfill;
 
 [SuppressMessage("Usage", "CA1001:Types that own disposable fields should be disposable")]
 public class ReleaseNotesPageParserTests(ITestOutputHelper output)

@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Migration;
+using Elastic.Changelog.Backfill;
 
-namespace Elastic.Changelog.Tests.Migration;
+namespace Elastic.Changelog.Tests.Backfill;
 
 /// <summary>
 /// A realistic release-notes Markdown fixture, modeled on the published EDOT Java page
@@ -14,12 +14,12 @@ namespace Elastic.Changelog.Tests.Migration;
 /// </summary>
 public static class ReleaseNotesFixture
 {
-	public static MigrateFromWebScope Scope { get; } = new()
+	public static BackfillScope Scope { get; } = new()
 	{
 		ProductId = "edot-java",
+		Path = "edot/sdks/java",
 		Owner = "elastic",
 		Repo = "elastic-otel-java",
-		Path = "docs/release-notes/index.md",
 		Ref = "9a61ce4faaf08e272c433a083bcc6f0e96d80e0a",
 		Cutoff = "1.10.0"
 	};

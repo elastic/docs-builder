@@ -10,7 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
 
-namespace Elastic.Changelog.Migration;
+namespace Elastic.Changelog.Backfill;
 
 /// <summary>A single release parsed from a published release-notes Markdown page, mapped to the existing bundle shape.</summary>
 public sealed record MigratedRelease
@@ -23,7 +23,7 @@ public sealed record MigratedRelease
 /// TEMPORARY (elastic/docs-eng-team#736): parses a hand-authored release-notes Markdown page —
 /// <c>## {version}</c> sections with typed <c>### {section}</c> subsections and bullet entries —
 /// into the existing <see cref="Bundle"/> shape with inline entries. No new schema is introduced.
-/// Delete together with the migrate-from-web command once the rollout (elastic/docs-eng-team#683) completes.
+/// Used by <c>changelog backfill</c> to build bundles from hand-authored and published release-notes Markdown.
 /// </summary>
 public static partial class ReleaseNotesPageParser
 {
@@ -52,7 +52,7 @@ public static partial class ReleaseNotesPageParser
 		IDiagnosticsCollector collector,
 		string markdown,
 		string sourceId,
-		MigrateFromWebScope scope)
+		BackfillScope scope)
 	{
 		var lines = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
 		var releases = new List<MigratedRelease>();
@@ -97,7 +97,7 @@ public static partial class ReleaseNotesPageParser
 		return 0;
 	}
 
-	private static SectionBuilder? StartSection(IDiagnosticsCollector collector, string version, string sourceId, MigrateFromWebScope scope)
+	private static SectionBuilder? StartSection(IDiagnosticsCollector collector, string version, string sourceId, BackfillScope scope)
 	{
 		// A heading token that is neither a version nor a date (e.g. a prose heading) is not a release
 		// section; skip it entirely rather than fabricating a bundle for it.
@@ -117,7 +117,7 @@ public static partial class ReleaseNotesPageParser
 	}
 
 	/// <summary>Accumulates one <c>## {version}</c> section's date, description, and typed entries.</summary>
-	private sealed class SectionBuilder(string version, string sourceId, MigrateFromWebScope scope)
+	private sealed class SectionBuilder(string version, string sourceId, BackfillScope scope)
 	{
 		private readonly StringBuilder _description = new();
 		private readonly List<BundledEntry> _entries = [];
@@ -254,7 +254,7 @@ public static partial class ReleaseNotesPageParser
 		return DateOnly.TryParseExact(text.Trim().TrimEnd('.'), formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
 	}
 
-	private static BundledEntry ParseEntry(string text, ChangelogEntryType type, MigrateFromWebScope scope)
+	private static BundledEntry ParseEntry(string text, ChangelogEntryType type, BackfillScope scope)
 	{
 		var (title, prs) = ExtractPrReferences(text, scope);
 		return new BundledEntry
@@ -266,7 +266,7 @@ public static partial class ReleaseNotesPageParser
 		};
 	}
 
-	private static BundledEntry MergeContinuation(BundledEntry entry, string continuation, MigrateFromWebScope scope)
+	private static BundledEntry MergeContinuation(BundledEntry entry, string continuation, BackfillScope scope)
 	{
 		var (title, prs) = ExtractPrReferences($"{entry.Title} {continuation}", scope);
 		var mergedPrs = (entry.Prs ?? []).Concat(prs).Distinct(StringComparer.Ordinal).ToList();
@@ -278,7 +278,7 @@ public static partial class ReleaseNotesPageParser
 	/// <c>[835](…/pull/835)</c>, and bare <c>#958</c> refs resolved against the scope's repository —
 	/// returning the cleaned-up title and the collected PR URLs.
 	/// </summary>
-	private static (string Title, List<string> Prs) ExtractPrReferences(string text, MigrateFromWebScope scope)
+	private static (string Title, List<string> Prs) ExtractPrReferences(string text, BackfillScope scope)
 	{
 		var prs = new List<string>();
 
