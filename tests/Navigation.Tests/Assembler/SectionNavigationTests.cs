@@ -335,7 +335,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			.OfType<ILeafNavigationItem<IDocumentationFile>>()
 			.FirstOrDefault(l => l.Url.Contains("/search/", StringComparison.Ordinal) || l.Url.EndsWith("/search", StringComparison.Ordinal));
 		searchLeaf.Should().NotBeNull();
-		searchLeaf!.FindIslandRoot().Should().BeSameAs(searchNav);
+		searchLeaf.FindIslandRoot().Should().BeSameAs(searchNav);
 
 		var listingModel = NavigationRenderModel.Create(
 			tree: section,

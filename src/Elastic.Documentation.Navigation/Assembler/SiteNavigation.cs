@@ -260,7 +260,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			if (item.Hidden)
 				continue;
 			if (item is IAssignableIslandNavigation island
-			    and INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 })
+				and INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 })
 				island.IsIsland = true;
 		}
 	}

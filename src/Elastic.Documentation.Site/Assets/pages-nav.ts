@@ -20,7 +20,7 @@ function saveNavState(nav: HTMLElement) {
 }
 
 function restoreNavState(nav: HTMLElement) {
-    let raw: string | null = null
+    let raw: string | null
     try {
         raw = sessionStorage.getItem(expandedStorageKey(nav))
     } catch {
