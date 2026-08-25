@@ -921,8 +921,8 @@ public class ChangelogUploadServiceTests
 			"primary entry has a local file");
 		var marker = targets.SingleOrDefault(t => t.S3Key == "changelog/elastic/elasticsearch/main/200.yaml");
 		marker.Should().NotBeNull();
-		marker!.InlineContent.Should().NotBeNullOrEmpty("marker has inline content, no local file");
-		var markerEntry = ReleaseNotesSerialization.DeserializeEntry(marker.InlineContent!);
+		marker.InlineContent.Should().NotBeNullOrEmpty("marker has inline content, no local file");
+		var markerEntry = ReleaseNotesSerialization.DeserializeEntry(marker.InlineContent);
 		markerEntry.Link.Should().Be("100");
 	}
 }
