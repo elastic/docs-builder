@@ -1,6 +1,4 @@
----
-title: Async search get supplemental fixture
----
+# Async search get supplemental fixture
 
 This file is a local fixture for docs-builder development.
 

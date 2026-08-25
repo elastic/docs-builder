@@ -51,8 +51,9 @@ public class PhysicalDocsetTests
 		docSet.Api.Should().ContainKey("docs-builder-elasticsearch");
 		var apiEntry = docSet.Api["docs-builder-elasticsearch"].SingleEntry;
 		apiEntry.Should().NotBeNull();
-		apiEntry.Spec.Should().Be("elasticsearch-openapi-docs.json");
+		apiEntry.Spec.Should().Be("elasticsearch.json");
 		apiEntry.Product.Should().Be("elasticsearch");
+		apiEntry.Repository.Should().Be("elastic/elasticsearch-specification");
 
 		docSet.TableOfContents.Should().NotBeEmpty();
 
