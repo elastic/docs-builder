@@ -48,12 +48,12 @@ public partial class DocumentationGenerator
 	private readonly IDocumentationFileExporter _documentationFileExporter;
 	private readonly IMarkdownExporter[] _markdownExporters;
 	private readonly IDocumentInferrerService _documentInferrer;
-	private HashSet<string>? _apiMarkdownExcludePaths;
 	private HtmlWriter HtmlWriter { get; }
 
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
 	public IMarkdownStringRenderer MarkdownStringRenderer => HtmlWriter;
+	private HashSet<string> ApiMarkdownExcludePaths { get; }
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
@@ -77,6 +77,7 @@ public partial class DocumentationGenerator
 		DocumentationSet = docSet;
 		PositionalNavigation = positionalNavigation ?? docSet;
 		Context = docSet.Context;
+		ApiMarkdownExcludePaths = BuildApiMarkdownExcludePaths();
 
 		// Use the provided inferrer or create a default one
 		_documentInferrer = documentInferrer ?? new DocumentInferrerService(
@@ -511,9 +512,6 @@ public partial class DocumentationGenerator
 		var normalized = relativePath.Replace(Path.DirectorySeparatorChar, '/');
 		return ApiMarkdownExcludePaths.Contains(normalized);
 	}
-
-	private HashSet<string> ApiMarkdownExcludePaths =>
-		_apiMarkdownExcludePaths ??= BuildApiMarkdownExcludePaths();
 
 	private HashSet<string> BuildApiMarkdownExcludePaths()
 	{
