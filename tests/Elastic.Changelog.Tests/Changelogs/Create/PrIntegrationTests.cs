@@ -220,9 +220,9 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	}
 
 	[Fact]
-	public async Task CreateChangelog_WithUseIssueNumberAndBothIssuesAndPrs_UseIssueNumberForFilename()
+	public async Task CreateChangelog_WithBothIssuesAndPrs_UsesPrNumberForFilename()
 	{
-		// When both --issues and --prs are specified, --use-issue-number should still determine the filename
+		// Filename is always derived from the PR number; issue-number naming was removed.
 		var prInfo = new GitHubPrInfo
 		{
 			Title = "Release notes test",
@@ -258,7 +258,6 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
-			UseIssueNumber = true,
 			Title = "Release notes test",
 			Type = "feature"
 		};
@@ -272,7 +271,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		files.Should().HaveCount(1);
 
 		var fileName = Path.GetFileName(files[0]);
-		fileName.Should().Be("233425.yaml", "the filename should use the issue number when UseIssueNumber is true, even with PRs present");
+		fileName.Should().Be("250840.yaml", "the filename should use the PR number; issue-number naming is no longer supported");
 	}
 
 	[Fact]

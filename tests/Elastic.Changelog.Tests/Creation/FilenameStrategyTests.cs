@@ -14,74 +14,35 @@ public class FilenameStrategyTests
 		new() { Products = [] };
 
 	[Fact]
-	public void ApplyConfigDefaults_FilenamePr_SetsUsePrNumber()
-	{
-		var config = ChangelogConfiguration.Default with { Filename = FilenameStrategy.Pr };
-		var input = DefaultInput();
-
-		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
-
-		result.UsePrNumber.Should().BeTrue();
-		result.UseIssueNumber.Should().BeFalse();
-	}
-
-	[Fact]
-	public void ApplyConfigDefaults_FilenameIssue_SetsUseIssueNumber()
-	{
-		var config = ChangelogConfiguration.Default with { Filename = FilenameStrategy.Issue };
-		var input = DefaultInput();
-
-		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
-
-		result.UsePrNumber.Should().BeFalse();
-		result.UseIssueNumber.Should().BeTrue();
-	}
-
-	[Fact]
-	public void ApplyConfigDefaults_FilenameTimestamp_NeitherFlagSet()
-	{
-		var config = ChangelogConfiguration.Default with { Filename = FilenameStrategy.Timestamp };
-		var input = DefaultInput();
-
-		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
-
-		result.UsePrNumber.Should().BeFalse();
-		result.UseIssueNumber.Should().BeFalse();
-	}
-
-	[Fact]
-	public void ApplyConfigDefaults_CLIUsePrNumber_OverridesConfigIssue()
-	{
-		var config = ChangelogConfiguration.Default with { Filename = FilenameStrategy.Issue };
-		var input = DefaultInput() with { UsePrNumber = true };
-
-		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
-
-		result.UsePrNumber.Should().BeTrue();
-		result.UseIssueNumber.Should().BeFalse();
-	}
-
-	[Fact]
-	public void ApplyConfigDefaults_CLIUseIssueNumber_OverridesConfigPr()
-	{
-		var config = ChangelogConfiguration.Default with { Filename = FilenameStrategy.Pr };
-		var input = DefaultInput() with { UseIssueNumber = true };
-
-		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
-
-		result.UsePrNumber.Should().BeFalse();
-		result.UseIssueNumber.Should().BeTrue();
-	}
-
-	[Fact]
-	public void ApplyConfigDefaults_DefaultConfig_UsesTimestamp()
+	public void ApplyConfigDefaults_AlwaysSetsPrNumberTrue()
 	{
 		var config = ChangelogConfiguration.Default;
 		var input = DefaultInput();
 
 		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
 
-		result.UsePrNumber.Should().BeFalse("default FilenameStrategy is Timestamp");
-		result.UseIssueNumber.Should().BeFalse("default FilenameStrategy is Timestamp");
+		result.UsePrNumber.Should().BeTrue("filename strategy is always Pr");
+	}
+
+	[Fact]
+	public void ApplyConfigDefaults_DefaultConfig_UsesPr()
+	{
+		var config = ChangelogConfiguration.Default;
+		var input = DefaultInput();
+
+		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
+
+		result.UsePrNumber.Should().BeTrue("default FilenameStrategy is Pr");
+	}
+
+	[Fact]
+	public void ApplyConfigDefaults_CLIUsePrNumber_RemainsTrue()
+	{
+		var config = ChangelogConfiguration.Default;
+		var input = DefaultInput() with { UsePrNumber = true };
+
+		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
+
+		result.UsePrNumber.Should().BeTrue();
 	}
 }

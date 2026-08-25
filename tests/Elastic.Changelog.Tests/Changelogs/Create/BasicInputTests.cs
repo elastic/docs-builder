@@ -21,6 +21,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 			Type = "feature",
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
 			Description = "This is a new search feature",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
@@ -68,6 +69,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
 				new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }
 			],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
@@ -112,6 +114,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Impact = "API clients will need to update",
 			Action = "Update your API client code",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 

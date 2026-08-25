@@ -169,6 +169,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			Type = "feature",
 			Products = [],
 			Repo = "kibana",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = outputDir
 		};
 
@@ -248,6 +249,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			Title = "Test",
 			Type = "feature",
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
