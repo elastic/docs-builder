@@ -131,4 +131,56 @@ public class NotesIndexReconcilerTests
 		var index = ReadIndex("9.0.0");
 		index.Notes.Should().Equal(["9.0/note-a.yml", "main/note-b.yml"]);
 	}
+
+	[Fact]
+	public async Task ReconcileRepo_BranchWithSlashInName_IsIncludedInIndex()
+	{
+		// Branch name contains '/' — e.g. "feature/my-fix"
+		SeedNote("feature/my-fix", "note-slow-rollover.yml", NoteYaml);
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+
+		var index = ReadIndex("9.0.0");
+		index.Notes.Should().BeEquivalentTo(["feature/my-fix/note-slow-rollover.yml"]);
+	}
+
+	[Fact]
+	public async Task ReconcileRepo_StaleTargetRemoved_OldIndexDeleted()
+	{
+		// Pre-seed a stale notes-8.0.0.json index from a previous reconcile run.
+		_s3.Seed(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "8.0.0"),
+			"""{"notes":["old/note-stale.yml"]}""");
+
+		// Only seed a note for 9.0.0.
+		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+
+		// 9.0.0 index should be written.
+		ReadIndex("9.0.0").Notes.Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
+
+		// 8.0.0 index should have been deleted.
+		_s3.Deletes.Should().ContainSingle()
+			.Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "8.0.0"));
+	}
+
+	[Fact]
+	public async Task ReconcileRepo_NoNotes_DeletesAllExistingIndexes()
+	{
+		// Pre-seed a stale notes index.
+		_s3.Seed(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
+			"""{"notes":["old/note-stale.yml"]}""");
+
+		// No note files — just an unrelated changelog entry.
+		_s3.Seed(PublicBucket, "changelog/elastic/elasticsearch/main/12345.yaml", "title: PR entry");
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+
+		// No new indexes should be written.
+		_s3.Puts.Should().BeEmpty();
+
+		// The stale index should be deleted.
+		_s3.Deletes.Should().ContainSingle()
+			.Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"));
+	}
 }

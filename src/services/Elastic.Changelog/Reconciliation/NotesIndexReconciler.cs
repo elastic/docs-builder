@@ -70,9 +70,16 @@ public sealed class NotesIndexReconciler(
 			}
 		}
 
+		var groupParts = notesScope.Group.Split('/');
+		var (org, repo) = (groupParts[0], groupParts[1]);
+
+		// List existing notes-*.json indexes so we can remove obsolete ones.
+		var existingIndexKeys = await ListExistingNotesIndexes(notesScope, ctx);
+
 		if (byTarget.Count == 0)
 		{
-			_logger.LogDebug("No targets found for repo {Repo}; no indexes written", notesScope.Group);
+			_logger.LogDebug("No targets found for repo {Repo}; removing any stale indexes", notesScope.Group);
+			await DeleteStaleIndexes(existingIndexKeys, [], org, repo, ctx);
 			return;
 		}
 
@@ -83,12 +90,71 @@ public sealed class NotesIndexReconciler(
 			async (kvp, ct) =>
 			{
 				var (target, paths) = kvp;
-				var indexKey = ChangelogKeys.NotesIndexKey(
-					notesScope.Group.Split('/')[0],
-					notesScope.Group.Split('/')[1],
-					target);
+				var indexKey = ChangelogKeys.NotesIndexKey(org, repo, target);
 				await WriteIndexAsync(indexKey, [.. paths.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)], ct);
 			});
+
+		// Remove indexes whose targets are no longer present.
+		await DeleteStaleIndexes(existingIndexKeys, byTarget.Keys.ToHashSet(StringComparer.Ordinal), org, repo, ctx);
+	}
+
+	private async Task<IReadOnlyList<string>> ListExistingNotesIndexes(ChangelogScope notesScope, Cancel ctx)
+	{
+		var request = new ListObjectsV2Request
+		{
+			BucketName = publicBucketName,
+			Prefix = notesScope.Prefix
+		};
+
+		var keys = new List<string>();
+		ListObjectsV2Response response;
+		do
+		{
+			response = await s3Client.ListObjectsV2Async(request, ctx);
+			foreach (var obj in response.S3Objects ?? [])
+			{
+				if (ChangelogKeys.IsNotesIndex(obj.Key))
+					keys.Add(obj.Key);
+			}
+			request.ContinuationToken = response.NextContinuationToken;
+		} while (response.IsTruncated == true);
+
+		return keys;
+	}
+
+	private async Task DeleteStaleIndexes(
+		IReadOnlyList<string> existingKeys,
+		HashSet<string> currentTargets,
+		string org,
+		string repo,
+		Cancel ctx)
+	{
+		// "changelog/{org}/{repo}/notes-" — the stable prefix shared by all notes-*.json keys for this repo.
+		var notesKeyPrefix = $"{ChangelogKeys.ChangelogPrefix}{org}/{repo}/notes-";
+
+		foreach (var key in existingKeys)
+		{
+			// Extract the target slug from the key to check if it's still needed.
+			if (!key.StartsWith(notesKeyPrefix, StringComparison.Ordinal))
+				continue;
+			var targetSlug = key[notesKeyPrefix.Length..^".json".Length];
+			if (currentTargets.Contains(targetSlug))
+				continue;
+
+			try
+			{
+				_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest
+				{
+					BucketName = publicBucketName,
+					Key = key
+				}, ctx);
+				_logger.LogInformation("Removed stale notes index {Key}", key);
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				_logger.LogWarning(ex, "Failed to delete stale notes index {Key}", key);
+			}
+		}
 	}
 
 	private async Task<IReadOnlyList<S3Object>> ListNoteFiles(ChangelogScope notesScope, Cancel ctx)
@@ -108,8 +174,8 @@ public sealed class NotesIndexReconciler(
 			foreach (var obj in response.S3Objects ?? [])
 			{
 				var relativePath = obj.Key[notesScope.Prefix.Length..];
-				// Accept only pool-relative paths: {branch}/note-{name}.yml (no further nesting)
-				var slash = relativePath.IndexOf('/');
+				// Use LastIndexOf so branch names containing '/' (e.g. feature/foo) are handled correctly.
+				var slash = relativePath.LastIndexOf('/');
 				if (slash <= 0)
 					continue;
 				var fileName = relativePath[(slash + 1)..];
