@@ -122,11 +122,10 @@ public class ScrubberProcessorTests
 	}
 
 	[Fact]
-	public async Task Process_PoolRegistryKeyEvents_ArePassedThroughVerbatim()
+	public async Task Process_PoolRegistryKeyEvents_AreIgnored()
 	{
-		// Pool manifests stay client-authored until Phase 3: `changelog bundle` still enumerates a
-		// pool through its manifest, so the private copy is mirrored verbatim — never scrubbed,
-		// never reconciled.
+		// Pool registry keys (changelog/{org}/{repo}/{branch}/registry.json) are retired — no client
+		// writes them since #3760. A stale event from an old client is silently dropped.
 		const string poolRegistry = "changelog/elastic/kibana/main/registry.json";
 		const string content = /*lang=json,strict*/ """{"schema_version":1,"bundles":[{"file":"100.yaml"}]}""";
 		_ = _s3.Seed(PrivateBucket, poolRegistry, content);
@@ -134,23 +133,23 @@ public class ScrubberProcessorTests
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", poolRegistry)], Ctx);
 
 		failed.Should().BeEmpty();
-		_s3.ContentOf(PublicBucket, poolRegistry).Should().Be(content, "pass-through must not transform the manifest");
+		_s3.Exists(PublicBucket, poolRegistry).Should().BeFalse("retired pool registry keys are not mirrored");
 		_metrics.GroupReconciles.Should().Be(0, "pool manifests are not reconciled");
-		_s3.Puts.Single(p => p.Key == poolRegistry).ContentType.Should().Be("application/json");
+		_s3.Puts.Should().BeEmpty("no S3 writes for a retired pool registry event");
 	}
 
 	[Fact]
-	public async Task Process_PoolRegistryKeyEvents_WithPrivateGone_DeleteThePublicCopy()
+	public async Task Process_PoolRegistryKeyDeleteEvents_AreAlsoIgnored()
 	{
-		// State decides for pass-through keys too: Phase 3's private-manifest cleanup deletes will
-		// propagate and remove the public pool manifests with them.
+		// Delete events for the retired pool registry are dropped the same way as creates —
+		// the key is no longer managed, so no public-bucket delete is needed.
 		const string poolRegistry = "changelog/elastic/kibana/main/registry.json";
 		_ = _s3.Seed(PublicBucket, poolRegistry, "{}");
 
 		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", poolRegistry)], Ctx);
 
 		failed.Should().BeEmpty();
-		_s3.Exists(PublicBucket, poolRegistry).Should().BeFalse();
+		_s3.Exists(PublicBucket, poolRegistry).Should().BeTrue("the event was ignored; no delete happened");
 	}
 
 	[Fact]

@@ -158,15 +158,15 @@ public sealed class ScrubberProcessor(
 			if (!hasScope)
 				return;
 
-			// The two trees part ways here. Bundle manifests are reconciler-owned: the event only
-			// schedules a group reconcile, so client-authored JSON never reaches the public bucket
-			// for the tree consumers enumerate. Pool manifests stay client-authored pass-through —
-			// `changelog bundle` still enumerates a pool through its manifest today, and 404-probing
-			// only works once entries are guaranteed one-per-PR — until Phase 3 retires them.
+			// Bundle manifests are reconciler-owned: the event schedules a group reconcile so
+			// client-authored JSON never reaches the public bucket directly. Pool registry keys
+			// (changelog/{org}/{repo}/{branch}/registry.json) are no longer written by any client
+			// — the pool index was retired in #3760. Drop them with a debug log; a stale event
+			// from an old client is harmless and does not need to copy anything.
 			if (scope!.Kind == ChangelogScopeKind.Bundle)
 				AddGroup(groupWork, scope, messageId);
 			else
-				AddObject(objectWork, key, sourceBucket, messageId, passThrough: true);
+				_logger.LogDebug("Ignoring retired pool registry key: {Key}", key);
 			return;
 		}
 
