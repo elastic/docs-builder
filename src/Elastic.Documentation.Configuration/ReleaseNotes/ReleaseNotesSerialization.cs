@@ -284,22 +284,29 @@ public static partial class ReleaseNotesSerialization
 
 	// Reverse mappings (Domain → DTO) for serialization
 
-	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
+	private static ChangelogEntryDto ToDto(ChangelogEntry entry)
 	{
-		Prs = entry.Prs?.ToList(),
-		Issues = entry.Issues?.ToList(),
-		Type = EntryTypeToString(entry.Type),
-		Subtype = EntrySubtypeToString(entry.Subtype),
-		Products = entry.Products?.Select(ToDto).ToList(),
-		Areas = entry.Areas?.ToList(),
-		Title = entry.Title,
-		Description = entry.Description,
-		Impact = entry.Impact,
-		Action = entry.Action,
-		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight,
-		Link = entry.Link
-	};
+		// Marker entries are link-only; emitting any other field would violate the marker contract.
+		if (entry.IsMarker)
+			return new ChangelogEntryDto { Link = entry.Link };
+
+		return new ChangelogEntryDto
+		{
+			Prs = entry.Prs?.ToList(),
+			Issues = entry.Issues?.ToList(),
+			Type = EntryTypeToString(entry.Type),
+			Subtype = EntrySubtypeToString(entry.Subtype),
+			Products = entry.Products?.Select(ToDto).ToList(),
+			Areas = entry.Areas?.ToList(),
+			Title = entry.Title,
+			Description = entry.Description,
+			Impact = entry.Impact,
+			Action = entry.Action,
+			FeatureId = entry.FeatureId,
+			Highlight = entry.Highlight,
+			Link = entry.Link
+		};
+	}
 
 	private static ProductInfoDto ToDto(ProductReference product) => new()
 	{
