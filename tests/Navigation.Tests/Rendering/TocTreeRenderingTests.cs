@@ -30,7 +30,8 @@ public class TocTreeRenderingTests
 					Url = "/docs/get-started"
 				}
 			],
-			ContentHash = "test"
+			ContentHash = "test",
+			NavigationPreviewEnabled = true
 		};
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
@@ -78,7 +79,8 @@ public class TocTreeRenderingTests
 					]
 				}
 			],
-			ContentHash = "folder"
+			ContentHash = "folder",
+			NavigationPreviewEnabled = true
 		};
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
@@ -113,7 +115,8 @@ public class TocTreeRenderingTests
 					Url = "/docs/reference/elasticsearch"
 				}
 			],
-			ContentHash = "island-stub"
+			ContentHash = "island-stub",
+			NavigationPreviewEnabled = true
 		};
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
@@ -152,7 +155,8 @@ public class TocTreeRenderingTests
 					Url = "/docs/reference/elasticsearch/rest-apis"
 				}
 			],
-			ContentHash = "island-overview"
+			ContentHash = "island-overview",
+			NavigationPreviewEnabled = true
 		};
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);

@@ -51,5 +51,6 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			// Flag off → dropdown on (matches main); flag on → dropdown off, top nav takes over.
 			isUsingNavigationDropdown: globalNavigation.TopNav is null,
 			isPrimaryNavEnabled: true,
-			isGlobalAssemblyBuild: true);
+			isGlobalAssemblyBuild: true,
+			navigationPreviewEnabled: globalNavigation.TopNav is not null);
 }

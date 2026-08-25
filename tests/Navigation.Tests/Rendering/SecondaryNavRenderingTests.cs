@@ -228,9 +228,10 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		TopNavRenderModel? topNav,
 		string currentUrl,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
-		bool showVersionDropdown = false)
+		bool showVersionDropdown = false,
+		bool navigationPreviewEnabled = true)
 	{
-		var model = CreateModel(topNav, currentUrl, root);
+		var model = CreateModel(topNav, currentUrl, root, navigationPreviewEnabled);
 		if (showVersionDropdown)
 		{
 			model = model with
@@ -249,9 +250,10 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		TopNavRenderModel? topNav,
 		string currentUrl,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
-		bool showVersionDropdown = false)
+		bool showVersionDropdown = false,
+		bool navigationPreviewEnabled = true)
 	{
-		var model = CreateModel(topNav, currentUrl, root) with
+		var model = CreateModel(topNav, currentUrl, root, navigationPreviewEnabled) with
 		{
 			NavigationHtml = "<ul id=\"nav-tree-test\"></ul>",
 			ShowVersionDropdown = showVersionDropdown,
@@ -266,7 +268,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	private GlobalLayoutViewModel CreateModel(
 		TopNavRenderModel? topNav,
 		string currentUrl,
-		IRootNavigationItem<INavigationModel, INavigationItem>? root = null)
+		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
+		bool navigationPreviewEnabled = true)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -289,7 +292,9 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = new FeatureFlags([]),
+			Features = navigationPreviewEnabled
+				? new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
+				: new FeatureFlags([]),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),

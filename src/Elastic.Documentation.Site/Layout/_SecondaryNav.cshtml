@@ -7,6 +7,7 @@
 	// The site root (SiteNavigation) has an Id that matches no tab, so homepage gets no active tab.
 	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
 	var docsHomeUrl = Model.Link("/");
+	var navigationPreviewEnabled = Model.Features.NavigationPreviewEnabled;
 
 	string? IconId(string title) => title switch
 	{
@@ -25,6 +26,8 @@
 		return new HtmlString($"<span class=\"{cls}\" aria-hidden=\"true\"><svg viewBox=\"0 0 16 16\"><use href=\"#icon-{id}\"/></svg></span>");
 	}
 }
+@if (navigationPreviewEnabled)
+{
 <div id="secondary-nav-host" class="relative md:sticky md:top-0 md:z-30 bg-white">
 	<nav id="secondary-nav">
 		@if (topNav is not null)
@@ -128,7 +131,7 @@
 		}
 		else
 		{
-			@* Built-in links: flag off, isolated builds, and any build without section: entries. *@
+			@* Built-in links: flag on but no section: entries defined. *@
 			<div class="secondary-nav-bar">
 				<a href="@docsHomeUrl"
 				   class="secondary-nav-home"
@@ -177,3 +180,47 @@
 		}
 	</nav>
 </div>
+}
+else
+{
+<div class="relative md:sticky md:top-0 md:z-30 bg-grey-10">
+	<nav id="secondary-nav"
+	     class="bg-grey-10 border-b border-grey-20">
+		<div class="
+					w-full
+					max-w-(--max-layout-width) flex mx-auto justify-between items-center
+					px-4 py-6">
+			<div class="flex gap-2 flex-nowrap items-center font-sans font-semibold text-sm text-ink-light md:text-base">
+				<a href="@docsHomeUrl"
+				   class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
+			</div>
+			<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
+				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+					<a
+						href="@Model.Link("/release-notes/")"
+						preload="mousedown"
+					>
+						Release notes
+					</a>
+				</li>
+				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+					<a
+						href="@Model.Link("/troubleshoot/")"
+						preload="mousedown"
+					>
+						Troubleshoot
+					</a>
+				</li>
+				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+					<a
+						href="@Model.Link("/reference/")"
+						preload="mousedown"
+					>
+						Reference
+					</a>
+				</li>
+			</ul>
+		</div>
+	</nav>
+</div>
+}

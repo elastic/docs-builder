@@ -72,13 +72,16 @@ public sealed record NavigationRenderModel
 	public required IReadOnlyList<NavigationRenderNode> Tree { get; init; }
 	/// <summary>Hash of the tree content; used as the <c>nav-tree-*</c> id so same-island pages share markup.</summary>
 	public required string ContentHash { get; init; }
+	/// <summary>Whether the NAVIGATION_PREVIEW feature flag is enabled; drives nav-v2 vs legacy tree rendering.</summary>
+	public bool NavigationPreviewEnabled { get; init; }
 
 	public static NavigationRenderModel Create(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
 		IEnumerable<INodeNavigationItem<INavigationModel, INavigationItem>> topLevelItems,
 		bool isUsingNavigationDropdown,
 		bool isPrimaryNavEnabled,
-		bool isGlobalAssemblyBuild)
+		bool isGlobalAssemblyBuild,
+		bool navigationPreviewEnabled = false)
 	{
 		var topLevel = topLevelItems.ToArray();
 		// Resolve current top-level by walking self-then-ancestors so nested islands
@@ -130,7 +133,8 @@ public sealed record NavigationRenderModel
 			TreeHeading = treeHeading,
 			TreeHeadingIcon = treeHeadingIcon,
 			Tree = nodes,
-			ContentHash = HashContent(rootIndex, treeHeading, treeHeadingIcon, nodes)
+			ContentHash = HashContent(rootIndex, treeHeading, treeHeadingIcon, nodes),
+			NavigationPreviewEnabled = navigationPreviewEnabled
 		};
 	}
 

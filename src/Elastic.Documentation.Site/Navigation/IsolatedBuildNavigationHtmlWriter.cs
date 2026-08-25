@@ -55,6 +55,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			topLevelItems: topLevelItems,
 			isUsingNavigationDropdown: isUsingDropdown,
 			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false,
+			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled);
 	}
 }

@@ -106,7 +106,8 @@ public class NavigationCurrentMarkerTests
 					Url = "/getting-started/installation"
 				}
 			],
-			ContentHash = "current-leaf"
+			ContentHash = "current-leaf",
+			NavigationPreviewEnabled = true
 		};
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);

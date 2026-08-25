@@ -8,6 +8,9 @@
 
 @media screen and (min-width: 768px) {
 	:root {
+		--offset-top: calc(var(--spacing) * 18);
+	}
+	body.navigation-preview {
 		--offset-top: 56px;
 	}
 }
