@@ -26,6 +26,9 @@
 			break;
 	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
+	@* hx-history=false stops new snapshots but still restores sessionStorage
+	   leftovers from older pages, which keeps the previous island tree. *@
+	<script>try{sessionStorage.removeItem("htmx-history-cache")}catch(e){}</script>
 	<script src="@Model.Static("main.js")" defer></script>
 	@if (Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled)
 	{
@@ -53,7 +56,7 @@
 	}
 	@await RenderPartialAsync(_Favicon.Create(Model))
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
-	<meta name="htmx-config" content='{"selfRequestsOnly": true, "defaultSettleDelay": 0}'>
+	<meta name="htmx-config" content='{"selfRequestsOnly": true, "defaultSettleDelay": 0, "historyCacheSize": 0, "refreshOnHistoryMiss": true}'>
 	@if (!string.IsNullOrEmpty(Model.NavigationActiveUrl))
 	{
 		<meta name="docs:nav-active" content="@Model.NavigationActiveUrl">

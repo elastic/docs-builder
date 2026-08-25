@@ -14,7 +14,7 @@ using Xunit;
 namespace Elastic.Markdown.Tests.Assembler;
 
 /// <summary>
-/// Navigation relies on body-level hx-boost with hx-preserve islands, so markdown links must
+/// Navigation relies on hx-boost targeting #main-container, so markdown links must
 /// not carry per-link htmx attributes. Cross-links stay same-site (no target=_blank).
 /// </summary>
 public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTestBase(output, "Go to [test](kibana://index.md)")
