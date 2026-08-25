@@ -236,8 +236,6 @@ The API Explorer generates documentation in these scenarios:
 API generation is skipped when running `docs-builder serve --watch`. This is a performance optimization for `dotnet watch` workflows. Run `serve` without `--watch` to include API docs in your local preview.
 :::
 
-This repository's own `_docset.yml` declares a local `elasticsearch` API that reads `elasticsearch-openapi-docs.json`. Use that entry to preview ApiExplorer and supplemental files during isolated `docs-builder serve`. Assembler skips this repo (`skip: true` in `assembler.yml`), so those pages are not published.
-
 ## Link to API pages in navigation
 
 You can reference API pages in your `toc.yml` or `docset.yml` navigation using cross-link syntax:
