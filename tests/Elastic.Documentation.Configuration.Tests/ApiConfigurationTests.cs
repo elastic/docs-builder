@@ -617,6 +617,34 @@ public class ConfigurationFileApiTests
 	}
 
 	[Fact]
+	public void AcceptsNestedChildWhoseBasenameLooksSupplemental()
+	{
+		var docSetFile = new DocumentationSetFile
+		{
+			Api = new Dictionary<string, ApiProductSequence>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntry
+						{
+							Spec = "elasticsearch-openapi.json",
+							Product = "elasticsearch",
+							Children = [new ApiEntryChild { File = "guides/op-overview.md" }]
+						}
+					]
+				}
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(docSetFile, extraMarkdownFiles: ["guides/op-overview.md"]);
+
+		collector.Errors.Should().Be(0);
+		config.ApiConfigurations!["elasticsearch"].Children.Should().ContainSingle(f => f.Name == "op-overview.md");
+	}
+
+	[Fact]
 	public void GetMarkdownPathsToExclude_IncludesChildrenAndSupplementalFiles()
 	{
 		var docSetFile = new DocumentationSetFile

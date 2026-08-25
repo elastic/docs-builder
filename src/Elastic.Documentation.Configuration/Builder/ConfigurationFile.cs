@@ -624,7 +624,7 @@ public record ConfigurationFile
 				continue;
 			}
 
-			if (ResolvedApiConfiguration.IsSupplementalFileName(childFile.Name))
+			if (IsTopLevelSupplementalChild(childFile, childrenDirectory))
 			{
 				context.EmitError(context.ConfigurationPath,
 					$"Child page '{child.File}' for API '{productKey}' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:.");
@@ -636,6 +636,11 @@ public record ConfigurationFile
 
 		return resolved;
 	}
+
+	private static bool IsTopLevelSupplementalChild(IFileInfo childFile, IDirectoryInfo apiDirectory) =>
+		childFile.Directory is not null
+		&& string.Equals(childFile.Directory.FullName, apiDirectory.FullName, StringComparison.OrdinalIgnoreCase)
+		&& ResolvedApiConfiguration.IsSupplementalFileName(childFile.Name);
 
 	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
 	{
