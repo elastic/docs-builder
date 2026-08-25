@@ -481,29 +481,12 @@ internal sealed partial class ChangelogCommands(
 		// Use provided products or empty list (service will infer from repo/config if empty)
 		var resolvedProducts = (IReadOnlyList<ProductArgument>?)products ?? [];
 
-		if (usePrNumber && useIssueNumber)
+		// Changelog entries are always keyed by PR number. --use-issue-number was removed.
+		if (useIssueNumber)
 		{
-			collector.EmitError(string.Empty, "--use-pr-number and --use-issue-number are mutually exclusive; specify only one.");
-			_ = collector.StartAsync(ctx);
-			await collector.WaitForDrain();
-			await collector.StopAsync(ctx);
-			return 1;
-		}
-
-		// --use-pr-number with --issues is allowed: PRs can be extracted from the issue body (Fixed by #123, etc.)
-		if (usePrNumber && (parsedPrs == null || parsedPrs.Length == 0) && (parsedIssues == null || parsedIssues.Length == 0))
-		{
-			collector.EmitError(string.Empty, "--use-pr-number requires --prs, --issues, or --report to be specified.");
-			_ = collector.StartAsync(ctx);
-			await collector.WaitForDrain();
-			await collector.StopAsync(ctx);
-			return 1;
-		}
-
-		// --use-issue-number with --prs is allowed: issues can be extracted from the PR body (Fixes #123, etc.)
-		if (useIssueNumber && (parsedIssues == null || parsedIssues.Length == 0) && (parsedPrs == null || parsedPrs.Length == 0))
-		{
-			collector.EmitError(string.Empty, "--use-issue-number requires --prs or --issues to be specified.");
+			collector.EmitError(string.Empty,
+				"--use-issue-number is no longer supported. Changelog entries are always keyed by PR number. " +
+				"For items with no PR use 'changelog note' instead.");
 			_ = collector.StartAsync(ctx);
 			await collector.WaitForDrain();
 			await collector.StopAsync(ctx);
@@ -529,7 +512,6 @@ internal sealed partial class ChangelogCommands(
 			Output = resolvedOutput,
 			Config = config?.FullName,
 			UsePrNumber = usePrNumber,
-			UseIssueNumber = useIssueNumber,
 			StripTitlePrefix = stripTitlePrefixResolved,
 			ExtractReleaseNotes = extractReleaseNotes,
 			ExtractIssues = extractIssues,

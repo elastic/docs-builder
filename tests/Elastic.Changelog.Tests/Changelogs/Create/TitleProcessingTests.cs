@@ -320,6 +320,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 				"https://github.com/elastic/elasticsearch/issues/123",
 				"https://github.com/elastic/elasticsearch/issues/456"
 			],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 

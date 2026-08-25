@@ -21,6 +21,7 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 			Type = "feature",
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			Highlight = true,
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
@@ -58,6 +59,7 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 			Type = "feature",
 			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
 			FeatureId = "feature:new-search-api",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
@@ -99,6 +101,7 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 				"https://github.com/elastic/elasticsearch/issues/123",
 				"https://github.com/elastic/elasticsearch/issues/456"
 			],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 

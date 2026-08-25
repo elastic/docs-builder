@@ -179,6 +179,119 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	}
 
 	/// <summary>
+	/// Fetches a named set of changelog entries directly from the CDN without consulting the pool registry.
+	/// Each entry is fetched by its key (<c>{base}/changelog/{org}/{repo}/{branch}/{fileName}</c>); a 404
+	/// is a hard error (the caller explicitly requested the entry), while 5xx / transport errors use the
+	/// normal retry budget. Returns <c>null</c> after emitting an error when any entry cannot be fetched.
+	/// </summary>
+	public async Task<IReadOnlyList<CdnChangelogEntry>?> FetchNamedAsync(
+		Uri baseUri,
+		string org,
+		string repo,
+		string branch,
+		IReadOnlyList<string> fileNames,
+		Action<string> emitError,
+		Cancel ctx)
+	{
+		var poolLabel = $"{org}/{repo}/{branch}";
+
+		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
+		{
+			emitError(
+				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'.");
+			return null;
+		}
+
+		var poolSegments = ChangelogKeys.PoolSegments(org, repo, branch);
+		var entries = new List<CdnChangelogEntry>(fileNames.Count);
+		var hasError = false;
+
+		foreach (var fileName in fileNames)
+		{
+			ctx.ThrowIfCancellationRequested();
+
+			if (!ChangelogKeys.IsSafeFileName(fileName))
+			{
+				emitError($"Requested changelog entry '{fileName}' is not a valid file name for pool '{poolLabel}'.");
+				hasError = true;
+				continue;
+			}
+
+			var entryUri = CombineSegments(baseUri, [.. poolSegments, fileName]);
+			var (fetched, content, lastError) = await TryFetchNamedEntryAsync(entryUri, fileName, poolLabel, ctx).ConfigureAwait(false);
+			if (fetched)
+			{
+				entries.Add(new CdnChangelogEntry(fileName, content));
+				continue;
+			}
+
+			// Explicit path-list request: a miss is a pipeline error (wrong name, not uploaded, or renamed).
+			emitError(
+				$"Changelog entry '{fileName}' for '{poolLabel}' could not be fetched from {entryUri}: {lastError}. " +
+				"Ensure the entry was uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead.");
+			hasError = true;
+		}
+
+		return hasError ? null : entries;
+	}
+
+	/// <summary>
+	/// Fetches a single explicitly-requested entry. A 404 is surfaced immediately (not retried) because the
+	/// caller knows the entry should exist; 5xx and transport errors use the normal retry budget.
+	/// Permanent client errors (4xx other than 404) also fail immediately without retry.
+	/// </summary>
+	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchNamedEntryAsync(Uri uri, string fileName, string poolLabel, Cancel ctx)
+	{
+		string? lastError = null;
+
+		for (var attempt = 1; attempt <= _maxAttempts; attempt++)
+		{
+			ctx.ThrowIfCancellationRequested();
+			try
+			{
+				var (notFound, content) = await FetchTextOrNotFoundAsync(uri, attempt, ctx).ConfigureAwait(false);
+				if (notFound)
+					return (false, string.Empty, "404 Not Found — entry does not exist in the pool");
+				if (attempt > 1)
+					_logger.LogInformation("Fetched changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}", fileName, poolLabel, attempt, _maxAttempts);
+				return (true, content, null);
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				// Permanent client errors (4xx — 404 is handled above as notFound) must not be retried.
+				if (ex is HttpRequestException { StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError })
+					return (false, string.Empty, ex.Message);
+
+				lastError = ex.Message;
+				if (attempt >= _maxAttempts)
+					break;
+
+				var delay = RetryDelay(attempt);
+				_logger.LogDebug(
+					"Changelog entry '{File}' for {Pool} not yet available (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
+					fileName, poolLabel, attempt, _maxAttempts, ex.Message, delay);
+				await _sleep(delay, ctx).ConfigureAwait(false);
+			}
+		}
+
+		return (false, string.Empty, lastError);
+	}
+
+	/// <summary>Returns (notFound: true) for a 404; throws for other non-success status codes.</summary>
+	private async Task<(bool NotFound, string Content)> FetchTextOrNotFoundAsync(Uri uri, int attempt, Cancel ctx)
+	{
+		var requestUri = attempt > 1 ? WithCacheBuster(uri) : uri;
+		using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+		if (attempt > 1)
+			_ = request.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
+		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+		if (response.StatusCode == HttpStatusCode.NotFound)
+			return (true, string.Empty);
+		_ = response.EnsureSuccessStatusCode();
+		return (false, await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false));
+	}
+
+	/// <summary>
 	/// Fetches a single entry, retrying transient failures (most importantly a not-yet-propagated 404)
 	/// up to <see cref="_maxAttempts"/> times with exponential backoff. Retry requests are cache-busted
 	/// so a CloudFront-cached 404 cannot pin the result for the whole window.

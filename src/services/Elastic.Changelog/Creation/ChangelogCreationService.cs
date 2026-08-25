@@ -37,7 +37,6 @@ public record CreateChangelogArguments
 	public string? Output { get; init; }
 	public string? Config { get; init; }
 	public bool UsePrNumber { get; init; }
-	public bool UseIssueNumber { get; init; }
 	public bool? StripTitlePrefix { get; init; }
 	/// <summary>
 	/// Whether to extract release note text from PR/issue descriptions for the entry description. null = use config default.
@@ -147,26 +146,15 @@ IEnvironmentVariables? env = null
 		}
 	}
 
-	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config)
-	{
-		var usePrNumber = input.UsePrNumber;
-		var useIssueNumber = input.UseIssueNumber;
-
-		if (!usePrNumber && !useIssueNumber)
-		{
-			usePrNumber = config.Filename == FilenameStrategy.Pr;
-			useIssueNumber = config.Filename == FilenameStrategy.Issue;
-		}
-
-		return input with
+	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config) =>
+		// Filename strategy is always Pr now; UsePrNumber is kept for backward compat but is effectively always true.
+		input with
 		{
 			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
 			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues,
 			StripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix,
-			UsePrNumber = usePrNumber,
-			UseIssueNumber = useIssueNumber
+			UsePrNumber = true
 		};
-	}
 
 	/// <summary>
 	/// Infers products from configuration defaults or repository name.

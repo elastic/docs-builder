@@ -47,8 +47,11 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		if (!fileSystem.Directory.Exists(outputDir))
 			_ = fileSystem.Directory.CreateDirectory(outputDir);
 
-		// Generate filename
+		// Generate filename — returns null and emits an error when no PR number is derivable.
 		var filename = GenerateFilename(collector, input);
+		if (filename == null)
+			return false;
+
 		var filePath = fileSystem.Path.Join(outputDir, filename);
 
 		// Write UTF-8 text without BOM using explicit encoding instance.
@@ -62,9 +65,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
 	private const int MaxFilenameLength = 200;
 
-	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
+	private string? GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
-		if (input.UsePrNumber && input.Prs is { Length: > 0 })
+		if (input.Prs is { Length: > 0 })
 		{
 			var numbers = input.Prs
 				.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
@@ -82,43 +85,13 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 				// Too many PRs: use compact format to avoid path-too-long errors
 				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
 			}
-
-			collector.EmitWarning(string.Empty, $"Failed to extract PR numbers from PRs. Falling back to timestamp-based filename.");
 		}
 
-		if (input.UseIssueNumber && input.Issues is { Length: > 0 })
-		{
-			var numbers = input.Issues
-				.Select(issue => ChangelogTextUtilities.ExtractIssueNumber(issue, input.Owner, input.Repo))
-				.Where(n => n.HasValue)
-				.Select(n => n!.Value)
-				.Distinct()
-				.OrderBy(n => n)
-				.ToList();
-
-			if (numbers.Count > 0)
-			{
-				var joined = $"{string.Join("-", numbers)}.yaml";
-				if (joined.Length <= MaxFilenameLength + 5)
-					return joined;
-				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-issues.yaml";
-			}
-
-			collector.EmitWarning(string.Empty, "Failed to extract issue numbers from issues. Falling back to timestamp-based filename.");
-		}
-
-		// Default: timestamp-slug.yaml
-		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-		var firstPr = input.Prs is { Length: > 0 } ? input.Prs[0] : null;
-		var firstIssue = input.Issues is { Length: > 0 } ? input.Issues[0] : null;
-		var slug = string.IsNullOrWhiteSpace(input.Title)
-			? firstPr != null
-				? $"pr-{firstPr.Replace("/", "-").Replace(":", "-")}"
-				: firstIssue != null
-					? $"issue-{firstIssue.Replace("/", "-").Replace(":", "-")}"
-					: "changelog"
-			: ChangelogTextUtilities.SanitizeFilename(input.Title);
-		return $"{timestamp}-{slug}.yaml";
+		collector.EmitError(string.Empty,
+			"Could not derive a PR number from the provided --prs values. " +
+			"Changelog entries must be anchored to a PR number. " +
+			"For items with no PR use 'changelog note' instead.");
+		return null;
 	}
 
 	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input)
