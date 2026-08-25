@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -174,11 +175,71 @@ public class ChangelogUploadService(
 			}
 
 			var fileName = _fileSystem.Path.GetFileName(filePath);
-			var s3Key = ChangelogKeys.ChangelogFileKey(org, repo, branch, fileName);
-			targets.Add(new UploadTarget(filePath, s3Key));
+
+			if (fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase))
+			{
+				targets.Add(new UploadTarget(filePath, ChangelogKeys.ChangelogFileKey(org, repo, branch, fileName)));
+				continue;
+			}
+
+			ChangelogEntry? entry = null;
+			try
+			{
+				var content = _fileSystem.File.ReadAllText(filePath);
+				entry = ReleaseNotesSerialization.DeserializeEntry(content);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogWarning(ex, "Could not read entry from {File}; using filename for key", filePath);
+			}
+
+			var (canonicalFileName, markerEntries) = DeriveCanonicalFileNameAndMarkers(fileName, entry, _logger);
+			var primaryKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, canonicalFileName);
+			targets.Add(new UploadTarget(filePath, primaryKey));
+
+			foreach (var (markerFileName, markerContent) in markerEntries)
+			{
+				var markerKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, markerFileName);
+				targets.Add(new UploadTarget(string.Empty, markerKey, markerContent));
+			}
 		}
 
 		return targets;
+	}
+
+	internal static (string CanonicalFileName, IReadOnlyList<(string FileName, string Content)> Markers)
+		DeriveCanonicalFileNameAndMarkers(string fileName, ChangelogEntry? entry, ILogger? logger = null)
+	{
+		if (entry is null)
+			return (fileName, []);
+
+		var prNumbers = entry.Prs?
+			.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr))
+			.Where(n => n.HasValue)
+			.Select(n => n!.Value)
+			.Distinct()
+			.OrderBy(n => n)
+			.ToList();
+
+		if (prNumbers is null or { Count: 0 })
+		{
+			logger?.LogWarning("Entry {File} has no PR references; using filename as-is for key", fileName);
+			return (fileName, []);
+		}
+
+		var primaryPr = prNumbers[0]; // already sorted ascending, min is first
+		var canonicalFileName = $"{primaryPr}.yaml";
+
+		if (prNumbers.Count == 1)
+			return (canonicalFileName, []);
+
+		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = primaryPr.ToString() });
+		var markers = prNumbers
+			.Skip(1)
+			.Select(pr => ($"{pr}.yaml", markerContent))
+			.ToList();
+
+		return (canonicalFileName, markers);
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
