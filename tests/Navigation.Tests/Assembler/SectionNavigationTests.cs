@@ -234,10 +234,19 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			.Should()
 			.OnlyContain(n => n.Kind == NavigationRenderNodeKind.Island,
 				"listing children of a single-child section are islands, not ancestor folders");
+		model.BackLinks.Should().BeEmpty("the section landing is the tab itself");
 
 		var listing = section.NavigationItems
 			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
 			.Single();
+		var listingModel = NavigationRenderModel.Create(
+			tree: listing,
+			topLevelItems: nav.TopLevelItems,
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: true);
+		listingModel.BackLinks.Should().BeEmpty(
+			"the listing shares the section URL, so ← Reference would be a self-link");
 		listing.NavigationItems
 			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
 			.Where(n => n.NavigationItems.Count > 0)

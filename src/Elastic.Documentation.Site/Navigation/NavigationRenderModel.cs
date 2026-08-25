@@ -139,6 +139,8 @@ public sealed record NavigationRenderModel
 	/// Immediate parent is always included; further ancestors only if they render as
 	/// islands, so nested books stay visible after the sidebar collapses to the current one.
 	/// The site root is omitted when the dropdown or assembler Docs tab already links there.
+	/// Ancestors that share the render root URL are omitted so a tab landing
+	/// (Reference, Troubleshoot, Release notes) does not link back to itself.
 	/// </summary>
 	private static IReadOnlyList<IslandBackLink> CreateBackLinks(
 		INavigationItem renderRoot,
@@ -155,6 +157,8 @@ public sealed record NavigationRenderModel
 		{
 			if ((isUsingNavigationDropdown || omitSiteRoot) && ancestor.Parent is null)
 				continue;
+			if (SameNavUrl(ancestor.Url, renderRoot.Url))
+				continue;
 
 			var include = ReferenceEquals(ancestor, immediateParent)
 				|| ancestor.Parent is null
@@ -167,6 +171,12 @@ public sealed record NavigationRenderModel
 		links.Reverse();
 		return links;
 	}
+
+	private static bool SameNavUrl(string left, string right) =>
+		string.Equals(TrimNavUrl(left), TrimNavUrl(right), StringComparison.Ordinal);
+
+	private static string TrimNavUrl(string url) =>
+		url.Length > 1 ? url.TrimEnd('/') : url;
 
 	private static NavigationRenderNode? CreateRootIndex(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,

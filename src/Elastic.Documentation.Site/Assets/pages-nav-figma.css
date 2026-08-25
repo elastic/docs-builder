@@ -332,8 +332,7 @@ aside.sidebar:has(#pages-nav):hover
 	font-size: 14px;
 	font-weight: 600;
 	line-height: 20px;
-	color: #516381;
-	text-transform: uppercase;
+	color: #1c1e23;
 }
 
 #pages-nav li.current::before {
