@@ -127,7 +127,7 @@ public static class ApiSupplementalDiscovery
 
 				foreach (var tagRef in operation.Tags)
 				{
-					var name = tagRef.Reference?.Id;
+					var name = OperationTagName(tagRef);
 					if (!string.IsNullOrEmpty(name))
 						_ = tags.Add(name);
 				}
@@ -136,6 +136,9 @@ public static class ApiSupplementalDiscovery
 
 		return (operations, tags);
 	}
+
+	private static string? OperationTagName(OpenApiTagReference tagRef) =>
+		!string.IsNullOrEmpty(tagRef.Name) ? tagRef.Name : tagRef.Reference?.Id;
 
 	private static (Dictionary<string, string> UniqueBySlug, IReadOnlyList<TagSlugCollision> Collisions) IndexTags(
 		IReadOnlyCollection<string> tagNames)

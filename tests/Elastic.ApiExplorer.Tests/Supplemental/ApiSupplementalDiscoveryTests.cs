@@ -136,6 +136,37 @@ public class ApiSupplementalDiscoveryTests
 		result.Ignored.Should().ContainSingle(f => f.Name == "random-notes.md");
 	}
 
+	[Fact]
+	public async Task Discover_InlineOperationTagsWithoutDocumentTags_MatchTagFile()
+	{
+		var folder = FolderWith("tag-search.md");
+		var specJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "t", "version": "1" },
+		  "paths": {
+		    "/search": {
+		      "get": {
+		        "operationId": "search",
+		        "tags": ["search"]
+		      }
+		    }
+		  }
+		}
+		""";
+		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			["/spec.json"] = new MockFileData(specJson)
+		});
+		var document = await OpenApiReader.Instance.ReadAsync(fs.FileInfo.New("/spec.json"))
+			?? throw new InvalidOperationException("Could not read spec");
+
+		var result = ApiSupplementalDiscovery.Discover(folder, document);
+
+		result.Tags.Should().ContainKey("search");
+		result.Unmatched.Should().BeEmpty();
+	}
+
 	private static System.IO.Abstractions.IDirectoryInfo FolderWith(params string[] fileNames)
 	{
 		var files = fileNames.ToDictionary(
