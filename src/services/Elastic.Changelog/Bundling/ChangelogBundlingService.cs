@@ -289,11 +289,13 @@ public partial class ChangelogBundlingService(
 			if (!ValidateInput(collector, input, requireDirectoryExists: !useCdn))
 				return false;
 
-			// --all and --input-products require reading every entry body; that is only possible locally.
-			// On the CDN path entries are probed by key, so there is nothing to enumerate without a PR list.
-			if (useCdn && (input.All || input.InputProducts is { Count: > 0 }))
+			// --all, --input-products, and --issues require reading every entry body; that is only possible locally.
+			// On the CDN path entries are probed by key (one per PR), so there is nothing to enumerate without a PR list.
+			if (useCdn && (input.All || input.InputProducts is { Count: > 0 } || input.Issues is { Length: > 0 }))
 			{
-				var flag = input.All ? "--all" : "--input-products";
+				var flag = input.All ? "--all"
+				: input.Issues is { Length: > 0 } ? "--issues"
+				: "--input-products";
 				collector.EmitError(string.Empty,
 					$"{flag} is not supported when sourcing changelog entries from the CDN, because entries are fetched by key (one per PR) and there is no pool enumeration. " +
 					"Pass --force-local or --directory to bundle from a local checkout instead.");
@@ -380,12 +382,16 @@ public partial class ChangelogBundlingService(
 				}
 				else
 				{
-					// --prs / --issues on the CDN path: still uses the pool registry for now (Step 9 will
-					// switch this to per-PR probing once canonical keys and markers are in place).
-					var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
-					if (contents == null)
+					// --prs / --report / --release-version on the CDN path: probe one key per PR number.
+					// Each entry lives at changelog/{org}/{repo}/{branch}/{pr}.yaml; 404 = no entry for that PR.
+					var probed = await FetchCdnProbedEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, prsToMatch, ctx);
+					if (probed == null)
 						return false;
-					matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
+					_logger.LogInformation("Probed {Count} changelog entry(ies) for {Pool} from CDN",
+						probed.Count, $"{authoringOwner}/{authoringRepo}/{authoringBranch}");
+					// Entries are already selected by probe; pass IncludeAll so the matcher skips content re-filtering.
+					var probeCriteria = filterCriteria with { IncludeAll = true };
+					matchResult = entryMatcher.MatchChangelogContents(collector, probed, probeCriteria, ctx);
 				}
 			}
 			else
@@ -1322,6 +1328,117 @@ public partial class ChangelogBundlingService(
 			}
 		}
 		return combined;
+	}
+
+	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnProbedEntriesAsync(
+		IDiagnosticsCollector collector,
+		string? org,
+		string? repo,
+		string? branch,
+		HashSet<string> prsToMatch,
+		Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(repo))
+		{
+			collector.EmitError(string.Empty,
+				"Sourcing changelog entries from the CDN requires a resolvable authoring repository. " +
+				"Set bundle.repo in changelog.yml (or pass --repo), or pass --force-local / --directory to bundle local changelog files.");
+			return null;
+		}
+
+		var resolvedOrg = string.IsNullOrWhiteSpace(org) ? DefaultOwner : org;
+		var resolvedBranch = string.IsNullOrWhiteSpace(branch) ? DefaultBranch : branch;
+		var poolLabel = $"{resolvedOrg}/{repo}/{resolvedBranch}";
+
+		var baseUri = ChangelogCdn.ResolveBaseUri();
+		if (baseUri is null)
+		{
+			collector.EmitError(string.Empty,
+				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+			return null;
+		}
+
+		var prNumbers = new List<int>();
+		foreach (var pr in prsToMatch)
+		{
+			if (TryExtractPrNumber(pr, resolvedOrg, repo, out var prNumber))
+				prNumbers.Add(prNumber);
+		}
+
+		if (prNumbers.Count == 0)
+		{
+			_logger.LogInformation("No PR numbers for {Pool} found in filter; returning empty probe result", poolLabel);
+			return [];
+		}
+
+		var tasks = prNumbers.Select(pr =>
+			_entryFetcher.FetchPrEntryAsync(baseUri, resolvedOrg, repo, resolvedBranch, pr, ctx)).ToArray();
+		var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+
+		var entries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var hasError = false;
+
+		for (var i = 0; i < prNumbers.Count; i++)
+		{
+			var prNumber = prNumbers[i];
+			var cdnEntry = results[i];
+
+			if (cdnEntry is null)
+			{
+				_logger.LogWarning("No changelog entry found for PR {PrNumber} in {Pool}", prNumber, poolLabel);
+				continue;
+			}
+
+			var entry = ReleaseNotesSerialization.DeserializeEntry(cdnEntry.Value.Content);
+			if (!entry.IsMarker)
+			{
+				_ = entries.TryAdd(cdnEntry.Value.FileName, cdnEntry.Value.Content);
+				continue;
+			}
+
+			if (!int.TryParse(entry.Link, out var parentPr) || parentPr <= 0)
+			{
+				collector.EmitError(string.Empty,
+					$"Changelog entry '{cdnEntry.Value.FileName}' contains an invalid link: '{entry.Link}'. Expected a positive PR number.");
+				hasError = true;
+				continue;
+			}
+
+			var parentCdnEntry = await _entryFetcher.FetchPrEntryAsync(baseUri, resolvedOrg, repo, resolvedBranch, parentPr, ctx).ConfigureAwait(false);
+			if (parentCdnEntry is null)
+			{
+				collector.EmitError(string.Empty,
+					$"Changelog entry '{cdnEntry.Value.FileName}' is a marker pointing to PR {parentPr}, but that entry does not exist in {poolLabel}.");
+				hasError = true;
+				continue;
+			}
+
+			var parentEntry = ReleaseNotesSerialization.DeserializeEntry(parentCdnEntry.Value.Content);
+			if (parentEntry.IsMarker)
+			{
+				collector.EmitError(string.Empty,
+					$"Marker chain detected: '{cdnEntry.Value.FileName}' → '{parentCdnEntry.Value.FileName}' is also a marker. Marker chains are not allowed.");
+				hasError = true;
+				continue;
+			}
+
+			_ = entries.TryAdd(parentCdnEntry.Value.FileName, parentCdnEntry.Value.Content);
+		}
+
+		return hasError ? null : entries.Select(kv => (kv.Key, kv.Value)).ToList();
+	}
+
+	private static bool TryExtractPrNumber(string pr, string authoringOwner, string authoringRepo, out int prNumber)
+	{
+		prNumber = 0;
+		// Normalize to {owner}/{repo}#{number} form; the org/repo may differ from the CDN pool
+		// (e.g. --owner override renames the pool but the PR URLs still carry the GitHub org).
+		// We only need the number to build the probe key.
+		var normalized = NormalizePrForComparison(pr, authoringOwner, authoringRepo);
+		var hashIndex = normalized.LastIndexOf('#');
+		if (hashIndex < 0)
+			return false;
+		return int.TryParse(normalized[(hashIndex + 1)..], out prNumber) && prNumber > 0;
 	}
 
 	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--directory</c>), and a CDN base is configured.</summary>
