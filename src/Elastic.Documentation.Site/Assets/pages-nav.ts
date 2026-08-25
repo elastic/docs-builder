@@ -13,7 +13,10 @@ function saveNavState(nav: HTMLElement) {
         .map((el) => el.id)
         .filter(Boolean)
     try {
-        sessionStorage.setItem(expandedStorageKey(nav), JSON.stringify(expanded))
+        sessionStorage.setItem(
+            expandedStorageKey(nav),
+            JSON.stringify(expanded)
+        )
     } catch {
         /* private mode */
     }
@@ -363,7 +366,10 @@ function ensureNavStatePersist() {
     navStatePersistBound = true
     document.addEventListener('change', (e: Event) => {
         const target = e.target
-        if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') {
+        if (
+            !(target instanceof HTMLInputElement) ||
+            target.type !== 'checkbox'
+        ) {
             return
         }
         const nav = target.closest<HTMLElement>('#pages-nav')

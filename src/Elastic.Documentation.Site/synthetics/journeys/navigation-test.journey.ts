@@ -173,30 +173,33 @@ journey('navigation test', ({ page, params }) => {
         await expect(page).toHaveURL(`${host}/docs/reference`)
     })
 
-    step('Island click swaps heading and Overview, back restores them', async () => {
-        await expect(
-            page.locator('#pages-nav .pages-nav-v2__heading-text')
-        ).toHaveText('Reference')
-        await page
-            .locator('#pages-nav a[href$="/docs/reference/elasticsearch"]')
-            .first()
-            .click()
-        await expect(page).toHaveURL(/\/docs\/reference\/elasticsearch/)
-        await expect(
-            page.locator('#pages-nav .pages-nav-v2__heading-text')
-        ).toHaveText('Elasticsearch')
-        await expect(
-            page.locator('#pages-nav .nav-v2-nav-text').first()
-        ).toHaveText('Overview')
-        await page.goBack()
-        await expect(page).toHaveURL(/\/docs\/reference\/?$/)
-        await expect(
-            page.locator('#pages-nav .pages-nav-v2__heading-text')
-        ).toHaveText('Reference')
-        await expect(
-            page.locator('#pages-nav .nav-v2-nav-text').first()
-        ).toHaveText('Overview')
-    })
+    step(
+        'Island click swaps heading and Overview, back restores them',
+        async () => {
+            await expect(
+                page.locator('#pages-nav .pages-nav-v2__heading-text')
+            ).toHaveText('Reference')
+            await page
+                .locator('#pages-nav a[href$="/docs/reference/elasticsearch"]')
+                .first()
+                .click()
+            await expect(page).toHaveURL(/\/docs\/reference\/elasticsearch/)
+            await expect(
+                page.locator('#pages-nav .pages-nav-v2__heading-text')
+            ).toHaveText('Elasticsearch')
+            await expect(
+                page.locator('#pages-nav .nav-v2-nav-text').first()
+            ).toHaveText('Overview')
+            await page.goBack()
+            await expect(page).toHaveURL(/\/docs\/reference\/?$/)
+            await expect(
+                page.locator('#pages-nav .pages-nav-v2__heading-text')
+            ).toHaveText('Reference')
+            await expect(
+                page.locator('#pages-nav .nav-v2-nav-text').first()
+            ).toHaveText('Overview')
+        }
+    )
 
     step(
         'Global nav script executed only once across navigations',
