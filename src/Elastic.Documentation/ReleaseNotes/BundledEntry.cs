@@ -47,4 +47,7 @@ public record BundledEntry
 
 	/// <summary>Related issue URLs or references.</summary>
 	public IReadOnlyList<string>? Issues { get; init; }
+
+	/// <summary>Bare PR number referencing the canonical entry. Present only on pipeline-written markers.</summary>
+	public string? Link { get; init; }
 }
