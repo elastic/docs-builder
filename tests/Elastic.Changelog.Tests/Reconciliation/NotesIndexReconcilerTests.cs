@@ -149,7 +149,8 @@ public class NotesIndexReconcilerTests
 	{
 		// Pre-seed a stale notes-8.0.0.json index from a previous reconcile run.
 		_s3.Seed(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "8.0.0"),
-			"""{"notes":["old/note-stale.yml"]}""");
+								 /*lang=json,strict*/
+								 """{"notes":["old/note-stale.yml"]}""");
 
 		// Only seed a note for 9.0.0.
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
@@ -169,7 +170,8 @@ public class NotesIndexReconcilerTests
 	{
 		// Pre-seed a stale notes index.
 		_s3.Seed(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
-			"""{"notes":["old/note-stale.yml"]}""");
+								 /*lang=json,strict*/
+								 """{"notes":["old/note-stale.yml"]}""");
 
 		// No note files — just an unrelated changelog entry.
 		_s3.Seed(PublicBucket, "changelog/elastic/elasticsearch/main/12345.yaml", "title: PR entry");
