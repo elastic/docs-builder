@@ -73,7 +73,7 @@ internal sealed partial record ApiSupplementalDoc(
 		new(frontMatter, description, EmptyOverrides(), EmptyOverrides(), []);
 
 	private static Dictionary<string, string> EmptyOverrides() =>
-		new(StringComparer.OrdinalIgnoreCase);
+		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 	private static bool IsParametersHeading(string heading) =>
 		heading.Equals("Parameters", StringComparison.OrdinalIgnoreCase)
