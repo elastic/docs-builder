@@ -335,6 +335,7 @@ jobs:
           && steps.internal-docs-build.outputs.skip != 'true'
           && steps.internal-docs-build.outcome == 'success'
           && steps.internal-validate-path-prefixes.outcome == 'success'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
 
       - name: Upload to S3
         id: s3-upload
@@ -343,6 +344,7 @@ jobs:
           && !cancelled()
           && steps.internal-docs-build.outputs.skip != 'true'
           && steps.internal-docs-build.outcome == 'success'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         env:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
