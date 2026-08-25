@@ -51,8 +51,9 @@ public sealed record NavigationRenderModel
 	public required string CurrentTopLevelUrl { get; init; }
 	public required IReadOnlyList<NavigationDropdownItem> DropdownItems { get; init; }
 	/// <summary>
-	/// Single back-link to the immediate parent of a nested island.
-	/// Empty when that parent is the site root already covered by the Docs tab or dropdown.
+	/// Root-first trail of island ancestors out of a nested island.
+	/// Empty when the dropdown or assembler Docs tab already covers the site root
+	/// and the render root has no other island ancestors.
 	/// </summary>
 	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
 	/// <summary>
@@ -134,22 +135,37 @@ public sealed record NavigationRenderModel
 	}
 
 	/// <summary>
-	/// One back-link: the island's immediate parent. The site root is omitted when
-	/// the dropdown or assembler Docs tab already links there.
+	/// Builds the root-first back-link trail out of a nested island.
+	/// Immediate parent is always included; further ancestors only if they render as
+	/// islands, so nested books stay visible after the sidebar collapses to the current one.
+	/// The site root is omitted when the dropdown or assembler Docs tab already links there.
 	/// </summary>
 	private static IReadOnlyList<IslandBackLink> CreateBackLinks(
 		INavigationItem renderRoot,
 		bool isUsingNavigationDropdown,
 		bool omitSiteRoot)
 	{
-		var parent = renderRoot.Parent;
-		if (parent is null)
-			return [];
-		if ((isUsingNavigationDropdown || omitSiteRoot) && parent.Parent is null)
+		var immediateParent = renderRoot.Parent;
+		if (immediateParent is null)
 			return [];
 
-		var (_, title) = ParseNavTitle(parent.NavigationTitle);
-		return [new IslandBackLink(title, parent.Url)];
+		var links = new List<IslandBackLink>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		for (var ancestor = immediateParent; ancestor is not null; ancestor = ancestor.Parent)
+		{
+			if ((isUsingNavigationDropdown || omitSiteRoot) && ancestor.Parent is null)
+				continue;
+
+			var include = ReferenceEquals(ancestor, immediateParent)
+				|| ancestor.Parent is null
+				|| ancestor.RendersAsIsland();
+			if (!include || !seen.Add(ancestor.Url))
+				continue;
+			var (_, title) = ParseNavTitle(ancestor.NavigationTitle);
+			links.Add(new IslandBackLink(title, ancestor.Url));
+		}
+		links.Reverse();
+		return links;
 	}
 
 	private static NavigationRenderNode? CreateRootIndex(

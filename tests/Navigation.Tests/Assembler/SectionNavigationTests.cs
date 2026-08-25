@@ -162,7 +162,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Back-link: immediate parent of obsNav is SectionNavigation
+	// Back-link: section island omits the assembler Docs root
 	// ──────────────────────────────────────────────────────────────
 
 	[Fact]
@@ -345,6 +345,15 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			isGlobalAssemblyBuild: true);
 		listingModel.TreeHeading.Should().Be("Release notes");
 		listingModel.Tree.Should().Contain(n => n.Kind == NavigationRenderNodeKind.Island && n.Url == searchNav.Url);
+
+		var searchModel = NavigationRenderModel.Create(
+			tree: searchNav,
+			topLevelItems: nav.TopLevelItems,
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: true);
+		searchModel.BackLinks.Should().Contain(l => l.Url == searchNav.Parent!.Url,
+			"immediate parent listing stays in the trail so the nested book can jump back");
 	}
 
 	// ──────────────────────────────────────────────────────────────
