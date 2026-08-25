@@ -190,7 +190,7 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 		if (prNumbers.Count == 1)
 			return (canonicalKey, []);
 
-		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = primaryPr.ToString() });
+		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = primaryPr.ToString(System.Globalization.CultureInfo.InvariantCulture) });
 		var markers = prNumbers
 			.Skip(1)
 			.Select(pr => (keyPrefix + $"{pr}.yaml", markerContent))
