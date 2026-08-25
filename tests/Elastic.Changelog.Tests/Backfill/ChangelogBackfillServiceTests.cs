@@ -43,7 +43,7 @@ public class ChangelogBackfillServiceTests
 
 	private BackfillArguments Args(bool dryRun = false, string[]? products = null, string[]? versions = null) => new()
 	{
-		Output = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test"),
+		Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test"),
 		DryRun = dryRun,
 		Products = products ?? [],
 		Versions = versions ?? [],
@@ -76,9 +76,9 @@ public class ChangelogBackfillServiceTests
 		result.Should().BeTrue();
 		_collector.Errors.Should().Be(0);
 
-		var bundleDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles");
+		var bundleDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles");
 		foreach (var version in InScopeVersions)
-			_mockFileSystem.FileExists(System.IO.Path.Join(bundleDir, $"{version}.yaml")).Should().BeTrue($"bundle for {version} should be written");
+			_mockFileSystem.FileExists(Path.Join(bundleDir, $"{version}.yaml")).Should().BeTrue($"bundle for {version} should be written");
 	}
 
 	[Fact]
@@ -133,9 +133,9 @@ public class ChangelogBackfillServiceTests
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
-		var bundleDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles");
+		var bundleDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles");
 		// 2.0.0 > cutoff 1.10.0 — belongs to the live pipeline
-		_mockFileSystem.FileExists(System.IO.Path.Join(bundleDir, "2.0.0.yaml")).Should().BeFalse("2.0.0 is beyond the cutoff");
+		_mockFileSystem.FileExists(Path.Join(bundleDir, "2.0.0.yaml")).Should().BeFalse("2.0.0 is beyond the cutoff");
 	}
 
 	[Fact]
@@ -146,9 +146,9 @@ public class ChangelogBackfillServiceTests
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"], versions: ["1.9.0"]), ct);
 
-		var bundleDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles");
-		_mockFileSystem.FileExists(System.IO.Path.Join(bundleDir, "1.9.0.yaml")).Should().BeTrue();
-		_mockFileSystem.FileExists(System.IO.Path.Join(bundleDir, "1.7.0.yaml")).Should().BeFalse("not in --versions filter");
+		var bundleDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles");
+		_mockFileSystem.FileExists(Path.Join(bundleDir, "1.9.0.yaml")).Should().BeTrue();
+		_mockFileSystem.FileExists(Path.Join(bundleDir, "1.7.0.yaml")).Should().BeFalse("not in --versions filter");
 	}
 
 	[Fact]
@@ -159,13 +159,13 @@ public class ChangelogBackfillServiceTests
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
-		var bundlePath = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles", "1.9.0.yaml");
+		var bundlePath = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles", "1.9.0.yaml");
 		var yaml = _mockFileSystem.File.ReadAllText(bundlePath);
-		var bundle = Elastic.Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeBundle(yaml);
+		var bundle = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeBundle(yaml);
 
 		bundle.Products.Should().ContainSingle().Which.Target.Should().Be("1.9.0");
 		bundle.Entries.Should().HaveCount(2);
-		bundle.Entries[0].Type.Should().Be(Elastic.Documentation.ReleaseNotes.ChangelogEntryType.BreakingChange);
+		bundle.Entries[0].Type.Should().Be(Documentation.ReleaseNotes.ChangelogEntryType.BreakingChange);
 	}
 
 	[Fact]
@@ -177,9 +177,9 @@ public class ChangelogBackfillServiceTests
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
 		// 1.9.0 has #958 and #960 as bare-ref PR entries.
-		var changelogDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
-		_mockFileSystem.FileExists(System.IO.Path.Join(changelogDir, "958.yaml")).Should().BeTrue("PR 958 entry should be written");
-		_mockFileSystem.FileExists(System.IO.Path.Join(changelogDir, "960.yaml")).Should().BeTrue("PR 960 entry should be written");
+		var changelogDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
+		_mockFileSystem.FileExists(Path.Join(changelogDir, "958.yaml")).Should().BeTrue("PR 958 entry should be written");
+		_mockFileSystem.FileExists(Path.Join(changelogDir, "960.yaml")).Should().BeTrue("PR 960 entry should be written");
 	}
 
 	[Fact]
@@ -190,11 +190,11 @@ public class ChangelogBackfillServiceTests
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
-		var entryPath = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "958.yaml");
+		var entryPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "958.yaml");
 		var yaml = _mockFileSystem.File.ReadAllText(entryPath);
-		var entry = Elastic.Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(yaml);
+		var entry = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(yaml);
 
-		entry.Type.Should().Be(Elastic.Documentation.ReleaseNotes.ChangelogEntryType.BreakingChange);
+		entry.Type.Should().Be(Documentation.ReleaseNotes.ChangelogEntryType.BreakingChange);
 		entry.Products.Should().ContainSingle().Which.Target.Should().Be("1.9.0");
 		entry.Prs.Should().ContainSingle(p => p.Contains("/pull/958"));
 	}
@@ -208,9 +208,9 @@ public class ChangelogBackfillServiceTests
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
 		// 1.4.1 has a fix entry with no PR reference.
-		var changelogDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
+		var changelogDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
 		var noteFiles = _mockFileSystem.AllFiles
-			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal) && System.IO.Path.GetFileName(f).StartsWith("note-", StringComparison.Ordinal))
+			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal) && Path.GetFileName(f).StartsWith("note-", StringComparison.Ordinal))
 			.ToList();
 		noteFiles.Should().NotBeEmpty("at least one PR-less entry should produce a note-*.yaml file");
 	}
@@ -224,13 +224,13 @@ public class ChangelogBackfillServiceTests
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
 		// notes-1.4.1.json should be written because 1.4.1 has a PR-less fix.
-		var changelogDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
-		_mockFileSystem.FileExists(System.IO.Path.Join(changelogDir, "notes-1.4.1.json")).Should().BeTrue();
+		var changelogDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
+		_mockFileSystem.FileExists(Path.Join(changelogDir, "notes-1.4.1.json")).Should().BeTrue();
 
-		var json = _mockFileSystem.File.ReadAllText(System.IO.Path.Join(changelogDir, "notes-1.4.1.json"));
-		var registry = System.Text.Json.JsonSerializer.Deserialize(json, Elastic.Changelog.Backfill.BackfillJsonContext.Default.NotesRegistry);
+		var json = _mockFileSystem.File.ReadAllText(Path.Join(changelogDir, "notes-1.4.1.json"));
+		var registry = System.Text.Json.JsonSerializer.Deserialize(json, BackfillJsonContext.Default.NotesRegistry);
 		registry.Should().NotBeNull();
-		registry!.Target.Should().Be("1.4.1");
+		registry.Target.Should().Be("1.4.1");
 		registry.Notes.Should().NotBeEmpty();
 		registry.Notes.Should().AllSatisfy(n => n.Should().StartWith("note-").And.EndWith(".yaml"));
 	}
@@ -258,12 +258,12 @@ public class ChangelogBackfillServiceTests
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
 		// All PR files should be unique names (no overwritten paths).
-		var changelogDir = System.IO.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
+		var changelogDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
 		var prFiles = _mockFileSystem.AllFiles
 			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal))
 			.Where(f => !f.Contains("bundles", StringComparison.Ordinal))
-			.Where(f => System.IO.Path.GetFileName(f) is var n && !n.StartsWith("note-") && !n.StartsWith("notes-"))
-			.Select(System.IO.Path.GetFileName)
+			.Where(f => Path.GetFileName(f) is var n && !n.StartsWith("note-") && !n.StartsWith("notes-"))
+			.Select(Path.GetFileName)
 			.ToList();
 
 		prFiles.Should().OnlyHaveUniqueItems("no PR number should be written twice");
