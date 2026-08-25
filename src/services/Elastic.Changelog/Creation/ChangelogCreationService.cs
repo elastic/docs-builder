@@ -146,17 +146,15 @@ IEnvironmentVariables? env = null
 		}
 	}
 
-	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config)
-	{
+	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config) =>
 		// Filename strategy is always Pr now; UsePrNumber is kept for backward compat but is effectively always true.
-		return input with
+		input with
 		{
 			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
 			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues,
 			StripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix,
 			UsePrNumber = true
 		};
-	}
 
 	/// <summary>
 	/// Infers products from configuration defaults or repository name.

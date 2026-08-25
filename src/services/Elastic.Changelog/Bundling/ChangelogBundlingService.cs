@@ -289,6 +289,17 @@ public partial class ChangelogBundlingService(
 			if (!ValidateInput(collector, input, requireDirectoryExists: !useCdn))
 				return false;
 
+			// --all and --input-products require reading every entry body; that is only possible locally.
+			// On the CDN path entries are probed by key, so there is nothing to enumerate without a PR list.
+			if (useCdn && (input.All || input.InputProducts is { Count: > 0 }))
+			{
+				var flag = input.All ? "--all" : "--input-products";
+				collector.EmitError(string.Empty,
+					$"{flag} is not supported when sourcing changelog entries from the CDN, because entries are fetched by key (one per PR) and there is no pool enumeration. " +
+					"Pass --force-local or --directory to bundle from a local checkout instead.");
+				return false;
+			}
+
 			if (!ValidatePlaceholderUsage(collector, input))
 				return false;
 
@@ -357,13 +368,10 @@ public partial class ChangelogBundlingService(
 			}
 			else if (useCdn)
 			{
-				var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
-				if (contents == null)
-					return false;
 				if (requestedEntryNames is not null)
 				{
-					var poolLabel = $"{authoringOwner}/{authoringRepo}/{authoringBranch}";
-					var selected = SelectRequestedCdnEntries(collector, contents, requestedEntryNames, poolLabel);
+					// --files on the CDN path: fetch each entry directly by key; no registry needed.
+					var selected = await FetchCdnNamedEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, requestedEntryNames, ctx);
 					if (selected == null)
 						return false;
 					_logger.LogInformation("Matching {Count} explicitly selected changelog entries from the CDN", selected.Count);
@@ -371,7 +379,14 @@ public partial class ChangelogBundlingService(
 					matchResult = entryMatcher.MatchChangelogContents(collector, selected, filesCriteria, ctx);
 				}
 				else
+				{
+					// --prs / --issues on the CDN path: still uses the pool registry for now (Step 9 will
+					// switch this to per-PR probing once canonical keys and markers are in place).
+					var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
+					if (contents == null)
+						return false;
 					matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
+				}
 			}
 			else
 			{
@@ -1094,6 +1109,55 @@ public partial class ChangelogBundlingService(
 		}
 
 		return null;
+	}
+
+	/// <summary>
+	/// Fetches a named list of changelog entries directly from the CDN without consulting the pool registry.
+	/// Used for the <c>--files</c> CDN path. Returns <c>null</c> after emitting an error on any failure.
+	/// </summary>
+	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnNamedEntriesAsync(
+		IDiagnosticsCollector collector,
+		string? org,
+		string? repo,
+		string? branch,
+		IReadOnlyList<string> fileNames,
+		Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(repo))
+		{
+			collector.EmitError(string.Empty,
+				"Sourcing changelog entries from the CDN requires a resolvable authoring repository. " +
+				"Set bundle.repo in changelog.yml (or pass --repo), or pass --force-local / --directory to bundle local files.");
+			return null;
+		}
+
+		var resolvedOrg = string.IsNullOrWhiteSpace(org) ? DefaultOwner : org;
+		var resolvedBranch = string.IsNullOrWhiteSpace(branch) ? DefaultBranch : branch;
+
+		var baseUri = ChangelogCdn.ResolveBaseUri();
+		if (baseUri is null)
+		{
+			collector.EmitError(string.Empty,
+				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+			return null;
+		}
+
+		var entries = await _entryFetcher.FetchNamedAsync(
+			baseUri,
+			resolvedOrg,
+			repo,
+			resolvedBranch,
+			fileNames,
+			msg => collector.EmitError(string.Empty, msg),
+			ctx);
+
+		if (entries == null)
+			return null;
+
+		_logger.LogInformation("Fetched {Count} named changelog entry(ies) for {Pool} from CDN",
+			entries.Count, $"{resolvedOrg}/{repo}/{resolvedBranch}");
+
+		return entries.Select(e => (e.FileName, e.Content)).ToList();
 	}
 
 	/// <summary>Downloads the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/> pool's changelog entries from the CDN (<c>changelog/{org}/{repo}/{branch}/...</c>); returns null after emitting an error on any fatal fetch failure.</summary>

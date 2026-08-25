@@ -79,7 +79,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/999"],
 			Output = output,
 			Repo = "elasticsearch"
 		};
@@ -108,7 +108,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/999"],
 			Output = output,
 			Owner = "acme-corp",
 			Repo = "elasticsearch",
@@ -133,7 +133,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/999"],
 			Output = output,
 			Repo = "acme-corp/widget"
 		};
@@ -222,6 +222,39 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	}
 
 	[Fact]
+	public async Task CdnAll_ReturnsError()
+	{
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher());
+
+		var input = new BundleChangelogsArguments { All = true, Output = OutputPath(), Repo = "elasticsearch" };
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("--all") && d.Message.Contains("--force-local"));
+	}
+
+	[Fact]
+	public async Task CdnInputProducts_ReturnsError()
+	{
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher());
+
+		var input = new BundleChangelogsArguments
+		{
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }],
+			Output = OutputPath(),
+			Repo = "elasticsearch"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("--input-products") && d.Message.Contains("--force-local"));
+	}
+
+	[Fact]
 	public async Task RegistryFailure_FailsBundle()
 	{
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output),
@@ -230,7 +263,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
 			Output = OutputPath(),
 			Repo = "elasticsearch"
 		};
@@ -260,7 +293,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/999"],
 			Output = OutputPath(),
 			Repo = "elasticsearch"
 		};

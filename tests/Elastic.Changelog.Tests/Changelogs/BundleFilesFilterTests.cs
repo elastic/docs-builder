@@ -321,7 +321,9 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		// --files uses FetchNamedAsync: direct GET per file, no registry fetch
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
+		handler.RequestedPaths.Should().NotContain("/changelog/elastic/elasticsearch/main/registry.json");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
@@ -343,8 +345,9 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
+		// --files uses FetchNamedAsync: a 404 means "entry does not exist in the pool"
 		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("not found in the CDN pool") && d.Message.Contains("never-uploaded.yaml"));
+			d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("pool"));
 	}
 
 	[Fact]
@@ -384,7 +387,9 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		// --files (via profile report) uses FetchNamedAsync: direct GET per file, no registry fetch
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
+		handler.RequestedPaths.Should().NotContain("/changelog/elastic/elasticsearch/main/registry.json");
 		var bundle = await FileSystem.File.ReadAllTextAsync(
 			FileSystem.Path.Join(outputDir, "bundle.yaml"), TestContext.Current.CancellationToken);
 		bundle.Should().Contain("name: keep.yaml");
