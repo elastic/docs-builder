@@ -233,7 +233,7 @@ public class ChangelogUploadService(
 		if (prNumbers.Count == 1)
 			return (canonicalFileName, []);
 
-		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = primaryPr.ToString() });
+		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = primaryPr.ToString(System.Globalization.CultureInfo.InvariantCulture) });
 		var markers = prNumbers
 			.Skip(1)
 			.Select(pr => ($"{pr}.yaml", markerContent))
