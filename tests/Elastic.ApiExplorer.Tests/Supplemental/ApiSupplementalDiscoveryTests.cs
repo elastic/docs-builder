@@ -42,7 +42,6 @@ public class ApiSupplementalDiscoveryTests
 		var folder = FolderWith(
 			"op-search.md",
 			"op-getAlertingHealth.md",
-			"op-getalertinghealth.md",
 			"op-cluster-health.md");
 
 		var result = ApiSupplementalDiscovery.Discover(
@@ -51,7 +50,18 @@ public class ApiSupplementalDiscoveryTests
 			[]);
 
 		result.Operations.Keys.Should().BeEquivalentTo("search", "getAlertingHealth");
-		result.Unmatched.Select(f => f.Name).Should().BeEquivalentTo("op-getalertinghealth.md", "op-cluster-health.md");
+		result.Unmatched.Select(f => f.Name).Should().ContainSingle().Which.Should().Be("op-cluster-health.md");
+	}
+
+	[Fact]
+	public void Discover_DoesNotMatchDifferentCasing()
+	{
+		var folder = FolderWith("op-getalertinghealth.md");
+
+		var result = ApiSupplementalDiscovery.Discover(folder, ["getAlertingHealth"], []);
+
+		result.Operations.Should().BeEmpty();
+		result.Unmatched.Select(f => f.Name).Should().ContainSingle().Which.Should().Be("op-getalertinghealth.md");
 	}
 
 	[Fact]
