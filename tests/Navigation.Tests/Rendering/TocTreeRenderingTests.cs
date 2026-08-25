@@ -43,6 +43,7 @@ public class TocTreeRenderingTests
 		html.Should().Contain("Guides");
 		html.Should().NotContain("data-nav-v2");
 		html.Should().NotContain("navigation-search");
+		html.Should().NotContain("hx-preserve");
 	}
 
 	[Fact]
@@ -93,7 +94,7 @@ public class TocTreeRenderingTests
 	}
 
 	[Fact]
-	public async Task IslandStub_UsesTheSameChevronAsFolders()
+	public async Task IslandStub_UsesTheForwardArrowNotTheFolderChevron()
 	{
 		var model = new NavigationRenderModel
 		{
@@ -117,12 +118,13 @@ public class TocTreeRenderingTests
 
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-		html.Should().Contain("href=\"#icon-chevron-down\"");
-		html.Should().NotContain("icon-chevron-double-down");
+		html.Should().Contain("nav-island-arrow");
+		html.Should().Contain("href=\"#icon-chevron-limit-right\"");
+		html.Should().NotContain("href=\"#icon-chevron-down\"");
 	}
 
 	[Fact]
-	public async Task IslandOverview_RendersAsFolderWithoutSeparator()
+	public async Task IslandOverview_RendersHeadingAndOverviewLeaf()
 	{
 		var model = new NavigationRenderModel
 		{
@@ -131,26 +133,23 @@ public class TocTreeRenderingTests
 			CurrentTopLevelUrl = "/docs/reference",
 			DropdownItems = [],
 			BackLinks = [new IslandBackLink("Reference", "/docs/reference")],
+			TreeHeading = "Elasticsearch",
+			TreeHeadingIcon = "elasticsearch",
 			Tree =
 			[
 				new NavigationRenderNode
 				{
-					Kind = NavigationRenderNodeKind.Node,
+					Kind = NavigationRenderNodeKind.Leaf,
 					IsTopLevel = true,
-					NavigationTitle = "Elasticsearch",
-					Url = "/docs/reference/elasticsearch",
-					Id = "elasticsearch",
-					ShowToggle = true,
-					NavigationItems =
-					[
-						new NavigationRenderNode
-						{
-							Kind = NavigationRenderNodeKind.Leaf,
-							IsTopLevel = false,
-							NavigationTitle = "REST APIs",
-							Url = "/docs/reference/elasticsearch/rest-apis"
-						}
-					]
+					NavigationTitle = "Overview",
+					Url = "/docs/reference/elasticsearch"
+				},
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Leaf,
+					IsTopLevel = true,
+					NavigationTitle = "REST APIs",
+					Url = "/docs/reference/elasticsearch/rest-apis"
 				}
 			],
 			ContentHash = "island-overview"
@@ -159,9 +158,16 @@ public class TocTreeRenderingTests
 		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
 		html.Should().Contain("pages-nav-v2__back");
+		html.Should().Contain("data-nav-heading=\"Elasticsearch\"");
+		html.Should().Contain("pages-nav-v2__heading-text");
+		html.Should().NotContain("pages-nav-v2__heading-icon");
 		html.Should().Contain("Elasticsearch");
+		html.Should().Contain("Overview");
 		html.Should().Contain("REST APIs");
-		html.Should().Contain("id=\"elasticsearch\"");
+		html.Should().Contain("href=\"/docs/reference/elasticsearch\"");
+		html.Should().NotContain("href=\"#\" class=\"pages-nav-v2__heading");
+		html.Should().NotContain("id=\"elasticsearch\"");
 		html.Should().NotContain("nav-v2-separator");
+		html.Should().NotContain("hx-preserve");
 	}
 }

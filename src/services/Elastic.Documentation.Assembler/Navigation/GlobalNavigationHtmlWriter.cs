@@ -35,11 +35,12 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		if (renderRoot is not INodeNavigationItem<INavigationModel, INavigationItem> group)
 			return NavigationRenderResult.Empty;
 
-		return await _renderedNavigationCache.GetOrRenderAsync(renderRoot, () =>
+		var rendered = await _renderedNavigationCache.GetOrRenderAsync(renderRoot, () =>
 		{
 			_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", renderRoot.NavigationTitle, renderRoot.Id);
 			return ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx);
 		});
+		return NavigationCurrentMarker.Apply(rendered, currentNavigationItem);
 	}
 
 	private NavigationRenderModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group) =>

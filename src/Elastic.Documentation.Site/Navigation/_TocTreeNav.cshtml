@@ -18,8 +18,8 @@
 				<a href="@item.Url" class="sidebar-link nav-folder-link nav-v2-link">
 					<span class="nav-v2-nav-text">@item.NavigationTitle</span>
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
-					<span class="nav-folder-chevron" aria-hidden="true">
-						<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+					<span class="nav-island-arrow" aria-hidden="true">
+						<svg class="nav-island-chevron" viewBox="0 0 16 16"><use href="#icon-chevron-limit-right"/></svg>
 					</span>
 				</a>
 			</div>
@@ -44,7 +44,7 @@
 					@if (item.ShowToggle)
 					{
 						<span class="nav-folder-chevron" aria-hidden="true">
-							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+							<svg class="nav-chevron" viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
 						</span>
 					}
 				</a>

@@ -111,6 +111,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 					sectionNav.Url = firstChildUrl;
 
 				((IAssignableChildrenNavigation)sectionNav).SetNavigationItems(sectionChildren);
+				PromoteSectionListingIslands(sectionNav);
 				items.Add(sectionNav);
 			}
 			else if (entry is SiteTableOfContentsRef tocRef)
@@ -232,6 +233,38 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		return normalized;
 	}
 
+	/// <summary>
+	/// Reference / Troubleshoot / Release notes: a section whose only child is a toc
+	/// listing. Mark that listing's group children as islands so the sidebar is
+	/// heading + Overview + stubs (arrow), not an ancestor folder tree.
+	/// </summary>
+	private static void PromoteSectionListingIslands(SectionNavigation section)
+	{
+		INodeNavigationItem<INavigationModel, INavigationItem>? listing = null;
+		foreach (var item in section.NavigationItems)
+		{
+			if (item.Hidden)
+				continue;
+			if (listing is not null)
+				return;
+			if (item is not INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
+				return;
+			listing = node;
+		}
+
+		if (listing is null)
+			return;
+
+		foreach (var item in listing.NavigationItems)
+		{
+			if (item.Hidden)
+				continue;
+			if (item is IAssignableIslandNavigation island
+			    and INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 })
+				island.IsIsland = true;
+		}
+	}
+
 	private INavigationItem? CreateSiteTableOfContentsNavigation(
 		SiteTableOfContentsRef tocRef,
 		int index,
@@ -322,7 +355,14 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 					root
 				);
 				if (childItem != null)
+				{
+					// Nested `toc:` entries in navigation.yml are islands (arrow + own
+					// heading), even when they omit `island: true` — Release notes
+					// clients, Reference nested books, etc.
+					if (childItem is IAssignableIslandNavigation childIsland)
+						childIsland.IsIsland = true;
 					children.Add(childItem);
+				}
 			}
 		}
 

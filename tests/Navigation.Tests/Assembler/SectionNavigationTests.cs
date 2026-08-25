@@ -197,6 +197,154 @@ public class SectionNavigationTests(ITestOutputHelper output)
 			"assembler Docs tab in the top bar already links to the site root");
 		renderModel.BackLinks.Should().NotContain(link => link.Title == "Guides",
 			"the section itself is not its own back-link");
+		renderModel.TreeHeading.Should().BeNull("Guides has two toc children, so it stays a list of folders");
+	}
+
+	[Fact]
+	public void SingleChildSection_FlattensToHeadingAndOverview()
+	{
+		// language=yaml
+		var yaml = """
+		           toc:
+		             - section: Reference
+		               children:
+		                 - toc: observability://
+		                   path_prefix: /observability
+		           """;
+
+		var (nav, _, _) = BuildTwoChildSection(output, yaml);
+		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
+
+		var model = NavigationRenderModel.Create(
+			tree: section,
+			topLevelItems: nav.TopLevelItems,
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: true);
+
+		model.TreeHeading.Should().Be("Reference");
+		model.TreeHeadingIcon.Should().Be("reference");
+		model.RootIndex.Should().BeNull();
+		model.Tree.Should().NotBeEmpty();
+		model.Tree[0].Kind.Should().Be(NavigationRenderNodeKind.Leaf);
+		model.Tree[0].NavigationTitle.Should().Be("Overview");
+		model.Tree[0].Url.Should().Be(section.Url);
+		model.Tree.Should().NotContain(n => n.NavigationTitle == "Reference" && n.Kind != NavigationRenderNodeKind.Leaf);
+		model.Tree.Where(n => n.Kind != NavigationRenderNodeKind.Leaf)
+			.Should()
+			.OnlyContain(n => n.Kind == NavigationRenderNodeKind.Island,
+				"listing children of a single-child section are islands, not ancestor folders");
+
+		var listing = section.NavigationItems
+			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
+			.Single();
+		listing.NavigationItems
+			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
+			.Where(n => n.NavigationItems.Count > 0)
+			.Should()
+			.OnlyContain(n => n.RendersAsIsland());
+	}
+
+	[Fact]
+	public void SingleChildSection_VirtualFileListingChildren_BecomeIslands()
+	{
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		fileSystem.AddFile("/checkouts/current/observability/docs/docset.yml", new MockFileData(
+			"""
+			project: observability
+			toc:
+			  - file: index.md
+			  - file: elasticsearch.md
+			    children:
+			      - file: clusters.md
+			  - file: kibana.md
+			    children:
+			      - file: discover.md
+			"""));
+		fileSystem.AddFile("/checkouts/current/observability/docs/index.md", new MockFileData("# Troubleshoot"));
+		fileSystem.AddFile("/checkouts/current/observability/docs/elasticsearch.md", new MockFileData("# Elasticsearch"));
+		fileSystem.AddFile("/checkouts/current/observability/docs/clusters.md", new MockFileData("# Clusters"));
+		fileSystem.AddFile("/checkouts/current/observability/docs/kibana.md", new MockFileData("# Kibana"));
+		fileSystem.AddFile("/checkouts/current/observability/docs/discover.md", new MockFileData("# Discover"));
+
+		var siteNavFile = SiteNavigationFile.Deserialize(
+			"""
+			toc:
+			  - section: Troubleshoot
+			    children:
+			      - toc: observability://
+			        path_prefix: /troubleshoot
+			""");
+		var obsCtx = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+		var obsDocset = DocumentationSetFile.LoadAndResolve(
+			obsCtx.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
+		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsCtx, GenericDocumentationFileFactory.Instance);
+		var siteCtx = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var nav = new SiteNavigation(siteNavFile, siteCtx, [obsNav], sitePrefix: "/docs");
+
+		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
+		var elasticsearch = section.NavigationItems
+			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
+			.SelectMany(listing => listing.NavigationItems)
+			.OfType<VirtualFileNavigation<IDocumentationFile>>()
+			.Single(n => n.Url.Contains("elasticsearch", StringComparison.Ordinal));
+
+		elasticsearch.RendersAsIsland().Should().BeTrue(
+			"file+children listings under a single-child section are islands, not ancestor folders");
+
+		var clusterLeaf = elasticsearch.NavigationItems
+			.OfType<ILeafNavigationItem<IDocumentationFile>>()
+			.Single(l => l.Url.Contains("clusters", StringComparison.Ordinal));
+		clusterLeaf.FindIslandRoot().Should().BeSameAs(elasticsearch);
+
+		var islandModel = NavigationRenderModel.Create(
+			tree: elasticsearch,
+			topLevelItems: nav.TopLevelItems,
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: true);
+
+		islandModel.TreeHeading.Should().Be("Elasticsearch");
+		islandModel.Tree[0].NavigationTitle.Should().Be("Overview");
+		islandModel.BackLinks.Should().Contain(l => l.Title == "Troubleshoot");
+	}
+
+	[Fact]
+	public void NestedAssemblerToc_UnderListing_IsIsland()
+	{
+		var yaml = """
+		           toc:
+		             - section: Release notes
+		               children:
+		                 - toc: observability://
+		                   path_prefix: /release-notes
+		                   children:
+		                     - toc: serverless-search://
+		                       path_prefix: /release-notes/search
+		           """;
+
+		var (nav, _, searchNav) = BuildTwoChildSection(output, yaml);
+		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
+
+		searchNav.RendersAsIsland().Should().BeTrue(
+			"nested toc: children in navigation.yml are islands even without island: true");
+
+		var searchLeaf = nav.NavigationIndexedByOrder.Values
+			.OfType<ILeafNavigationItem<IDocumentationFile>>()
+			.FirstOrDefault(l => l.Url.Contains("/search/", StringComparison.Ordinal) || l.Url.EndsWith("/search", StringComparison.Ordinal));
+		searchLeaf.Should().NotBeNull();
+		searchLeaf!.FindIslandRoot().Should().BeSameAs(searchNav);
+
+		var listingModel = NavigationRenderModel.Create(
+			tree: section,
+			topLevelItems: nav.TopLevelItems,
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: true,
+			isGlobalAssemblyBuild: true);
+		listingModel.TreeHeading.Should().Be("Release notes");
+		listingModel.Tree.Should().Contain(n => n.Kind == NavigationRenderNodeKind.Island && n.Url == searchNav.Url);
 	}
 
 	// ──────────────────────────────────────────────────────────────

@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Navigation.Isolated.Node;
 /// Represents a file navigation item that defines children which are not part of the file tree.
 [DebuggerDisplay("{Url}")]
 public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
-	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation
+	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation, IAssignableIslandNavigation
 	where TModel : IDocumentationFile
 {
 	/// <inheritdoc />
@@ -29,6 +29,9 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 
 	/// <inheritdoc />
 	public bool Hidden { get; } = args.Hidden;
+
+	/// <inheritdoc />
+	public bool IsIsland { get; set; }
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }

@@ -193,7 +193,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task Create_BuildsBackLinkStack_RootFirst()
+	public async Task Create_BuildsBackLink_ImmediateParentOnly()
 	{
 		// language=yaml
 		var yaml = """
@@ -241,20 +241,20 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			isPrimaryNavEnabled: false,
 			isGlobalAssemblyBuild: false);
 
-		// Back links: root-first → docset root, then security (enclosing island, also the immediate parent).
-		// Stack: docset root (/), then security (/security) — total 2 entries.
-		model.BackLinks.Should().HaveCount(2);
-		model.BackLinks[0].Url.Should().Be("/", "first entry is the top navigation root");
-		model.BackLinks[1].Url.Should().Be("/security", "second is the enclosing island (also the immediate parent)");
+		model.BackLinks.Should().ContainSingle(b => b.Url == "/security",
+			"only the immediate parent is a back-link; the docset root is not stacked");
 
 		// The island URL is the rules section root
 		rules.Url.Should().Be("/security/rules");
-		model.RootIndex.Should().BeNull("island overview is the first-level folder, not a detached index row");
-		var overview = model.Tree.Should().ContainSingle().Subject;
-		overview.Kind.Should().Be(NavigationRenderNodeKind.Node);
-		overview.ShowToggle.Should().BeTrue();
-		overview.NavigationTitle.Should().Be("index", "TestDocumentationFileFactory uses filename without extension");
-		overview.NavigationItems.Should().ContainSingle(n => n.Url == "/security/rules/page");
+		model.RootIndex.Should().BeNull("island index is the Overview leaf, not a detached row");
+		model.TreeHeading.Should().Be("index", "TestDocumentationFileFactory uses filename without extension");
+		model.TreeHeadingIcon.Should().BeNull();
+		model.Tree.Should().HaveCount(2);
+		var overview = model.Tree[0];
+		overview.Kind.Should().Be(NavigationRenderNodeKind.Leaf);
+		overview.NavigationTitle.Should().Be("Overview");
+		overview.Url.Should().Be("/security/rules");
+		model.Tree[1].Url.Should().Be("/security/rules/page");
 	}
 
 	[Fact]
@@ -332,10 +332,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		// Different tree content (page-a vs page-b) → different content hash
 		model1.ContentHash.Should().NotBe(model2.ContentHash, "different tree pages produce different content hashes");
-		model1.Tree.Should().ContainSingle()
-			.Which.NavigationItems.Should().ContainSingle(n => n.Url.EndsWith("page-a", StringComparison.Ordinal));
-		model2.Tree.Should().ContainSingle()
-			.Which.NavigationItems.Should().ContainSingle(n => n.Url.EndsWith("page-b", StringComparison.Ordinal));
+		model1.Tree.Should().Contain(n => n.Url.EndsWith("page-a", StringComparison.Ordinal));
+		model2.Tree.Should().Contain(n => n.Url.EndsWith("page-b", StringComparison.Ordinal));
 	}
 
 	[Fact]
@@ -376,13 +374,10 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task Create_NestedIsland_KeepsTopLevelBackLink_AlongsideDropdown()
+	public async Task Create_NestedIsland_BackLinkIsImmediateParent()
 	{
-		// In the assembled site: SiteNavigation (nav root) → top-level section (island) → inner island.
-		// The dropdown represents the nav root; the top-level section STILL appears as a back-link
-		// because re-selecting the active dropdown item is a poor UX substitute for a direct link.
-		// We simulate this with a 3-level tree: docset root → elasticsearch (island) → clients (island).
-		// docset root plays the nav-root role (Parent=null), elasticsearch plays top-level section.
+		// SiteNavigation (nav root) → elasticsearch (island) → clients (island).
+		// Only elasticsearch (immediate parent) is a back-link.
 		var yaml = """
 		           project: 'test-project'
 		           toc:
@@ -432,10 +427,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			isPrimaryNavEnabled: true,
 			isGlobalAssemblyBuild: false);
 
-		// ← elasticsearch appears even though the dropdown also shows elasticsearch as active.
-		// The nav root (navigation, Parent=null) is suppressed because the dropdown covers it.
 		model.BackLinks.Should().ContainSingle(b => b.Url == elasticsearch.Url,
-			"← elasticsearch stays even though the dropdown names it as the active section");
+			"immediate parent is the only back-link");
 		// Dropdown correctly identifies elasticsearch as the current top-level section
 		model.CurrentTopLevelUrl.Should().Be(elasticsearch.Url);
 		// Nav root must NOT appear in back-links (dropdown suppresses it)
@@ -444,9 +437,9 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task Create_WithoutDropdown_KeepsFullBackLinkTrail()
+	public async Task Create_WithoutDropdown_KeepsImmediateParentBackLink()
 	{
-		// Isolated build without primary nav: back-links include the navigation root
+		// Isolated build without primary nav: the immediate parent is the navigation root.
 		var yaml = """
 		           project: 'test-project'
 		           toc:
@@ -477,9 +470,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			isPrimaryNavEnabled: false,
 			isGlobalAssemblyBuild: false);
 
-		// Without dropdown the nav root IS included in back-links
 		model.BackLinks.Should().ContainSingle(b => b.Url == navigation.Url,
-			"without dropdown the nav root appears as a back-link");
+			"without dropdown the immediate parent (nav root) is the back-link");
 		model.IsUsingNavigationDropdown.Should().BeFalse();
 	}
 

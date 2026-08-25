@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Assembler;
 
 namespace Elastic.Documentation.Site.Navigation;
 
@@ -38,9 +39,10 @@ public sealed record IslandBackLink(string Title, string Url);
 
 /// <summary>
 /// Everything <c>_TocTree.cshtml</c> renders, resolved from the domain navigation up front.
-/// <see cref="ContentHash"/> identifies the preserved tree content: pages whose trees are identical
-/// share a <c>nav-tree-*</c> id so htmx keeps the sidebar DOM (and its expand/collapse state) alive,
-/// while any visible change produces a new id and swaps in fresh HTML.
+/// <see cref="ContentHash"/> identifies the tree content so same-island pages share markup.
+/// The tree itself lives in <c>#pages-nav</c>, which is <c>hx-preserve</c>'d so
+/// expanding folders survives same-tree navigations. JS still replaces the nav
+/// when the island/section surface changes (heading + Overview).
 /// </summary>
 public sealed record NavigationRenderModel
 {
@@ -49,18 +51,25 @@ public sealed record NavigationRenderModel
 	public required string CurrentTopLevelUrl { get; init; }
 	public required IReadOnlyList<NavigationDropdownItem> DropdownItems { get; init; }
 	/// <summary>
-	/// Root-first trail out of a nested island.
-	/// Empty when the dropdown or assembler Docs tab already covers the site root
-	/// and the render root has no other island ancestors.
+	/// Single back-link to the immediate parent of a nested island.
+	/// Empty when that parent is the site root already covered by the Docs tab or dropdown.
 	/// </summary>
 	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
 	/// <summary>
 	/// Root index link as the first sidebar row when primary nav is off.
-	/// Null when primary nav / global assembly already covers that role.
+	/// Null when primary nav / global assembly already covers that role,
+	/// or when the index is flattened to an Overview row under <see cref="TreeHeading"/>.
 	/// </summary>
 	public NavigationRenderNode? RootIndex { get; init; }
+	/// <summary>
+	/// Non-clickable label above an island/section tree (e.g. "Elasticsearch", "Reference").
+	/// The clickable index sits in <see cref="Tree"/> as "Overview".
+	/// </summary>
+	public string? TreeHeading { get; init; }
+	/// <summary>Slug for the heading icon (<c>reference</c>, <c>elasticsearch</c>, …); null when none maps.</summary>
+	public string? TreeHeadingIcon { get; init; }
 	public required IReadOnlyList<NavigationRenderNode> Tree { get; init; }
-	/// <summary>Hash of the preserved tree content only; the dropdown, back-links and search live outside the preserved element.</summary>
+	/// <summary>Hash of the tree content; used as the <c>nav-tree-*</c> id so same-island pages share markup.</summary>
 	public required string ContentHash { get; init; }
 
 	public static NavigationRenderModel Create(
@@ -85,15 +94,28 @@ public sealed record NavigationRenderModel
 			}
 		}
 		var rootIndex = CreateRootIndex(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild);
-		var nestOverview = rootIndex is not null
-			&& IsIslandSidebar(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild);
-		var nodes = CreateNavigationItems(tree, isTopLevel: !nestOverview).ToList();
-		if (nestOverview)
+		string? treeHeading = null;
+		List<NavigationRenderNode> nodes;
+		if (TryUnwrapSingleChildSection(tree, out var onlyChild, out var sectionTitle))
 		{
-			nodes = NestIslandOverview(rootIndex!, tree.Id, nodes);
+			treeHeading = sectionTitle;
+			nodes = CreateNavigationItems(onlyChild, isTopLevel: true).ToList();
+			if (!tree.Index.Hidden)
+				nodes = FlattenIslandOverview(SectionOverviewLeaf(tree.Url), nodes);
 			rootIndex = null;
 		}
+		else
+		{
+			nodes = CreateNavigationItems(tree, isTopLevel: true).ToList();
+			if (rootIndex is not null && IsIslandSidebar(tree, isPrimaryNavEnabled, isGlobalAssemblyBuild))
+			{
+				treeHeading = rootIndex.NavigationTitle;
+				nodes = FlattenIslandOverview(rootIndex, nodes);
+				rootIndex = null;
+			}
+		}
 		var backLinks = CreateBackLinks(tree, isUsingNavigationDropdown, omitSiteRoot: isGlobalAssemblyBuild);
+		var treeHeadingIcon = HeadingIconSlug(treeHeading);
 		return new NavigationRenderModel
 		{
 			IsUsingNavigationDropdown = isUsingNavigationDropdown,
@@ -104,47 +126,30 @@ public sealed record NavigationRenderModel
 				: [],
 			BackLinks = backLinks,
 			RootIndex = rootIndex,
+			TreeHeading = treeHeading,
+			TreeHeadingIcon = treeHeadingIcon,
 			Tree = nodes,
-			ContentHash = HashContent(rootIndex, nodes)
+			ContentHash = HashContent(rootIndex, treeHeading, treeHeadingIcon, nodes)
 		};
 	}
 
 	/// <summary>
-	/// Builds the root-first back-link trail out of a nested island.
-	/// When the dropdown is enabled, the navigation root is omitted (the dropdown replaces it),
-	/// but top-level ancestor entries are kept — clicking the active dropdown item is hard so
-	/// an explicit back-link is more usable.
-	/// Assembler builds also omit the site root: the secondary-nav "Docs" tab links home.
-	/// Returns empty when the render root has no island ancestry (e.g. a top-level section whose
-	/// only ancestor is the nav root, which the dropdown already replaces).
+	/// One back-link: the island's immediate parent. The site root is omitted when
+	/// the dropdown or assembler Docs tab already links there.
 	/// </summary>
 	private static IReadOnlyList<IslandBackLink> CreateBackLinks(
 		INavigationItem renderRoot,
 		bool isUsingNavigationDropdown,
 		bool omitSiteRoot)
 	{
-		var immediateParent = renderRoot.Parent;
-		if (immediateParent is null)
+		var parent = renderRoot.Parent;
+		if (parent is null)
+			return [];
+		if ((isUsingNavigationDropdown || omitSiteRoot) && parent.Parent is null)
 			return [];
 
-		var links = new List<IslandBackLink>();
-		var seen = new HashSet<string>(StringComparer.Ordinal);
-		for (var ancestor = immediateParent; ancestor is not null; ancestor = ancestor.Parent)
-		{
-			// Drop the nav root when the dropdown or assembler Docs tab already represents it
-			if ((isUsingNavigationDropdown || omitSiteRoot) && ancestor.Parent is null)
-				continue;
-
-			var include = ReferenceEquals(ancestor, immediateParent)
-				|| ancestor.Parent is null              // top navigation root (when dropdown is off)
-				|| ancestor.RendersAsIsland();
-			if (!include || !seen.Add(ancestor.Url))
-				continue;
-			var (_, title) = ParseNavTitle(ancestor.NavigationTitle);
-			links.Add(new IslandBackLink(title, ancestor.Url));
-		}
-		links.Reverse(); // collected nearest-first, rendered root-first
-		return links;
+		var (_, title) = ParseNavTitle(parent.NavigationTitle);
+		return [new IslandBackLink(title, parent.Url)];
 	}
 
 	private static NavigationRenderNode? CreateRootIndex(
@@ -199,8 +204,8 @@ public sealed record NavigationRenderModel
 	}
 
 	/// <summary>
-	/// Nested island sidebars (assembler) and isolated island roots: the overview is a first-level
-	/// folder, not a detached index row above a separator.
+	/// Nested island sidebars (assembler) and isolated island roots: heading + Overview leaf
+	/// in the same list as the children, not a wrapping folder.
 	/// </summary>
 	private static bool IsIslandSidebar(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
@@ -212,24 +217,65 @@ public sealed record NavigationRenderModel
 		return !isPrimaryNavEnabled && tree.RendersAsIsland();
 	}
 
-	private static List<NavigationRenderNode> NestIslandOverview(
+	/// <summary>
+	/// Reference / Troubleshoot: a section whose only child is a toc wrapper. Unwrap it so
+	/// the sidebar is "Reference" (heading) + Overview + the toc's children, not a folder.
+	/// </summary>
+	private static bool TryUnwrapSingleChildSection(
+		INodeNavigationItem<INavigationModel, INavigationItem> tree,
+		out INodeNavigationItem<INavigationModel, INavigationItem> child,
+		out string heading)
+	{
+		child = null!;
+		heading = "";
+		if (tree is not SectionNavigation || tree.Parent?.Parent is not null)
+			return false;
+
+		INodeNavigationItem<INavigationModel, INavigationItem>? only = null;
+		foreach (var item in tree.NavigationItems)
+		{
+			if (item.Hidden)
+				continue;
+			if (only is not null)
+				return false;
+			if (item is not INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
+				return false;
+			only = node;
+		}
+
+		if (only is null)
+			return false;
+
+		child = only;
+		(_, heading) = ParseNavTitle(tree.NavigationTitle);
+		return true;
+	}
+
+	private static NavigationRenderNode SectionOverviewLeaf(string url) =>
+		new()
+		{
+			Kind = NavigationRenderNodeKind.Leaf,
+			IsTopLevel = true,
+			NavigationTitle = "Overview",
+			Url = url
+		};
+
+	private static List<NavigationRenderNode> FlattenIslandOverview(
 		NavigationRenderNode overview,
-		string folderId,
 		List<NavigationRenderNode> children)
 	{
+		var overviewLeaf = overview with
+		{
+			Kind = NavigationRenderNodeKind.Leaf,
+			NavigationTitle = "Overview",
+			Id = null,
+			ShowToggle = false,
+			NavigationItems = []
+		};
 		if (children.Count == 0)
-			return [overview];
+			return [overviewLeaf];
 
-		return
-		[
-			overview with
-			{
-				Kind = NavigationRenderNodeKind.Node,
-				Id = folderId,
-				ShowToggle = true,
-				NavigationItems = children
-			}
-		];
+		return [overviewLeaf, .. children];
 	}
 
 	private static IEnumerable<NavigationRenderNode> CreateNavigationItems(
@@ -302,13 +348,32 @@ public sealed record NavigationRenderModel
 		return (null, raw);
 	}
 
-	private static string HashContent(NavigationRenderNode? rootIndex, IReadOnlyList<NavigationRenderNode> tree)
+	/// <summary>Top-nav / product glyph that matches a flattened heading, if we ship one.</summary>
+	internal static string? HeadingIconSlug(string? heading) => heading switch
+	{
+		"Guides" => "guides",
+		"Reference" => "reference",
+		"Troubleshoot" => "troubleshoot",
+		"Products" => "products",
+		"APIs" => "apis",
+		"Release notes" => "release-notes",
+		"Elasticsearch" => "elasticsearch",
+		_ => null
+	};
+
+	private static string HashContent(
+		NavigationRenderNode? rootIndex,
+		string? treeHeading,
+		string? treeHeadingIcon,
+		IReadOnlyList<NavigationRenderNode> tree)
 	{
 		using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-		Append(hash, "navigation-tree-v2");
+		Append(hash, "navigation-tree-v4");
 		AppendInt(hash, rootIndex is null ? 0 : 1);
 		if (rootIndex is not null)
 			AppendNode(hash, rootIndex);
+		Append(hash, treeHeading ?? string.Empty);
+		Append(hash, treeHeadingIcon ?? string.Empty);
 		AppendNodes(hash, tree);
 		return Convert.ToHexStringLower(hash.GetHashAndReset().AsSpan(0, 8));
 	}
