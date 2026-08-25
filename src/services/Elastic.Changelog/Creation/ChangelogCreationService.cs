@@ -153,6 +153,7 @@ IEnvironmentVariables? env = null
 	{
 		try
 		{
+			var cliDescription = input.Description;
 			input = EnrichFromCI(input);
 
 			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
@@ -163,6 +164,15 @@ IEnvironmentVariables? env = null
 			}
 
 			input = ApplyConfigDefaults(input, config);
+
+			// Mirror CreateChangelog: discard CI-injected description when extraction is disabled
+			if (input.ExtractionDisabled
+				&& string.IsNullOrWhiteSpace(cliDescription)
+				&& !string.IsNullOrWhiteSpace(input.Description))
+			{
+				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
+				input = input with { Description = null };
+			}
 
 			// Validate PR citation format (same rule as `add`: numeric refs require --owner/--repo)
 			if (input.Prs is { Length: > 1 })
