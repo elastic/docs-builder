@@ -9,6 +9,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
@@ -228,6 +229,7 @@ public class OpenApiGenerator(
 		IReadOnlyList<ApiVersionSwitcherItem> versionSwitcherItems,
 		Cancel ctx)
 	{
+		_ = DiscoverSupplemental(openApiDocument, apiConfig);
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
 
@@ -243,6 +245,27 @@ public class OpenApiGenerator(
 		};
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>
+	/// Associates <c>op-*.md</c> / <c>tag-*.md</c> files under <c>api/&lt;key&gt;/</c> with this
+	/// document. Merge into page models is a later change; this call logs and exposes the result.
+	/// </summary>
+	internal ApiSupplementalDiscoveryResult DiscoverSupplemental(
+		OpenApiDocument openApiDocument,
+		ResolvedApiConfiguration? apiConfig)
+	{
+		var result = ApiSupplementalDiscovery.Discover(apiConfig?.ApiContentDirectory, openApiDocument);
+		if (result.Operations.Count == 0 && result.Tags.Count == 0 && result.Unmatched.Count == 0)
+			return result;
+
+		_logger.LogInformation(
+			"API '{ApiKey}' supplemental files: {Operations} operations, {Tags} tags, {Unmatched} unmatched",
+			apiConfig?.ProductKey ?? "unknown",
+			result.Operations.Count,
+			result.Tags.Count,
+			result.Unmatched.Count);
+		return result;
 	}
 
 	private async Task RenderNavigationItems(

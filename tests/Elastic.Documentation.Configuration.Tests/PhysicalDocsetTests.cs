@@ -48,7 +48,12 @@ public class PhysicalDocsetTests
 		docSet.Subs.Should().NotBeEmpty();
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
-		docSet.Api.Should().BeNullOrEmpty("API declarations live in docs-content for assembler builds");
+		docSet.Api.Should().ContainKey("docs-builder-elasticsearch");
+		var apiEntry = docSet.Api["docs-builder-elasticsearch"].SingleEntry;
+		apiEntry.Should().NotBeNull();
+		apiEntry.Spec.Should().Be("elasticsearch.json");
+		apiEntry.Product.Should().Be("elasticsearch");
+		apiEntry.Repository.Should().Be("elastic/elasticsearch-specification");
 
 		docSet.TableOfContents.Should().NotBeEmpty();
 
