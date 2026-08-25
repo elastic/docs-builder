@@ -293,9 +293,7 @@ public partial class ChangelogBundlingService(
 			// On the CDN path entries are probed by key (one per PR), so there is nothing to enumerate without a PR list.
 			if (useCdn && (input.All || input.InputProducts is { Count: > 0 } || input.Issues is { Length: > 0 }))
 			{
-				var flag = input.All ? "--all"
-				: input.Issues is { Length: > 0 } ? "--issues"
-				: "--input-products";
+				var flag = input.All ? "--all" : input.Issues is { Length: > 0 } ? "--issues" : "--input-products";
 				collector.EmitError(string.Empty,
 					$"{flag} is not supported when sourcing changelog entries from the CDN, because entries are fetched by key (one per PR) and there is no pool enumeration. " +
 					"Pass --force-local or --directory to bundle from a local checkout instead.");
