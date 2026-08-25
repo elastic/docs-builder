@@ -88,10 +88,10 @@ public partial class ChangelogBackfillService(
 
 		var allResults = new List<BackfillProductResult>();
 		var failedProducts = 0;
-		foreach (var (scope, markdown) in scopes.Zip(fetchedMarkdowns))
+		foreach (var (scope, (markdown, fetchError)) in scopes.Zip(fetchedMarkdowns))
 		{
 			ctx.ThrowIfCancellationRequested();
-			var result = ProcessProduct(collector, args, scope, markdown);
+			var result = ProcessProduct(collector, args, scope, markdown, fetchError);
 			if (result.Outcome == OutcomeFailed)
 				failedProducts++;
 			allResults.Add(result);
@@ -115,7 +115,7 @@ public partial class ChangelogBackfillService(
 		return failedProducts == 0;
 	}
 
-	private async Task<string?[]> FetchAllMarkdown(
+	private async Task<(string? Markdown, bool IsError)[]> FetchAllMarkdown(
 		IDiagnosticsCollector collector,
 		BackfillArguments args,
 		IReadOnlyList<BackfillScope> scopes,
@@ -157,7 +157,7 @@ public partial class ChangelogBackfillService(
 		return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
 	}
 
-	private async Task<string?> FetchWithRetry(IDiagnosticsCollector collector, HttpClient client, string url, Cancel ctx)
+	private async Task<(string? Markdown, bool IsError)> FetchWithRetry(IDiagnosticsCollector collector, HttpClient client, string url, Cancel ctx)
 	{
 		const int maxAttempts = 3;
 		var retryable = new HashSet<int> { 408, 429, 500, 502, 503, 504 };
@@ -180,7 +180,7 @@ public partial class ChangelogBackfillService(
 				if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
 				{
 					collector.EmitHint(url, $"Release-notes page returned 404 — product will be skipped (URL may have moved).");
-					return null;
+					return (null, false);
 				}
 
 				if (!response.IsSuccessStatusCode)
@@ -188,10 +188,10 @@ public partial class ChangelogBackfillService(
 					if (retryable.Contains((int)response.StatusCode) && attempt < maxAttempts - 1)
 						continue;
 					collector.EmitError(url, $"Fetching release notes failed with HTTP {(int)response.StatusCode} ({response.StatusCode}).");
-					return null;
+					return (null, true);
 				}
 
-				return await response.Content.ReadAsStringAsync(ctx);
+				return (await response.Content.ReadAsStringAsync(ctx), false);
 			}
 			catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested && attempt < maxAttempts - 1)
 			{
@@ -200,19 +200,20 @@ public partial class ChangelogBackfillService(
 			catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested)
 			{
 				collector.EmitError(url, $"Fetching release notes failed after {maxAttempts} attempts: {ex.Message}", ex);
-				return null;
+				return (null, true);
 			}
 		}
 
 		collector.EmitError(url, $"Fetching release notes failed after {maxAttempts} attempts.");
-		return null;
+		return (null, true);
 	}
 
 	private BackfillProductResult ProcessProduct(
 		IDiagnosticsCollector collector,
 		BackfillArguments args,
 		BackfillScope scope,
-		string? markdown)
+		string? markdown,
+		bool fetchError)
 	{
 		var url = scope.IsRepoSource
 			? $"{args.RawBaseUrl}/{scope.Owner}/{scope.Repo}/{scope.Ref}/{scope.RepoPath}"
@@ -221,8 +222,9 @@ public partial class ChangelogBackfillService(
 		if (markdown is null)
 		{
 			// FetchWithRetry already emitted the appropriate error or hint.
-			var outcome = collector.Errors > 0 ? OutcomeFailed : OutcomeUnavailable;
-			return new BackfillProductResult(scope.ProductId, url, outcome, 0, 0, 0, 0, 0, "fetch failed");
+			// Use fetchError (from this product's fetch only) — not collector.Errors which is global.
+			var outcome = fetchError ? OutcomeFailed : OutcomeUnavailable;
+			return new BackfillProductResult(scope.ProductId, url, outcome, 0, 0, 0, 0, 0, fetchError ? "fetch failed" : "404 unavailable");
 		}
 
 		var releases = ReleaseNotesPageParser.Parse(collector, markdown, url, scope);
@@ -246,17 +248,20 @@ public partial class ChangelogBackfillService(
 			return true;
 		}).ToList();
 
-		if (args.DryRun)
-			return new BackfillProductResult(scope.ProductId, url, OutcomeOk, inScope.Count, 0, 0, 0, 0, "dry-run; nothing written");
+		var totalEntries = inScope.Sum(r => r.Bundle.Entries?.Count ?? 0);
 
-		var (filesWritten, noPr, dupPr) = WriteBundles(collector, args, scope, inScope);
-		return new BackfillProductResult(scope.ProductId, url, OutcomeOk, inScope.Count, inScope.Count, filesWritten, noPr, dupPr, "");
+		if (args.DryRun)
+			return new BackfillProductResult(scope.ProductId, url, OutcomeOk, inScope.Count, totalEntries, 0, 0, 0, "dry-run; nothing written");
+
+		var (succeeded, filesWritten, noPr, dupPr) = WriteBundles(collector, args, scope, inScope);
+		var writeOutcome = succeeded ? OutcomeOk : OutcomeFailed;
+		return new BackfillProductResult(scope.ProductId, url, writeOutcome, inScope.Count, totalEntries, filesWritten, noPr, dupPr, succeeded ? "" : "write failed");
 	}
 
 	[GeneratedRegex(@"/pull/(?<number>\d+)$")]
 	private static partial Regex PrNumberFromUrlRegex();
 
-	private (int FilesWritten, int NoPrEntries, int DuplicatePrRefs) WriteBundles(
+	private (bool Succeeded, int FilesWritten, int NoPrEntries, int DuplicatePrRefs) WriteBundles(
 		IDiagnosticsCollector collector,
 		BackfillArguments args,
 		BackfillScope scope,
@@ -345,6 +350,7 @@ public partial class ChangelogBackfillService(
 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
 		{
 			collector.EmitError(changelogDir, $"Could not write backfill output: {ex.Message}", ex);
+			return (false, filesWritten, noPrEntries, dupPrRefs);
 		}
 
 		if (noPrEntries > 0)
@@ -354,7 +360,7 @@ public partial class ChangelogBackfillService(
 				$"{scope.ProductId}: {noPrEntries}/{total} entries had no PR reference; written as note-*.yaml.");
 		}
 
-		return (filesWritten, noPrEntries, dupPrRefs);
+		return (true, filesWritten, noPrEntries, dupPrRefs);
 	}
 
 	private static string? AllocateNoteFileName(
