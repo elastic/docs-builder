@@ -178,6 +178,20 @@ public class ReleaseNotesSerializationTests
 	}
 
 	[Fact]
+	public void SerializeEntry_MarkerEntry_YamlContainsOnlyLinkField()
+	{
+		// Marker entries must serialize as link: only — no title, type, products, etc.
+		var entry = new ChangelogEntry { Link = "12345" };
+
+		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
+
+		yaml.Should().Contain("link:");
+		yaml.Should().NotContain("title:");
+		yaml.Should().NotContain("type:");
+		yaml.Should().NotContain("products:");
+	}
+
+	[Fact]
 	public void IsMarker_NullLink_ReturnsFalse()
 	{
 		var entry = new ChangelogEntry
