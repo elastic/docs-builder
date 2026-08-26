@@ -57,6 +57,12 @@ public record ChangelogEntry
 	public bool IsMarker => Link is not null;
 
 	/// <summary>
+	/// When true, this entry is a scrubber-written source pointer in the public bucket that traces
+	/// to a canonical key. Distinguishes source pointers from ordinary link-only PR markers.
+	/// </summary>
+	public bool SourceRedirect { get; init; }
+
+	/// <summary>
 	/// Converts this ChangelogEntry to a BundledEntry for embedding in bundles.
 	/// File property is set to null; set it separately using a 'with' expression.
 	/// </summary>

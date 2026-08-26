@@ -19,7 +19,8 @@ public class ChangelogContentScrubberTests
 	[Fact]
 	public async Task ScrubAsync_MarkerEntry_LinkFieldPreserved()
 	{
-		// A marker is link: only — the scrubber must pass it through unchanged.
+		// A marker is link: only — the scrubber must pass it through (re-serialized to strip
+		// any private-authored fields, but link: itself is preserved).
 		var yaml = "link: \"12345\"\n";
 		var scrubber = Scrubber();
 
@@ -30,6 +31,23 @@ public class ChangelogContentScrubberTests
 		entry.IsMarker.Should().BeTrue();
 		result.CanonicalKey.Should().BeNull("markers are already canonical");
 		result.Markers.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task ScrubAsync_MarkerEntryWithSourceRedirect_StripsSourceRedirectFromOutput()
+	{
+		// source-redirect: true is processor-owned metadata. If a private author adds it to a
+		// marker file, the scrubber must strip it so forged markers cannot impersonate
+		// scrubber-written source pointers and trigger spurious canonical deletion on delete.
+		var yaml = "link: \"12345\"\nsource-redirect: true\n";
+		var scrubber = Scrubber();
+
+		var result = await scrubber.ScrubAsync("changelog/elastic/elasticsearch/main/12346.yaml", yaml, CancellationToken.None);
+
+		var entry = ReleaseNotesSerialization.DeserializeEntry(result.Content);
+		entry.Link.Should().Be("12345", "link: must survive the scrub round-trip");
+		entry.SourceRedirect.Should().BeFalse("source-redirect must be stripped from private-authored markers");
+		result.IsMarker.Should().BeTrue();
 	}
 
 	[Fact]

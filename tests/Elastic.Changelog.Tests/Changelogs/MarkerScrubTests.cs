@@ -4,13 +4,16 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Scrubbing;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
 /// <summary>
 /// Verifies that <see cref="ChangelogContentScrubber"/> handles <c>link:</c> markers correctly:
-/// a bare marker passes through unchanged; a marker with content fields throws.
+/// a bare marker is re-serialized with the link value preserved; a marker with content fields throws.
+/// Re-serialization (rather than pass-through) strips private-authored fields such as
+/// <c>source-redirect: true</c> so forged markers cannot impersonate scrubber-written source pointers.
 /// </summary>
 public class MarkerScrubTests
 {
@@ -20,25 +23,30 @@ public class MarkerScrubTests
 	private Cancel Ctx => TestContext.Current.CancellationToken;
 
 	[Fact]
-	public async Task Marker_OnlyLink_PassesThroughUnchanged()
+	public async Task Marker_OnlyLink_PreservesLinkValue()
 	{
 		const string key = "changelog/elastic/elasticsearch/main/200.yaml";
 		const string content = "link: 100\n";
 
 		var result = await _scrubber.ScrubAsync(key, content, Ctx);
 
-		result.Content.Should().Be(content);
+		var entry = ReleaseNotesSerialization.DeserializeEntry(result.Content);
+		entry.Link.Should().Be("100", "link: value must survive the scrub");
+		entry.SourceRedirect.Should().BeFalse("source-redirect must not appear in scrubbed markers");
+		result.IsMarker.Should().BeTrue();
 	}
 
 	[Fact]
-	public async Task Marker_OnlyLink_NoTrailingNewline_PassesThroughUnchanged()
+	public async Task Marker_OnlyLink_NoTrailingNewline_PreservesLinkValue()
 	{
 		const string key = "changelog/elastic/elasticsearch/main/200.yaml";
 		const string content = "link: 100";
 
 		var result = await _scrubber.ScrubAsync(key, content, Ctx);
 
-		result.Content.Should().Be(content);
+		var entry = ReleaseNotesSerialization.DeserializeEntry(result.Content);
+		entry.Link.Should().Be("100", "link: value must survive the scrub even without a trailing newline");
+		result.IsMarker.Should().BeTrue();
 	}
 
 	[Fact]
