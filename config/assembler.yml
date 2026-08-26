@@ -84,6 +84,8 @@ shared_configuration:
 ###
 narrative:
   checkout_strategy: full
+  # docs-content is large; give each fetch attempt extra headroom before retrying.
+  clone_timeout: 15m
 
 ###
 # 'references' defines a map of `elastic/<repository_name> * <repository_config>
@@ -94,6 +96,10 @@ narrative:
 #             # 'partial' --cone sparse-checkout of only the 'docs' folder with --filter=blob:none
 #   current: <git_ref>
 #   next: <git_ref>
+#   clone_timeout: <duration>
+#             # Per-attempt timeout for network git operations (fetch, pull) in CI.
+#             # Accepts a positive integer followed by 's' (seconds) or 'm' (minutes), e.g. '30s' or '15m'.
+#             # When omitted the global default of 10m applies in CI (unbounded locally).
 ###
 references:
 
