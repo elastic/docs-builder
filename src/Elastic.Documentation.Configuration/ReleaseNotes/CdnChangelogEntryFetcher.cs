@@ -304,7 +304,9 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		var poolSegments = ChangelogKeys.PoolSegments(org, repo, branch);
 		var uri = CombineSegments(baseUri, [.. poolSegments, fileName]);
 		var poolLabel = $"{org}/{repo}/{branch}";
-		var (fetched, content, _) = await TryProbeEntryAsync(uri, fileName, poolLabel, ctx).ConfigureAwait(false);
+		var (fetched, content, lastError) = await TryProbeEntryAsync(uri, fileName, poolLabel, ctx).ConfigureAwait(false);
+		if (lastError != null)
+			throw new InvalidOperationException($"Transient failure probing changelog entry '{fileName}' for {poolLabel}: {lastError}");
 		return fetched ? new CdnChangelogEntry(fileName, content) : null;
 	}
 
