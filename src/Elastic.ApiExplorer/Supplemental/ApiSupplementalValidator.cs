@@ -17,17 +17,13 @@ internal static class ApiSupplementalValidator
 		OpenApiDocument document,
 		IDiagnosticsCollector collector,
 		string moniker,
-		bool emitUnmatchedBaseFiles = false)
+		bool emitUnmatchedBaseFiles)
 	{
-		if (moniker == "main" || emitUnmatchedBaseFiles)
+		if (emitUnmatchedBaseFiles)
 			EmitUnmatched(discovery.Unmatched, collector, "the latest spec");
 
-		var isNumeric = int.TryParse(moniker, out var major);
-		if (moniker != "main" && !isNumeric)
-			return;
-
 		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(document);
-		if (isNumeric)
+		if (int.TryParse(moniker, out var major))
 		{
 			var tagSlugs = new HashSet<string>(tagNames.Select(ApiUrlBuilder.TagSlug), StringComparer.Ordinal);
 			ValidateVersionSuffixed(discovery.VersionSuffixed, major, operationsById, tagSlugs, document, collector);

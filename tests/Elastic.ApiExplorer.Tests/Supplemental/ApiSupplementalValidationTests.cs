@@ -132,6 +132,20 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	}
 
 	[Fact]
+	public void Validate_UnknownParameterOnNonNumericLatest_EmitsError()
+	{
+		var collector = Validate(FolderWith(("op-search.md", """
+			## Parameters
+
+			: `nope`
+			  Not a search parameter.
+			""")), fixture.Document, "next");
+
+		collector.ErrorMessages.Should().ContainSingle(m =>
+			m.Contains("Parameter 'nope'") && m.Contains("operation 'search'"));
+	}
+
+	[Fact]
 	public void Validate_UnknownParameterOnOlderVersionMatchedBaseFile_EmitsError()
 	{
 		var collector = Validate(FolderWith(("op-search.md", """
@@ -189,12 +203,16 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 		IDirectoryInfo folder,
 		OpenApiDocument document,
 		string moniker,
-		bool emitUnmatchedBaseFiles = false)
+		bool? emitUnmatchedBaseFiles = null)
 	{
 		var discovery = ApiSupplementalDiscovery.Discover(folder, document);
 		var collector = new CapturingDiagnosticsCollector();
 		ApiSupplementalValidator.Validate(
-			discovery, document, collector, moniker, emitUnmatchedBaseFiles: emitUnmatchedBaseFiles);
+			discovery,
+			document,
+			collector,
+			moniker,
+			emitUnmatchedBaseFiles: emitUnmatchedBaseFiles ?? moniker == "main");
 		return collector;
 	}
 

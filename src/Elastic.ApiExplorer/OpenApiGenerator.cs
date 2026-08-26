@@ -113,7 +113,8 @@ public class OpenApiGenerator(
 					apiConfig,
 					switcherItems,
 					versioned.Version.Moniker,
-					emitUnmatchedBaseFiles: !hasMain && versioned.Version.Moniker == monikers[0],
+					emitUnmatchedBaseFiles: versioned.Version.Moniker == "main"
+						|| (!hasMain && versioned.Version.Moniker == monikers[0]),
 					ctx)
 				.ConfigureAwait(false);
 		}
