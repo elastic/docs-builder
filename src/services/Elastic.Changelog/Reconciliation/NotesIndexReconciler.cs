@@ -222,11 +222,17 @@ public sealed class NotesIndexReconciler(
 			if (dto.Products is not { Count: > 0 })
 				return [];
 
-			return dto.Products
-				.Select(p => p.Target)
-				.Where(t => !string.IsNullOrWhiteSpace(t))
-				.Distinct(StringComparer.Ordinal)
-				.ToList()!;
+			var valid = new List<string>();
+			foreach (var target in dto.Products.Select(p => p.Target).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.Ordinal))
+			{
+				if (target!.Contains('/', StringComparison.Ordinal))
+				{
+					_logger.LogWarning("Note {Key} has target '{Target}' containing '/'; skipping — targets must be single path segments", key, target);
+					continue;
+				}
+				valid.Add(target);
+			}
+			return valid;
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 		{
