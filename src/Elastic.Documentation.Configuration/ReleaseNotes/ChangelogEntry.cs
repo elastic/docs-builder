@@ -27,6 +27,9 @@ public record ChangelogEntryDto
 	[YamlMember(Alias = "feature-id", ApplyNamingConventions = false)]
 	public string? FeatureId { get; set; }
 	public bool? Highlight { get; set; }
+
+	/// <summary>Bare PR number referencing the canonical entry. Marks this as a pipeline-written marker; must be the only field present.</summary>
+	public string? Link { get; set; }
 }
 
 /// <summary>

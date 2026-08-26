@@ -12,12 +12,12 @@ using Actions.Core.Services;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
 using Elastic.Changelog.AllowlistIdentity;
+using Elastic.Changelog.Backfill;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
-using Elastic.Changelog.Migration;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
@@ -1914,28 +1914,29 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>TEMPORARY: One-off migration of published release notes into the S3 bundle store; removed after elastic/docs-eng-team#683.</summary>
+	/// <summary>Backfill changelog entries, notes, and bundles from published release-notes pages.</summary>
 	/// <remarks>
-	/// <para>Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the
-	/// checked-in scope table), maps it to the existing bundle YAML shape, and uploads to
-	/// <c>bundle/{product}/</c> with create-only semantics (<c>If-None-Match: *</c>) — existing keys are
-	/// skipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and
-	/// object ETag) suitable for pasting into the tracking issue.</para>
-	/// <para>Migrates every product in the checked-in scope table by default. The table lives in code
-	/// (<c>MigrateFromWebScope.All</c>: product id → source repo, release-notes path, pinned ref, version
-	/// cutoff) and grows per rollout wave; use <c>--products</c> to narrow a run for tests and pilots.
-	/// Tracked by elastic/docs-eng-team#736.</para>
+	/// <para>Fetches every product's release-notes Markdown — either from the published elastic.co site page
+	/// or from a pinned raw.githubusercontent.com ref for products whose published page is an empty
+	/// &lt;changelog&gt; stub — parses it into typed bundle YAML, and writes all output to
+	/// <c>--output</c> (default: <c>.artifacts/release-notes-backfill/</c>). Nothing is written to S3;
+	/// use <c>changelog upload --directory &lt;product&gt;/changelog/bundles</c> to publish.</para>
+	/// <para>The scope table (<c>BackfillScope.All</c>) covers 38 products (37 site-source + 1 repo-source); use <c>--products</c> to narrow
+	/// a run. Entries without a PR reference are emitted as <c>note-*.yaml</c> files. Sourced from a
+	/// prototype (<c>scripts/scrape-release-notes.py</c>, 2026-08-25).</para>
 	/// </remarks>
-	/// <param name="products">Optional: restrict the run to specific product ids (comma-separated or repeated), e.g. "edot-java". Defaults to every product in the checked-in scope table.</param>
-	/// <param name="s3BucketName">Destination S3 bucket. Required unless --dry-run; when provided with --dry-run, existing keys are still inspected so the report distinguishes would-create from skipped.</param>
-	/// <param name="versions">Optional: restrict the run to specific versions (comma-separated or repeated). Versions above a product's cutoff are always skipped.</param>
-	/// <param name="dryRun">Do everything except the S3 writes and report what would be created.</param>
+	/// <param name="products">Restrict the run to specific product ids (comma-separated or repeated). Defaults to every product in the scope table.</param>
+	/// <param name="versions">Restrict the run to specific versions (comma-separated or repeated).</param>
+	/// <param name="output">Output directory. Defaults to <c>.artifacts/release-notes-backfill/</c> under the checkout root.</param>
+	/// <param name="concurrency">Maximum number of pages fetched concurrently (1–16, default 4).</param>
+	/// <param name="dryRun">Fetch and parse every page but write nothing to disk.</param>
 	/// <param name="ct">Cancellation token</param>
 	[NoOptionsInjection]
-	public async Task<int> MigrateFromWeb(
+	public async Task<int> Backfill(
 		string[]? products = null,
-		string s3BucketName = "",
 		string[]? versions = null,
+		string? output = null,
+		int concurrency = 4,
 		[DryRun] bool dryRun = false,
 		CancellationToken ct = default
 	)
@@ -1943,26 +1944,28 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		if (!dryRun && string.IsNullOrWhiteSpace(s3BucketName))
-		{
-			collector.EmitError(string.Empty, "--s3-bucket-name is required unless --dry-run is specified.");
-			_ = collector.StartAsync(ctx);
-			await collector.WaitForDrain();
-			await collector.StopAsync(ctx);
-			return 1;
-		}
+		var checkout = Paths.WorkingDirectoryRoot;
+		var resolved = string.IsNullOrWhiteSpace(output)
+			? Path.Join(checkout.FullName, ".artifacts", "release-notes-backfill")
+			: Path.GetFullPath(output);
 
-		var service = new WebMigrationService(logFactory, CheckoutsFileSystem.FromWorkingDirectory().Write);
-		var args = new MigrateFromWebArguments
+		var physical = new System.IO.Abstractions.FileSystem();
+		var fs = new CheckoutsFileSystem(
+			physical.DirectoryInfo.New(checkout.FullName),
+			physical.DirectoryInfo.New(resolved)).Write;
+
+		var service = new ChangelogBackfillService(logFactory, fs);
+		var args = new BackfillArguments
 		{
 			Products = ExpandCommaSeparated(products),
-			S3BucketName = s3BucketName,
-			DryRun = dryRun,
-			Versions = ExpandCommaSeparated(versions)
+			Versions = ExpandCommaSeparated(versions),
+			Output = resolved,
+			Concurrency = concurrency,
+			DryRun = dryRun
 		};
 
 		serviceInvoker.AddCommand(service, args,
-			static async (s, c, state, ct) => await s.MigrateFromWeb(c, state, ct)
+			static async (s, c, state, ct) => await s.Backfill(c, state, ct)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
