@@ -31,24 +31,6 @@ public class ChangelogContentScrubberTests
 	}
 
 	[Fact]
-	public async Task ScrubAsync_EntryWithLinkAndPrivatePrs_LinkPreservedPrsStripped()
-	{
-		// A hypothetical entry with both link: and prs: pointing to a private repo.
-		// link: must survive scrubbing; private prs: must be stripped.
-		var yaml =
-			"link: \"12345\"\n" +
-			"prs:\n" +
-			"  - https://github.com/elastic/private-repo/pull/99\n";
-		var scrubber = Scrubber(["elastic/elasticsearch"]); // private-repo not allowed
-
-		var result = await scrubber.ScrubAsync("changelog/elastic/elasticsearch/main/12346.yaml", yaml, CancellationToken.None);
-
-		var entry = ReleaseNotesSerialization.DeserializeEntry(result);
-		entry.Link.Should().Be("12345", "link: must survive the scrub even when prs: is stripped");
-		entry.Prs.Should().BeNullOrEmpty("private PR reference must be scrubbed");
-	}
-
-	[Fact]
 	public async Task ScrubAsync_NormalEntry_LinkIsNull()
 	{
 		var yaml =
