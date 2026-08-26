@@ -83,19 +83,26 @@ public sealed class NotesIndexReconciler(
 			return;
 		}
 
-		// Write one index per target.
-		await Parallel.ForEachAsync(
-			byTarget,
-			new ParallelOptions { MaxDegreeOfParallelism = MaxParallelReads, CancellationToken = ctx },
-			async (kvp, ct) =>
-			{
-				var (target, paths) = kvp;
-				var indexKey = ChangelogKeys.NotesIndexKey(org, repo, target);
-				await WriteIndexAsync(indexKey, [.. paths.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)], ct);
-			});
-
-		// Remove indexes whose targets are no longer present.
-		await DeleteStaleIndexes(existingIndexKeys, byTarget.Keys.ToHashSet(StringComparer.Ordinal), org, repo, ctx);
+		// Write one index per target. DeleteStaleIndexes runs even if some writes fail — stale
+		// deletion is safe because we only remove targets absent from byTarget.Keys, which is
+		// independent of whether the new writes succeeded.
+		try
+		{
+			await Parallel.ForEachAsync(
+				byTarget,
+				new ParallelOptions { MaxDegreeOfParallelism = MaxParallelReads, CancellationToken = ctx },
+				async (kvp, ct) =>
+				{
+					var (target, paths) = kvp;
+					var indexKey = ChangelogKeys.NotesIndexKey(org, repo, target);
+					await WriteIndexAsync(indexKey, [.. paths.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)], ct);
+				});
+		}
+		finally
+		{
+			// Remove indexes whose targets are no longer present.
+			await DeleteStaleIndexes(existingIndexKeys, byTarget.Keys.ToHashSet(StringComparer.Ordinal), org, repo, ctx);
+		}
 	}
 
 	private async Task<IReadOnlyList<string>> ListExistingNotesIndexes(ChangelogScope notesScope, Cancel ctx)
