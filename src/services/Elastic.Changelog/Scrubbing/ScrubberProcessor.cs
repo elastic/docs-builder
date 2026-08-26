@@ -380,9 +380,11 @@ public sealed class ScrubberProcessor(
 				var publicContent = await TryGetPublicObject(key, ctx);
 				if (publicContent is not null && !IsNumericYamlKey(key))
 				{
-					// Non-canonical source key — check for a source pointer.
+					// Non-canonical source key — check for a scrubber-written source pointer.
+					// Only entries with SourceRedirect=true are source pointers; a plain link: field
+					// alone is an ordinary PR marker that must not trigger canonical deletion.
 					var entry = TryDeserializeEntry(publicContent);
-					if (entry?.IsMarker == true)
+					if (entry?.SourceRedirect == true)
 					{
 						var lastSlash = key.LastIndexOf('/');
 						var keyPrefix = lastSlash >= 0 ? key[..(lastSlash + 1)] : string.Empty;
@@ -484,6 +486,10 @@ public sealed class ScrubberProcessor(
 	{
 		var lastSlash = key.LastIndexOf('/');
 		var fileName = lastSlash >= 0 ? key[(lastSlash + 1)..] : key;
+		// Only .yaml (not .yml) files are written as canonical PR keys by the pipeline.
+		// A .yml source file is always non-canonical; treat it as needing pointer tracing.
+		if (!fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
+			return false;
 		var stem = Path.GetFileNameWithoutExtension(fileName);
 		return int.TryParse(stem, NumberStyles.None, CultureInfo.InvariantCulture, out _);
 	}
@@ -495,7 +501,7 @@ public sealed class ScrubberProcessor(
 		var stem = Path.GetFileNameWithoutExtension(canonicalFileName);
 		if (!int.TryParse(stem, NumberStyles.None, CultureInfo.InvariantCulture, out _))
 			return; // Not a PR-based canonical key; nothing to point to.
-		var pointerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = stem });
+		var pointerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = stem, SourceRedirect = true });
 		await PutPublicObject(sourceKey, pointerContent, "application/yaml", ctx);
 		_logger.LogInformation("Wrote source pointer {SourceKey} → canonical {CanonicalKey}", sourceKey, canonicalKey);
 	}

@@ -8,6 +8,8 @@ using Elastic.Changelog.Reconciliation;
 using Elastic.Changelog.Scrubbing;
 using Elastic.Changelog.Tests.Reconciliation;
 using Elastic.Changelog.Uploading;
+using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -478,7 +480,9 @@ public class ScrubberProcessorTests
 		const string markerKey = "changelog/elastic/elasticsearch/main/67890.yaml";
 		// Simulate state left by the prior write: source pointer at privateKey, canonical at
 		// canonicalKey, and a secondary-PR marker at markerKey.
-		_ = _s3.Seed(PublicBucket, privateKey, "link: \"12345\"\n");
+		// The source pointer must carry source-redirect: true to be distinguishable from a plain marker.
+		_ = _s3.Seed(PublicBucket, privateKey,
+			ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "12345", SourceRedirect = true }));
 		_ = _s3.Seed(PublicBucket, canonicalKey,
 			// language=yaml
 			"""
@@ -525,6 +529,45 @@ public class ScrubberProcessorTests
 		_s3.Exists(PublicBucket, canonicalKey).Should().BeFalse("canonical entry must be deleted");
 		_s3.Exists(PublicBucket, marker200).Should().BeFalse("PR-200 marker must be deleted");
 		_s3.Exists(PublicBucket, marker300).Should().BeFalse("PR-300 marker must be deleted");
+	}
+
+	[Fact]
+	public async Task Process_DeleteOfNonCanonicalSourceWithPlainMarker_DoesNotDeleteCanonical()
+	{
+		// Regression guard for source-pointer ambiguity: a plain link: marker at a non-numeric key
+		// must NOT be treated as a source pointer. Only objects with source-redirect: true trigger
+		// canonical deletion; otherwise any migrated marker could accidentally nuke live content.
+		const string privateKey = "changelog/elastic/elasticsearch/main/12345-fix.yaml";
+		const string canonicalKey = "changelog/elastic/elasticsearch/main/12345.yaml";
+		// Public object has link: but no source-redirect: true — it's a plain marker, not a pointer.
+		_ = _s3.Seed(PublicBucket, privateKey, "link: \"12345\"\n");
+		_ = _s3.Seed(PublicBucket, canonicalKey, "type: enhancement\ntitle: Real\n");
+
+		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", privateKey)], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, privateKey).Should().BeFalse("the source-key public object is deleted");
+		_s3.Exists(PublicBucket, canonicalKey).Should().BeTrue(
+			"a plain link: marker must not trigger canonical deletion — only source-redirect: true does");
+	}
+
+	[Fact]
+	public async Task Process_DeleteOfYmlSourceKey_TracesSourcePointerToCanonical()
+	{
+		// .yml files are never canonical PR keys; IsNumericYamlKey must return false for them
+		// even when the stem is numeric, so source-pointer tracing runs correctly.
+		const string privateKey = "changelog/elastic/elasticsearch/main/12345.yml";
+		const string canonicalKey = "changelog/elastic/elasticsearch/main/12345.yaml";
+		_ = _s3.Seed(PublicBucket, privateKey,
+			ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "12345", SourceRedirect = true }));
+		_ = _s3.Seed(PublicBucket, canonicalKey, "type: enhancement\ntitle: Real\n");
+
+		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", privateKey)], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, privateKey).Should().BeFalse("source pointer is cleaned up");
+		_s3.Exists(PublicBucket, canonicalKey).Should().BeFalse(
+			"canonical must be deleted via pointer tracing — .yml stem being numeric must not block this");
 	}
 
 	// language=yaml
