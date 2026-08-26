@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
@@ -110,6 +111,38 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			.BeLessThan(html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal));
 		html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal).Should()
 			.BeLessThan(html.IndexOf("id=\"common-patterns\"", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task Operation_PostSections_DeduplicateAnchorsAgainstReservedAndPrior()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav, operations: Doc("search", """
+			## Description
+
+			SUPP_OP_DESCRIPTION
+
+			## Responses
+
+			SUPP_OP_RESPONSES_SECTION
+
+			## Best practices
+
+			SUPP_OP_BEST_1
+
+			## Best practices
+
+			SUPP_OP_BEST_2
+			"""));
+
+		html.Should().Contain("id=\"responses\"");
+		html.Should().Contain("id=\"responses-2\"");
+		html.Should().Contain("SUPP_OP_RESPONSES_SECTION");
+		html.Should().Contain("id=\"best-practices\"");
+		html.Should().Contain("id=\"best-practices-2\"");
+		html.Should().Contain("SUPP_OP_BEST_1");
+		html.Should().Contain("SUPP_OP_BEST_2");
+		Regex.Matches(html, """id="responses"(?!-)""").Count.Should().Be(1);
 	}
 
 	[Fact]
