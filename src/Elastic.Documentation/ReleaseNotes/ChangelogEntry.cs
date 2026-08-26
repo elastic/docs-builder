@@ -46,6 +46,9 @@ public record ChangelogEntry
 	/// <summary>Whether this entry should be highlighted.</summary>
 	public bool? Highlight { get; init; }
 
+	/// <summary>Bare PR number referencing the canonical entry. Marks this as a pipeline-written marker; must be the only field present.</summary>
+	public string? Link { get; init; }
+
 	/// <summary>
 	/// Converts this ChangelogEntry to a BundledEntry for embedding in bundles.
 	/// File property is set to null; set it separately using a 'with' expression.
@@ -64,6 +67,7 @@ public record ChangelogEntry
 		Subtype = Subtype,
 		Areas = Areas,
 		Prs = Prs,
-		Issues = Issues
+		Issues = Issues,
+		Link = Link
 	};
 }

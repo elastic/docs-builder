@@ -165,7 +165,8 @@ public static partial class ReleaseNotesSerialization
 		Impact = dto.Impact,
 		Action = dto.Action,
 		FeatureId = dto.FeatureId,
-		Highlight = dto.Highlight
+		Highlight = dto.Highlight,
+		Link = dto.Link
 	};
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) => new()
@@ -181,7 +182,8 @@ public static partial class ReleaseNotesSerialization
 		Impact = entry.Impact,
 		Action = entry.Action,
 		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight
+		Highlight = entry.Highlight,
+		Link = entry.Link
 	};
 
 	private static ProductReference ToProductReference(ProductInfoDto dto) => new()
@@ -294,7 +296,8 @@ public static partial class ReleaseNotesSerialization
 		Impact = entry.Impact,
 		Action = entry.Action,
 		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight
+		Highlight = entry.Highlight,
+		Link = entry.Link
 	};
 
 	private static ProductInfoDto ToDto(ProductReference product) => new()
