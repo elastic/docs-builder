@@ -24,6 +24,14 @@ namespace Elastic.ApiExplorer;
 
 internal sealed record VersionedOpenApiDocument(ResolvedApiVersion Version, OpenApiDocument Document);
 
+internal sealed record ApiProductGeneration(
+	string Prefix,
+	OpenApiDocument Document,
+	ResolvedApiConfiguration? ApiConfig,
+	IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems,
+	string Moniker,
+	bool EmitUnmatchedBaseFiles);
+
 /// <summary>
 /// Renders API explorer pages for every configured OpenAPI specification: builds the navigation
 /// tree via <see cref="ApiNavigationBuilder"/> and writes each page to the output directory.
@@ -108,13 +116,14 @@ public class OpenApiGenerator(
 				context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
 			await GenerateApiProduct(
-					apiUrlSuffix,
-					versioned.Document,
-					apiConfig,
-					switcherItems,
-					versioned.Version.Moniker,
-					emitUnmatchedBaseFiles: versioned.Version.Moniker == "main"
-						|| (!hasMain && versioned.Version.Moniker == monikers[0]),
+					new(
+						apiUrlSuffix,
+						versioned.Document,
+						apiConfig,
+						switcherItems,
+						versioned.Version.Moniker,
+						EmitUnmatchedBaseFiles: versioned.Version.Moniker == "main"
+							|| (!hasMain && versioned.Version.Moniker == monikers[0])),
 					ctx)
 				.ConfigureAwait(false);
 		}
@@ -231,33 +240,26 @@ public class OpenApiGenerator(
 		_ = await Render(navigation.Index, navigation.Index.Model, renderContext, navigationRenderer, ctx).ConfigureAwait(false);
 	}
 
-	private async Task GenerateApiProduct(
-		string prefix,
-		OpenApiDocument openApiDocument,
-		ResolvedApiConfiguration? apiConfig,
-		IReadOnlyList<ApiVersionSwitcherItem> versionSwitcherItems,
-		string moniker,
-		bool emitUnmatchedBaseFiles,
-		Cancel ctx)
+	private async Task GenerateApiProduct(ApiProductGeneration generation, Cancel ctx)
 	{
-		var discovery = DiscoverSupplemental(openApiDocument, apiConfig);
+		var discovery = DiscoverSupplemental(generation.Document, generation.ApiConfig);
 		ApiSupplementalValidator.Validate(discovery, new(
-			openApiDocument,
+			generation.Document,
 			context.Collector,
-			moniker,
-			EmitUnmatchedBaseFiles: emitUnmatchedBaseFiles));
-		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
-		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
+			generation.Moniker,
+			EmitUnmatchedBaseFiles: generation.EmitUnmatchedBaseFiles));
+		var navigation = CreateNavigation(generation.Prefix, generation.Document, generation.ApiConfig);
+		_logger.LogInformation("Generating OpenApiDocument {Title}", generation.Document.Info?.Title ?? "<no title>");
 
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
 
-		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
+		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
 			MarkdownRenderer = markdownStringRenderer,
 			ApiExplorerLog = _logger,
-			VersionSwitcherItems = versionSwitcherItems,
+			VersionSwitcherItems = generation.VersionSwitcherItems,
 			OperationSupplemental = ApiSupplementalDoc.Load(discovery.Operations),
 			TagSupplemental = ApiSupplementalDoc.Load(discovery.Tags)
 		};
