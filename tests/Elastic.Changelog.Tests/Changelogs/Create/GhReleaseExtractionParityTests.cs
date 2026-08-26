@@ -59,6 +59,17 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 
 	private static StubHandler EmptyPool() => new(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 
+	/// <summary>Pool with a single entry named after PR 12345 whose YAML fails to parse.</summary>
+	private static StubHandler PoolWithUnparseableEntry() => new(req =>
+	{
+		var path = req.RequestUri!.AbsolutePath;
+		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+			return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345.yaml" } ] }""");
+		if (path.EndsWith("12345.yaml", StringComparison.Ordinal))
+			return Yaml("title: [unterminated");
+		return new HttpResponseMessage(HttpStatusCode.NotFound);
+	});
+
 	private void ArrangeRelease() =>
 		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
 			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = ReleaseBody });
@@ -94,6 +105,35 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 
 		A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
 			.MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task PrWithUnparseablePoolEntry_FallsBackToPrMetadataSynthesis()
+	{
+		// A pool file that matches the PR by name but fails to parse must not be treated as a
+		// successful write: ProcessPrReference should still fall through to PR-body extraction /
+		// title fallback, and the PR must still count as an error worth surfacing.
+		ArrangeRelease();
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
+			.Returns(new GitHubPrInfo
+			{
+				Title = "Fix query parsing edge case",
+				Body = "Just a description of the change, no release-note block.",
+				Labels = [],
+				LinkedIssues = []
+			});
+		var outputDir = OutputDir();
+
+		var result = await Service(PoolWithUnparseableEntry()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
+		FileSystem.File.Exists(FileSystem.Path.Join(outputDir, "12345.yaml")).Should().BeFalse("the malformed pool file is never written verbatim");
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().ContainSingle("a synthesized entry must exist for the PR despite the unusable pool file");
+		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		content.Should().Contain("Fix query parsing edge case");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be parsed", StringComparison.Ordinal),
+			"the parse failure on the checked-in entry must still be surfaced");
 	}
 
 	[Fact]

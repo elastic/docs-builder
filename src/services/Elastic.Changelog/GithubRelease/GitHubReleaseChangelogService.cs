@@ -410,10 +410,19 @@ public class GitHubReleaseChangelogService(
 		if (matches.Count == 0)
 			return false;
 
+		// Only report success when at least one matching pool file was actually written; parse
+		// failures alone must fall through to PR-metadata synthesis rather than being swallowed.
+		var wroteAnyFile = false;
+
 		foreach (var match in matches)
 		{
 			if (!context.WrittenPoolFiles.Add(match.FileName))
+			{
+				// Another PR reference already claimed this pool file (e.g. one entry lists
+				// several `prs:` URLs); that earlier write already satisfied this PR too.
+				wroteAnyFile = true;
 				continue;
+			}
 
 			if (match.Entry == null)
 			{
@@ -427,9 +436,10 @@ public class GitHubReleaseChangelogService(
 			await _fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
 			createdFiles.Add(match.FileName);
 			_logger.LogInformation("Using checked-in changelog entry '{FileName}' for PR #{PrNumber}", match.FileName, prRef.PrNumber);
+			wroteAnyFile = true;
 		}
 
-		return true;
+		return wroteAnyFile;
 	}
 
 	private static string GenerateYaml(ChangelogEntry data) =>
