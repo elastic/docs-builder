@@ -16,18 +16,22 @@ internal static class ApiSupplementalValidator
 		ApiSupplementalDiscoveryResult discovery,
 		OpenApiDocument document,
 		IDiagnosticsCollector collector,
-		string moniker)
+		string moniker,
+		bool emitUnmatchedBaseFiles = false)
 	{
 		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(document);
-		if (moniker == "main")
+		var isNumeric = int.TryParse(moniker, out var major);
+		if (moniker != "main" && !isNumeric)
+			return;
+
+		if (moniker == "main" || emitUnmatchedBaseFiles)
 			EmitUnmatched(discovery.Unmatched, collector, "the latest spec");
-		else if (int.TryParse(moniker, out var major))
+
+		if (isNumeric)
 		{
 			var tagSlugs = new HashSet<string>(tagNames.Select(ApiUrlBuilder.TagSlug), StringComparer.Ordinal);
 			ValidateVersionSuffixed(discovery.VersionSuffixed, major, operationsById, tagSlugs, document, collector);
 		}
-		else
-			return;
 
 		ValidateOperationOverrides(discovery.Operations, operationsById, document, collector);
 	}

@@ -101,12 +101,20 @@ public class OpenApiGenerator(
 			return null;
 
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
+		var hasMain = monikers.Contains("main");
 		foreach (var versioned in versionedDocuments)
 		{
 			var switcherItems = ApiVersionSwitcher.Build(
 				context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
-			await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherItems, versioned.Version.Moniker, ctx)
+			await GenerateApiProduct(
+					apiUrlSuffix,
+					versioned.Document,
+					apiConfig,
+					switcherItems,
+					versioned.Version.Moniker,
+					emitUnmatchedBaseFiles: !hasMain && versioned.Version.Moniker == monikers[0],
+					ctx)
 				.ConfigureAwait(false);
 		}
 
@@ -228,10 +236,12 @@ public class OpenApiGenerator(
 		ResolvedApiConfiguration? apiConfig,
 		IReadOnlyList<ApiVersionSwitcherItem> versionSwitcherItems,
 		string moniker,
+		bool emitUnmatchedBaseFiles,
 		Cancel ctx)
 	{
 		var discovery = DiscoverSupplemental(openApiDocument, apiConfig);
-		ApiSupplementalValidator.Validate(discovery, openApiDocument, context.Collector, moniker);
+		ApiSupplementalValidator.Validate(
+			discovery, openApiDocument, context.Collector, moniker, emitUnmatchedBaseFiles: emitUnmatchedBaseFiles);
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
 

@@ -106,6 +106,19 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	}
 
 	[Fact]
+	public void Validate_UnmatchedBaseFileWhenLatestIsNumeric_EmitsError()
+	{
+		var collector = Validate(
+			FolderWith(("op-does-not-exist.md", "# supplemental")),
+			SpecWith("ping"),
+			"8",
+			emitUnmatchedBaseFiles: true);
+
+		collector.ErrorMessages.Should().ContainSingle(m =>
+			m.Contains("op-does-not-exist.md") && m.Contains("does not match any operationId in the latest spec"));
+	}
+
+	[Fact]
 	public void Validate_UnknownParameterOnOlderVersionMatchedBaseFile_EmitsError()
 	{
 		var collector = Validate(FolderWith(("op-search.md", """
@@ -162,11 +175,13 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	private static CapturingDiagnosticsCollector Validate(
 		IDirectoryInfo folder,
 		OpenApiDocument document,
-		string moniker)
+		string moniker,
+		bool emitUnmatchedBaseFiles = false)
 	{
 		var discovery = ApiSupplementalDiscovery.Discover(folder, document);
 		var collector = new CapturingDiagnosticsCollector();
-		ApiSupplementalValidator.Validate(discovery, document, collector, moniker);
+		ApiSupplementalValidator.Validate(
+			discovery, document, collector, moniker, emitUnmatchedBaseFiles: emitUnmatchedBaseFiles);
 		return collector;
 	}
 
