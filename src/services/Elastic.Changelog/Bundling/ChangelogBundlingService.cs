@@ -201,6 +201,10 @@ public partial class ChangelogBundlingService(
 	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex GitHubIssueUrlRegex();
 
+	/// <summary>A profile argument that is a plain version string (safe for conventional file names), not a report URL/path.</summary>
+	[GeneratedRegex(@"^[A-Za-z0-9._+-]+$")]
+	private static partial Regex PlanVersionArgumentRegex();
+
 	public async Task<bool> BundleChangelogs(IDiagnosticsCollector collector, BundleChangelogsArguments input, Cancel ctx)
 	{
 		try
@@ -592,8 +596,11 @@ public partial class ChangelogBundlingService(
 
 	private async Task<BundleChangelogsArguments?> ProcessProfile(IDiagnosticsCollector collector, BundleChangelogsArguments input, ChangelogConfiguration? config, Cancel ctx)
 	{
+		if (!ValidateProfileOutputs(collector, config))
+			return null;
+
 		// Commit-range mode derives its PR list from git; the profile only contributes output
-		// metadata (output/output_products/repo/owner/branch/description), not a filter source.
+		// metadata (output_products/repo/owner/branch/description), not a filter source.
 		var filterResult = !string.IsNullOrWhiteSpace(input.StartGitRef)
 			? ResolveGitRangeProfileFilter(collector, input, config)
 			: await ProfileFilterResolver.ResolveAsync(
@@ -627,10 +634,12 @@ public partial class ChangelogBundlingService(
 			// For all other profile types, infer it from the base version string.
 			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
 
-			var outputPattern = profile.Output?
-				.Replace("{version}", filterResult.Version)
-				.Replace("{lifecycle}", resolvedLifecycle);
-			if (!string.IsNullOrWhiteSpace(outputPattern))
+			// Bundle output names follow the standardized {product}-{version}.yaml convention (B2 —
+			// elastic/docs-builder#3774), derived from the profile's primary output product and the
+			// version argument. When either is unavailable (e.g. a report/list invocation without a
+			// version) the default changelog-bundle.yaml naming applies downstream.
+			var primaryProduct = ResolvePrimaryProduct(profile, input);
+			if (!string.IsNullOrWhiteSpace(primaryProduct) && filterResult.Version != "unknown")
 			{
 				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
 				// → bundle.directory → CWD
@@ -638,22 +647,7 @@ public partial class ChangelogBundlingService(
 					?? input.OutputDirectory
 					?? config.Bundle.Directory
 					?? _fileSystem.Directory.GetCurrentDirectory();
-				outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
-			}
-			else if (!string.IsNullOrWhiteSpace(input.StartGitRef))
-			{
-				// Commit-range bundles follow the standardized {product}-{version}.yaml naming
-				// convention when the profile sets no explicit output pattern (explicit output:
-				// patterns are being phased out — see elastic/docs-builder#3774).
-				var primaryProduct = ResolvePrimaryProduct(profile, input);
-				if (!string.IsNullOrWhiteSpace(primaryProduct))
-				{
-					var outputDir = config.Bundle.OutputDirectory
-						?? input.OutputDirectory
-						?? config.Bundle.Directory
-						?? _fileSystem.Directory.GetCurrentDirectory();
-					outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{filterResult.Version}.yaml").OptionalWindowsReplace();
-				}
+				outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{filterResult.Version}.yaml").OptionalWindowsReplace();
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -1012,10 +1006,15 @@ public partial class ChangelogBundlingService(
 			config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 
 		BundleProfile? profileDef = null;
-		if (!string.IsNullOrWhiteSpace(input.Profile) &&
-			config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
+		if (!string.IsNullOrWhiteSpace(input.Profile))
 		{
-			if (string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase))
+			// Plan must fail the same way the run does when profiles still carry output: patterns
+			// or collide on the conventional target, so CI surfaces the error before the Docker run.
+			if (!ValidateProfileOutputs(collector, config))
+				return null;
+
+			if (config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true &&
+				string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase))
 			{
 				needsNetwork = true;
 				needsGithubToken = true;
@@ -1032,32 +1031,32 @@ public partial class ChangelogBundlingService(
 		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
 			needsNetwork = true;
 
-		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults.
+		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults: the
+		// standardized {product}-{version}.yaml convention when the profile's primary product and a
+		// plain version argument resolve, else the changelog-bundle.yaml default.
 		var outputPath = input.Output;
-		if (string.IsNullOrWhiteSpace(outputPath) && profileDef?.Output != null)
-		{
-			var version = input.ProfileArgument ?? "unknown";
-			var lifecycle = VersionLifecycleInference.InferLifecycle(version);
-			var outputPattern = profileDef.Output
-				.Replace("{version}", version)
-				.Replace("{lifecycle}", lifecycle);
-			var outputDir = config?.Bundle?.OutputDirectory
-				?? config?.Bundle?.Directory
-				?? _fileSystem.Directory.GetCurrentDirectory();
-			outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
-		}
-		else if (string.IsNullOrWhiteSpace(outputPath) &&
-			!string.IsNullOrWhiteSpace(input.StartGitRef) &&
+		if (string.IsNullOrWhiteSpace(outputPath) &&
 			profileDef != null &&
 			!string.IsNullOrWhiteSpace(input.ProfileArgument) &&
+			PlanVersionArgumentRegex().IsMatch(input.ProfileArgument) &&
 			ResolvePrimaryProduct(profileDef, input) is { } primaryProduct)
 		{
-			// Mirror ProcessProfile's commit-range convention: {product}-{version}.yaml when the
-			// profile sets no explicit output pattern.
+			// For 'source: github_release', ProcessProfile names the bundle from the version it
+			// extracts out of the fetched release tag (ExtractBaseVersion strips a leading 'v' and any
+			// pre-release suffix), not the raw CLI argument. Mirror that here for concrete version
+			// arguments so plan's output_path always matches the file bundle actually writes; "latest"
+			// can't be resolved to a concrete tag without the network call plan deliberately avoids, so
+			// it is passed through as-is (a best-effort value CI must not depend on byte-for-byte).
+			var planVersion = string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
+				? ChangelogTextUtilities.ExtractBaseVersion(input.ProfileArgument)
+				: input.ProfileArgument;
+			// Same precedence as ProcessProfile: config.Bundle.OutputDirectory > input.OutputDirectory
+			// (programmatic override, e.g. a CI-provided --output-directory) > config.Bundle.Directory > cwd.
 			var outputDir = config?.Bundle?.OutputDirectory
+				?? input.OutputDirectory
 				?? config?.Bundle?.Directory
 				?? _fileSystem.Directory.GetCurrentDirectory();
-			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{input.ProfileArgument}.yaml").OptionalWindowsReplace();
+			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{planVersion}.yaml").OptionalWindowsReplace();
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
 			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
@@ -1093,19 +1092,14 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// The first concrete (non-wildcard) product that scopes the bundle, used to build its CDN URL.
+	/// The first concrete (non-wildcard) product that scopes the bundle, used for the conventional
+	/// <c>{product}-{version}.yaml</c> name and the bundle's CDN URL.
 	/// From the profile <c>output_products</c>/<c>products</c> pattern, else the first explicit product argument.
 	/// </summary>
 	private static string? ResolvePrimaryProduct(BundleProfile? profileDef, BundleChangelogsArguments input)
 	{
-		var pattern = profileDef?.OutputProducts ?? profileDef?.Products;
-		if (!string.IsNullOrWhiteSpace(pattern))
-		{
-			var firstGroup = pattern.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
-			var id = firstGroup?.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-			if (!string.IsNullOrWhiteSpace(id) && id != "*")
-				return id;
-		}
+		if (profileDef != null && ResolvePrimaryProductFromProfile(profileDef) is { } fromProfile)
+			return fromProfile;
 
 		foreach (var list in new[] { input.OutputProducts, input.InputProducts })
 		{
@@ -1119,6 +1113,60 @@ public partial class ChangelogBundlingService(
 		}
 
 		return null;
+	}
+
+	/// <summary>The first concrete product id from a profile's <c>output_products</c>/<c>products</c> pattern.</summary>
+	private static string? ResolvePrimaryProductFromProfile(BundleProfile profileDef)
+	{
+		var pattern = profileDef.OutputProducts ?? profileDef.Products;
+		if (string.IsNullOrWhiteSpace(pattern))
+			return null;
+
+		var firstGroup = pattern.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+		var id = firstGroup?.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+		return !string.IsNullOrWhiteSpace(id) && id != "*" ? id : null;
+	}
+
+	/// <summary>
+	/// B2 (elastic/docs-builder#3774): bundle output names are standardized by convention as
+	/// <c>{product}-{version}.yaml</c>. Any profile still setting an explicit <c>output</c> pattern
+	/// is a hard error, and two profiles sharing the same primary output product would collide on
+	/// the same conventional target for any given version, so that is rejected as well.
+	/// </summary>
+	private static bool ValidateProfileOutputs(IDiagnosticsCollector collector, ChangelogConfiguration? config)
+	{
+		if (config?.Bundle?.Profiles is not { Count: > 0 } profiles)
+			return true;
+
+		var valid = true;
+		foreach (var (name, profile) in profiles)
+		{
+#pragma warning disable CS0618 // intentionally reading the obsolete field to reject profiles that still set it
+			if (string.IsNullOrWhiteSpace(profile.Output))
+				continue;
+#pragma warning restore CS0618
+			collector.EmitError(string.Empty,
+				$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
+				"as '{product}-{version}.yaml' from the profile's output_products.");
+			valid = false;
+		}
+
+		var collisions = profiles
+			.Select(kvp => (Name: kvp.Key, Product: ResolvePrimaryProductFromProfile(kvp.Value)))
+			.Where(p => !string.IsNullOrWhiteSpace(p.Product))
+			.GroupBy(p => p.Product, StringComparer.OrdinalIgnoreCase)
+			.Where(g => g.Count() > 1);
+
+		foreach (var group in collisions)
+		{
+			var names = string.Join("', '", group.Select(p => p.Name).Order(StringComparer.Ordinal));
+			collector.EmitError(string.Empty,
+				$"Profiles '{names}' all resolve to the same '{group.Key}-{{version}}.yaml' bundle target for any given version. " +
+				"Bundle names are derived by convention from the profile's primary output product, so each profile must target a distinct product.");
+			valid = false;
+		}
+
+		return valid;
 	}
 
 	/// <summary>
