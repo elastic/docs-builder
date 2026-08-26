@@ -31,6 +31,7 @@ public sealed class ScrubberProcessor(
 	IChangelogContentScrubber scrubber,
 	BundleRegistryReconciler reconciler,
 	ShallowRegistryReconciler shallowReconciler,
+	NotesIndexReconciler notesReconciler,
 	ReconcileMetrics? metrics = null
 )
 {
@@ -75,6 +76,7 @@ public sealed class ScrubberProcessor(
 	{
 		var objectWork = new Dictionary<string, ObjectWork>(StringComparer.Ordinal);
 		var groupWork = new Dictionary<string, GroupWork>(StringComparer.Ordinal);
+		var notesWork = new Dictionary<string, GroupWork>(StringComparer.Ordinal);
 		var shallowWork = new Dictionary<ChangelogScopeKind, ShallowWork>();
 		var failedIds = new HashSet<string>(StringComparer.Ordinal);
 
@@ -87,7 +89,7 @@ public sealed class ScrubberProcessor(
 				{
 					var key = Uri.UnescapeDataString(record.S3.Object.Key.Replace('+', ' '));
 					_logger.LogInformation("Batch names key={Key} (event={EventName})", key, record.EventName?.Value);
-					Classify(message.MessageId, record.S3.Bucket.Name, key, objectWork, groupWork, shallowWork);
+					Classify(message.MessageId, record.S3.Bucket.Name, key, objectWork, groupWork, notesWork, shallowWork);
 				}
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
@@ -125,6 +127,20 @@ public sealed class ScrubberProcessor(
 			}
 		}
 
+		foreach (var work in notesWork.Values)
+		{
+			ctx.ThrowIfCancellationRequested();
+			try
+			{
+				await notesReconciler.ReconcileRepoAsync(work.Scope, ctx);
+			}
+			catch (Exception e) when (e is not OperationCanceledException)
+			{
+				_logger.LogError(e, "Notes reconcile for {Scope} failed; failing its {Count} contributing message(s)", work.Scope, work.MessageIds.Count);
+				failedIds.UnionWith(work.MessageIds);
+			}
+		}
+
 		foreach (var work in shallowWork.Values)
 		{
 			ctx.ThrowIfCancellationRequested();
@@ -149,6 +165,7 @@ public sealed class ScrubberProcessor(
 		string key,
 		Dictionary<string, ObjectWork> objectWork,
 		Dictionary<string, GroupWork> groupWork,
+		Dictionary<string, GroupWork> notesWork,
 		Dictionary<ChangelogScopeKind, ShallowWork> shallowWork)
 	{
 		var hasScope = ChangelogScope.TryFromKey(key, out var scope);
@@ -167,6 +184,14 @@ public sealed class ScrubberProcessor(
 				AddGroup(groupWork, scope, messageId);
 			else
 				_logger.LogDebug("Ignoring retired pool registry key: {Key}", key);
+			return;
+		}
+
+		// Notes indexes (notes-{target}.json) are reconciler-owned; a client that uploads one is
+		// rejected here — the reconciler writes directly to the public bucket, so no copy is needed.
+		if (ChangelogKeys.IsNotesIndex(key))
+		{
+			_logger.LogWarning("Rejecting client-uploaded notes index {Key}; notes indexes are reconciler-owned", key);
 			return;
 		}
 
@@ -190,8 +215,24 @@ public sealed class ScrubberProcessor(
 
 		if (scope!.Kind == ChangelogScopeKind.Bundle)
 			AddGroup(groupWork, scope, messageId);
+
+		// A note-*.yml upload triggers a notes-index reconcile for the whole repo — all targets
+		// whose index lists this note must be rebuilt. The Changelog scope's group is {org}/{repo}/{branch};
+		// the notes scope is the two-segment {org}/{repo} prefix.
+		if (scope.Kind == ChangelogScopeKind.Changelog)
+		{
+			var fileName = key[scope.Prefix.Length..];
+			if (IsNoteFileName(fileName))
+				AddNotesGroup(notesWork, scope.Group, messageId);
+		}
+
 		AddShallow(shallowWork, scope, messageId);
 	}
+
+	private static bool IsNoteFileName(string fileName) =>
+		fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase)
+		&& (fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
+		&& !fileName.Contains('/', StringComparison.Ordinal);
 
 	private static void AddObject(
 		Dictionary<string, ObjectWork> objectWork,
@@ -215,6 +256,24 @@ public sealed class ScrubberProcessor(
 		{
 			work = new GroupWork(scope);
 			groupWork[scope.Prefix] = work;
+		}
+		_ = work.MessageIds.Add(messageId);
+	}
+
+	private static void AddNotesGroup(Dictionary<string, GroupWork> notesWork, string changelogGroup, string messageId)
+	{
+		// changelogGroup is {org}/{repo}/{branch...}; extract {org}/{repo} by taking the first two segments.
+		var parts = changelogGroup.Split('/');
+		if (parts.Length < 2)
+			return;
+		var org = parts[0];
+		var repo = parts[1];
+		if (!ChangelogScope.TryCreateNotes(org, repo, out var notesScope))
+			return;
+		if (!notesWork.TryGetValue(notesScope.Prefix, out var work))
+		{
+			work = new GroupWork(notesScope);
+			notesWork[notesScope.Prefix] = work;
 		}
 		_ = work.MessageIds.Add(messageId);
 	}
