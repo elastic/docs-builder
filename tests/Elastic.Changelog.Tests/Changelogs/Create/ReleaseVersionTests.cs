@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using AwesomeAssertions;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using FakeItEasy;
 using Xunit;
 
@@ -20,8 +22,14 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	private readonly IGitHubReleaseService _mockReleaseService = A.Fake<IGitHubReleaseService>();
 	private readonly IGitHubPrService _mockPrService = A.Fake<IGitHubPrService>();
 
+	// CreateChangelogsFromRelease always probes the checked-in entry pool. Without a stub handler
+	// the default CdnChangelogEntryFetcher hits ChangelogCdn's real production base URL — offline
+	// or sandboxed test runs must never make that call, so every test here gets an all-404 handler.
+	private readonly CdnChangelogEntryFetcher _offlineEntryFetcher = new(
+		new TestLoggerFactory(output), new OfflinePoolHandler(), sleep: (_, _) => Task.CompletedTask);
+
 	private GitHubReleaseChangelogService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, FileSystem, _mockReleaseService, _mockPrService);
+		new(LoggerFactory, ConfigurationContext, FileSystem, _mockReleaseService, _mockPrService, entryFetcher: _offlineEntryFetcher);
 
 	private string CreateOutputDirectory() =>
 		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -298,5 +306,15 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		{
 			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
+	}
+
+	/// <summary>Answers every checked-in entry pool probe as absent, so tests degrade to PR-metadata synthesis.</summary>
+	private sealed class OfflinePoolHandler : HttpMessageHandler
+	{
+		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
+			new(HttpStatusCode.NotFound);
+
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+			Task.FromResult(Send(request, cancellationToken));
 	}
 }
