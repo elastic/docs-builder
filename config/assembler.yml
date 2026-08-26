@@ -84,8 +84,6 @@ shared_configuration:
 ###
 narrative:
   checkout_strategy: full
-  # docs-content is large; give each fetch attempt extra headroom before retrying.
-  clone_timeout: 45s
 
 ###
 # 'references' defines a map of `elastic/<repository_name> * <repository_config>
