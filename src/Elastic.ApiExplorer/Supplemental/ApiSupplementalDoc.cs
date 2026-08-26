@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
+using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 
 namespace Elastic.ApiExplorer.Supplemental;
@@ -16,6 +18,31 @@ internal sealed partial record ApiSupplementalDoc(
 	IReadOnlyList<ApiSupplementalSection> PostSections
 )
 {
+	public string? DescriptionOr(string? spec) =>
+		string.IsNullOrWhiteSpace(Description) ? spec : Description;
+
+	public string? ParameterOr(string name, string? spec) =>
+		ParameterOverrides.TryGetValue(name, out var value) ? value : spec;
+
+	public string? RequestBodyOr(string name, string? spec) =>
+		RequestBodyOverrides.TryGetValue(name, out var value) ? value : spec;
+
+	public static IReadOnlyDictionary<string, ApiSupplementalDoc> Load(IReadOnlyDictionary<string, IFileInfo> files)
+	{
+		if (files.Count == 0)
+			return FrozenDictionary<string, ApiSupplementalDoc>.Empty;
+
+		var parsed = new Dictionary<string, ApiSupplementalDoc>(files.Count, StringComparer.Ordinal);
+		foreach (var (key, file) in files)
+		{
+			var doc = Parse(file.FileSystem.File.ReadAllText(file.FullName));
+			if (doc is not null)
+				parsed[key] = doc;
+		}
+
+		return parsed;
+	}
+
 	public static ApiSupplementalDoc? Parse(string? raw)
 	{
 		if (raw is null)

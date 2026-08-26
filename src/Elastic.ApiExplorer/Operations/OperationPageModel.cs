@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
@@ -29,6 +30,17 @@ public record ApiQueryParameter
 	public required IReadOnlyList<ConstraintDisplay> Constraints { get; init; }
 	public required IReadOnlyList<string> EnumValues { get; init; }
 	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
+	public required HtmlString DescriptionHtml { get; init; }
+}
+
+/// <summary>A path parameter with its effective description precomputed.</summary>
+public record ApiPathParameter
+{
+	public required IOpenApiParameter Parameter { get; init; }
+	public required HtmlString DescriptionHtml { get; init; }
+
+	public string? Name => Parameter.Name;
+	public bool? Deprecated => Parameter.Deprecated;
 }
 
 /// <summary>One response content entry with its property tree prebuilt.</summary>
@@ -74,8 +86,10 @@ public record OperationPageModel
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
 	public required IReadOnlyCollection<OperationNavigationItem> Overloads { get; init; }
-	public required IReadOnlyList<IOpenApiParameter> PathParameters { get; init; }
+	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
 	public required IReadOnlyList<ApiQueryParameter> QueryParameters { get; init; }
+	public required string? DescriptionMarkdown { get; init; }
+	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
 	public required string RequestContentType { get; init; }
 	public required ApiPropertyList? RequestProperties { get; init; }
 	public required TypeAnnotation? RequestType { get; init; }
@@ -94,6 +108,10 @@ public record OperationPageModel
 		var operation = apiOperation.Operation;
 		var document = context.Model;
 		var analyzer = new SchemaAnalyzer(document);
+		var supplemental = operation.OperationId is { Length: > 0 } operationId
+			&& context.OperationSupplemental.TryGetValue(operationId, out var doc)
+			? doc
+			: null;
 		var options = new PropertyDisplayOptions
 		{
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
@@ -131,15 +149,29 @@ public record OperationPageModel
 			ExternalDocs = externalDocs,
 			Servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers,
 			Overloads = ResolveOverloads(context),
-			PathParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Path).ToArray() ?? [],
+			PathParameters = (operation.Parameters ?? [])
+				.Where(p => p.In == ParameterLocation.Path)
+				.Select(p => new ApiPathParameter
+				{
+					Parameter = p,
+					DescriptionHtml = ApiMarkdown.Render(context, supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description)
+				})
+				.ToArray(),
 			QueryParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Query)
-				.Select(p => BuildQueryParameter(p, analyzer, builder))
+				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = requestSchema is not null
-				? builder.BuildPropertyList(requestSchema, new PropertyTreeScope { Prefix = "req", IsRequest = true })
+				? builder.BuildPropertyList(requestSchema, new PropertyTreeScope
+				{
+					Prefix = "req",
+					IsRequest = true,
+					DescriptionOverrides = supplemental?.RequestBodyOverrides
+				})
 				: null,
+			DescriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
+			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
 			CodeSamples = codeSamples,
@@ -168,7 +200,12 @@ public record OperationPageModel
 		return context.CurrentNavigation is OperationNavigationItem self ? [self] : [];
 	}
 
-	private static ApiQueryParameter BuildQueryParameter(IOpenApiParameter parameter, SchemaAnalyzer analyzer, ApiPropertyTreeBuilder builder)
+	private static ApiQueryParameter BuildQueryParameter(
+		IOpenApiParameter parameter,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder,
+		ApiRenderContext context,
+		ApiSupplementalDoc? supplemental)
 	{
 		var schema = parameter.Schema;
 		return new ApiQueryParameter
@@ -179,7 +216,8 @@ public record OperationPageModel
 			EnumValues = CollectEnumValues(schema, analyzer),
 			UnionOptions = CollectUnionOptionNames(schema, analyzer)
 				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
-				.ToArray()
+				.ToArray(),
+			DescriptionHtml = ApiMarkdown.Render(context, supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description)
 		};
 	}
 
