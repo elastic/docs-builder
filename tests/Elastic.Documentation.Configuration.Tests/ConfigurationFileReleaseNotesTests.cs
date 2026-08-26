@@ -136,7 +136,7 @@ public class ConfigurationFileReleaseNotesTests
 			{
 				Id = "reference-only",
 				DisplayName = "Reference Only",
-				Features = new ProductFeatures { PublicReference = true, ReleaseNotes = false }
+				Features = new ProductFeatures { PublicReference = true, ReleaseNotes = ReleaseNotesPath.None }
 			}
 		};
 
