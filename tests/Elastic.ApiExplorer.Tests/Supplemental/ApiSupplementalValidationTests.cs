@@ -199,6 +199,22 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	}
 
 	[Fact]
+	public void Validate_VersionSuffixedTagSlugCollision_EmitsError()
+	{
+		var spec = SpecWith("ping");
+		spec.Tags = new HashSet<OpenApiTag>
+		{
+			new() { Name = "foo bar" },
+			new() { Name = "foo-bar" }
+		};
+
+		var collector = Validate(FolderWith(("tag-foo-bar.v8.md", "# supplemental")), spec, "8");
+
+		collector.ErrorMessages.Should().ContainSingle(m =>
+			m.Contains("tag-foo-bar.v8.md") && m.Contains("does not match any tag in version 8"));
+	}
+
+	[Fact]
 	public void Validate_VersionSuffixedUnknownParameter_EmitsError()
 	{
 		var collector = Validate(FolderWith(("op-search.v8.md", """

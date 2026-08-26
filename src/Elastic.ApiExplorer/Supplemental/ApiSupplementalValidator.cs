@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
@@ -28,7 +27,8 @@ internal static class ApiSupplementalValidator
 		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(request.Document);
 		if (int.TryParse(request.Moniker, out var major))
 		{
-			var tagSlugs = new HashSet<string>(tagNames.Select(ApiUrlBuilder.TagSlug), StringComparer.Ordinal);
+			var (uniqueBySlug, _) = ApiSupplementalDiscovery.IndexTags(tagNames);
+			var tagSlugs = new HashSet<string>(uniqueBySlug.Keys, StringComparer.Ordinal);
 			ValidateVersionSuffixed(
 				discovery.VersionSuffixed, major, operationsById, tagSlugs, request.Document, request.Collector);
 		}

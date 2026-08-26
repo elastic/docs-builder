@@ -141,7 +141,7 @@ public static class ApiSupplementalDiscovery
 	private static string? OperationTagName(OpenApiTagReference tagRef) =>
 		!string.IsNullOrEmpty(tagRef.Name) ? tagRef.Name : tagRef.Reference?.Id;
 
-	private static (Dictionary<string, string> UniqueBySlug, IReadOnlyList<TagSlugCollision> Collisions) IndexTags(
+	internal static (Dictionary<string, string> UniqueBySlug, IReadOnlyList<TagSlugCollision> Collisions) IndexTags(
 		IReadOnlyCollection<string> tagNames)
 	{
 		var bySlug = new Dictionary<string, List<string>>(StringComparer.Ordinal);
