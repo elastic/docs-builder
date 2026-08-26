@@ -28,7 +28,11 @@ public record ChangelogEntryDto
 	public string? FeatureId { get; set; }
 	public bool? Highlight { get; set; }
 
-	/// <summary>Bare PR number referencing the canonical entry. Marks this as a pipeline-written marker; must be the only field present.</summary>
+	/// <summary>
+	/// Marker reference: a bare PR number pointing to the authoritative entry in the same pool.
+	/// A marker carries <c>link:</c> and nothing else; any other field alongside it is invalid.
+	/// Written by the pipeline for non-primary PRs in a multi-PR entry; never hand-authored.
+	/// </summary>
 	public string? Link { get; set; }
 }
 

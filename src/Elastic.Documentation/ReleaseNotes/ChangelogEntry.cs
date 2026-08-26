@@ -46,8 +46,15 @@ public record ChangelogEntry
 	/// <summary>Whether this entry should be highlighted.</summary>
 	public bool? Highlight { get; init; }
 
-	/// <summary>Bare PR number referencing the canonical entry. Marks this as a pipeline-written marker; must be the only field present.</summary>
+	/// <summary>
+	/// Marker reference: a bare PR number pointing to the authoritative entry in the same pool.
+	/// Non-null only on machine-written marker objects emitted by the pipeline for non-primary PRs
+	/// in a multi-PR entry. A marker carries <c>link:</c> and nothing else.
+	/// </summary>
 	public string? Link { get; init; }
+
+	/// <summary>True when this entry is a pipeline-written marker that redirects to another PR's entry.</summary>
+	public bool IsMarker => Link is not null;
 
 	/// <summary>
 	/// Converts this ChangelogEntry to a BundledEntry for embedding in bundles.
