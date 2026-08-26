@@ -411,7 +411,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 	[InlineData("sturdier-snapshots.yaml", new int[0])]
 	[InlineData("1755000000-my-title.yaml", new[] { 1755000000 })]
 	public void ParseLeadingPrNumbers_CoversNamingSchemes(string fileName, int[] expected) =>
-		GitRangeEntryResolver.ParseLeadingPrNumbers(fileName).Should().Equal(expected);
+		ChangelogPrIdentity.ParseLeadingPrNumbers(fileName).Should().Equal(expected);
 
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
