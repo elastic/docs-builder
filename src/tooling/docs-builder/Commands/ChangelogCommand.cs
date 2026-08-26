@@ -1921,7 +1921,7 @@ internal sealed partial class ChangelogCommands(
 	/// &lt;changelog&gt; stub — parses it into typed bundle YAML, and writes all output to
 	/// <c>--output</c> (default: <c>.artifacts/release-notes-backfill/</c>). Nothing is written to S3;
 	/// use <c>changelog upload --directory &lt;product&gt;/changelog/bundles</c> to publish.</para>
-	/// <para>The scope table (<c>BackfillScope.All</c>) covers 40 products; use <c>--products</c> to narrow
+	/// <para>The scope table (<c>BackfillScope.All</c>) covers 38 products (37 site-source + 1 repo-source); use <c>--products</c> to narrow
 	/// a run. Entries without a PR reference are emitted as <c>note-*.yaml</c> files. Sourced from a
 	/// prototype (<c>scripts/scrape-release-notes.py</c>, 2026-08-25).</para>
 	/// </remarks>

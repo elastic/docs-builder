@@ -254,7 +254,10 @@ public partial class ChangelogBackfillService(
 		var totalEntries = inScope.Sum(r => r.Bundle.Entries?.Count ?? 0);
 
 		if (args.DryRun)
-			return new BackfillProductResult(scope.ProductId, url, OutcomeOk, inScope.Count, totalEntries, 0, 0, 0, "dry-run; nothing written");
+		{
+			var (dryNoPr, dryDupPr) = CountPrStats(inScope);
+			return new BackfillProductResult(scope.ProductId, url, OutcomeOk, inScope.Count, totalEntries, 0, dryNoPr, dryDupPr, "dry-run; nothing written");
+		}
 
 		var (succeeded, filesWritten, noPr, dupPr) = WriteBundles(collector, args, scope, inScope);
 		var writeOutcome = succeeded ? OutcomeOk : OutcomeFailed;
@@ -263,6 +266,36 @@ public partial class ChangelogBackfillService(
 
 	[GeneratedRegex(@"/pull/(?<number>\d+)$")]
 	private static partial Regex PrNumberFromUrlRegex();
+
+	private static (int NoPrEntries, int DuplicatePrRefs) CountPrStats(IReadOnlyList<MigratedRelease> releases)
+	{
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		var noPr = 0;
+		var dup = 0;
+		foreach (var release in releases)
+		{
+			foreach (var entry in release.Bundle.Entries ?? [])
+			{
+				string? canonical = null;
+				foreach (var pr in entry.Prs ?? [])
+				{
+					var m = PrNumberFromUrlRegex().Match(pr);
+					if (!m.Success)
+						continue;
+					var num = m.Groups["number"].Value;
+					if (seen.Add(num))
+					{
+						canonical = num;
+						break;
+					}
+					dup++;
+				}
+				if (canonical is null)
+					noPr++;
+			}
+		}
+		return (noPr, dup);
+	}
 
 	private (bool Succeeded, int FilesWritten, int NoPrEntries, int DuplicatePrRefs) WriteBundles(
 		IDiagnosticsCollector collector,
