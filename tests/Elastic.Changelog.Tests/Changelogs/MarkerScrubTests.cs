@@ -27,7 +27,7 @@ public class MarkerScrubTests
 
 		var result = await _scrubber.ScrubAsync(key, content, Ctx);
 
-		result.Should().Be(content);
+		result.Content.Should().Be(content);
 	}
 
 	[Fact]
@@ -38,7 +38,7 @@ public class MarkerScrubTests
 
 		var result = await _scrubber.ScrubAsync(key, content, Ctx);
 
-		result.Should().Be(content);
+		result.Content.Should().Be(content);
 	}
 
 	[Fact]
