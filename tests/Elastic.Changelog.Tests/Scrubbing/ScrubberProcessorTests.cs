@@ -554,8 +554,8 @@ public class ScrubberProcessorTests
 	[Fact]
 	public async Task Process_DeleteOfYmlSourceKey_TracesSourcePointerToCanonical()
 	{
-		// .yml files are never canonical PR keys; IsNumericYamlKey must return false for them
-		// even when the stem is numeric, so source-pointer tracing runs correctly.
+		// A .yml source key can have a source pointer even though the stem looks numeric.
+		// The delete path must check SourceRedirect first, not the filename shape.
 		const string privateKey = "changelog/elastic/elasticsearch/main/12345.yml";
 		const string canonicalKey = "changelog/elastic/elasticsearch/main/12345.yaml";
 		_ = _s3.Seed(PublicBucket, privateKey,
@@ -568,6 +568,27 @@ public class ScrubberProcessorTests
 		_s3.Exists(PublicBucket, privateKey).Should().BeFalse("source pointer is cleaned up");
 		_s3.Exists(PublicBucket, canonicalKey).Should().BeFalse(
 			"canonical must be deleted via pointer tracing — .yml stem being numeric must not block this");
+	}
+
+	[Fact]
+	public async Task Process_DeleteOfNumericYamlSourceKeyWithSourcePointer_TracesPointerToCanonical()
+	{
+		// Comment 4 regression: a numeric .yaml source key (e.g. 12345.yaml) can itself have a
+		// source pointer when the entry's min PR is smaller than 12345 (e.g. PRs [100, 12345] →
+		// canonical 100.yaml). The delete path must check SourceRedirect first — before any
+		// filename-shape heuristic — so canonical 100.yaml is not orphaned.
+		const string privateKey = "changelog/elastic/elasticsearch/main/12345.yaml";
+		const string canonicalKey = "changelog/elastic/elasticsearch/main/100.yaml";
+		_ = _s3.Seed(PublicBucket, privateKey,
+			ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "100", SourceRedirect = true }));
+		_ = _s3.Seed(PublicBucket, canonicalKey, "type: enhancement\ntitle: Real\n");
+
+		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", privateKey)], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, privateKey).Should().BeFalse("source pointer is cleaned up");
+		_s3.Exists(PublicBucket, canonicalKey).Should().BeFalse(
+			"canonical must be deleted via pointer tracing even when the source key is numeric");
 	}
 
 	// language=yaml

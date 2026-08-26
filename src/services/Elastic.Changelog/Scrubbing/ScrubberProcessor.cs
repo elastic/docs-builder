@@ -366,46 +366,34 @@ public sealed class ScrubberProcessor(
 			}
 			else
 			{
-				// Issue 2: the private object is gone. Read the public bucket to discover what
-				// was previously written for this source key so we can clean it up completely.
+				// Private object is gone. Read the public bucket to discover what was previously
+				// written for this source key so we can clean it up completely.
 				//
 				// Two sub-cases:
-				// (a) Source key was non-canonical: the scrubber wrote canonical content to a
-				//     different public key and left a source pointer (link: <pr>) at 'key'. Read
-				//     the pointer, derive the canonical key, delete it and all its markers, then
-				//     delete the pointer. Non-canonical source keys always have a non-integer
-				//     filename (e.g. "12345-fix.yaml"), which differentiates them from PR markers.
-				// (b) Source key was canonical or a secondary PR marker: delete its markers (if
-				//     any), then delete the key itself.
+				// (a) Source key carries a scrubber-written source pointer (SourceRedirect == true):
+				//     the scrubber routed canonical content to a different public key and left a
+				//     breadcrumb here. Trace the pointer to the canonical key, delete it and all its
+				//     markers, then delete the pointer itself. SourceRedirect is processor-owned —
+				//     the scrubber strips it from private-authored markers on the way through.
+				// (b) Any other key (canonical entry, secondary-PR marker, note-* file): clean up
+				//     any markers the canonical may have emitted and delete the key itself.
 				var publicContent = await TryGetPublicObject(key, ctx);
-				if (publicContent is not null && !IsNumericYamlKey(key))
+				var publicEntry = publicContent is not null ? TryDeserializeEntry(publicContent) : null;
+
+				if (publicEntry?.SourceRedirect == true)
 				{
-					// Non-canonical source key — check for a scrubber-written source pointer.
-					// Only entries with SourceRedirect=true are source pointers; a plain link: field
-					// alone is an ordinary PR marker that must not trigger canonical deletion.
-					var entry = TryDeserializeEntry(publicContent);
-					if (entry?.SourceRedirect == true)
-					{
-						var lastSlash = key.LastIndexOf('/');
-						var keyPrefix = lastSlash >= 0 ? key[..(lastSlash + 1)] : string.Empty;
-						var canonicalKey = $"{keyPrefix}{entry.Link}.yaml";
-						var canonicalContent = await TryGetPublicObject(canonicalKey, ctx);
-						await DeleteStaleMarkersAsync(canonicalKey, canonicalContent, [], ctx);
-						await DeletePublicObject(canonicalKey, ctx);
-						_logger.LogInformation(
-							"Source pointer {Key} traced to canonical {CanonicalKey}; deleted canonical and its markers",
-							key, canonicalKey);
-					}
-					else
-					{
-						// Non-canonical key but not a pointer (e.g. a note-* file).
-						await DeleteStaleMarkersAsync(key, publicContent, [], ctx);
-					}
+					var lastSlash = key.LastIndexOf('/');
+					var keyPrefix = lastSlash >= 0 ? key[..(lastSlash + 1)] : string.Empty;
+					var canonicalKey = $"{keyPrefix}{publicEntry.Link}.yaml";
+					var canonicalContent = await TryGetPublicObject(canonicalKey, ctx);
+					await DeleteStaleMarkersAsync(canonicalKey, canonicalContent, [], ctx);
+					await DeletePublicObject(canonicalKey, ctx);
+					_logger.LogInformation(
+						"Source pointer {Key} traced to canonical {CanonicalKey}; deleted canonical and its markers",
+						key, canonicalKey);
 				}
 				else if (publicContent is not null)
 				{
-					// Numeric key: canonical entry or secondary-PR marker. Either way, clean up any
-					// markers the canonical may have emitted before deleting the entry itself.
 					await DeleteStaleMarkersAsync(key, publicContent, [], ctx);
 				}
 
@@ -480,18 +468,6 @@ public sealed class ScrubberProcessor(
 		try
 		{ return ReleaseNotesSerialization.DeserializeEntry(content); }
 		catch { return null; }
-	}
-
-	private static bool IsNumericYamlKey(string key)
-	{
-		var lastSlash = key.LastIndexOf('/');
-		var fileName = lastSlash >= 0 ? key[(lastSlash + 1)..] : key;
-		// Only .yaml (not .yml) files are written as canonical PR keys by the pipeline.
-		// A .yml source file is always non-canonical; treat it as needing pointer tracing.
-		if (!fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
-			return false;
-		var stem = Path.GetFileNameWithoutExtension(fileName);
-		return int.TryParse(stem, NumberStyles.None, CultureInfo.InvariantCulture, out _);
 	}
 
 	private async Task WriteSourcePointerAsync(string sourceKey, string canonicalKey, Cancel ctx)

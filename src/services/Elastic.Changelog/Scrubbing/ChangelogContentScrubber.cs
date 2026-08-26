@@ -105,7 +105,11 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 		var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
 		var entry = ReleaseNotesSerialization.DeserializeEntry(normalized);
 
-		// Marker: link: <pr_number> with no other content. Return unchanged — there is no URL to scrub.
+		// Marker: link: <pr_number> with no other content.
+		// Re-serialize rather than passing raw content through so private-authored fields
+		// (e.g. source-redirect: true) are stripped. source-redirect is processor-owned and
+		// must never be settable by private input — if it were passed through, a forged marker
+		// could impersonate a scrubber-written source pointer and trigger canonical deletion.
 		if (entry.Link != null)
 		{
 			var hasContent = !string.IsNullOrEmpty(entry.Title)
@@ -115,7 +119,8 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			if (hasContent)
 				throw new InvalidOperationException(
 					"Changelog entry has both 'link:' and content fields. A marker must contain only 'link: <pr_number>'.");
-			return new ScrubResult { Content = content, IsMarker = true };
+			var safeContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = entry.Link });
+			return new ScrubResult { Content = safeContent, IsMarker = true };
 		}
 
 		var bundledEntry = new BundledEntry
