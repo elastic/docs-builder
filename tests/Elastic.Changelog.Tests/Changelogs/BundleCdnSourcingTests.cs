@@ -543,7 +543,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(RegistryJson);
 			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
-				return Json("""{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}""");
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}""");
 			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
 			{
 				callCount.TryGetValue(path, out var n);
@@ -592,7 +592,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(RegistryJson);
 			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
-				return Json("""{"schema_version":1,"notes":[{"path":"9.4/note-known-issue.yml","bundle_seq":0},{"path":"feature/note-known-issue.yml","bundle_seq":0}]}""");
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"9.4/note-known-issue.yml","bundle_seq":0},{"path":"feature/note-known-issue.yml","bundle_seq":0}]}""");
 			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
 			{
 				callCount.TryGetValue(path, out var n);
@@ -640,7 +640,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(RegistryJson);
 			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
-				return Json("""{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}""");
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}""");
 			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
 				return Yaml(NoteKnownIssueMain); // identical for both branch fetches
 			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
