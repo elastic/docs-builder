@@ -411,13 +411,19 @@ public partial class ChangelogBundlingService(
 			if (collector.Errors > 0)
 				return false;
 
-			if (matchResult.Entries.Count == 0)
+			// Merge notes for the target when sourcing from CDN and an explicit target is available.
+			// Notes are target-scoped by their index, so they are never filtered by PR/issue criteria.
+			var allEntries = await MergeNotesAsync(collector, matchResult.Entries, useCdn, authoringOwner, authoringRepo, input, ctx);
+			if (allEntries == null)
+				return false;
+
+			if (allEntries.Count == 0)
 			{
 				collector.EmitError(string.Empty, "No changelog entries matched the filter criteria");
 				return false;
 			}
 
-			return await BuildAndWriteBundle(collector, input, config, matchResult.Entries, outputPath, ctx);
+			return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
 		}
 		catch (IOException ioEx)
 		{
@@ -1216,6 +1222,108 @@ public partial class ChangelogBundlingService(
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}
 
+	/// <summary>
+	/// Fetches notes for <paramref name="target"/> from the CDN and converts them to matched entries.
+	/// An absent notes index is not an error (most targets have no notes). Returns <c>null</c> after
+	/// emitting an error when the index exists but a listed note cannot be fetched.
+	/// </summary>
+	private async Task<IReadOnlyList<MatchedChangelogFile>?> FetchCdnNotesAsync(
+		IDiagnosticsCollector collector,
+		string? org,
+		string? repo,
+		string target,
+		Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(repo))
+			return [];
+
+		var resolvedOrg = string.IsNullOrWhiteSpace(org) ? DefaultOwner : org;
+
+		var baseUri = ChangelogCdn.ResolveBaseUri();
+		if (baseUri is null)
+			return [];
+
+		var hadError = false;
+		var cdnEntries = await _entryFetcher.FetchNotesAsync(
+			baseUri, resolvedOrg, repo, target,
+			msg => { hadError = true; collector.EmitError(string.Empty, msg); },
+			ctx);
+
+		if (hadError)
+			return null;
+
+		if (cdnEntries.Count == 0)
+			return [];
+
+		var matchedNotes = new List<MatchedChangelogFile>(cdnEntries.Count);
+		foreach (var entry in cdnEntries)
+		{
+			try
+			{
+				var normalized = ReleaseNotesSerialization.NormalizeYaml(entry.Content);
+				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+				var data = ReleaseNotesSerialization.ConvertEntry(dto);
+				var checksum = ComputeSha1(entry.Content);
+				matchedNotes.Add(new MatchedChangelogFile
+				{
+					Data = data,
+					FilePath = entry.FileName,
+					FileName = entry.FileName,
+					Checksum = checksum
+				});
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				_logger.LogWarning(ex, "Failed to parse note '{FileName}' for {Repo}@{Target}; skipping", entry.FileName, repo, target);
+				collector.EmitError(string.Empty, $"Note '{entry.FileName}' for {repo}@{target} could not be parsed: {ex.Message}");
+				return null;
+			}
+		}
+
+		_logger.LogInformation("Resolved {Count} note(s) for {Repo}@{Target} from CDN", matchedNotes.Count, repo, target);
+		return matchedNotes;
+	}
+
+	/// <summary>
+	/// Fetches notes from the CDN (when applicable) and appends them to <paramref name="entries"/>,
+	/// deduplicating by checksum. Returns <c>null</c> after emitting an error on any fatal failure;
+	/// returns the original list unchanged when CDN notes are not applicable.
+	/// </summary>
+	private async Task<IReadOnlyList<MatchedChangelogFile>?> MergeNotesAsync(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<MatchedChangelogFile> entries,
+		bool useCdn,
+		string? org,
+		string? repo,
+		BundleChangelogsArguments input,
+		Cancel ctx)
+	{
+		if (!useCdn)
+			return entries;
+
+		var noteTargets = ResolveNoteTargets(input);
+		if (noteTargets.Count == 0)
+			return entries;
+
+		// Dedup by checksum: a note body identical to a PR entry (edge case) should appear once.
+		var seen = new HashSet<string>(entries.Select(e => e.Checksum), StringComparer.OrdinalIgnoreCase);
+		var combined = new List<MatchedChangelogFile>(entries);
+
+		foreach (var noteTarget in noteTargets)
+		{
+			var noteEntries = await FetchCdnNotesAsync(collector, org, repo, noteTarget, ctx);
+			if (noteEntries == null)
+				return null;
+
+			foreach (var note in noteEntries)
+			{
+				if (seen.Add(note.Checksum))
+					combined.Add(note);
+			}
+		}
+		return combined;
+	}
+
 	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--directory</c>), and a CDN base is configured.</summary>
 	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
 	{
@@ -1332,6 +1440,22 @@ public partial class ChangelogBundlingService(
 		}
 
 		return true;
+	}
+
+	/// <summary>
+	/// Returns all distinct, explicit, non-wildcard targets from <see cref="BundleChangelogsArguments.OutputProducts"/>.
+	/// Notes are fetched for every resolved target so multi-target bundles are fully covered.
+	/// Returns an empty list when no concrete targets are available.
+	/// </summary>
+	private static IReadOnlyList<string> ResolveNoteTargets(BundleChangelogsArguments input)
+	{
+		if (input.OutputProducts is not { Count: > 0 })
+			return [];
+		return input.OutputProducts
+			.Where(p => !string.IsNullOrWhiteSpace(p.Target) && p.Target != "*")
+			.Select(p => p.Target!)
+			.Distinct(StringComparer.Ordinal)
+			.ToList();
 	}
 
 	private static ChangelogFilterCriteria BuildFilterCriteria(

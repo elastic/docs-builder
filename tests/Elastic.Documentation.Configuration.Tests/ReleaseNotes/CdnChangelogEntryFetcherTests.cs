@@ -188,6 +188,77 @@ public class CdnChangelogEntryFetcherTests
 		warnings.Should().ContainSingle().Which.Should().Contain("escape.yaml");
 	}
 
+	[Fact]
+	public async Task FetchNotesAsync_IndexAbsent_ReturnsEmptyWithNoError()
+	{
+		// A missing notes index means "no notes for this target" — not a pipeline error.
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNotesAsync(BaseUri, "elastic", "elasticsearch", "9.0.0", emitError, TestContext.Current.CancellationToken);
+
+		entries.Should().BeEmpty();
+		errors.Should().BeEmpty("a missing index is expected for targets with no notes");
+		handler.RequestedPaths.Should().ContainSingle()
+			.Which.Should().EndWith("/changelog/elastic/elasticsearch/notes-9.0.0.json");
+	}
+
+	[Fact]
+	public async Task FetchNotesAsync_HappyPath_FetchesAllListedNotes()
+	{
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{"notes":["main/note-slow-rollover.yml","9.0/note-gap.yml"]}""");
+			return Yaml(SampleEntry);
+		});
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNotesAsync(BaseUri, "elastic", "elasticsearch", "9.0.0", emitError, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		entries.Select(e => e.FileName).Should().BeEquivalentTo("main/note-slow-rollover.yml", "9.0/note-gap.yml");
+		// Verify the actual note URLs contain branch segments
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/main/note-slow-rollover.yml", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/9.0/note-gap.yml", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task FetchNotesAsync_ListedNoteNotFound_EmitsErrorAndReturnsEmpty()
+	{
+		// A note listed in the index that cannot be fetched is a hard error — the index promises it exists.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{"notes":["main/note-missing.yml"]}""");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler, maxAttempts: 2);
+		var entries = await fetcher.FetchNotesAsync(BaseUri, "elastic", "elasticsearch", "9.0.0", emitError, TestContext.Current.CancellationToken);
+
+		entries.Should().BeEmpty();
+		errors.Should().ContainSingle().Which.Should().Contain("note-missing.yml");
+	}
+
+	[Fact]
+	public async Task FetchNotesAsync_EmptyIndex_ReturnsEmpty()
+	{
+		var handler = new StubHandler(_ => Json(/*lang=json,strict*/ """{"notes":[]}"""));
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNotesAsync(BaseUri, "elastic", "elasticsearch", "9.0.0", emitError, TestContext.Current.CancellationToken);
+
+		entries.Should().BeEmpty();
+		errors.Should().BeEmpty();
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
