@@ -298,26 +298,26 @@ public partial class ChangelogBackfillService(
 				foreach (var entry in release.Bundle.Entries ?? [])
 				{
 					var firstPr = entry.Prs is { Count: > 0 } prs ? prs[0] : null;
-					if (firstPr is not null)
+					var prNumberMatch = firstPr is not null ? PrNumberFromUrlRegex().Match(firstPr) : default;
+					if (prNumberMatch is { Success: true })
 					{
-						var prNumberMatch = PrNumberFromUrlRegex().Match(firstPr);
-						if (prNumberMatch.Success)
+						var prNumber = prNumberMatch.Groups["number"].Value;
+						if (!seenPrNumbers.Add(prNumber))
 						{
-							var prNumber = prNumberMatch.Groups["number"].Value;
-							if (!seenPrNumbers.Add(prNumber))
-							{
-								dupPrRefs++;
-								_logger.LogDebug("Duplicate PR #{PrNumber} for {Product} {Version}; skipping", prNumber, scope.ProductId, release.Version);
-								continue;
-							}
-
-							var entryYaml = SerializeEntry(entry, scope, release.Version);
-							fileSystem.File.WriteAllText(Path.Join(changelogDir, $"{prNumber}.yaml"), entryYaml);
-							filesWritten++;
+							dupPrRefs++;
+							_logger.LogDebug("Duplicate PR #{PrNumber} for {Product} {Version}; skipping fragment", prNumber, scope.ProductId, release.Version);
+							continue;
 						}
+
+						var entryYaml = SerializeEntry(entry, scope, release.Version);
+						fileSystem.File.WriteAllText(Path.Join(changelogDir, $"{prNumber}.yaml"), entryYaml);
+						filesWritten++;
 					}
 					else
 					{
+						// No PR URL or unrecognised format — treat as note-*.yaml.
+						if (firstPr is not null)
+							_logger.LogDebug("Could not extract PR number from '{Pr}' in {Product} {Version}; treating as no-PR entry", firstPr, scope.ProductId, release.Version);
 						noPrEntries++;
 						var noteFile = AllocateNoteFileName(entry.Title ?? string.Empty, release.Version, slugVersionCounts, claimedNoteFiles);
 						if (noteFile is null)
