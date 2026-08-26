@@ -220,12 +220,11 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	{
 		var discovery = ApiSupplementalDiscovery.Discover(folder, document);
 		var collector = new CapturingDiagnosticsCollector();
-		ApiSupplementalValidator.Validate(
-			discovery,
+		ApiSupplementalValidator.Validate(discovery, new(
 			document,
 			collector,
 			moniker,
-			emitUnmatchedBaseFiles: emitUnmatchedBaseFiles ?? (moniker == "main"));
+			EmitUnmatchedBaseFiles: emitUnmatchedBaseFiles ?? (moniker == "main")));
 		return collector;
 	}
 

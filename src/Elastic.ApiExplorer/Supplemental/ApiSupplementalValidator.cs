@@ -10,26 +10,30 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Supplemental;
 
+internal sealed record ApiSupplementalValidationRequest(
+	OpenApiDocument Document,
+	IDiagnosticsCollector Collector,
+	string Moniker,
+	bool EmitUnmatchedBaseFiles);
+
 internal static class ApiSupplementalValidator
 {
 	public static void Validate(
 		ApiSupplementalDiscoveryResult discovery,
-		OpenApiDocument document,
-		IDiagnosticsCollector collector,
-		string moniker,
-		bool emitUnmatchedBaseFiles)
+		ApiSupplementalValidationRequest request)
 	{
-		if (emitUnmatchedBaseFiles)
-			EmitUnmatched(discovery.Unmatched, collector, "the latest spec");
+		if (request.EmitUnmatchedBaseFiles)
+			EmitUnmatched(discovery.Unmatched, request.Collector, "the latest spec");
 
-		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(document);
-		if (int.TryParse(moniker, out var major))
+		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(request.Document);
+		if (int.TryParse(request.Moniker, out var major))
 		{
 			var tagSlugs = new HashSet<string>(tagNames.Select(ApiUrlBuilder.TagSlug), StringComparer.Ordinal);
-			ValidateVersionSuffixed(discovery.VersionSuffixed, major, operationsById, tagSlugs, document, collector);
+			ValidateVersionSuffixed(
+				discovery.VersionSuffixed, major, operationsById, tagSlugs, request.Document, request.Collector);
 		}
 
-		ValidateOperationOverrides(discovery.Operations, operationsById, document, collector);
+		ValidateOperationOverrides(discovery.Operations, operationsById, request.Document, request.Collector);
 	}
 
 	private static void EmitUnmatched(

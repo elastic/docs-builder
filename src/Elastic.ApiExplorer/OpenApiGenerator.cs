@@ -241,8 +241,11 @@ public class OpenApiGenerator(
 		Cancel ctx)
 	{
 		var discovery = DiscoverSupplemental(openApiDocument, apiConfig);
-		ApiSupplementalValidator.Validate(
-			discovery, openApiDocument, context.Collector, moniker, emitUnmatchedBaseFiles: emitUnmatchedBaseFiles);
+		ApiSupplementalValidator.Validate(discovery, new(
+			openApiDocument,
+			context.Collector,
+			moniker,
+			EmitUnmatchedBaseFiles: emitUnmatchedBaseFiles));
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
 
