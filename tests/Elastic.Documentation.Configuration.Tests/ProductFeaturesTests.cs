@@ -177,6 +177,39 @@ public class ProductFeaturesTests
 			.WithMessage("*'public-reference' value 'prestage'*Allowed values: true, false*");
 	}
 
+	[Fact]
+	public void ReleaseNotesFeature_PresentButEmpty_Throws()
+	{
+		// A present-but-empty key must be rejected, not silently treated as the omitted-key default.
+		var act = () => ParseProducts("""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes:
+			""");
+
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*has an empty 'release-notes' value*Allowed values: true, false, prestage, on-release*");
+	}
+
+	[Fact]
+	public void PublicReferenceFeature_PresentButEmpty_Throws()
+	{
+		var act = () => ParseProducts("""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      public-reference:
+			""");
+
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*has an empty 'public-reference' value*Allowed values: true, false*");
+	}
+
 	private static ProductsConfiguration ParseProducts(string yaml)
 	{
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());

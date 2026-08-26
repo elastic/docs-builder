@@ -89,8 +89,11 @@ public static class ProductExtensions
 
 	private static bool ResolveBooleanFeature(string productId, Dictionary<string, string> featuresDto, string key)
 	{
-		if (!featuresDto.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+		if (!featuresDto.TryGetValue(key, out var value))
 			return true;
+		if (string.IsNullOrWhiteSpace(value))
+			throw new InvalidOperationException(
+				$"Product '{productId}' has an empty '{key}' value. Allowed values: true, false.");
 		if (bool.TryParse(value, out var enabled))
 			return enabled;
 		throw new InvalidOperationException(
@@ -104,8 +107,12 @@ public static class ProductExtensions
 	/// </summary>
 	private static ReleaseNotesPath ResolveReleaseNotesPath(string productId, Dictionary<string, string> featuresDto)
 	{
-		if (!featuresDto.TryGetValue("release-notes", out var value) || string.IsNullOrWhiteSpace(value))
+		if (!featuresDto.TryGetValue("release-notes", out var value))
 			return ReleaseNotesPath.OnRelease;
+
+		if (string.IsNullOrWhiteSpace(value))
+			throw new InvalidOperationException(
+				$"Product '{productId}' has an empty 'release-notes' value. Allowed values: true, false, prestage, on-release.");
 
 		if (bool.TryParse(value, out var enabled))
 			return enabled ? ReleaseNotesPath.OnRelease : ReleaseNotesPath.None;
