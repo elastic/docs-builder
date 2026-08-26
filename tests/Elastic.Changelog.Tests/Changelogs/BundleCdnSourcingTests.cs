@@ -47,6 +47,10 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	// language=yaml
 	private static string MarkerFor(int parentPr) => $"link: \"{parentPr}\"\n";
 
+	private const string RegistryJson =
+		/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-alpha.yaml" }, { "file": "2-bravo.yaml" } ] }""";
+
+
 	private static StubHandler ProbeHandler() => new(req =>
 	{
 		var path = req.RequestUri!.AbsolutePath;
