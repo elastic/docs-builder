@@ -20,17 +20,16 @@ internal static class ApiSupplementalValidator
 	{
 		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(document);
 		if (moniker == "main")
-		{
 			EmitUnmatched(discovery.Unmatched, collector, "the latest spec");
-			ValidateOperationOverrides(discovery.Operations, operationsById, document, collector);
-			return;
+		else if (int.TryParse(moniker, out var major))
+		{
+			var tagSlugs = new HashSet<string>(tagNames.Select(ApiUrlBuilder.TagSlug), StringComparer.Ordinal);
+			ValidateVersionSuffixed(discovery.VersionSuffixed, major, operationsById, tagSlugs, document, collector);
 		}
-
-		if (!int.TryParse(moniker, out var major))
+		else
 			return;
 
-		var tagSlugs = new HashSet<string>(tagNames.Select(ApiUrlBuilder.TagSlug), StringComparer.Ordinal);
-		ValidateVersionSuffixed(discovery.VersionSuffixed, major, operationsById, tagSlugs, document, collector);
+		ValidateOperationOverrides(discovery.Operations, operationsById, document, collector);
 	}
 
 	private static void EmitUnmatched(

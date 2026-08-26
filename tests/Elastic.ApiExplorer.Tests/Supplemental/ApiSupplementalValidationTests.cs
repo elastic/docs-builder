@@ -106,6 +106,20 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	}
 
 	[Fact]
+	public void Validate_UnknownParameterOnOlderVersionMatchedBaseFile_EmitsError()
+	{
+		var collector = Validate(FolderWith(("op-search.md", """
+			## Parameters
+
+			: `pretty`
+			  Removed in this version.
+			""")), SpecWith("search", "q"), "8");
+
+		collector.ErrorMessages.Should().ContainSingle(m =>
+			m.Contains("Parameter 'pretty'") && m.Contains("operation 'search'"));
+	}
+
+	[Fact]
 	public void Validate_VersionSuffixedUnknownOperation_EmitsErrorNamingVersion()
 	{
 		var collector = Validate(FolderWith(("op-nope.v8.md", "# supplemental")), SpecWith("ping"), "8");
@@ -162,7 +176,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 		return new MockFileSystem(data).DirectoryInfo.New(Folder);
 	}
 
-	private static OpenApiDocument SpecWith(string operationId) => new()
+	private static OpenApiDocument SpecWith(string operationId, params string[] parameterNames) => new()
 	{
 		Info = new OpenApiInfo { Title = "t", Version = "1" },
 		Paths = new OpenApiPaths
@@ -175,6 +189,9 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 					{
 						OperationId = operationId,
 						Tags = new HashSet<OpenApiTagReference> { new("core") },
+						Parameters = parameterNames
+							.Select(name => (IOpenApiParameter)new OpenApiParameter { Name = name, In = ParameterLocation.Query })
+							.ToList(),
 						Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
 					}
 				}
