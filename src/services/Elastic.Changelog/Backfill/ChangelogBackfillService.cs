@@ -248,6 +248,9 @@ public partial class ChangelogBackfillService(
 			return true;
 		}).ToList();
 
+		if (inScope.Count == 0)
+			return new BackfillProductResult(scope.ProductId, url, OutcomeSkipped, 0, 0, 0, 0, 0, "no versions matched filters or cutoff");
+
 		var totalEntries = inScope.Sum(r => r.Bundle.Entries?.Count ?? 0);
 
 		if (args.DryRun)
@@ -297,27 +300,40 @@ public partial class ChangelogBackfillService(
 				var noteFilesForVersion = new List<string>();
 				foreach (var entry in release.Bundle.Entries ?? [])
 				{
-					var firstPr = entry.Prs is { Count: > 0 } prs ? prs[0] : null;
-					var prNumberMatch = firstPr is not null ? PrNumberFromUrlRegex().Match(firstPr) : default;
-					if (prNumberMatch is { Success: true })
+					// Find the first PR URL not yet claimed. An entry with Prs=[100, 200] where
+					// 100 is already seen is still written under 200; only skip when every
+					// referenced PR number is a duplicate.
+					string? canonicalPrNumber = null;
+					foreach (var pr in entry.Prs ?? [])
 					{
-						var prNumber = prNumberMatch.Groups["number"].Value;
-						if (!seenPrNumbers.Add(prNumber))
-						{
-							dupPrRefs++;
-							_logger.LogDebug("Duplicate PR #{PrNumber} for {Product} {Version}; skipping fragment", prNumber, scope.ProductId, release.Version);
+						var m = PrNumberFromUrlRegex().Match(pr);
+						if (!m.Success)
 							continue;
+						var num = m.Groups["number"].Value;
+						if (seenPrNumbers.Add(num))
+						{
+							canonicalPrNumber = num;
+							break;
 						}
+						dupPrRefs++;
+					}
 
+					if (canonicalPrNumber is not null)
+					{
 						var entryYaml = SerializeEntry(entry, scope, release.Version);
-						fileSystem.File.WriteAllText(Path.Join(changelogDir, $"{prNumber}.yaml"), entryYaml);
+						fileSystem.File.WriteAllText(Path.Join(changelogDir, $"{canonicalPrNumber}.yaml"), entryYaml);
 						filesWritten++;
 					}
 					else
 					{
-						// No PR URL or unrecognised format — treat as note-*.yaml.
-						if (firstPr is not null)
+						// No PR URL, unrecognised format, or all referenced PRs already claimed
+						// — treat as note-*.yaml.
+						var firstPr = entry.Prs is { Count: > 0 } prs2 ? prs2[0] : null;
+						if (firstPr is not null && entry.Prs!.Any(p => PrNumberFromUrlRegex().IsMatch(p)))
+							_logger.LogDebug("All PR refs already claimed for entry in {Product} {Version}; skipping fragment", scope.ProductId, release.Version);
+						else if (firstPr is not null)
 							_logger.LogDebug("Could not extract PR number from '{Pr}' in {Product} {Version}; treating as no-PR entry", firstPr, scope.ProductId, release.Version);
+
 						noPrEntries++;
 						var noteFile = AllocateNoteFileName(entry.Title ?? string.Empty, release.Version, slugVersionCounts, claimedNoteFiles);
 						if (noteFile is null)
