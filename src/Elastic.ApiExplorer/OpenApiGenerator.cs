@@ -24,6 +24,10 @@ namespace Elastic.ApiExplorer;
 
 internal sealed record VersionedOpenApiDocument(ResolvedApiVersion Version, OpenApiDocument Document);
 
+internal sealed record ResolvedProductDocuments(
+	IReadOnlyList<VersionedOpenApiDocument> Documents,
+	string? UnmatchedBaseFilesMoniker);
+
 internal sealed record ApiProductGeneration(
 	string Prefix,
 	OpenApiDocument Document,
@@ -104,12 +108,12 @@ public class OpenApiGenerator(
 		ResolvedApiConfiguration apiConfig,
 		Cancel ctx)
 	{
-		var versionedDocuments = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
-		if (versionedDocuments.Count == 0)
+		var resolved = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
+		if (resolved.Documents.Count == 0)
 			return null;
 
+		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
-		var hasMain = monikers.Contains("main");
 		foreach (var versioned in versionedDocuments)
 		{
 			var switcherItems = ApiVersionSwitcher.Build(
@@ -122,8 +126,7 @@ public class OpenApiGenerator(
 						apiConfig,
 						switcherItems,
 						versioned.Version.Moniker,
-						EmitUnmatchedBaseFiles: versioned.Version.Moniker == "main"
-							|| (!hasMain && versioned.Version.Moniker == monikers[0])),
+						EmitUnmatchedBaseFiles: versioned.Version.Moniker == resolved.UnmatchedBaseFilesMoniker),
 					ctx)
 				.ConfigureAwait(false);
 		}
@@ -139,9 +142,11 @@ public class OpenApiGenerator(
 
 	/// <summary>
 	/// Resolves every OpenAPI document to render for one API key, including canonical <c>main</c>
-	/// and released numeric majors. Returns an empty list when nothing could be resolved.
+	/// and released numeric majors. Returns empty documents when nothing could be resolved.
+	/// <see cref="ResolvedProductDocuments.UnmatchedBaseFilesMoniker"/> is the declared latest
+	/// version only when that document actually resolved.
 	/// </summary>
-	internal async Task<IReadOnlyList<VersionedOpenApiDocument>> ResolveDocumentsForProduct(
+	internal async Task<ResolvedProductDocuments> ResolveDocumentsForProduct(
 		string apiKey,
 		ResolvedApiConfiguration apiConfig,
 		Cancel ctx)
@@ -158,13 +163,17 @@ public class OpenApiGenerator(
 			: [.. versions];
 
 		if (versionsToRender.Length == 0)
-			return [];
+			return new([], null);
 
 		if (!versionless && versionsToRender.All(v => v.Moniker != "main") && versions.Count > 0)
 		{
 			context.Collector.EmitGlobalWarning(
 				$"Version index for API '{apiKey}' has no 'main' entry; the unversioned path will not be rendered.");
 		}
+
+		var latestDeclared = versionsToRender.Any(v => v.Moniker == "main")
+			? "main"
+			: versionsToRender[0].Moniker;
 
 		var results = new List<VersionedOpenApiDocument>(versionsToRender.Length);
 		foreach (var version in versionsToRender)
@@ -176,18 +185,18 @@ public class OpenApiGenerator(
 			results.Add(new VersionedOpenApiDocument(version, document));
 		}
 
-		return results;
+		return ToResolvedProductDocuments(results, latestDeclared);
 	}
 
-	private async Task<IReadOnlyList<VersionedOpenApiDocument>> ResolveLocalMainOnly(IFileInfo localFile)
+	private async Task<ResolvedProductDocuments> ResolveLocalMainOnly(IFileInfo localFile)
 	{
 		var document = await _openApiReader.ReadAsync(localFile).ConfigureAwait(false);
 		if (document is null)
-			return [];
+			return new([], null);
 
-		return
+		VersionedOpenApiDocument[] documents =
 		[
-			new VersionedOpenApiDocument(
+			new(
 				new ResolvedApiVersion
 				{
 					Moniker = "main",
@@ -197,7 +206,15 @@ public class OpenApiGenerator(
 				},
 				document)
 		];
+		return ToResolvedProductDocuments(documents, "main");
 	}
+
+	private static ResolvedProductDocuments ToResolvedProductDocuments(
+		IReadOnlyList<VersionedOpenApiDocument> documents,
+		string latestDeclared) =>
+		new(
+			documents,
+			documents.Any(d => d.Version.Moniker == latestDeclared) ? latestDeclared : null);
 
 	private static bool IsVersionlessProduct(Product product) =>
 		product.VersioningSystem?.IsVersionless == true;
