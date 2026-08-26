@@ -472,6 +472,68 @@ public class CdnChangelogFetcherTests
 	}
 
 	[Fact]
+	public async Task FetchAsync_ShallowMapTimesOut_DegradesInsteadOfFaultingLaterFetches()
+	{
+		// HttpClient surfaces its own request timeout as a TaskCanceledException even though the
+		// caller's token was never signaled. That must degrade like a transport failure — not fault
+		// the shared per-base-URI map lookup and take every later product fetch down with it.
+		var mapCalls = 0;
+		var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch
+		{
+			ShallowMapPath when Interlocked.Increment(ref mapCalls) == 1 =>
+				throw new TaskCanceledException("The request timed out.", new TimeoutException(), new CancellationToken(canceled: true)),
+			var p when p.EndsWith("/registry.json", StringComparison.Ordinal) => Json(EsRegistryJson),
+			_ => Yaml(SampleBundle)
+		});
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, new MockFileSystem(), handler);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		bundles.Should().ContainSingle("a map timeout must degrade to the full per-product registry fetch, not fault the whole run");
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/registry.json");
+	}
+
+	[Fact]
+	public async Task FetchAsync_ShallowMapTimesOut_DoesNotPoisonLaterProductsInTheSameRun()
+	{
+		var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch
+		{
+			ShallowMapPath => throw new TaskCanceledException("The request timed out.", new TimeoutException(), new CancellationToken(canceled: true)),
+			var p when p.EndsWith("/registry.json", StringComparison.Ordinal) => Json(EsRegistryJson),
+			_ => Yaml(SampleBundle)
+		});
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, new MockFileSystem(), handler);
+		var first = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		var second = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		first.Should().ContainSingle();
+		second.Should().ContainSingle("a prior timeout for this base URI must not poison later fetches sharing the cached map lookup");
+	}
+
+	[Fact]
+	public async Task FetchAsync_CallerCancels_PropagatesCancellationRatherThanDegrading()
+	{
+		using var cts = new CancellationTokenSource();
+		var handler = new StubHandler(req => req.RequestUri!.AbsolutePath == ShallowMapPath
+			? throw new OperationCanceledException(cts.Token)
+			: throw new InvalidOperationException($"Unexpected request: {req.RequestUri}"));
+
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, new MockFileSystem(), handler);
+		await cts.CancelAsync();
+
+		var act = () => fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, _ => { }, _ => { }, cts.Token);
+
+		await act.Should().ThrowAsync<OperationCanceledException>("a genuinely canceled caller must not have its cancellation swallowed as a degrade-and-continue");
+	}
+
+	[Fact]
 	public async Task FetchAsync_ShallowTokenMatchesWarmCache_MakesNoPerProductRequests()
 	{
 		var fs = WarmCache("tok1");

@@ -174,7 +174,20 @@ public sealed class CdnChangelogFetcher : IDisposable
 		var lazyMap = _shallowMaps.GetOrAdd(
 			baseUri.AbsoluteUri,
 			_ => new Lazy<Task<Dictionary<string, string>?>>(() => FetchShallowMapAsync(baseUri, ctx)));
-		var map = await lazyMap.Value.ConfigureAwait(false);
+		Dictionary<string, string>? map;
+		try
+		{
+			map = await lazyMap.Value.ConfigureAwait(false);
+		}
+		catch (OperationCanceledException)
+		{
+			// A genuinely canceled caller faults the cached Lazy for good (Lazy<Task<T>> caches the
+			// faulted task forever), which would otherwise poison every later fetch for this base URI
+			// within the same run. Evict it (only if it's still the same entry we faulted) so a future
+			// call with a live token can retry.
+			_ = _shallowMaps.TryRemove(new(baseUri.AbsoluteUri, lazyMap));
+			throw;
+		}
 		if (map is null || !map.TryGetValue(product, out var token))
 			return null;
 
@@ -198,6 +211,14 @@ public sealed class CdnChangelogFetcher : IDisposable
 			_ = response.EnsureSuccessStatusCode();
 			await using var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
 			return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.DictionaryStringString, ctx).ConfigureAwait(false);
+		}
+		catch (OperationCanceledException) when (!ctx.IsCancellationRequested)
+		{
+			// HttpClient surfaces its own request timeout as a TaskCanceledException even when the
+			// caller's token was never signaled — that must degrade like any other transport failure,
+			// not fault the shared lazy and take every subsequent product fetch down with it.
+			_logger.LogDebug("Shallow changelog map at {MapUri} timed out; fetching every product registry as usual", mapUri);
+			return null;
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
