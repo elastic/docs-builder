@@ -119,6 +119,19 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	}
 
 	[Fact]
+	public void Validate_UnmatchedBaseFileWhenLatestMonikerIsNonNumeric_EmitsError()
+	{
+		var collector = Validate(
+			FolderWith(("op-does-not-exist.md", "# supplemental")),
+			SpecWith("ping"),
+			"next",
+			emitUnmatchedBaseFiles: true);
+
+		collector.ErrorMessages.Should().ContainSingle(m =>
+			m.Contains("op-does-not-exist.md") && m.Contains("does not match any operationId in the latest spec"));
+	}
+
+	[Fact]
 	public void Validate_UnknownParameterOnOlderVersionMatchedBaseFile_EmitsError()
 	{
 		var collector = Validate(FolderWith(("op-search.md", """

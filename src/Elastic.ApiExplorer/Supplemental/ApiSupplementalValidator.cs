@@ -19,14 +19,14 @@ internal static class ApiSupplementalValidator
 		string moniker,
 		bool emitUnmatchedBaseFiles = false)
 	{
-		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(document);
+		if (moniker == "main" || emitUnmatchedBaseFiles)
+			EmitUnmatched(discovery.Unmatched, collector, "the latest spec");
+
 		var isNumeric = int.TryParse(moniker, out var major);
 		if (moniker != "main" && !isNumeric)
 			return;
 
-		if (moniker == "main" || emitUnmatchedBaseFiles)
-			EmitUnmatched(discovery.Unmatched, collector, "the latest spec");
-
+		var (operationsById, tagNames) = ApiSupplementalDiscovery.CollectEntities(document);
 		if (isNumeric)
 		{
 			var tagSlugs = new HashSet<string>(tagNames.Select(ApiUrlBuilder.TagSlug), StringComparer.Ordinal);
