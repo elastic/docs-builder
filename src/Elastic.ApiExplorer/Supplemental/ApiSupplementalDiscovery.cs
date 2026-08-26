@@ -39,9 +39,9 @@ public static class ApiSupplementalDiscovery
 
 	public static ApiSupplementalDiscoveryResult Discover(IDirectoryInfo? folder, OpenApiDocument document)
 	{
-		var (operationIds, tagNames) = CollectEntities(document);
+		var (operationsById, tagNames) = CollectEntities(document);
 		var (tagBySlug, collisions) = IndexTags(tagNames);
-		return MatchFiles(folder, operationIds, tagBySlug, collisions);
+		return MatchFiles(folder, operationsById.Keys.ToHashSet(StringComparer.Ordinal), tagBySlug, collisions);
 	}
 
 	private static ApiSupplementalDiscoveryResult MatchFiles(
@@ -98,9 +98,10 @@ public static class ApiSupplementalDiscovery
 		};
 	}
 
-	private static (HashSet<string> OperationIds, HashSet<string> TagNames) CollectEntities(OpenApiDocument document)
+	internal static (Dictionary<string, OpenApiOperation> OperationsById, HashSet<string> TagNames) CollectEntities(
+		OpenApiDocument document)
 	{
-		var operations = new HashSet<string>(StringComparer.Ordinal);
+		var operations = new Dictionary<string, OpenApiOperation>(StringComparer.Ordinal);
 		var tags = new HashSet<string>(StringComparer.Ordinal);
 
 		if (document.Tags is not null)
@@ -120,7 +121,7 @@ public static class ApiSupplementalDiscovery
 			foreach (var operation in path.Value.Operations.Values)
 			{
 				if (!string.IsNullOrWhiteSpace(operation.OperationId))
-					_ = operations.Add(operation.OperationId);
+					operations[operation.OperationId] = operation;
 
 				if (operation.Tags is null)
 					continue;

@@ -106,7 +106,7 @@ public class OpenApiGenerator(
 			var switcherItems = ApiVersionSwitcher.Build(
 				context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
 			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
-			await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherItems, ctx)
+			await GenerateApiProduct(apiUrlSuffix, versioned.Document, apiConfig, switcherItems, versioned.Version.Moniker, ctx)
 				.ConfigureAwait(false);
 		}
 
@@ -227,9 +227,11 @@ public class OpenApiGenerator(
 		OpenApiDocument openApiDocument,
 		ResolvedApiConfiguration? apiConfig,
 		IReadOnlyList<ApiVersionSwitcherItem> versionSwitcherItems,
+		string moniker,
 		Cancel ctx)
 	{
 		var discovery = DiscoverSupplemental(openApiDocument, apiConfig);
+		ApiSupplementalValidator.Validate(discovery, openApiDocument, context.Collector, moniker);
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
 
