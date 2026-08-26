@@ -147,6 +147,15 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, string? Sort = null, IReadOnlyCollection<string>? Exclude = null)
 	: ITableOfContentsItem;
 
+/// <summary>
+/// A synthetic single-page folder created from the childless "file: subdir/index.md" sugar. Its path
+/// always resolves relative to the parent, exactly like the <see cref="FileRef"/> it was expanded from
+/// -- unlike an explicit "folder: a/b" entry, it never switches to context-relative resolution just
+/// because its path contains '/'.
+/// </summary>
+public record DeepLinkedFolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
+	: FolderRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Children, Context);
+
 /// <param name="Island">
 /// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
 /// <c>- toc: x</c> entry and the child <c>toc.yml</c> root (OR semantics).

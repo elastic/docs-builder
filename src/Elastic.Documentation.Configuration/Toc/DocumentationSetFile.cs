@@ -585,8 +585,10 @@ public class DocumentationSetFile : TableOfContentsFile
 	{
 		// Folder paths containing '/' are treated as relative to the context file's directory (full paths).
 		// Simple folder names (no '/') are resolved relative to the parent path in the navigation hierarchy.
+		// DeepLinkedFolderRef (the "file: subdir/index.md" sugar) is the exception: it always resolves
+		// relative to the parent, exactly like the FileRef it was expanded from, regardless of '/'.
 		string fullPath;
-		if (folderRef.PathRelativeToDocumentationSet.Contains('/'))
+		if (folderRef is not DeepLinkedFolderRef && folderRef.PathRelativeToDocumentationSet.Contains('/'))
 		{
 			// Path contains '/', treat as context-relative (full path from the context file's directory)
 			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
@@ -600,7 +602,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		}
 		else
 		{
-			// Simple name, resolve relative to parent path
+			// Simple name (or a DeepLinkedFolderRef), resolve relative to parent path
 			fullPath = string.IsNullOrEmpty(parentPath) ? folderRef.PathRelativeToDocumentationSet : $"{parentPath}/{folderRef.PathRelativeToDocumentationSet}";
 		}
 
