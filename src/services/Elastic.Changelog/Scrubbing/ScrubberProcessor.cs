@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -321,25 +322,91 @@ public sealed class ScrubberProcessor(
 					// marker objects it previously produced and delete any that are no longer needed.
 					var oldPublicContent = await TryGetPublicObject(publicKey, ctx);
 
-					await PutPublicObject(publicKey, scrubResult.Content, "application/yaml", ctx);
-					if (scrubResult.CanonicalKey is not null)
-						_logger.LogInformation("Scrubbed {Key} → canonical public key {CanonicalKey}", key, scrubResult.CanonicalKey);
-					else
-						_logger.LogInformation("Scrubbed and wrote {Key} to public bucket", key);
+					// Issue 1 guard: a private marker derived from raw (pre-allowlist) PRs can race
+					// with the scrubber writing canonical public content at the same key. If canonical
+					// content already occupies the public key, skip the marker write so it cannot
+					// overwrite the canonical entry that the primary object's scrub already produced.
+					// A null return from TryDeserializeEntry (unparseable content) is treated as
+					// canonical — the safest assumption when we cannot classify the existing object.
+					var skipWrite = scrubResult.IsMarker
+						&& oldPublicContent is not null
+						&& TryDeserializeEntry(oldPublicContent)?.IsMarker != true;
 
-					foreach (var (markerKey, markerContent) in scrubResult.Markers)
+					if (skipWrite)
 					{
-						await PutPublicObject(markerKey, markerContent, "application/yaml", ctx);
-						_logger.LogInformation("Wrote marker {MarkerKey} → {PrimaryKey}", markerKey, publicKey);
+						_logger.LogInformation(
+							"Skipped pass-through marker {Key}: canonical content in public bucket takes precedence", key);
 					}
+					else
+					{
+						await PutPublicObject(publicKey, scrubResult.Content, "application/yaml", ctx);
+						if (scrubResult.CanonicalKey is not null)
+						{
+							_logger.LogInformation("Scrubbed {Key} → canonical public key {CanonicalKey}", key, scrubResult.CanonicalKey);
+							// Issue 2: write a source pointer at the source key in the public bucket so
+							// that a delete event for 'key' can trace back to the canonical key and clean
+							// it up (see delete path below). The pointer uses the same link: format as
+							// secondary-PR markers; the non-canonical filename makes it distinguishable.
+							await WriteSourcePointerAsync(key, scrubResult.CanonicalKey, ctx);
+						}
+						else
+							_logger.LogInformation("Scrubbed and wrote {Key} to public bucket", key);
 
-					// Remove marker objects that existed in the previous scrub result but are no
-					// longer produced (e.g. an entry shrank from 3 PRs to 1).
-					await DeleteStaleMarkersAsync(publicKey, oldPublicContent, scrubResult.Markers, ctx);
+						foreach (var (markerKey, markerContent) in scrubResult.Markers)
+						{
+							await PutPublicObject(markerKey, markerContent, "application/yaml", ctx);
+							_logger.LogInformation("Wrote marker {MarkerKey} → {PrimaryKey}", markerKey, publicKey);
+						}
+
+						// Remove marker objects that existed in the previous scrub result but are no
+						// longer produced (e.g. an entry shrank from 3 PRs to 1).
+						await DeleteStaleMarkersAsync(publicKey, oldPublicContent, scrubResult.Markers, ctx);
+					}
 				}
 			}
 			else
 			{
+				// Issue 2: the private object is gone. Read the public bucket to discover what
+				// was previously written for this source key so we can clean it up completely.
+				//
+				// Two sub-cases:
+				// (a) Source key was non-canonical: the scrubber wrote canonical content to a
+				//     different public key and left a source pointer (link: <pr>) at 'key'. Read
+				//     the pointer, derive the canonical key, delete it and all its markers, then
+				//     delete the pointer. Non-canonical source keys always have a non-integer
+				//     filename (e.g. "12345-fix.yaml"), which differentiates them from PR markers.
+				// (b) Source key was canonical or a secondary PR marker: delete its markers (if
+				//     any), then delete the key itself.
+				var publicContent = await TryGetPublicObject(key, ctx);
+				if (publicContent is not null && !IsNumericYamlKey(key))
+				{
+					// Non-canonical source key — check for a source pointer.
+					var entry = TryDeserializeEntry(publicContent);
+					if (entry?.IsMarker == true)
+					{
+						var lastSlash = key.LastIndexOf('/');
+						var keyPrefix = lastSlash >= 0 ? key[..(lastSlash + 1)] : string.Empty;
+						var canonicalKey = $"{keyPrefix}{entry.Link}.yaml";
+						var canonicalContent = await TryGetPublicObject(canonicalKey, ctx);
+						await DeleteStaleMarkersAsync(canonicalKey, canonicalContent, [], ctx);
+						await DeletePublicObject(canonicalKey, ctx);
+						_logger.LogInformation(
+							"Source pointer {Key} traced to canonical {CanonicalKey}; deleted canonical and its markers",
+							key, canonicalKey);
+					}
+					else
+					{
+						// Non-canonical key but not a pointer (e.g. a note-* file).
+						await DeleteStaleMarkersAsync(key, publicContent, [], ctx);
+					}
+				}
+				else if (publicContent is not null)
+				{
+					// Numeric key: canonical entry or secondary-PR marker. Either way, clean up any
+					// markers the canonical may have emitted before deleting the entry itself.
+					await DeleteStaleMarkersAsync(key, publicContent, [], ctx);
+				}
+
 				await DeletePublicObject(key, ctx);
 				_logger.LogInformation("Private {Key} is gone; removed its public copy", key);
 			}
@@ -402,6 +469,35 @@ public sealed class ScrubberProcessor(
 		{
 			return null;
 		}
+	}
+
+	private static ChangelogEntry? TryDeserializeEntry(string? content)
+	{
+		if (content is null)
+			return null;
+		try
+		{ return ReleaseNotesSerialization.DeserializeEntry(content); }
+		catch { return null; }
+	}
+
+	private static bool IsNumericYamlKey(string key)
+	{
+		var lastSlash = key.LastIndexOf('/');
+		var fileName = lastSlash >= 0 ? key[(lastSlash + 1)..] : key;
+		var stem = Path.GetFileNameWithoutExtension(fileName);
+		return int.TryParse(stem, NumberStyles.None, CultureInfo.InvariantCulture, out _);
+	}
+
+	private async Task WriteSourcePointerAsync(string sourceKey, string canonicalKey, Cancel ctx)
+	{
+		var lastSlash = canonicalKey.LastIndexOf('/');
+		var canonicalFileName = lastSlash >= 0 ? canonicalKey[(lastSlash + 1)..] : canonicalKey;
+		var stem = Path.GetFileNameWithoutExtension(canonicalFileName);
+		if (!int.TryParse(stem, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+			return; // Not a PR-based canonical key; nothing to point to.
+		var pointerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = stem });
+		await PutPublicObject(sourceKey, pointerContent, "application/yaml", ctx);
+		_logger.LogInformation("Wrote source pointer {SourceKey} → canonical {CanonicalKey}", sourceKey, canonicalKey);
 	}
 
 	private async Task<string?> TryGetPublicObject(string key, Cancel ctx)

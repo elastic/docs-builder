@@ -31,6 +31,14 @@ public record ScrubResult
 	/// Empty for single-PR entries and bundles.
 	/// </summary>
 	public IReadOnlyList<(string Key, string Content)> Markers { get; init; } = [];
+
+	/// <summary>
+	/// True when the content is a pass-through private marker (<c>link:</c> only).
+	/// The processor must not overwrite existing canonical public content at the same key
+	/// with a marker — private markers derived from raw (pre-allowlist) PR lists can be
+	/// stale and their canonical target may already be written to a different public key.
+	/// </summary>
+	public bool IsMarker { get; init; }
 }
 
 /// <summary>Rewrites private-bucket changelog YAML into its public, allowlist-scrubbed form.</summary>
@@ -107,7 +115,7 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			if (hasContent)
 				throw new InvalidOperationException(
 					"Changelog entry has both 'link:' and content fields. A marker must contain only 'link: <pr_number>'.");
-			return new ScrubResult { Content = content };
+			return new ScrubResult { Content = content, IsMarker = true };
 		}
 
 		var bundledEntry = new BundledEntry
