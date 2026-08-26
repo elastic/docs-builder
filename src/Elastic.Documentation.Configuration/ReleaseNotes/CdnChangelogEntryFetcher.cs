@@ -429,14 +429,14 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// <summary>
 	/// <summary>
 	/// Fetches all <c>note-*.yml</c> entries for <paramref name="org"/>/<paramref name="repo"/> at
-	/// <paramref name="target"/> from the CDN. Reads the <c>notes-{target}.json</c> index to enumerate
+	/// <paramref name="version"/> from the CDN. Reads the <c>notes-{version}.json</c> index to enumerate
 	/// the pool-relative note paths; a missing index means no notes (not an error). A listed note that
 	/// cannot be fetched is a hard error — the index is an authoritative promise that the note exists.
 	/// </summary>
 	/// <param name="baseUri">CDN base URI.</param>
 	/// <param name="org">Repository org (e.g. <c>elastic</c>).</param>
 	/// <param name="repo">Repository name (e.g. <c>kibana</c>).</param>
-	/// <param name="target">Target version string (e.g. <c>9.0.0</c>).</param>
+	/// <param name="version">Release version string (e.g. <c>9.0.0</c>).</param>
 	/// <param name="emitError">Called once per hard error; caller decides how to surface it.</param>
 	/// <param name="ctx">Cancellation token.</param>
 	/// <returns>The fetched note entries, keyed by pool-relative path (<c>main/note-foo.yml</c>).</returns>
@@ -444,7 +444,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		Uri baseUri,
 		string org,
 		string repo,
-		string target,
+		string version,
 		Action<string> emitError,
 		Cancel ctx)
 	{
@@ -454,21 +454,21 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			return [];
 		}
 
-		var indexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{target}.json"]);
+		var indexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{version}.json"]);
 		NotesIndex? index;
 		try
 		{
 			var (notFound, content) = await FetchTextOrNotFoundAsync(indexUri, 1, ctx).ConfigureAwait(false);
 			if (notFound)
 			{
-				_logger.LogDebug("Notes index for {Org}/{Repo}@{Target} not found at {Uri}; no notes to bundle", org, repo, target, indexUri);
+				_logger.LogDebug("Notes index for {Org}/{Repo}@{Version} not found at {Uri}; no notes to bundle", org, repo, version, indexUri);
 				return [];
 			}
 			index = JsonSerializer.Deserialize(content, NotesIndexJsonContext.Default.NotesIndex);
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
-			emitError($"Could not fetch notes index for {org}/{repo}@{target} from {indexUri}: {ex.Message}");
+			emitError($"Could not fetch notes index for {org}/{repo}@{version} from {indexUri}: {ex.Message}");
 			return [];
 		}
 
@@ -477,15 +477,16 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 
 		var repoLabel = $"{org}/{repo}";
 		var entries = new List<CdnChangelogEntry>(index.Notes.Count);
-		foreach (var poolRelativePath in index.Notes)
+		foreach (var noteEntry in index.Notes)
 		{
 			ctx.ThrowIfCancellationRequested();
 
 			// Pool-relative path is "{branch}/note-{name}.yml"; split on first '/' only.
+			var poolRelativePath = noteEntry.Path;
 			var slash = poolRelativePath.IndexOf('/', StringComparison.Ordinal);
 			if (slash <= 0 || slash == poolRelativePath.Length - 1)
 			{
-				emitError($"Notes index for {repoLabel}@{target} lists an invalid pool-relative path '{poolRelativePath}'; expected {{branch}}/{{file}}.");
+				emitError($"Notes index for {repoLabel}@{version} lists an invalid pool-relative path '{poolRelativePath}'; expected {{branch}}/{{file}}.");
 				return [];
 			}
 			var branch = poolRelativePath[..slash];
@@ -493,7 +494,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 
 			if (!ChangelogKeys.IsValidBranch(branch))
 			{
-				emitError($"Notes index for {repoLabel}@{target} lists path '{poolRelativePath}' with an invalid branch segment.");
+				emitError($"Notes index for {repoLabel}@{version} lists path '{poolRelativePath}' with an invalid branch segment.");
 				return [];
 			}
 
@@ -510,12 +511,12 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 
 			// The notes index asserts this note exists — a miss is a real pipeline error.
 			emitError(
-				$"Note '{poolRelativePath}' for {repoLabel}@{target} is listed in the notes index but could not be fetched from {noteUri}: {lastError}. " +
+				$"Note '{poolRelativePath}' for {repoLabel}@{version} is listed in the notes index but could not be fetched from {noteUri}: {lastError}. " +
 				"Ensure the note was uploaded and scrubbed; if it persists check the changelog scrubber pipeline.");
 			return [];
 		}
 
-		_logger.LogInformation("Fetched {Count} note(s) for {Repo}@{Target} from {BaseUri}", entries.Count, repoLabel, target, baseUri);
+		_logger.LogInformation("Fetched {Count} note(s) for {Repo}@{Version} from {BaseUri}", entries.Count, repoLabel, version, baseUri);
 		return entries;
 	}
 

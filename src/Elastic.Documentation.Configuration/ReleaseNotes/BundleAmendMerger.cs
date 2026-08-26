@@ -13,7 +13,8 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// </summary>
 public static partial class BundleAmendMerger
 {
-	[GeneratedRegex(@"\.amend-(\d+)(\.ya?ml)$", RegexOptions.IgnoreCase)]
+	// Matches both numbered amends (.amend-1.yaml) and the reconciler-owned notes sidecar (.amend-notes.yaml).
+	[GeneratedRegex(@"\.amend-(\d+|notes)(\.ya?ml)$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();
 
 	/// <summary>Whether a path is an amend sidecar (<c>{name}.amend-{N}.yaml</c>).</summary>

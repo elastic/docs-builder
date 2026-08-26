@@ -99,11 +99,17 @@ public static class ChangelogKeys
 		$"{ChangelogPrefix}{poolGroup}/{RegistryFileName}";
 
 	/// <summary>
-	/// The notes-index key for one target within a repo: <c>changelog/{org}/{repo}/notes-{target}.json</c>.
-	/// Repo-level and branch-agnostic — all notes for a target, regardless of which branch they were authored on.
+	/// The notes-index key for one release version within a repo: <c>changelog/{org}/{repo}/notes-{version}.json</c>.
+	/// Repo-level and branch-agnostic — all notes for a version, regardless of which branch they were authored on.
 	/// </summary>
-	public static string NotesIndexKey(string org, string repo, string target) =>
-		$"{ChangelogPrefix}{org}/{repo}/notes-{target}.json";
+	/// <remarks>
+	/// The slug in the key is the release version (e.g. <c>9.3.0</c> or <c>2026-05-15</c>).
+	/// Previously this parameter was named <c>target</c> to match the obsolete <c>target:</c> YAML field;
+	/// it was renamed to <c>version</c> when that field was replaced by <c>versions:</c> on notes.
+	/// The key layout (<c>notes-{slug}.json</c>) is unchanged — no migration is needed.
+	/// </remarks>
+	public static string NotesIndexKey(string org, string repo, string version) =>
+		$"{ChangelogPrefix}{org}/{repo}/notes-{version}.json";
 
 	/// <summary>
 	/// The S3 prefix that covers all branches and notes indexes of one repo: <c>changelog/{org}/{repo}/</c>.

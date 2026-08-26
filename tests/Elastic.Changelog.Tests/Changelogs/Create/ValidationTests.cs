@@ -49,7 +49,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -73,7 +73,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		{
 			Title = "Test",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "invalid-product", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "invalid-product" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -96,7 +96,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		{
 			Title = "Test",
 			Type = "invalid-type",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -139,7 +139,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		{
 			Title = "Test",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -248,7 +248,7 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		{
 			Title = "Test",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Config = configPath,
 			Output = CreateOutputDirectory()

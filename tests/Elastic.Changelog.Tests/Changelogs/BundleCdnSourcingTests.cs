@@ -497,6 +497,181 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		bundle.Should().NotContain("Bravo");
 	}
 
+	// language=yaml
+	private const string NoteKnownIssueMain = """
+		title: Known issue on main
+		type: known-issue
+		products:
+		  - product: elasticsearch
+		    versions:
+		      - 9.3.0
+		    lifecycle: ga
+		""";
+
+	// language=yaml
+	private const string NoteKnownIssue94 = """
+		title: Known issue on 9.4 branch (backport)
+		type: known-issue
+		products:
+		  - product: elasticsearch
+		    versions:
+		      - 9.3.0
+		    lifecycle: ga
+		""";
+
+	// language=yaml
+	private const string NoteKnownIssueFeature = """
+		title: Known issue on feature branch
+		type: known-issue
+		products:
+		  - product: elasticsearch
+		    versions:
+		      - 9.3.0
+		    lifecycle: ga
+		""";
+
+	[Fact]
+	public async Task BackportCollision_MainBranchWins_WarnAndKeepMain()
+	{
+		// notes-9.3.0.json lists both main/note-known-issue.yml and 9.4/note-known-issue.yml.
+		// The fetcher requests note-known-issue.yml twice (same leaf URL), returning main content first
+		// and 9.4-branch content second. The backport rule must keep the main copy and warn about the 9.4 copy.
+		var callCount = new Dictionary<string, int>(StringComparer.Ordinal);
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+				return Json("""{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}""");
+			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
+			{
+				callCount.TryGetValue(path, out var n);
+				callCount[path] = n + 1;
+				// First fetch → main content; second fetch → 9.4-branch content (simulates differing backport content).
+				return n == 0 ? Yaml(NoteKnownIssueMain) : Yaml(NoteKnownIssue94);
+			}
+			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("2-bravo.yaml", StringComparison.Ordinal))
+				return Yaml(EntryBravo);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+			Output = output,
+			Repo = "elasticsearch",
+			OutputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }]
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		// Only the main-branch note title should appear once.
+		bundle.Should().Contain("Known issue on main");
+		bundle.Should().NotContain("Known issue on 9.4 branch");
+	}
+
+	[Fact]
+	public async Task BackportCollision_NoMainOrMaster_KeepsOrdinalFirst()
+	{
+		// When neither branch is main/master, the alphabetically-first path wins.
+		// "9.4/note-known-issue.yml" < "feature/note-known-issue.yml" lexicographically.
+		var callCount = new Dictionary<string, int>(StringComparer.Ordinal);
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+				return Json("""{"schema_version":1,"notes":[{"path":"9.4/note-known-issue.yml","bundle_seq":0},{"path":"feature/note-known-issue.yml","bundle_seq":0}]}""");
+			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
+			{
+				callCount.TryGetValue(path, out var n);
+				callCount[path] = n + 1;
+				return n == 0 ? Yaml(NoteKnownIssue94) : Yaml(NoteKnownIssueFeature);
+			}
+			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("2-bravo.yaml", StringComparison.Ordinal))
+				return Yaml(EntryBravo);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+			Output = output,
+			Repo = "elasticsearch",
+			OutputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }]
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		// "9.4/note-known-issue.yml" sorts before "feature/note-known-issue.yml".
+		bundle.Should().Contain("Known issue on 9.4 branch");
+		bundle.Should().NotContain("Known issue on feature branch");
+	}
+
+	[Fact]
+	public async Task BackportCollision_IdenticalContent_ChecksumDedupHandlesIt()
+	{
+		// Same leaf on two branches, identical content → same checksum → existing checksum dedup
+		// removes the duplicate; the backport rule emits no warning since DeduplicateNotesByLeaf
+		// sees two entries but the second is absorbed by seen.Add(checksum) before reaching combined.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+				return Json("""{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}""");
+			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
+				return Yaml(NoteKnownIssueMain); // identical for both branch fetches
+			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("2-bravo.yaml", StringComparison.Ordinal))
+				return Yaml(EntryBravo);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+			Output = output,
+			Repo = "elasticsearch",
+			OutputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }]
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		bundle.Should().Contain("Known issue on main");
+		// Note appears exactly once (not duplicated).
+		bundle.Split("Known issue on main", StringSplitOptions.None).Length.Should().Be(2, "note must appear exactly once");
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 

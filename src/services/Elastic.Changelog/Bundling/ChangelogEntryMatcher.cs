@@ -259,7 +259,26 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			foreach (var changelogProduct in data.Products)
 			{
 				var productMatches = MatchesPattern(changelogProduct.Product, filter.ProductPattern);
-				var targetMatches = MatchesPattern(changelogProduct.Target, filter.TargetPattern);
+
+				// Target filtering: null or "*" pattern matches everything.
+				// For notes (Versions list), any version matching the pattern counts.
+				// For legacy entries that still carry Target (read-side compat), fall back to that.
+				bool targetMatches;
+				if (filter.TargetPattern is null or "*")
+				{
+					targetMatches = true;
+				}
+				else if (changelogProduct.Versions is { Count: > 0 })
+				{
+					targetMatches = changelogProduct.Versions.Any(v => MatchesPattern(v, filter.TargetPattern));
+				}
+				else
+				{
+#pragma warning disable CS0618 // reading obsolete Target for backward compat with legacy entries
+					targetMatches = MatchesPattern(changelogProduct.Target, filter.TargetPattern);
+#pragma warning restore CS0618
+				}
+
 				var lifecycleMatches = MatchesPattern(changelogProduct.Lifecycle, filter.LifecyclePattern);
 
 				if (productMatches && targetMatches && lifecycleMatches)

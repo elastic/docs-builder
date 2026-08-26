@@ -49,4 +49,4 @@ public sealed record ChangelogRegistryBundle
 [JsonSerializable(typeof(ChangelogRegistry))]
 [JsonSerializable(typeof(ChangelogRegistryBundle))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
-internal sealed partial class ChangelogRegistryJsonContext : JsonSerializerContext;
+public sealed partial class ChangelogRegistryJsonContext : JsonSerializerContext;

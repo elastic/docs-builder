@@ -51,7 +51,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -115,7 +115,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -179,7 +179,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -243,7 +243,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -311,7 +311,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true,
@@ -376,7 +376,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true,
@@ -443,7 +443,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = null  // CLI did not specify; config default applies
@@ -515,7 +515,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = null
@@ -582,7 +582,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = false
@@ -669,7 +669,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 				"https://github.com/elastic/elasticsearch/pull/100",
 				"https://github.com/elastic/elasticsearch/pull/200"
 			],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = output,
 			ExtractReleaseNotes = null,
@@ -743,7 +743,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = null
@@ -813,7 +813,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -879,7 +879,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = false,

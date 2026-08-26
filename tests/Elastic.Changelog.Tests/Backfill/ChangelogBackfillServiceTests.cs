@@ -195,7 +195,7 @@ public class ChangelogBackfillServiceTests
 		var entry = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(yaml);
 
 		entry.Type.Should().Be(Documentation.ReleaseNotes.ChangelogEntryType.BreakingChange);
-		entry.Products.Should().ContainSingle().Which.Target.Should().Be("1.9.0");
+		entry.Products.Should().ContainSingle().Which.Versions.Should().BeEquivalentTo(["1.9.0"]);
 		entry.Prs.Should().ContainSingle(p => p.Contains("/pull/958"));
 	}
 
