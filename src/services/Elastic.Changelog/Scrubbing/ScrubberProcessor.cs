@@ -8,6 +8,7 @@ using Amazon.S3.Model;
 using Amazon.S3.Util;
 using Elastic.Changelog.Reconciliation;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Scrubbing;
@@ -315,6 +316,11 @@ public sealed class ScrubberProcessor(
 				{
 					var scrubResult = await scrubber.ScrubAsync(key, source.Content, ctx);
 					var publicKey = scrubResult.CanonicalKey ?? key;
+
+					// Read the current public entry before overwriting so we can derive which
+					// marker objects it previously produced and delete any that are no longer needed.
+					var oldPublicContent = await TryGetPublicObject(publicKey, ctx);
+
 					await PutPublicObject(publicKey, scrubResult.Content, "application/yaml", ctx);
 					if (scrubResult.CanonicalKey is not null)
 						_logger.LogInformation("Scrubbed {Key} → canonical public key {CanonicalKey}", key, scrubResult.CanonicalKey);
@@ -326,6 +332,10 @@ public sealed class ScrubberProcessor(
 						await PutPublicObject(markerKey, markerContent, "application/yaml", ctx);
 						_logger.LogInformation("Wrote marker {MarkerKey} → {PrimaryKey}", markerKey, publicKey);
 					}
+
+					// Remove marker objects that existed in the previous scrub result but are no
+					// longer produced (e.g. an entry shrank from 3 PRs to 1).
+					await DeleteStaleMarkersAsync(publicKey, oldPublicContent, scrubResult.Markers, ctx);
 				}
 			}
 			else
@@ -392,6 +402,88 @@ public sealed class ScrubberProcessor(
 		{
 			return null;
 		}
+	}
+
+	private async Task<string?> TryGetPublicObject(string key, Cancel ctx)
+	{
+		try
+		{
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
+			{
+				BucketName = publicBucketName,
+				Key = key
+			}, ctx);
+			await using var stream = response.ResponseStream;
+			using var reader = new StreamReader(stream);
+			return await reader.ReadToEndAsync(ctx);
+		}
+		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+		{
+			return null;
+		}
+	}
+
+	private async Task DeleteStaleMarkersAsync(
+		string publicKey,
+		string? oldPublicContent,
+		IReadOnlyList<(string Key, string Content)> newMarkers,
+		Cancel ctx)
+	{
+		if (oldPublicContent is null)
+			return;
+
+		IReadOnlyList<string> oldMarkerKeys;
+		try
+		{
+			oldMarkerKeys = DeriveMarkerKeys(publicKey, oldPublicContent);
+		}
+		catch
+		{
+			// If the old content can't be parsed, we can't derive old markers — skip cleanup.
+			return;
+		}
+
+		if (oldMarkerKeys.Count == 0)
+			return;
+
+		var newMarkerKeySet = newMarkers.Select(m => m.Key).ToHashSet(StringComparer.Ordinal);
+		foreach (var staleKey in oldMarkerKeys)
+		{
+			if (newMarkerKeySet.Contains(staleKey))
+				continue;
+			await DeletePublicObject(staleKey, ctx);
+			_logger.LogInformation("Deleted stale marker {StaleKey} (no longer referenced by {PrimaryKey})", staleKey, publicKey);
+		}
+	}
+
+	private static IReadOnlyList<string> DeriveMarkerKeys(string publicKey, string content)
+	{
+		var entry = ReleaseNotesSerialization.DeserializeEntry(content);
+		if (entry.IsMarker || entry.Prs is not { Count: > 0 })
+			return [];
+
+		var lastSlash = publicKey.LastIndexOf('/');
+		if (lastSlash < 0)
+			return [];
+		var keyPrefix = publicKey[..(lastSlash + 1)];
+
+		var prNumbers = entry.Prs
+			.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr))
+			.Where(n => n.HasValue)
+			.Select(n => n!.Value)
+			.Distinct()
+			.OrderBy(n => n)
+			.ToList();
+
+		if (prNumbers.Count <= 1)
+			return [];
+
+		var primaryPr = prNumbers[0];
+		return prNumbers
+			.Skip(1)
+			.Select(pr => $"{keyPrefix}{pr}.yaml")
+			.Where(k => !string.Equals(k, $"{keyPrefix}{primaryPr}.yaml", StringComparison.OrdinalIgnoreCase))
+			.ToList();
 	}
 
 	private async Task PutPublicObject(string key, string content, string contentType, Cancel ctx) =>
