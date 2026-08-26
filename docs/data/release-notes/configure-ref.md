@@ -124,11 +124,9 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   When the bundle is rendered, entries with matching `feature-id` values are commented out.
 
 `output`
-:   The output filename pattern for the bundle file.
-:   Supports `{version}` and `{lifecycle}` placeholders.
-:   When not set, the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
-:   Setting this is recommended so each profile produces a distinctly named file rather than overwriting the default.
-:   Example: `"elasticsearch/{version}.yaml"`
+:   Removed. Bundle output names are derived by convention as `{product}-{version}.yaml` from the profile's primary output product (the first product in `output_products`, or `products`) and the version argument. Setting `output` on any profile is a hard error at bundle time; remove the field.
+:   When no primary product or version resolves (for example, a promotion-report invocation without a version argument), the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
+:   No two profiles in the same configuration may share a primary output product — they would resolve to the same `{product}-{version}.yaml` target for any given version, which is also a hard error.
 
 `output_products`
 :   The bundle's `products` metadata, which affects the bundle rules that are applied and the product and version titles that ultimately appear in documentation.

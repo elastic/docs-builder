@@ -66,7 +66,6 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -101,7 +100,6 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -132,7 +130,6 @@ public class BundlePlanTests : ChangelogTestBase
 			    serverless:
 			      products: "cloud-serverless {version} *"
 			      output_products: "cloud-serverless {version} *"
-			      output: "serverless-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -146,7 +143,7 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/serverless-2026-03.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/cloud-serverless-2026-03.yaml");
 	}
 
 	[Fact]
@@ -162,7 +159,6 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -192,7 +188,7 @@ public class BundlePlanTests : ChangelogTestBase
 			    es-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
+			      output_products: "elasticsearch {version}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -208,12 +204,17 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeTrue();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-v9.2.0.yaml").OptionalWindowsReplace());
+		// 'source: github_release' names the bundle from ExtractBaseVersion(release.TagName) at run time
+		// (leading 'v' stripped), not the raw CLI argument — plan must mirror that so output_path matches
+		// the file 'bundle' actually writes.
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
-	public async Task Plan_ProfileMode_LifecycleSubstitution_ResolvesCorrectly()
+	public async Task Plan_ProfileMode_ConventionalName_UsesPrimaryOutputProduct()
 	{
+		// Output names follow the {product}-{version}.yaml convention; lifecycle only affects
+		// product metadata (output_products), never the file name.
 		// language=yaml
 		var configContent =
 			"""
@@ -223,7 +224,7 @@ public class BundlePlanTests : ChangelogTestBase
 			    dotnet-release:
 			      source: github_release
 			      repo: apm-agent-dotnet
-			      output: "dotnet-{version}-{lifecycle}.yaml"
+			      output_products: "apm-agent-dotnet {version} {lifecycle}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -237,7 +238,9 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "dotnet-1.0.0-beta.1-beta.yaml").OptionalWindowsReplace());
+		// ExtractBaseVersion strips the pre-release suffix at run time too, so plan's file name must
+		// drop "-beta.1" the same way to stay in sync with the bundle 'run' actually writes.
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
