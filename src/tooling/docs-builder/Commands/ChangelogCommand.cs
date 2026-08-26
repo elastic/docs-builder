@@ -18,7 +18,6 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
-using Elastic.Changelog.Migration;
 using Elastic.Changelog.Onboarding;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
