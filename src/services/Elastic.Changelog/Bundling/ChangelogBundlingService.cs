@@ -1429,12 +1429,17 @@ public partial class ChangelogBundlingService(
 	private static bool TryExtractPrNumber(string pr, string authoringOwner, string authoringRepo, out int prNumber)
 	{
 		prNumber = 0;
-		// Normalize to {owner}/{repo}#{number} form; the org/repo may differ from the CDN pool
-		// (e.g. --owner override renames the pool but the PR URLs still carry the GitHub org).
-		// We only need the number to build the probe key.
+		// Normalize to {owner}/{repo}#{number} form.
 		var normalized = NormalizePrForComparison(pr, authoringOwner, authoringRepo);
 		var hashIndex = normalized.LastIndexOf('#');
 		if (hashIndex < 0)
+			return false;
+		// Reject PRs whose repo does not match the authoring repo — a kibana PR number must not
+		// probe the elasticsearch pool even when --owner is overridden (owner may differ, repo must not).
+		var ownerRepo = normalized[..hashIndex];
+		var slashIndex = ownerRepo.LastIndexOf('/');
+		var prRepo = slashIndex >= 0 ? ownerRepo[(slashIndex + 1)..] : ownerRepo;
+		if (!string.Equals(prRepo, authoringRepo, StringComparison.OrdinalIgnoreCase))
 			return false;
 		return int.TryParse(normalized[(hashIndex + 1)..], out prNumber) && prNumber > 0;
 	}
