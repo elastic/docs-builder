@@ -31,14 +31,14 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 	}
 
 	/// <summary>
-	/// Validates that if all PRs are just numbers, owner and repo must be provided.
+	/// Validates that if any PR is a bare number, owner and repo must be provided.
 	/// </summary>
 	public bool ValidateMultiplePrFormat(IDiagnosticsCollector collector, string[] prs, string? owner, string? repo)
 	{
-		var allAreNumbers = prs.All(pr => int.TryParse(pr.Trim(), out _));
-		if (allAreNumbers && (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
+		var anyAreNumbers = prs.Any(pr => int.TryParse(pr.Trim(), out _));
+		if (anyAreNumbers && (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
 		{
-			collector.EmitError(string.Empty, "When --prs contains only numbers, both --owner and --repo must be provided");
+			collector.EmitError(string.Empty, "When --prs contains any bare number, both --owner and --repo must be provided");
 			return false;
 		}
 
@@ -62,14 +62,14 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 	}
 
 	/// <summary>
-	/// Validates that if all issues are just numbers, owner and repo must be provided.
+	/// Validates that if any issue is a bare number, owner and repo must be provided.
 	/// </summary>
 	public bool ValidateMultipleIssueFormat(IDiagnosticsCollector collector, string[] issues, string? owner, string? repo)
 	{
-		var allAreNumbers = issues.All(i => int.TryParse(i.Trim(), out _));
-		if (allAreNumbers && (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
+		var anyAreNumbers = issues.Any(i => int.TryParse(i.Trim(), out _));
+		if (anyAreNumbers && (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
 		{
-			collector.EmitError(string.Empty, "When --issues contains only numbers, both --owner and --repo must be provided");
+			collector.EmitError(string.Empty, "When --issues contains any bare number, both --owner and --repo must be provided");
 			return false;
 		}
 
@@ -118,6 +118,21 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 			return false;
 		}
 
+		return true;
+	}
+
+	public bool ValidateNoteProducts(IDiagnosticsCollector collector, CreateChangelogArguments input)
+	{
+		foreach (var product in input.Products)
+		{
+			if (string.IsNullOrWhiteSpace(product.Target) || product.Target == "*")
+			{
+				collector.EmitError(string.Empty,
+					$"Product '{product.Product}' must have a specific target for 'changelog note'. " +
+					"Use --products 'product target lifecycle' with a concrete target value (for example, '9.2.0' or '2026-05-15').");
+				return false;
+			}
+		}
 		return true;
 	}
 

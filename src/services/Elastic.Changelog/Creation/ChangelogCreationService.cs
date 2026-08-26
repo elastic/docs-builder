@@ -62,6 +62,9 @@ public record CreateChangelogArguments
 	/// unauthorized GITHUB_TOKEN would otherwise silently produce unfiltered, title-less changelogs.
 	/// </summary>
 	public bool StrictFetch { get; init; }
+
+	public bool IsNote { get; init; }
+	public string? NoteName { get; init; }
 }
 
 /// <summary>
@@ -142,6 +145,72 @@ IEnvironmentVariables? env = null
 		catch (UnauthorizedAccessException uaEx)
 		{
 			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
+	public async Task<bool> CreateNote(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
+	{
+		try
+		{
+			var cliDescription = input.Description;
+			input = EnrichFromCI(input);
+
+			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			if (config == null)
+			{
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
+				return false;
+			}
+
+			input = ApplyConfigDefaults(input, config);
+
+			// Mirror CreateChangelog: discard CI-injected description when extraction is disabled
+			if (input.ExtractionDisabled
+				&& string.IsNullOrWhiteSpace(cliDescription)
+				&& !string.IsNullOrWhiteSpace(input.Description))
+			{
+				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
+				input = input with { Description = null };
+			}
+
+			// Validate PR citation format (same rule as `add`: numeric refs require --owner/--repo)
+			if (input.Prs is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultiplePrFormat(collector, input.Prs, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidatePrFormat(collector, input.Prs?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			// Validate issue citation format
+			if (input.Issues is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultipleIssueFormat(collector, input.Issues, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidateIssueFormat(collector, input.Issues?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed: false))
+				return false;
+
+			if (!_validator.ValidateNoteProducts(collector, input))
+				return false;
+
+			if (!_validator.ValidateAgainstConfiguration(collector, input, config))
+				return false;
+
+			return await _fileWriter.WriteNoteAsync(input, config, ctx);
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error creating note: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied creating note: {uaEx.Message}", uaEx);
 			return false;
 		}
 	}

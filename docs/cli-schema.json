@@ -3931,6 +3931,236 @@
           "path": [
             "changelog"
           ],
+          "name": "note",
+          "summary": "Create a note-*.yml changelog fragment for items that have no associated PR.",
+          "notes": "Use this command for release notes that are not tied to a specific pull request \u2014 for example, a\nknown-issue entry or a cross-cutting change that spans many PRs. Every product listed must have a\nconcrete target (not a wildcard); --prs and --issues are still accepted as\noptional citations but do not affect the output filename.",
+          "usage": "docs-builder changelog note [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "name",
+              "type": "string",
+              "required": false,
+              "summary": "Explicit slug for the note filename. Defaults to a slug derived from the title."
+            },
+            {
+              "role": "flag",
+              "name": "products",
+              "type": "string",
+              "required": false,
+              "summary": "Products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022elasticsearch 9.2.0 ga\u0022). Target is required for all products."
+            },
+            {
+              "role": "flag",
+              "name": "action",
+              "type": "string",
+              "required": false,
+              "summary": "Optional action text."
+            },
+            {
+              "role": "flag",
+              "name": "areas",
+              "type": "array",
+              "required": false,
+              "summary": "Optional area tags.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "concise",
+              "type": "boolean",
+              "required": false,
+              "summary": "Omit schema reference comments from the generated YAML.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": false,
+              "summary": "Path to the changelog.yml configuration file.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "description",
+              "type": "string",
+              "required": false,
+              "summary": "Entry description."
+            },
+            {
+              "role": "flag",
+              "name": "no-extract-release-notes",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip extracting release note text from PR/issue descriptions.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "no-extract-issues",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip extracting linked issues/PRs from PR/issue body.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "feature-id",
+              "type": "string",
+              "required": false,
+              "summary": "Optional feature ID."
+            },
+            {
+              "role": "flag",
+              "name": "highlight",
+              "type": "boolean",
+              "required": false,
+              "summary": "Mark the entry as a highlight.",
+              "defaultValue": "default"
+            },
+            {
+              "role": "flag",
+              "name": "impact",
+              "type": "string",
+              "required": false,
+              "summary": "Optional impact text."
+            },
+            {
+              "role": "flag",
+              "name": "issues",
+              "type": "array",
+              "required": false,
+              "summary": "Optional issue URLs (cited but not used as anchor).",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub owner. Falls back to bundle.owner or \u0022elastic\u0022."
+            },
+            {
+              "role": "flag",
+              "name": "output",
+              "type": "string",
+              "required": false,
+              "summary": "Output directory."
+            },
+            {
+              "role": "flag",
+              "name": "prs",
+              "type": "array",
+              "required": false,
+              "summary": "Optional PR URLs (cited but not used as anchor).",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "repo",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub repository name."
+            },
+            {
+              "role": "flag",
+              "name": "strip-title-prefix",
+              "type": "boolean",
+              "required": false,
+              "summary": "Strip a repo-name prefix from the title.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "strict-fetch",
+              "type": "boolean",
+              "required": false,
+              "summary": "Treat GitHub fetch failures as errors.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "subtype",
+              "type": "string",
+              "required": false,
+              "summary": "Entry subtype."
+            },
+            {
+              "role": "flag",
+              "name": "title",
+              "type": "string",
+              "required": false,
+              "summary": "Entry title (required)."
+            },
+            {
+              "role": "flag",
+              "name": "type",
+              "type": "string",
+              "required": false,
+              "summary": "Entry type (required)."
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
           "name": "prepare-artifact",
           "summary": "(CI) Package changelog artifact for cross-workflow transfer.",
           "notes": "Resolves final status from evaluate-pr \u002B changelog add outcomes, copies generated YAML,\nwrites metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.\n\n\nThe isFork, canCommit and maintainerCanModify parameters are declared\nas bool? so the generated CLI emits both --flag and --no-flag pairs\n(Argh convention). A plain bool would expose presence-only switches: passing\n--can-commit \u0022false\u0022 would set canCommit = true (the flag is present) and\nsilently discard the literal \u0022false\u0022 as a stray positional. Callers that forward a\ndynamic value (--can-commit \u0022$VAR\u0022) would then misroute fork PRs into the\ncommit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172\nfor the workflow-side fix.",

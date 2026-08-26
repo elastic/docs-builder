@@ -62,6 +62,59 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return true;
 	}
 
+	public async Task<bool> WriteNoteAsync(
+		CreateChangelogArguments input,
+		ChangelogConfiguration config,
+		Cancel ctx)
+	{
+		var changelogData = BuildChangelogData(input);
+		var yamlContent = input.Concise
+			? GenerateConciseYaml(changelogData)
+			: GenerateYaml(changelogData, config, titleMissing: false, typeMissing: false);
+
+		var outputDir = input.Output ?? fileSystem.Directory.GetCurrentDirectory();
+		if (!fileSystem.Directory.Exists(outputDir))
+			_ = fileSystem.Directory.CreateDirectory(outputDir);
+
+		var filename = GenerateNoteFilename(input.NoteName, input.Title);
+		var filePath = fileSystem.Path.Join(outputDir, filename);
+
+		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
+		await fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
+		logger.LogInformation("Created note fragment: {FilePath}", filePath);
+		return true;
+	}
+
+	private static string GenerateNoteFilename(string? noteName, string? title)
+	{
+		var source = !string.IsNullOrWhiteSpace(noteName) ? noteName : title;
+		if (string.IsNullOrWhiteSpace(source))
+			return "note-untitled.yml";
+		var slug = Slugify(source);
+		return string.IsNullOrEmpty(slug) ? "note-untitled.yml" : $"note-{slug}.yml";
+	}
+
+	private static string Slugify(string text)
+	{
+		var sb = new StringBuilder(text.Length);
+		var prevWasHyphen = false;
+		foreach (var ch in text.ToLowerInvariant())
+		{
+			if (char.IsLetterOrDigit(ch))
+			{
+				_ = sb.Append(ch);
+				prevWasHyphen = false;
+			}
+			else if (!prevWasHyphen && sb.Length > 0)
+			{
+				_ = sb.Append('-');
+				prevWasHyphen = true;
+			}
+		}
+		var result = sb.ToString().TrimEnd('-');
+		return result.Length > 60 ? result[..60].TrimEnd('-') : result;
+	}
+
 	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
 	private const int MaxFilenameLength = 200;
 
