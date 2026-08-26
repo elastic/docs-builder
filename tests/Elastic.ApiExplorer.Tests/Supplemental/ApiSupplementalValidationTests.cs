@@ -212,7 +212,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			document,
 			collector,
 			moniker,
-			emitUnmatchedBaseFiles: emitUnmatchedBaseFiles ?? moniker == "main");
+			emitUnmatchedBaseFiles: emitUnmatchedBaseFiles ?? (moniker == "main"));
 		return collector;
 	}
 
