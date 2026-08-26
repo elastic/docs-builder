@@ -155,8 +155,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		           toc:
 		             - file: reference/apache-intro.md
 		               children:
-		                 - file: reference/apache/index.md
-		                 - file: reference/apache_spark/index.md
+		                 - file: apache/index.md
+		                 - file: apache_spark/index.md
 		           """;
 
 		var fileSystem = new MockFileSystem();
@@ -173,8 +173,70 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		intro.Url.Should().Be("/reference/apache-intro");
 
 		var childFolders = intro.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().ToList();
-		// Deep-linked index paths resolve relative to the documentation set root, not the parent path.
+		// Deep-linked index paths resolve relative to the virtual file's parent directory, exactly like
+		// a plain sibling file would (see ProbePlainFileChildUnderVirtualFileWithFullPath for the baseline).
 		childFolders.Select(f => f.Url).Should().BeEquivalentTo(["/reference/apache", "/reference/apache_spark"]);
 		context.Collector.Errors.Should().Be(0);
+	}
+
+	[Fact]
+	public async Task ChildlessDeepLinkedIndexFileNestedUnderExplicitFolderResolvesParentRelative()
+	{
+		// Regression for a path-resolution bug flagged in review: a multi-segment sugar-expanded
+		// child (e.g. "integrations/aws/index.md") must resolve relative to its parent folder, exactly
+		// like a plain FileRef child would -- not relative to the containing toc.yml/docset.yml.
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: reference
+		               file: index.md
+		               children:
+		                 - file: integrations/aws/index.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		var reference = navigation.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
+		var nested = reference.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
+		nested.Url.Should().Be("/reference/integrations/aws");
+		context.Collector.Errors.Should().Be(0);
+	}
+
+	/// <summary>Baseline showing plain (non-sugar) file children under a virtual file already double a
+	/// redundantly-repeated path segment; the sugar-folder case is intentionally consistent with this.</summary>
+	[Fact]
+	public async Task ProbePlainFileChildUnderVirtualFileWithFullPath()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: reference/apache-intro.md
+		               children:
+		                 - file: reference/apache-other.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		var intro = navigation.NavigationItems.OfType<VirtualFileNavigation<IDocumentationFile>>().Single();
+		var child = intro.NavigationItems.Single();
+		child.Url.Should().Be("/reference/reference/apache-other");
 	}
 }

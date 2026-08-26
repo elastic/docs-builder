@@ -183,7 +183,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			{
 				var indexFolderPath = fileOnly[..^"/index.md".Length];
 				var indexFile = new FolderIndexFileRef("index.md", "index.md", false, [], placeholderContext);
-				return new FolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext);
+				return new DeepLinkedFolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext);
 			}
 
 			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
