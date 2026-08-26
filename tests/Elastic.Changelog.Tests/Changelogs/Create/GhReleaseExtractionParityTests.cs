@@ -137,6 +137,52 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 	}
 
 	[Fact]
+	public async Task TwoPrsSharingAnUnparseablePoolEntry_BothFallBackToSynthesis()
+	{
+		// Regression for a follow-up bot review finding: WrittenPoolFiles must only remember a file
+		// name once it has genuinely been written. Otherwise the *first* PR to hit an unparseable
+		// shared entry marks it "claimed", and a *second* PR matching the same still-unwritten file
+		// (via leading-number filename matching) is wrongly treated as already satisfied and silently
+		// dropped instead of falling back to PR-metadata synthesis.
+		const string sharedBody =
+			"""
+			## What's Changed
+
+			* Fix query parsing edge case by @contributor1 in #12345
+			* Improve indexing throughput by @contributor2 in #12346
+
+			**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
+			""";
+		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
+			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = sharedBody });
+
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>.That.Matches(u => u.EndsWith("12345", StringComparison.Ordinal)), A<string?>._, A<string?>._, A<Cancel>._))
+			.Returns(new GitHubPrInfo { Title = "Fix query parsing edge case", Body = "No release note here.", Labels = [], LinkedIssues = [] });
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>.That.Matches(u => u.EndsWith("12346", StringComparison.Ordinal)), A<string?>._, A<string?>._, A<Cancel>._))
+			.Returns(new GitHubPrInfo { Title = "Improve indexing throughput", Body = "No release note here either.", Labels = [], LinkedIssues = [] });
+
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345-12346.yaml" } ] }""");
+			if (path.EndsWith("12345-12346.yaml", StringComparison.Ordinal))
+				return Yaml("title: [unterminated");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var outputDir = OutputDir();
+
+		var result = await Service(handler).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue("both PRs must fall back to PR-metadata synthesis despite the shared unparseable pool file");
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(2, "each PR must synthesize its own entry rather than one silently disappearing");
+		var contents = await Task.WhenAll(files.Select(f => FileSystem.File.ReadAllTextAsync(f, TestContext.Current.CancellationToken)));
+		contents.Should().Contain(c => c.Contains("Fix query parsing edge case", StringComparison.Ordinal));
+		contents.Should().Contain(c => c.Contains("Improve indexing throughput", StringComparison.Ordinal));
+	}
+
+	[Fact]
 	public async Task PrBodyReleaseNote_BecomesEntryDescription()
 	{
 		ArrangeRelease();

@@ -410,16 +410,19 @@ public class GitHubReleaseChangelogService(
 		if (matches.Count == 0)
 			return false;
 
-		// Only report success when at least one matching pool file was actually written; parse
-		// failures alone must fall through to PR-metadata synthesis rather than being swallowed.
+		// Only report success when at least one matching pool file was actually written (now or by
+		// an earlier PR reference sharing the same entry); parse failures alone must fall through
+		// to PR-metadata synthesis rather than being swallowed. A file name is only added to
+		// WrittenPoolFiles once it has genuinely been written, so a parse failure never poisons a
+		// later PR reference that happens to match the same (still-unwritten) file name.
 		var wroteAnyFile = false;
 
 		foreach (var match in matches)
 		{
-			if (!context.WrittenPoolFiles.Add(match.FileName))
+			if (context.WrittenPoolFiles.Contains(match.FileName))
 			{
-				// Another PR reference already claimed this pool file (e.g. one entry lists
-				// several `prs:` URLs); that earlier write already satisfied this PR too.
+				// Another PR reference already wrote this pool file (e.g. one entry lists several
+				// `prs:` URLs); that earlier write already satisfied this PR too.
 				wroteAnyFile = true;
 				continue;
 			}
@@ -435,6 +438,7 @@ public class GitHubReleaseChangelogService(
 			var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(match.Content);
 			await _fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
 			createdFiles.Add(match.FileName);
+			_ = context.WrittenPoolFiles.Add(match.FileName);
 			_logger.LogInformation("Using checked-in changelog entry '{FileName}' for PR #{PrNumber}", match.FileName, prRef.PrNumber);
 			wroteAnyFile = true;
 		}
