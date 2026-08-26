@@ -54,6 +54,17 @@ public class ApiSupplementalDocTests
 	}
 
 	[Fact]
+	public void Parse_CrlfInput_NormalizesToLf()
+	{
+		const string raw = "The search API returns hits that match the query.\r\n\r\nIt supports aggregations.";
+
+		var doc = ApiSupplementalDoc.Parse(raw);
+
+		doc.Should().NotBeNull();
+		doc.Description.Should().Be("The search API returns hits that match the query.\n\nIt supports aggregations.");
+	}
+
+	[Fact]
 	public void Parse_NoHeadingsWithFrontMatter_StripsFrontMatterFromDescription()
 	{
 		const string raw = """

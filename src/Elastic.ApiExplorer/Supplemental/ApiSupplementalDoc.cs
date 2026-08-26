@@ -21,6 +21,7 @@ internal sealed partial record ApiSupplementalDoc(
 		if (raw is null)
 			return null;
 
+		raw = raw.ReplaceLineEndings("\n");
 		var (frontMatter, rawContent) = ExtractFrontMatter(raw);
 		var trimmed = rawContent.Trim();
 		if (string.IsNullOrWhiteSpace(trimmed))
