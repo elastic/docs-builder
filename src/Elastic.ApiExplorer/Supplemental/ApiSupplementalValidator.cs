@@ -153,8 +153,41 @@ internal static class ApiSupplementalValidator
 
 	private static HashSet<string> RequestBodyFieldNames(SchemaAnalyzer analyzer, OpenApiOperation operation)
 	{
+		var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var schema = operation.RequestBody?.Content?.FirstOrDefault().Value?.Schema;
-		var properties = analyzer.GetSchemaProperties(schema);
-		return new HashSet<string>(properties?.Keys ?? [], StringComparer.OrdinalIgnoreCase);
+		CollectFieldNames(analyzer, schema, names, []);
+		return names;
+	}
+
+	private static void CollectFieldNames(
+		SchemaAnalyzer analyzer,
+		IOpenApiSchema? schema,
+		HashSet<string> names,
+		HashSet<object> visited)
+	{
+		var resolved = analyzer.ResolveSchema(schema);
+		if (resolved is null || !visited.Add(resolved))
+			return;
+
+		var properties = analyzer.GetSchemaProperties(resolved);
+		if (properties is not null)
+		{
+			foreach (var (name, child) in properties)
+			{
+				_ = names.Add(name);
+				CollectFieldNames(analyzer, child, names, visited);
+			}
+		}
+
+		if (resolved.Items is not null)
+			CollectFieldNames(analyzer, resolved.Items, names, visited);
+
+		if (resolved.AdditionalProperties is IOpenApiSchema additional)
+			CollectFieldNames(analyzer, additional, names, visited);
+
+		foreach (var option in resolved.OneOf ?? [])
+			CollectFieldNames(analyzer, option, names, visited);
+		foreach (var option in resolved.AnyOf ?? [])
+			CollectFieldNames(analyzer, option, names, visited);
 	}
 }

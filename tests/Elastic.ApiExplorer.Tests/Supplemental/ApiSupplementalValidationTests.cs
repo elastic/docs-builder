@@ -85,6 +85,19 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	}
 
 	[Fact]
+	public void Validate_NestedRequestBodyField_EmitsNoError()
+	{
+		var collector = Validate(FolderWith(("op-search.md", """
+			## Request body
+
+			: `bool`
+			  Nested under query; the renderer matches by leaf name.
+			""")), SpecWithNestedRequestBody("search", "query", "bool"), "main");
+
+		collector.Errors.Should().Be(0);
+	}
+
+	[Fact]
 	public void Validate_ListedRealParameter_EmitsNoError()
 	{
 		var collector = Validate(FolderWith(("op-search.md", """
@@ -244,6 +257,34 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			}
 		}
 	};
+
+	private static OpenApiDocument SpecWithNestedRequestBody(string operationId, string parent, string nested)
+	{
+		var document = SpecWith(operationId);
+		document.Paths["/x"].Operations![HttpMethod.Get].RequestBody = new OpenApiRequestBody
+		{
+			Content = new Dictionary<string, IOpenApiMediaType>
+			{
+				["application/json"] = new OpenApiMediaType
+				{
+					Schema = new OpenApiSchema
+					{
+						Properties = new Dictionary<string, IOpenApiSchema>
+						{
+							[parent] = new OpenApiSchema
+							{
+								Properties = new Dictionary<string, IOpenApiSchema>
+								{
+									[nested] = new OpenApiSchema { Type = JsonSchemaType.Object }
+								}
+							}
+						}
+					}
+				}
+			}
+		};
+		return document;
+	}
 
 	private sealed class CapturingDiagnosticsCollector() : DiagnosticsCollector([])
 	{
