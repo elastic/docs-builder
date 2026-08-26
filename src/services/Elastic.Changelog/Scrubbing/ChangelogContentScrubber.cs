@@ -110,9 +110,6 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			return new ScrubResult { Content = content };
 		}
 
-		// Derive canonical key and markers from the pre-scrub entry while prs: URLs are still intact.
-		var (canonicalKey, markers) = BuildCanonicalKeyAndMarkers(key, entry);
-
 		var bundledEntry = new BundledEntry
 		{
 			Type = entry.Type,
@@ -133,6 +130,11 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			collector, bundledEntry, allowRepos, "elastic", null,
 			out var sanitized, out var changed))
 			throw new InvalidOperationException($"Failed to apply allowlist to changelog entry; errors: {collector.Errors}");
+
+		// Derive canonical key and markers AFTER allowlist filtering so private-only PRs that are
+		// stripped from public output don't become the primary anchor or generate stale markers.
+		var publicEntry = changed ? entry with { Prs = sanitized.Prs } : entry;
+		var (canonicalKey, markers) = BuildCanonicalKeyAndMarkers(key, publicEntry);
 
 		if (!changed)
 		{

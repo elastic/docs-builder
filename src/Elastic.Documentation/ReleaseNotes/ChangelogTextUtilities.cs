@@ -171,13 +171,20 @@ public static partial class ChangelogTextUtilities
 		if (prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
 			prUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
 		{
-			var uri = new Uri(prUrl);
-			var segments = uri.Segments;
-			// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
-			if (segments.Length >= 5 &&
-				segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
-				int.TryParse(segments[4].TrimEnd('/'), out var prNum))
-				return prNum;
+			try
+			{
+				var uri = new Uri(prUrl);
+				var segments = uri.Segments;
+				// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
+				if (segments.Length >= 5 &&
+					segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
+					int.TryParse(segments[4].TrimEnd('/'), out var prNum))
+					return prNum;
+			}
+			catch (UriFormatException)
+			{
+				// Malformed URL; fall through to return null.
+			}
 		}
 
 		// Handle short format: owner/repo#123
