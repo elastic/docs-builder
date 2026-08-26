@@ -130,7 +130,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var input = new BundleChangelogsArguments
 		{
-			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+			Prs = ["https://github.com/elastic/widget/pull/100"],
 			Output = output,
 			Repo = "acme-corp/widget"
 		};
