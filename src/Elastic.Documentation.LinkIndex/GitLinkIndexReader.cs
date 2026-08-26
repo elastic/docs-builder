@@ -2,12 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.ExternalCommands;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links;
 using Nullean.ScopedFileSystem;
+using ProcNet;
 
 namespace Elastic.Documentation.LinkIndex;
 
@@ -21,6 +22,17 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	private static readonly string CloneDirectory = Path.Join(
 		Paths.ApplicationData.FullName,
 		"codex-link-index");
+
+	private static readonly Dictionary<string, string> GitEnvironmentVars = new()
+	{
+		{ "GIT_EDITOR", "true" }
+	};
+
+	// Fetch retries up to 3 times with exponential back-off, each bounded by the CI default timeout.
+	private static readonly RetryPolicy FetchRetry = new(
+		MaxAttempts: 3,
+		BaseDelay: TimeSpan.FromSeconds(5),
+		AttemptTimeout: GitTimeouts.CiDefault);
 
 	private readonly string _environment;
 	private readonly IFileSystem _fileSystem;
@@ -112,7 +124,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 				RunGit(CloneDirectory, "remote", "add", "origin", gitUrl);
 			}
 
-			RunGit(CloneDirectory, "fetch", "--no-tags", "--prune", "--depth", "1", "origin", "HEAD");
+			RunGitWithRetry(CloneDirectory, FetchRetry, "fetch", "--no-tags", "--prune", "--depth", "1", "origin", "HEAD");
 			RunGit(CloneDirectory, "checkout", "--force", "FETCH_HEAD");
 
 			_ensuredClone = true;
@@ -136,28 +148,40 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		return $"git@github.com:{LinkIndexOrigin}.git";
 	}
 
+	/// <summary>
+	/// Runs a git command with a retry policy. Throws <see cref="InvalidOperationException"/> on exhaustion.
+	/// </summary>
+	private static void RunGitWithRetry(string workingDirectory, RetryPolicy policy, params string[] args)
+	{
+		var failure = CommandRetry.Invoke(
+			policy,
+			invoke: () => ExecGit(workingDirectory, args, policy.AttemptTimeout),
+			delay: d => Thread.Sleep(d),
+			onRetry: f => Console.Error.WriteLine($"[git {string.Join(" ", args)}] {f}; retrying…")
+		);
+
+		if (failure is not null)
+			throw new InvalidOperationException($"Git command failed after {policy.MaxAttempts} attempts (last: {failure.Value}).");
+	}
+
+	/// <summary>
+	/// Runs a single git command with no retry. Throws <see cref="InvalidOperationException"/> on failure.
+	/// </summary>
 	private static void RunGit(string workingDirectory, params string[] args)
 	{
-		var startInfo = new ProcessStartInfo
+		var exitCode = ExecGit(workingDirectory, args, timeout: null);
+		if (exitCode != 0)
+			throw new InvalidOperationException($"Git command failed (exit {exitCode}): git {string.Join(" ", args)}");
+	}
+
+	private static int ExecGit(string workingDirectory, string[] args, TimeSpan? timeout)
+	{
+		var arguments = new ExecArguments("git", args)
 		{
-			FileName = "git",
 			WorkingDirectory = workingDirectory,
-			UseShellExecute = false,
-			RedirectStandardOutput = true,
-			RedirectStandardError = true,
-			CreateNoWindow = true
+			Environment = GitEnvironmentVars,
+			Timeout = timeout
 		};
-		foreach (var arg in args)
-			startInfo.ArgumentList.Add(arg);
-		startInfo.Environment["GIT_EDITOR"] = "true";
-
-		using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start git process.");
-
-		var stderr = process.StandardError.ReadToEnd();
-		_ = process.StandardOutput.ReadToEnd();
-		process.WaitForExit();
-
-		if (process.ExitCode != 0)
-			throw new InvalidOperationException($"Git command failed (exit {process.ExitCode}): {stderr.Trim()}");
+		return Proc.Exec(arguments);
 	}
 }

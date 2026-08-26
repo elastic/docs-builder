@@ -54,6 +54,14 @@ public record Repository
 	[YamlMember(Alias = "private")]
 	public bool Private { get; set; }
 
+	/// <summary>
+	/// Per-attempt timeout for network git operations (fetch, pull) in CI.
+	/// Accepts duration strings such as <c>30s</c> or <c>15m</c>.
+	/// When omitted the global default applies (10 minutes in CI, unbounded locally).
+	/// </summary>
+	[YamlMember(Alias = "clone_timeout")]
+	public TimeSpan? CloneTimeout { get; set; }
+
 	public string GetBranch(ContentSource contentSource) => contentSource switch
 	{
 		ContentSource.Current => GitReferenceCurrent,
