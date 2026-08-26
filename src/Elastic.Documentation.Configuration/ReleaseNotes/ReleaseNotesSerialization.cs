@@ -166,7 +166,8 @@ public static partial class ReleaseNotesSerialization
 		Action = dto.Action,
 		FeatureId = dto.FeatureId,
 		Highlight = dto.Highlight,
-		Link = dto.Link
+		Link = dto.Link,
+		SourceRedirect = dto.SourceRedirect ?? false
 	};
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) => new()
@@ -287,8 +288,10 @@ public static partial class ReleaseNotesSerialization
 	private static ChangelogEntryDto ToDto(ChangelogEntry entry)
 	{
 		// Marker entries are link-only; emitting any other field would violate the marker contract.
+		// Source pointers also carry source-redirect: true so the delete path can distinguish them
+		// from ordinary PR markers without ambiguity.
 		if (entry.IsMarker)
-			return new ChangelogEntryDto { Link = entry.Link };
+			return new ChangelogEntryDto { Link = entry.Link, SourceRedirect = entry.SourceRedirect ? true : null };
 
 		return new ChangelogEntryDto
 		{

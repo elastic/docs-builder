@@ -34,6 +34,14 @@ public record ChangelogEntryDto
 	/// Written by the pipeline for non-primary PRs in a multi-PR entry; never hand-authored.
 	/// </summary>
 	public string? Link { get; set; }
+
+	/// <summary>
+	/// When true, this public-bucket object is a scrubber-written source pointer that traces back
+	/// to a canonical public key. Distinguishes source pointers from ordinary link-only PR markers
+	/// so the delete path does not spuriously follow a regular marker to its canonical target.
+	/// </summary>
+	[YamlMember(Alias = "source-redirect", ApplyNamingConventions = false)]
+	public bool? SourceRedirect { get; set; }
 }
 
 /// <summary>

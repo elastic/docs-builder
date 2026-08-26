@@ -21,7 +21,13 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// <para>
 /// Individual bundle files are cached locally keyed by <c>{product}-{fileName}-{etag}</c> so that
 /// repeated builds (and dev-server reloads) do not re-download unchanged content from the CDN.
-/// The registry itself is always fetched (it's small and provides fresh ETags).
+/// The per-product registry is normally fetched every run (it's small and provides fresh ETags),
+/// with one opt-out: the scrubber maintains a shallow per-tree map at <c>bundle/registry.json</c>
+/// mapping each product folder to an opaque change token. The map is fetched once per fetcher run;
+/// when a product's token equals the token the local cache last saw, the cached registry is reused
+/// and the per-product registry fetch is skipped entirely. Tokens are opaque — compared for string
+/// equality only, never parsed — and a map that is absent (pre-cutover CDNs), unparseable, or
+/// unreachable degrades to exactly the pre-map behavior: every product registry is fetched.
 /// </para>
 /// <para>
 /// Resilience follows the manifest's consistency model: a registry that cannot be fetched or parsed
@@ -59,6 +65,13 @@ public sealed class CdnChangelogFetcher : IDisposable
 	private readonly BundleLoader _bundleLoader;
 	private readonly IFileSystem _fileSystem;
 	private readonly ConcurrentDictionary<string, string> _memoryCache = new(StringComparer.Ordinal);
+
+	/// <summary>
+	/// Shallow-map fetches memoized per base URI, so one run consults the CDN once no matter how many
+	/// products it fetches. The map is intentionally never cached to disk: it is the freshness signal
+	/// itself, and a stale copy would defeat its purpose.
+	/// </summary>
+	private readonly ConcurrentDictionary<string, Lazy<Task<Dictionary<string, string>?>>> _shallowMaps = new(StringComparer.Ordinal);
 
 	/// <summary>
 	/// Non-null only when a caller injects its own <see cref="HttpMessageHandler"/> (tests): in that case we
@@ -108,22 +121,30 @@ public sealed class CdnChangelogFetcher : IDisposable
 		}
 
 		var registryUri = Combine(baseUri, [.. ChangelogKeys.BundleSegments(product), ChangelogKeys.RegistryFileName]);
+		var shallowToken = await TryGetShallowTokenAsync(baseUri, product, ctx).ConfigureAwait(false);
 
-		ChangelogRegistry? registry;
-		try
-		{
-			registry = await FetchRegistryAsync(registryUri, ctx).ConfigureAwait(false);
-		}
-		catch (Exception ex) when (ex is not OperationCanceledException)
-		{
-			emitError($"Could not fetch changelog registry for product '{product}' from {registryUri}: {ex.Message}");
-			return [];
-		}
-
+		var registry = TryGetCachedRegistry(product, shallowToken);
 		if (registry is null)
 		{
-			emitError($"Changelog registry for product '{product}' at {registryUri} was empty or unparseable.");
-			return [];
+			try
+			{
+				_logger.LogInformation("Fetching changelog registry {RegistryUri}", registryUri);
+				var registryText = await FetchTextAsync(registryUri, ctx).ConfigureAwait(false);
+				registry = JsonSerializer.Deserialize(registryText, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
+				if (registry is not null && shallowToken is not null)
+					WriteCachedText(RegistryCacheKey(product, shallowToken), registryText);
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				emitError($"Could not fetch changelog registry for product '{product}' from {registryUri}: {ex.Message}");
+				return [];
+			}
+
+			if (registry is null)
+			{
+				emitError($"Changelog registry for product '{product}' at {registryUri} was empty or unparseable.");
+				return [];
+			}
 		}
 
 		if (registry.SchemaVersion > SupportedSchemaVersion)
@@ -143,14 +164,94 @@ public sealed class CdnChangelogFetcher : IDisposable
 		return _bundleLoader.LoadBundlesFromContent(contents, emitWarning);
 	}
 
-	private async Task<ChangelogRegistry?> FetchRegistryAsync(Uri registryUri, Cancel ctx)
+	/// <summary>
+	/// The product's opaque change token from the tree's shallow map, or null when the map is
+	/// unavailable or does not list the product — in which case the caller fetches the per-product
+	/// registry exactly as it did before the map existed.
+	/// </summary>
+	private async Task<string?> TryGetShallowTokenAsync(Uri baseUri, string product, Cancel ctx)
 	{
-		_logger.LogInformation("Fetching changelog registry {RegistryUri}", registryUri);
-		using var request = new HttpRequestMessage(HttpMethod.Get, registryUri);
-		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
-		_ = response.EnsureSuccessStatusCode();
-		await using var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
-		return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx).ConfigureAwait(false);
+		var lazyMap = _shallowMaps.GetOrAdd(
+			baseUri.AbsoluteUri,
+			_ => new Lazy<Task<Dictionary<string, string>?>>(() => FetchShallowMapAsync(baseUri, ctx)));
+		Dictionary<string, string>? map;
+		try
+		{
+			map = await lazyMap.Value.ConfigureAwait(false);
+		}
+		catch (OperationCanceledException)
+		{
+			// A genuinely canceled caller faults the cached Lazy for good (Lazy<Task<T>> caches the
+			// faulted task forever), which would otherwise poison every later fetch for this base URI
+			// within the same run. Evict it (only if it's still the same entry we faulted) so a future
+			// call with a live token can retry.
+			_ = _shallowMaps.TryRemove(new(baseUri.AbsoluteUri, lazyMap));
+			throw;
+		}
+		if (map is null || !map.TryGetValue(product, out var token))
+			return null;
+
+		// The token is opaque but becomes part of a local cache file name; anything that is not a
+		// plain path segment is ignored rather than joined into a path.
+		return ChangelogKeys.IsSafeFileName(token) ? token : null;
+	}
+
+	/// <summary>
+	/// Fetches the tree's shallow map (<c>bundle/registry.json</c>) mapping each product folder to an
+	/// opaque change token. Every failure — absent on pre-cutover CDNs, unparseable, transport — degrades
+	/// to null so the run behaves exactly as it did before the map existed.
+	/// </summary>
+	private async Task<Dictionary<string, string>?> FetchShallowMapAsync(Uri baseUri, Cancel ctx)
+	{
+		var mapUri = Combine(baseUri, ["bundle", ChangelogKeys.RegistryFileName]);
+		try
+		{
+			using var request = new HttpRequestMessage(HttpMethod.Get, mapUri);
+			using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+			_ = response.EnsureSuccessStatusCode();
+			await using var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
+			return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.DictionaryStringString, ctx).ConfigureAwait(false);
+		}
+		catch (OperationCanceledException) when (!ctx.IsCancellationRequested)
+		{
+			// HttpClient surfaces its own request timeout as a TaskCanceledException even when the
+			// caller's token was never signaled — that must degrade like any other transport failure,
+			// not fault the shared lazy and take every subsequent product fetch down with it.
+			_logger.LogDebug("Shallow changelog map at {MapUri} timed out; fetching every product registry as usual", mapUri);
+			return null;
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			_logger.LogDebug("Shallow changelog map at {MapUri} is unavailable ({Message}); fetching every product registry as usual", mapUri, ex.Message);
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// The parsed registry from the token-keyed local cache, or null when there is no shallow token
+	/// for the product, no cached copy for that token, or the cached copy no longer parses — every
+	/// miss falls back to a normal registry fetch.
+	/// </summary>
+	private ChangelogRegistry? TryGetCachedRegistry(string product, string? shallowToken)
+	{
+		if (shallowToken is null)
+			return null;
+
+		var cached = TryGetCachedText(RegistryCacheKey(product, shallowToken));
+		if (cached is null)
+			return null;
+
+		try
+		{
+			var registry = JsonSerializer.Deserialize(cached, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
+			if (registry is not null)
+				_logger.LogInformation("Changelog folder 'bundle/{Product}' is unchanged per the shallow map; using the cached registry", product);
+			return registry;
+		}
+		catch (JsonException)
+		{
+			return null;
+		}
 	}
 
 	private async Task<List<(string FileName, string Content)>> DownloadBundlesAsync(
@@ -257,12 +358,17 @@ public sealed class CdnChangelogFetcher : IDisposable
 		return new Uri($"{basePath}/{suffix}");
 	}
 
-	private string? TryGetCachedBundle(string product, string fileName, string? etag)
-	{
-		if (string.IsNullOrWhiteSpace(etag))
-			return null;
+	private string? TryGetCachedBundle(string product, string fileName, string? etag) =>
+		string.IsNullOrWhiteSpace(etag) ? null : TryGetCachedText(BundleCacheKey(product, fileName, etag));
 
-		var cacheKey = CacheKey(product, fileName, etag);
+	private void WriteCachedBundle(string product, string fileName, string? etag, string content)
+	{
+		if (!string.IsNullOrWhiteSpace(etag))
+			WriteCachedText(BundleCacheKey(product, fileName, etag), content);
+	}
+
+	private string? TryGetCachedText(string cacheKey)
+	{
 		if (_memoryCache.TryGetValue(cacheKey, out var cached))
 			return cached;
 
@@ -278,17 +384,13 @@ public sealed class CdnChangelogFetcher : IDisposable
 		}
 		catch (Exception e)
 		{
-			_logger.LogError(e, "Failed to read cached changelog bundle {CachePath}", cachePath);
+			_logger.LogError(e, "Failed to read cached changelog file {CachePath}", cachePath);
 			return null;
 		}
 	}
 
-	private void WriteCachedBundle(string product, string fileName, string? etag, string content)
+	private void WriteCachedText(string cacheKey, string content)
 	{
-		if (string.IsNullOrWhiteSpace(etag))
-			return;
-
-		var cacheKey = CacheKey(product, fileName, etag);
 		_ = _memoryCache.TryAdd(cacheKey, content);
 
 		var cachePath = CachePath(cacheKey);
@@ -302,12 +404,20 @@ public sealed class CdnChangelogFetcher : IDisposable
 		}
 		catch (Exception e)
 		{
-			_logger.LogError(e, "Failed to write cached changelog bundle {CachePath}", cachePath);
+			_logger.LogError(e, "Failed to write cached changelog file {CachePath}", cachePath);
 		}
 	}
 
-	private static string CacheKey(string product, string fileName, string etag) =>
+	private static string BundleCacheKey(string product, string fileName, string etag) =>
 		$"changelog-{product}-{fileName}-{etag}";
+
+	/// <summary>
+	/// Registry cache entries embed the shallow token in the key: a token mismatch is simply a cache
+	/// miss under the new key, which re-fetches and records the fresh registry alongside it — the same
+	/// convention the ETag-keyed bundle cache follows.
+	/// </summary>
+	private static string RegistryCacheKey(string product, string token) =>
+		$"registry-{product}-{token}";
 
 	private static string CachePath(string cacheKey) =>
 		Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", cacheKey);

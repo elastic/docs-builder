@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation;
@@ -13,13 +14,16 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
+using static System.StringComparison;
 
 namespace Elastic.Documentation.Isolated;
 
@@ -167,7 +171,7 @@ public class IsolatedBuildService(
 
 
 		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray(), documentInferrer: documentInferrer);
-		_ = await generator.GenerateAll(ctx);
+		var result = await generator.GenerateAll(ctx);
 
 		if (!skipOpenApi)
 		{
@@ -178,6 +182,9 @@ public class IsolatedBuildService(
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
 
+		if (result.Redirects.Count > 0)
+			await WriteRedirectsAsync(result.Redirects, context, ctx);
+
 		var finishTasks = markdownExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
 		_ = await Task.WhenAll(finishTasks);
 
@@ -186,5 +193,60 @@ public class IsolatedBuildService(
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
 		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
+	}
+
+	private async Task WriteRedirectsAsync(IReadOnlyDictionary<string, LinkRedirect> redirects, BuildContext context, Cancel ctx)
+	{
+		var pathPrefix = (context.UrlPathPrefix ?? string.Empty).TrimEnd('/');
+		var resolved = new Dictionary<string, string>();
+
+		foreach (var (from, redirect) in redirects)
+		{
+			string? to = null;
+			if (redirect.To is not null)
+				to = redirect.To;
+			else if (redirect.Many is { Length: > 0 })
+				to = redirect.Many.FirstOrDefault(r => r.To is not null)?.To;
+
+			if (to is null || to.Contains("://"))
+				continue;
+
+			var fromUrl = ToAbsoluteUrl(from, pathPrefix);
+			var toUrl = ToAbsoluteUrl(to, pathPrefix);
+
+			if (!string.IsNullOrEmpty(fromUrl) && !string.IsNullOrEmpty(toUrl)
+				&& !fromUrl.TrimEnd('/').Equals(toUrl.TrimEnd('/'), OrdinalIgnoreCase))
+			{
+				resolved[fromUrl] = toUrl;
+			}
+		}
+
+		if (resolved.Count == 0)
+			return;
+
+		var redirectsFile = context.WriteFileSystem.FileInfo.New(
+			Path.Join(context.OutputDirectory.FullName, "redirects.json"));
+		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", resolved.Count, redirectsFile.FullName);
+
+		var json = JsonSerializer.Serialize(resolved, SourceGenerationContext.Default.DictionaryStringString);
+		await context.WriteFileSystem.File.WriteAllTextAsync(redirectsFile.FullName, json, ctx);
+	}
+
+	internal static string ToAbsoluteUrl(string path, string pathPrefix)
+	{
+		pathPrefix = pathPrefix.TrimEnd('/');
+
+		if (path.EndsWith(".md", OrdinalIgnoreCase))
+			path = path[..^3];
+
+		if (path.EndsWith("/index", OrdinalIgnoreCase))
+			path = path[..^6];
+		else if (path.Equals("index", OrdinalIgnoreCase))
+			return string.IsNullOrEmpty(pathPrefix) ? "/" : pathPrefix;
+
+		if (string.IsNullOrEmpty(path))
+			return string.IsNullOrEmpty(pathPrefix) ? "/" : pathPrefix;
+
+		return $"{pathPrefix}/{path}";
 	}
 }
