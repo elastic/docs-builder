@@ -10,7 +10,12 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Integrations.S3;
 
 /// <summary>Describes a file to upload: its local path and intended S3 key.</summary>
-public record UploadTarget(string LocalPath, string S3Key);
+/// <remarks>
+/// When <see cref="InlineContent"/> is non-null the object is uploaded from that string
+/// directly (skipping ETag comparison) and <see cref="LocalPath"/> is ignored. Used for
+/// machine-generated marker objects that have no on-disk counterpart.
+/// </remarks>
+public record UploadTarget(string LocalPath, string S3Key, string? InlineContent = null);
 
 /// <summary>Result of an incremental upload run.</summary>
 public record UploadResult(int Uploaded, int Skipped, int Failed);
@@ -41,6 +46,14 @@ public class S3IncrementalUploader(
 
 			try
 			{
+				if (target.InlineContent is { } inlineContent)
+				{
+					_logger.LogInformation("Uploading inline marker → s3://{Bucket}/{S3Key}", bucketName, target.S3Key);
+					await PutInlineObject(target.S3Key, inlineContent, ctx);
+					uploaded++;
+					continue;
+				}
+
 				if (!skipEtagCheck)
 				{
 					var remoteEtag = await GetRemoteEtag(target.S3Key, ctx);
@@ -98,6 +111,18 @@ public class S3IncrementalUploader(
 			Key = target.S3Key,
 			InputStream = stream,
 			ChecksumAlgorithm = ChecksumAlgorithm.SHA256
+		};
+		_ = await s3Client.PutObjectAsync(request, ctx);
+	}
+
+	private async Task PutInlineObject(string key, string content, Cancel ctx)
+	{
+		var request = new PutObjectRequest
+		{
+			BucketName = bucketName,
+			Key = key,
+			ContentBody = content,
+			ContentType = "application/yaml"
 		};
 		_ = await s3Client.PutObjectAsync(request, ctx);
 	}

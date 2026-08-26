@@ -10,6 +10,29 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Scrubbing;
 
+/// <summary>
+/// The result of scrubbing a changelog artifact for public publication.
+/// </summary>
+public record ScrubResult
+{
+	/// <summary>The scrubbed YAML content to write to the public bucket.</summary>
+	public required string Content { get; init; }
+
+	/// <summary>
+	/// Canonical public key for this object. Null when the source key is already canonical
+	/// and no rename is needed; non-null when the source was named non-canonically
+	/// (e.g. <c>12345-fix.yaml</c>) and must be written at <c>12345.yaml</c> instead.
+	/// </summary>
+	public string? CanonicalKey { get; init; }
+
+	/// <summary>
+	/// Additional marker objects to write to the public bucket for non-primary PRs
+	/// in a multi-PR entry. Each marker's entire content is <c>link: {parentPr}</c>.
+	/// Empty for single-PR entries and bundles.
+	/// </summary>
+	public IReadOnlyList<(string Key, string Content)> Markers { get; init; } = [];
+}
+
 /// <summary>Rewrites private-bucket changelog YAML into its public, allowlist-scrubbed form.</summary>
 public interface IChangelogContentScrubber
 {
@@ -18,7 +41,7 @@ public interface IChangelogContentScrubber
 	/// shape: <c>bundle/{product}/…</c> is a bundle, everything else a changelog entry. Throws
 	/// when the content cannot be proven free of private references.
 	/// </summary>
-	Task<string> ScrubAsync(string key, string content, Cancel ctx);
+	Task<ScrubResult> ScrubAsync(string key, string content, Cancel ctx);
 }
 
 /// <summary>
@@ -31,7 +54,7 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogContentScrubber>();
 
 	/// <inheritdoc />
-	public async Task<string> ScrubAsync(string key, string content, Cancel ctx)
+	public async Task<ScrubResult> ScrubAsync(string key, string content, Cancel ctx)
 	{
 		// Artifact-root layout: bundles live under "bundle/{product}/…", entries under
 		// "changelog/{org}/{repo}/{branch}/…". Match the bundle prefix (not a "/bundle/" substring,
@@ -40,10 +63,10 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 
 		return isBundlePath
 			? await ScrubBundle(content, ctx)
-			: await ScrubChangelog(content, ctx);
+			: await ScrubChangelog(key, content, ctx);
 	}
 
-	private async Task<string> ScrubBundle(string content, Cancel ctx)
+	private async Task<ScrubResult> ScrubBundle(string content, Cancel ctx)
 	{
 		ctx.ThrowIfCancellationRequested();
 
@@ -59,15 +82,15 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 		{
 			_logger.LogInformation("Bundle had no private references, writing unchanged");
 			LinkAllowlistSanitizer.ValidateNoPrivateReferences(content, allowRepos);
-			return content;
+			return new ScrubResult { Content = content };
 		}
 
 		var result = ReleaseNotesSerialization.SerializeBundle(sanitized);
 		LinkAllowlistSanitizer.ValidateNoPrivateReferences(result, allowRepos);
-		return result;
+		return new ScrubResult { Content = result };
 	}
 
-	private async Task<string> ScrubChangelog(string content, Cancel ctx)
+	private async Task<ScrubResult> ScrubChangelog(string key, string content, Cancel ctx)
 	{
 		ctx.ThrowIfCancellationRequested();
 
@@ -84,7 +107,7 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			if (hasContent)
 				throw new InvalidOperationException(
 					"Changelog entry has both 'link:' and content fields. A marker must contain only 'link: <pr_number>'.");
-			return content;
+			return new ScrubResult { Content = content };
 		}
 
 		var bundledEntry = new BundledEntry
@@ -108,11 +131,16 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			out var sanitized, out var changed))
 			throw new InvalidOperationException($"Failed to apply allowlist to changelog entry; errors: {collector.Errors}");
 
+		// Derive canonical key and markers AFTER allowlist filtering so private-only PRs that are
+		// stripped from public output don't become the primary anchor or generate stale markers.
+		var publicEntry = changed ? entry with { Prs = sanitized.Prs } : entry;
+		var (canonicalKey, markers) = BuildCanonicalKeyAndMarkers(key, publicEntry);
+
 		if (!changed)
 		{
 			_logger.LogInformation("Changelog entry had no private references, writing unchanged");
 			LinkAllowlistSanitizer.ValidateNoPrivateReferences(content, allowRepos);
-			return content;
+			return new ScrubResult { Content = content, CanonicalKey = canonicalKey, Markers = markers };
 		}
 
 		var scrubEntry = entry with
@@ -127,6 +155,49 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 
 		var result = ReleaseNotesSerialization.SerializeEntry(scrubEntry);
 		LinkAllowlistSanitizer.ValidateNoPrivateReferences(result, allowRepos);
-		return result;
+		return new ScrubResult { Content = result, CanonicalKey = canonicalKey, Markers = markers };
+	}
+
+	private static (string? CanonicalKey, IReadOnlyList<(string Key, string Content)> Markers)
+		BuildCanonicalKeyAndMarkers(string sourceKey, ChangelogEntry entry)
+	{
+		// note-* files are their own anchor; markers have link: already set as their identity.
+		var lastSlash = sourceKey.LastIndexOf('/');
+		if (lastSlash < 0)
+			return (null, []);
+
+		var fileName = sourceKey[(lastSlash + 1)..];
+		var keyPrefix = sourceKey[..(lastSlash + 1)];
+
+		if (fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase) || entry.IsMarker)
+			return (null, []);
+
+		var prNumbers = entry.Prs?
+			.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr))
+			.Where(n => n.HasValue)
+			.Select(n => n!.Value)
+			.Distinct()
+			.OrderBy(n => n)
+			.ToList();
+
+		if (prNumbers is null or { Count: 0 })
+			return (null, []);
+
+		var primaryPr = prNumbers[0];
+		var canonicalFileName = $"{primaryPr}.yaml";
+		var canonicalKey = string.Equals(fileName, canonicalFileName, StringComparison.OrdinalIgnoreCase)
+			? null
+			: keyPrefix + canonicalFileName;
+
+		if (prNumbers.Count == 1)
+			return (canonicalKey, []);
+
+		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = primaryPr.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+		var markers = prNumbers
+			.Skip(1)
+			.Select(pr => (keyPrefix + $"{pr}.yaml", markerContent))
+			.ToList<(string, string)>();
+
+		return (canonicalKey, markers);
 	}
 }
