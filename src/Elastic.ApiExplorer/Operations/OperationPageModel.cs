@@ -171,7 +171,7 @@ public record OperationPageModel
 				})
 				: null,
 			DescriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
-			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? [], ApiPostSection.OperationReservedAnchors),
+			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
 			CodeSamples = codeSamples,

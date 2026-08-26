@@ -4,7 +4,6 @@
 
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
-using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
@@ -103,18 +102,18 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			SUPP_OP_COMMON_PATTERNS
 			"""));
 
-		html.Should().Contain("id=\"best-practices\"");
+		html.Should().Contain("id=\"extra-best-practices\"");
 		html.Should().Contain("SUPP_OP_BEST_PRACTICES");
-		html.Should().Contain("id=\"common-patterns\"");
+		html.Should().Contain("id=\"extra-common-patterns\"");
 		html.Should().Contain("SUPP_OP_COMMON_PATTERNS");
 		html.IndexOf("id=\"responses\"", StringComparison.Ordinal).Should()
-			.BeLessThan(html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal));
-		html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal).Should()
-			.BeLessThan(html.IndexOf("id=\"common-patterns\"", StringComparison.Ordinal));
+			.BeLessThan(html.IndexOf("id=\"extra-best-practices\"", StringComparison.Ordinal));
+		html.IndexOf("id=\"extra-best-practices\"", StringComparison.Ordinal).Should()
+			.BeLessThan(html.IndexOf("id=\"extra-common-patterns\"", StringComparison.Ordinal));
 	}
 
 	[Fact]
-	public async Task Operation_PostSections_DeduplicateAnchorsAgainstReservedAndPrior()
+	public async Task Operation_PostSections_PrefixAutoAnchorsAndHonorExplicitIds()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav, operations: Doc("search", """
@@ -126,6 +125,10 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 
 			SUPP_OP_RESPONSES_SECTION
 
+			## Errors {#errors-guide}
+
+			SUPP_OP_ERRORS
+
 			## Best practices
 
 			SUPP_OP_BEST_1
@@ -136,13 +139,33 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			"""));
 
 		html.Should().Contain("id=\"responses\"");
-		html.Should().Contain("id=\"responses-2\"");
+		html.Should().NotContain("id=\"responses-2\"");
+		html.Should().Contain("id=\"extra-responses\"");
 		html.Should().Contain("SUPP_OP_RESPONSES_SECTION");
-		html.Should().Contain("id=\"best-practices\"");
-		html.Should().Contain("id=\"best-practices-2\"");
+		html.Should().Contain("id=\"errors-guide\"");
+		html.Should().Contain(">Errors<");
+		html.Should().NotContain("{#errors-guide}");
+		html.Should().Contain("SUPP_OP_ERRORS");
+		html.Should().Contain("id=\"extra-best-practices\"");
+		html.Should().Contain("id=\"extra-best-practices-2\"");
 		html.Should().Contain("SUPP_OP_BEST_1");
 		html.Should().Contain("SUPP_OP_BEST_2");
-		Regex.Matches(html, """id="responses"(?!-)""").Count.Should().Be(1);
+	}
+
+	[Fact]
+	public void SplitHeading_ReadsExplicitId()
+	{
+		var (title, id) = ApiPostSection.SplitHeading("Errors {#errors-guide}");
+		title.Should().Be("Errors");
+		id.Should().Be("errors-guide");
+	}
+
+	[Fact]
+	public void ResolveAnchor_ExplicitReservedId_GetsPrefix()
+	{
+		var used = ApiPostSection.OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
+		ApiPostSection.ResolveAnchor("Responses", "responses", used).Should().Be("extra-responses");
+		ApiPostSection.ResolveAnchor("Responses", null, used).Should().Be("extra-responses-2");
 	}
 
 	[Fact]
@@ -214,11 +237,11 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("SUPP_TAG_DESCRIPTION");
 		html.Should().NotContain(SpecTagDescription);
 		html.Should().Contain("api-overview");
-		html.Should().Contain("id=\"getting-started\"");
+		html.Should().Contain("id=\"extra-getting-started\"");
 		html.Should().Contain("SUPP_TAG_GETTING_STARTED");
 		html.IndexOf("SUPP_TAG_DESCRIPTION", StringComparison.Ordinal).Should()
-			.BeLessThan(html.IndexOf("id=\"getting-started\"", StringComparison.Ordinal));
-		html.IndexOf("id=\"getting-started\"", StringComparison.Ordinal).Should()
+			.BeLessThan(html.IndexOf("id=\"extra-getting-started\"", StringComparison.Ordinal));
+		html.IndexOf("id=\"extra-getting-started\"", StringComparison.Ordinal).Should()
 			.BeLessThan(html.IndexOf("api-overview", StringComparison.Ordinal));
 	}
 

@@ -19,6 +19,8 @@ public record SectionHeader(string Title, string Anchor, string? Route = null, s
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>
 public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
 {
+	internal const string AutoPrefix = "extra-";
+
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
 	[
 		"paths",
@@ -36,27 +38,54 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
 
 	internal static IReadOnlyList<ApiPostSection> From(
 		ApiRenderContext context,
-		IReadOnlyList<ApiSupplementalSection> sections,
-		IReadOnlySet<string>? reservedAnchors = null)
+		IReadOnlyList<ApiSupplementalSection> sections)
 	{
 		if (sections.Count == 0)
 			return [];
 
-		var used = reservedAnchors is null
-			? new HashSet<string>(StringComparer.Ordinal)
-			: new HashSet<string>(reservedAnchors, StringComparer.Ordinal);
+		var used = OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
 		var result = new List<ApiPostSection>(sections.Count);
 		foreach (var s in sections)
 		{
-			var anchor = UniqueAnchor(AnchorFor(s.Heading), used);
-			result.Add(new ApiPostSection(s.Heading, anchor, ApiMarkdown.Render(context, s.Body)));
+			var (title, explicitId) = SplitHeading(s.Heading);
+			var anchor = ResolveAnchor(title, explicitId, used);
+			result.Add(new ApiPostSection(title, anchor, ApiMarkdown.Render(context, s.Body)));
 		}
 
 		return result;
 	}
 
+	internal static (string Title, string? ExplicitId) SplitHeading(string heading)
+	{
+		var trimmed = heading.Trim();
+		var start = trimmed.LastIndexOf("{#", StringComparison.Ordinal);
+		if (start < 0 || !trimmed.EndsWith('}'))
+			return (trimmed, null);
+
+		var id = trimmed[(start + 2)..^1];
+		if (id.Length == 0 || id.Contains(' ') || id.Contains('{') || id.Contains('}'))
+			return (trimmed, null);
+
+		var title = trimmed[..start].Trim();
+		return (title.Length == 0 ? trimmed : title, id);
+	}
+
 	internal static string AnchorFor(string heading) =>
 		heading.Trim().ToLowerInvariant().Replace(' ', '-');
+
+	internal static string ResolveAnchor(string title, string? explicitId, ISet<string> used)
+	{
+		if (explicitId is null)
+			return UniqueAnchor(AutoPrefix + AnchorFor(title), used);
+
+		if (used.Add(explicitId))
+			return explicitId;
+
+		var protectedId = explicitId.StartsWith(AutoPrefix, StringComparison.Ordinal)
+			? explicitId
+			: AutoPrefix + explicitId;
+		return UniqueAnchor(protectedId, used);
+	}
 
 	internal static string UniqueAnchor(string baseAnchor, ISet<string> used)
 	{
