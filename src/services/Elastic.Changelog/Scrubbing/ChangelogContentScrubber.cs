@@ -74,17 +74,16 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 		var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
 		var entry = ReleaseNotesSerialization.DeserializeEntry(normalized);
 
-		// Marker: link: <pr_number> with no other content. Return unchanged — there is no URL to scrub.
+		// Pure marker: link: <pr_number> with no other content. Return unchanged — there is no URL to scrub.
 		if (entry.Link != null)
 		{
 			var hasContent = !string.IsNullOrEmpty(entry.Title)
 				|| entry.Type != ChangelogEntryType.Invalid
 				|| entry.Products is { Count: > 0 }
 				|| entry.Prs is { Count: > 0 };
-			if (hasContent)
-				throw new InvalidOperationException(
-					"Changelog entry has both 'link:' and content fields. A marker must contain only 'link: <pr_number>'.");
-			return content;
+			if (!hasContent)
+				return content;
+			// Has link: alongside other fields — fall through to normal scrubbing (link is preserved below).
 		}
 
 		var bundledEntry = new BundledEntry
