@@ -215,8 +215,14 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	private static CapturingDiagnosticsCollector Validate(
 		IDirectoryInfo folder,
 		OpenApiDocument document,
+		string moniker) =>
+		Validate(folder, document, moniker, emitUnmatchedBaseFiles: moniker == "main");
+
+	private static CapturingDiagnosticsCollector Validate(
+		IDirectoryInfo folder,
+		OpenApiDocument document,
 		string moniker,
-		bool? emitUnmatchedBaseFiles = null)
+		bool emitUnmatchedBaseFiles)
 	{
 		var discovery = ApiSupplementalDiscovery.Discover(folder, document);
 		var collector = new CapturingDiagnosticsCollector();
@@ -224,7 +230,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			document,
 			collector,
 			moniker,
-			EmitUnmatchedBaseFiles: emitUnmatchedBaseFiles ?? (moniker == "main")));
+			EmitUnmatchedBaseFiles: emitUnmatchedBaseFiles));
 		return collector;
 	}
 
