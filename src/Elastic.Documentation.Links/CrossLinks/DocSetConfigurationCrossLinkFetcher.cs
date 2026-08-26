@@ -28,6 +28,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var registryUrlsByRepository = new Dictionary<string, string>();
 		var registryByRepository = new Dictionary<string, DocSetRegistry>();
+		var fetchFailures = new Dictionary<string, string>();
 		var codexRepositories = new HashSet<string>();
 		var declaredRepositories = new HashSet<string>();
 
@@ -35,9 +36,11 @@ public class DocSetConfigurationCrossLinkFetcher(
 		var useDualRegistry = configuration.Registry != DocSetRegistry.Public && _codexReader is not null;
 
 		// Fetch each registry once up front so per-repository lookups don't trigger N S3 round-trips.
-		var publicRegistry = await TryGetRegistry(publicReader, ctx);
-		var codexRegistry = useDualRegistry ? await TryGetRegistry(_codexReader!, ctx) : null;
-		var hadFetchFailures = false;
+		var (publicRegistry, publicRegistryFailure) = await TryGetRegistry(publicReader, ctx);
+		LinkRegistry? codexRegistry = null;
+		string? codexRegistryFailure = null;
+		if (useDualRegistry)
+			(codexRegistry, codexRegistryFailure) = await TryGetRegistry(_codexReader!, ctx);
 
 		foreach (var entry in configuration.CrossLinkEntries)
 		{
@@ -46,44 +49,52 @@ public class DocSetConfigurationCrossLinkFetcher(
 			var isCodexEntry = useDualRegistry && entry.Registry != DocSetRegistry.Public;
 			var reader = isCodexEntry ? _codexReader! : publicReader;
 			var registry = isCodexEntry ? codexRegistry : publicRegistry;
+			var registryFailure = isCodexEntry ? codexRegistryFailure : publicRegistryFailure;
+			registryUrlsByRepository[entry.Repository] = reader.RegistryUrl;
 
 			if (isCodexEntry)
 				_ = codexRepositories.Add(entry.Repository);
 
-			try
+			if (registry is null)
 			{
-				if (registry is null || !registry.Repositories.TryGetValue(entry.Repository, out var repoBranches))
-					throw new Exception($"Repository {entry.Repository} not found in link index");
-
-				var linkIndexEntry = GetNextContentSourceLinkIndexEntry(repoBranches, entry.Repository);
-				var linkReference = await FetchLinkIndexEntryFromReader(reader, entry.Repository, linkIndexEntry, ctx);
-
-				linkReferences.Add(entry.Repository, linkReference);
-				linkIndexEntries.Add(entry.Repository, linkIndexEntry);
-				registryUrlsByRepository[entry.Repository] = reader.RegistryUrl;
+				fetchFailures[entry.Repository] =
+					registryFailure ?? $"Failed to fetch link index registry from {reader.RegistryUrl}";
 			}
-			catch (Exception ex)
+			else
 			{
-				hadFetchFailures = true;
-				_logger.LogWarning(ex, "Error fetching link data for repository '{Repository}'. Cross-links to this repository may not resolve correctly.", entry.Repository);
-				_ = registryUrlsByRepository.TryAdd(entry.Repository, reader.RegistryUrl);
-
-				if (!linkReferences.ContainsKey(entry.Repository))
+				try
 				{
-					linkReferences.Add(entry.Repository, new RepositoryLinks
-					{
-						Links = [],
-						Origin = new GitCheckoutInformation
-						{
-							Branch = "main",
-							RepositoryName = entry.Repository,
-							Remote = "origin",
-							Ref = "refs/heads/main"
-						},
-						UrlPathPrefix = "",
-						CrossLinks = []
-					});
+					if (!registry.Repositories.TryGetValue(entry.Repository, out var repoBranches))
+						throw new Exception($"Repository {entry.Repository} not found in link index");
+
+					var linkIndexEntry = GetNextContentSourceLinkIndexEntry(repoBranches, entry.Repository);
+					var linkReference = await FetchLinkIndexEntryFromReader(reader, entry.Repository, linkIndexEntry, ctx);
+
+					linkReferences.Add(entry.Repository, linkReference);
+					linkIndexEntries.Add(entry.Repository, linkIndexEntry);
 				}
+				catch (Exception ex)
+				{
+					fetchFailures[entry.Repository] = ex.Message;
+					_logger.LogWarning(ex, "Error fetching link data for repository '{Repository}'. Cross-links to this repository may not resolve correctly.", entry.Repository);
+				}
+			}
+
+			if (!linkReferences.ContainsKey(entry.Repository))
+			{
+				linkReferences.Add(entry.Repository, new RepositoryLinks
+				{
+					Links = [],
+					Origin = new GitCheckoutInformation
+					{
+						Branch = "main",
+						RepositoryName = entry.Repository,
+						Remote = "origin",
+						Ref = "refs/heads/main"
+					},
+					UrlPathPrefix = "",
+					CrossLinks = []
+				});
 			}
 		}
 
@@ -95,15 +106,15 @@ public class DocSetConfigurationCrossLinkFetcher(
 			RegistryUrlsByRepository = registryUrlsByRepository.ToFrozenDictionary(),
 			RegistryByRepository = registryByRepository.ToFrozenDictionary(),
 			CodexRepositories = codexRepositories.Count > 0 ? codexRepositories.ToFrozenSet() : null,
-			IsComplete = !hadFetchFailures,
+			FetchFailures = fetchFailures.ToFrozenDictionary(),
 		};
 	}
 
-	private async Task<LinkRegistry?> TryGetRegistry(ILinkIndexReader reader, Cancel ctx)
+	private async Task<(LinkRegistry? Registry, string? FailureReason)> TryGetRegistry(ILinkIndexReader reader, Cancel ctx)
 	{
 		try
 		{
-			return await reader.GetRegistry(ctx);
+			return (await reader.GetRegistry(ctx), null);
 		}
 		catch (OperationCanceledException)
 		{
@@ -112,7 +123,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		catch (Exception ex)
 		{
 			_logger.LogWarning(ex, "Failed to fetch link index registry from {RegistryUrl}", reader.RegistryUrl);
-			return null;
+			return (null, ex.Message);
 		}
 	}
 }

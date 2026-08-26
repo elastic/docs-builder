@@ -212,6 +212,7 @@ public class CodexBuildService(
 					buildContext.Configuration,
 					codexLinkIndexReader: buildContext.Configuration.Registry != DocSetRegistry.Public ? codexLinkIndexReader : null);
 				var crossLinks = await fetcher.FetchCrossLinks(ctx);
+				CrossLinkFetchDiagnostics.EmitFetchFailures(context.Collector, buildContext.ConfigurationPath.FullName, crossLinks);
 				if (crossLinks.CodexRepositories is not null)
 					codexRepos.UnionWith(crossLinks.CodexRepositories);
 				var uriResolver = new CodexAwareUriResolver(codexRepos.ToFrozenSet(), useRelativePaths: true);

@@ -94,6 +94,7 @@ public class ReloadableGeneratorState : IDisposable
 		if (crossLinks is null || reloadConfiguration)
 		{
 			crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+			CrossLinkFetchDiagnostics.EmitFetchFailures(_context.Collector, _context.ConfigurationPath.FullName, crossLinks);
 			// Only cache successful fetches so transient failures get retried on the next reload.
 			_cachedCrossLinks = crossLinks.IsComplete ? crossLinks : null;
 		}
