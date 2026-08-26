@@ -500,6 +500,7 @@ public sealed class ScrubberProcessor(
 		_logger.LogInformation("Wrote source pointer {SourceKey} → canonical {CanonicalKey}", sourceKey, canonicalKey);
 	}
 
+
 	private async Task<string?> TryGetPublicObject(string key, Cancel ctx)
 	{
 		try

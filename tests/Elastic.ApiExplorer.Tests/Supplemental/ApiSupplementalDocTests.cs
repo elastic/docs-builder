@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Supplemental;
 
@@ -261,5 +263,57 @@ public class ApiSupplementalDocTests
 		doc.PostSections[0].Heading.Should().Be("Usage examples");
 		doc.PostSections[0].Body.Should().Contain("### Full-text search");
 		doc.PostSections[0].Body.Should().Contain("Details stay in this section.");
+	}
+
+	[Fact]
+	public void DescriptionOr_PrefersSupplementalThenSpec()
+	{
+		var withDescription = ApiSupplementalDoc.Parse("Override text");
+		var parametersOnly = ApiSupplementalDoc.Parse("""
+			## Parameters
+
+			: `q`
+			  Query override.
+			""");
+
+		withDescription!.DescriptionOr("spec").Should().Be("Override text");
+		withDescription.DescriptionOr(null).Should().Be("Override text");
+		parametersOnly!.DescriptionOr("spec").Should().Be("spec");
+		parametersOnly.DescriptionOr(null).Should().BeNull();
+	}
+
+	[Fact]
+	public void ParameterOr_ReplacesListedNamesOnly()
+	{
+		var doc = ApiSupplementalDoc.Parse("""
+			## Parameters
+
+			: `q`
+			  Query override.
+			""");
+
+		doc!.ParameterOr("q", "spec q").Should().Be("Query override.");
+		doc.ParameterOr("index", "spec index").Should().Be("spec index");
+	}
+
+	[Fact]
+	public void Load_ParsesMatchedFilesAndSkipsEmpty()
+	{
+		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			["/docs/api/fixture/op-search.md"] = new("Supplemental search description."),
+			["/docs/api/fixture/op-empty.md"] = new("   ")
+		});
+		var files = new Dictionary<string, IFileInfo>
+		{
+			["search"] = fs.FileInfo.New("/docs/api/fixture/op-search.md"),
+			["empty"] = fs.FileInfo.New("/docs/api/fixture/op-empty.md")
+		};
+
+		var docs = ApiSupplementalDoc.Load(files);
+
+		docs.Should().ContainKey("search");
+		docs["search"].Description.Should().Be("Supplemental search description.");
+		docs.Should().NotContainKey("empty");
 	}
 }

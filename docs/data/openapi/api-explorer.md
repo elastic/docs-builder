@@ -82,12 +82,10 @@ api:
 - Child pages are fully rendered Markdown with access to all MyST directives, substitutions, and cross-links.
 - Child files are automatically excluded from normal HTML generation — you do not need to add them to the `exclude:` list.
 
-**What you cannot do today:** there is no way to override or augment an individual operation,
-tag, schema, or parameter description using a local Markdown file. Every description for generated
-operations, tags, and schema types comes verbatim from the OpenAPI JSON. For per-operation and
-per-parameter enrichment see the [CLI reference](../cli-schema/index.md), which provides a
-fine-grained supplemental mechanism as a reference model for what future API augmentation could
-look like.
+Per-operation and per-tag Markdown files in `api/<key>/` (`op-*.md`, `tag-*.md`) override
+descriptions and can append extra sections. Parameter and request-body field text can be
+replaced with definition lists. Schema type pages still take descriptions from the OpenAPI
+spec only. Full authoring rules will land with the content-enrichment docs.
 
 #### Child file naming and validation
 
