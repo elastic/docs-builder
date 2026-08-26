@@ -229,7 +229,7 @@ public class OpenApiGenerator(
 		IReadOnlyList<ApiVersionSwitcherItem> versionSwitcherItems,
 		Cancel ctx)
 	{
-		_ = DiscoverSupplemental(openApiDocument, apiConfig);
+		var discovery = DiscoverSupplemental(openApiDocument, apiConfig);
 		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
 
@@ -241,7 +241,9 @@ public class OpenApiGenerator(
 			CurrentNavigation = navigation,
 			MarkdownRenderer = markdownStringRenderer,
 			ApiExplorerLog = _logger,
-			VersionSwitcherItems = versionSwitcherItems
+			VersionSwitcherItems = versionSwitcherItems,
+			OperationSupplemental = ApiSupplementalDoc.Load(discovery.Operations),
+			TagSupplemental = ApiSupplementalDoc.Load(discovery.Tags)
 		};
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
@@ -249,7 +251,7 @@ public class OpenApiGenerator(
 
 	/// <summary>
 	/// Associates <c>op-*.md</c> / <c>tag-*.md</c> files under <c>api/&lt;key&gt;/</c> with this
-	/// document. Merge into page models is a later change; this call logs and exposes the result.
+	/// document. Parsed matches are attached to the render context by the caller.
 	/// </summary>
 	internal ApiSupplementalDiscoveryResult DiscoverSupplemental(
 		OpenApiDocument openApiDocument,
