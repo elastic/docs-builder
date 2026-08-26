@@ -292,6 +292,56 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	}
 
 	/// <summary>
+	/// Probes for a PR's changelog entry by number. Returns <c>null</c> when the entry does not exist (404);
+	/// this is the normal "no changelog for this PR" case and is not an error. Transient failures
+	/// (5xx, timeouts, transport errors) are retried with the same budget as other fetches.
+	/// Unlike <see cref="TryFetchNamedEntryAsync"/>, a 404 here is authoritative-null, not an error.
+	/// </summary>
+	public async Task<CdnChangelogEntry?> FetchPrEntryAsync(
+		Uri baseUri, string org, string repo, string branch, int prNumber, Cancel ctx)
+	{
+		var fileName = $"{prNumber}.yaml";
+		var poolSegments = ChangelogKeys.PoolSegments(org, repo, branch);
+		var uri = CombineSegments(baseUri, [.. poolSegments, fileName]);
+		var poolLabel = $"{org}/{repo}/{branch}";
+		var (fetched, content, lastError) = await TryProbeEntryAsync(uri, fileName, poolLabel, ctx).ConfigureAwait(false);
+		if (lastError != null)
+			throw new InvalidOperationException($"Transient failure probing changelog entry '{fileName}' for {poolLabel}: {lastError}");
+		return fetched ? new CdnChangelogEntry(fileName, content) : null;
+	}
+
+	private async Task<(bool Fetched, string Content, string? LastError)> TryProbeEntryAsync(Uri uri, string fileName, string poolLabel, Cancel ctx)
+	{
+		string? lastError = null;
+		for (var attempt = 1; attempt <= _maxAttempts; attempt++)
+		{
+			ctx.ThrowIfCancellationRequested();
+			try
+			{
+				var (notFound, content) = await FetchTextOrNotFoundAsync(uri, attempt, ctx).ConfigureAwait(false);
+				if (notFound)
+					return (false, string.Empty, null); // 404 = probe miss, not an error
+				if (attempt > 1)
+					_logger.LogInformation("Probed changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}", fileName, poolLabel, attempt, _maxAttempts);
+				return (true, content, null);
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				if (ex is HttpRequestException { StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError })
+					return (false, string.Empty, ex.Message);
+				lastError = ex.Message;
+				if (attempt >= _maxAttempts)
+					break;
+				var delay = RetryDelay(attempt);
+				_logger.LogDebug("Probe for changelog entry '{File}' for {Pool} failed (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
+					fileName, poolLabel, attempt, _maxAttempts, ex.Message, delay);
+				await _sleep(delay, ctx).ConfigureAwait(false);
+			}
+		}
+		return (false, string.Empty, lastError);
+	}
+
+	/// <summary>
 	/// Fetches a single entry, retrying transient failures (most importantly a not-yet-propagated 404)
 	/// up to <see cref="_maxAttempts"/> times with exponential backoff. Retry requests are cache-busted
 	/// so a CloudFront-cached 404 cannot pin the result for the whole window.
