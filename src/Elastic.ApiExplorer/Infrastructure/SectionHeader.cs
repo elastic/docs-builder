@@ -19,8 +19,6 @@ public record SectionHeader(string Title, string Anchor, string? Route = null, s
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>
 public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
 {
-	internal const string AutoPrefix = "extra-";
-
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
 	[
 		"paths",
@@ -73,19 +71,8 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
 	internal static string AnchorFor(string heading) =>
 		heading.Trim().ToLowerInvariant().Replace(' ', '-');
 
-	internal static string ResolveAnchor(string title, string? explicitId, ISet<string> used)
-	{
-		if (explicitId is null)
-			return UniqueAnchor(AutoPrefix + AnchorFor(title), used);
-
-		if (used.Add(explicitId))
-			return explicitId;
-
-		var protectedId = explicitId.StartsWith(AutoPrefix, StringComparison.Ordinal)
-			? explicitId
-			: AutoPrefix + explicitId;
-		return UniqueAnchor(protectedId, used);
-	}
+	internal static string ResolveAnchor(string title, string? explicitId, ISet<string> used) =>
+		UniqueAnchor(explicitId ?? AnchorFor(title), used);
 
 	internal static string UniqueAnchor(string baseAnchor, ISet<string> used)
 	{
