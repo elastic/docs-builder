@@ -361,6 +361,9 @@ jobs:
           && needs.check.outputs.any_modified != 'false'
           && github.event_name == 'push'
           && steps.s3-upload.outcome == 'success'
+        # Best-effort: the preview role may not yet have cloudfront-keyvaluestore:PutKey granted.
+        # Don't block the preview deploy on it; treat a permissions gap as a follow-up, not an outage.
+        continue-on-error: true
         run: |
           if [ -f .artifacts/docs/html/redirects.json ]; then
             dotnet run --project src/tooling/docs-builder -- assembler deploy update-redirects --no-delete preview --redirectsFile .artifacts/docs/html/redirects.json
