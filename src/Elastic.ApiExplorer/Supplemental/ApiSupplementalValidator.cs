@@ -33,7 +33,7 @@ internal static class ApiSupplementalValidator
 				discovery.VersionSuffixed, major, operationsById, tagSlugs, request.Document, request.Collector);
 		}
 
-		ValidateOperationOverrides(discovery.Operations, operationsById, request.Document, request.Collector);
+		ValidateOperationOverrides(discovery.Operations, operationsById, request);
 	}
 
 	private static void EmitUnmatched(
@@ -76,7 +76,7 @@ internal static class ApiSupplementalValidator
 					continue;
 				}
 
-				ValidateFileOverrides(versioned.File, operation, analyzer, collector);
+				ValidateFileOverrides(versioned.File, operation, analyzer, collector, specLabel);
 				continue;
 			}
 
@@ -88,30 +88,34 @@ internal static class ApiSupplementalValidator
 	private static void ValidateOperationOverrides(
 		IReadOnlyDictionary<string, IFileInfo> operationFiles,
 		IReadOnlyDictionary<string, OpenApiOperation> operationsById,
-		OpenApiDocument document,
-		IDiagnosticsCollector collector)
+		ApiSupplementalValidationRequest request)
 	{
-		var analyzer = new SchemaAnalyzer(document);
+		var analyzer = new SchemaAnalyzer(request.Document);
+		var specLabel = SpecLabel(request.Moniker);
 		foreach (var (operationId, file) in operationFiles)
 		{
 			if (!operationsById.TryGetValue(operationId, out var operation))
 				continue;
 
-			ValidateFileOverrides(file, operation, analyzer, collector);
+			ValidateFileOverrides(file, operation, analyzer, request.Collector, specLabel);
 		}
 	}
+
+	private static string SpecLabel(string moniker) =>
+		int.TryParse(moniker, out var major) ? $"version {major}" : "the latest spec";
 
 	private static void ValidateFileOverrides(
 		IFileInfo file,
 		OpenApiOperation operation,
 		SchemaAnalyzer analyzer,
-		IDiagnosticsCollector collector)
+		IDiagnosticsCollector collector,
+		string specLabel)
 	{
 		var doc = ApiSupplementalDoc.Parse(file.FileSystem.File.ReadAllText(file.FullName));
 		if (doc is null)
 			return;
 
-		ValidateOverrideKeys(file, operation, analyzer, collector, doc);
+		ValidateOverrideKeys(file, operation, analyzer, collector, doc, specLabel);
 	}
 
 	private static void ValidateOverrideKeys(
@@ -119,7 +123,8 @@ internal static class ApiSupplementalValidator
 		OpenApiOperation operation,
 		SchemaAnalyzer analyzer,
 		IDiagnosticsCollector collector,
-		ApiSupplementalDoc doc)
+		ApiSupplementalDoc doc,
+		string specLabel)
 	{
 		var operationId = operation.OperationId ?? "";
 		if (doc.ParameterOverrides.Count > 0)
@@ -128,7 +133,7 @@ internal static class ApiSupplementalValidator
 			foreach (var key in doc.ParameterOverrides.Keys)
 			{
 				if (!parameterNames.Contains(key))
-					collector.EmitError(file, $"API supplemental: Parameter '{key}' not found in operation '{operationId}'");
+					collector.EmitError(file, $"API supplemental: Parameter '{key}' not found in operation '{operationId}' in {specLabel}");
 			}
 		}
 
@@ -138,7 +143,7 @@ internal static class ApiSupplementalValidator
 			foreach (var key in doc.RequestBodyOverrides.Keys)
 			{
 				if (!bodyNames.Contains(key))
-					collector.EmitError(file, $"API supplemental: Request body field '{key}' not found in operation '{operationId}'");
+					collector.EmitError(file, $"API supplemental: Request body field '{key}' not found in operation '{operationId}' in {specLabel}");
 			}
 		}
 	}

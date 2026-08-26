@@ -61,7 +61,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			""")), fixture.Document, "main");
 
 		collector.ErrorMessages.Should().ContainSingle(m =>
-			m.Contains("Parameter 'nope'") && m.Contains("operation 'search'"));
+			m.Contains("Parameter 'nope'") && m.Contains("operation 'search'") && m.Contains("the latest spec"));
 	}
 
 	[Fact]
@@ -81,7 +81,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			""")), fixture.Document, "main");
 
 		collector.ErrorMessages.Should().ContainSingle()
-			.Which.Should().Contain("Request body field 'nope_field'").And.Contain("operation 'search'");
+			.Which.Should().Contain("Request body field 'nope_field'").And.Contain("operation 'search'")
+			.And.Contain("the latest spec");
 	}
 
 	[Fact]
@@ -155,7 +156,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			""")), fixture.Document, "next");
 
 		collector.ErrorMessages.Should().ContainSingle(m =>
-			m.Contains("Parameter 'nope'") && m.Contains("operation 'search'"));
+			m.Contains("Parameter 'nope'") && m.Contains("operation 'search'") && m.Contains("the latest spec"));
 	}
 
 	[Fact]
@@ -169,7 +170,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			""")), SpecWith("search", "q"), "8");
 
 		collector.ErrorMessages.Should().ContainSingle(m =>
-			m.Contains("Parameter 'pretty'") && m.Contains("operation 'search'"));
+			m.Contains("Parameter 'pretty'") && m.Contains("operation 'search'") && m.Contains("version 8"));
 	}
 
 	[Fact]
@@ -225,7 +226,7 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			""")), fixture.Document, "8");
 
 		collector.ErrorMessages.Should().ContainSingle(m =>
-			m.Contains("Parameter 'nope'") && m.Contains("operation 'search'"));
+			m.Contains("Parameter 'nope'") && m.Contains("operation 'search'") && m.Contains("version 8"));
 	}
 
 	private static CapturingDiagnosticsCollector Validate(
