@@ -51,10 +51,10 @@ Required structure:
 
 ## What
 
-#### <name or short label>
-<Prose paragraph. Lead with behaviour, not a symbol or path. Name a symbol only
- when the reviewer needs it to find the code. Two to four sentences max.
- Three to five sections total.>
+#### <Conceptual label — not a filename>
+<Prose paragraph. Group by what changed conceptually, not by which files moved.
+ Lead with behaviour. Name a symbol only when the reviewer needs it to find the code.
+ Two to four sentences. Three to five sections total.>
 
 ## Verify
 <How a reviewer confirms this locally. Use real commands they would run:
