@@ -20,6 +20,7 @@
     "synthetics:test:staging": "DOCS_ENV=staging npm run synthetics:test",
     "synthetics:test:edge": "DOCS_ENV=edge npm run synthetics:test",
     "synthetics:test:local": "DOCS_ENV=local npm run synthetics:test",
+    "synthetics:test:preview": "DOCS_ENV=preview npx @elastic/synthetics ./synthetics/journeys/navigation-test.journey.ts ./synthetics/journeys/api-explorer.journey.ts --config=./synthetics/synthetics.config.ts",
     "synthetics:test:accessibility": "npx @elastic/synthetics ./synthetics/ci/accessibility.ci.ts --config=./synthetics/synthetics.config.ts",
     "synthetics:test:mcp": "npx @elastic/synthetics ./synthetics/journeys/mcp-server.journey.ts --config=./synthetics/synthetics.config.ts",
     "synthetics:test:mcp:prod": "DOCS_ENV=prod npm run synthetics:test:mcp",

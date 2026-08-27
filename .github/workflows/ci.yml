@@ -43,46 +43,6 @@ jobs:
     needs: [lint]
     uses: ./.github/workflows/build-openapi-index-lambda.yml
 
-  synthetics:
-    needs: [lint]
-    runs-on: ubuntu-latest
-    env:
-      MSBuildNoWarn: IDE0032
-      FEATURE_ASSEMBLER_API_EXPLORER: 'true'
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-        
-      - name: Bootstrap Action Workspace
-        id: bootstrap
-        uses: ./.github/actions/bootstrap
-          
-      - name: Install dependencies
-        working-directory: src/Elastic.Documentation.Site
-        run: npm ci
-        
-      - name: Run assembler
-        run: |
-          mkdir ../assembler-workspace
-          cd ../assembler-workspace
-          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler config init --local 
-          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler clone -c local --skip-private-repositories
-          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler build -c local --skip-private-repositories
-          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler serve &
-        
-      - name: Wait for docs
-        working-directory: src/Elastic.Documentation.Site
-        run: npx wait-on http-get://localhost:4000/docs
-          
-      - name: Run synthetics
-        working-directory: src/Elastic.Documentation.Site
-        run: npm run synthetics:test
-
-      - name: Run accessibility synthetics
-        working-directory: src/Elastic.Documentation.Site
-        run: npm run synthetics:test:accessibility
-
   npm:
     runs-on: ubuntu-latest
     defaults: 
