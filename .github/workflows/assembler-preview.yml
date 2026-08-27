@@ -131,7 +131,7 @@ jobs:
         run: npm ci
 
       - name: Wait for preview to be live
-        run: npx wait-on "https://docs-v3-preview.elastic.dev/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --timeout 120000
+        run: npx wait-on "https-get://docs-v3-preview.elastic.dev/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --timeout 180000
 
       - name: Run synthetics
         id: synthetics
