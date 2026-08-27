@@ -22,11 +22,14 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 			  'old-page.md': 'kibana://docs/reference/advanced-settings.md'
 			""");
 
-		collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("kibana://docs/reference/advanced-settings.md") &&
-			d.Message.Contains("docs/reference/advanced-settings.md") &&
-			d.Message.Contains("kibana"));
+		collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("kibana://docs/reference/advanced-settings.md") && d.Message.Contains(
+					"docs/reference/advanced-settings.md"
+				) && d.Message.Contains("kibana")
+			);
 	}
 
 	[Fact]
@@ -48,9 +51,7 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 			  'old-page.md': 'not-a-repo://foo.md'
 			""");
 
-		collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("not-a-repo"));
+		collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not-a-repo"));
 	}
 
 	[Fact]
@@ -67,7 +68,8 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 	[Fact]
 	public void ValidateRedirectsExists_ManyWithBadCrossRepo_EmitsError()
 	{
-		var collector = CreateSet("""
+		var collector = CreateSet(
+			"""
 			redirects:
 			  'old-page.md':
 			    many:
@@ -77,20 +79,22 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 			      - to: 'kibana://docs/reference/advanced-settings.md'
 			        anchors:
 			          'keep': 'keep'
-			""");
+			"""
+		);
 
-		collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("kibana://docs/reference/advanced-settings.md"));
+		collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("kibana://docs/reference/advanced-settings.md"));
 	}
 
 	[Fact]
 	public void ValidateRedirectsExists_NoopResolver_NoError()
 	{
-		var collector = CreateSet("""
+		var collector = CreateSet(
+			"""
 			redirects:
 			  'old-page.md': 'kibana://docs/reference/advanced-settings.md'
-			""", NoopCrossLinkResolver.Instance);
+			""",
+			NoopCrossLinkResolver.Instance
+		);
 
 		RedirectErrors(collector).Should().BeEmpty();
 	}
@@ -98,21 +102,22 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 	private TestDiagnosticsCollector CreateSet(string redirectYaml, ICrossLinkResolver? resolver = null)
 	{
 		var logger = new TestLoggerFactory(output);
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
 			{
-				"docs/docset.yml", new MockFileData("""
+				{
+					"docs/docset.yml",
+					new MockFileData("""
 					project: test
 					toc:
 					- file: index.md
 					""")
+				},
+				{ "docs/redirects.yml", new MockFileData(redirectYaml) },
+				{ "docs/index.md", new MockFileData("# Home") }
 			},
-			{ "docs/redirects.yml", new MockFileData(redirectYaml) },
-			{ "docs/index.md", new MockFileData("# Home") }
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
@@ -122,7 +127,5 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 	}
 
 	private static IEnumerable<Diagnostic> RedirectErrors(TestDiagnosticsCollector collector) =>
-		collector.Diagnostics.Where(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Redirect ", StringComparison.Ordinal));
+		collector.Diagnostics.Where(d => d.Severity == Severity.Error && d.Message.Contains("Redirect ", StringComparison.Ordinal));
 }
