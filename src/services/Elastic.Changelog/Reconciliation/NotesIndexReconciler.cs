@@ -51,8 +51,7 @@ public sealed class NotesIndexReconciler(
 	/// Returns an empty dictionary when no notes exist. Consumed by <see cref="NoteAmendReconciler"/>
 	/// in the same SQS-batch pass to compute <c>bundle_seq</c> and publish amend sidecars.
 	/// </returns>
-	public async Task<IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> ReconcileRepoAsync(
-		ChangelogScope notesScope, Cancel ctx)
+	public async Task<IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> ReconcileRepoAsync(ChangelogScope notesScope, Cancel ctx)
 	{
 		if (notesScope.Kind != ChangelogScopeKind.Notes)
 			throw new ArgumentException($"Notes reconcile requires a Notes scope; got '{notesScope}'.", nameof(notesScope));
@@ -102,21 +101,22 @@ public sealed class NotesIndexReconciler(
 		var written = new Dictionary<string, IReadOnlyList<NoteIndexEntry>>(StringComparer.Ordinal);
 		try
 		{
-			await Parallel.ForEachAsync(
-				byVersion,
-				new ParallelOptions { MaxDegreeOfParallelism = MaxParallelReads, CancellationToken = ctx },
-				async (kvp, ct) =>
-				{
-					var (version, entries) = kvp;
-					var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
-					var sortedEntries = entries
-						.DistinctBy(e => e.Path, StringComparer.Ordinal)
-						.OrderBy(e => e.Path, StringComparer.Ordinal)
-						.ToList();
-					await WriteIndexAsync(indexKey, sortedEntries, ct);
-					lock (written)
-						written[version] = sortedEntries;
-				});
+			await Parallel.ForEachAsync(byVersion, new ParallelOptions
+			{
+				MaxDegreeOfParallelism = MaxParallelReads,
+				CancellationToken = ctx
+			}, async (kvp, ct) =>
+			{
+				var (version, entries) = kvp;
+				var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
+				var sortedEntries = entries
+					.DistinctBy(e => e.Path, StringComparer.Ordinal)
+					.OrderBy(e => e.Path, StringComparer.Ordinal)
+					.ToList();
+				await WriteIndexAsync(indexKey, sortedEntries, ct);
+				lock (written)
+					written[version] = sortedEntries;
+			});
 		}
 		finally
 		{
@@ -129,11 +129,7 @@ public sealed class NotesIndexReconciler(
 
 	private async Task<IReadOnlyList<string>> ListExistingNotesIndexes(ChangelogScope notesScope, Cancel ctx)
 	{
-		var request = new ListObjectsV2Request
-		{
-			BucketName = publicBucketName,
-			Prefix = notesScope.Prefix
-		};
+		var request = new ListObjectsV2Request { BucketName = publicBucketName, Prefix = notesScope.Prefix };
 
 		var keys = new List<string>();
 		ListObjectsV2Response response;
@@ -146,7 +142,8 @@ public sealed class NotesIndexReconciler(
 					keys.Add(obj.Key);
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return keys;
 	}
@@ -156,7 +153,8 @@ public sealed class NotesIndexReconciler(
 		HashSet<string> currentVersions,
 		string org,
 		string repo,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// "changelog/{org}/{repo}/notes-" — the stable prefix shared by all notes-*.json keys for this repo.
 		var notesKeyPrefix = $"{ChangelogKeys.ChangelogPrefix}{org}/{repo}/notes-";
@@ -172,11 +170,7 @@ public sealed class NotesIndexReconciler(
 
 			try
 			{
-				_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest
-				{
-					BucketName = publicBucketName,
-					Key = key
-				}, ctx);
+				_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
 				_logger.LogInformation("Removed stale notes index {Key}", key);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
@@ -214,15 +208,17 @@ public sealed class NotesIndexReconciler(
 				_metrics.IncrementObjectsListed();
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return files;
 	}
 
 	private static bool IsNoteFileName(string fileName) =>
 		fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase)
-		&& (fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
-		&& !fileName.Contains('/', StringComparison.Ordinal);
+			&& (fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+				|| fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
+			&& !fileName.Contains('/', StringComparison.Ordinal);
 
 	/// <summary>
 	/// Reads a note file and returns all version slugs it should be indexed under.
@@ -233,11 +229,7 @@ public sealed class NotesIndexReconciler(
 	{
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = _sourceBucketName,
-				Key = key
-			}, ctx);
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = _sourceBucketName, Key = key }, ctx);
 
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
@@ -254,12 +246,9 @@ public sealed class NotesIndexReconciler(
 			{
 				// Prefer the new `versions` list; fall back to the legacy `target` field for compat.
 #pragma warning disable CS0618 // reading obsolete Target for backward compat
-				IEnumerable<string?> rawVersions =
-					productInfo.Versions is { Count: > 0 }
-						? productInfo.Versions
-						: productInfo.Target is not null
-							? [productInfo.Target]
-							: [];
+				IEnumerable<string?> rawVersions = productInfo.Versions is { Count: > 0 }
+					? productInfo.Versions
+					: productInfo.Target is not null ? [productInfo.Target] : [];
 #pragma warning restore CS0618
 
 				foreach (var raw in rawVersions.Where(v => !string.IsNullOrWhiteSpace(v)))
@@ -267,7 +256,11 @@ public sealed class NotesIndexReconciler(
 					var v = raw!.Trim();
 					if (v.Contains('/', StringComparison.Ordinal))
 					{
-						_logger.LogWarning("Note {Key} has version '{Version}' containing '/'; skipping — versions must be single path segments", key, v);
+						_logger.LogWarning(
+							"Note {Key} has version '{Version}' containing '/'; skipping — versions must be single path segments",
+							key,
+							v
+						);
 						continue;
 					}
 					if (!valid.Contains(v, StringComparer.Ordinal))
@@ -298,11 +291,7 @@ public sealed class NotesIndexReconciler(
 	/// </remarks>
 	public async Task WriteIndexAsync(string key, IReadOnlyList<NoteIndexEntry> entries, Cancel ctx)
 	{
-		var index = new NotesIndex
-		{
-			SchemaVersion = NotesIndex.CurrentSchemaVersion,
-			Notes = entries
-		};
+		var index = new NotesIndex { SchemaVersion = NotesIndex.CurrentSchemaVersion, Notes = entries };
 		var newJson = JsonSerializer.Serialize(index, NotesIndexJsonContext.Default.NotesIndex);
 
 		for (var attempt = 1; attempt <= MaxWriteAttempts; attempt++)
@@ -314,11 +303,10 @@ public sealed class NotesIndexReconciler(
 				string? currentETag = null;
 				try
 				{
-					var head = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
-					{
-						BucketName = publicBucketName,
-						Key = key
-					}, ctx);
+					var head = await s3Client.GetObjectMetadataAsync(
+						new GetObjectMetadataRequest { BucketName = publicBucketName, Key = key },
+						ctx
+					);
 					currentETag = head.ETag;
 				}
 				catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -331,11 +319,10 @@ public sealed class NotesIndexReconciler(
 				{
 					try
 					{
-						var existing = await s3Client.GetObjectAsync(new GetObjectRequest
-						{
-							BucketName = publicBucketName,
-							Key = key
-						}, ctx);
+						var existing = await s3Client.GetObjectAsync(
+							new GetObjectRequest { BucketName = publicBucketName, Key = key },
+							ctx
+						);
 						await using var existStream = existing.ResponseStream;
 						using var existReader = new StreamReader(existStream);
 						var existingJson = await existReader.ReadToEndAsync(ctx);
@@ -381,7 +368,13 @@ public sealed class NotesIndexReconciler(
 				}
 				var jitter = TimeSpan.FromMilliseconds(Random.Shared.NextDouble() * 100);
 				var delay = (_retryBaseDelay * attempt) + jitter;
-				_logger.LogDebug("Notes index {Key} conditional write conflict (attempt {A}/{Max}); retrying in {Delay}", key, attempt, MaxWriteAttempts, delay);
+				_logger.LogDebug(
+					"Notes index {Key} conditional write conflict (attempt {A}/{Max}); retrying in {Delay}",
+					key,
+					attempt,
+					MaxWriteAttempts,
+					delay
+				);
 				await Task.Delay(delay, ctx);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
@@ -390,7 +383,14 @@ public sealed class NotesIndexReconciler(
 					throw;
 
 				var delay = _retryBaseDelay * attempt;
-				_logger.LogDebug(ex, "Notes index write {Key} failed (attempt {A}/{Max}); retrying in {Delay}", key, attempt, MaxWriteAttempts, delay);
+				_logger.LogDebug(
+					ex,
+					"Notes index write {Key} failed (attempt {A}/{Max}); retrying in {Delay}",
+					key,
+					attempt,
+					MaxWriteAttempts,
+					delay
+				);
 				await Task.Delay(delay, ctx);
 			}
 		}

@@ -26,8 +26,7 @@ public class NoteAmendReconcilerTests
 	private const string Version = "9.3.0";
 
 	// Pool key prefix: changelog/elastic/elasticsearch/
-	private static string NoteKey(string branch, string file) =>
-		$"changelog/{Org}/{Repo}/{branch}/{file}";
+	private static string NoteKey(string branch, string file) => $"changelog/{Org}/{Repo}/{branch}/{file}";
 
 	private static string AmendNotesKey(string parentFile) =>
 		$"bundle/{Product}/{Path.GetFileNameWithoutExtension(parentFile)}.amend-notes{Path.GetExtension(parentFile)}";
@@ -37,13 +36,12 @@ public class NoteAmendReconcilerTests
 	private static string BundleKey(string file) => $"bundle/{Product}/{file}";
 
 	// language=yaml
-	private const string NoteYaml =
-		"title: CVE security fix\n" +
-		"type: security\n" +
-		"products:\n" +
-		"  - product: elasticsearch\n" +
-		"    versions: [9.3.0]\n" +
-		"    lifecycle: ga\n";
+	private const string NoteYaml = "title: CVE security fix\n"
+		+ "type: security\n"
+		+ "products:\n"
+		+ "  - product: elasticsearch\n"
+		+ "    versions: [9.3.0]\n"
+		+ "    lifecycle: ga\n";
 
 	private readonly FakeS3 _s3 = new(PublicBucket);
 	private readonly NotesIndexReconciler _notesReconciler;
@@ -51,11 +49,14 @@ public class NoteAmendReconcilerTests
 
 	public NoteAmendReconcilerTests()
 	{
-		_notesReconciler = new NotesIndexReconciler(
-			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero);
+		_notesReconciler = new NotesIndexReconciler(NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero);
 		_reconciler = new NoteAmendReconciler(
-			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _notesReconciler,
-			retryBaseDelay: TimeSpan.Zero);
+			NullLoggerFactory.Instance,
+			_s3.Client,
+			PublicBucket,
+			_notesReconciler,
+			retryBaseDelay: TimeSpan.Zero
+		);
 	}
 
 	private static ChangelogScope NotesScope()
@@ -70,12 +71,17 @@ public class NoteAmendReconcilerTests
 		var bundle = new Bundle
 		{
 			Products = [new BundledProduct(Product, target: Version, lifecycle: Lifecycle.Ga)],
-			Entries = [.. entryFileNames.Select(n => new BundledEntry
-			{
-				File = new BundledFile { Name = n, Checksum = "abc123" },
-				Title = $"Entry for {n}",
-				Type = ChangelogEntryType.BugFix
-			})]
+			Entries =
+			[
+				.. entryFileNames.Select(
+					n => new BundledEntry
+					{
+						File = new BundledFile { Name = n, Checksum = "abc123" },
+						Title = $"Entry for {n}",
+						Type = ChangelogEntryType.BugFix
+					}
+				)
+			]
 		};
 		return ReleaseNotesSerialization.SerializeBundle(bundle);
 	}
@@ -96,11 +102,9 @@ public class NoteAmendReconcilerTests
 		return JsonSerializer.Serialize(registry, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
 	}
 
-	private static NotesIndex ReadNotesIndex(string json) =>
-		JsonSerializer.Deserialize(json, NotesIndexJsonContext.Default.NotesIndex)!;
+	private static NotesIndex ReadNotesIndex(string json) => JsonSerializer.Deserialize(json, NotesIndexJsonContext.Default.NotesIndex)!;
 
-	private static IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>> NotesByVersion(
-		string version, params string[] paths) =>
+	private static IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>> NotesByVersion(string version, params string[] paths) =>
 		new Dictionary<string, IReadOnlyList<NoteIndexEntry>>
 		{
 			[version] = [.. paths.Select(p => new NoteIndexEntry { Path = p, BundleSeq = 0 })]
@@ -163,7 +167,15 @@ public class NoteAmendReconcilerTests
 		var amendBundle = new Bundle
 		{
 			Products = [new BundledProduct(Product, target: Version, lifecycle: Lifecycle.Ga)],
-			Entries = [new BundledEntry { File = new BundledFile { Name = "main/note-cve.yml", Checksum = "def456" }, Title = "CVE", Type = ChangelogEntryType.Security }]
+			Entries =
+			[
+				new BundledEntry
+				{
+					File = new BundledFile { Name = "main/note-cve.yml", Checksum = "def456" },
+					Title = "CVE",
+					Type = ChangelogEntryType.Security
+				}
+			]
 		};
 		_s3.Seed(PublicBucket, BundleKey(humanAmend), ReleaseNotesSerialization.SerializeBundle(amendBundle));
 		_s3.Seed(PublicBucket, NoteKey("main", "note-cve.yml"), NoteYaml);
@@ -171,7 +183,10 @@ public class NoteAmendReconcilerTests
 		var notesByVersion = NotesByVersion(Version, "main/note-cve.yml");
 		await _reconciler.ReconcileAsync(NotesScope(), notesByVersion, TestContext.Current.CancellationToken);
 
-		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("note already in human amend → reconciler amend-notes must not be created");
+		_s3
+			.Exists(PublicBucket, AmendNotesKey(parent))
+			.Should()
+			.BeFalse("note already in human amend → reconciler amend-notes must not be created");
 
 		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Version);
 		var index = ReadNotesIndex(_s3.ContentOf(PublicBucket, indexKey));
@@ -216,7 +231,15 @@ public class NoteAmendReconcilerTests
 		var staleAmend = new Bundle
 		{
 			Products = [new BundledProduct(Product, target: Version, lifecycle: Lifecycle.Ga)],
-			Entries = [new BundledEntry { File = new BundledFile { Name = "main/note-cve.yml", Checksum = "old" }, Title = "CVE", Type = ChangelogEntryType.Security }]
+			Entries =
+			[
+				new BundledEntry
+				{
+					File = new BundledFile { Name = "main/note-cve.yml", Checksum = "old" },
+					Title = "CVE",
+					Type = ChangelogEntryType.Security
+				}
+			]
 		};
 		_s3.Seed(PublicBucket, AmendNotesKey(parent), ReleaseNotesSerialization.SerializeBundle(staleAmend));
 

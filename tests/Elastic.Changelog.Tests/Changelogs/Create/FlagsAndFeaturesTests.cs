@@ -96,11 +96,7 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 			Title = "Fix multiple issues",
 			Type = "bug-fix",
 			Products = [new ProductArgument { Product = "elasticsearch" }],
-			Issues =
-			[
-				"https://github.com/elastic/elasticsearch/issues/123",
-				"https://github.com/elastic/elasticsearch/issues/456"
-			],
+			Issues = ["https://github.com/elastic/elasticsearch/issues/123", "https://github.com/elastic/elasticsearch/issues/456"],
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};

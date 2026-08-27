@@ -1504,9 +1504,7 @@ public partial class ChangelogBundlingService(
 	/// branch is present the ordinal-first path is kept so the choice is deterministic. A warning is
 	/// logged for each discarded copy.
 	/// </summary>
-	private IReadOnlyList<MatchedChangelogFile> DeduplicateNotesByLeaf(
-		IReadOnlyList<MatchedChangelogFile> notes,
-		string version)
+	private IReadOnlyList<MatchedChangelogFile> DeduplicateNotesByLeaf(IReadOnlyList<MatchedChangelogFile> notes, string version)
 	{
 		var byLeaf = new Dictionary<string, List<MatchedChangelogFile>>(StringComparer.OrdinalIgnoreCase);
 		foreach (var note in notes)
@@ -1539,7 +1537,11 @@ public partial class ChangelogBundlingService(
 			{
 				_logger.LogWarning(
 					"Backport collision for '{Leaf}' at version {Version}: keeping '{Winner}', discarding '{Discarded}'",
-					leaf, version, winner.FileName, discarded.FileName);
+					leaf,
+					version,
+					winner.FileName,
+					discarded.FileName
+				);
 			}
 		}
 
@@ -1562,7 +1564,7 @@ public partial class ChangelogBundlingService(
 
 	private static bool IsMainOrMasterBranch(string branch) =>
 		string.Equals(branch, "main", StringComparison.OrdinalIgnoreCase)
-		|| string.Equals(branch, "master", StringComparison.OrdinalIgnoreCase);
+			|| string.Equals(branch, "master", StringComparison.OrdinalIgnoreCase);
 
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnProbedEntriesAsync(
 		IDiagnosticsCollector collector,

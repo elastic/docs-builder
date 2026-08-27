@@ -15,34 +15,30 @@ public class NotesIndexReconcilerTests
 	private const string PublicBucket = "public-bucket";
 
 	/// <summary>New-format note using the <c>versions:</c> field.</summary>
-	private const string NoteYaml =
-		"title: Slow rollover known issue\n" +
-		"type: known-issue\n" +
-		"products:\n" +
-		"  - product: elasticsearch\n" +
-		"    versions: [9.0.0]\n";
+	private const string NoteYaml = "title: Slow rollover known issue\n"
+		+ "type: known-issue\n"
+		+ "products:\n"
+		+ "  - product: elasticsearch\n"
+		+ "    versions: [9.0.0]\n";
 
 	/// <summary>Legacy-format note using the obsolete <c>target:</c> field for backward-compat tests.</summary>
-	private const string LegacyNoteYaml =
-		"title: Legacy rollover known issue\n" +
-		"type: known-issue\n" +
-		"products:\n" +
-		"  - product: elasticsearch\n" +
-		"    target: 9.0.0\n";
+	private const string LegacyNoteYaml = "title: Legacy rollover known issue\n"
+		+ "type: known-issue\n"
+		+ "products:\n"
+		+ "  - product: elasticsearch\n"
+		+ "    target: 9.0.0\n";
 
-	private const string NoteYamlTwoVersions =
-		"title: Two-version known issue\n" +
-		"type: known-issue\n" +
-		"products:\n" +
-		"  - product: elasticsearch\n" +
-		"    versions: [9.0.0, 9.1.0]\n";
+	private const string NoteYamlTwoVersions = "title: Two-version known issue\n"
+		+ "type: known-issue\n"
+		+ "products:\n"
+		+ "  - product: elasticsearch\n"
+		+ "    versions: [9.0.0, 9.1.0]\n";
 
 	private readonly FakeS3 _s3 = new(PublicBucket);
 	private readonly NotesIndexReconciler _reconciler;
 
 	public NotesIndexReconcilerTests() =>
-		_reconciler = new NotesIndexReconciler(
-			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero);
+		_reconciler = new NotesIndexReconciler(NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero);
 
 	private static ChangelogScope NotesScope(string org = "elastic", string repo = "elasticsearch")
 	{
@@ -56,7 +52,8 @@ public class NotesIndexReconcilerTests
 	private NotesIndex ReadIndex(string version) =>
 		JsonSerializer.Deserialize(
 			_s3.ContentOf(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", version)),
-			NotesIndexJsonContext.Default.NotesIndex)!;
+			NotesIndexJsonContext.Default.NotesIndex
+		)!;
 
 	// Helper that projects entries to their paths for compact assertions.
 	private static IEnumerable<string> Paths(NotesIndex index) => index.Notes.Select(e => e.Path);
@@ -88,8 +85,19 @@ public class NotesIndexReconcilerTests
 		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
 
 		_s3.ListCalls.Should().BeGreaterThan(0, "reconciler should have listed the bucket");
-		_s3.Gets.Count.Should().BeGreaterThan(0, $"reconciler should have fetched the note; ListCalls={_s3.ListCalls} SeedExists={_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/main/note-slow-rollover.yml")}");
-		_s3.Puts.Count.Should().BeGreaterThan(0, $"reconciler should have written the index; ListCalls={_s3.ListCalls} Gets={_s3.Gets.Count}");
+		_s3
+			.Gets
+			.Count
+			.Should()
+			.BeGreaterThan(
+				0,
+				$"reconciler should have fetched the note; ListCalls={_s3.ListCalls} SeedExists={_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/main/note-slow-rollover.yml")}"
+			);
+		_s3
+			.Puts
+			.Count
+			.Should()
+			.BeGreaterThan(0, $"reconciler should have written the index; ListCalls={_s3.ListCalls} Gets={_s3.Gets.Count}");
 		var index = ReadIndex("9.0.0");
 		Paths(index).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
 	}
@@ -136,10 +144,7 @@ public class NotesIndexReconcilerTests
 		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
 
 		var index = ReadIndex("9.0.0");
-		Paths(index).Should().BeEquivalentTo([
-			"9.0/note-slow-rollover.yml",
-			"main/note-slow-rollover.yml"
-		]);
+		Paths(index).Should().BeEquivalentTo(["9.0/note-slow-rollover.yml", "main/note-slow-rollover.yml"]);
 	}
 
 	[Fact]
@@ -204,9 +209,12 @@ public class NotesIndexReconcilerTests
 	public async Task ReconcileRepo_StaleTargetRemoved_OldIndexDeleted()
 	{
 		// Pre-seed a stale notes-8.0.0.json index from a previous reconcile run.
-		_s3.Seed(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "8.0.0"),
-								 /*lang=json,strict*/
-								 """{"schema_version":1,"notes":[]}""");
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "8.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"notes":[]}"""
+		);
 
 		// Only seed a note for 9.0.0.
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
@@ -217,17 +225,19 @@ public class NotesIndexReconcilerTests
 		Paths(ReadIndex("9.0.0")).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
 
 		// 8.0.0 index should have been deleted.
-		_s3.Deletes.Should().ContainSingle()
-			.Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "8.0.0"));
+		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "8.0.0"));
 	}
 
 	[Fact]
 	public async Task ReconcileRepo_NoNotes_DeletesAllExistingIndexes()
 	{
 		// Pre-seed a stale notes index.
-		_s3.Seed(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
-								 /*lang=json,strict*/
-								 """{"schema_version":1,"notes":[]}""");
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"notes":[]}"""
+		);
 
 		// No note files — just an unrelated changelog entry.
 		_s3.Seed(PublicBucket, "changelog/elastic/elasticsearch/main/12345.yaml", "title: PR entry");
@@ -238,7 +248,6 @@ public class NotesIndexReconcilerTests
 		_s3.Puts.Should().BeEmpty();
 
 		// The stale index should be deleted.
-		_s3.Deletes.Should().ContainSingle()
-			.Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"));
+		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"));
 	}
 }

@@ -8,15 +8,18 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
-	: INavigationHtmlWriter
+public class IsolatedBuildNavigationHtmlWriter(
+	BuildContext context,
+	IRootNavigationItem<INavigationModel, INavigationItem> siteRoot
+) : INavigationHtmlWriter
 {
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
 
 	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		INavigationItem currentNavigationItem,
-		Cancel ctx = default)
+		Cancel ctx = default
+	)
 	{
 		var renderRoot = currentNavigationItem.FindIslandRoot() ?? SelectNavigationRoot(currentRootNavigation);
 
@@ -25,7 +28,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 
 		var rendered = await _renderedNavigationCache.GetOrRenderAsync(
 			renderRoot,
-			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx));
+			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx)
+		);
 		return NavigationCurrentMarker.Apply(rendered, currentNavigationItem);
 	}
 
@@ -35,7 +39,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	/// or when primary nav/dropdown features are enabled.
 	/// </summary>
 	private IRootNavigationItem<INavigationModel, INavigationItem> SelectNavigationRoot(
-		IRootNavigationItem<INavigationModel, INavigationItem> requestedRoot)
+		IRootNavigationItem<INavigationModel, INavigationItem> requestedRoot
+	)
 	{
 		var useRequestedRoot = requestedRoot != siteRoot
 			|| context.Configuration.Features.PrimaryNavEnabled
@@ -56,6 +61,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			isUsingNavigationDropdown: isUsingDropdown,
 			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
 			isGlobalAssemblyBuild: false,
-			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled);
+			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled
+		);
 	}
 }

@@ -81,7 +81,8 @@ public sealed record NavigationRenderModel
 		bool isUsingNavigationDropdown,
 		bool isPrimaryNavEnabled,
 		bool isGlobalAssemblyBuild,
-		bool navigationPreviewEnabled = false)
+		bool navigationPreviewEnabled = false
+	)
 	{
 		var topLevel = topLevelItems.ToArray();
 		// Resolve current top-level by walking self-then-ancestors so nested islands
@@ -149,7 +150,8 @@ public sealed record NavigationRenderModel
 	private static IReadOnlyList<IslandBackLink> CreateBackLinks(
 		INavigationItem renderRoot,
 		bool isUsingNavigationDropdown,
-		bool omitSiteRoot)
+		bool omitSiteRoot
+	)
 	{
 		var immediateParent = renderRoot.Parent;
 		if (immediateParent is null)
@@ -164,9 +166,7 @@ public sealed record NavigationRenderModel
 			if (SameNavUrl(ancestor.Url, renderRoot.Url))
 				continue;
 
-			var include = ReferenceEquals(ancestor, immediateParent)
-				|| ancestor.Parent is null
-				|| ancestor.RendersAsIsland();
+			var include = ReferenceEquals(ancestor, immediateParent) || ancestor.Parent is null || ancestor.RendersAsIsland();
 			if (!include || !seen.Add(ancestor.Url))
 				continue;
 			var (_, title) = ParseNavTitle(ancestor.NavigationTitle);
@@ -179,13 +179,13 @@ public sealed record NavigationRenderModel
 	private static bool SameNavUrl(string left, string right) =>
 		string.Equals(TrimNavUrl(left), TrimNavUrl(right), StringComparison.Ordinal);
 
-	private static string TrimNavUrl(string url) =>
-		url.Length > 1 ? url.TrimEnd('/') : url;
+	private static string TrimNavUrl(string url) => url.Length > 1 ? url.TrimEnd('/') : url;
 
 	private static NavigationRenderNode? CreateRootIndex(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
 		bool isPrimaryNavEnabled,
-		bool isGlobalAssemblyBuild)
+		bool isGlobalAssemblyBuild
+	)
 	{
 		if (tree.Index.Hidden)
 			return null;
@@ -240,7 +240,8 @@ public sealed record NavigationRenderModel
 	private static bool IsIslandSidebar(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
 		bool isPrimaryNavEnabled,
-		bool isGlobalAssemblyBuild)
+		bool isGlobalAssemblyBuild
+	)
 	{
 		if (isGlobalAssemblyBuild)
 			return tree.Parent?.Parent is not null;
@@ -254,7 +255,8 @@ public sealed record NavigationRenderModel
 	private static bool TryUnwrapSingleChildSection(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
 		out INodeNavigationItem<INavigationModel, INavigationItem> child,
-		out string heading)
+		out string heading
+	)
 	{
 		child = null!;
 		heading = "";
@@ -282,17 +284,9 @@ public sealed record NavigationRenderModel
 	}
 
 	private static NavigationRenderNode SectionOverviewLeaf(string url) =>
-		new()
-		{
-			Kind = NavigationRenderNodeKind.Leaf,
-			IsTopLevel = true,
-			NavigationTitle = "Overview",
-			Url = url
-		};
+		new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = true, NavigationTitle = "Overview", Url = url };
 
-	private static List<NavigationRenderNode> FlattenIslandOverview(
-		NavigationRenderNode overview,
-		List<NavigationRenderNode> children)
+	private static List<NavigationRenderNode> FlattenIslandOverview(NavigationRenderNode overview, List<NavigationRenderNode> children)
 	{
 		var overviewLeaf = overview with
 		{
@@ -310,7 +304,8 @@ public sealed record NavigationRenderModel
 
 	private static IEnumerable<NavigationRenderNode> CreateNavigationItems(
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		bool isTopLevel)
+		bool isTopLevel
+	)
 	{
 		foreach (var item in parent.NavigationItems)
 		{
@@ -395,7 +390,8 @@ public sealed record NavigationRenderModel
 		NavigationRenderNode? rootIndex,
 		string? treeHeading,
 		string? treeHeadingIcon,
-		IReadOnlyList<NavigationRenderNode> tree)
+		IReadOnlyList<NavigationRenderNode> tree
+	)
 	{
 		using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 		Append(hash, "navigation-tree-v4");

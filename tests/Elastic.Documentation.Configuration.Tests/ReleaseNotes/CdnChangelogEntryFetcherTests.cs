@@ -303,7 +303,9 @@ public class CdnChangelogEntryFetcherTests
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0},{"path":"9.0/note-gap.yml","bundle_seq":0}]}""");
+				return Json(/*lang=json,strict*/
+					"""{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0},{"path":"9.0/note-gap.yml","bundle_seq":0}]}"""
+				);
 			return Yaml(SampleEntry);
 		});
 		var (errors, _, emitError, _) = Diagnostics();
