@@ -49,6 +49,7 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 			delay: DelayBeforeRetry,
 			onRetry: f =>
 			{
+				OnBeforeRetry();
 				// Deliberately not routed through Log: a silent multi-second stall is worse than extra local output.
 				Logger.LogWarning("[{Command}] {Failure}. Retrying in {WorkingDirectory}", command, f, workingDirectory.FullName);
 			});
@@ -62,6 +63,8 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		collector.EmitError("", detail);
 		return false;
 	}
+
+	protected virtual void OnBeforeRetry() { }
 
 	protected virtual void DelayBeforeRetry(TimeSpan delay)
 	{

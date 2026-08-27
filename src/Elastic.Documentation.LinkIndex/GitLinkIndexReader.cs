@@ -151,13 +151,18 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	/// <summary>
 	/// Runs a git command with a retry policy. Throws <see cref="InvalidOperationException"/> on exhaustion.
 	/// </summary>
-	private static void RunGitWithRetry(string workingDirectory, RetryPolicy policy, params string[] args)
+	private void RunGitWithRetry(string workingDirectory, RetryPolicy policy, params string[] args)
 	{
 		var failure = CommandRetry.Invoke(
 			policy,
 			invoke: () => ExecGit(workingDirectory, args, policy.AttemptTimeout),
 			delay: d => Thread.Sleep(d),
-			onRetry: f => Console.Error.WriteLine($"[git {string.Join(" ", args)}] {f}; retrying…")
+			onRetry: f =>
+			{
+				GitLocks.ClearStale(_fileSystem, workingDirectory,
+					l => Console.Error.WriteLine($"[git {string.Join(" ", args)}] Removed stale lock file {l}"));
+				Console.Error.WriteLine($"[git {string.Join(" ", args)}] {f}; retrying…");
+			}
 		);
 
 		if (failure is not null)

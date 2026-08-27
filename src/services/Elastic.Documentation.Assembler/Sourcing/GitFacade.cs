@@ -15,8 +15,8 @@ public interface IGitRepository
 	string GetCurrentCommit();
 	void GitAddOrigin(string origin);
 	bool IsInitialized();
-	void Pull(string branch);
-	void Fetch(string reference);
+	bool Pull(string branch);
+	bool Fetch(string reference);
 	void EnableSparseCheckout(string[] folders);
 	void DisableSparseCheckout();
 	void Checkout(string reference);
@@ -48,12 +48,16 @@ public class SingleCommitOptimizedGitRepository(ILoggerFactory logFactory, IDiag
 	/// <inheritdoc />
 	protected override ILogger Logger { get; } = logFactory.CreateLogger<SingleCommitOptimizedGitRepository>();
 
+	protected override void OnBeforeRetry() =>
+		GitLocks.ClearStale(WorkingDirectory.FileSystem, WorkingDirectory.FullName,
+			f => Logger.LogWarning("{RepositoryName}: Removed stale git lock file {LockFile}", WorkingDirectory.Name, f));
+
 	public string GetCurrentCommit() => Capture("git", "rev-parse", "HEAD");
 
 	public void Init() => ExecIn(EnvironmentVars, "git", "init");
 	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));
-	public void Pull(string branch) => _ = ExecInWithRetry(EnvironmentVars, _networkRetry, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", branch);
-	public void Fetch(string reference) => _ = ExecInWithRetry(EnvironmentVars, _networkRetry, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
+	public bool Pull(string branch) => ExecInWithRetry(EnvironmentVars, _networkRetry, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", branch);
+	public bool Fetch(string reference) => ExecInWithRetry(EnvironmentVars, _networkRetry, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
 	public void EnableSparseCheckout(string[] folders) => ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);
 
 	public void DisableSparseCheckout() => ExecIn(EnvironmentVars, "git", "sparse-checkout", "disable");

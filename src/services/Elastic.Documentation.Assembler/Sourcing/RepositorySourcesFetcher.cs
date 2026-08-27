@@ -202,7 +202,13 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 			_logger.LogInformation("{RepositoryName}: HEAD already at {GitRef}", repository.Name, gitRef);
 		else
 		{
-			FetchAndCheckout(git, repository, gitRef);
+			if (!FetchAndCheckout(git, repository, gitRef))
+			{
+				_logger.LogError("{RepositoryName}: Fetch failed for {GitRef}, falling back to recreating from scratch", repository.Name, gitRef);
+				checkoutFolder.Delete(true);
+				checkoutFolder.Refresh();
+				return CloneRef(repository, gitRef, pull, attempt + 1, appendRepositoryName, assumeCloned);
+			}
 			if (!pull)
 			{
 				return new Checkout
@@ -212,13 +218,9 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 					Repository = repository,
 				};
 			}
-			try
+			if (!git.Pull(gitRef))
 			{
-				git.Pull(gitRef);
-			}
-			catch (Exception e)
-			{
-				_logger.LogError(e, "{RepositoryName}: Failed to update {GitRef} from {Path}, falling back to recreating from scratch",
+				_logger.LogError("{RepositoryName}: Pull failed for {GitRef} from {Path}, falling back to recreating from scratch",
 					repository.Name, gitRef, checkoutFolder.FullName);
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
@@ -248,9 +250,10 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 		return false;
 	}
 
-	private static void FetchAndCheckout(IGitRepository git, Repository repository, string gitRef)
+	private static bool FetchAndCheckout(IGitRepository git, Repository repository, string gitRef)
 	{
-		git.Fetch(gitRef);
+		if (!git.Fetch(gitRef))
+			return false;
 		switch (repository.CheckoutStrategy)
 		{
 			case CheckoutStrategy.Full:
@@ -263,6 +266,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 				throw new ArgumentOutOfRangeException(nameof(repository), repository.CheckoutStrategy, null);
 		}
 		git.Checkout(gitRef);
+		return true;
 	}
 }
 
