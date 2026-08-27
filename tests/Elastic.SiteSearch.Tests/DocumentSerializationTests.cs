@@ -12,10 +12,7 @@ namespace Elastic.SiteSearch.Tests;
 
 public class DocumentSerializationTests
 {
-	private static readonly JsonSerializerOptions Options = new()
-	{
-		TypeInfoResolver = SourceGenerationContext.Default
-	};
+	private static readonly JsonSerializerOptions Options = new() { TypeInfoResolver = SourceGenerationContext.Default };
 
 	/// <summary>
 	/// Options that configure SearchDocumentBase as a fallback-safe polymorphic root.
@@ -23,15 +20,14 @@ public class DocumentSerializationTests
 	/// </summary>
 	private static readonly JsonSerializerOptions FallbackOptions = new()
 	{
-		TypeInfoResolver = JsonTypeInfoResolver.Combine(SourceGenerationContext.Default)
-			.WithAddedModifier(SearchDocumentPolymorphism.WithFallback())
+		TypeInfoResolver =
+			JsonTypeInfoResolver.Combine(SourceGenerationContext.Default).WithAddedModifier(SearchDocumentPolymorphism.WithFallback())
 	};
 
 	/// <summary>
 	/// <see cref="SearchDocumentBase.ContentType"/> is JSON-driven; AutoBogus would assign unrelated strings if populated.
 	/// </summary>
-	private static AutoFaker<T> CreateAutoFaker<T>()
-		where T : SearchDocumentBase =>
+	private static AutoFaker<T> CreateAutoFaker<T>() where T : SearchDocumentBase =>
 		new AutoFaker<T>().Configure(builder =>
 		{
 #pragma warning disable CA2263 // Skip path must match the concrete faker type T (inherited ContentType).
@@ -119,7 +115,8 @@ public class DocumentSerializationTests
 		// because the interface cannot be instantiated as a fallback.
 		// Callers that don't have a discriminator should read as SearchDocumentBase with
 		// WithFallback() — see MissingDiscriminator_ReadAs_SearchDocumentBase_ReturnsFallback.
-		var json = """
+		var json =
+			"""
 		{
 			"title": "Getting Started",
 			"search_title": "Getting Started with Elasticsearch",
@@ -137,7 +134,8 @@ public class DocumentSerializationTests
 	{
 		// An unknown $type on an interface root still throws because the interface cannot be
 		// instantiated as a fallback, even with IgnoreUnrecognizedTypeDiscriminators=true.
-		var json = """
+		var json =
+			"""
 		{
 			"$type": "unknown-future-type",
 			"title": "Some Page",
@@ -156,7 +154,8 @@ public class DocumentSerializationTests
 	{
 		// With WithFallback() applied, SearchDocumentBase is a concrete polymorphic root.
 		// A missing $type materializes a SearchDocumentBase instance rather than throwing.
-		var json = """
+		var json =
+			"""
 		{
 			"title": "Getting Started",
 			"search_title": "Getting Started with Elasticsearch",
@@ -178,7 +177,8 @@ public class DocumentSerializationTests
 	{
 		// With WithFallback() applied, an unrecognized $type yields a SearchDocumentBase
 		// fallback instance instead of throwing.
-		var json = """
+		var json =
+			"""
 		{
 			"$type": "unknown-future-type",
 			"title": "Some Page",
@@ -199,7 +199,8 @@ public class DocumentSerializationTests
 	public void KnownDiscriminator_ReadAs_SearchDocumentBase_WithFallback_DispatchesToConcreteType()
 	{
 		// Even with WithFallback(), a known $type still dispatches to the correct concrete type.
-		var json = """
+		var json =
+			"""
 		{
 			"$type": "site",
 			"title": "Blog Post",
@@ -218,7 +219,8 @@ public class DocumentSerializationTests
 	[Fact]
 	public void ContentType_FromJson_Overrides_WhenPresent()
 	{
-		var json = """
+		var json =
+			"""
 		{
 			"title": "Legacy",
 			"search_title": "Legacy",
@@ -253,7 +255,8 @@ public class DocumentSerializationTests
 	[Fact]
 	public void NavigationFields_Roundtrip()
 	{
-		var json = """
+		var json =
+			"""
 		{
 			"$type": "site",
 			"title": "Test",
@@ -284,13 +287,7 @@ public class DocumentSerializationTests
 	[Fact]
 	public void NavigationFields_DefaultPenaltyValues()
 	{
-		var doc = new SiteDocument
-		{
-			Title = "Test",
-			SearchTitle = "Test",
-			Path = "/x",
-			Hash = "h"
-		};
+		var doc = new SiteDocument { Title = "Test", SearchTitle = "Test", Path = "/x", Hash = "h" };
 
 		// rank_feature defaults to 50 so documents without explicit nav metadata are penalised
 		doc.Navigation.Depth.Should().Be(50);

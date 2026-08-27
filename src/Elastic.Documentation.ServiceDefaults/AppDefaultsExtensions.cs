@@ -22,17 +22,19 @@ namespace Elastic.Documentation.ServiceDefaults;
 
 public static class AppDefaultsExtensions
 {
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder)
-		where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), null);
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder =>
+		builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), null);
 
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, Action<IServiceCollection, ConfigurationFileProvider>? configure)
-		where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), configure);
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(
+		this TBuilder builder,
+		Action<IServiceCollection, ConfigurationFileProvider>? configure
+	) where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), configure);
 
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(
 		this TBuilder builder,
 		GlobalCliOptions cliOptions,
-		Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
-		where TBuilder : IHostApplicationBuilder
+		Action<IServiceCollection, ConfigurationFileProvider>? configure = null
+	) where TBuilder : IHostApplicationBuilder
 	{
 		// Map ENVIRONMENT (dev/edge/staging/prod) to the .NET hosting environment so
 		// IsDevelopment()/IsStaging()/IsProduction() reflect the real deployment environment.
@@ -42,7 +44,8 @@ public static class AppDefaultsExtensions
 			builder.Environment.EnvironmentName = dotnetEnv;
 
 		// We do not use appsettings.json — all config comes from env vars / user secrets / code.
-		var jsonSources = builder.Configuration.Sources
+		var jsonSources = builder.Configuration
+			.Sources
 			.OfType<JsonConfigurationSource>()
 			.Where(s => s.Path is not null && s.Path.StartsWith("appsettings", StringComparison.OrdinalIgnoreCase))
 			.ToList();
@@ -53,22 +56,27 @@ public static class AppDefaultsExtensions
 			.AddElasticDocumentationLogging(cliOptions.LogLevel)
 			.ConfigureHttpClientDefaults(http =>
 			{
-				_ = http.AddStandardResilienceHandler(options =>
+				_ =
+					http.AddStandardResilienceHandler(options =>
+					{
+						options.Retry.DisableForUnsafeHttpMethods();
+					});
+			})
+			.AddConfigurationFileProvider(
+				cliOptions.SkipPrivateRepositories,
+				cliOptions.ConfigSource,
+				(s, p) =>
 				{
-					options.Retry.DisableForUnsafeHttpMethods();
-				});
-			})
-			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
-			{
-				var versionConfiguration = p.CreateVersionConfiguration();
-				var products = p.CreateProducts(versionConfiguration);
-				var search = p.CreateSearchConfiguration();
-				_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
-				_ = s.AddSingleton(products);
-				_ = s.AddSingleton(versionConfiguration);
-				_ = s.AddSingleton(search);
-				configure?.Invoke(s, p);
-			})
+					var versionConfiguration = p.CreateVersionConfiguration();
+					var products = p.CreateProducts(versionConfiguration);
+					var search = p.CreateSearchConfiguration();
+					_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
+					_ = s.AddSingleton(products);
+					_ = s.AddSingleton(versionConfiguration);
+					_ = s.AddSingleton(search);
+					configure?.Invoke(s, p);
+				}
+			)
 			.AddSingleton(cliOptions);
 
 		var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
@@ -77,22 +85,24 @@ public static class AppDefaultsExtensions
 		return builder;
 	}
 
-	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel)
-		where TServiceCollection : IServiceCollection
+	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(
+		this TServiceCollection services,
+		LogLevel logLevel
+	) where TServiceCollection : IServiceCollection
 	{
-		_ = services.AddLogging(x =>
-		{
-			_ = x.ClearProviders().SetMinimumLevel(logLevel);
-			services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
-			_ = x.AddConsole(c => c.FormatterName = "condensed");
-		});
+		_ =
+			services.AddLogging(x =>
+			{
+				_ = x.ClearProviders().SetMinimumLevel(logLevel);
+				services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
+				_ = x.AddConsole(c => c.FormatterName = "condensed");
+			});
 		return services;
 	}
 
 	public static TBuilder HealthCheckBuilderExtensions<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
 	{
-		_ = builder.Services.AddHealthChecks()
-			.AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+		_ = builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
 
 		return builder;
 	}

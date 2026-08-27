@@ -33,9 +33,7 @@ public class BundleDataResolver
 		};
 	}
 
-	private static List<ResolvedEntry> ResolveBundleEntries(
-		ValidatedBundle bundle,
-		HashSet<(string product, string target)> allProducts)
+	private static List<ResolvedEntry> ResolveBundleEntries(ValidatedBundle bundle, HashSet<(string product, string target)> allProducts)
 	{
 		// Collect products from this bundle
 		var bundleProductIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -52,15 +50,19 @@ public class BundleDataResolver
 			? bundle.Data.Products[0].Owner!
 			: "elastic";
 
-		return bundle.Data.Entries
-			.Select(entry => new ResolvedEntry
-			{
-				Entry = ReleaseNotesSerialization.ConvertBundledEntry(entry),
-				Repo = repo,
-				Owner = owner,
-				BundleProductIds = bundleProductIds,
-				HideLinks = bundle.Input.HideLinks
-			})
+		return bundle.Data
+			.Entries
+			.Select(
+				entry =>
+					new ResolvedEntry
+					{
+						Entry = ReleaseNotesSerialization.ConvertBundledEntry(entry),
+						Repo = repo,
+						Owner = owner,
+						BundleProductIds = bundleProductIds,
+						HideLinks = bundle.Input.HideLinks
+					}
+			)
 			.ToList();
 	}
 }

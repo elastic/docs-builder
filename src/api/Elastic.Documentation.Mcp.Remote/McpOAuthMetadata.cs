@@ -38,49 +38,61 @@ public static class McpOAuthMetadata
 		var issuer = env.McpOAuthIssuer!;
 		var jwksJson = BuildJwksJson(env);
 
-		_ = group.MapGet("/.well-known/oauth-protected-resource", (HttpContext context) =>
-		{
-			context.Response.Headers.CacheControl = CacheControlValue;
-			return Results.Json(
-				new ProtectedResourceMetadata
+		_ =
+			group.MapGet(
+				"/.well-known/oauth-protected-resource",
+				(HttpContext context) =>
 				{
-					Resource = issuer,
-					AuthorizationServers = [issuer],
-					ScopesSupported = ScopesSupported,
-					BearerMethodsSupported = BearerMethodsSupported
-				},
-				OAuthMetadataJsonContext.Default.ProtectedResourceMetadata
+					context.Response.Headers.CacheControl = CacheControlValue;
+					return Results.Json(
+						new ProtectedResourceMetadata
+						{
+							Resource = issuer,
+							AuthorizationServers = [issuer],
+							ScopesSupported = ScopesSupported,
+							BearerMethodsSupported = BearerMethodsSupported
+						},
+						OAuthMetadataJsonContext.Default.ProtectedResourceMetadata
+					);
+				}
 			);
-		});
 
-		_ = group.MapGet("/.well-known/openid-configuration", (HttpContext context) =>
-		{
-			context.Response.Headers.CacheControl = CacheControlValue;
-			return Results.Json(
-				new AuthorizationServerMetadata
+		_ =
+			group.MapGet(
+				"/.well-known/openid-configuration",
+				(HttpContext context) =>
 				{
-					Issuer = issuer,
-					AuthorizationEndpoint = $"{issuer}/authorize",
-					TokenEndpoint = $"{issuer}/token",
-					RegistrationEndpoint = $"{issuer}/register",
-					JwksUri = $"{issuer}/jwks",
-					ResponseTypesSupported = ResponseTypesSupported,
-					GrantTypesSupported = GrantTypesSupported,
-					CodeChallengeMethodsSupported = CodeChallengeMethodsSupported,
-					TokenEndpointAuthMethodsSupported = TokenEndpointAuthMethodsSupported,
-					ScopesSupported = ScopesSupported,
-					SubjectTypesSupported = SubjectTypesSupported,
-					IdTokenSigningAlgValuesSupported = IdTokenSigningAlgValuesSupported
-				},
-				OAuthMetadataJsonContext.Default.AuthorizationServerMetadata
+					context.Response.Headers.CacheControl = CacheControlValue;
+					return Results.Json(
+						new AuthorizationServerMetadata
+						{
+							Issuer = issuer,
+							AuthorizationEndpoint = $"{issuer}/authorize",
+							TokenEndpoint = $"{issuer}/token",
+							RegistrationEndpoint = $"{issuer}/register",
+							JwksUri = $"{issuer}/jwks",
+							ResponseTypesSupported = ResponseTypesSupported,
+							GrantTypesSupported = GrantTypesSupported,
+							CodeChallengeMethodsSupported = CodeChallengeMethodsSupported,
+							TokenEndpointAuthMethodsSupported = TokenEndpointAuthMethodsSupported,
+							ScopesSupported = ScopesSupported,
+							SubjectTypesSupported = SubjectTypesSupported,
+							IdTokenSigningAlgValuesSupported = IdTokenSigningAlgValuesSupported
+						},
+						OAuthMetadataJsonContext.Default.AuthorizationServerMetadata
+					);
+				}
 			);
-		});
 
-		_ = group.MapGet("/jwks", (HttpContext context) =>
-		{
-			context.Response.Headers.CacheControl = CacheControlValue;
-			return Results.Text(jwksJson, "application/json");
-		});
+		_ =
+			group.MapGet(
+				"/jwks",
+				(HttpContext context) =>
+				{
+					context.Response.Headers.CacheControl = CacheControlValue;
+					return Results.Text(jwksJson, "application/json");
+				}
+			);
 	}
 
 	private static string BuildJwksJson(IEnvironmentVariables env)
@@ -105,11 +117,7 @@ public static class McpOAuthMetadata
 		return System.Text.Json.JsonSerializer.Serialize(new JwksDocument { Keys = [jwk] }, OAuthMetadataJsonContext.Default.JwksDocument);
 	}
 
-	private static string Base64UrlEncode(byte[] data) =>
-		Convert.ToBase64String(data)
-			.TrimEnd('=')
-			.Replace('+', '-')
-			.Replace('/', '_');
+	private static string Base64UrlEncode(byte[] data) => Convert.ToBase64String(data).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
 /// <summary>RFC 9728 Protected Resource Metadata.</summary>

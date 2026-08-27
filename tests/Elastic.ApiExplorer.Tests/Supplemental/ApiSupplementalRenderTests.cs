@@ -41,7 +41,13 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_DescriptionHeading_ReplacesDescriptionAndKeepsGeneratedSections()
 	{
 		var nav = SearchOperation();
-		var html = await RenderAsync(nav.Model, nav, operations: Doc("search", """
+		var html =
+			await RenderAsync(
+				nav.Model,
+				nav,
+				operations: Doc(
+					"search",
+					"""
 			## Description
 
 			SUPP_OP_DESCRIPTION
@@ -49,7 +55,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			## Best practices
 
 			SUPP_OP_BEST_PRACTICES
-			"""));
+			"""
+				)
+			);
 
 		html.Should().Contain("SUPP_OP_DESCRIPTION");
 		html.Should().NotContain(SpecOperationDescription);
@@ -67,7 +75,8 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			new OpenApiOperation { OperationId = "lonely", Summary = "Lonely", Description = null },
 			src.Model.Route,
 			src.Model.Path,
-			src.Model.ApiName);
+			src.Model.ApiName
+		);
 
 		var html = await RenderAsync(apiOp, src, operations: Doc("lonely", "LONELY_OVERRIDE"));
 
@@ -88,7 +97,13 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_PostSections_RenderAfterGeneratedContent()
 	{
 		var nav = SearchOperation();
-		var html = await RenderAsync(nav.Model, nav, operations: Doc("search", """
+		var html =
+			await RenderAsync(
+				nav.Model,
+				nav,
+				operations: Doc(
+					"search",
+					"""
 			## Description
 
 			SUPP_OP_DESCRIPTION
@@ -100,15 +115,19 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			## Common patterns
 
 			SUPP_OP_COMMON_PATTERNS
-			"""));
+			"""
+				)
+			);
 
 		html.Should().Contain("id=\"best-practices\"");
 		html.Should().Contain("SUPP_OP_BEST_PRACTICES");
 		html.Should().Contain("id=\"common-patterns\"");
 		html.Should().Contain("SUPP_OP_COMMON_PATTERNS");
-		html.IndexOf("id=\"responses\"", StringComparison.Ordinal).Should()
+		html.IndexOf("id=\"responses\"", StringComparison.Ordinal)
+			.Should()
 			.BeLessThan(html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal));
-		html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal).Should()
+		html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal)
+			.Should()
 			.BeLessThan(html.IndexOf("id=\"common-patterns\"", StringComparison.Ordinal));
 	}
 
@@ -116,7 +135,13 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_PostSections_HonorExplicitIdsAndSkipReservedAnchors()
 	{
 		var nav = SearchOperation();
-		var html = await RenderAsync(nav.Model, nav, operations: Doc("search", """
+		var html =
+			await RenderAsync(
+				nav.Model,
+				nav,
+				operations: Doc(
+					"search",
+					"""
 			## Description
 
 			SUPP_OP_DESCRIPTION
@@ -136,7 +161,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			## Best practices
 
 			SUPP_OP_BEST_2
-			"""));
+			"""
+				)
+			);
 
 		html.Should().Contain("id=\"responses\"");
 		html.Should().Contain("id=\"responses-2\"");
@@ -171,7 +198,13 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_ParameterOverrides_ReplaceListedPathAndQueryOnly()
 	{
 		var nav = SearchOperation();
-		var html = await RenderAsync(nav.Model, nav, operations: Doc("search", """
+		var html =
+			await RenderAsync(
+				nav.Model,
+				nav,
+				operations: Doc(
+					"search",
+					"""
 			## Path parameters
 
 			: `index`
@@ -184,7 +217,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 
 			: `nope`
 			  UNKNOWN_PARAM_OVERRIDE
-			"""));
+			"""
+				)
+			);
 
 		html.Should().Contain("SUPP_INDEX");
 		html.Should().Contain("SUPP_Q");
@@ -198,12 +233,17 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_RequestBodyOverride_ReplacesListedFieldOnly()
 	{
 		var nav = SearchOperation();
-		var html = await RenderAsync(nav.Model, nav, operations: Doc("search", """
+		var html =
+			await RenderAsync(
+				nav.Model,
+				nav,
+				operations: Doc("search", """
 			## Request body
 
 			: `query`
 			  SUPP_QUERY_FIELD
-			"""));
+			""")
+			);
 
 		html.Should().Contain("SUPP_QUERY_FIELD");
 		html.Should().Contain(SpecFieldsDescription);
@@ -223,7 +263,13 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Tag_DescriptionHeading_ReplacesDescriptionAndKeepsOverview()
 	{
 		var nav = SearchTag();
-		var html = await RenderAsync(nav.Index.Model, nav, tags: Doc("search", """
+		var html =
+			await RenderAsync(
+				nav.Index.Model,
+				nav,
+				tags: Doc(
+					"search",
+					"""
 			## Description
 
 			SUPP_TAG_DESCRIPTION
@@ -231,16 +277,20 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			## Getting started
 
 			SUPP_TAG_GETTING_STARTED
-			"""));
+			"""
+				)
+			);
 
 		html.Should().Contain("SUPP_TAG_DESCRIPTION");
 		html.Should().NotContain(SpecTagDescription);
 		html.Should().Contain("api-overview");
 		html.Should().Contain("id=\"getting-started\"");
 		html.Should().Contain("SUPP_TAG_GETTING_STARTED");
-		html.IndexOf("SUPP_TAG_DESCRIPTION", StringComparison.Ordinal).Should()
+		html.IndexOf("SUPP_TAG_DESCRIPTION", StringComparison.Ordinal)
+			.Should()
 			.BeLessThan(html.IndexOf("id=\"getting-started\"", StringComparison.Ordinal));
-		html.IndexOf("id=\"getting-started\"", StringComparison.Ordinal).Should()
+		html.IndexOf("id=\"getting-started\"", StringComparison.Ordinal)
+			.Should()
 			.BeLessThan(html.IndexOf("api-overview", StringComparison.Ordinal));
 	}
 
@@ -267,29 +317,18 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public void RequestBodyOverride_MatchesPropertyNameOnRequestTreeOnly()
 	{
 		var schema = fixture.Document.Components!.Schemas!["fixture.SearchRequestBody"];
-		var options = new PropertyDisplayOptions
-		{
-			RenderMarkdown = s => new HtmlString($"<p>{s}</p>"),
-			ApiRootUrl = "/api/doc/fixture"
-		};
+		var options = new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" };
 		var builder = new ApiPropertyTreeBuilder(fixture.Document, options);
-		var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-		{
-			["query"] = "SUPP_QUERY_FIELD"
-		};
+		var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["query"] = "SUPP_QUERY_FIELD" };
 
-		var request = builder.BuildPropertyList(schema, new PropertyTreeScope
-		{
-			Prefix = "req",
-			IsRequest = true,
-			DescriptionOverrides = overrides
-		});
-		var response = builder.BuildPropertyList(schema, new PropertyTreeScope
-		{
-			Prefix = "res",
-			IsRequest = false,
-			DescriptionOverrides = overrides
-		});
+		var request = builder.BuildPropertyList(
+			schema,
+			new PropertyTreeScope { Prefix = "req", IsRequest = true, DescriptionOverrides = overrides }
+		);
+		var response = builder.BuildPropertyList(
+			schema,
+			new PropertyTreeScope { Prefix = "res", IsRequest = false, DescriptionOverrides = overrides }
+		);
 
 		request.Should().NotBeNull();
 		request.Items.Single(p => p.Name == "query").DescriptionHtml.Value.Should().Contain("SUPP_QUERY_FIELD");
@@ -299,12 +338,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	}
 
 	private OperationNavigationItem SearchOperation() =>
-		fixture.Walk().OfType<OperationNavigationItem>()
-			.First(n => n.Model.Operation.OperationId == "search");
+		fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
 
-	private TagNavigationItem SearchTag() =>
-		fixture.Walk().OfType<TagNavigationItem>()
-			.First(t => t.Index.Model.Name == "search");
+	private TagNavigationItem SearchTag() => fixture.Walk().OfType<TagNavigationItem>().First(t => t.Index.Model.Name == "search");
 
 	private static Dictionary<string, ApiSupplementalDoc> Doc(string key, string raw) =>
 		new(StringComparer.Ordinal) { [key] = ApiSupplementalDoc.Parse(raw)! };
@@ -313,12 +349,14 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		IApiModel model,
 		INavigationItem navigation,
 		IReadOnlyDictionary<string, ApiSupplementalDoc>? operations = null,
-		IReadOnlyDictionary<string, ApiSupplementalDoc>? tags = null)
+		IReadOnlyDictionary<string, ApiSupplementalDoc>? tags = null
+	)
 	{
 		var renderContext = new ApiRenderContext(
 			fixture.Context,
 			fixture.Document,
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context)))
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
+		)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,

@@ -68,7 +68,8 @@ public sealed record NavigationRenderModel
 		IEnumerable<INodeNavigationItem<INavigationModel, INavigationItem>> topLevelItems,
 		bool isUsingNavigationDropdown,
 		bool isPrimaryNavEnabled,
-		bool isGlobalAssemblyBuild)
+		bool isGlobalAssemblyBuild
+	)
 	{
 		var topLevel = topLevelItems.ToArray();
 		// Resolve current top-level by walking self-then-ancestors so nested islands
@@ -110,9 +111,7 @@ public sealed record NavigationRenderModel
 	/// Returns empty when the render root has no island ancestry (e.g. a top-level section whose
 	/// only ancestor is the nav root, which the dropdown already replaces).
 	/// </summary>
-	private static IReadOnlyList<IslandBackLink> CreateBackLinks(
-		INavigationItem renderRoot,
-		bool isUsingNavigationDropdown)
+	private static IReadOnlyList<IslandBackLink> CreateBackLinks(INavigationItem renderRoot, bool isUsingNavigationDropdown)
 	{
 		var immediateParent = renderRoot.Parent;
 		if (immediateParent is null)
@@ -127,7 +126,8 @@ public sealed record NavigationRenderModel
 				continue;
 
 			var include = ReferenceEquals(ancestor, immediateParent)
-				|| ancestor.Parent is null              // top navigation root (when dropdown is off)
+				|| ancestor.Parent is null // top navigation root (when dropdown is off)
+
 				|| ancestor.RendersAsIsland();
 			if (!include || !seen.Add(ancestor.Url))
 				continue;
@@ -141,7 +141,8 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode? CreateRootIndex(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
 		bool isPrimaryNavEnabled,
-		bool isGlobalAssemblyBuild)
+		bool isGlobalAssemblyBuild
+	)
 	{
 		if (tree.Index.Hidden)
 			return null;
@@ -191,7 +192,8 @@ public sealed record NavigationRenderModel
 
 	private static IEnumerable<NavigationRenderNode> CreateNavigationItems(
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		bool isTopLevel)
+		bool isTopLevel
+	)
 	{
 		foreach (var item in parent.NavigationItems)
 		{

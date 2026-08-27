@@ -42,17 +42,18 @@ public class DurationYamlConverter : IYamlTypeConverter
 		if (value.EndsWith('s') && int.TryParse(value.AsSpan(0, value.Length - 1), out var seconds) && seconds > 0)
 			return TimeSpan.FromSeconds(seconds);
 
-		throw new YamlException(scalar.Start, scalar.End,
-			$"Invalid duration '{value}'. Expected a positive integer followed by 's' (seconds) or 'm' (minutes), e.g. '30s' or '15m'.");
+		throw new YamlException(
+			scalar.Start,
+			scalar.End,
+			$"Invalid duration '{value}'. Expected a positive integer followed by 's' (seconds) or 'm' (minutes), e.g. '30s' or '15m'."
+		);
 	}
 
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
 	{
 		if (value is TimeSpan ts)
 		{
-			var text = ts.TotalMinutes >= 1 && ts.TotalMinutes % 1 == 0
-				? $"{(int)ts.TotalMinutes}m"
-				: $"{(int)ts.TotalSeconds}s";
+			var text = ts.TotalMinutes >= 1 && ts.TotalMinutes % 1 == 0 ? $"{(int)ts.TotalMinutes}m" : $"{(int)ts.TotalSeconds}s";
 			emitter.Emit(new Scalar(text));
 		}
 		else

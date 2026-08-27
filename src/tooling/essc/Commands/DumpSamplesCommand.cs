@@ -8,9 +8,7 @@ using Spectre.Console;
 
 namespace Elastic.SiteSearch.Cli.Commands;
 
-internal sealed class DumpSamplesCommand(
-	ContentStackClient client
-)
+internal sealed class DumpSamplesCommand(ContentStackClient client)
 {
 	private const string DefaultOutputDir = "/tmp/contentstack-samples";
 
@@ -23,10 +21,7 @@ internal sealed class DumpSamplesCommand(
 	/// </remarks>
 	/// <param name="outputDir">Output directory for JSON files.</param>
 	/// <param name="ct">Cancellation token.</param>
-	public async Task Samples(
-		string? outputDir = null,
-		Cancel ct = default
-	)
+	public async Task Samples(string? outputDir = null, Cancel ct = default)
 	{
 		var dir = outputDir ?? DefaultOutputDir;
 		_ = Directory.CreateDirectory(dir);
@@ -42,12 +37,7 @@ internal sealed class DumpSamplesCommand(
 			.AutoRefresh(true)
 			.AutoClear(false)
 			.HideCompleted(false)
-			.Columns(
-				new SpinnerColumn(),
-				new TaskDescriptionColumn(),
-				new ProgressBarColumn(),
-				new PercentageColumn()
-			)
+			.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 			.StartAsync(async ctx =>
 			{
 				var task = ctx.AddTask("[aqua]Fetching samples[/]", maxValue: PageContentTypes.All.Length);
@@ -59,11 +49,7 @@ internal sealed class DumpSamplesCommand(
 
 					try
 					{
-						var result = await client.InitialSyncAsync(
-							contentTypeUid: contentType,
-							maxPages: 1,
-							ct: ct
-						);
+						var result = await client.InitialSyncAsync(contentTypeUid: contentType, maxPages: 1, ct: ct);
 
 						if (result.Items.Count > 0 && result.Items[0].Data is { } data)
 						{
@@ -101,17 +87,9 @@ internal sealed class DumpSamplesCommand(
 
 		foreach (var (contentType, itemCount, filePath) in results)
 		{
-			var status = filePath != null
-				? "[green]✓[/]"
-				: itemCount == 0
-					? "[grey]empty[/]"
-					: "[red]error[/]";
+			var status = filePath != null ? "[green]✓[/]" : itemCount == 0 ? "[grey]empty[/]" : "[red]error[/]";
 
-			_ = table.AddRow(
-				new Markup(Markup.Escape(contentType)),
-				new Markup($"[white]{itemCount}[/]"),
-				new Markup(status)
-			);
+			_ = table.AddRow(new Markup(Markup.Escape(contentType)), new Markup($"[white]{itemCount}[/]"), new Markup(status));
 		}
 
 		AnsiConsole.Write(table);

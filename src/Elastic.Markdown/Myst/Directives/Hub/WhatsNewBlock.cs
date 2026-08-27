@@ -27,8 +27,7 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// etc. directly. Useful for one-offs that don't belong in the central
 /// feed.</para>
 /// </summary>
-public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	private const string WhatsNewFileName = "hub-whats-new.yml";
 
@@ -47,7 +46,9 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 			var resolved = LoadFromCentralConfig(product);
 			if (resolved is null)
 			{
-				this.EmitError($"{{whats-new}} :product: '{product}' was not found in {WhatsNewFileName} at the root of this documentation set.");
+				this.EmitError(
+					$"{{whats-new}} :product: '{product}' was not found in {WhatsNewFileName} at the root of this documentation set."
+				);
 				return;
 			}
 			Data = resolved;
@@ -97,26 +98,28 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 		if (!Build.ReadFileSystem.File.Exists(path))
 			return null;
 
-		var config = CentralConfigCache.GetOrAdd(path, p =>
-		{
-			try
+		var config = CentralConfigCache.GetOrAdd(
+			path,
+			p =>
 			{
-				var yaml = Build.ReadFileSystem.File.ReadAllText(p);
-				return YamlSerialization.Deserialize<WhatsNewConfig>(yaml, Build.ProductsConfiguration);
+				try
+				{
+					var yaml = Build.ReadFileSystem.File.ReadAllText(p);
+					return YamlSerialization.Deserialize<WhatsNewConfig>(yaml, Build.ProductsConfiguration);
+				}
+				catch
+				{
+					return null;
+				}
 			}
-			catch
-			{
-				return null;
-			}
-		});
+		);
 
 		if (config?.Products is null)
 			return null;
 		return config.Products.TryGetValue(productKey, out var data) ? data : null;
 	}
 
-	public override IEnumerable<string> GeneratedAnchors =>
-		string.IsNullOrWhiteSpace(Data.Id) ? [] : [Data.Id];
+	public override IEnumerable<string> GeneratedAnchors => string.IsNullOrWhiteSpace(Data.Id) ? [] : [Data.Id];
 }
 
 [YamlSerializable]

@@ -18,14 +18,13 @@ public static class SearchResultProcessor
 		Hit<TDocument> hit,
 		string searchQuery,
 		IReadOnlyDictionary<string, string[]> synonyms,
-		HighlightOptions? highlightOptions = null)
-		where TDocument : SearchDocumentBase
+		HighlightOptions? highlightOptions = null
+	) where TDocument : SearchDocumentBase
 	{
 		var options = highlightOptions ?? HighlightOptions.Default;
 		var doc = hit.Source!;
 		var highlights = hit.Highlight;
-		var searchTokens = searchQuery
-			.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		var searchTokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Where(token => token.Length >= options.MinTokenLength)
 			.Where(token => options.ExcludePattern is null || !options.ExcludePattern.IsMatch(token))
 			.ToArray();
@@ -61,7 +60,8 @@ public static class SearchResultProcessor
 
 	public static IReadOnlyDictionary<string, long> ExtractTermsAggregation<TDocument>(
 		Clients.Elasticsearch.SearchResponse<TDocument> response,
-		string aggregationName)
+		string aggregationName
+	)
 	{
 		var aggregations = new Dictionary<string, long>();
 		var terms = response.Aggregations?.GetStringTerms(aggregationName);
@@ -76,7 +76,8 @@ public static class SearchResultProcessor
 	public static IReadOnlyDictionary<string, long> ExtractNestedTermsAggregation<TDocument>(
 		Clients.Elasticsearch.SearchResponse<TDocument> response,
 		string nestedAggregationName,
-		string innerTermsAggregationName)
+		string innerTermsAggregationName
+	)
 	{
 		var aggregations = new Dictionary<string, long>();
 		var nested = response.Aggregations?.GetNested(nestedAggregationName);

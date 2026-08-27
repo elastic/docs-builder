@@ -241,27 +241,21 @@ public static class EuiSvgIcons
 	{
 		if (IconAliases.TryGetValue(name, out var canonical))
 			name = canonical;
-		return Icons.TryGetValue(name, out var svg)
-			? cssClass is not null ? InjectClass(svg, cssClass) : svg
-			: null;
+		return Icons.TryGetValue(name, out var svg) ? cssClass is not null ? InjectClass(svg, cssClass) : svg : null;
 	}
 
-	private static string InjectClass(string svg, string cssClass) =>
-		svg.Replace("<svg ", $"<svg class=\"{cssClass}\" ");
+	private static string InjectClass(string svg, string cssClass) => svg.Replace("<svg ", $"<svg class=\"{cssClass}\" ");
 
 	/// <summary>
 	/// Gets a token SVG by name, returning null if not found.
 	/// </summary>
 	/// <param name="name">The token name (without .svg extension)</param>
 	/// <returns>The SVG content or null if not found</returns>
-	public static string? GetToken(string name) =>
-		Tokens.TryGetValue(name, out var svg) ? svg : null;
+	public static string? GetToken(string name) => Tokens.TryGetValue(name, out var svg) ? svg : null;
 
-	private static IReadOnlyDictionary<string, string> LoadIcons() =>
-		LoadFromPrefix("svgs.");
+	private static IReadOnlyDictionary<string, string> LoadIcons() => LoadFromPrefix("svgs.");
 
-	private static IReadOnlyDictionary<string, string> LoadTokens() =>
-		LoadFromPrefix("svgs.tokens.");
+	private static IReadOnlyDictionary<string, string> LoadTokens() => LoadFromPrefix("svgs.tokens.");
 
 	private static IReadOnlyDictionary<string, string> LoadFromPrefix(string folderPrefix)
 	{
@@ -283,6 +277,7 @@ public static class EuiSvgIcons
 			})
 			.ToDictionary(
 				r => r[fullPrefix.Length..^4], // Remove prefix and ".svg" suffix
+
 				r =>
 				{
 					using var stream = assembly.GetManifestResourceStream(r);

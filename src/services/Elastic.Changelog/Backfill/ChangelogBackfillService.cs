@@ -52,7 +52,8 @@ public sealed record BackfillProductResult(
 	int FilesWritten,
 	int NoPrEntries,
 	int DuplicatePrRefs,
-	string Detail);
+	string Detail
+);
 
 /// <summary>
 /// Backfills changelog entries, notes registries, and bundles from published release-notes pages.
@@ -105,8 +106,10 @@ public partial class ChangelogBackfillService(
 		if (totalNoPr > 0)
 		{
 			var pct = totalEntries > 0 ? totalNoPr * 100.0 / totalEntries : 0;
-			collector.EmitWarning(string.Empty,
-				$"{totalNoPr}/{totalEntries} entries ({pct:F1}%) could not be traced back to a pull request and were written as note-*.yaml.");
+			collector.EmitWarning(
+				string.Empty,
+				$"{totalNoPr}/{totalEntries} entries ({pct:F1}%) could not be traced back to a pull request and were written as note-*.yaml."
+			);
 		}
 
 		if (failedProducts > 0)
@@ -120,7 +123,8 @@ public partial class ChangelogBackfillService(
 		BackfillArguments args,
 		IReadOnlyList<BackfillScope> scopes,
 		int concurrency,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		using var client = BuildHttpClient();
 		using var semaphore = new SemaphoreSlim(concurrency, concurrency);
@@ -157,10 +161,23 @@ public partial class ChangelogBackfillService(
 		return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
 	}
 
-	private async Task<(string? Markdown, bool IsError)> FetchWithRetry(IDiagnosticsCollector collector, HttpClient client, string url, Cancel ctx)
+	private async Task<(string? Markdown, bool IsError)> FetchWithRetry(
+		IDiagnosticsCollector collector,
+		HttpClient client,
+		string url,
+		Cancel ctx
+	)
 	{
 		const int maxAttempts = 3;
-		var retryable = new HashSet<int> { 408, 429, 500, 502, 503, 504 };
+		var retryable = new HashSet<int>
+		{
+			408,
+			429,
+			500,
+			502,
+			503,
+			504
+		};
 
 		for (var attempt = 0; attempt < maxAttempts; attempt++)
 		{
@@ -187,13 +204,18 @@ public partial class ChangelogBackfillService(
 				{
 					if (retryable.Contains((int)response.StatusCode) && attempt < maxAttempts - 1)
 						continue;
-					collector.EmitError(url, $"Fetching release notes failed with HTTP {(int)response.StatusCode} ({response.StatusCode}).");
+					collector.EmitError(
+						url,
+						$"Fetching release notes failed with HTTP {(int)response.StatusCode} ({response.StatusCode})."
+					);
 					return (null, true);
 				}
 
 				return (await response.Content.ReadAsStringAsync(ctx), false);
 			}
-			catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.IsCancellationRequested && attempt < maxAttempts - 1)
+			catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException
+				&& !ctx.IsCancellationRequested
+				&& attempt < maxAttempts - 1)
 			{
 				_logger.LogInformation("Transient error fetching {Url}: {Message}", url, ex.Message);
 			}
@@ -213,7 +235,8 @@ public partial class ChangelogBackfillService(
 		BackfillArguments args,
 		BackfillScope scope,
 		string? markdown,
-		bool fetchError)
+		bool fetchError
+	)
 	{
 		var url = scope.IsRepoSource
 			? $"{args.RawBaseUrl}/{scope.Owner}/{scope.Repo}/{scope.Ref}/{scope.RepoPath}"
@@ -230,7 +253,10 @@ public partial class ChangelogBackfillService(
 		var releases = ReleaseNotesPageParser.Parse(collector, markdown, url, scope);
 		if (releases.Count == 0)
 		{
-			collector.EmitHint(url, $"No release sections parsed from '{scope.ProductId}' — the page may be an empty <changelog> stub or contain no ## headings.");
+			collector.EmitHint(
+				url,
+				$"No release sections parsed from '{scope.ProductId}' — the page may be an empty <changelog> stub or contain no ## headings."
+			);
 			return new BackfillProductResult(scope.ProductId, url, OutcomeEmpty, 0, 0, 0, 0, 0, "no ## version headings found");
 		}
 
@@ -256,12 +282,32 @@ public partial class ChangelogBackfillService(
 		if (args.DryRun)
 		{
 			var (dryNoPr, dryDupPr) = CountPrStats(inScope);
-			return new BackfillProductResult(scope.ProductId, url, OutcomeOk, inScope.Count, totalEntries, 0, dryNoPr, dryDupPr, "dry-run; nothing written");
+			return new BackfillProductResult(
+				scope.ProductId,
+				url,
+				OutcomeOk,
+				inScope.Count,
+				totalEntries,
+				0,
+				dryNoPr,
+				dryDupPr,
+				"dry-run; nothing written"
+			);
 		}
 
 		var (succeeded, filesWritten, noPr, dupPr) = WriteBundles(collector, args, scope, inScope);
 		var writeOutcome = succeeded ? OutcomeOk : OutcomeFailed;
-		return new BackfillProductResult(scope.ProductId, url, writeOutcome, inScope.Count, totalEntries, filesWritten, noPr, dupPr, succeeded ? "" : "write failed");
+		return new BackfillProductResult(
+			scope.ProductId,
+			url,
+			writeOutcome,
+			inScope.Count,
+			totalEntries,
+			filesWritten,
+			noPr,
+			dupPr,
+			succeeded ? "" : "write failed"
+		);
 	}
 
 	[GeneratedRegex(@"/pull/(?<number>\d+)$")]
@@ -301,7 +347,8 @@ public partial class ChangelogBackfillService(
 		IDiagnosticsCollector collector,
 		BackfillArguments args,
 		BackfillScope scope,
-		IReadOnlyList<MigratedRelease> releases)
+		IReadOnlyList<MigratedRelease> releases
+	)
 	{
 		var changelogDir = Path.Join(args.Output, scope.ProductId, "changelog");
 		var bundleDir = Path.Join(changelogDir, "bundles");
@@ -363,15 +410,34 @@ public partial class ChangelogBackfillService(
 						// — treat as note-*.yaml.
 						var firstPr = entry.Prs is { Count: > 0 } prs2 ? prs2[0] : null;
 						if (firstPr is not null && entry.Prs!.Any(p => PrNumberFromUrlRegex().IsMatch(p)))
-							_logger.LogDebug("All PR refs already claimed for entry in {Product} {Version}; skipping fragment", scope.ProductId, release.Version);
+							_logger.LogDebug(
+								"All PR refs already claimed for entry in {Product} {Version}; skipping fragment",
+								scope.ProductId,
+								release.Version
+							);
 						else if (firstPr is not null)
-							_logger.LogDebug("Could not extract PR number from '{Pr}' in {Product} {Version}; treating as no-PR entry", firstPr, scope.ProductId, release.Version);
+							_logger.LogDebug(
+								"Could not extract PR number from '{Pr}' in {Product} {Version}; treating as no-PR entry",
+								firstPr,
+								scope.ProductId,
+								release.Version
+							);
 
 						noPrEntries++;
-						var noteFile = AllocateNoteFileName(entry.Title ?? string.Empty, release.Version, slugVersionCounts, claimedNoteFiles);
+						var noteFile = AllocateNoteFileName(
+							entry.Title ?? string.Empty,
+							release.Version,
+							slugVersionCounts,
+							claimedNoteFiles
+						);
 						if (noteFile is null)
 						{
-							_logger.LogDebug("Could not generate slug for PR-less entry in {Product} {Version}: {Title}", scope.ProductId, release.Version, entry.Title);
+							_logger.LogDebug(
+								"Could not generate slug for PR-less entry in {Product} {Version}: {Title}",
+								scope.ProductId,
+								release.Version,
+								entry.Title
+							);
 							continue;
 						}
 
@@ -405,8 +471,10 @@ public partial class ChangelogBackfillService(
 		if (noPrEntries > 0)
 		{
 			var total = releases.Sum(r => r.Bundle.Entries?.Count ?? 0);
-			collector.EmitHint(args.Output,
-				$"{scope.ProductId}: {noPrEntries}/{total} entries had no PR reference; written as note-*.yaml.");
+			collector.EmitHint(
+				args.Output,
+				$"{scope.ProductId}: {noPrEntries}/{total} entries had no PR reference; written as note-*.yaml."
+			);
 		}
 
 		return (true, filesWritten, noPrEntries, dupPrRefs);
@@ -416,7 +484,8 @@ public partial class ChangelogBackfillService(
 		string title,
 		string version,
 		Dictionary<string, int> slugVersionCounts,
-		HashSet<string> claimedNoteFiles)
+		HashSet<string> claimedNoteFiles
+	)
 	{
 		if (string.IsNullOrWhiteSpace(title))
 			return null;
@@ -466,13 +535,10 @@ public partial class ChangelogBackfillService(
 		return ReleaseNotesSerialization.SerializeEntry(entry);
 	}
 
-	private static string SanitizeFileName(string version) =>
-		string.Join('_', version.Split(Path.GetInvalidFileNameChars()));
+	private static string SanitizeFileName(string version) => string.Join('_', version.Split(Path.GetInvalidFileNameChars()));
 
 	private static string SanitizeSlugSegment(string value) =>
-		string.Join('-', value.Split(Path.GetInvalidFileNameChars()))
-			.Replace('.', '-')
-			.Trim('-');
+		string.Join('-', value.Split(Path.GetInvalidFileNameChars())).Replace('.', '-').Trim('-');
 
 	/// <summary>Formats the run report as a markdown table suitable for pasting into the tracking issue.</summary>
 	public static string FormatReport(IReadOnlyList<BackfillProductResult> results)
@@ -486,16 +552,22 @@ public partial class ChangelogBackfillService(
 		foreach (var r in results)
 		{
 			var pct = r.Entries > 0 ? r.NoPrEntries * 100.0 / r.Entries : 0;
-			_ = sb.AppendLine(CultureInfo.InvariantCulture,
-				$"| `{r.ProductId}` | {r.Outcome} | {r.Versions} | {r.Entries} | {r.FilesWritten} | {r.NoPrEntries} | {pct:F1}% | {r.Detail} |");
+			_ =
+				sb.AppendLine(
+					CultureInfo.InvariantCulture,
+					$"| `{r.ProductId}` | {r.Outcome} | {r.Versions} | {r.Entries} | {r.FilesWritten} | {r.NoPrEntries} | {pct:F1}% | {r.Detail} |"
+				);
 		}
 
 		var totalEntries = results.Sum(r => r.Entries);
 		var totalFiles = results.Sum(r => r.FilesWritten);
 		var totalNoPr = results.Sum(r => r.NoPrEntries);
 		var totalPct = totalEntries > 0 ? totalNoPr * 100.0 / totalEntries : 0;
-		_ = sb.AppendLine(CultureInfo.InvariantCulture,
-			$"| **totals** | | {results.Sum(r => r.Versions)} | {totalEntries} | {totalFiles} | {totalNoPr} | {totalPct:F1}% | |");
+		_ =
+			sb.AppendLine(
+				CultureInfo.InvariantCulture,
+				$"| **totals** | | {results.Sum(r => r.Versions)} | {totalEntries} | {totalFiles} | {totalNoPr} | {totalPct:F1}% | |"
+			);
 
 		return sb.ToString();
 	}

@@ -7,8 +7,10 @@ using System.IO.Abstractions;
 
 namespace Elastic.Documentation.Diagnostics;
 
-public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs, TimeProvider? timeProvider = null)
-	: IDiagnosticsCollector
+public class DiagnosticsCollector(
+	IReadOnlyCollection<IDiagnosticsOutput> outputs,
+	TimeProvider? timeProvider = null
+) : IDiagnosticsCollector
 {
 	public DiagnosticsChannel Channel { get; } = new();
 
@@ -58,25 +60,29 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	{
 		if (_started is not null)
 			return _started;
-		_started = Task.Run(async () =>
-		{
-			_ = await Channel.WaitToWrite(cancellationToken);
-			_readerStarted = true;
-			while (!Channel.CancellationToken.IsCancellationRequested)
-			{
-				try
+		_started =
+			Task.Run(
+				async () =>
 				{
-					while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
-						Drain();
-				}
-				catch
-				{
-					//ignore
-				}
-			}
+					_ = await Channel.WaitToWrite(cancellationToken);
+					_readerStarted = true;
+					while (!Channel.CancellationToken.IsCancellationRequested)
+					{
+						try
+						{
+							while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
+								Drain();
+						}
+						catch
+						{
+							//ignore
+						}
+					}
 
-			Drain();
-		}, cancellationToken);
+					Drain();
+				},
+				cancellationToken
+			);
 		return _started;
 	}
 
@@ -142,18 +148,15 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	}
 
 	public void Emit(Severity severity, string file, string message) =>
-		Write(new Diagnostic
-		{
-			Severity = severity,
-			File = file,
-			Message = message
-		});
+		Write(new Diagnostic { Severity = severity, File = file, Message = message });
 
-	public void EmitError(string file, string message, string specificErrorMessage) => Emit(Severity.Error, file, $"{message}{Environment.NewLine}{specificErrorMessage}");
+	public void EmitError(string file, string message, string specificErrorMessage) =>
+		Emit(Severity.Error, file, $"{message}{Environment.NewLine}{specificErrorMessage}");
 
 	public void EmitError(string file, string message, Exception? e = null)
 	{
-		message = message
+		message =
+			message
 				+ (e != null ? Environment.NewLine + e : string.Empty)
 				+ (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
 		Emit(Severity.Error, file, message);
@@ -176,6 +179,5 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		GC.SuppressFinalize(this);
 	}
 
-	public void CollectUsedSubstitutionKey(ReadOnlySpan<char> key) =>
-		_ = InUseSubstitutionKeys.TryAdd(key.ToString(), true);
+	public void CollectUsedSubstitutionKey(ReadOnlySpan<char> key) => _ = InUseSubstitutionKeys.TryAdd(key.ToString(), true);
 }

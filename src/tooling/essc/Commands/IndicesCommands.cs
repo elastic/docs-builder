@@ -106,8 +106,7 @@ internal sealed class IndicesCleanupOptions
 internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFactory loggerFactory)
 {
 	private static bool IsInteractive() =>
-		string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) &&
-		AnsiConsole.Profile.Capabilities.Interactive;
+		string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) && AnsiConsole.Profile.Capabilities.Interactive;
 
 	/// <summary>
 	/// Incrementally reindex <c>docs-assembler.*</c>, <c>site-*</c>, and <c>labs-*</c> semantic
@@ -171,8 +170,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var batchTsStr = batchTs.ToString("o");
 		float? rpsOpt = rps < 0 ? null : rps;
 
-		var extraLabels = (aliases ?? "")
-			.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var extraLabels = (aliases ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
 		var docsAssemblerAlias = $"docs-assembler.semantic-{env}-latest";
 		var siteAlias = SiteMappingContext.SiteDocumentSemantic.CreateContext(type: buildType, env: env).ResolveWriteAlias();
@@ -185,7 +183,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine($"[dim]Environment:[/]   [white]{Markup.Escape(env)}[/]");
 		AnsiConsole.MarkupLine($"[dim]Sources:[/]       [white]{Markup.Escape(string.Join(", ", sourceAliases))}[/]");
 		AnsiConsole.MarkupLine($"[dim]Alias:[/]         [white]{Markup.Escape(pageAlias)}[/]");
-		AnsiConsole.MarkupLine($"[dim]Slices:[/]        [white]{Markup.Escape(slices)}[/]  [dim]rps:[/] [white]{(rps < 0 ? "unlimited" : rps.ToString("F0"))}[/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]Slices:[/]        [white]{Markup.Escape(slices)}[/]  [dim]rps:[/] [white]{(rps < 0 ? "unlimited" : rps.ToString("F0"))}[/]"
+		);
 		if (extraLabels.Length > 0)
 			AnsiConsole.MarkupLine($"[dim]Aliases:[/]       [white]{Markup.Escape(string.Join(", ", extraLabels))}[/]");
 		AnsiConsole.WriteLine();
@@ -196,13 +196,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var synonymSetName = $"docs-assembler-{env}";
 		var indexTimeSynonyms = IndexTimeSynonyms.Docs;
 
-		var lexicalContext = WebsiteSearchMappingContext.WebsiteSearchDocument
-			.CreateContext(env: env) with
+		var lexicalContext = WebsiteSearchMappingContext.WebsiteSearchDocument.CreateContext(env: env) with
 		{
 			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
-		var semanticContext = WebsiteSearchMappingContext.WebsiteSearchDocumentSemantic
-			.CreateContext(env: env) with
+		var semanticContext = WebsiteSearchMappingContext.WebsiteSearchDocumentSemantic.CreateContext(env: env) with
 		{
 			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
 		};
@@ -216,15 +214,20 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			OnRolloverDecision = info =>
 			{
 				var roll = info.RolledOver ? "new backing index" : "reuse";
-				logger.LogInformation("[{Label}] rollover={Roll} local={Local} remote={Remote}",
-					info.Label, roll, info.LocalHash, info.RemoteHash);
+				logger.LogInformation(
+					"[{Label}] rollover={Roll} local={Local} remote={Remote}",
+					info.Label,
+					roll,
+					info.LocalHash,
+					info.RemoteHash
+				);
 			},
 		};
 
 		var context = await orchestrator.StartAsync(BootstrapMethod.Silent, ct);
 
-		var lexicalAlias = context.PrimaryWriteAlias;    // website-search.lexical-{env}-latest
-		var semanticAlias = context.SecondaryWriteAlias;  // website-search.semantic-{env}-latest
+		var lexicalAlias = context.PrimaryWriteAlias; // website-search.lexical-{env}-latest
+		var semanticAlias = context.SecondaryWriteAlias; // website-search.semantic-{env}-latest
 
 		// ── Source hash check ─────────────────────────────────────────────────────
 		var (currentSourceHash, perSourceHashes) = await FetchCombinedSourceHashAsync(transport, sourceAliases, ct);
@@ -237,7 +240,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine(
 			sourceHashChanged
 				? $"[dim]  combined: [yellow]{Markup.Escape(currentSourceHash)}[/] (stored: [yellow]{Markup.Escape(storedSourceHash ?? "none")}[/]) — [yellow]changed[/][/]"
-				: $"[dim]  combined: [white]{Markup.Escape(currentSourceHash)}[/] (stored: [white]{Markup.Escape(storedSourceHash ?? "none")}[/]) — unchanged[/]");
+				: $"[dim]  combined: [white]{Markup.Escape(currentSourceHash)}[/] (stored: [white]{Markup.Escape(storedSourceHash ?? "none")}[/]) — unchanged[/]"
+		);
 		AnsiConsole.WriteLine();
 
 		// ── Resolve backing indices ───────────────────────────────────────────────
@@ -259,10 +263,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		}
 		else
 		{
-			lexicalIndex = await ResolveAliasIndexAsync(transport, lexicalAlias, ct)
-							?? throw new InvalidOperationException($"Lexical alias '{lexicalAlias}' not found.");
-			semanticIndex = await ResolveAliasIndexAsync(transport, semanticAlias, ct)
-							?? throw new InvalidOperationException($"Semantic alias '{semanticAlias}' not found.");
+			lexicalIndex =
+				await ResolveAliasIndexAsync(transport, lexicalAlias, ct)
+					?? throw new InvalidOperationException($"Lexical alias '{lexicalAlias}' not found.");
+			semanticIndex =
+				await ResolveAliasIndexAsync(transport, semanticAlias, ct)
+					?? throw new InvalidOperationException($"Semantic alias '{semanticAlias}' not found.");
 		}
 
 		// Apply rename after the orchestrator has set up the canonical template and backing indices.
@@ -278,7 +284,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var isFullReindex = orchestrator.Strategy == IngestSyncStrategy.Multiplex || sourceHashChanged;
 		var currentPageAlias = await ResolveAliasIndexAsync(transport, pageAlias, ct);
 
-		AnsiConsole.MarkupLine($"[green]✓[/] Strategy: [white]{orchestrator.Strategy}[/]{(sourceHashChanged ? " [yellow]+ source hash rollover[/]" : "")}");
+		AnsiConsole.MarkupLine(
+			$"[green]✓[/] Strategy: [white]{orchestrator.Strategy}[/]{(sourceHashChanged ? " [yellow]+ source hash rollover[/]" : "")}"
+		);
 		AnsiConsole.MarkupLine($"[dim]Mode:[/] [white]{(isFullReindex ? "full reindex" : "incremental")}[/]");
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[dim]Indices:[/]");
@@ -292,8 +300,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine($"[dim]  semantic: [white]{semanticDisplay}[/][/]");
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[dim]Current aliases:[/]");
-		AnsiConsole.MarkupLine($"[dim]  {Markup.Escape(lexicalAlias)} → [white]{Markup.Escape(await ResolveAliasIndexAsync(transport, lexicalAlias, ct) ?? "not set")}[/][/]");
-		AnsiConsole.MarkupLine($"[dim]  {Markup.Escape(semanticAlias)} → [white]{Markup.Escape(await ResolveAliasIndexAsync(transport, semanticAlias, ct) ?? "not set")}[/][/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]  {Markup.Escape(lexicalAlias)} → [white]{Markup.Escape(await ResolveAliasIndexAsync(transport, lexicalAlias, ct) ?? "not set")}[/][/]"
+		);
+		AnsiConsole.MarkupLine(
+			$"[dim]  {Markup.Escape(semanticAlias)} → [white]{Markup.Escape(await ResolveAliasIndexAsync(transport, semanticAlias, ct) ?? "not set")}[/][/]"
+		);
 		AnsiConsole.MarkupLine($"[dim]  {Markup.Escape(pageAlias)} → [white]{Markup.Escape(currentPageAlias ?? "not set")}[/][/]");
 		AnsiConsole.WriteLine();
 
@@ -302,9 +314,23 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		const string semanticSlices = "1";
 
 		var state = new UnifyRunState(
-			sourceAliases, lexicalIndex, semanticIndex, originalSemanticIndex, semanticWasRenamed,
-			lexicalAlias, semanticAlias, pageAlias, extraLabels, env, isFullReindex, batchTsStr,
-			currentSourceHash, semanticSlices, slices, rpsOpt);
+			sourceAliases,
+			lexicalIndex,
+			semanticIndex,
+			originalSemanticIndex,
+			semanticWasRenamed,
+			lexicalAlias,
+			semanticAlias,
+			pageAlias,
+			extraLabels,
+			env,
+			isFullReindex,
+			batchTsStr,
+			currentSourceHash,
+			semanticSlices,
+			slices,
+			rpsOpt
+		);
 
 		try
 		{
@@ -347,7 +373,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		string CurrentSourceHash,
 		string SemanticSlices,
 		string Slices,
-		float? RpsOpt);
+		float? RpsOpt
+	);
 
 	private async Task RunUnifySteps(DistributedTransport transport, UnifyRunState state, ILogger logger, Cancel ct)
 	{
@@ -356,9 +383,14 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		foreach (var source in state.SourceAliases)
 		{
 			var fillBody = BuildLexicalFillBody(source, state.LexicalIndex, state.BatchTsStr);
-			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = fillBody, Slices = state.Slices, RequestsPerSecond = state.RpsOpt },
-				$"fill-lexical ({Markup.Escape(source)})", ct))
+			if (
+				!await RunServerReindexAsync(
+					transport,
+					new ServerReindexOptions { Body = fillBody, Slices = state.Slices, RequestsPerSecond = state.RpsOpt },
+					$"fill-lexical ({Markup.Escape(source)})",
+					ct
+				)
+			)
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — lexical fill failed.[/]");
 				Environment.Exit(1);
@@ -387,9 +419,20 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		{
 			// ── Full reindex to semantic (all docs trigger inference) ────────────
 			// slices=1: prevents es_rejected_execution_exception from concurrent inference bulk.
-			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Source = state.LexicalIndex, Destination = state.SemanticIndex, Slices = state.SemanticSlices, RequestsPerSecond = state.RpsOpt },
-				"full-semantic", ct))
+			if (
+				!await RunServerReindexAsync(
+					transport,
+					new ServerReindexOptions
+					{
+						Source = state.LexicalIndex,
+						Destination = state.SemanticIndex,
+						Slices = state.SemanticSlices,
+						RequestsPerSecond = state.RpsOpt
+					},
+					"full-semantic",
+					ct
+				)
+			)
 			{
 				// Reindex failed mid-way. The semantic backing index is partial — delete it so
 				// the next run starts clean (Multiplex will recreate it).
@@ -408,6 +451,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			_ = await PruneOldIndicesAsync(transport, $"ws-catalog.semantic-{state.Env}-*", keepCount: 3, logger, ct);
 		}
 		else // Reindex mode — incremental
+
 		{
 			// Global cutoff: max(last_updated) across all docs currently in semantic.
 			// Changed/new source docs have newer last_updated from their sync → caught by inference step.
@@ -418,13 +462,22 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			// ── Inference step ───────────────────────────────────────────────────
 			// Reindex only docs whose last_updated > cutoff from lexical → semantic (slices=1, inference).
 			// These are docs that changed in any source since the last unify run.
-			var inferenceBody =
-				"{\"source\":{\"index\":\"" + state.LexicalIndex +
-				"\",\"query\":{\"range\":{\"last_updated\":{\"gt\":\"" + cutoff.ToString("o") + "\"}}}}," +
-				"\"dest\":{\"index\":\"" + state.SemanticIndex + "\"}}";
-			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = inferenceBody, Slices = state.SemanticSlices, RequestsPerSecond = state.RpsOpt },
-				"inference-reindex", ct))
+			var inferenceBody = "{\"source\":{\"index\":\""
+				+ state.LexicalIndex
+				+ "\",\"query\":{\"range\":{\"last_updated\":{\"gt\":\""
+				+ cutoff.ToString("o")
+				+ "\"}}}},"
+				+ "\"dest\":{\"index\":\""
+				+ state.SemanticIndex
+				+ "\"}}";
+			if (
+				!await RunServerReindexAsync(
+					transport,
+					new ServerReindexOptions { Body = inferenceBody, Slices = state.SemanticSlices, RequestsPerSecond = state.RpsOpt },
+					"inference-reindex",
+					ct
+				)
+			)
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — inference reindex failed.[/]");
 				Environment.Exit(1);
@@ -435,9 +488,14 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			// Reindex stale lexical docs (batch_index_date < batchTimestamp = not in current fill)
 			// to semantic using a delete script. This removes docs deleted from all sources.
 			var deleteBody = BuildDeleteScriptBody(state.LexicalIndex, state.SemanticIndex, state.BatchTsStr);
-			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = deleteBody, Slices = state.Slices },
-				"reindex-deletes", ct))
+			if (
+				!await RunServerReindexAsync(
+					transport,
+					new ServerReindexOptions { Body = deleteBody, Slices = state.Slices },
+					"reindex-deletes",
+					ct
+				)
+			)
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — delete step failed.[/]");
 				Environment.Exit(1);
@@ -454,7 +512,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 		// Persist combined source hash into component template for next-run rollover detection.
 		await WriteStoredSourceHashAsync(transport, state.Env, state.CurrentSourceHash, ct);
-		AnsiConsole.MarkupLine($"[dim]Stored source hash {Markup.Escape(state.CurrentSourceHash)} → {Markup.Escape(UnifyStateTemplateName(state.Env))}[/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]Stored source hash {Markup.Escape(state.CurrentSourceHash)} → {Markup.Escape(UnifyStateTemplateName(state.Env))}[/]"
+		);
 
 		foreach (var label in state.ExtraLabels)
 		{
@@ -472,22 +532,28 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 	private static string ResolveTemplateName(string writeAlias) =>
 		(writeAlias.EndsWith("-latest", StringComparison.Ordinal)
-			? writeAlias[..^7]       // strip "-latest"
-			: writeAlias)
-		+ "-template";
+				? writeAlias[..^7] // strip "-latest"
 
-	private static async Task<(string Combined, IReadOnlyList<(string Alias, string Template, string Hash)> PerSource)>
-		FetchCombinedSourceHashAsync(DistributedTransport transport, IEnumerable<string> sourceAliases, CancellationToken ct)
+				: writeAlias)
+			+ "-template";
+
+	private static async Task<(string Combined, IReadOnlyList<(string Alias, string Template, string Hash)> PerSource)> FetchCombinedSourceHashAsync(
+		DistributedTransport transport,
+		IEnumerable<string> sourceAliases,
+		CancellationToken ct
+	)
 	{
 		var perSource = new List<(string, string, string)>();
 		var parts = new List<string>();
 		foreach (var alias in sourceAliases)
 		{
 			var template = ResolveTemplateName(alias);
-			var resp = await transport.RequestAsync<JsonResponse>(
-				Transport.HttpMethod.GET,
-				$"_index_template/{Uri.EscapeDataString(template)}?filter_path=index_templates.index_template._meta.hash",
-				cancellationToken: ct);
+			var resp =
+				await transport.RequestAsync<JsonResponse>(
+					Transport.HttpMethod.GET,
+					$"_index_template/{Uri.EscapeDataString(template)}?filter_path=index_templates.index_template._meta.hash",
+					cancellationToken: ct
+				);
 			var hash = resp.Get<string>("index_templates.0.index_template._meta.hash") ?? "missing";
 			perSource.Add((alias, template, hash));
 			parts.Add(alias + "=" + hash);
@@ -495,35 +561,42 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		return (HashedBulkUpdate.CreateHash(parts.ToArray()), perSource);
 	}
 
-	private static string UnifyStateTemplateName(string env) =>
-		$"website-search-unify-state-{env}";
+	private static string UnifyStateTemplateName(string env) => $"website-search-unify-state-{env}";
 
-	private static async Task<string?> ReadStoredSourceHashAsync(
-		DistributedTransport transport, string env, CancellationToken ct)
+	private static async Task<string?> ReadStoredSourceHashAsync(DistributedTransport transport, string env, CancellationToken ct)
 	{
 		var name = UnifyStateTemplateName(env);
-		var resp = await transport.RequestAsync<JsonResponse>(
-			Transport.HttpMethod.GET,
-			$"_component_template/{Uri.EscapeDataString(name)}",
-			cancellationToken: ct);
+		var resp =
+			await transport.RequestAsync<JsonResponse>(
+				Transport.HttpMethod.GET,
+				$"_component_template/{Uri.EscapeDataString(name)}",
+				cancellationToken: ct
+			);
 		if (!resp.ApiCallDetails.HasSuccessfulStatusCode)
 			return null;
 		return resp.Get<string>("component_templates.0.component_template._meta.source_hash");
 	}
 
 	private static async Task WriteStoredSourceHashAsync(
-		DistributedTransport transport, string env, string combinedHash, CancellationToken ct)
+		DistributedTransport transport,
+		string env,
+		string combinedHash,
+		CancellationToken ct
+	)
 	{
 		var name = UnifyStateTemplateName(env);
 		var body = "{\"_meta\":{\"source_hash\":\"" + combinedHash + "\"},\"template\":{}}";
-		_ = await transport.PutAsync<StringResponse>(
-			$"_component_template/{Uri.EscapeDataString(name)}",
-			PostData.String(body), ct);
+		_ = await transport.PutAsync<StringResponse>($"_component_template/{Uri.EscapeDataString(name)}", PostData.String(body), ct);
 	}
 
 	// ─── ServerReindex helpers ──────────────────────────────────────────────────
 
-	private async Task<bool> RunServerReindexAsync(DistributedTransport transport, ServerReindexOptions opts, string label, CancellationToken ct)
+	private async Task<bool> RunServerReindexAsync(
+		DistributedTransport transport,
+		ServerReindexOptions opts,
+		string label,
+		CancellationToken ct
+	)
 	{
 		AnsiConsole.MarkupLine($"[aqua]{label}[/]...");
 		var reindex = new ServerReindex(transport, opts);
@@ -551,7 +624,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			await foreach (var p in reindex.MonitorAsync(ct))
 			{
 				last = p;
-				AnsiConsole.MarkupLine($"[dim]{label}[/] {(p.FractionComplete.HasValue ? $"{p.FractionComplete:P0}" : "?")} — created={p.Created:N0} updated={p.Updated:N0} total={p.Total:N0}");
+				AnsiConsole.MarkupLine(
+					$"[dim]{label}[/] {(p.FractionComplete.HasValue ? $"{p.FractionComplete:P0}" : "?")} — created={p.Created:N0} updated={p.Updated:N0} total={p.Total:N0}"
+				);
 			}
 		}
 
@@ -561,16 +636,14 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		if (last?.Failures.Count > 0)
 		{
 			AnsiConsole.MarkupLine($"[yellow]⚠ {label} — {last.Failures.Count:N0} document(s) failed[/]");
-			foreach (var group in last.Failures
-				.GroupBy(f => (f.CauseType, f.CauseReason))
-				.OrderByDescending(g => g.Count())
-				.Take(10))
+			foreach (var group in last.Failures.GroupBy(f => (f.CauseType, f.CauseReason)).OrderByDescending(g => g.Count()).Take(10))
 			{
 				var sample = group.First();
 				AnsiConsole.MarkupLine(
 					$"[dim]  ×{group.Count():N0}[/] [red]{Markup.Escape(sample.CauseType ?? "unknown")}[/]: " +
-					$"{Markup.Escape(sample.CauseReason ?? "no reason given")} " +
-					$"[dim](e.g. {Markup.Escape(sample.Index ?? "?")}/{Markup.Escape(sample.Id ?? "?")})[/]");
+						$"{Markup.Escape(sample.CauseReason ?? "no reason given")} " +
+						$"[dim](e.g. {Markup.Escape(sample.Index ?? "?")}/{Markup.Escape(sample.Id ?? "?")})[/]"
+				);
 			}
 			if (last.Failures.Count > 10)
 				AnsiConsole.MarkupLine($"[dim]  ... {last.Failures.Count - 10:N0} more failure(s) not shown[/]");
@@ -589,15 +662,16 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	}
 
 	private async Task RunDeleteByQueryAsync(
-		DistributedTransport transport, string index, string query, string slices, string label, CancellationToken ct)
+		DistributedTransport transport,
+		string index,
+		string query,
+		string slices,
+		string label,
+		CancellationToken ct
+	)
 	{
 		AnsiConsole.MarkupLine($"[aqua]{label}[/]...");
-		var dbq = new DeleteByQuery(transport, new DeleteByQueryOptions
-		{
-			Index = index,
-			QueryBody = query,
-			Slices = slices,
-		});
+		var dbq = new DeleteByQuery(transport, new DeleteByQueryOptions { Index = index, QueryBody = query, Slices = slices, });
 		long deleted = 0;
 		await foreach (var p in dbq.MonitorAsync(ct))
 		{
@@ -611,43 +685,65 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	// ─── Reindex body builders ──────────────────────────────────────────────────
 
 	private static string BuildLexicalFillBody(string sourceAlias, string lexicalIndex, string batchTs) =>
-		"{\"source\":{\"index\":\"" + sourceAlias + "\"}," +
-		"\"dest\":{\"index\":\"" + lexicalIndex + "\"}," +
-		"\"script\":{\"source\":\"ctx._source.batch_index_date = params.ts;\"," +
-		"\"params\":{\"ts\":\"" + batchTs + "\"}}}";
+		"{\"source\":{\"index\":\""
+			+ sourceAlias
+			+ "\"},"
+			+ "\"dest\":{\"index\":\""
+			+ lexicalIndex
+			+ "\"},"
+			+ "\"script\":{\"source\":\"ctx._source.batch_index_date = params.ts;\","
+			+ "\"params\":{\"ts\":\""
+			+ batchTs
+			+ "\"}}}";
 
 	// Reindex stale lexical docs (batch_index_date < batchTs = not in current fill = deleted from source)
 	// to semantic using a delete script. Mirrors orchestrator's ReindexWithDeleteScriptAsync.
 	private static string BuildDeleteScriptBody(string lexicalIndex, string semanticIndex, string batchTs) =>
-		"{\"source\":{\"index\":\"" + lexicalIndex +
-		"\",\"query\":{\"range\":{\"batch_index_date\":{\"lt\":\"" + batchTs + "\"}}}}," +
-		"\"dest\":{\"index\":\"" + semanticIndex + "\"}," +
-		"\"script\":{\"source\":\"ctx.op = 'delete'\",\"lang\":\"painless\"}}";
+		"{\"source\":{\"index\":\""
+			+ lexicalIndex
+			+ "\",\"query\":{\"range\":{\"batch_index_date\":{\"lt\":\""
+			+ batchTs
+			+ "\"}}}},"
+			+ "\"dest\":{\"index\":\""
+			+ semanticIndex
+			+ "\"},"
+			+ "\"script\":{\"source\":\"ctx.op = 'delete'\",\"lang\":\"painless\"}}";
 
 	// ─── Cutoff query ───────────────────────────────────────────────────────────
 
 	private static async Task<DateTimeOffset> QueryMaxLastUpdatedAsync(
-		DistributedTransport transport, string semanticIndex, CancellationToken ct)
+		DistributedTransport transport,
+		string semanticIndex,
+		CancellationToken ct
+	)
 	{
-		var body = /*lang=json,strict*/ "{\"size\":0,\"aggs\":{\"max_lu\":{\"max\":{\"field\":\"last_updated\"}}}}";
-		var resp = await transport.RequestAsync<JsonResponse>(
-			Transport.HttpMethod.POST, $"{semanticIndex}/_search", PostData.String(body), cancellationToken: ct);
+		var body = /*lang=json,strict*/  "{\"size\":0,\"aggs\":{\"max_lu\":{\"max\":{\"field\":\"last_updated\"}}}}";
+		var resp =
+			await transport.RequestAsync<JsonResponse>(
+				Transport.HttpMethod.POST,
+				$"{semanticIndex}/_search",
+				PostData.String(body),
+				cancellationToken: ct
+			);
 		return resp.Get<DateTimeOffset?>("aggregations.max_lu.value_as_string") ?? DateTimeOffset.MinValue;
 	}
 
 	// ─── Alias helpers ──────────────────────────────────────────────────────────
 
-	private static async Task<string?> ResolveAliasIndexAsync(
-		DistributedTransport transport, string alias, CancellationToken ct)
+	private static async Task<string?> ResolveAliasIndexAsync(DistributedTransport transport, string alias, CancellationToken ct)
 	{
 		// _cat/aliases?h=index returns a plain-text line containing just the index name.
 		// Using text/plain avoids JSON array parsing (JsonResponse.Get<T> doesn't traverse arrays).
 		// This mirrors IncrementalSyncOrchestrator.ResolveExistingIndexAsync internally.
 		var rq = new RequestConfiguration { Accept = "text/plain" };
-		var resp = await transport.RequestAsync<StringResponse>(
-			Transport.HttpMethod.GET,
-			$"_cat/aliases/{Uri.EscapeDataString(alias)}?h=index",
-			null, rq, ct);
+		var resp =
+			await transport.RequestAsync<StringResponse>(
+				Transport.HttpMethod.GET,
+				$"_cat/aliases/{Uri.EscapeDataString(alias)}?h=index",
+				null,
+				rq,
+				ct
+			);
 		var index = resp.Body?.Trim('\n', '\r', ' ');
 		return string.IsNullOrEmpty(index) ? null : index;
 	}
@@ -658,25 +754,42 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// and their inference configuration exist before the inference reindex runs.
 	/// </summary>
 	private static async Task BootstrapSemanticIndexAsync(
-		DistributedTransport fromTransport, DistributedTransport toTransport,
-		string sourceAlias, string destIndex, ILogger logger, CancellationToken ct)
+		DistributedTransport fromTransport,
+		DistributedTransport toTransport,
+		string sourceAlias,
+		string destIndex,
+		ILogger logger,
+		CancellationToken ct
+	)
 	{
-		AnsiConsole.MarkupLine($"[dim]  Bootstrapping [white]{Markup.Escape(destIndex)}[/] from source mapping of [white]{Markup.Escape(sourceAlias)}[/]...[/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]  Bootstrapping [white]{Markup.Escape(destIndex)}[/] from source mapping of [white]{Markup.Escape(sourceAlias)}[/]...[/]"
+		);
 
-		var mappingResp = await fromTransport.RequestAsync<StringResponse>(
-			Transport.HttpMethod.GET, $"{Uri.EscapeDataString(sourceAlias)}/_mapping", cancellationToken: ct);
+		var mappingResp =
+			await fromTransport.RequestAsync<StringResponse>(
+				Transport.HttpMethod.GET,
+				$"{Uri.EscapeDataString(sourceAlias)}/_mapping",
+				cancellationToken: ct
+			);
 		if (!mappingResp.ApiCallDetails.HasSuccessfulStatusCode || mappingResp.Body is null)
 		{
-			logger.LogError("Failed to fetch source mapping from {Alias}: {Info}", sourceAlias, mappingResp.ApiCallDetails.DebugInformation);
+			logger.LogError(
+				"Failed to fetch source mapping from {Alias}: {Info}",
+				sourceAlias,
+				mappingResp.ApiCallDetails.DebugInformation
+			);
 			return;
 		}
 
 		// Fetch only the analysis settings — tokenizers, analyzers, filters that the mapping references.
 		// filter_path trims the response to just the analysis sub-tree.
-		var settingsResp = await fromTransport.RequestAsync<StringResponse>(
-			Transport.HttpMethod.GET,
-			$"{Uri.EscapeDataString(sourceAlias)}/_settings?filter_path=**.index.analysis",
-			cancellationToken: ct);
+		var settingsResp =
+			await fromTransport.RequestAsync<StringResponse>(
+				Transport.HttpMethod.GET,
+				$"{Uri.EscapeDataString(sourceAlias)}/_settings?filter_path=**.index.analysis",
+				cancellationToken: ct
+			);
 
 		// Response shapes:
 		//   _mapping:  { "<backing>": { "mappings": { ... } } }
@@ -700,8 +813,13 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			? $"{{\"settings\":{{\"analysis\":{analysis.ToJsonString()}}},\"mappings\":{mappings.ToJsonString()}}}"
 			: $"{{\"mappings\":{mappings.ToJsonString()}}}";
 
-		var createResp = await toTransport.RequestAsync<StringResponse>(
-			Transport.HttpMethod.PUT, Uri.EscapeDataString(destIndex), PostData.String(body), cancellationToken: ct);
+		var createResp =
+			await toTransport.RequestAsync<StringResponse>(
+				Transport.HttpMethod.PUT,
+				Uri.EscapeDataString(destIndex),
+				PostData.String(body),
+				cancellationToken: ct
+			);
 		if (!createResp.ApiCallDetails.HasSuccessfulStatusCode)
 			logger.LogError("Failed to create {Index} with source mapping: {Info}", destIndex, createResp.ApiCallDetails.DebugInformation);
 		else
@@ -712,7 +830,14 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	// fresh destination index — these are cluster/identity-specific and must not be replayed.
 	private static readonly string[] ReadOnlySettingsKeys =
 	[
-		"creation_date", "creation_date_string", "uuid", "version", "provided_name", "resize", "routing", "history",
+		"creation_date",
+		"creation_date_string",
+		"uuid",
+		"version",
+		"provided_name",
+		"resize",
+		"routing",
+		"history",
 	];
 
 	/// <summary>
@@ -721,21 +846,40 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// <see cref="Copy"/> to faithfully recreate a destination index before reindexing into it.
 	/// </summary>
 	private static async Task CopyIndexDefinitionAsync(
-		DistributedTransport fromTransport, DistributedTransport toTransport,
-		string sourceIndex, string destIndex, ILogger logger, CancellationToken ct)
+		DistributedTransport fromTransport,
+		DistributedTransport toTransport,
+		string sourceIndex,
+		string destIndex,
+		ILogger logger,
+		CancellationToken ct
+	)
 	{
-		AnsiConsole.MarkupLine($"[dim]  Creating [white]{Markup.Escape(destIndex)}[/] from source mapping+settings of [white]{Markup.Escape(sourceIndex)}[/]...[/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]  Creating [white]{Markup.Escape(destIndex)}[/] from source mapping+settings of [white]{Markup.Escape(sourceIndex)}[/]...[/]"
+		);
 
-		var mappingResp = await fromTransport.RequestAsync<StringResponse>(
-			Transport.HttpMethod.GET, $"{Uri.EscapeDataString(sourceIndex)}/_mapping", cancellationToken: ct);
+		var mappingResp =
+			await fromTransport.RequestAsync<StringResponse>(
+				Transport.HttpMethod.GET,
+				$"{Uri.EscapeDataString(sourceIndex)}/_mapping",
+				cancellationToken: ct
+			);
 		if (!mappingResp.ApiCallDetails.HasSuccessfulStatusCode || mappingResp.Body is null)
 		{
-			logger.LogError("Failed to fetch source mapping from {Index}: {Info}", sourceIndex, mappingResp.ApiCallDetails.DebugInformation);
+			logger.LogError(
+				"Failed to fetch source mapping from {Index}: {Info}",
+				sourceIndex,
+				mappingResp.ApiCallDetails.DebugInformation
+			);
 			return;
 		}
 
-		var settingsResp = await fromTransport.RequestAsync<StringResponse>(
-			Transport.HttpMethod.GET, $"{Uri.EscapeDataString(sourceIndex)}/_settings", cancellationToken: ct);
+		var settingsResp =
+			await fromTransport.RequestAsync<StringResponse>(
+				Transport.HttpMethod.GET,
+				$"{Uri.EscapeDataString(sourceIndex)}/_settings",
+				cancellationToken: ct
+			);
 
 		// Response shapes:
 		//   _mapping:  { "<backing>": { "mappings": { ... } } }
@@ -764,10 +908,19 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			? $"{{\"settings\":{{\"index\":{settings.ToJsonString()}}},\"mappings\":{mappings.ToJsonString()}}}"
 			: $"{{\"mappings\":{mappings.ToJsonString()}}}";
 
-		var createResp = await toTransport.RequestAsync<StringResponse>(
-			Transport.HttpMethod.PUT, Uri.EscapeDataString(destIndex), PostData.String(body), cancellationToken: ct);
+		var createResp =
+			await toTransport.RequestAsync<StringResponse>(
+				Transport.HttpMethod.PUT,
+				Uri.EscapeDataString(destIndex),
+				PostData.String(body),
+				cancellationToken: ct
+			);
 		if (!createResp.ApiCallDetails.HasSuccessfulStatusCode)
-			logger.LogError("Failed to create {Index} with source mapping+settings: {Info}", destIndex, createResp.ApiCallDetails.DebugInformation);
+			logger.LogError(
+				"Failed to create {Index} with source mapping+settings: {Info}",
+				destIndex,
+				createResp.ApiCallDetails.DebugInformation
+			);
 		else
 			AnsiConsole.MarkupLine($"[green]✓[/] Created [white]{Markup.Escape(destIndex)}[/] with source mapping+settings");
 	}
@@ -779,9 +932,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// argument is null or empty.
 	/// </summary>
 	private static string ApplyRename(string indexName, string? from, string? to) =>
-		!string.IsNullOrEmpty(from) && !string.IsNullOrEmpty(to)
-			? Regex.Replace(indexName, from, to)
-			: indexName;
+		!string.IsNullOrEmpty(from) && !string.IsNullOrEmpty(to) ? Regex.Replace(indexName, from, to) : indexName;
 
 	/// <summary>
 	/// Derives a date-stamped backing index name from an alias on first run.
@@ -795,7 +946,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	}
 
 	private static async Task PointAliasAsync(
-		DistributedTransport transport, string alias, string destIndex, ILogger logger, CancellationToken ct)
+		DistributedTransport transport,
+		string alias,
+		string destIndex,
+		ILogger logger,
+		CancellationToken ct
+	)
 	{
 		var current = await ResolveAliasIndexAsync(transport, alias, ct);
 		var sb = new StringBuilder("{\"actions\":[");
@@ -809,13 +965,20 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	}
 
 	private static async Task<List<string>> PruneOldIndicesAsync(
-		DistributedTransport transport, string pattern, int keepCount, ILogger logger, CancellationToken ct)
+		DistributedTransport transport,
+		string pattern,
+		int keepCount,
+		ILogger logger,
+		CancellationToken ct
+	)
 	{
 		var pruned = new List<string>();
-		var resp = await transport.RequestAsync<JsonResponse>(
-			Transport.HttpMethod.GET,
-			$"_cat/indices/{Uri.EscapeDataString(pattern)}?h=index&s=creation.date.string:desc&format=json",
-			cancellationToken: ct);
+		var resp =
+			await transport.RequestAsync<JsonResponse>(
+				Transport.HttpMethod.GET,
+				$"_cat/indices/{Uri.EscapeDataString(pattern)}?h=index&s=creation.date.string:desc&format=json",
+				cancellationToken: ct
+			);
 
 		if (!resp.ApiCallDetails.HasSuccessfulStatusCode)
 			return pruned;
@@ -838,14 +1001,20 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		}
 
 		if (pruned.Count > 0)
-			AnsiConsole.MarkupLine($"[dim]Pruned {pruned.Count} old backing {(pruned.Count == 1 ? "index" : "indices")}:[/] {string.Join(", ", pruned.Select(Markup.Escape))}");
+			AnsiConsole.MarkupLine(
+				$"[dim]Pruned {pruned.Count} old backing {(pruned.Count == 1 ? "index" : "indices")}:[/] {string.Join(", ", pruned.Select(Markup.Escape))}"
+			);
 		return pruned;
 	}
 
 	// ─── Channel options ────────────────────────────────────────────────────────
 
 	private void ConfigureChannelOptions(
-		string label, IngestChannelOptions<WebsiteSearchDocument> options, ElasticsearchEndpoint endpoint, bool semantic = false)
+		string label,
+		IngestChannelOptions<WebsiteSearchDocument> options,
+		ElasticsearchEndpoint endpoint,
+		bool semantic = false
+	)
 	{
 		var log = loggerFactory.CreateLogger<IndicesCommands>();
 		options.BufferOptions = new BufferOptions
@@ -892,7 +1061,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		[Argument] string alias,
 		[AsParameters] IndicesRemoteSyncOptions options,
 		bool stripSemanticFields = false,
-		Cancel ct = default)
+		Cancel ct = default
+	)
 	{
 		var (fromEndpoint, transport, toUri) = ResolveSyncTransport(options);
 		var slicesStr = options.Slices.ToString();
@@ -902,7 +1072,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var head = await transport.HeadAsync(alias, ct);
 		if (head.ApiCallDetails.HttpStatusCode != 200)
 		{
-			AnsiConsole.MarkupLine($"[red]✗ Destination alias/index [white]{Markup.Escape(alias)}[/] does not exist on {Markup.Escape(toUri)}[/]");
+			AnsiConsole.MarkupLine(
+				$"[red]✗ Destination alias/index [white]{Markup.Escape(alias)}[/] does not exist on {Markup.Escape(toUri)}[/]"
+			);
 			AnsiConsole.MarkupLine("[dim]Create it first (e.g. run [white]indices unify[/] on the destination cluster).[/]");
 			Environment.Exit(1);
 			return;
@@ -913,7 +1085,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		// Fail fast before starting the expensive reindex.
 		if (!SearchResourceSynchronizer.TryDeriveEnvironment(alias, out var syncEnv))
 		{
-			AnsiConsole.MarkupLine($"[red]✗ Cannot derive environment from alias '{Markup.Escape(alias)}' — cannot copy search resources.[/]");
+			AnsiConsole.MarkupLine(
+				$"[red]✗ Cannot derive environment from alias '{Markup.Escape(alias)}' — cannot copy search resources.[/]"
+			);
 			AnsiConsole.MarkupLine("[dim]Alias must follow the pattern <source>.(lexical|semantic)-<env>-latest or ws-content-<env>.[/]");
 			Environment.Exit(1);
 			return;
@@ -932,7 +1106,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		}
 
 		var destIndex = await ResolveAliasIndexAsync(transport, alias, ct) ?? alias;
-		var sourceCount = await CountAsync(transport, alias, /*match_all*/ null, ct);
+		var sourceCount = await CountAsync(transport, alias, /*match_all*/  null, ct);
 
 		AnsiConsole.MarkupLine("[aqua bold]Indices sync-remote[/]");
 		AnsiConsole.MarkupLine($"[dim]From (source):[/]   {Markup.Escape(fromEndpoint.Uri.ToString())}");
@@ -940,21 +1114,28 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine($"[dim]  source docs:[/]   [white]{sourceCount:N0}[/]");
 		AnsiConsole.MarkupLine($"[dim]To (dest):[/]       {Markup.Escape(toUri)}");
 		AnsiConsole.MarkupLine($"[dim]  alias → index:[/] [white]{Markup.Escape(alias)}[/] → [white]{Markup.Escape(destIndex)}[/]");
-		AnsiConsole.MarkupLine($"[dim]Slices:[/]          [white]{Markup.Escape(slicesStr)}[/]  [dim]rps:[/] [white]{(options.Rps.HasValue ? options.Rps.Value.ToString("F0") : "unlimited")}[/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]Slices:[/]          [white]{Markup.Escape(slicesStr)}[/]  [dim]rps:[/] [white]{(options.Rps.HasValue ? options.Rps.Value.ToString("F0") : "unlimited")}[/]"
+		);
 		AnsiConsole.MarkupLine($"[dim]Strip sem. fields:[/][white]{stripSemanticFields}[/]");
 		AnsiConsole.WriteLine();
 
 		var remoteSource = BuildRemoteSource(fromEndpoint);
-		if (!await RunServerReindexAsync(transport,
-			new ServerReindexOptions
-			{
-				Remote = remoteSource,
-				Source = alias,
-				Destination = alias,
-				RequestsPerSecond = options.Rps,
-				ExcludeInferenceFields = stripSemanticFields,
-			},
-			$"sync-remote ({Markup.Escape(alias)})", ct))
+		if (
+			!await RunServerReindexAsync(
+				transport,
+				new ServerReindexOptions
+				{
+					Remote = remoteSource,
+					Source = alias,
+					Destination = alias,
+					RequestsPerSecond = options.Rps,
+					ExcludeInferenceFields = stripSemanticFields,
+				},
+				$"sync-remote ({Markup.Escape(alias)})",
+				ct
+			)
+		)
 		{
 			AnsiConsole.MarkupLine("[red]Aborting — remote reindex failed.[/]");
 			Environment.Exit(1);
@@ -1018,7 +1199,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		bool force = false,
 		bool stripSemanticFields = false,
 		[AsParameters] IndicesRemoteSyncOptions options = default!,
-		Cancel ct = default)
+		Cancel ct = default
+	)
 	{
 		if (indices.Length == 0)
 		{
@@ -1035,7 +1217,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine("[aqua bold]Indices copy[/]");
 		AnsiConsole.MarkupLine($"[dim]From (source):[/] {Markup.Escape(fromEndpoint.Uri.ToString())}");
 		AnsiConsole.MarkupLine($"[dim]To (dest):[/]      {Markup.Escape(toUri)}");
-		AnsiConsole.MarkupLine($"[dim]rps:[/]             [white]{(options.Rps.HasValue ? options.Rps.Value.ToString("F0") : "unlimited")}[/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]rps:[/]             [white]{(options.Rps.HasValue ? options.Rps.Value.ToString("F0") : "unlimited")}[/]"
+		);
 		AnsiConsole.MarkupLine($"[dim]Force:[/]          [white]{force}[/]  [dim]Strip sem. fields:[/] [white]{stripSemanticFields}[/]");
 		AnsiConsole.WriteLine();
 
@@ -1047,14 +1231,18 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		{
 			var destIndex = ApplyRename(source, renameFrom, renameTo);
 			var renamed = destIndex != source;
-			AnsiConsole.MarkupLine(renamed
-				? $"[aqua]{Markup.Escape(source)}[/] [dim](renamed →)[/] [aqua]{Markup.Escape(destIndex)}[/]"
-				: $"[aqua]{Markup.Escape(source)}[/]");
+			AnsiConsole.MarkupLine(
+				renamed
+					? $"[aqua]{Markup.Escape(source)}[/] [dim](renamed →)[/] [aqua]{Markup.Escape(destIndex)}[/]"
+					: $"[aqua]{Markup.Escape(source)}[/]"
+			);
 
 			var sourceHead = await fromTransport.HeadAsync(source, ct);
 			if (sourceHead.ApiCallDetails.HttpStatusCode != 200)
 			{
-				AnsiConsole.MarkupLine($"[red]✗ Source index [white]{Markup.Escape(source)}[/] not found on {Markup.Escape(fromEndpoint.Uri.ToString())}[/]");
+				AnsiConsole.MarkupLine(
+					$"[red]✗ Source index [white]{Markup.Escape(source)}[/] not found on {Markup.Escape(fromEndpoint.Uri.ToString())}[/]"
+				);
 				failed++;
 				continue;
 			}
@@ -1074,16 +1262,21 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 			// Slices is intentionally omitted — Elasticsearch rejects slices > 1 for reindex
 			// from a remote source ("reindex from remote sources doesn't support slices > 1").
-			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions
-				{
-					Remote = remoteSource,
-					Source = source,
-					Destination = destIndex,
-					RequestsPerSecond = options.Rps,
-					ExcludeInferenceFields = stripSemanticFields,
-				},
-				$"copy ({Markup.Escape(source)})", ct))
+			if (
+				!await RunServerReindexAsync(
+					transport,
+					new ServerReindexOptions
+					{
+						Remote = remoteSource,
+						Source = source,
+						Destination = destIndex,
+						RequestsPerSecond = options.Rps,
+						ExcludeInferenceFields = stripSemanticFields,
+					},
+					$"copy ({Markup.Escape(source)})",
+					ct
+				)
+			)
 			{
 				AnsiConsole.MarkupLine($"[red]✗ Copy failed for {Markup.Escape(source)}.[/]");
 				failed++;
@@ -1167,7 +1360,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		string? renameTo = null,
 		string? renameToLexical = null,
 		[AsParameters] IndicesRemoteSyncOptions options = default!,
-		Cancel ct = default)
+		Cancel ct = default
+	)
 	{
 		var (fromEndpoint, transport, toUri) = ResolveSyncTransport(options);
 		var slicesStr = options.Slices.ToString();
@@ -1177,8 +1371,10 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 		// ── Validate destination targets ──────────────────────────────────────────
 		// Both aliases must exist and expose the tracking fields used for incremental sync.
-		if (!await IndexHasFieldsAsync(transport, lexicalAlias, ["batch_index_date", "last_updated"], ct)
-			|| !await IndexHasFieldsAsync(transport, semanticAlias, ["last_updated"], ct))
+		if (
+			!await IndexHasFieldsAsync(transport, lexicalAlias, ["batch_index_date", "last_updated"], ct)
+			|| !await IndexHasFieldsAsync(transport, semanticAlias, ["last_updated"], ct)
+		)
 		{
 			Environment.Exit(1);
 			return;
@@ -1191,7 +1387,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var fromTransport = ElasticsearchTransportFactory.Create(fromEndpoint);
 		if (!SearchResourceSynchronizer.TryDeriveEnvironment(semanticAlias, out var syncEnv))
 		{
-			AnsiConsole.MarkupLine($"[red]✗ Cannot derive environment from alias '{Markup.Escape(semanticAlias)}' — cannot copy search resources.[/]");
+			AnsiConsole.MarkupLine(
+				$"[red]✗ Cannot derive environment from alias '{Markup.Escape(semanticAlias)}' — cannot copy search resources.[/]"
+			);
 			AnsiConsole.MarkupLine("[dim]Alias must follow the pattern <source>.(lexical|semantic)-<env>-latest.[/]");
 			Environment.Exit(1);
 			return;
@@ -1214,11 +1412,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var resolvedLexicalIndex = await ResolveAliasIndexAsync(transport, lexicalAlias, ct);
 		var lexicalIndex = ApplyRename(
 			resolvedLexicalIndex ?? DeriveBackingIndexName(lexicalAlias, batchTs),
-			renameFrom, renameToLexical ?? renameTo);
+			renameFrom,
+			renameToLexical ?? renameTo
+		);
 		var resolvedSemanticIndex = await ResolveAliasIndexAsync(transport, semanticAlias, ct);
-		var semanticIndex = ApplyRename(
-			resolvedSemanticIndex ?? DeriveBackingIndexName(semanticAlias, batchTs),
-			renameFrom, renameTo);
+		var semanticIndex = ApplyRename(resolvedSemanticIndex ?? DeriveBackingIndexName(semanticAlias, batchTs), renameFrom, renameTo);
 		// True when the destination index doesn't exist yet and must be created from source mapping.
 		// Lexical is plain-text — ES dynamic mapping is sufficient, no bootstrap needed.
 		var semanticIsNew = resolvedSemanticIndex is null || semanticIndex != resolvedSemanticIndex;
@@ -1240,7 +1438,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			? $"{Markup.Escape(resolvedSemanticIndex)} [dim](renamed →)[/] {Markup.Escape(semanticIndex)}"
 			: Markup.Escape(semanticIndex);
 		AnsiConsole.MarkupLine($"[dim]  semantic → index:[/] [white]{Markup.Escape(semanticAlias)}[/] → [white]{semanticIndexDisplay}[/]");
-		AnsiConsole.MarkupLine($"[dim]Slices:[/]              [white]{Markup.Escape(slicesStr)}[/]  [dim]rps:[/] [white]{(options.Rps.HasValue ? options.Rps.Value.ToString("F0") : "unlimited")}[/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]Slices:[/]              [white]{Markup.Escape(slicesStr)}[/]  [dim]rps:[/] [white]{(options.Rps.HasValue ? options.Rps.Value.ToString("F0") : "unlimited")}[/]"
+		);
 		AnsiConsole.MarkupLine($"[dim]batch_index_date (this run):[/] [white]{batchTs:o}[/]");
 		AnsiConsole.MarkupLine($"[dim]cutoff (max last_updated in semantic):[/] [white]{cutoff:o}[/]");
 		AnsiConsole.WriteLine();
@@ -1249,19 +1449,28 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		// Fast bulk copy — lexical has no semantic_text fields → no inference.
 		// Stamps batch_index_date = batchTs on every doc so the mark-and-sweep can find deletes.
 		// Docs removed from prod are NOT restamped → their batch_index_date < batchTs after this step.
-		var stampScript = "{\"lang\":\"painless\",\"source\":\"ctx._source.batch_index_date = params.ts;\",\"params\":{\"ts\":\"" + batchTsStr + "\"}}";
-		AnsiConsole.MarkupLine($"[dim]Phase 1:[/] remote-fill [white]{Markup.Escape(lexicalAlias)}[/] → [white]{Markup.Escape(lexicalIndex)}[/]");
+		var stampScript = "{\"lang\":\"painless\",\"source\":\"ctx._source.batch_index_date = params.ts;\",\"params\":{\"ts\":\""
+			+ batchTsStr
+			+ "\"}}";
+		AnsiConsole.MarkupLine(
+			$"[dim]Phase 1:[/] remote-fill [white]{Markup.Escape(lexicalAlias)}[/] → [white]{Markup.Escape(lexicalIndex)}[/]"
+		);
 		var remoteSource = BuildRemoteSource(fromEndpoint);
-		if (!await RunServerReindexAsync(transport,
-			new ServerReindexOptions
-			{
-				Remote = remoteSource,
-				Source = lexicalAlias,
-				Destination = lexicalIndex,
-				Script = stampScript,
-				RequestsPerSecond = options.Rps,
-			},
-			"remote-lexical-fill", ct))
+		if (
+			!await RunServerReindexAsync(
+				transport,
+				new ServerReindexOptions
+				{
+					Remote = remoteSource,
+					Source = lexicalAlias,
+					Destination = lexicalIndex,
+					Script = stampScript,
+					RequestsPerSecond = options.Rps,
+				},
+				"remote-lexical-fill",
+				ct
+			)
+		)
 		{
 			AnsiConsole.MarkupLine("[red]Aborting — remote lexical fill failed.[/]");
 			Environment.Exit(1);
@@ -1281,8 +1490,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var toDelete = await CountAsync(transport, lexicalIndex, toDeleteQuery, ct);
 
 		AnsiConsole.MarkupLine("[dim]Phase 2 preview:[/]");
-		AnsiConsole.MarkupLine($"  [green]→[/] [white]{toSync:N0}[/] [dim]docs to (re)index into [white]{Markup.Escape(semanticAlias)}[/]  (last_updated > {cutoff:o})[/]");
-		AnsiConsole.MarkupLine($"  [red]←[/] [white]{toDelete:N0}[/] [dim]docs to delete from [white]{Markup.Escape(semanticAlias)}[/] + [white]{Markup.Escape(lexicalAlias)}[/]  (batch_index_date < {batchTs:o})[/]");
+		AnsiConsole.MarkupLine(
+			$"  [green]→[/] [white]{toSync:N0}[/] [dim]docs to (re)index into [white]{Markup.Escape(semanticAlias)}[/]  (last_updated > {cutoff:o})[/]"
+		);
+		AnsiConsole.MarkupLine(
+			$"  [red]←[/] [white]{toDelete:N0}[/] [dim]docs to delete from [white]{Markup.Escape(semanticAlias)}[/] + [white]{Markup.Escape(lexicalAlias)}[/]  (batch_index_date < {batchTs:o})[/]"
+		);
 		AnsiConsole.WriteLine();
 
 		// ── Phase 2a: Incremental inference reindex ───────────────────────────────
@@ -1293,14 +1506,25 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			await BootstrapSemanticIndexAsync(fromTransport, transport, semanticAlias, semanticIndex, logger, ct);
 		}
 		const string semanticSlices = "1";
-		AnsiConsole.MarkupLine($"[dim]Phase 2a:[/] inference-reindex [white]{Markup.Escape(lexicalAlias)}[/] → [white]{Markup.Escape(semanticIndex)}[/]");
-		var inferenceBody =
-			"{\"source\":{\"index\":\"" + lexicalIndex +
-			"\",\"query\":" + toSyncQuery + "}," +
-			"\"dest\":{\"index\":\"" + semanticIndex + "\"}}";
-		if (!await RunServerReindexAsync(transport,
-			new ServerReindexOptions { Body = inferenceBody, Slices = semanticSlices, RequestsPerSecond = options.Rps },
-			"inference-reindex", ct))
+		AnsiConsole.MarkupLine(
+			$"[dim]Phase 2a:[/] inference-reindex [white]{Markup.Escape(lexicalAlias)}[/] → [white]{Markup.Escape(semanticIndex)}[/]"
+		);
+		var inferenceBody = "{\"source\":{\"index\":\""
+			+ lexicalIndex
+			+ "\",\"query\":"
+			+ toSyncQuery
+			+ "},"
+			+ "\"dest\":{\"index\":\""
+			+ semanticIndex
+			+ "\"}}";
+		if (
+			!await RunServerReindexAsync(
+				transport,
+				new ServerReindexOptions { Body = inferenceBody, Slices = semanticSlices, RequestsPerSecond = options.Rps },
+				"inference-reindex",
+				ct
+			)
+		)
 		{
 			AnsiConsole.MarkupLine("[red]Aborting — inference reindex failed.[/]");
 			Environment.Exit(1);
@@ -1309,11 +1533,18 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 		// ── Phase 2b: Delete step — remove docs gone from prod ────────────────────
 		// Reindex stale lexical docs (batch_index_date < batchTs) to semantic with a delete script.
-		AnsiConsole.MarkupLine($"[dim]Phase 2b:[/] delete-reindex [white]{Markup.Escape(lexicalAlias)}[/] → [white]{Markup.Escape(semanticIndex)}[/]");
+		AnsiConsole.MarkupLine(
+			$"[dim]Phase 2b:[/] delete-reindex [white]{Markup.Escape(lexicalAlias)}[/] → [white]{Markup.Escape(semanticIndex)}[/]"
+		);
 		var deleteBody = BuildDeleteScriptBody(lexicalIndex, semanticIndex, batchTsStr);
-		if (!await RunServerReindexAsync(transport,
-			new ServerReindexOptions { Body = deleteBody, Slices = slicesStr },
-			"reindex-deletes", ct))
+		if (
+			!await RunServerReindexAsync(
+				transport,
+				new ServerReindexOptions { Body = deleteBody, Slices = slicesStr },
+				"reindex-deletes",
+				ct
+			)
+		)
 		{
 			AnsiConsole.MarkupLine("[red]Aborting — delete step failed.[/]");
 			Environment.Exit(1);
@@ -1390,8 +1621,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 				return;
 			}
 
-			AnsiConsole.MarkupLine(
-				$"[red]Error fetching index aliases:[/] HTTP {aliasResponse.ApiCallDetails.HttpStatusCode}");
+			AnsiConsole.MarkupLine($"[red]Error fetching index aliases:[/] HTTP {aliasResponse.ApiCallDetails.HttpStatusCode}");
 			Environment.Exit(1);
 			return;
 		}
@@ -1437,14 +1667,16 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			{
 				failed++;
 				AnsiConsole.MarkupLine(
-					$"[red]Failed to delete[/] [white]{Markup.Escape(index.Name)}[/] — HTTP {deleteResponse.ApiCallDetails.HttpStatusCode}");
+					$"[red]Failed to delete[/] [white]{Markup.Escape(index.Name)}[/] — HTTP {deleteResponse.ApiCallDetails.HttpStatusCode}"
+				);
 			}
 		}
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine(
 			$"[green]✓[/] Done — kept [white]{plan.ToKeep.Count}[/], deleted [white]{deleted}[/]" +
-			(failed > 0 ? $", [red]failed {failed}[/]" : ""));
+				(failed > 0 ? $", [red]failed {failed}[/]" : "")
+		);
 
 		if (failed > 0)
 			Environment.Exit(1);
@@ -1470,7 +1702,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	private static void RenderPlanTable(CleanupPlan plan)
 	{
 		var keepSet = plan.ToKeep.ToHashSet();
-		var all = plan.ToKeep.Concat(plan.ToDelete)
+		var all = plan.ToKeep
+			.Concat(plan.ToDelete)
 			.OrderBy(b => b.Group.Source)
 			.ThenBy(b => b.Group.Variant)
 			.ThenByDescending(b => b.Date)
@@ -1497,28 +1730,24 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 				_ = table.AddEmptyRow();
 			lastGroup = currentGroup;
 
-			var action = idx.IsActive
-				? "[green]KEEP-ACTIVE[/]"
-				: keepSet.Contains(idx)
-					? "[grey]KEEP[/]"
-					: "[red]DELETE[/]";
-			_ = table.AddRow(
-				Markup.Escape(idx.Group.Source),
-				Markup.Escape(idx.Group.Variant),
-				Markup.Escape(idx.Group.Environment),
-				idx.Date.ToString("yyyy-MM-dd HH:mm:ss"),
-				action);
+			var action = idx.IsActive ? "[green]KEEP-ACTIVE[/]" : keepSet.Contains(idx) ? "[grey]KEEP[/]" : "[red]DELETE[/]";
+			_ =
+				table.AddRow(
+					Markup.Escape(idx.Group.Source),
+					Markup.Escape(idx.Group.Variant),
+					Markup.Escape(idx.Group.Environment),
+					idx.Date.ToString("yyyy-MM-dd HH:mm:ss"),
+					action
+				);
 		}
 
 		AnsiConsole.Write(table);
 		AnsiConsole.WriteLine();
 	}
 
-
 	// ─── Remote sync helpers ────────────────────────────────────────────────────
 
-	private (ElasticsearchEndpoint From, DistributedTransport ToTransport, string ToUri) ResolveSyncTransport(
-		IndicesRemoteSyncOptions o)
+	private (ElasticsearchEndpoint From, DistributedTransport ToTransport, string ToUri) ResolveSyncTransport(IndicesRemoteSyncOptions o)
 	{
 		var from = ResolveEndpoint(o.FromUrl, o.FromApiKey);
 
@@ -1539,7 +1768,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	}
 
 	private async Task ApplyAliasesAsync(
-		DistributedTransport transport, string? applyAliases, string destIndex, ILogger logger, CancellationToken ct)
+		DistributedTransport transport,
+		string? applyAliases,
+		string destIndex,
+		ILogger logger,
+		CancellationToken ct
+	)
 	{
 		if (string.IsNullOrWhiteSpace(applyAliases))
 			return;
@@ -1572,16 +1806,22 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// field is absent from its mapping.
 	/// </summary>
 	private static async Task<bool> IndexHasFieldsAsync(
-		DistributedTransport transport, string target, string[] requiredFields, CancellationToken ct)
+		DistributedTransport transport,
+		string target,
+		string[] requiredFields,
+		CancellationToken ct
+	)
 	{
 		var csv = string.Join(",", requiredFields);
 		// Use StringResponse + plain string check to avoid Get<T> on object-typed nodes.
 		// _field_caps returns {"fields":{"<name>":{...}}} — checking for the key name as a JSON key
 		// is sufficient to confirm the field is mapped.
-		var resp = await transport.RequestAsync<StringResponse>(
-			Transport.HttpMethod.GET,
-			$"{Uri.EscapeDataString(target)}/_field_caps?fields={csv}&filter_path=fields",
-			cancellationToken: ct);
+		var resp =
+			await transport.RequestAsync<StringResponse>(
+				Transport.HttpMethod.GET,
+				$"{Uri.EscapeDataString(target)}/_field_caps?fields={csv}&filter_path=fields",
+				cancellationToken: ct
+			);
 
 		if (!resp.ApiCallDetails.HasSuccessfulStatusCode)
 		{
@@ -1595,7 +1835,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			// null status = connection-level failure (DNS, TLS, timeout) — hard fail.
 			AnsiConsole.MarkupLine(
 				$"[red]✗ Destination target [white]{Markup.Escape(target)}[/] not found or inaccessible " +
-				$"(HTTP {status?.ToString() ?? "connection error"}).[/]");
+					$"(HTTP {status?.ToString() ?? "connection error"}).[/]"
+			);
 			return false;
 		}
 
@@ -1607,10 +1848,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			if (!body.Contains($"\"{field}\":", StringComparison.Ordinal))
 			{
 				AnsiConsole.MarkupLine(
-					$"[red]✗ Field [white]{Markup.Escape(field)}[/] not found in mapping of [white]{Markup.Escape(target)}[/].[/]");
+					$"[red]✗ Field [white]{Markup.Escape(field)}[/] not found in mapping of [white]{Markup.Escape(target)}[/].[/]"
+				);
 				AnsiConsole.MarkupLine(
 					$"[dim]  [white]unify-incremental-sync[/] requires [white]{Markup.Escape(field)}[/] " +
-					$"for incremental tracking. Run [white]indices unify[/] on the destination first.[/]");
+						$"for incremental tracking. Run [white]indices unify[/] on the destination first.[/]"
+				);
 				ok = false;
 			}
 		}
@@ -1621,15 +1864,16 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// Returns the document count for <paramref name="target"/> matching <paramref name="queryBody"/>
 	/// (a JSON query object, or <c>null</c> for match-all).
 	/// </summary>
-	private static async Task<long> CountAsync(
-		DistributedTransport transport, string target, string? queryBody, CancellationToken ct)
+	private static async Task<long> CountAsync(DistributedTransport transport, string target, string? queryBody, CancellationToken ct)
 	{
 		var body = queryBody is null ? null : PostData.String("{\"query\":" + queryBody + "}");
-		var resp = await transport.RequestAsync<JsonResponse>(
-			Transport.HttpMethod.POST,
-			$"{Uri.EscapeDataString(target)}/_count",
-			body,
-			cancellationToken: ct);
+		var resp =
+			await transport.RequestAsync<JsonResponse>(
+				Transport.HttpMethod.POST,
+				$"{Uri.EscapeDataString(target)}/_count",
+				body,
+				cancellationToken: ct
+			);
 		return resp.Get<long?>("count") ?? 0;
 	}
 

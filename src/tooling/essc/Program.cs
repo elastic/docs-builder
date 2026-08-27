@@ -17,9 +17,7 @@ using Nullean.Argh.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-var isInteractive =
-	string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) &&
-	!Console.IsOutputRedirected;
+var isInteractive = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) && !Console.IsOutputRedirected;
 
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
@@ -40,10 +38,9 @@ builder.Services.AddSingleton<ContentStackConfiguration>(sp => sp.GetRequiredSer
 
 var csHttpClient = builder.Services
 	.AddHttpClient<ContentStackClient>()
-	.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-	{
-		AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-	});
+	.ConfigurePrimaryHttpMessageHandler(
+		() => new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
+	);
 
 // Rate limiter is added after the resilience pipeline so it applies on each retry attempt.
 csHttpClient.AddStandardResilienceHandler(o =>
@@ -64,21 +61,22 @@ builder.Services.AddSingleton<CrawlerRateLimiter>();
 
 static void ConfigureLabsCrawlHttp(IHttpClientBuilder b)
 {
-	_ = b.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-	{
-		AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-	});
-	_ = b.AddStandardResilienceHandler(o =>
-	{
-		o.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
-		o.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(30);
-		o.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(120);
-		o.CircuitBreaker.MinimumThroughput = 20;
-		o.Retry.MaxRetryAttempts = 8;
-		o.Retry.UseJitter = true;
-		o.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
-		o.Retry.Delay = TimeSpan.FromSeconds(2);
-	});
+	_ =
+		b.ConfigurePrimaryHttpMessageHandler(
+			() => new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
+		);
+	_ =
+		b.AddStandardResilienceHandler(o =>
+		{
+			o.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+			o.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(30);
+			o.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(120);
+			o.CircuitBreaker.MinimumThroughput = 20;
+			o.Retry.MaxRetryAttempts = 8;
+			o.Retry.UseJitter = true;
+			o.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
+			o.Retry.Delay = TimeSpan.FromSeconds(2);
+		});
 }
 
 ConfigureLabsCrawlHttp(builder.Services.AddHttpClient<ISitemapParser, SitemapParser>());
@@ -95,12 +93,15 @@ builder.Services.AddArgh(
 	args,
 	argh =>
 	{
-		_ = argh.UseCliDescription(
-			"Elastic Site Search CLI — tooling to ingest and enrich data published on elastic.co (not the Elastic documentation site).");
+		_ =
+			argh.UseCliDescription(
+				"Elastic Site Search CLI — tooling to ingest and enrich data published on elastic.co (not the Elastic documentation site)."
+			);
 		_ = argh.MapNamespace<ContentStackCommands>("contentstack");
 		_ = argh.MapNamespace<LabsCommands>("labs");
 		_ = argh.MapNamespace<IndicesCommands>("indices");
-	});
+	}
+);
 
 using var host = builder.Build();
 await host.RunAsync().ConfigureAwait(false);

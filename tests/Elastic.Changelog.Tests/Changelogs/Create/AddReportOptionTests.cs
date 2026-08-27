@@ -33,18 +33,12 @@ public class AddReportOptionTests(ITestOutputHelper output) : CreateChangelogTes
 
 		var pr1 = new GitHubPrInfo { Title = "First from report", Labels = ["type:feature"] };
 		var pr2 = new GitHubPrInfo { Title = "Second from report", Labels = ["type:bug"] };
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("7001"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr1);
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>.That.Contains("7002"),
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(pr2);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("7001"), null, null, A<CancellationToken>._)).Returns(
+			pr1
+		);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>.That.Contains("7002"), null, null, A<CancellationToken>._)).Returns(
+			pr2
+		);
 
 		// language=yaml
 		var configContent =

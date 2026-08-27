@@ -35,8 +35,11 @@ public class DiagnosticsCollectorDisposeTests
 		var collector = new DiagnosticsCollector([output]);
 		collector.EmitWarning("file.yaml", "test warning that nobody is reading");
 
-		await ShouldComplete(collector.DisposeAsync().AsTask(), TimeSpan.FromSeconds(5),
-			"DisposeAsync must not deadlock when StartAsync was never called");
+		await ShouldComplete(
+			collector.DisposeAsync().AsTask(),
+			TimeSpan.FromSeconds(5),
+			"DisposeAsync must not deadlock when StartAsync was never called"
+		);
 
 		collector.Warnings.Should().Be(1, "severity counters update regardless of reader state");
 		collector.IsStarted.Should().BeFalse();
@@ -51,8 +54,11 @@ public class DiagnosticsCollectorDisposeTests
 		var collector = new DiagnosticsCollector([output]);
 		collector.EmitError("file.yaml", "test error that nobody is reading");
 
-		await ShouldComplete(collector.StopAsync(CancellationToken.None), TimeSpan.FromSeconds(5),
-			"StopAsync must not deadlock when StartAsync was never called");
+		await ShouldComplete(
+			collector.StopAsync(CancellationToken.None),
+			TimeSpan.FromSeconds(5),
+			"StopAsync must not deadlock when StartAsync was never called"
+		);
 
 		collector.Errors.Should().Be(1);
 		collector.IsStarted.Should().BeFalse();
@@ -64,8 +70,11 @@ public class DiagnosticsCollectorDisposeTests
 	{
 		var collector = new DiagnosticsCollector([]);
 
-		await ShouldComplete(collector.DisposeAsync().AsTask(), TimeSpan.FromSeconds(5),
-			"Instantiate-and-dispose with no emissions must be a no-op");
+		await ShouldComplete(
+			collector.DisposeAsync().AsTask(),
+			TimeSpan.FromSeconds(5),
+			"Instantiate-and-dispose with no emissions must be a no-op"
+		);
 
 		collector.IsStarted.Should().BeFalse();
 		collector.Warnings.Should().Be(0);
@@ -98,8 +107,11 @@ public class DiagnosticsCollectorDisposeTests
 		iface.EmitWarning(string.Empty, "should be drained");
 
 		// WaitForDrain must not throw even though IsStarted may still be false here.
-		await ShouldComplete(iface.WaitForDrain(), TimeSpan.FromSeconds(5),
-			"WaitForDrain must not throw when StartAsync was called but reader hasn't started yet");
+		await ShouldComplete(
+			iface.WaitForDrain(),
+			TimeSpan.FromSeconds(5),
+			"WaitForDrain must not throw when StartAsync was called but reader hasn't started yet"
+		);
 
 		collector.Warnings.Should().Be(1);
 		output.Items.Should().HaveCount(1, "the item must be drained once the reader starts");
@@ -128,7 +140,9 @@ public class DiagnosticsCollectorDisposeTests
 
 		drain.IsCompleted.Should().BeTrue("the 2s virtual deadline must trip long before 50s of virtual time");
 		Func<Task> act = () => drain;
-		_ = (await act.Should().ThrowAsync<InvalidOperationException>())
-			.WithMessage("*timed out waiting for the background reader to start*");
+		_ =
+			(await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
+				"*timed out waiting for the background reader to start*"
+			);
 	}
 }

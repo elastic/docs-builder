@@ -21,7 +21,8 @@ public class IndicesCleanupPlannerTests
 		entries.ToDictionary(
 			e => e.Name,
 			e => (IReadOnlySet<string>)e.Aliases.ToHashSet(StringComparer.OrdinalIgnoreCase),
-			StringComparer.OrdinalIgnoreCase);
+			StringComparer.OrdinalIgnoreCase
+		);
 
 	[Fact]
 	public void Empty_input_returns_empty_plan()
@@ -36,8 +37,7 @@ public class IndicesCleanupPlannerTests
 	[Fact]
 	public void Single_active_index_is_always_kept()
 	{
-		var indexAliases = Idx(
-			("test-source.lexical-prod-2026.01.01.000000", ["test-source.lexical-prod-latest"]));
+		var indexAliases = Idx(("test-source.lexical-prod-2026.01.01.000000", ["test-source.lexical-prod-latest"]));
 
 		var plan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 2);
 
@@ -52,7 +52,8 @@ public class IndicesCleanupPlannerTests
 			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"]),
 			("test-source.lexical-prod-2026.04.14.000000", []),
 			("test-source.lexical-prod-2026.04.13.000000", []),
-			("test-source.lexical-prod-2026.04.12.000000", []));
+			("test-source.lexical-prod-2026.04.12.000000", [])
+		);
 
 		var plan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 2);
 
@@ -73,7 +74,8 @@ public class IndicesCleanupPlannerTests
 			("test-source.lexical-prod-2026.04.15.000000", []),
 			("test-source.lexical-prod-2026.04.14.000000", []),
 			("test-source.lexical-prod-2026.04.13.000000", ["test-source.lexical-prod-latest"]),
-			("test-source.lexical-prod-2026.04.12.000000", []));
+			("test-source.lexical-prod-2026.04.12.000000", [])
+		);
 
 		var plan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 2);
 
@@ -93,7 +95,8 @@ public class IndicesCleanupPlannerTests
 		var indexAliases = Idx(
 			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"]),
 			("test-source.lexical-prod-2026.04.14.000000", []),
-			("test-source.lexical-prod-2026.04.13.000000", []));
+			("test-source.lexical-prod-2026.04.13.000000", [])
+		);
 
 		var plan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 1);
 
@@ -105,9 +108,12 @@ public class IndicesCleanupPlannerTests
 	public void Indices_with_non_date_suffix_are_skipped_with_warning()
 	{
 		var indexAliases = Idx(
-			("test-source.lexical-prod-latest", []),           // alias itself, not a backing index
-			("test-source.lexical-prod-not-a-date", []),       // malformed
-			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"]));
+			("test-source.lexical-prod-latest", []), // alias itself, not a backing index
+
+			("test-source.lexical-prod-not-a-date", []), // malformed
+
+			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"])
+		);
 
 		var plan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 2);
 
@@ -119,8 +125,20 @@ public class IndicesCleanupPlannerTests
 	[Fact]
 	public void Multiple_groups_are_planned_independently()
 	{
-		var lexicalEntry = new AliasEntry("test-source", "lexical", "prod", "test-source.lexical-prod-latest", "test-source.lexical-prod-*");
-		var semanticEntry = new AliasEntry("test-source", "semantic", "prod", "test-source.semantic-prod-latest", "test-source.semantic-prod-*");
+		var lexicalEntry = new AliasEntry(
+			"test-source",
+			"lexical",
+			"prod",
+			"test-source.lexical-prod-latest",
+			"test-source.lexical-prod-*"
+		);
+		var semanticEntry = new AliasEntry(
+			"test-source",
+			"semantic",
+			"prod",
+			"test-source.semantic-prod-latest",
+			"test-source.semantic-prod-*"
+		);
 
 		var indexAliases = Idx(
 			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"]),
@@ -128,7 +146,8 @@ public class IndicesCleanupPlannerTests
 			("test-source.lexical-prod-2026.04.13.000000", []),
 			("test-source.semantic-prod-2026.04.15.000000", ["test-source.semantic-prod-latest"]),
 			("test-source.semantic-prod-2026.04.14.000000", []),
-			("test-source.semantic-prod-2026.04.13.000000", []));
+			("test-source.semantic-prod-2026.04.13.000000", [])
+		);
 
 		var plan = IndicesCleanupPlanner.Plan(indexAliases, [lexicalEntry, semanticEntry], keep: 2);
 
@@ -145,7 +164,8 @@ public class IndicesCleanupPlannerTests
 		var indexAliases = Idx(
 			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"]),
 			("some-other-index-2026.04.15.000000", []),
-			("completely-unrelated", ["some-alias"]));
+			("completely-unrelated", ["some-alias"])
+		);
 
 		var plan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 2);
 
@@ -163,14 +183,17 @@ public class IndicesCleanupPlannerTests
 			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"]),
 			("test-source.lexical-prod-2026.04.14.000000", []),
 			("test-source.lexical-prod-2026.04.13.000000", []),
-			("test-source.lexical-prod-2026.04.12.000000", []));
+			("test-source.lexical-prod-2026.04.12.000000", [])
+		);
 
 		var firstPlan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 2);
 		firstPlan.ToDelete.Should().HaveCount(2); // sanity check against the scenario above
 
-		var afterApply = indexAliases
-			.Where(kv => firstPlan.ToDelete.All(d => d.Name != kv.Key))
-			.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+		var afterApply = indexAliases.Where(kv => firstPlan.ToDelete.All(d => d.Name != kv.Key)).ToDictionary(
+			kv => kv.Key,
+			kv => kv.Value,
+			StringComparer.OrdinalIgnoreCase
+		);
 
 		var secondPlan = IndicesCleanupPlanner.Plan(afterApply, [TestEntry], keep: 2);
 
@@ -199,17 +222,22 @@ public class IndicesCleanupPlannerTests
 	public void PageAlias_on_older_index_keeps_it_regardless_of_keep_budget()
 	{
 		// ws-content-prod points to an older index that -latest does not; it must not be deleted
-		var semanticEntry = new AliasEntry("ws-catalog", "semantic", "prod",
-			"ws-catalog.semantic-prod-latest", "ws-catalog.semantic-prod-*");
+		var semanticEntry = new AliasEntry(
+			"ws-catalog",
+			"semantic",
+			"prod",
+			"ws-catalog.semantic-prod-latest",
+			"ws-catalog.semantic-prod-*"
+		);
 		var indexAliases = Idx(
 			("ws-catalog.semantic-prod-2026.04.15.000000", ["ws-catalog.semantic-prod-latest"]),
 			("ws-catalog.semantic-prod-2026.04.14.000000", ["ws-content-prod"]),
-			("ws-catalog.semantic-prod-2026.04.13.000000", []));
+			("ws-catalog.semantic-prod-2026.04.13.000000", [])
+		);
 
 		// keep=1 would normally only retain the active index and delete the other two;
 		// but the page-alias index must also survive
-		var plan = IndicesCleanupPlanner.Plan(indexAliases, [semanticEntry], keep: 1,
-			pageAlias: "ws-content-prod");
+		var plan = IndicesCleanupPlanner.Plan(indexAliases, [semanticEntry], keep: 1, pageAlias: "ws-content-prod");
 
 		plan.ToKeep.Should().HaveCount(2);
 		plan.ToKeep.Should().Contain(i => i.Name == "ws-catalog.semantic-prod-2026.04.15.000000" && i.IsActive);
@@ -220,16 +248,21 @@ public class IndicesCleanupPlannerTests
 	[Fact]
 	public void PageAlias_pointing_to_different_index_than_semantic_latest_emits_warning()
 	{
-		var semanticEntry = new AliasEntry("ws-catalog", "semantic", "prod",
-			"ws-catalog.semantic-prod-latest", "ws-catalog.semantic-prod-*");
+		var semanticEntry = new AliasEntry(
+			"ws-catalog",
+			"semantic",
+			"prod",
+			"ws-catalog.semantic-prod-latest",
+			"ws-catalog.semantic-prod-*"
+		);
 		var indexAliases = Idx(
 			// -latest points here
 			("ws-catalog.semantic-prod-2026.04.15.000000", ["ws-catalog.semantic-prod-latest"]),
 			// pages alias points to an older index — mismatch!
-			("ws-catalog.semantic-prod-2026.04.14.000000", ["ws-content-prod"]));
+			("ws-catalog.semantic-prod-2026.04.14.000000", ["ws-content-prod"])
+		);
 
-		var plan = IndicesCleanupPlanner.Plan(indexAliases, [semanticEntry], keep: 2,
-			pageAlias: "ws-content-prod");
+		var plan = IndicesCleanupPlanner.Plan(indexAliases, [semanticEntry], keep: 2, pageAlias: "ws-content-prod");
 
 		// Both indices must be kept (one via -latest, one via page alias)
 		plan.ToDelete.Should().BeEmpty();

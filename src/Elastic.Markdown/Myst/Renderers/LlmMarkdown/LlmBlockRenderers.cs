@@ -32,10 +32,15 @@ public static class LlmRenderingHelpers
 {
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
-		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, block, static (tmpRenderer, obj) =>
-		{
-			_ = tmpRenderer.Render(obj);
-		});
+		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
+			renderer.BuildContext,
+			renderer.LinkUrlRewriter,
+			block,
+			static (tmpRenderer, obj) =>
+			{
+				_ = tmpRenderer.Render(obj);
+			}
+		);
 
 		if (string.IsNullOrEmpty(content))
 			return;
@@ -59,8 +64,10 @@ public static class LlmRenderingHelpers
 		// Convert localhost URLs to canonical URLs for LLM consumption
 		if (!string.IsNullOrEmpty(url) && url.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase))
 		{
-			if (Uri.TryCreate(url, UriKind.Absolute, out var localhostUri) &&
-				localhostUri.AbsolutePath.StartsWith("/docs/", StringComparison.Ordinal))
+			if (
+				Uri.TryCreate(url, UriKind.Absolute, out var localhostUri)
+				&& localhostUri.AbsolutePath.StartsWith("/docs/", StringComparison.Ordinal)
+			)
 			{
 				// Replace localhost with canonical base URL
 				var canonicalUrl = new Uri(renderer.BuildContext.CanonicalBaseUrl, localhostUri.AbsolutePath);
@@ -80,7 +87,8 @@ public static class LlmRenderingHelpers
 			string.IsNullOrEmpty(url)
 			|| baseUri == null
 			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
-			|| !Uri.IsWellFormedUriString(url, UriKind.Relative))
+			|| !Uri.IsWellFormedUriString(url, UriKind.Relative)
+		)
 			return url;
 		try
 		{
@@ -243,7 +251,8 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		var appliesText = LlmApplicabilityHelper.RenderForLlm(
 			directive.AppliesTo,
 			renderer.BuildContext.VersionsConfiguration,
-			useInlineTag: false);
+			useInlineTag: false
+		);
 
 		if (string.IsNullOrEmpty(appliesText))
 			return;
@@ -322,9 +331,7 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 			renderer.EnsureBlockSpacing();
 
 		var isOrdered = listBlock.IsOrdered;
-		var itemIndex = listBlock.IsOrdered && int.TryParse(listBlock.DefaultOrderedStart, out var startIndex)
-			? startIndex
-			: 1;
+		var itemIndex = listBlock.IsOrdered && int.TryParse(listBlock.DefaultOrderedStart, out var startIndex) ? startIndex : 1;
 
 		var items = listBlock.Cast<ListItemBlock>().ToArray();
 		foreach (var item in items)
@@ -347,8 +354,7 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 		}
 	}
 
-	private static string GetContinuationIndent(string baseIndent, bool isOrdered) =>
-		baseIndent + new string(' ', isOrdered ? 3 : 2);
+	private static string GetContinuationIndent(string baseIndent, bool isOrdered) => baseIndent + new string(' ', isOrdered ? 3 : 2);
 
 	private static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, Block block, string baseIndent, bool isOrdered)
 	{
@@ -360,10 +366,15 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 		}
 
 		// Render other blocks in separate context and re-indent each line
-		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, block, static (tmpRenderer, obj) =>
-		{
-			_ = tmpRenderer.Render(obj);
-		});
+		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
+			renderer.BuildContext,
+			renderer.LinkUrlRewriter,
+			block,
+			static (tmpRenderer, obj) =>
+			{
+				_ = tmpRenderer.Render(obj);
+			}
+		);
 
 		var continuationIndent = GetContinuationIndent(baseIndent, isOrdered);
 		var lines = blockOutput.Split('\n');
@@ -451,9 +462,7 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 
 		// Convert Table to list of string arrays for shared rendering
 		var rows = table.Cast<TableRow>()
-			.Select(row => row.Cast<TableCell>()
-				.Select(cell => RenderTableCellContent(renderer, cell))
-				.ToArray() as IReadOnlyList<string>)
+			.Select(row => row.Cast<TableCell>().Select(cell => RenderTableCellContent(renderer, cell)).ToArray() as IReadOnlyList<string>)
 			.ToList();
 
 		LlmRenderingHelpers.RenderMarkdownTable(renderer, rows);
@@ -472,7 +481,8 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 				// Render the cell's child blocks (e.g., ParagraphBlock) which properly
 				// handles the inline hierarchy without duplicating nested inline content
 				tmpRenderer.WriteChildren(c);
-			}).Trim();
+			}
+		).Trim();
 }
 
 public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, DirectiveBlock>
@@ -531,8 +541,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		switch (obj)
 		{
-			case AdmonitionBlock when obj.Directive
-				is "note" or "tip" or "warning" or "important":
+			case AdmonitionBlock when obj.Directive is "note" or "tip" or "warning" or "important":
 				// skip for these directives
 				// otherwise it will render as <note title="Note">
 				break;
@@ -547,7 +556,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				var appliesText = LlmApplicabilityHelper.RenderForLlm(
 					appliesBlock.AppliesTo,
 					renderer.BuildContext.VersionsConfiguration,
-					useInlineTag: false);
+					useInlineTag: false
+				);
 				if (!string.IsNullOrEmpty(appliesText))
 					renderer.Writer.Write($" applies-to=\"{appliesText}\"");
 				break;
@@ -622,9 +632,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			return;
 
 		renderer.EnsureLine();
-		var title = string.IsNullOrEmpty(item.Link)
-			? item.Title
-			: $"[{item.Title}]({HubLinkForLlm(renderer, item.Link)})";
+		var title = string.IsNullOrEmpty(item.Link) ? item.Title : $"[{item.Title}]({HubLinkForLlm(renderer, item.Link)})";
 
 		var meta = new List<string>(2);
 		if (!string.IsNullOrEmpty(item.Date))
@@ -664,9 +672,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	private static void WriteGetStartedStep(LlmMarkdownRenderer renderer, GetStartedStep step, int number)
 	{
 		renderer.EnsureLine();
-		var title = string.IsNullOrEmpty(step.Link)
-			? step.Title
-			: $"[{step.Title}]({HubLinkForLlm(renderer, step.Link)})";
+		var title = string.IsNullOrEmpty(step.Link) ? step.Title : $"[{step.Title}]({HubLinkForLlm(renderer, step.Link)})";
 		renderer.WriteLine($"{number}. {title}");
 
 		if (!string.IsNullOrEmpty(step.Description))
@@ -723,9 +729,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		if (!string.IsNullOrEmpty(data.Title))
 		{
-			var heading = string.IsNullOrEmpty(data.Link)
-				? data.Title
-				: $"[{data.Title}]({HubLinkForLlm(renderer, data.Link)})";
+			var heading = string.IsNullOrEmpty(data.Link) ? data.Title : $"[{data.Title}]({HubLinkForLlm(renderer, data.Link)})";
 			renderer.WriteLine($"#### {heading}");
 			renderer.EnsureLine();
 		}
@@ -805,8 +809,15 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			try
 			{
 				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, Cancel.None, block.Line)
-					.GetAwaiter().GetResult();
+				var document = MarkdownParser.ParseSnippetAsync(
+					block.Build,
+					block.Context,
+					snippet,
+					parentPath,
+					block.Context.YamlFrontMatter,
+					Cancel.None,
+					block.Line
+				).GetAwaiter().GetResult();
 				_ = renderer.Render(document);
 			}
 			catch (Exception ex)
@@ -823,9 +834,12 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		if (!block.Found || block.IncludePath is null)
 		{
 			var path = block.IncludePath ?? "(no path specified)";
-			renderer.BuildContext.Collector.EmitError(
-				block.IncludePath ?? string.Empty,
-				$"Settings directive error: Could not resolve path '{path}'. Ensure the file exists and the path is correct.");
+			renderer.BuildContext
+				.Collector
+				.EmitError(
+					block.IncludePath ?? string.Empty,
+					$"Settings directive error: Could not resolve path '{path}'. Ensure the file exists and the path is correct."
+				);
 			return;
 		}
 
@@ -834,9 +848,12 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		// Check if file exists before attempting to read
 		if (!file.Exists)
 		{
-			renderer.BuildContext.Collector.EmitError(
-				block.IncludePath,
-				$"Settings file not found: '{block.IncludePath}' does not exist. Check that the file path is correct and the file has been committed to the repository.");
+			renderer.BuildContext
+				.Collector
+				.EmitError(
+					block.IncludePath,
+					$"Settings file not found: '{block.IncludePath}' does not exist. Check that the file path is correct and the file has been committed to the repository."
+				);
 			return;
 		}
 
@@ -845,41 +862,54 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
-			settings = SettingsBlock.PrepareSettingsForRendering(
-				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
-				block.Context
-			);
+			settings =
+				SettingsBlock.PrepareSettingsForRendering(
+					YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+					block.Context
+				);
 		}
 		catch (FileNotFoundException e)
 		{
-			renderer.BuildContext.Collector.EmitError(
-				block.IncludePath,
-				$"Settings file not found: Unable to read '{block.IncludePath}'. The file may have been moved or deleted.",
-				e);
+			renderer.BuildContext
+				.Collector
+				.EmitError(
+					block.IncludePath,
+					$"Settings file not found: Unable to read '{block.IncludePath}'. The file may have been moved or deleted.",
+					e
+				);
 			return;
 		}
 		catch (DirectoryNotFoundException e)
 		{
-			renderer.BuildContext.Collector.EmitError(
-				block.IncludePath,
-				$"Settings directory not found: The directory containing '{block.IncludePath}' does not exist. Check that the path is correct.",
-				e);
+			renderer.BuildContext
+				.Collector
+				.EmitError(
+					block.IncludePath,
+					$"Settings directory not found: The directory containing '{block.IncludePath}' does not exist. Check that the path is correct.",
+					e
+				);
 			return;
 		}
 		catch (YamlException e)
 		{
-			renderer.BuildContext.Collector.EmitError(
-				block.IncludePath,
-				$"Invalid YAML in settings file: '{block.IncludePath}' contains invalid YAML syntax. Please check the file format matches the expected settings structure (groups, settings, etc.).",
-				e.InnerException ?? e);
+			renderer.BuildContext
+				.Collector
+				.EmitError(
+					block.IncludePath,
+					$"Invalid YAML in settings file: '{block.IncludePath}' contains invalid YAML syntax. Please check the file format matches the expected settings structure (groups, settings, etc.).",
+					e.InnerException ?? e
+				);
 			return;
 		}
 		catch (Exception e)
 		{
-			renderer.BuildContext.Collector.EmitError(
-				block.IncludePath,
-				$"Failed to process settings file: Unable to parse '{block.IncludePath}'. Error: {e.Message}",
-				e);
+			renderer.BuildContext
+				.Collector
+				.EmitError(
+					block.IncludePath,
+					$"Failed to process settings file: Unable to parse '{block.IncludePath}'. Error: {e.Message}",
+					e
+				);
 			return;
 		}
 
@@ -916,12 +946,21 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		Setting setting,
 		string? parentName,
 		Elastic.Documentation.AppliesTo.ApplicableTo? inheritedAppliesTo,
-		string? product)
+		string? product
+	)
 	{
 		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
 		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
-		var stackAvailability = LlmApplicabilityHelper.RenderStackRowForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
-		var supportedOn = LlmApplicabilityHelper.RenderSupportedOnRowForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
+		var stackAvailability = LlmApplicabilityHelper.RenderStackRowForLlm(
+			appliesTo,
+			renderer.BuildContext.VersionsConfiguration,
+			useInlineTag: false
+		);
+		var supportedOn = LlmApplicabilityHelper.RenderSupportedOnRowForLlm(
+			appliesTo,
+			renderer.BuildContext.VersionsConfiguration,
+			useInlineTag: false
+		);
 		var showSupportedOn = appliesTo is not null && appliesTo != Documentation.AppliesTo.ApplicableTo.All;
 
 		renderer.WriteLine("  <definition term=\"" + WebUtility.HtmlEncode(displayName) + "\">");
@@ -971,7 +1010,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		string directive,
 		string? content,
 		string? title = null,
-		string? product = null)
+		string? product = null
+	)
 	{
 		if (string.IsNullOrWhiteSpace(content))
 			return;
@@ -981,7 +1021,12 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		RenderSettingsMarkdownSnippet(renderer, block, snippet, product);
 	}
 
-	private static void RenderSettingsMarkdownSnippet(LlmMarkdownRenderer renderer, SettingsBlock block, string? content, string? product = null)
+	private static void RenderSettingsMarkdownSnippet(
+		LlmMarkdownRenderer renderer,
+		SettingsBlock block,
+		string? content,
+		string? product = null
+	)
 	{
 		if (string.IsNullOrWhiteSpace(content))
 			return;
@@ -996,7 +1041,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			block.Build.ReadFileSystem.FileInfo.New(block.IncludePath),
 			block.Context.YamlFrontMatter,
 			block.IncludeFrom,
-			MarkdownParser.Pipeline);
+			MarkdownParser.Pipeline
+		);
 		_ = renderer.Render(document);
 		renderer.EnsureBlockSpacing();
 	}
@@ -1031,9 +1077,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	{
 		if (!block.Found || string.IsNullOrEmpty(block.CsvFilePath))
 		{
-			renderer.BuildContext.Collector.EmitError(
-				block.CsvFilePath ?? string.Empty,
-				"CSV file not found or invalid path");
+			renderer.BuildContext.Collector.EmitError(block.CsvFilePath ?? string.Empty, "CSV file not found or invalid path");
 			return;
 		}
 
@@ -1093,7 +1137,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			renderer.Writer.Write($" storybook=\"{WebUtility.HtmlEncode(block.Storybook)}\"");
 		if (!string.IsNullOrWhiteSpace(block.StoryId))
 			renderer.Writer.Write($" story-id=\"{WebUtility.HtmlEncode(block.StoryId)}\"");
-		renderer.Writer.Write($" src=\"{WebUtility.HtmlEncode(LlmRenderingHelpers.MakeAbsoluteUrl(renderer, block.StoryUrl) ?? block.StoryUrl)}\"");
+		renderer.Writer.Write(
+			$" src=\"{WebUtility.HtmlEncode(LlmRenderingHelpers.MakeAbsoluteUrl(renderer, block.StoryUrl) ?? block.StoryUrl)}\""
+		);
 		renderer.Writer.WriteLine(">");
 		if (block.Count > 0)
 			WriteChildrenWithIndentation(renderer, block, "  ");
@@ -1104,18 +1150,23 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	private static void WriteChildrenWithIndentation(LlmMarkdownRenderer renderer, Block container, string indent)
 	{
 		// Capture output and manually add indentation
-		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, container, static (tmpRenderer, obj) =>
-		{
-			switch (obj)
+		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
+			renderer.BuildContext,
+			renderer.LinkUrlRewriter,
+			container,
+			static (tmpRenderer, obj) =>
 			{
-				case ContainerBlock containerBlock:
-					tmpRenderer.WriteChildren(containerBlock);
-					break;
-				case LeafBlock leafBlock:
-					tmpRenderer.WriteLeafInline(leafBlock);
-					break;
+				switch (obj)
+				{
+					case ContainerBlock containerBlock:
+						tmpRenderer.WriteChildren(containerBlock);
+						break;
+					case LeafBlock leafBlock:
+						tmpRenderer.WriteLeafInline(leafBlock);
+						break;
+				}
 			}
-		});
+		);
 
 		if (string.IsNullOrEmpty(content))
 			return;
@@ -1157,10 +1208,15 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 
 	private static string GetPlainTextFromLeafBlock(LlmMarkdownRenderer renderer, LeafBlock leafBlock)
 	{
-		var markdownText = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, leafBlock, static (tmpRenderer, obj) =>
-		{
-			tmpRenderer.WriteLeafInline(obj);
-		});
+		var markdownText = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
+			renderer.BuildContext,
+			renderer.LinkUrlRewriter,
+			leafBlock,
+			static (tmpRenderer, obj) =>
+			{
+				tmpRenderer.WriteLeafInline(obj);
+			}
+		);
 		return markdownText.StripMarkdown();
 	}
 }

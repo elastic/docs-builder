@@ -15,7 +15,8 @@ public class SitemapParser(ILogger<SitemapParser> logger, HttpClient httpClient)
 	public async Task<IReadOnlyList<SitemapEntry>> ParseAsync(
 		Uri sitemapUrl,
 		Action<int, int, string>? onProgress = null,
-		CancellationToken ctx = default)
+		CancellationToken ctx = default
+	)
 	{
 		logger.LogDebug("Fetching sitemap: {Url}", sitemapUrl);
 		onProgress?.Invoke(0, 1, sitemapUrl.ToString());
@@ -57,10 +58,10 @@ public class SitemapParser(ILogger<SitemapParser> logger, HttpClient httpClient)
 	private async Task<IReadOnlyList<SitemapEntry>> ParseSitemapIndexAsync(
 		XElement root,
 		Action<int, int, string>? onProgress,
-		CancellationToken ctx)
+		CancellationToken ctx
+	)
 	{
-		var sitemapUrls = root
-			.Elements(SitemapNs + "sitemap")
+		var sitemapUrls = root.Elements(SitemapNs + "sitemap")
 			.Select(s => s.Element(SitemapNs + "loc")?.Value)
 			.Where(loc => !string.IsNullOrWhiteSpace(loc))
 			.Select(loc => new Uri(loc!))
@@ -103,12 +104,7 @@ public class SitemapParser(ILogger<SitemapParser> logger, HttpClient httpClient)
 	}
 
 	private List<SitemapEntry> ParseUrlSet(XElement root) =>
-		root
-			.Elements(SitemapNs + "url")
-			.Select(ParseUrlElement)
-			.Where(e => e is not null)
-			.Select(e => e!)
-			.ToList();
+		root.Elements(SitemapNs + "url").Select(ParseUrlElement).Where(e => e is not null).Select(e => e!).ToList();
 
 	private static SitemapEntry? ParseUrlElement(XElement urlElement)
 	{

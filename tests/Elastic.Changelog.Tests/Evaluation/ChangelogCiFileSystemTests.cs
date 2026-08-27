@@ -51,8 +51,7 @@ public class ChangelogCiFileSystemTests
 
 		var create = () => fs.Directory.CreateDirectory(hidden);
 
-		create.Should().Throw<ScopedFileSystemException>()
-			.WithMessage("*hidden*");
+		create.Should().Throw<ScopedFileSystemException>().WithMessage("*hidden*");
 	}
 
 	[Fact]
@@ -64,7 +63,6 @@ public class ChangelogCiFileSystemTests
 
 		var create = () => fs.Directory.CreateDirectory(hidden);
 
-		create.Should().Throw<ScopedFileSystemException>()
-			.WithMessage("*hidden*");
+		create.Should().Throw<ScopedFileSystemException>().WithMessage("*hidden*");
 	}
 }

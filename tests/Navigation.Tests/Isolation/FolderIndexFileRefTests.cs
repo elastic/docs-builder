@@ -18,7 +18,8 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 	public async Task FolderWithFileCreatesCorrectStructure()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -54,7 +55,8 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 	public async Task FolderWithFileChildrenPathsAreScopedToFolder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -88,7 +90,8 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 	public async Task FolderWithFileEmitsHintWhenFileNameDoesNotMatchFolder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -110,18 +113,19 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		// Should emit hint about file name not matching folder name
 		context.Collector.Hints.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Hint &&
-			d.Message.Contains("intro.md") &&
-			d.Message.Contains("getting-started") &&
-			d.Message.Contains("Best practice"));
+		diagnostics.Should().Contain(
+			d =>
+				d.Severity == Severity.Hint && d.Message.Contains("intro.md") && d.Message.Contains("getting-started") &&
+					d.Message.Contains("Best practice")
+		);
 	}
 
 	[Fact]
 	public async Task FolderWithFileDoesNotEmitHintWhenFileNameMatchesFolder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -149,7 +153,8 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 	public async Task FolderWithFileEmitsErrorForDeepLinkingInFile()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -171,17 +176,19 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		// Should emit error about deep linking in the file attribute
 		context.Collector.Errors.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Deep linking on folder 'file' is not supported") &&
-			d.Message.Contains("intro/file.md"));
+		diagnostics.Should().Contain(
+			d =>
+				d.Severity == Severity.Error && d.Message.Contains("Deep linking on folder 'file' is not supported") &&
+					d.Message.Contains("intro/file.md")
+		);
 	}
 
 	[Fact]
 	public async Task FolderWithIndexMdFileDoesNotNeedToMatchFolderName()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -209,7 +216,8 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 	public async Task FolderWithFileCaseInsensitiveMatch()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: GettingStarted

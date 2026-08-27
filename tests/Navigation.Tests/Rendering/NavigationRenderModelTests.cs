@@ -18,7 +18,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	public void EquivalentTrees_ProduceSameContentHash()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -38,19 +39,23 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	public void DifferentPages_ProduceDifferentContentHashes()
 	{
 		// language=yaml
-		var first = CreateRenderModel("""
+		var first = CreateRenderModel(
+			"""
 		                              project: 'test-project'
 		                              toc:
 		                                - file: index.md
 		                                - file: overview.md
-		                              """);
+		                              """
+		);
 		// language=yaml
-		var second = CreateRenderModel("""
+		var second = CreateRenderModel(
+			"""
 		                               project: 'test-project'
 		                               toc:
 		                                 - file: index.md
 		                                 - file: reference.md
-		                               """);
+		                               """
+		);
 
 		first.ContentHash.Should().NotBe(second.ContentHash);
 	}
@@ -59,21 +64,25 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	public void ReorderedSiblings_ProduceDifferentContentHashes()
 	{
 		// language=yaml
-		var first = CreateRenderModel("""
+		var first = CreateRenderModel(
+			"""
 		                              project: 'test-project'
 		                              toc:
 		                                - file: index.md
 		                                - file: alpha.md
 		                                - file: beta.md
-		                              """);
+		                              """
+		);
 		// language=yaml
-		var second = CreateRenderModel("""
+		var second = CreateRenderModel(
+			"""
 		                               project: 'test-project'
 		                               toc:
 		                                 - file: index.md
 		                                 - file: beta.md
 		                                 - file: alpha.md
-		                               """);
+		                               """
+		);
 
 		first.ContentHash.Should().NotBe(second.ContentHash);
 	}
@@ -82,21 +91,25 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	public void HiddenItems_AreExcludedFromTheTree_AndChangeTheContentHash()
 	{
 		// language=yaml
-		var visible = CreateRenderModel("""
+		var visible = CreateRenderModel(
+			"""
 		                                project: 'test-project'
 		                                toc:
 		                                  - file: index.md
 		                                  - file: guide.md
 		                                  - file: secret.md
-		                                """);
+		                                """
+		);
 		// language=yaml
-		var hidden = CreateRenderModel("""
+		var hidden = CreateRenderModel(
+			"""
 		                               project: 'test-project'
 		                               toc:
 		                                 - file: index.md
 		                                 - file: guide.md
 		                                 - hidden: secret.md
-		                               """);
+		                               """
+		);
 
 		visible.Tree.Should().Contain(n => n.Url == "/secret");
 		hidden.Tree.Should().NotContain(n => n.Url == "/secret");
@@ -107,7 +120,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	public void PrimaryNav_OmitsIndexRow_AndChangesTheContentHash()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -127,7 +141,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	public void Nodes_CarryToggleStateAndNavigationItems()
 	{
 		// language=yaml
-		var model = CreateRenderModel("""
+		var model = CreateRenderModel(
+			"""
 		                              project: 'test-project'
 		                              toc:
 		                                - file: index.md
@@ -135,7 +150,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		                                  children:
 		                                    - file: index.md
 		                                    - file: install.md
-		                              """);
+		                              """
+		);
 
 		var node = model.Tree.Should().ContainSingle(n => n.Kind == NavigationRenderNodeKind.Node).Subject;
 		node.Url.Should().Be("/setup");
@@ -152,7 +168,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	public async Task IslandNode_ProjectsAsIslandKind_WithNoChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -165,17 +182,24 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/reference/index.md", new MockFileData("# Reference"));
 		fileSystem.AddFile("/docs/reference/page.md", new MockFileData("# Page"));
-		fileSystem.AddFile("/docs/reference/toc.yml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"/docs/reference/toc.yml",
+			new MockFileData("""
 			toc:
 			  - file: index.md
 			  - file: page.md
-			"""));
+			""")
+		);
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var model = NavigationRenderModel.Create(
@@ -183,7 +207,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false
+		);
 
 		// The island node appears in the tree
 		var islandNode = model.Tree.Should().ContainSingle(n => n.Kind == NavigationRenderNodeKind.Island).Subject;
@@ -196,7 +221,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	public async Task Create_BuildsBackLinkStack_RootFirst()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -210,24 +236,35 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		fileSystem.AddFile("/docs/security/index.md", new MockFileData("# Security"));
 		fileSystem.AddFile("/docs/security/rules/index.md", new MockFileData("# Rules"));
 		fileSystem.AddFile("/docs/security/rules/page.md", new MockFileData("# Page"));
-		fileSystem.AddFile("/docs/security/toc.yml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"/docs/security/toc.yml",
+			new MockFileData(
+				"""
 			toc:
 			  - file: index.md
 			  - toc: rules
 			    island: true
-			"""));
-		fileSystem.AddFile("/docs/security/rules/toc.yml", new MockFileData(
 			"""
+			)
+		);
+		fileSystem.AddFile(
+			"/docs/security/rules/toc.yml",
+			new MockFileData("""
 			toc:
 			  - file: index.md
 			  - file: page.md
-			"""));
+			""")
+		);
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var security = (TableOfContentsNavigation<TestDocumentationFile>)navigation.NavigationItems.ElementAt(0);
@@ -239,7 +276,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			topLevelItems: [navigation],
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false
+		);
 
 		// Back links: root-first → docset root, then security (enclosing island, also the immediate parent).
 		// Stack: docset root (/), then security (/security) — total 2 entries.
@@ -261,7 +299,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	{
 		// Islands with different page trees must produce different hashes even when back links are identical.
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -274,17 +313,24 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/reference/index.md", new MockFileData("# Reference"));
 		fileSystem.AddFile("/docs/reference/page-a.md", new MockFileData("# Page A"));
-		fileSystem.AddFile("/docs/reference/toc.yml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"/docs/reference/toc.yml",
+			new MockFileData("""
 			toc:
 			  - file: index.md
 			  - file: page-a.md
-			"""));
+			""")
+		);
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var reference = (TableOfContentsNavigation<TestDocumentationFile>)navigation.NavigationItems.ElementAt(0);
@@ -293,11 +339,13 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			topLevelItems: [],
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false
+		);
 
 		// Second navigation: same structure but a different page name in the island tree
 		// language=yaml
-		var yaml2 = """
+		var yaml2 =
+			"""
 		            project: 'test-project'
 		            toc:
 		              - file: index.md
@@ -308,17 +356,24 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		fileSystem2.AddDirectory("/docs");
 		fileSystem2.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem2.AddFile("/docs/reference/index.md", new MockFileData("# Reference"));
-		fileSystem2.AddFile("/docs/reference/page-b.md", new MockFileData("# Page B"));  // ← different page
-		fileSystem2.AddFile("/docs/reference/toc.yml", new MockFileData(
-			"""
+		fileSystem2.AddFile("/docs/reference/page-b.md", new MockFileData("# Page B")); // ← different page
+		fileSystem2.AddFile(
+			"/docs/reference/toc.yml",
+			new MockFileData("""
 			toc:
 			  - file: index.md
 			  - file: page-b.md
-			"""));
+			""")
+		);
 		var context2 = CreateContext(fileSystem2);
 		var docSet2 = DocumentationSetFile.LoadAndResolve(context2.Collector, yaml2, fileSystem2.NewDirInfo("docs"));
 		_ = context2.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation2 = new DocumentationSetNavigation<TestDocumentationFile>(docSet2, context2, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation2 = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet2,
+			context2,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 		await context2.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		var reference2 = (TableOfContentsNavigation<TestDocumentationFile>)navigation2.NavigationItems.ElementAt(0);
@@ -327,7 +382,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			topLevelItems: [],
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false
+		);
 
 		// Different tree content (page-a vs page-b) → different content hash
 		model1.ContentHash.Should().NotBe(model2.ContentHash, "different tree pages produce different content hashes");
@@ -341,7 +397,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 	{
 		// A top-level section (Parent is nav root, grandparent is null) has the dropdown
 		// as its only mechanism — no back-link trail is generated.
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -365,7 +422,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			topLevelItems: [navigation],
 			isUsingNavigationDropdown: true,
 			isPrimaryNavEnabled: true,
-			isGlobalAssemblyBuild: true);
+			isGlobalAssemblyBuild: true
+		);
 
 		// No back-links: the only ancestor would be the nav root, which the dropdown replaces
 		model.BackLinks.Should().BeEmpty("top-level sections rely on the dropdown, not back-links");
@@ -381,7 +439,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		// because re-selecting the active dropdown item is a poor UX substitute for a direct link.
 		// We simulate this with a 3-level tree: docset root → elasticsearch (island) → clients (island).
 		// docset root plays the nav-root role (Parent=null), elasticsearch plays top-level section.
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -394,29 +453,46 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/elasticsearch/index.md", new MockFileData("# Elasticsearch"));
 		fileSystem.AddFile("/docs/elasticsearch/clients/index.md", new MockFileData("# Clients"));
-		fileSystem.AddFile("/docs/elasticsearch/toc.yml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"/docs/elasticsearch/toc.yml",
+			new MockFileData(
+				"""
 			toc:
 			  - file: index.md
 			  - toc: clients
 			    island: true
-			"""));
-		fileSystem.AddFile("/docs/elasticsearch/clients/toc.yml", new MockFileData(
 			"""
+			)
+		);
+		fileSystem.AddFile(
+			"/docs/elasticsearch/clients/toc.yml",
+			new MockFileData("""
 			toc:
 			  - file: index.md
-			"""));
+			""")
+		);
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
-		var elasticsearch = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
-		var clients = elasticsearch.NavigationItems.ElementAt(0)
-			.Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var elasticsearch = navigation.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
+		var clients = elasticsearch.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
 
 		// elasticsearch is the "top-level section" (Parent=navigation/nav-root, island=true)
 		elasticsearch.RendersAsIsland().Should().BeTrue();
@@ -425,27 +501,30 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		var model = NavigationRenderModel.Create(
 			tree: clients,
-			topLevelItems: [elasticsearch],  // elasticsearch = the "top-level section" in the dropdown
+			topLevelItems: [elasticsearch], // elasticsearch = the "top-level section" in the dropdown
+
 			isUsingNavigationDropdown: true,
 			isPrimaryNavEnabled: true,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false
+		);
 
 		// ← elasticsearch appears even though the dropdown also shows elasticsearch as active.
 		// The nav root (navigation, Parent=null) is suppressed because the dropdown covers it.
-		model.BackLinks.Should().ContainSingle(b => b.Url == elasticsearch.Url,
-			"← elasticsearch stays even though the dropdown names it as the active section");
+		model.BackLinks
+			.Should()
+			.ContainSingle(b => b.Url == elasticsearch.Url, "← elasticsearch stays even though the dropdown names it as the active section");
 		// Dropdown correctly identifies elasticsearch as the current top-level section
 		model.CurrentTopLevelUrl.Should().Be(elasticsearch.Url);
 		// Nav root must NOT appear in back-links (dropdown suppresses it)
-		model.BackLinks.Should().NotContain(b => b.Url == navigation.Url,
-			"nav root is represented by the dropdown, not a back-link");
+		model.BackLinks.Should().NotContain(b => b.Url == navigation.Url, "nav root is represented by the dropdown, not a back-link");
 	}
 
 	[Fact]
 	public async Task Create_WithoutDropdown_KeepsFullBackLinkTrail()
 	{
 		// Isolated build without primary nav: back-links include the navigation root
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -462,22 +541,26 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
-		var clients = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var clients = navigation.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 
 		var model = NavigationRenderModel.Create(
 			tree: clients,
 			topLevelItems: [navigation],
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: false,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false
+		);
 
 		// Without dropdown the nav root IS included in back-links
-		model.BackLinks.Should().ContainSingle(b => b.Url == navigation.Url,
-			"without dropdown the nav root appears as a back-link");
+		model.BackLinks.Should().ContainSingle(b => b.Url == navigation.Url, "without dropdown the nav root appears as a back-link");
 		model.IsUsingNavigationDropdown.Should().BeFalse();
 	}
 
@@ -493,6 +576,7 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 			topLevelItems: navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
 			isUsingNavigationDropdown: false,
 			isPrimaryNavEnabled: isPrimaryNavEnabled,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false
+		);
 	}
 }

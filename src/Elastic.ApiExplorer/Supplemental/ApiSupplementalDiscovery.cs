@@ -31,7 +31,8 @@ public static class ApiSupplementalDiscovery
 	public static ApiSupplementalDiscoveryResult Discover(
 		IDirectoryInfo? folder,
 		IReadOnlyCollection<string> operationIds,
-		IReadOnlyCollection<string> tagNames)
+		IReadOnlyCollection<string> tagNames
+	)
 	{
 		var (tagBySlug, collisions) = IndexTags(tagNames);
 		return MatchFiles(folder, operationIds.ToHashSet(StringComparer.Ordinal), tagBySlug, collisions);
@@ -48,7 +49,8 @@ public static class ApiSupplementalDiscovery
 		IDirectoryInfo? folder,
 		HashSet<string> operationIds,
 		Dictionary<string, string> tagBySlug,
-		IReadOnlyList<TagSlugCollision> collisions)
+		IReadOnlyList<TagSlugCollision> collisions
+	)
 	{
 		if (folder is null || !folder.Exists)
 			return NoFiles(collisions);
@@ -99,7 +101,8 @@ public static class ApiSupplementalDiscovery
 	}
 
 	internal static (Dictionary<string, OpenApiOperation> OperationsById, HashSet<string> TagNames) CollectEntities(
-		OpenApiDocument document)
+		OpenApiDocument document
+	)
 	{
 		var operations = new Dictionary<string, OpenApiOperation>(StringComparer.Ordinal);
 		var tags = new HashSet<string>(StringComparer.Ordinal);
@@ -142,7 +145,8 @@ public static class ApiSupplementalDiscovery
 		!string.IsNullOrEmpty(tagRef.Name) ? tagRef.Name : tagRef.Reference?.Id;
 
 	internal static (Dictionary<string, string> UniqueBySlug, IReadOnlyList<TagSlugCollision> Collisions) IndexTags(
-		IReadOnlyCollection<string> tagNames)
+		IReadOnlyCollection<string> tagNames
+	)
 	{
 		var bySlug = new Dictionary<string, List<string>>(StringComparer.Ordinal);
 		foreach (var tagName in tagNames)
@@ -171,13 +175,14 @@ public static class ApiSupplementalDiscovery
 		return (unique, collisions);
 	}
 
-	private static ApiSupplementalDiscoveryResult NoFiles(IReadOnlyList<TagSlugCollision> collisions) => new()
-	{
-		Operations = new Dictionary<string, IFileInfo>(),
-		Tags = new Dictionary<string, IFileInfo>(),
-		Unmatched = [],
-		Ignored = [],
-		VersionSuffixed = [],
-		TagSlugCollisions = collisions
-	};
+	private static ApiSupplementalDiscoveryResult NoFiles(IReadOnlyList<TagSlugCollision> collisions) =>
+		new()
+		{
+			Operations = new Dictionary<string, IFileInfo>(),
+			Tags = new Dictionary<string, IFileInfo>(),
+			Unmatched = [],
+			Ignored = [],
+			VersionSuffixed = [],
+			TagSlugCollisions = collisions
+		};
 }

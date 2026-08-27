@@ -193,20 +193,26 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = ImageCarouselView.Create(new ImageCarouselViewModel
 		{
 			DirectiveBlock = block,
-			Images = block.Images.Select(img => new ImageViewModel
-			{
-				DirectiveBlock = img,
-				Label = img.Label,
-				Align = img.Align ?? string.Empty,
-				Alt = img.Alt ?? string.Empty,
-				Title = img.Title,
-				Height = img.Height,
-				Width = img.Width,
-				Scale = img.Scale ?? string.Empty,
-				Screenshot = img.Screenshot,
-				Target = img.Target,
-				ImageUrl = img.ImageUrl
-			}).ToList(),
+			Images =
+				block.Images
+					.Select(
+						img =>
+							new ImageViewModel
+							{
+								DirectiveBlock = img,
+								Label = img.Label,
+								Align = img.Align ?? string.Empty,
+								Alt = img.Alt ?? string.Empty,
+								Title = img.Title,
+								Height = img.Height,
+								Width = img.Width,
+								Scale = img.Scale ?? string.Empty,
+								Screenshot = img.Screenshot,
+								Target = img.Target,
+								ImageUrl = img.ImageUrl
+							}
+					)
+					.ToList(),
 			MaxHeight = block.MaxHeight
 		});
 		RenderRazorSlice(slice, renderer);
@@ -298,15 +304,21 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				DescriptionHtml = RenderInlineMarkdown(step.Description),
 				Link = step.Link,
 				LinkLabel = step.LinkLabel,
-				Options = [.. step.Options.Select(option => new GetStartedOptionViewModel
-				{
-					Label = option.Label,
-					DescriptionHtml = RenderInlineMarkdown(option.Description),
-					Code = option.Code,
-					Language = option.Language,
-					Url = option.Url,
-					UrlLabel = option.UrlLabel
-				})]
+				Options =
+				[
+					.. step.Options.Select(
+						option =>
+							new GetStartedOptionViewModel
+							{
+								Label = option.Label,
+								DescriptionHtml = RenderInlineMarkdown(option.Description),
+								Code = option.Code,
+								Language = option.Language,
+								Url = option.Url,
+								UrlLabel = option.UrlLabel
+							}
+					)
+				]
 			});
 		}
 
@@ -339,12 +351,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WritePageCard(HtmlRenderer renderer, PageCardBlock block)
 	{
-		var slice = PageCardView.Create(new PageCardViewModel
-		{
-			DirectiveBlock = block,
-			Title = block.Title,
-			Url = block.ResolvedUrl
-		});
+		var slice = PageCardView.Create(new PageCardViewModel { DirectiveBlock = block, Title = block.Title, Url = block.ResolvedUrl });
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -368,11 +375,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteButtonGroup(HtmlRenderer renderer, ButtonGroupBlock block)
 	{
-		var slice = ButtonGroupView.Create(new ButtonGroupViewModel
-		{
-			DirectiveBlock = block,
-			Align = block.Align
-		});
+		var slice = ButtonGroupView.Create(new ButtonGroupViewModel { DirectiveBlock = block, Align = block.Align });
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -390,21 +393,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteListSubPages(HtmlRenderer renderer, ListSubPagesBlock block)
 	{
-		var slice = ListSubPagesView.Create(new ListSubPagesViewModel
-		{
-			DirectiveBlock = block,
-			SubPages = block.SubPages
-		});
+		var slice = ListSubPagesView.Create(new ListSubPagesViewModel { DirectiveBlock = block, SubPages = block.SubPages });
 		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteListing(HtmlRenderer renderer, ListingBlock block)
 	{
-		var slice = ListingView.Create(new ListingViewModel
-		{
-			DirectiveBlock = block,
-			Entries = block.Entries
-		});
+		var slice = ListingView.Create(new ListingViewModel { DirectiveBlock = block, Entries = block.Entries });
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -422,9 +417,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteCliModifiers(HtmlRenderer renderer, CliModifiersBlock block)
 	{
-		if (!block.Destructive && !block.RequiresConfirmation && !block.RequiresAuth
-			&& !block.Idempotent && string.IsNullOrWhiteSpace(block.Scope)
-			&& !block.Streaming && !block.LongRunning)
+		if (
+			!block.Destructive
+			&& !block.RequiresConfirmation
+			&& !block.RequiresAuth
+			&& !block.Idempotent
+			&& string.IsNullOrWhiteSpace(block.Scope)
+			&& !block.Streaming
+			&& !block.LongRunning
+		)
 			return;
 
 		var slice = CliModifiersView.Create(new CliModifiersViewModel
@@ -486,8 +487,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteFigure(HtmlRenderer renderer, ImageBlock block)
 	{
-		var imageUrl = block.ImageUrl != null &&
-					   (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+		var imageUrl = block.ImageUrl != null && (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
 			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
 			: block.ImageUrl;
 		var slice = FigureView.Create(new ImageViewModel
@@ -507,8 +507,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer);
 	}
 
-	private static void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) =>
-		renderer.WriteChildren(directiveBlock);
+	private static void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) => renderer.WriteChildren(directiveBlock);
 
 	private static void WriteVersion(HtmlRenderer renderer, VersionBlock block)
 	{
@@ -586,7 +585,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		// Parse the applies_to definition to get the ApplicableTo object
 		// Use the pre-parsed AppliesTo from the block (implementing IBlockAppliesTo)
-		var appliesTo = block.AppliesTo ?? (block.AppliesToDefinition is not null ? ParseApplicableTo(block.AppliesToDefinition, block) : null);
+		var appliesTo = block.AppliesTo
+			?? (block.AppliesToDefinition is not null ? ParseApplicableTo(block.AppliesToDefinition, block) : null);
 		var slice = AppliesItemView.Create(new AppliesItemViewModel
 		{
 			DirectiveBlock = block,
@@ -652,8 +652,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
 		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default, block.Line)
-			.GetAwaiter().GetResult();
+		var document = MarkdownParser.ParseSnippetAsync(
+			block.Build,
+			block.Context,
+			snippet,
+			parentPath,
+			block.Context.YamlFrontMatter,
+			default,
+			block.Line
+		).GetAwaiter().GetResult();
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
@@ -670,10 +677,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = SettingsBlock.PrepareSettingsForRendering(
-				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
-				block.Context
-			);
+			settings =
+				SettingsBlock.PrepareSettingsForRendering(
+					YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+					block.Context
+				);
 		}
 		catch (YamlException e)
 		{
@@ -703,7 +711,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					settingsSourceFile,
 					block.Context.YamlFrontMatter,
 					block.IncludeFrom,
-					MarkdownParser.Pipeline);
+					MarkdownParser.Pipeline
+				);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 
 				// Trim to ensure consistent whitespace
@@ -722,8 +731,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSliceRawContent<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
-		where T : DirectiveViewModel
+	private static void RenderRazorSliceRawContent<T>(
+		RazorSlice<T> slice,
+		HtmlRenderer renderer,
+		DirectiveBlock obj
+	) where T : DirectiveViewModel
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
@@ -750,7 +762,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					_ = renderer.Write(new string(r.DelimiterChar, r.DelimiterCount));
 					renderer.WriteChildren(r);
 				}
-
 				else
 					_ = renderer.Write($"(LeafBlock: {oo.GetType().Name}");
 			}
@@ -805,7 +816,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			value,
 			block.IncludeFrom,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline);
+			MarkdownParser.Pipeline
+		);
 
 		if (document.Count == 1 && document.FirstOrDefault() is ParagraphBlock paragraph && paragraph.Inline != null)
 			return RenderInlineMarkdown(paragraph);
@@ -848,7 +860,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			markdown,
 			block.CurrentFile,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline);
+			MarkdownParser.Pipeline
+		);
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);

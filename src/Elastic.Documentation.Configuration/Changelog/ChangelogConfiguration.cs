@@ -15,18 +15,16 @@ public record ChangelogConfiguration
 	/// <summary>
 	/// Default types for changelog entries (derived from ChangelogEntryType enum)
 	/// </summary>
-	public static IReadOnlyList<string> DefaultTypes { get; } =
-		ChangelogEntryTypeExtensions.GetValues()
-			.Select(t => t.ToStringFast(true))
-			.ToList();
+	public static IReadOnlyList<string> DefaultTypes { get; } = ChangelogEntryTypeExtensions.GetValues()
+		.Select(t => t.ToStringFast(true))
+		.ToList();
 
 	/// <summary>
 	/// Default subtypes for breaking changes (derived from ChangelogEntrySubtype enum)
 	/// </summary>
-	public static IReadOnlyList<string> DefaultSubtypes { get; } =
-		ChangelogEntrySubtypeExtensions.GetValues()
-			.Select(s => s.ToStringFast(true))
-			.ToList();
+	public static IReadOnlyList<string> DefaultSubtypes { get; } = ChangelogEntrySubtypeExtensions.GetValues()
+		.Select(s => s.ToStringFast(true))
+		.ToList();
 
 	/// <summary>
 	/// Required types that must be present in the configuration.

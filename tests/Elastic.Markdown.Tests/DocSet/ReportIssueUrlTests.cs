@@ -32,10 +32,7 @@ public class ReportIssueUrlTests : IAsyncLifetime
 	public ReportIssueUrlTests(ITestOutputHelper output)
 	{
 		var loggerFactory = new TestLoggerFactory(output);
-		var mockWriteFs = new MockFileSystem(new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+		var mockWriteFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		var invocation = new System.IO.Abstractions.FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var fs = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { InnerWrite = mockWriteFs });
 		var collector = new TestDiagnosticsCollector(output);
@@ -91,8 +88,7 @@ public class ReportIssueUrlTests : IAsyncLifetime
 		//   Item = new Uri(CanonicalBaseUrl ?? localhost, parent.Url).ToString()
 		// Same bug would have applied here if the old JoinUrl call had been used.
 		INavigationTraversable traversable = Set;
-		var nestedFile = Set.MarkdownFiles
-			.First(f => traversable.GetParentsOfMarkdownFile(f).Length > 0);
+		var nestedFile = Set.MarkdownFiles.First(f => traversable.GetParentsOfMarkdownFile(f).Length > 0);
 		var parents = traversable.GetParentsOfMarkdownFile(nestedFile);
 
 		parents.Should().NotBeEmpty();

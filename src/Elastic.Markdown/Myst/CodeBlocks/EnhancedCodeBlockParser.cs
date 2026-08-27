@@ -81,11 +81,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		if (processor.Context is not ParserContext context)
 			throw new Exception("Expected parser context to be of type ParserContext");
 
-		codeBlock.Language = (
-			(codeBlock.Info?.IndexOf('{') ?? -1) != -1
-				? codeBlock.Arguments?.Split()[0]
-				: codeBlock.Info
-		) ?? "unknown";
+		codeBlock.Language = ((codeBlock.Info?.IndexOf('{') ?? -1) != -1 ? codeBlock.Arguments?.Split()[0] : codeBlock.Info) ?? "unknown";
 
 		var language = codeBlock.Language;
 		codeBlock.Language = language switch
@@ -137,10 +133,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		}
 	}
 
-	private static void ProcessContributorsDirective(
-		ContributorsBlock contributorsBlock,
-		StringLineGroup lines,
-		ParserContext context)
+	private static void ProcessContributorsDirective(ContributorsBlock contributorsBlock, StringLineGroup lines, ParserContext context)
 	{
 		var yaml = lines.ToSlice().AsSpan().ToString();
 
@@ -155,11 +148,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		}
 	}
 
-	private static void ProcessCodeBlock(
-		StringLineGroup lines,
-		string language,
-		EnhancedCodeBlock codeBlock,
-		ParserContext context)
+	private static void ProcessCodeBlock(StringLineGroup lines, string language, EnhancedCodeBlock codeBlock, ParserContext context)
 	{
 		string argsString;
 		if (codeBlock.Arguments == null)
@@ -170,14 +159,14 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		{
 			// if the code block starts with {code-block} and is followed by a language, we need to skip the language
 			var parts = codeBlock.Arguments.Split();
-			argsString = parts.Length > 1 && CodeBlock.Languages.Contains(parts[0])
-				? string.Join(" ", parts[1..])
-				: codeBlock.Arguments;
+			argsString = parts.Length > 1 && CodeBlock.Languages.Contains(parts[0]) ? string.Join(" ", parts[1..]) : codeBlock.Arguments;
 		}
 
 		var codeBlockArgs = CodeBlockArguments.Default;
 		if (!CodeBlockArguments.TryParse(argsString, out var codeArgs))
-			codeBlock.EmitError($"Unable to parse code block arguments: {argsString}. Valid arguments are {CodeBlockArguments.KnownKeysString}.");
+			codeBlock.EmitError(
+				$"Unable to parse code block arguments: {argsString}. Valid arguments are {CodeBlockArguments.KnownKeysString}."
+			);
 		else
 			codeBlockArgs = codeArgs;
 
@@ -224,11 +213,13 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		ProcessInlineAnnotations(codeBlock);
 	}
 
-	private static List<CallOut> EnumerateAnnotations(Regex.ValueMatchEnumerator matches,
+	private static List<CallOut> EnumerateAnnotations(
+		Regex.ValueMatchEnumerator matches,
 		ref ReadOnlySpan<char> span,
 		ref int callOutIndex,
 		int originatingLine,
-		bool inlineCodeAnnotation)
+		bool inlineCodeAnnotation
+	)
 	{
 		var callOuts = new List<CallOut>();
 		foreach (var match in matches)
@@ -270,7 +261,12 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		};
 	}
 
-	private static List<CallOut> ParseClassicCallOuts(ValueMatch match, ref ReadOnlySpan<char> span, ref int callOutIndex, int originatingLine)
+	private static List<CallOut> ParseClassicCallOuts(
+		ValueMatch match,
+		ref ReadOnlySpan<char> span,
+		ref int callOutIndex,
+		int originatingLine
+	)
 	{
 		var indexOfLastComment = Math.Max(span.LastIndexOf(" # "), span.LastIndexOf(" // "));
 		var startIndex = span.LastIndexOf('<');
@@ -310,7 +306,8 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		StringLineGroup lines,
 		EnhancedCodeBlock codeBlock,
 		CodeBlockArguments codeBlockArgs,
-		ParserContext context)
+		ParserContext context
+	)
 	{
 		var currentSegment = new ApiSegment();
 		var callOutIndex = 0;
@@ -353,11 +350,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 				if (codeBlockArgs.UseCallouts && codeBlock.OpeningFencedCharCount <= 3)
 					ProcessCalloutsForLine(span, codeBlock, ref callOutIndex, originatingLine);
 
-				currentSegment = new ApiSegment
-				{
-					Header = lineText,
-					LineNumber = originatingLine
-				};
+				currentSegment = new ApiSegment { Header = lineText, LineNumber = originatingLine };
 
 				// Clear this line from the content since it's now a header
 				var s = new StringSlice("");
@@ -387,34 +380,35 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	private static bool IsHttpVerb(string line)
 	{
 		var trimmed = line.Trim();
-		return trimmed.StartsWith("GET ", StringComparison.OrdinalIgnoreCase) ||
-			trimmed.StartsWith("POST ", StringComparison.OrdinalIgnoreCase) ||
-			trimmed.StartsWith("PUT ", StringComparison.OrdinalIgnoreCase) ||
-			trimmed.StartsWith("DELETE ", StringComparison.OrdinalIgnoreCase) ||
-			trimmed.StartsWith("PATCH ", StringComparison.OrdinalIgnoreCase) ||
-			trimmed.StartsWith("HEAD ", StringComparison.OrdinalIgnoreCase) ||
-			trimmed.StartsWith("OPTIONS ", StringComparison.OrdinalIgnoreCase);
+		return trimmed.StartsWith("GET ", StringComparison.OrdinalIgnoreCase)
+			|| trimmed.StartsWith("POST ", StringComparison.OrdinalIgnoreCase)
+			|| trimmed.StartsWith("PUT ", StringComparison.OrdinalIgnoreCase)
+			|| trimmed.StartsWith("DELETE ", StringComparison.OrdinalIgnoreCase)
+			|| trimmed.StartsWith("PATCH ", StringComparison.OrdinalIgnoreCase)
+			|| trimmed.StartsWith("HEAD ", StringComparison.OrdinalIgnoreCase)
+			|| trimmed.StartsWith("OPTIONS ", StringComparison.OrdinalIgnoreCase);
 	}
 
-	private static void ProcessCalloutsForLine(ReadOnlySpan<char> span, EnhancedCodeBlock codeBlock, ref int callOutIndex, int originatingLine)
+	private static void ProcessCalloutsForLine(
+		ReadOnlySpan<char> span,
+		EnhancedCodeBlock codeBlock,
+		ref int callOutIndex,
+		int originatingLine
+	)
 	{
 		List<CallOut> callOuts = [];
 		var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
 		if (hasClassicCallout)
 		{
 			var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
-			callOuts.AddRange(
-				EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false)
-			);
+			callOuts.AddRange(EnumerateAnnotations(matchClassicCallout, ref span, ref callOutIndex, originatingLine, false));
 		}
 
 		// only support magic callouts for smaller line lengths
 		if (callOuts.Count == 0 && span.Length < 200)
 		{
 			var matchInline = CallOutParser.MathInlineAnnotation().EnumerateMatches(span);
-			callOuts.AddRange(
-				EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine, true)
-			);
+			callOuts.AddRange(EnumerateAnnotations(matchInline, ref span, ref callOutIndex, originatingLine, true));
 		}
 
 		codeBlock.CallOuts.AddRange(callOuts);
@@ -425,14 +419,17 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		//update string slices to ignore call outs
 		if (codeBlock.CallOuts.Count > 0)
 		{
-			var callouts = codeBlock.CallOuts.Aggregate(new Dictionary<int, CallOut>(), (acc, curr) =>
-			{
-				if (acc.TryAdd(curr.Line, curr))
+			var callouts = codeBlock.CallOuts.Aggregate(
+				new Dictionary<int, CallOut>(),
+				(acc, curr) =>
+				{
+					if (acc.TryAdd(curr.Line, curr))
+						return acc;
+					if (acc[curr.Line].SliceStart > curr.SliceStart)
+						acc[curr.Line] = curr;
 					return acc;
-				if (acc[curr.Line].SliceStart > curr.SliceStart)
-					acc[curr.Line] = curr;
-				return acc;
-			});
+				}
+			);
 
 			// Console code blocks use ApiSegments for rendering, so we need to update headers directly
 			// Note: console language gets converted to "json" for syntax highlighting

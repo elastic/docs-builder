@@ -21,7 +21,8 @@ public class SimpleMarkdownNavigationItem(
 	string url,
 	string title,
 	IFileInfo fileInfo,
-	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot) : INavigationItem, IApiModel, ILeafNavigationItem<IApiModel>
+	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot
+) : INavigationItem, IApiModel, ILeafNavigationItem<IApiModel>
 {
 	public string Url { get; } = url;
 	public string NavigationTitle { get; } = title;
@@ -41,9 +42,7 @@ public class SimpleMarkdownNavigationItem(
 	public static string CreateSlugFromFile(IFileInfo markdownFile)
 	{
 		var fileName = Path.GetFileNameWithoutExtension(markdownFile.Name);
-		return fileName.ToLowerInvariant()
-			.Replace(' ', '-')
-			.Replace('_', '-');
+		return fileName.ToLowerInvariant().Replace(' ', '-').Replace('_', '-');
 	}
 
 	/// <summary>Throws if the slug collides with reserved API Explorer path segments.</summary>
@@ -54,7 +53,8 @@ public class SimpleMarkdownNavigationItem(
 		if (reservedSegments.Contains(slug, StringComparer.OrdinalIgnoreCase))
 		{
 			throw new InvalidOperationException(
-				$"Markdown file slug '{slug}' (from '{filePath}') conflicts with reserved API Explorer segment in product '{productKey}'. Reserved segments: {string.Join(", ", reservedSegments)}");
+				$"Markdown file slug '{slug}' (from '{filePath}') conflicts with reserved API Explorer segment in product '{productKey}'. Reserved segments: {string.Join(", ", reservedSegments)}"
+			);
 		}
 	}
 

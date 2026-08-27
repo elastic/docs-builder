@@ -28,7 +28,8 @@ public sealed record McpServerProfile(
 	string DocsDescription,
 	string Introduction,
 	string[] ExtraTriggers,
-	McpFeatureModule[] Modules)
+	McpFeatureModule[] Modules
+)
 {
 	public static McpServerProfile Public { get; } = new(
 		"public",
@@ -37,7 +38,9 @@ public sealed record McpServerProfile(
 		"",
 		"Elastic documentation",
 		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs.",
-		["References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."],
+		[
+			"References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."
+		],
 		[McpFeatureModules.Search, McpFeatureModules.Documents, McpFeatureModules.Coherence]
 	);
 
@@ -87,20 +90,16 @@ public sealed record McpServerProfile(
 		var capabilities = DeriveCapabilities();
 		var introduction = Introduction.Replace("{capabilities}", capabilities, StringComparison.Ordinal);
 
-		var whenToUse = Modules
-			.SelectMany(m => m.WhenToUse)
+		var whenToUse = Modules.SelectMany(m => m.WhenToUse)
 			.Distinct()
 			.Select(line => line.Replace("{docs}", DocsDescription, StringComparison.Ordinal))
 			.Concat(ExtraTriggers)
 			.ToList();
-		var toolGuidance = Modules
-			.SelectMany(m => m.ToolGuidance)
+		var toolGuidance = Modules.SelectMany(m => m.ToolGuidance)
 			.Select(line => ReplaceToolPlaceholders(line, ResourceNoun, ScopePrefix))
 			.ToList();
 
-		var whenToUseBlock = whenToUse.Count > 0
-			? "\n" + string.Join("\n", whenToUse.Select(b => $"- {b}"))
-			: "";
+		var whenToUseBlock = whenToUse.Count > 0 ? "\n" + string.Join("\n", whenToUse.Select(b => $"- {b}")) : "";
 		var toolGuidanceBlock = toolGuidance.Count > 0
 			? "\n<tool_guidance>\n" + string.Join("\n", toolGuidance.Select(l => $"- {l}")) + "\n</tool_guidance>"
 			: "";
@@ -137,9 +136,11 @@ public sealed record McpServerProfile(
 				break;
 			end--;
 			var template = line[templateStart..end];
-			var resolved = template
-				.Replace("{resource}", resourceNoun, StringComparison.Ordinal)
-				.Replace("{scope}", scopePrefix, StringComparison.Ordinal);
+			var resolved = template.Replace("{resource}", resourceNoun, StringComparison.Ordinal).Replace(
+				"{scope}",
+				scopePrefix,
+				StringComparison.Ordinal
+			);
 			_ = sb.Append(line, pos, start - pos);
 			_ = sb.Append(resolved);
 			pos = end + 1;
@@ -150,11 +151,7 @@ public sealed record McpServerProfile(
 
 	private string DeriveCapabilities()
 	{
-		var verbs = Modules
-			.Select(m => m.Capability)
-			.Where(c => !string.IsNullOrEmpty(c))
-			.Distinct()
-			.ToList();
+		var verbs = Modules.Select(m => m.Capability).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
 
 		return verbs.Count switch
 		{

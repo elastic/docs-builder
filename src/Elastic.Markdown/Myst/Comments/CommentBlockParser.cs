@@ -12,9 +12,7 @@ namespace Elastic.Markdown.Myst.Comments;
 
 public class CommentRenderer : HtmlObjectRenderer<CommentBlock>
 {
-	protected override void Write(HtmlRenderer renderer, CommentBlock obj)
-	{
-	}
+	protected override void Write(HtmlRenderer renderer, CommentBlock obj) { }
 }
 
 [DebuggerDisplay("{GetType().Name} Line: {Line}, {Lines} Level: {Level}")]
@@ -107,9 +105,8 @@ public class CommentBlockParser : BlockParser
 			// The optional closing sequence of #s must be preceded by a space and may be followed by spaces only.
 			var endState = 0;
 			var countClosingTags = 0;
-			for (var i = processor.Line.End;
-				 i >= processor.Line.Start - 1;
-				 i--) // Go up to Start - 1 in order to match the space after the first ###
+			for (var i = processor.Line.End; i >= processor.Line.Start - 1; i--) // Go up to Start - 1 in order to match the space after the first ###
+
 			{
 				c = processor.Line.Text[i];
 				if (endState == 0)

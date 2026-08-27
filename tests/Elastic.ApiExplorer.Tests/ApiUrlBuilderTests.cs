@@ -14,16 +14,12 @@ public class ApiUrlBuilderTests
 	[InlineData("elasticsearch", "9", "elasticsearch/v9")]
 	[InlineData("elasticsearch", "8", "elasticsearch/v8")]
 	[InlineData("kibana", "10", "kibana/v10")]
-	public void ProductSuffix_MapsVersionMonikersToPathSuffixes(string apiKey, string versionMoniker, string expected)
-	{
+	public void ProductSuffix_MapsVersionMonikersToPathSuffixes(string apiKey, string versionMoniker, string expected) =>
 		ApiUrlBuilder.ProductSuffix(apiKey, versionMoniker).Should().Be(expected);
-	}
 
 	[Theory]
 	[InlineData("", "elasticsearch", "/api/doc/elasticsearch")]
 	[InlineData("", "elasticsearch/v9", "/api/doc/elasticsearch/v9")]
-	public void ProductRoot_UsesVersionAwareSuffix(string urlPathPrefix, string apiUrlSuffix, string expected)
-	{
+	public void ProductRoot_UsesVersionAwareSuffix(string urlPathPrefix, string apiUrlSuffix, string expected) =>
 		ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix).Should().Be(expected);
-	}
 }

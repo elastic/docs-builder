@@ -32,32 +32,31 @@ public static class SitemapBuilder
 	{
 		// API pages are generated on staging and preview (assembler-api-explorer flag). /docs/api/* is still
 		// proxied to bump.sh at the edge (#725). Keep them out of the sitemap until cutover.
-		var filtered = entries
-			.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal))
-			.ToList();
+		var filtered = entries.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal)).ToList();
 
 		if (filtered.Count > MaxEntries)
 			throw new InvalidOperationException(
 				$"Sitemap contains {filtered.Count:N0} URLs, which exceeds the sitemap protocol limit of {MaxEntries:N0}. " +
-				"Consider implementing sitemap index files to split entries across multiple sitemaps."
+					"Consider implementing sitemap index files to split entries across multiple sitemaps."
 			);
 
-		var doc = new XDocument
-		{
-			Declaration = new XDeclaration("1.0", "utf-8", "yes")
-		};
+		var doc = new XDocument { Declaration = new XDeclaration("1.0", "utf-8", "yes") };
 
 		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
 		var root = new XElement(
 			ns + "urlset",
 			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-			filtered
-				.OrderBy(e => e.Key, StringComparer.Ordinal)
-				.Select(e => new XElement(ns + "url", [
-					new XElement(ns + "loc", new Uri(BaseUri, e.Key)),
-					new XElement(ns + "lastmod", e.Value.ToString("o", CultureInfo.InvariantCulture))
-				]))
+			filtered.OrderBy(e => e.Key, StringComparer.Ordinal).Select(
+				e =>
+					new XElement(
+						ns + "url",
+						[
+							new XElement(ns + "loc", new Uri(BaseUri, e.Key)),
+							new XElement(ns + "lastmod", e.Value.ToString("o", CultureInfo.InvariantCulture))
+						]
+					)
+			)
 		);
 
 		doc.Add(root);
@@ -69,7 +68,7 @@ public static class SitemapBuilder
 		if (fileSize > MaxFileSizeBytes)
 			throw new InvalidOperationException(
 				$"Sitemap file size is {fileSize / (1024.0 * 1024.0):F1} MB, which exceeds the sitemap protocol limit of 50 MB. " +
-				"Consider implementing sitemap index files to split entries across multiple sitemaps."
+					"Consider implementing sitemap index files to split entries across multiple sitemaps."
 			);
 
 		if (!outputFolder.Exists)
@@ -87,16 +86,14 @@ public static class SitemapBuilder
 /// <summary>Extracts URLs from navigation items for sitemap generation.</summary>
 public static class SitemapNavigationHelper
 {
-	public static IEnumerable<INavigationItem> Flatten(INavigationItem item) =>
-		item switch
-		{
-			ILeafNavigationItem<CrossLinkModel> => [],
-			ILeafNavigationItem<DetectionRuleFile> => [],
-			ILeafNavigationItem<INavigationModel> { Hidden: true } => [],
-			ILeafNavigationItem<INavigationModel> file => [file],
-			INodeNavigationItem<INavigationModel, INavigationItem> { Hidden: true } => [],
-			INodeNavigationItem<INavigationModel, INavigationItem> group =>
-				group.NavigationItems.SelectMany(Flatten).Append(group),
-			_ => []
-		};
+	public static IEnumerable<INavigationItem> Flatten(INavigationItem item) => item switch
+	{
+		ILeafNavigationItem<CrossLinkModel> => [],
+		ILeafNavigationItem<DetectionRuleFile> => [],
+		ILeafNavigationItem<INavigationModel> { Hidden: true } => [],
+		ILeafNavigationItem<INavigationModel> file => [file],
+		INodeNavigationItem<INavigationModel, INavigationItem> { Hidden: true } => [],
+		INodeNavigationItem<INavigationModel, INavigationItem> group => group.NavigationItems.SelectMany(Flatten).Append(group),
+		_ => []
+	};
 }

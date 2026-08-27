@@ -49,14 +49,13 @@ internal static class AiEnrichmentConsole
 					switch (p.Phase)
 					{
 						case AiEnrichmentPhase.Querying when p.TotalCandidates > 0:
-							var effectiveMax = maxAiDocs > 0
-								? Math.Min(p.TotalCandidates, maxAiDocs)
-								: p.TotalCandidates;
+							var effectiveMax = maxAiDocs > 0 ? Math.Min(p.TotalCandidates, maxAiDocs) : p.TotalCandidates;
 							task.IsIndeterminate = false;
 							task.MaxValue = effectiveMax;
 							task.Value = 0;
-							task.Description = $"[purple]Found {p.TotalCandidates:N0} candidates[/]"
-								+ (maxAiDocs > 0 ? $" [dim](limit: {maxAiDocs:N0})[/]" : "");
+							task.Description =
+								$"[purple]Found {p.TotalCandidates:N0} candidates[/]"
+									+ (maxAiDocs > 0 ? $" [dim](limit: {maxAiDocs:N0})[/]" : "");
 							break;
 						case AiEnrichmentPhase.Enriching:
 							task.Value = p.Enriched + p.Failed;
@@ -94,15 +93,15 @@ internal static class AiEnrichmentConsole
 
 		sw.Stop();
 
-		return new AiEnrichmentResult(
-			last?.Enriched ?? 0,
-			last?.Failed ?? 0,
-			last?.TotalCandidates ?? 0,
-			sw.Elapsed
-		);
+		return new AiEnrichmentResult(last?.Enriched ?? 0, last?.Failed ?? 0, last?.TotalCandidates ?? 0, sw.Elapsed);
 	}
 
-	internal static void DisplaySummary(AiEnrichmentResult? result, TimeSpan? maxAiTime, int maxAiDocs, string panelTitle = "[aqua]AI Enrichment Complete[/]")
+	internal static void DisplaySummary(
+		AiEnrichmentResult? result,
+		TimeSpan? maxAiTime,
+		int maxAiDocs,
+		string panelTitle = "[aqua]AI Enrichment Complete[/]"
+	)
 	{
 		if (result is null)
 			return;
@@ -111,35 +110,21 @@ internal static class AiEnrichmentConsole
 
 		var rows = new List<Spectre.Console.Rendering.IRenderable>();
 
-		var aiGrid = new Grid()
-			.AddColumn(new GridColumn().NoWrap().PadRight(2))
-			.AddColumn(new GridColumn().NoWrap());
+		var aiGrid = new Grid().AddColumn(new GridColumn().NoWrap().PadRight(2)).AddColumn(new GridColumn().NoWrap());
 
-		_ = aiGrid.AddRow(
-			new Markup("[purple]Candidates[/]"),
-			new Markup($"[white]{result.TotalCandidates:N0}[/]")
-		);
+		_ = aiGrid.AddRow(new Markup("[purple]Candidates[/]"), new Markup($"[white]{result.TotalCandidates:N0}[/]"));
 
 		if (result.Enriched > 0)
 		{
-			_ = aiGrid.AddRow(
-				new Markup("[green]   Enriched[/]"),
-				new Markup($"[white]{result.Enriched:N0}[/]")
-			);
+			_ = aiGrid.AddRow(new Markup("[green]   Enriched[/]"), new Markup($"[white]{result.Enriched:N0}[/]"));
 		}
 
 		if (result.Failed > 0)
 		{
-			_ = aiGrid.AddRow(
-				new Markup("[red]   Failed[/]"),
-				new Markup($"[white]{result.Failed:N0}[/]")
-			);
+			_ = aiGrid.AddRow(new Markup("[red]   Failed[/]"), new Markup($"[white]{result.Failed:N0}[/]"));
 		}
 
-		_ = aiGrid.AddRow(
-			new Markup("[dim]   Duration[/]"),
-			new Markup($"[white]{result.Duration:hh\\:mm\\:ss}[/]")
-		);
+		_ = aiGrid.AddRow(new Markup("[dim]   Duration[/]"), new Markup($"[white]{result.Duration:hh\\:mm\\:ss}[/]"));
 
 		rows.Add(aiGrid);
 

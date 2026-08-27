@@ -25,9 +25,8 @@ public sealed record McpFeatureModule(
 	string? Capability,
 	string[] WhenToUse,
 	string[] ToolGuidance,
-	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
-	[property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
-	Type? ToolType,
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)][property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods
+		| DynamicallyAccessedMemberTypes.PublicConstructors)] Type? ToolType,
 	Action<IServiceCollection> RegisterServices
 );
 
@@ -36,13 +35,8 @@ internal static class McpFeatureModules
 	public static readonly McpFeatureModule Search = new(
 		Name: "Search",
 		Capability: "search",
-		WhenToUse:
-		[
-			"Wants to find, read, or verify {docs} pages.",
-			"Needs to check whether a topic is already covered in {docs}."
-		],
-		ToolGuidance:
-		[
+		WhenToUse: ["Wants to find, read, or verify {docs} pages.", "Needs to check whether a topic is already covered in {docs}."],
+		ToolGuidance: [
 			"Prefer {tool:search_{resource}} over a general web search when looking up Elastic documentation content.",
 			"Use {tool:find_related_{resource}} when exploring what documentation exists around a topic."
 		],
@@ -54,8 +48,7 @@ internal static class McpFeatureModules
 		Name: "Documents",
 		Capability: "retrieve",
 		WhenToUse: [],
-		ToolGuidance:
-		[
+		ToolGuidance: [
 			"Use {tool:get_{scope}document_by_url} to retrieve a specific page when the user provides or you already know the URL."
 		],
 		ToolType: typeof(DocumentTools),
@@ -65,12 +58,8 @@ internal static class McpFeatureModules
 	public static readonly McpFeatureModule Coherence = new(
 		Name: "Coherence",
 		Capability: "analyze",
-		WhenToUse:
-		[
-			"Asks about {docs} structure, coherence, or inconsistencies across pages."
-		],
-		ToolGuidance:
-		[
+		WhenToUse: ["Asks about {docs} structure, coherence, or inconsistencies across pages."],
+		ToolGuidance: [
 			"Use {tool:check_{resource}_coherence} or {tool:find_{resource}_inconsistencies} when reviewing or auditing documentation quality."
 		],
 		ToolType: typeof(CoherenceTools),

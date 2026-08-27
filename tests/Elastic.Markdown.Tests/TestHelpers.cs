@@ -28,7 +28,8 @@ public static class TestHelpers
 	public static DocumentationFileSystem CreateDocumentationFileSystem(
 		MockFileSystem fileSystem,
 		IDirectoryInfo? invocation = null,
-		GitCheckoutInformation? git = null)
+		GitCheckoutInformation? git = null
+	)
 	{
 		var gitPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".git");
 		if (!fileSystem.Directory.Exists(gitPath))
@@ -37,14 +38,19 @@ public static class TestHelpers
 		return DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { Inner = fileSystem, Git = git });
 	}
 
-	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null)
+	public static IConfigurationContext CreateConfigurationContext(
+		IFileSystem fileSystem,
+		VersionsConfiguration? versionsConfiguration = null,
+		ProductsConfiguration? productsConfiguration = null
+	)
 	{
 		versionsConfiguration ??= new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Stack, new VersioningSystem
+					VersioningSystemId.Stack,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
 						Current = new SemVersion(8, 0, 0),
@@ -52,36 +58,20 @@ public static class TestHelpers
 					}
 				},
 				{
-					VersioningSystemId.Self, new VersioningSystem
-					{
-						Id = VersioningSystemId.Self,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
+					VersioningSystemId.Self,
+					new VersioningSystem { Id = VersioningSystemId.Self, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) }
 				},
 				{
-					VersioningSystemId.Ess, new VersioningSystem
-					{
-						Id = VersioningSystemId.Ess,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
+					VersioningSystemId.Ess,
+					new VersioningSystem { Id = VersioningSystemId.Ess, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) }
 				},
 				{
-					VersioningSystemId.Eck, new VersioningSystem
-					{
-						Id = VersioningSystemId.Eck,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
+					VersioningSystemId.Eck,
+					new VersioningSystem { Id = VersioningSystemId.Eck, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) }
 				},
 				{
-					VersioningSystemId.Ece, new VersioningSystem
-					{
-						Id = VersioningSystemId.Ece,
-						Current = new SemVersion(8, 0, 0),
-						Base = new SemVersion(8, 0, 0)
-					}
+					VersioningSystemId.Ece,
+					new VersioningSystem { Id = VersioningSystemId.Ece, Current = new SemVersion(8, 0, 0), Base = new SemVersion(8, 0, 0) }
 				}
 			},
 		};
@@ -90,7 +80,8 @@ public static class TestHelpers
 			var products = new Dictionary<string, Product>
 			{
 				{
-					"elasticsearch", new Product
+					"elasticsearch",
+					new Product
 					{
 						Id = "elasticsearch",
 						DisplayName = "Elasticsearch",
@@ -98,7 +89,8 @@ public static class TestHelpers
 					}
 				},
 				{
-					"kibana", new Product
+					"kibana",
+					new Product
 					{
 						Id = "kibana",
 						DisplayName = "Kibana",
@@ -106,7 +98,8 @@ public static class TestHelpers
 					}
 				},
 				{
-					"apm", new Product
+					"apm",
+					new Product
 					{
 						Id = "apm",
 						DisplayName = "APM",
@@ -114,7 +107,8 @@ public static class TestHelpers
 					}
 				},
 				{
-					"apm-agent", new Product
+					"apm-agent",
+					new Product
 					{
 						Id = "apm-agent",
 						DisplayName = "APM Agent",
@@ -132,11 +126,12 @@ public static class TestHelpers
 		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
-			Endpoints = new DocumentationEndpoints
-			{
-				Elasticsearch = ElasticsearchEndpoint.Default,
-			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(TestContext.Current.TestOutputHelper), new ConfigurationFileSystem(fileSystem)),
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
+			ConfigurationFileProvider =
+				new ConfigurationFileProvider(
+					new TestLoggerFactory(TestContext.Current.TestOutputHelper),
+					new ConfigurationFileSystem(fileSystem)
+				),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = search,

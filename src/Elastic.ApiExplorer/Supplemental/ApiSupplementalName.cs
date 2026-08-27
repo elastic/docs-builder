@@ -12,10 +12,7 @@ public enum ApiSupplementalKind
 	Tag
 }
 
-public readonly record struct ApiSupplementalFileName(
-	ApiSupplementalKind Kind,
-	string Stem,
-	int? VersionMajor)
+public readonly record struct ApiSupplementalFileName(ApiSupplementalKind Kind, string Stem, int? VersionMajor)
 {
 	public bool IsVersionSuffixed => VersionMajor is not null;
 }
