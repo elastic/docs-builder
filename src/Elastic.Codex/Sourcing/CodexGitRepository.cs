@@ -39,8 +39,11 @@ public class CodexGitRepository(
 	);
 
 	protected override void OnBeforeRetry() =>
-		GitLocks.ClearStale(WorkingDirectory.FileSystem, WorkingDirectory.FullName,
-			f => Logger.LogWarning("Removed stale git lock file {LockFile}", f));
+		GitLocks.ClearStale(
+			WorkingDirectory.FileSystem,
+			WorkingDirectory.FullName,
+			f => Logger.LogWarning("Removed stale git lock file {LockFile}", f)
+		);
 
 	public string GetCurrentCommit() => Capture("git", "rev-parse", "HEAD");
 

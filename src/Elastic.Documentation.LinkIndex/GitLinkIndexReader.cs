@@ -155,17 +155,19 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	/// </summary>
 	private void RunGitWithRetry(string workingDirectory, RetryPolicy policy, params string[] args)
 	{
-		var failure = CommandRetry.Invoke(
-			policy,
-			invoke: () => ExecGit(workingDirectory, args, policy.AttemptTimeout),
-			delay: d => Thread.Sleep(d),
-			onRetry: f =>
-			{
-				GitLocks.ClearStale(_fileSystem, workingDirectory,
-					l => Console.Error.WriteLine($"[git {string.Join(" ", args)}] Removed stale lock file {l}"));
-				Console.Error.WriteLine($"[git {string.Join(" ", args)}] {f}; retrying…");
-			}
-		);
+		var failure = CommandRetry.Invoke(policy, invoke: () => ExecGit(
+			workingDirectory,
+			args,
+			policy.AttemptTimeout
+		), delay: d => Thread.Sleep(d), onRetry: f =>
+		{
+			GitLocks.ClearStale(
+				_fileSystem,
+				workingDirectory,
+				l => Console.Error.WriteLine($"[git {string.Join(" ", args)}] Removed stale lock file {l}")
+			);
+			Console.Error.WriteLine($"[git {string.Join(" ", args)}] {f}; retrying…");
+		});
 
 		if (failure is not null)
 			throw new InvalidOperationException($"Git command failed after {policy.MaxAttempts} attempts (last: {failure.Value}).");
