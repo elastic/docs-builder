@@ -175,7 +175,8 @@ public static class ChangelogKeys
 	/// <summary>
 	/// Parses a CDN bundle locator into product and file name. Accepts
 	/// <c>/bundle/{product}/{file}</c> (leading slash optional) or an absolute http(s) URL whose path
-	/// contains that layout. Returns false for changelog-pool paths. Amend sidecars still parse as
+	/// contains that layout as a path segment (<c>bundle/</c> at the start of the path or after a
+	/// slash). Returns false for changelog-pool paths. Amend sidecars still parse as
 	/// locators; callers that need a parent should reject them with <c>BundleAmendMerger.IsAmendFile</c>.
 	/// </summary>
 	public static bool TryParseBundleLocator(
@@ -193,8 +194,7 @@ public static class ChangelogKeys
 		if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
 		{
 			var path = uri.AbsolutePath.TrimStart('/');
-			var prefixAt = path.IndexOf(BundlePrefix, StringComparison.Ordinal);
-			if (prefixAt < 0)
+			if (!TryGetBundlePrefixIndex(path, out var prefixAt))
 				return false;
 			key = path[prefixAt..];
 		}
@@ -221,6 +221,27 @@ public static class ChangelogKeys
 			return false;
 		}
 
+		return true;
+	}
+
+	/// <summary>
+	/// Index of a path-segment <c>bundle/</c> in an already slash-trimmed URL path, or false when
+	/// the substring only appears inside another segment (for example <c>notbundle/</c>).
+	/// </summary>
+	private static bool TryGetBundlePrefixIndex(string path, out int prefixAt)
+	{
+		prefixAt = -1;
+		if (path.StartsWith(BundlePrefix, StringComparison.Ordinal))
+		{
+			prefixAt = 0;
+			return true;
+		}
+
+		var nested = path.IndexOf("/" + BundlePrefix, StringComparison.Ordinal);
+		if (nested < 0)
+			return false;
+
+		prefixAt = nested + 1;
 		return true;
 	}
 

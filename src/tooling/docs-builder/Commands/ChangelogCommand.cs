@@ -1487,9 +1487,10 @@ internal sealed partial class ChangelogCommands(
 
 	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
 	/// <remarks>
-	/// Creates an immutable <c>.amend-N.yaml</c> sidecar. The parent may be a local file (the sidecar
-	/// is written next to it) or a CDN locator <c>/bundle/{product}/{file}.yaml</c> (the sidecar is
-	/// written under <c>--output</c>, <c>bundle.output_directory</c>, or the current directory).
+	/// Creates an immutable <c>.amend-N</c> sidecar using the same <c>.yaml</c> or <c>.yml</c> extension
+	/// as the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator
+	/// <c>/bundle/{product}/{file}.yaml</c> (the sidecar is written under <c>--output</c>,
+	/// <c>bundle.output_directory</c>, or the current directory).
 	/// Upload the sidecar separately with <c>changelog upload --artifact-type bundle</c>.
 	/// </remarks>
 	/// <param name="bundlePath">Required: Local path to the parent bundle, or a CDN locator <c>/bundle/{product}/{file}.yaml</c> (leading slash optional; an absolute http(s) URL with that path is also accepted). Local paths support tilde (~) expansion and must be a <c>.yml</c>/<c>.yaml</c> file that exists on disk.</param>
@@ -1498,7 +1499,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the sourced changelog, or when no YAML can be sourced (inferred git-ref entries).</param>
 	/// <param name="forceLocal">Optional: Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config).</param>
 	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
-	/// <param name="output">Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a <c>.yaml</c>/<c>.yml</c> path whose file name must be <c>{parent}.amend-N.yaml</c> for the next unused N. Falls back to <c>bundle.output_directory</c> in changelog.yml, then the current directory. Ignored for a local parent.</param>
+	/// <param name="output">Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a <c>.yaml</c>/<c>.yml</c> path whose file name must be <c>{parent}.amend-N</c> plus the same extension as the parent for the next unused N. Falls back to <c>bundle.output_directory</c> in changelog.yml, then the current directory. Ignored for a local parent.</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
 		[Argument] string bundlePath,

@@ -1,7 +1,7 @@
 ## Description
 
 Amend a bundle with additional or excluded changelog entries without modifying the parent bundle file.
-Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}` plus the same `.yaml` or `.yml` extension as the parent, where `{N}` is a sequence number.
 
 Specify at least one of `--add` or `--remove`.
 
@@ -63,7 +63,7 @@ Amend bundles created by older docs-builder versions may omit `products`; they a
 
 `--add` and `--remove` use the same CDN-versus-local gate as [](/cli/changelog/bundle.md), except `bundle-amend` has no `--directory` or `--repo` flags: CDN by default when `bundle.repo` or the parent bundle's `repo` resolves; local disk when `--force-local` or `bundle.use_local_changelogs` is set, or when no authoring repo can be resolved. In CDN mode, only the file name is used (including CDN paths such as `/changelog/elastic/kibana/main/247279.yaml`). The GET uses the resolved authoring org/repo/branch from `changelog.yml` or the parent bundle, not the org/repo/branch segments in the path you pass. Use `--force-local` to read local changelogs from disk.
 
-The parent may be a local bundle file or a published CDN locator (`/bundle/{product}/{file}.yaml`, leading slash optional). A local parent writes `{parent}.amend-N.yaml` next to that file. A CDN parent fetches the published bundle and any existing `amend-N` sidecars, then writes only the new sidecar locally — it does not download-and-rewrite the parent, and it does not upload. `--output` (a directory, or the exact `{parent}.amend-N.yaml` name for the next unused N) selects the write location for a CDN parent; when omitted, the command uses `bundle.output_directory` from `changelog.yml`, then the current directory. `--output` is ignored for a local parent.
+The parent may be a local bundle file or a published CDN locator (`/bundle/{product}/{file}.yaml`, leading slash optional). A local parent writes `{parent}.amend-N` next to that file, using the parent's `.yaml` or `.yml` extension. A CDN parent fetches the published bundle and any existing `amend-N` sidecars, then writes only the new sidecar locally — it does not download-and-rewrite the parent, and it does not upload. `--output` (a directory, or the exact `{parent}.amend-N` name with the same extension as the parent for the next unused N) selects the write location for a CDN parent; when omitted, the command uses `bundle.output_directory` from `changelog.yml`, then the current directory. `--output` is ignored for a local parent.
 :::
 
 ## Examples

@@ -174,7 +174,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 	}
 
 	/// <summary>
-	/// Fetches a single parent bundle and its listed <c>{name}.amend-N.yaml</c> sidecars from the
+	/// Fetches a single parent bundle and its listed <c>{name}.amend-N</c> sidecars from the
 	/// product tree. Reads <c>bundle/{product}/registry.json</c> (the scrubber-maintained bundle
 	/// index, not the changelog-entry pool) so sibling amends can be enumerated without downloading
 	/// the rest of the catalog. Returns <c>null</c> after emitting an error when the registry cannot

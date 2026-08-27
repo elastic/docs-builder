@@ -282,6 +282,7 @@ public class ChangelogKeysTests
 	[InlineData("not-a-path")]
 	[InlineData("bundle/foo.bar/9.3.0.yaml")]
 	[InlineData("/bundle/elasticsearch/a/b.yaml")]
+	[InlineData("https://cdn.example/notbundle/kibana/9.3.0.yaml")]
 	[InlineData("")]
 	[InlineData(null)]
 	public void TryParseBundleLocator_NonBundlePaths_ReturnsFalse(string? input)

@@ -3400,7 +3400,7 @@
           ],
           "name": "bundle-amend",
           "summary": "Append or exclude changelog entries in a published bundle without modifying it.",
-          "notes": "Creates an immutable .amend-N.yaml sidecar file alongside the original bundle.",
+          "notes": "Creates an immutable .amend-N sidecar using the same .yaml or .yml extension\nas the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator\n/bundle/{product}/{file}.yaml (the sidecar is written under --output,\nbundle.output_directory, or the current directory).\nUpload the sidecar separately with changelog upload --artifact-type bundle.",
           "usage": "docs-builder changelog bundle-amend \u003Cbundle-path\u003E [options]",
           "examples": [],
           "parameters": [
@@ -3409,22 +3409,7 @@
               "name": "bundle-path",
               "type": "string",
               "required": true,
-              "summary": "Required: Path to the original bundle file to amend",
-              "validations": [
-                {
-                  "kind": "rejectSymbolicLinks"
-                },
-                {
-                  "kind": "existing"
-                },
-                {
-                  "kind": "fileExtensions",
-                  "values": [
-                    "yml",
-                    "yaml"
-                  ]
-                }
-              ]
+              "summary": "Required: Local path to the parent bundle, or a CDN locator /bundle/{product}/{file}.yaml (leading slash optional; an absolute http(s) URL with that path is also accepted). Local paths support tilde (~) expansion and must be a .yml/.yaml file that exists on disk."
             },
             {
               "role": "flag",
@@ -3467,6 +3452,13 @@
               "required": false,
               "summary": "Optional: Preview changes without writing an amend file.",
               "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "output",
+              "type": "string",
+              "required": false,
+              "summary": "Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a .yaml/.yml path whose file name must be {parent}.amend-N plus the same extension as the parent for the next unused N. Falls back to bundle.output_directory in changelog.yml, then the current directory. Ignored for a local parent."
             },
             {
               "role": "flag",

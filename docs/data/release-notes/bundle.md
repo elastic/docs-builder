@@ -297,7 +297,7 @@ docs-builder changelog bundle-amend \
   --add /changelog/elastic/kibana/main/138723.yaml
 ```
 
-Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}` plus the same `.yaml` or `.yml` extension as the parent, where `{N}` is a sequence number.
 
 To remove entries from an existing bundle without editing the parent file, use `--remove` on the same command:
 

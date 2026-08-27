@@ -55,8 +55,9 @@ public record AmendBundleArguments
 	public bool DryRun { get; init; }
 
 	/// <summary>
-	/// Directory or <c>{parent}.amend-N.yaml</c> path for the new sidecar. Used only when the parent
-	/// is a CDN bundle locator; local parents always write beside the parent file.
+	/// Directory or <c>{parent}.amend-N</c> path (same <c>.yaml</c>/<c>.yml</c> extension as the parent)
+	/// for the new sidecar. Used only when the parent is a CDN bundle locator; local parents always
+	/// write beside the parent file.
 	/// </summary>
 	public string? Output { get; init; }
 }
