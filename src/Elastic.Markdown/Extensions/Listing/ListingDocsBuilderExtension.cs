@@ -62,9 +62,9 @@ public class ListingDocsBuilderExtension(BuildContext build, MarkdownParser mark
 
 	private void RegisterListingRef(ListingRef listingRef)
 	{
-		var rootDir = Build.ReadFileSystem.Path.Join(
-			Build.DocumentationSourceDirectory.FullName,
-			listingRef.PathRelativeToDocumentationSet);
+		var rootDir = Build.ReadFileSystem
+			.Path
+			.Join(Build.DocumentationSourceDirectory.FullName, listingRef.PathRelativeToDocumentationSet);
 
 		// Root index
 		RegisterIndexPath(Build.ReadFileSystem.Path.Join(rootDir, "index.md"));
@@ -80,18 +80,21 @@ public class ListingDocsBuilderExtension(BuildContext build, MarkdownParser mark
 			if (groupIndex is null)
 			{
 				// Synthesize <rootDir>/<groupKey>/index.md
-				var groupIndexPath = Build.ReadFileSystem.Path.Join(
-					Build.DocumentationSourceDirectory.FullName,
-					listingRef.PathRelativeToDocumentationSet,
-					groupRef.GroupKey,
-					"index.md");
+				var groupIndexPath = Build.ReadFileSystem
+					.Path
+					.Join(
+						Build.DocumentationSourceDirectory.FullName,
+						listingRef.PathRelativeToDocumentationSet,
+						groupRef.GroupKey,
+						"index.md"
+					);
 				RegisterIndexPath(groupIndexPath);
 			}
 			else
 			{
-				RegisterIndexPath(Build.ReadFileSystem.Path.Join(
-					Build.DocumentationSourceDirectory.FullName,
-					groupIndex.PathRelativeToDocumentationSet));
+				RegisterIndexPath(
+					Build.ReadFileSystem.Path.Join(Build.DocumentationSourceDirectory.FullName, groupIndex.PathRelativeToDocumentationSet)
+				);
 			}
 		}
 	}
@@ -133,7 +136,8 @@ public class ListingDocsBuilderExtension(BuildContext build, MarkdownParser mark
 	}
 
 	public IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(
-		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling)
+		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
+	)
 	{
 		EnsureInitialized();
 		if (_syntheticIndexFiles is not { Count: > 0 })

@@ -41,7 +41,8 @@ public record ResolvedScrubberAllowlist
 	public string? LocalSha256 { get; init; }
 
 	/// <summary>Whether the local allowlist matches the deployed one; null when no local path was given.</summary>
-	public bool? MatchesLocal => LocalSha256 is null ? null : string.Equals(LocalSha256, Identity.AllowlistSha256, StringComparison.Ordinal);
+	public bool? MatchesLocal =>
+		LocalSha256 is null ? null : string.Equals(LocalSha256, Identity.AllowlistSha256, StringComparison.Ordinal);
 }
 
 /// <summary>
@@ -69,7 +70,8 @@ public class ScrubberAllowlistIdentityService(
 	public async Task<ResolvedScrubberAllowlist?> ResolveDeployedAsync(
 		IDiagnosticsCollector collector,
 		ResolveScrubberAllowlistArguments args,
-		Cancel ctx = default)
+		Cancel ctx = default
+	)
 	{
 		var located = await LocateIdentityAssetAsync(collector, args, ctx);
 		if (located is null)
@@ -79,8 +81,10 @@ public class ScrubberAllowlistIdentityService(
 		var json = await releaseService.DownloadAssetTextAsync(asset, ctx);
 		if (json is null)
 		{
-			collector.EmitError(string.Empty,
-				$"Failed to download release asset '{asset.Name}' from {args.Owner}/{args.Repo}@{release.TagName}.");
+			collector.EmitError(
+				string.Empty,
+				$"Failed to download release asset '{asset.Name}' from {args.Owner}/{args.Repo}@{release.TagName}."
+			);
 			return null;
 		}
 
@@ -92,21 +96,22 @@ public class ScrubberAllowlistIdentityService(
 		}
 
 		var localSha = ComputeLocalSha256(collector, args.AssemblerPath);
-		var resolved = new ResolvedScrubberAllowlist
-		{
-			Identity = identity,
-			ReleaseTag = release.TagName,
-			LocalSha256 = localSha
-		};
+		var resolved = new ResolvedScrubberAllowlist { Identity = identity, ReleaseTag = release.TagName, LocalSha256 = localSha };
 
-		_logger.LogInformation("Deployed scrubber allowlist: {Sha256} (commit {Commit}, release {Tag})",
-			identity.AllowlistSha256, identity.DeploymentCommit, release.TagName);
+		_logger.LogInformation(
+			"Deployed scrubber allowlist: {Sha256} (commit {Commit}, release {Tag})",
+			identity.AllowlistSha256,
+			identity.DeploymentCommit,
+			release.TagName
+		);
 
 		if (resolved.MatchesLocal == false)
 		{
-			collector.EmitWarning(string.Empty,
+			collector.EmitWarning(
+				string.Empty,
 				$"Local assembler.yml ({localSha}) differs from the deployed scrubber allowlist ({identity.AllowlistSha256}, release {release.TagName}). " +
-				"Links must be validated against the deployed allowlist, not the local checkout.");
+					"Links must be validated against the deployed allowlist, not the local checkout."
+			);
 		}
 		else if (resolved.MatchesLocal == true)
 		{
@@ -119,24 +124,29 @@ public class ScrubberAllowlistIdentityService(
 	private async Task<(GitHubReleaseInfo Release, GitHubReleaseAsset Asset)?> LocateIdentityAssetAsync(
 		IDiagnosticsCollector collector,
 		ResolveScrubberAllowlistArguments args,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (!string.IsNullOrWhiteSpace(args.Tag))
 		{
 			var release = await releaseService.FetchReleaseAsync(args.Owner, args.Repo, args.Tag, ctx);
 			if (release is null)
 			{
-				collector.EmitError(string.Empty,
-					$"Release '{args.Tag}' was not found on {args.Owner}/{args.Repo}. Ensure the tag exists and credentials are set.");
+				collector.EmitError(
+					string.Empty,
+					$"Release '{args.Tag}' was not found on {args.Owner}/{args.Repo}. Ensure the tag exists and credentials are set."
+				);
 				return null;
 			}
 
 			var asset = FindIdentityAsset(release);
 			if (asset is null)
 			{
-				collector.EmitError(string.Empty,
+				collector.EmitError(
+					string.Empty,
 					$"Release {args.Owner}/{args.Repo}@{release.TagName} does not carry the '{ScrubberAllowlistIdentity.AssetName}' asset: " +
-					"either the release predates allowlist identity publication, or its scrubber deploy never completed.");
+						"either the release predates allowlist identity publication, or its scrubber deploy never completed."
+				);
 				return null;
 			}
 
@@ -152,9 +162,11 @@ public class ScrubberAllowlistIdentityService(
 			_logger.LogDebug("Release {Tag} has no allowlist identity asset; looking further back", release.TagName);
 		}
 
-		collector.EmitError(string.Empty,
+		collector.EmitError(
+			string.Empty,
 			$"No release among the latest {ReleaseLookback} on {args.Owner}/{args.Repo} carries the '{ScrubberAllowlistIdentity.AssetName}' asset, " +
-			"so the deployed scrubber allowlist identity cannot be resolved. A backfill plan cannot be approved without it.");
+				"so the deployed scrubber allowlist identity cannot be resolved. A backfill plan cannot be approved without it."
+		);
 		return null;
 	}
 

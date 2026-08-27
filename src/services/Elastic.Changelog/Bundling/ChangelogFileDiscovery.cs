@@ -20,7 +20,8 @@ public class ChangelogFileDiscovery(IFileSystem fileSystem, ILogger logger)
 		var outputFileName = fileSystem.Path.GetFileName(outputPath);
 
 		// Read all YAML files from directory
-		var allYamlFiles = fileSystem.Directory.GetFiles(directory, "*.yaml", SearchOption.TopDirectoryOnly)
+		var allYamlFiles = fileSystem.Directory
+			.GetFiles(directory, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(fileSystem.Directory.GetFiles(directory, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();
 
@@ -49,8 +50,7 @@ public class ChangelogFileDiscovery(IFileSystem fileSystem, ILogger logger)
 		{
 			var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
 			// Bundle files have "entries:" at root level, changelog files don't
-			if (fileContent.Contains("entries:", StringComparison.Ordinal) &&
-				fileContent.Contains("products:", StringComparison.Ordinal))
+			if (fileContent.Contains("entries:", StringComparison.Ordinal) && fileContent.Contains("products:", StringComparison.Ordinal))
 			{
 				logger.LogDebug("Skipping bundle file: {FileName}", fileName);
 				return true;

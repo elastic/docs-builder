@@ -33,20 +33,18 @@ public class StaticWebHost
 		if (!dir.IsSubPathOf(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)))
 			throw new Exception($"Can not serve directory outside of: {Paths.WorkingDirectoryRoot.FullName}");
 
-		var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-		{
-			ContentRootPath = _contentRoot
-		});
+		var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = _contentRoot });
 
 		_ = builder.AddDocumentationServiceDefaults();
 #if DEBUG
 		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
-		_ = builder.Logging
-			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
-			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
-			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
+		_ =
+			builder.Logging
+				.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
+				.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
+				.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
 
 		WebApplication = builder.Build();
@@ -59,35 +57,32 @@ public class StaticWebHost
 
 	private void SetUpRoutes()
 	{
-		_ = WebApplication.Use(async (context, next) =>
-		{
-			try
-			{
-				await next(context);
-			}
-			catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
-			{
-				// Client disconnected or navigated away — normal, no need to log or rethrow.
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
-				Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
-				if (ex.InnerException != null)
-					Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-
-				throw; // Re-throw to let ASP.NET Core handle it
-			}
-		});
 		_ =
-			WebApplication
-				.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
-				.UseRouting();
+			WebApplication.Use(async (context, next) =>
+			{
+				try
+				{
+					await next(context);
+				}
+				catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+				{
+					// Client disconnected or navigated away — normal, no need to log or rethrow.
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
+					Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
+					if (ex.InnerException != null)
+						Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+
+					throw; // Re-throw to let ASP.NET Core handle it
+				}
+			});
+		_ = WebApplication.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions()).UseRouting();
 
 		_ = WebApplication.MapGet("/", ServeRootIndex);
 
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
-
 
 #if DEBUG
 		var apiV1 = WebApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
@@ -145,7 +140,6 @@ public class StaticWebHost
 			};
 			return Results.File(fileInfo.FullName, mimetype);
 		}
-
 
 		return Results.NotFound();
 	}

@@ -14,18 +14,17 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: DirectiveTest(output, content)
-	where TDirective : DirectiveBlock
+public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : DirectiveTest(
+	output,
+	content
+) where TDirective : DirectiveBlock
 {
 	protected TDirective? Block { get; private set; }
 
 	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
-		Block = Document
-			.Descendants<TDirective>()
-			.FirstOrDefault();
+		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
 	[Fact]
@@ -48,21 +47,21 @@ public abstract class DirectiveTest : IAsyncLifetime
 		var logger = new TestLoggerFactory(output);
 
 		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
-		var documentContents = TestingFullDocument ? content :
-// language=markdown
-$"""
+		var documentContents = TestingFullDocument
+			? content
+			:
+			// language=markdown
+			$"""
  # Test Document
 
  {content}
  """;
 
-		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "docs/index.md", new MockFileData(documentContents) }
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+		FileSystem =
+			new MockFileSystem(
+				new Dictionary<string, MockFileData> { { "docs/index.md", new MockFileData(documentContents) } },
+				new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+			);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
@@ -75,10 +74,13 @@ $"""
 		// ReSharper disable once VirtualMemberCallInConstructor
 		var environment = GetEnvironment();
 		// ReSharper disable once VirtualMemberCallInConstructor
-		var context = new BuildContext(Collector, TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()), configurationContext, environment)
-		{
-			ContentSource = GetContentSource()
-		};
+		var context = new BuildContext(
+			Collector,
+			TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()),
+			configurationContext,
+			environment
+		)
+		{ ContentSource = GetContentSource() };
 		var linkResolver = new TestCrossLinkResolver();
 		// ReSharper disable once VirtualMemberCallInConstructor
 		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
@@ -142,7 +144,9 @@ $"""
 	{
 		var outputDir = Set.Context.OutputDirectory.FullName;
 		return FileSystem.AllFiles
-			.Where(f => f.StartsWith(outputDir, StringComparison.OrdinalIgnoreCase) && f.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+			.Where(
+				f => f.StartsWith(outputDir, StringComparison.OrdinalIgnoreCase) && f.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+			)
 			.Select(f => FileSystem.File.ReadAllText(f))
 			.ToList();
 	}

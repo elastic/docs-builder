@@ -11,9 +11,8 @@ namespace Elastic.Documentation.Navigation.Isolated.Node;
 public class FolderNavigation<TModel>(
 	string parentPath,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-	INavigationHomeAccessor homeAccessor)
-	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation, IAssignableIslandNavigation
-	where TModel : class, IDocumentationFile
+	INavigationHomeAccessor homeAccessor
+) : INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation, IAssignableIslandNavigation where TModel : class, IDocumentationFile
 {
 	// Will be set by SetNavigationItems
 
@@ -48,7 +47,8 @@ public class FolderNavigation<TModel>(
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
 
-	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{FolderPath}/index.md", out navigationItems);

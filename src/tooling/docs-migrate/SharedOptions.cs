@@ -21,8 +21,7 @@ internal static class SharedOptions
 
 	public static readonly DirectoryInfo DefaultWorkDir = ResolveDefaultWorkDir();
 
-	public static string ResolveWorkDir(string? workDir) =>
-		workDir ?? DefaultWorkDir.FullName;
+	public static string ResolveWorkDir(string? workDir) => workDir ?? DefaultWorkDir.FullName;
 
 	private static DirectoryInfo ResolveDefaultWorkDir()
 	{
@@ -65,8 +64,7 @@ internal static class SharedOptions
 		return JsonSerializer.Deserialize<FilterOptions>(json, JsonOptions) ?? new FilterOptions();
 	}
 
-	public static FilterOptions ResolveFilterOptions(
-		string workDir, int? majors, bool? all, int? minVersion, string? book, int? minors)
+	public static FilterOptions ResolveFilterOptions(string workDir, int? majors, bool? all, int? minVersion, string? book, int? minors)
 	{
 		var saved = LoadFilterOptions(workDir);
 
@@ -90,17 +88,15 @@ internal static class SharedOptions
 		var branches = book.Branches.ToList();
 
 		if (minVersion is not null)
-			branches = branches
-				.Where(b => TryParseMajorMinor(b.VersionLabel) is var p && p.HasValue && p.Value.Major >= minVersion)
-				.ToList();
+			branches =
+				branches.Where(b => TryParseMajorMinor(b.VersionLabel) is var p && p.HasValue && p.Value.Major >= minVersion).ToList();
 
 		if (all)
 			return EnsureCurrent(book, SortDescending(branches));
 
 		var selected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-		var grouped = branches
-			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
+		var grouped = branches.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.Where(x => x.Parsed.HasValue)
 			.GroupBy(x => x.Parsed!.Value.Major)
 			.OrderByDescending(g => g.Key)
@@ -126,16 +122,14 @@ internal static class SharedOptions
 		if (versions.Any(v => v.VersionLabel == book.Current))
 			return versions;
 
-		var currentBranch = book.Branches.FirstOrDefault(b => b.VersionLabel == book.Current)
-			?? new BranchRef(book.Current);
+		var currentBranch = book.Branches.FirstOrDefault(b => b.VersionLabel == book.Current) ?? new BranchRef(book.Current);
 
 		versions.Insert(0, currentBranch);
 		return versions;
 	}
 
 	private static List<BranchRef> SortDescending(IEnumerable<BranchRef> branches) =>
-		branches
-			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
+		branches.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.OrderByDescending(x => x.Parsed?.Major ?? 0)
 			.ThenByDescending(x => x.Parsed?.Minor ?? 0)
 			.Select(x => x.Branch)

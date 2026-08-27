@@ -23,22 +23,21 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Checks documentation coherence for a given topic.
 	/// </summary>
-	[McpServerTool, McpToolName("check_{resource}_coherence"), Description(
-		"Checks how coherently a topic is covered across all {docs}. " +
-		"Use when reviewing documentation quality, auditing coverage of a feature or concept, " +
-		"or checking whether a topic is documented consistently across products and sections.")]
+	[McpServerTool, McpToolName("check_{resource}_coherence"), Description("Checks how coherently a topic is covered across all {docs}. "
+		+ "Use when reviewing documentation quality, auditing coverage of a feature or concept, "
+		+ "or checking whether a topic is documented consistently across products and sections.")]
 	public async Task<string> CheckCoherence(
 		[Description("Topic or concept to check coherence for")] string topic,
 		[Description("Maximum number of documents to analyze (default: 20)")] int limit = 20,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default
+	)
 	{
 		var toolName = McpToolTelemetry.ResolveToolName("check_{resource}_coherence");
 		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
-		{
-			["topic"] = topic,
-			["limit"] = limit
-		});
+		var payload = McpToolTelemetry.SetPayloadMetadata(
+			activity,
+			new Dictionary<string, object?> { ["topic"] = topic, ["limit"] = limit }
+		);
 		McpToolTelemetry.LogStart(logger, toolName, payload);
 		var duration = Stopwatch.StartNew();
 		var outcome = "failure";
@@ -47,13 +46,7 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 		{
 			limit = Math.Clamp(limit, 5, 50);
 
-			var request = new FullSearchRequest
-			{
-				Query = topic,
-				PageNumber = 1,
-				PageSize = limit,
-				IncludeHighlighting = false
-			};
+			var request = new FullSearchRequest { Query = topic, PageNumber = 1, PageSize = limit, IncludeHighlighting = false };
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
 
@@ -80,14 +73,21 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 				DocsWithAiSummary = docsWithSummaries,
 				DocsWithRagSummary = docsWithRagSummaries,
 				CoverageScore = CalculateCoverageScore(result.TotalResults, navigationSections.Count, products.Count),
-				TopDocuments = result.Results.Take(5).Select(r => new CoherenceDocDto
-				{
-					Url = r.Url,
-					Title = r.Title,
-					AiShortSummary = r.AiShortSummary,
-					NavigationSection = r.NavigationSection,
-					Product = r.Product?.DisplayName
-				}).ToList()
+				TopDocuments =
+					result.Results
+						.Take(5)
+						.Select(
+							r =>
+								new CoherenceDocDto
+								{
+									Url = r.Url,
+									Title = r.Title,
+									AiShortSummary = r.AiShortSummary,
+									NavigationSection = r.NavigationSection,
+									Product = r.Product?.DisplayName
+								}
+						)
+						.ToList()
 			};
 
 			McpToolTelemetry.MarkSuccess(activity);
@@ -116,22 +116,21 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 	/// <summary>
 	/// Finds potential inconsistencies in documentation for a given topic.
 	/// </summary>
-	[McpServerTool, McpToolName("find_{resource}_inconsistencies"), Description(
-		"Finds potential inconsistencies across {docs} pages covering the same topic. " +
-		"Use when auditing docs quality, verifying that instructions don't contradict each other, " +
-		"or checking for overlapping content within a product area.")]
+	[McpServerTool, McpToolName("find_{resource}_inconsistencies"), Description("Finds potential inconsistencies across {docs} pages covering the same topic. "
+		+ "Use when auditing docs quality, verifying that instructions don't contradict each other, "
+		+ "or checking for overlapping content within a product area.")]
 	public async Task<string> FindInconsistencies(
 		[Description("Topic or concept to check for inconsistencies")] string topic,
 		[Description("Specific area to focus on (e.g., 'installation', 'configuration')")] string? focusArea = null,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default
+	)
 	{
 		var toolName = McpToolTelemetry.ResolveToolName("find_{resource}_inconsistencies");
 		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
-		{
-			["topic"] = topic,
-			["focusArea"] = focusArea
-		});
+		var payload = McpToolTelemetry.SetPayloadMetadata(
+			activity,
+			new Dictionary<string, object?> { ["topic"] = topic, ["focusArea"] = focusArea }
+		);
 		McpToolTelemetry.LogStart(logger, toolName, payload);
 		var duration = Stopwatch.StartNew();
 		var outcome = "failure";
@@ -140,13 +139,7 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 		{
 			var query = focusArea != null ? $"{topic} {focusArea}" : topic;
 
-			var request = new FullSearchRequest
-			{
-				Query = query,
-				PageNumber = 1,
-				PageSize = 30,
-				IncludeHighlighting = false
-			};
+			var request = new FullSearchRequest { Query = query, PageNumber = 1, PageSize = 30, IncludeHighlighting = false };
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
 

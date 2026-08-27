@@ -22,13 +22,7 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 	private const string Owner = "elastic";
 	private const string Repo = "widget";
 
-	private static readonly CommitRangeArguments Args = new()
-	{
-		Owner = Owner,
-		Repo = Repo,
-		StartRef = "startsha",
-		EndRef = "endsha"
-	};
+	private static readonly CommitRangeArguments Args = new() { Owner = Owner, Repo = Repo, StartRef = "startsha", EndRef = "endsha" };
 
 	private static string Sha(int i) => i.ToString(CultureInfo.InvariantCulture).PadLeft(40, '0');
 
@@ -53,7 +47,11 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		{
 			if (i > 0)
 				_ = sb.Append(',');
-			_ = sb.Append(CultureInfo.InvariantCulture, $$""" "c{{i}}": { "oid": "{{commits[i].Sha}}", "associatedPullRequests": { "nodes": [{{string.Join(",", commits[i].PrNodes)}}] } }""");
+			_ =
+				sb.Append(
+					CultureInfo.InvariantCulture,
+					$$""" "c{{i}}": { "oid": "{{commits[i].Sha}}", "associatedPullRequests": { "nodes": [{{string.Join(",", commits[i].PrNodes)}}] } }"""
+				);
 		}
 
 		return $$"""{ "data": { "repository": {{{sb}} } } }""";
@@ -62,7 +60,10 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 	private GitHubCommitRangeService Service(StubHandler handler) =>
 		new(new TestLoggerFactory(Output), new GitHubApiTransport(handler, "test-token"));
 
-	private static StubHandler Handler(Func<HttpRequestMessage, string?> compareResponder, Func<HttpRequestMessage, string> graphQlResponder) =>
+	private static StubHandler Handler(
+		Func<HttpRequestMessage, string?> compareResponder,
+		Func<HttpRequestMessage, string> graphQlResponder
+	) =>
 		new(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
@@ -83,7 +84,8 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		var (sha1, sha2) = (Sha(1), Sha(2));
 		var handler = Handler(
 			_ => CompareJson(2, [sha1, sha2]),
-			_ => GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)]), (sha2, [PrNode(12, mergeCommitSha: sha2)])]));
+			_ => GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)]), (sha2, [PrNode(12, mergeCommitSha: sha2)])])
+		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 
@@ -104,11 +106,13 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		var (sha1, sha2, mergeSha) = (Sha(1), Sha(2), Sha(3));
 		var handler = Handler(
 			_ => CompareJson(3, [sha1, sha2, mergeSha]),
-			_ => GraphQlJson([
-				(sha1, [PrNode(20, mergeCommitSha: mergeSha)]),
-				(sha2, [PrNode(20, mergeCommitSha: mergeSha)]),
-				(mergeSha, [PrNode(20, mergeCommitSha: mergeSha)])
-			]));
+			_ =>
+				GraphQlJson([
+					(sha1, [PrNode(20, mergeCommitSha: mergeSha)]),
+					(sha2, [PrNode(20, mergeCommitSha: mergeSha)]),
+					(mergeSha, [PrNode(20, mergeCommitSha: mergeSha)])
+				])
+		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 
@@ -126,11 +130,13 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		var (sha1, sha2, sha3) = (Sha(1), Sha(2), Sha(3));
 		var handler = Handler(
 			_ => CompareJson(3, [sha1, sha2, sha3]),
-			_ => GraphQlJson([
-				(sha1, []),
-				(sha2, [PrNode(30, merged: false)]),
-				(sha3, [PrNode(31, mergeCommitSha: sha3, repoFullName: "someone/fork")])
-			]));
+			_ =>
+				GraphQlJson([
+					(sha1, []),
+					(sha2, [PrNode(30, merged: false)]),
+					(sha3, [PrNode(31, mergeCommitSha: sha3, repoFullName: "someone/fork")])
+				])
+		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 
@@ -143,17 +149,14 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 	public async Task ResolvePullRequests_MultipleMergedPrs_WarnsAndPicksDeterministically()
 	{
 		var sha1 = Sha(1);
-		var handler = Handler(
-			_ => CompareJson(1, [sha1]),
-			_ => GraphQlJson([(sha1, [PrNode(42), PrNode(7)])]));
+		var handler = Handler(_ => CompareJson(1, [sha1]), _ => GraphQlJson([(sha1, [PrNode(42), PrNode(7)])]));
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
 		result.PullRequests.Should().ContainSingle();
 		result.PullRequests[0].Number.Should().Be(7, "ambiguity resolves deterministically to the lowest PR number");
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning && d.Message.Contains("multiple merged pull requests"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("multiple merged pull requests"));
 	}
 
 	[Fact]
@@ -162,9 +165,7 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		// A commit associated with two merged PRs, but exactly one of them has this commit as its
 		// merge commit — that one wins without a warning.
 		var sha1 = Sha(1);
-		var handler = Handler(
-			_ => CompareJson(1, [sha1]),
-			_ => GraphQlJson([(sha1, [PrNode(50), PrNode(60, mergeCommitSha: sha1)])]));
+		var handler = Handler(_ => CompareJson(1, [sha1]), _ => GraphQlJson([(sha1, [PrNode(50), PrNode(60, mergeCommitSha: sha1)])]));
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 
@@ -197,10 +198,9 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 				// resolves to its own squashed PR (number = index + 1).
 				var batchIndex = graphQlBatches++;
 				var batch = shas.Skip(batchIndex * 50).Take(50).ToList();
-				return GraphQlJson(batch
-					.Select(sha => (sha, new[] { PrNode(shas.IndexOf(sha) + 1, mergeCommitSha: sha) }))
-					.ToList());
-			});
+				return GraphQlJson(batch.Select(sha => (sha, new[] { PrNode(shas.IndexOf(sha) + 1, mergeCommitSha: sha) })).ToList());
+			}
+		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 
@@ -219,7 +219,8 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 	{
 		var handler = Handler(
 			_ => CompareJson(0, [], status: "identical"),
-			_ => throw new InvalidOperationException("GraphQL must not be called for an empty range"));
+			_ => throw new InvalidOperationException("GraphQL must not be called for an empty range")
+		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 
@@ -243,7 +244,10 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 	[Fact]
 	public async Task ResolvePullRequests_MissingToken_EmitsErrorWithoutAnyRequest()
 	{
-		var handler = Handler(_ => throw new InvalidOperationException("no request expected"), _ => throw new InvalidOperationException("no request expected"));
+		var handler = Handler(
+			_ => throw new InvalidOperationException("no request expected"),
+			_ => throw new InvalidOperationException("no request expected")
+		);
 		var service = new GitHubCommitRangeService(new TestLoggerFactory(Output), new GitHubApiTransport(handler, ""));
 
 		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
@@ -259,7 +263,8 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		var sha1 = Sha(1);
 		var handler = Handler(
 			_ => CompareJson(1, [sha1]),
-			_ => /*lang=json,strict*/ """{ "data": null, "errors": [ { "message": "boom" } ] }""");
+			_ => /*lang=json,strict*/  """{ "data": null, "errors": [ { "message": "boom" } ] }"""
+		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 

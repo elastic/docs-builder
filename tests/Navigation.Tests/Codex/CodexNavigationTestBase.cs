@@ -22,15 +22,12 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 	protected ICodexDocumentationContext CreateContext() => new TestCodexDocumentationContext(Collector);
 
 	protected static CodexConfiguration CreateCodexConfiguration(string sitePrefix) =>
-		new()
-		{
-			Title = "Test Codex",
-			SitePrefix = sitePrefix
-		};
+		new() { Title = "Test Codex", SitePrefix = sitePrefix };
 
 	protected IReadOnlyDictionary<string, IDocumentationSetNavigation> CreateMockDocSetNavigations(
 		IEnumerable<string> repoNames,
-		bool includeProject = true)
+		bool includeProject = true
+	)
 	{
 		var result = new Dictionary<string, IDocumentationSetNavigation>();
 		var fileSystem = new MockFileSystem();
@@ -44,10 +41,14 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 				fileSystem.DirectoryInfo.New($"/{repoName}/output"),
 				fileSystem.FileInfo.New($"/{repoName}/docs/docset.yml"),
 				output,
-				repoName);
+				repoName
+			);
 
 			var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
-				docSet, context, CodexTestDocumentationFileFactory.Instance);
+				docSet,
+				context,
+				CodexTestDocumentationFileFactory.Instance
+			);
 
 			result[repoName] = navigation;
 		}
@@ -62,14 +63,9 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 		fileSystem.AddFile($"{docsPath}/index.md", new MockFileData($"# {repoName}"));
 
 		// language=yaml
-		var yaml = includeProject
-			? $"project: '{repoName}'\ntoc:\n  - file: index.md"
-			: "toc:\n  - file: index.md";
+		var yaml = includeProject ? $"project: '{repoName}'\ntoc:\n  - file: index.md" : "toc:\n  - file: index.md";
 
-		return DocumentationSetFile.LoadAndResolve(
-			new DiagnosticsCollector([]),
-			yaml,
-			fileSystem.DirectoryInfo.New(docsPath));
+		return DocumentationSetFile.LoadAndResolve(new DiagnosticsCollector([]), yaml, fileSystem.DirectoryInfo.New(docsPath));
 	}
 }
 
@@ -79,8 +75,10 @@ internal sealed class TestCodexDocumentationContext(IDiagnosticsCollector collec
 
 	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New(_fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
 	public IDiagnosticsCollector Collector => collector;
-	public DocumentationWriteFileSystem WriteFileSystem => new(_fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, _fileSystem);
-	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New(_fileSystem.Path.Join(Paths.ApplicationData.FullName, "codex", "output"));
+	public DocumentationWriteFileSystem WriteFileSystem =>
+		new(_fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, _fileSystem);
+	public IDirectoryInfo OutputDirectory =>
+		_fileSystem.DirectoryInfo.New(_fileSystem.Path.Join(Paths.ApplicationData.FullName, "codex", "output"));
 	public BuildType BuildType => BuildType.Codex;
 
 	public void EmitError(string message) => collector.EmitError(ConfigurationPath, message);

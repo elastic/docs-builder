@@ -43,8 +43,11 @@ internal sealed class RefactorCommands(
 		var service = new MoveFileService(logFactory, configurationContext);
 		var fs = DocumentationFileSystem.Resolve(path ?? Paths.WorkingDirectoryRoot.FullName);
 
-		serviceInvoker.AddCommand(service, (source, target, dryRun, path, fs),
-			async static (s, collector, state, ctx) => await s.Move(collector, state.source, state.target, state.dryRun, state.path, state.fs, ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(source, target, dryRun, path, fs),
+			static async (s, collector, state, ctx) =>
+				await s.Move(collector, state.source, state.target, state.dryRun, state.path, state.fs, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -57,13 +60,7 @@ internal sealed class RefactorCommands(
 	[CommandIntent(Intent.Idempotent)]
 	[MutationScope(MutationScope.Directory)]
 	[CommandName("format")]
-	public async Task<int> Format(
-		GlobalCliOptions _,
-		string? path = null,
-		bool check = false,
-		bool write = false,
-		Cancel ct = default
-	)
+	public async Task<int> Format(GlobalCliOptions _, string? path = null, bool check = false, bool write = false, Cancel ct = default)
 	{
 		if (check == write)
 		{
@@ -76,8 +73,10 @@ internal sealed class RefactorCommands(
 		var service = new FormatService(logFactory, configurationContext);
 		var fs = DocumentationFileSystem.Resolve(path ?? Paths.WorkingDirectoryRoot.FullName);
 
-		serviceInvoker.AddCommand(service, (path, check, fs),
-			async static (s, collector, state, ctx) => await s.Format(collector, state.path, state.check, state.fs, ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(path, check, fs),
+			static async (s, collector, state, ctx) => await s.Format(collector, state.path, state.check, state.fs, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

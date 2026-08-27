@@ -19,32 +19,36 @@ namespace Elastic.Documentation.Search;
 public partial class FullSearchService(
 	ISearchService<DocumentationDocument> inner,
 	IProductNameLookup productNameLookup,
-	ILogger<FullSearchService> logger)
-	: IFullSearchService, IDisposable
+	ILogger<FullSearchService> logger
+) : IFullSearchService, IDisposable
 {
 	public async Task<FullSearchResponse> SearchAsync(FullSearchRequest request, Cancel ctx = default)
 	{
 		SearchResponse<DocumentationDocument> resp;
 		try
 		{
-			resp = await inner.SearchAsync(new SearchRequest
-			{
-				Query = request.Query,
-				PageNumber = request.PageNumber,
-				PageSize = request.PageSize,
-				TypeFilter = request.TypeFilter ?? [],
-				SectionFilter = request.SectionFilter ?? [],
-				ProductFilter = request.ProductFilter ?? [],
-				DeploymentFilter = request.DeploymentFilter ?? [],
-				VersionFilter = request.VersionFilter,
-				SortBy = request.SortBy.ToLowerInvariant() switch
-				{
-					"recent" => SortMode.Recent,
-					"alpha" => SortMode.Alpha,
-					_ => SortMode.Relevance
-				},
-				IncludeHighlighting = request.IncludeHighlighting
-			}, ctx);
+			resp =
+				await inner.SearchAsync(
+					new SearchRequest
+					{
+						Query = request.Query,
+						PageNumber = request.PageNumber,
+						PageSize = request.PageSize,
+						TypeFilter = request.TypeFilter ?? [],
+						SectionFilter = request.SectionFilter ?? [],
+						ProductFilter = request.ProductFilter ?? [],
+						DeploymentFilter = request.DeploymentFilter ?? [],
+						VersionFilter = request.VersionFilter,
+						SortBy = request.SortBy.ToLowerInvariant() switch
+						{
+							"recent" => SortMode.Recent,
+							"alpha" => SortMode.Alpha,
+							_ => SortMode.Relevance
+						},
+						IncludeHighlighting = request.IncludeHighlighting
+					},
+					ctx
+				);
 		}
 		catch (TransportException ex) when (IsTransient(ex))
 		{
@@ -52,7 +56,8 @@ public partial class FullSearchService(
 			// so callers (e.g. MCP tools) can signal "retry in a few seconds" to their clients.
 			throw new SearchUnavailableException(
 				$"Search backend is temporarily unavailable ({ex.FailureReason}). Transient — retry in a few seconds.",
-				ex);
+				ex
+			);
 		}
 
 		var response = new FullSearchResponse
@@ -71,7 +76,8 @@ public partial class FullSearchService(
 			response.PageNumber,
 			request.Query,
 			response.IsSemanticQuery,
-			response.Results.Select(i => i.Url).ToArray());
+			response.Results.Select(i => i.Url).ToArray()
+		);
 
 		return response;
 	}
@@ -80,56 +86,52 @@ public partial class FullSearchService(
 	// on a single-node pool, or server-side overload (HTTP 429 / 503).
 	private static bool IsTransient(TransportException ex) =>
 		ex.FailureReason is PipelineFailure.MaxTimeoutReached or PipelineFailure.MaxRetriesReached
-		|| (ex.FailureReason is PipelineFailure.BadResponse
-			&& ex.ApiCallDetails?.HttpStatusCode is 429 or 503);
+			|| (ex.FailureReason is PipelineFailure.BadResponse && ex.ApiCallDetails?.HttpStatusCode is 429 or 503);
 
 	[LoggerMessage(Level = LogLevel.Information, Message = "Full search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}' (semantic: {IsSemantic}): {Urls}")]
 	private static partial void LogFullSearchResults(
-		ILogger logger, int pageSize, int pageNumber, string searchQuery, bool isSemantic, string[] urls);
+		ILogger logger,
+		int pageSize,
+		int pageNumber,
+		string searchQuery,
+		bool isSemantic,
+		string[] urls
+	);
 
-	private FullSearchResultItem MapHit(SearchResultItem<DocumentationDocument> item) => new()
-	{
-		Type = item.Document.ContentType,
-		Url = item.Document.Path,
-		Title = item.Title,
-		Description = item.Description,
-		Parents = (item.Document.Parents ?? [])
-			.Select(p => new FullSearchResultParent { Title = p.Title, Url = p.Path })
-			.ToArray(),
-		Score = item.Score,
-		AiShortSummary = item.Document.AiShortSummary,
-		AiRagOptimizedSummary = item.Document.AiRagOptimizedSummary,
-		NavigationSection = item.Document.Section,
-		LastUpdated = item.Document.LastUpdated,
-		Product = MapProduct(item.Document.Product),
-		RelatedProducts = (item.Document.RelatedProducts?
-			.Where(p => p.Id is not null)
-			.Select(p => MapProduct(p.Id)!)
-			.ToArray()) ?? []
-	};
+	private FullSearchResultItem MapHit(SearchResultItem<DocumentationDocument> item) =>
+		new()
+		{
+			Type = item.Document.ContentType,
+			Url = item.Document.Path,
+			Title = item.Title,
+			Description = item.Description,
+			Parents = (item.Document.Parents ?? []).Select(p => new FullSearchResultParent { Title = p.Title, Url = p.Path }).ToArray(),
+			Score = item.Score,
+			AiShortSummary = item.Document.AiShortSummary,
+			AiRagOptimizedSummary = item.Document.AiRagOptimizedSummary,
+			NavigationSection = item.Document.Section,
+			LastUpdated = item.Document.LastUpdated,
+			Product = MapProduct(item.Document.Product),
+			RelatedProducts = (item.Document.RelatedProducts?.Where(p => p.Id is not null).Select(p => MapProduct(p.Id)!).ToArray()) ?? []
+		};
 
 	private FullSearchProduct? MapProduct(string? id) =>
 		id is not null
-			? new FullSearchProduct
-			{
-				Id = id,
-				DisplayName = productNameLookup.TryGetProductName(id, out var name) ? name : id
-			}
+			? new FullSearchProduct { Id = id, DisplayName = productNameLookup.TryGetProductName(id, out var name) ? name : id }
 			: null;
 
-	private FullSearchAggregations MapAggregations(SearchAggregations agg) => new()
-	{
-		Type = agg.Type,
-		NavigationSection = agg.NavigationSection,
-		DeploymentType = agg.DeploymentType,
-		Product = agg.Product.ToDictionary(
-			kvp => kvp.Key,
-			kvp => new ProductAggregationBucket
-			{
-				Count = kvp.Value.Count,
-				DisplayName = kvp.Value.DisplayName ?? kvp.Key
-			})
-	};
+	private FullSearchAggregations MapAggregations(SearchAggregations agg) =>
+		new()
+		{
+			Type = agg.Type,
+			NavigationSection = agg.NavigationSection,
+			DeploymentType = agg.DeploymentType,
+			Product =
+				agg.Product.ToDictionary(
+					kvp => kvp.Key,
+					kvp => new ProductAggregationBucket { Count = kvp.Value.Count, DisplayName = kvp.Value.DisplayName ?? kvp.Key }
+				)
+		};
 
 	public void Dispose() => GC.SuppressFinalize(this);
 }

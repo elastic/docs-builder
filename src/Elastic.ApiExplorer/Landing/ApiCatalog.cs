@@ -51,5 +51,7 @@ public class ApiCatalogNavigationItem : IRootNavigationItem<ApiCatalog, INavigat
 	public bool IsUsingNavigationDropdown => false;
 
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
-		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on {nameof(ApiCatalogNavigationItem)}.");
+		throw new NotSupportedException(
+			$"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on {nameof(ApiCatalogNavigationItem)}."
+		);
 }

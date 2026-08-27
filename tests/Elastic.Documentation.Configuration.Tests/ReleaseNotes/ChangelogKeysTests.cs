@@ -15,8 +15,7 @@ public class ChangelogKeysTests
 	[InlineData("cloud_hosted")]
 	[InlineData("a")]
 	[InlineData("Agent2")]
-	public void IsValidProduct_ValidNames_ReturnsTrue(string product) =>
-		ChangelogKeys.IsValidProduct(product).Should().BeTrue();
+	public void IsValidProduct_ValidNames_ReturnsTrue(string product) => ChangelogKeys.IsValidProduct(product).Should().BeTrue();
 
 	[Theory]
 	[InlineData(null)]
@@ -28,15 +27,13 @@ public class ChangelogKeysTests
 	[InlineData("..")]
 	[InlineData("foo bar")]
 	[InlineData("foo/bar")]
-	public void IsValidProduct_InvalidNames_ReturnsFalse(string? product) =>
-		ChangelogKeys.IsValidProduct(product).Should().BeFalse();
+	public void IsValidProduct_InvalidNames_ReturnsFalse(string? product) => ChangelogKeys.IsValidProduct(product).Should().BeFalse();
 
 	[Theory]
 	[InlineData("elastic")]
 	[InlineData("acme-corp")]
 	[InlineData("ACME1")]
-	public void IsValidOrg_ValidLogins_ReturnsTrue(string org) =>
-		ChangelogKeys.IsValidOrg(org).Should().BeTrue();
+	public void IsValidOrg_ValidLogins_ReturnsTrue(string org) => ChangelogKeys.IsValidOrg(org).Should().BeTrue();
 
 	[Theory]
 	[InlineData(null)]
@@ -49,8 +46,7 @@ public class ChangelogKeysTests
 	[InlineData("..")]
 	[InlineData("acme corp")]
 	[InlineData("acme/corp")]
-	public void IsValidOrg_InvalidLogins_ReturnsFalse(string? org) =>
-		ChangelogKeys.IsValidOrg(org).Should().BeFalse();
+	public void IsValidOrg_InvalidLogins_ReturnsFalse(string? org) => ChangelogKeys.IsValidOrg(org).Should().BeFalse();
 
 	[Theory]
 	[InlineData("elasticsearch")]
@@ -58,8 +54,7 @@ public class ChangelogKeysTests
 	[InlineData("apm.agent")]
 	[InlineData("my_repo")]
 	[InlineData("repo-1")]
-	public void IsValidRepo_ValidNames_ReturnsTrue(string repo) =>
-		ChangelogKeys.IsValidRepo(repo).Should().BeTrue();
+	public void IsValidRepo_ValidNames_ReturnsTrue(string repo) => ChangelogKeys.IsValidRepo(repo).Should().BeTrue();
 
 	[Theory]
 	[InlineData(null)]
@@ -70,8 +65,7 @@ public class ChangelogKeysTests
 	[InlineData("..")]
 	[InlineData("a/b")]
 	[InlineData("a b")]
-	public void IsValidRepo_InvalidNames_ReturnsFalse(string? repo) =>
-		ChangelogKeys.IsValidRepo(repo).Should().BeFalse();
+	public void IsValidRepo_InvalidNames_ReturnsFalse(string? repo) => ChangelogKeys.IsValidRepo(repo).Should().BeFalse();
 
 	[Theory]
 	[InlineData("main")]
@@ -81,8 +75,7 @@ public class ChangelogKeysTests
 	[InlineData("feature/foo")]
 	[InlineData("release/8.x")]
 	[InlineData("a_b")]
-	public void IsValidBranch_ValidBranches_ReturnsTrue(string branch) =>
-		ChangelogKeys.IsValidBranch(branch).Should().BeTrue();
+	public void IsValidBranch_ValidBranches_ReturnsTrue(string branch) => ChangelogKeys.IsValidBranch(branch).Should().BeTrue();
 
 	[Theory]
 	[InlineData(null)]
@@ -96,15 +89,13 @@ public class ChangelogKeysTests
 	[InlineData("..")]
 	[InlineData("feature/..")]
 	[InlineData("a b")]
-	public void IsValidBranch_InvalidBranches_ReturnsFalse(string? branch) =>
-		ChangelogKeys.IsValidBranch(branch).Should().BeFalse();
+	public void IsValidBranch_InvalidBranches_ReturnsFalse(string? branch) => ChangelogKeys.IsValidBranch(branch).Should().BeFalse();
 
 	[Theory]
 	[InlineData("entry.yaml")]
 	[InlineData("registry.json")]
 	[InlineData("9.0.0.yaml")]
-	public void IsSafeFileName_SingleSegments_ReturnsTrue(string fileName) =>
-		ChangelogKeys.IsSafeFileName(fileName).Should().BeTrue();
+	public void IsSafeFileName_SingleSegments_ReturnsTrue(string fileName) => ChangelogKeys.IsSafeFileName(fileName).Should().BeTrue();
 
 	[Theory]
 	[InlineData(null)]
@@ -119,28 +110,25 @@ public class ChangelogKeysTests
 
 	[Fact]
 	public void BundleFileKey_ComposesArtifactRootKey() =>
-		ChangelogKeys.BundleFileKey("elasticsearch", "9.0.0.yaml")
-			.Should().Be("bundle/elasticsearch/9.0.0.yaml");
+		ChangelogKeys.BundleFileKey("elasticsearch", "9.0.0.yaml").Should().Be("bundle/elasticsearch/9.0.0.yaml");
 
 	[Fact]
 	public void ChangelogFileKey_ComposesArtifactRootKey() =>
-		ChangelogKeys.ChangelogFileKey("elastic", "kibana", "main", "entry.yaml")
-			.Should().Be("changelog/elastic/kibana/main/entry.yaml");
+		ChangelogKeys.ChangelogFileKey("elastic", "kibana", "main", "entry.yaml").Should().Be("changelog/elastic/kibana/main/entry.yaml");
 
 	[Fact]
 	public void ChangelogFileKey_BranchSlashesBecomeKeySegments() =>
 		ChangelogKeys.ChangelogFileKey("elastic", "kibana", "feature/foo", "entry.yaml")
-			.Should().Be("changelog/elastic/kibana/feature/foo/entry.yaml");
+			.Should()
+			.Be("changelog/elastic/kibana/feature/foo/entry.yaml");
 
 	[Fact]
 	public void BundleRegistryKey_ComposesManifestKey() =>
-		ChangelogKeys.BundleRegistryKey("elasticsearch")
-			.Should().Be("bundle/elasticsearch/registry.json");
+		ChangelogKeys.BundleRegistryKey("elasticsearch").Should().Be("bundle/elasticsearch/registry.json");
 
 	[Fact]
 	public void ChangelogRegistryKey_ComposesManifestKeyFromGroup() =>
-		ChangelogKeys.ChangelogRegistryKey("elastic/kibana/main")
-			.Should().Be("changelog/elastic/kibana/main/registry.json");
+		ChangelogKeys.ChangelogRegistryKey("elastic/kibana/main").Should().Be("changelog/elastic/kibana/main/registry.json");
 
 	[Theory]
 	[InlineData("bundle/elasticsearch/9.0.0.yaml", "elasticsearch")]
@@ -159,8 +147,7 @@ public class ChangelogKeysTests
 	[InlineData("bundle/../entry.yaml")]
 	[InlineData("bundle/foo.bar/entry.yaml")]
 	[InlineData("bundle/elastic search/entry.yaml")]
-	public void ExtractBundleGroup_NonBundleKeys_ReturnsNull(string key) =>
-		ChangelogKeys.ExtractBundleGroup(key).Should().BeNull();
+	public void ExtractBundleGroup_NonBundleKeys_ReturnsNull(string key) => ChangelogKeys.ExtractBundleGroup(key).Should().BeNull();
 
 	[Theory]
 	[InlineData("changelog/elastic/kibana/main/entry.yaml", "elastic/kibana/main")]
@@ -182,18 +169,15 @@ public class ChangelogKeysTests
 	[InlineData("changelog/elastic/../main/entry.yaml")]
 	[InlineData("changelog/acme.corp/widgets/main/entry.yaml")]
 	[InlineData("changelog/elastic/elastic search/main/entry.yaml")]
-	public void ExtractChangelogGroup_NonEntryKeys_ReturnsNull(string key) =>
-		ChangelogKeys.ExtractChangelogGroup(key).Should().BeNull();
+	public void ExtractChangelogGroup_NonEntryKeys_ReturnsNull(string key) => ChangelogKeys.ExtractChangelogGroup(key).Should().BeNull();
 
 	[Fact]
 	public void BundleSegments_ReturnsPrefixAndProduct() =>
-		ChangelogKeys.BundleSegments("elasticsearch")
-			.Should().Equal("bundle", "elasticsearch");
+		ChangelogKeys.BundleSegments("elasticsearch").Should().Equal("bundle", "elasticsearch");
 
 	[Fact]
 	public void PoolSegments_ExpandsBranchSlashesIntoSegments() =>
-		ChangelogKeys.PoolSegments("elastic", "kibana", "feature/foo")
-			.Should().Equal("changelog", "elastic", "kibana", "feature", "foo");
+		ChangelogKeys.PoolSegments("elastic", "kibana", "feature/foo").Should().Equal("changelog", "elastic", "kibana", "feature", "foo");
 
 	[Theory]
 	// Bundle index (artifact-root): bundle/{product}/registry.json — exactly one product segment.
@@ -218,8 +202,7 @@ public class ChangelogKeysTests
 	// Branch stored verbatim: a branch's own '/' become additional, valid key segments.
 	[InlineData("changelog/elastic/kibana/feature/foo/registry.json")]
 	[InlineData("changelog/elastic/kibana/release/8.x/registry.json")]
-	public void IsRegistry_ValidArtifactRootKeys_ReturnsTrue(string key) =>
-		ChangelogKeys.IsRegistry(key).Should().BeTrue();
+	public void IsRegistry_ValidArtifactRootKeys_ReturnsTrue(string key) => ChangelogKeys.IsRegistry(key).Should().BeTrue();
 
 	[Theory]
 	[InlineData("")]
@@ -258,8 +241,7 @@ public class ChangelogKeysTests
 	// Spaces (and other out-of-class characters) are rejected.
 	[InlineData("bundle/elastic search/registry.json")]
 	[InlineData("changelog/elastic/elastic search/main/registry.json")]
-	public void IsRegistry_InvalidKeys_ReturnsFalse(string key) =>
-		ChangelogKeys.IsRegistry(key).Should().BeFalse();
+	public void IsRegistry_InvalidKeys_ReturnsFalse(string key) => ChangelogKeys.IsRegistry(key).Should().BeFalse();
 
 	[Theory]
 	[InlineData("/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]

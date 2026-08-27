@@ -24,7 +24,12 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 	protected IDirectoryInfo WorkingDirectory => workingDirectory;
 	protected IDiagnosticsCollector Collector => collector;
 
-	protected virtual int ExecInCore(Dictionary<string, string> environmentVars, TimeSpan? attemptTimeout, string binary, params string[] args)
+	protected virtual int ExecInCore(
+		Dictionary<string, string> environmentVars,
+		TimeSpan? attemptTimeout,
+		string binary,
+		params string[] args
+	)
 	{
 		var arguments = new ExecArguments(binary, args)
 		{
@@ -51,7 +56,8 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 			{
 				// Deliberately not routed through Log: a silent multi-second stall is worse than extra local output.
 				Logger.LogWarning("[{Command}] {Failure}. Retrying in {WorkingDirectory}", command, f, workingDirectory.FullName);
-			});
+			}
+		);
 
 		if (failure is null)
 			return true;
@@ -80,7 +86,10 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		};
 		var result = Proc.Start(arguments);
 		if (result.ExitCode != 0)
-			collector.EmitError("", $"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}");
+			collector.EmitError(
+				"",
+				$"Exit code: {result.ExitCode} while executing {binary} {string.Join(" ", args)} in {workingDirectory}"
+			);
 	}
 
 	protected string[] CaptureMultiple(string binary, params string[] args) => CaptureMultiple(false, 10, binary, args);
@@ -105,7 +114,16 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 		if (e is not null && !muteExceptions)
 			collector.EmitError("", "failure capturing stdout", e);
 		if (e is not null)
-			Log(l => l.LogError(e, "[{Binary} {Args}] failure capturing stdout executing in {WorkingDirectory}", binary, string.Join(" ", args), workingDirectory.FullName));
+			Log(
+				l =>
+					l.LogError(
+						e,
+						"[{Binary} {Args}] failure capturing stdout executing in {WorkingDirectory}",
+						binary,
+						string.Join(" ", args),
+						workingDirectory.FullName
+					)
+			);
 
 		return [];
 
@@ -128,17 +146,40 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 					output = result.ConsoleOut.Select(x => x.Line).ToArray();
 					if (output.Length == 0)
 					{
-						Log(l => l.LogInformation("[{Binary} {Args}] captured no output. ({Iteration}/{MaxIteration}) pwd: {WorkingDirectory}",
-							binary, string.Join(" ", args), iteration, max, workingDirectory.FullName)
+						Log(
+							l =>
+								l.LogInformation(
+									"[{Binary} {Args}] captured no output. ({Iteration}/{MaxIteration}) pwd: {WorkingDirectory}",
+									binary,
+									string.Join(" ", args),
+									iteration,
+									max,
+									workingDirectory.FullName
+								)
 						);
-						throw new Exception($"No output captured executing in pwd: {workingDirectory} from {binary} {string.Join(" ", args)}", previousException);
+						throw new Exception(
+							$"No output captured executing in pwd: {workingDirectory} from {binary} {string.Join(" ", args)}",
+							previousException
+						);
 					}
 					break;
 				case (not 0, false):
-					Log(l => l.LogInformation("[{Binary} {Args}] Exit code is not 0 but {ExitCode}. ({Iteration}/{MaxIteration}) pwd: {WorkingDirectory}",
-						binary, string.Join(" ", args), result.ExitCode, iteration, max, workingDirectory.FullName)
+					Log(
+						l =>
+							l.LogInformation(
+								"[{Binary} {Args}] Exit code is not 0 but {ExitCode}. ({Iteration}/{MaxIteration}) pwd: {WorkingDirectory}",
+								binary,
+								string.Join(" ", args),
+								result.ExitCode,
+								iteration,
+								max,
+								workingDirectory.FullName
+							)
 					);
-					throw new Exception($"Exit code not 0. Received {result.ExitCode} in pwd: {workingDirectory} from {binary} {string.Join(" ", args)}", previousException);
+					throw new Exception(
+						$"Exit code not 0. Received {result.ExitCode} in pwd: {workingDirectory} from {binary} {string.Join(" ", args)}",
+						previousException
+					);
 			}
 
 			return output;
@@ -151,7 +192,9 @@ public abstract class ExternalCommandExecutor(IDiagnosticsCollector collector, I
 	private string Capture(bool muteExceptions, int attempts, string binary, params string[] args)
 	{
 		var lines = CaptureMultiple(muteExceptions, attempts, binary, args);
-		return lines.FirstOrDefault() ??
-			(muteExceptions ? string.Empty : throw new Exception($"[{binary} {string.Join(" ", args)}] No output captured executing in : {workingDirectory}"));
+		return lines.FirstOrDefault()
+			?? (muteExceptions
+				? string.Empty
+				: throw new Exception($"[{binary} {string.Join(" ", args)}] No output captured executing in : {workingDirectory}"));
 	}
 }

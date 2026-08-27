@@ -55,11 +55,9 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 	public void UpdateAnchorMap(Dictionary<string, string> slugMap, Dictionary<string, string> titleMap) =>
 		options = options with { AnchorToSlugMap = slugMap, AnchorToTitleMap = titleMap };
 
-	public void UpdatePageSlug(string slug) =>
-		options = options with { PageSlug = slug };
+	public void UpdatePageSlug(string slug) => options = options with { PageSlug = slug };
 
-	public void UpdateHeadingBase(int level) =>
-		options = options with { HeadingLevelBase = level };
+	public void UpdateHeadingBase(int level) => options = options with { HeadingLevelBase = level };
 
 	public string Emit(AsciidocDocument document)
 	{
@@ -258,12 +256,11 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 		WriteLine();
 	}
 
-	private static string MapAdmonitionType(AdmonitionType type) =>
-		type switch
-		{
-			AdmonitionType.Caution => "warning",
-			_ => type.ToString().ToLowerInvariant()
-		};
+	private static string MapAdmonitionType(AdmonitionType type) => type switch
+	{
+		AdmonitionType.Caution => "warning",
+		_ => type.ToString().ToLowerInvariant()
+	};
 
 	private void EmitDirective(string name, string? argument, IReadOnlyList<IAsciidocNode> children)
 	{
@@ -364,8 +361,7 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 		table.HeaderRows
 			.Concat(table.BodyRows)
 			.SelectMany(r => r.Cells)
-			.Any(c => c.ColSpan > 1 || c.RowSpan > 1 || c.Content.Count > 1
-				|| (c.Content.Count == 1 && c.Content[0] is not ParagraphNode));
+			.Any(c => c.ColSpan > 1 || c.RowSpan > 1 || c.Content.Count > 1 || (c.Content.Count == 1 && c.Content[0] is not ParagraphNode));
 
 	private void EmitPipeTable(TableNode table)
 	{
@@ -614,19 +610,22 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 	// Replaces {name} → {{name}} for product-name subs in raw title strings (which
 	// bypass ParseInlines and never hit the AttributeRefInline emission path).
 	private static string SubstituteTitleAttrs(string title) =>
-		AttrRefRegex().Replace(title, m =>
-			SharedAttributes.ProductNames.ContainsKey(m.Groups[1].Value)
-				? $"{{{{{m.Groups[1].Value}}}}}"
-				: m.Value);
+		AttrRefRegex().Replace(
+			title,
+			m => SharedAttributes.ProductNames.ContainsKey(m.Groups[1].Value) ? $"{{{{{m.Groups[1].Value}}}}}" : m.Value
+		);
 
 	// Replaces <<anchor>> and <<anchor,text>> xrefs in raw title strings.
 	private string SubstituteTitleXrefs(string title) =>
-		TitleXrefRegex().Replace(title, m =>
-		{
-			var anchor = m.Groups[1].Value.Trim();
-			var text = m.Groups[2].Success ? m.Groups[2].Value.Trim() : anchor;
-			if (options.AnchorToSlugMap.TryGetValue(anchor, out var slug))
-				return slug == options.PageSlug ? $"[{text}](#{anchor})" : $"[{text}]({slug}.md#{anchor})";
-			return $"[{text}](#{anchor})";
-		});
+		TitleXrefRegex().Replace(
+			title,
+			m =>
+			{
+				var anchor = m.Groups[1].Value.Trim();
+				var text = m.Groups[2].Success ? m.Groups[2].Value.Trim() : anchor;
+				if (options.AnchorToSlugMap.TryGetValue(anchor, out var slug))
+					return slug == options.PageSlug ? $"[{text}](#{anchor})" : $"[{text}]({slug}.md#{anchor})";
+				return $"[{text}](#{anchor})";
+			}
+		);
 }

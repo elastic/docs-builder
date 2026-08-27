@@ -89,7 +89,6 @@ public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistribut
 		return idToken;
 	}
 
-
 	private async Task<string> ExchangeJwtForIdToken(string jwt, string targetAudience, Cancel cancellationToken)
 	{
 		var requestContent = new FormUrlEncodedContent([
@@ -117,7 +116,6 @@ public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistribut
 		// Convert base64 to base64url encoding
 		return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
 	}
-
 }
 
 internal readonly record struct ServiceAccountKey(
@@ -135,14 +133,7 @@ internal readonly record struct ServiceAccountKey(
 
 internal readonly record struct JwtHeader(string Alg, string Typ, string Kid);
 
-internal readonly record struct JwtPayload(
-	string Iss,
-	string Sub,
-	string Aud,
-	long Iat,
-	long Exp,
-	string TargetAudience
-);
+internal readonly record struct JwtPayload(string Iss, string Sub, string Aud, long Iat, long Exp, string TargetAudience);
 
 [JsonSerializable(typeof(ServiceAccountKey))]
 [JsonSerializable(typeof(JwtPayload))]

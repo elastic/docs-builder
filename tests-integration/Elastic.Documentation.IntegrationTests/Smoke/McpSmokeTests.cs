@@ -42,10 +42,9 @@ public class McpSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 			new HttpClientTransportOptions { Endpoint = mcpEndpoint },
 			httpClient,
 			NullLoggerFactory.Instance,
-			ownsHttpClient: false);
-		await using var mcpClient = await McpClient.CreateAsync(
-			transport,
-			cancellationToken: TestContext.Current.CancellationToken);
+			ownsHttpClient: false
+		);
+		await using var mcpClient = await McpClient.CreateAsync(transport, cancellationToken: TestContext.Current.CancellationToken);
 		var tools = await mcpClient.ListToolsAsync(cancellationToken: TestContext.Current.CancellationToken);
 		_ = tools.Should().NotBeEmpty("the MCP server should expose at least one tool");
 	}

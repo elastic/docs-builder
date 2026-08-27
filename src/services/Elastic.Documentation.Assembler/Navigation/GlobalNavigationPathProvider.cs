@@ -25,30 +25,33 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 		_assembleSources = assembleSources;
 		_context = context;
 
-		TableOfContentsPrefixes = [..assembleSources.NavigationTocMappings
-			.Values
-			.Select(p =>
-			{
-				var source = p.Source.ToString();
-				return source.EndsWith(":///", StringComparison.OrdinalIgnoreCase) ? source[..^1] : source;
-			})
-			.OrderByDescending(v => v.Length)
+		TableOfContentsPrefixes =
+		[
+			.. assembleSources.NavigationTocMappings
+				.Values
+				.Select(p =>
+				{
+					var source = p.Source.ToString();
+					return source.EndsWith(":///", StringComparison.OrdinalIgnoreCase) ? source[..^1] : source;
+				})
+				.OrderByDescending(v => v.Length)
 		];
 
-		PhantomPrefixes = [..navigation.Phantoms
-			.Select(p =>
-			{
-				var source = p.Source.ToString();
-				return source.EndsWith(":///", StringComparison.OrdinalIgnoreCase) ? source[..^1] : source;
-			})
-			.OrderByDescending(v => v.Length)
-			.ToArray()
+		PhantomPrefixes =
+		[
+			.. navigation.Phantoms
+				.Select(p =>
+				{
+					var source = p.Source.ToString();
+					return source.EndsWith(":///", StringComparison.OrdinalIgnoreCase) ? source[..^1] : source;
+				})
+				.OrderByDescending(v => v.Length)
+				.ToArray()
 		];
 	}
 
 	public IFileInfo? OutputFile(DocumentationSet documentationSet, IFileInfo defaultOutputFile, string relativePath)
 	{
-
 		if (relativePath.StartsWith("_static/", StringComparison.Ordinal))
 			return defaultOutputFile;
 
@@ -62,7 +65,6 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			var md = fs.FileInfo.New(Path.ChangeExtension(output.FullName, "md"));
 			relativePath = Path.GetRelativePath(documentationSet.OutputDirectory.FullName, md.FullName);
 		}
-
 
 		var l = ContentSourceMoniker.CreateString(repositoryName, relativePath).TrimEnd('/');
 		var lookup = l.AsSpan();
@@ -111,7 +113,10 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 			}
 
 			var fallBack = fs.Path.Join(outputDirectory.FullName, "_failed", repositoryName, relativePath);
-			_context.Collector.EmitError(_context.ConfigurationFileProvider.NavigationFile, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
+			_context.Collector.EmitError(
+				_context.ConfigurationFileProvider.NavigationFile,
+				$"No toc for output path: '{lookup}' falling back to: '{fallBack}'"
+			);
 			return fs.FileInfo.New(fallBack);
 		}
 

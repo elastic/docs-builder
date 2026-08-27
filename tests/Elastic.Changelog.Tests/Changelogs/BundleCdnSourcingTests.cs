@@ -21,7 +21,8 @@ namespace Elastic.Changelog.Tests.Changelogs;
 public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
 	// language=yaml
-	private const string EntryAlpha = """
+	private const string EntryAlpha =
+		"""
 		title: Alpha
 		type: feature
 		products:
@@ -33,7 +34,8 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		""";
 
 	// language=yaml
-	private const string EntryBravo = """
+	private const string EntryBravo =
+		"""
 		title: Bravo
 		type: feature
 		products:
@@ -47,15 +49,16 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	// language=yaml
 	private static string MarkerFor(int parentPr) => $"link: \"{parentPr}\"\n";
 
-	private static StubHandler ProbeHandler() => new(req =>
-	{
-		var path = req.RequestUri!.AbsolutePath;
-		if (path.EndsWith("/100.yaml", StringComparison.Ordinal))
-			return Yaml(EntryAlpha);
-		if (path.EndsWith("/999.yaml", StringComparison.Ordinal))
-			return Yaml(EntryBravo);
-		return new HttpResponseMessage(HttpStatusCode.NotFound);
-	});
+	private static StubHandler ProbeHandler() =>
+		new(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/100.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("/999.yaml", StringComparison.Ordinal))
+				return Yaml(EntryBravo);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
 
 	// No-op sleeper so any entry retry stays instant in tests.
 	private static CdnChangelogEntryFetcher Fetcher(ITestOutputHelper output, StubHandler handler) =>
@@ -63,8 +66,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 	private CdnChangelogEntryFetcher Fetcher() => Fetcher(Output, ProbeHandler());
 
-	private string OutputPath() =>
-		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+	private string OutputPath() => FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 
 	[Fact]
 	public async Task OptionMode_RepoResolvable_ProbesEntriesByPrNumber()
@@ -83,7 +85,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		// Entries are probed by PR number from the authoring pool.
@@ -114,11 +118,17 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
-		handler.RequestedPaths.Should().Contain(p =>
-			p.Contains("/acme-corp/elasticsearch/8.x/", StringComparison.Ordinal) &&
-			p.EndsWith("/100.yaml", StringComparison.Ordinal));
+		handler.RequestedPaths
+			.Should()
+			.Contain(
+				p =>
+					p.Contains("/acme-corp/elasticsearch/8.x/", StringComparison.Ordinal) &&
+						p.EndsWith("/100.yaml", StringComparison.Ordinal)
+			);
 	}
 
 	[Fact]
@@ -137,10 +147,11 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
-		handler.RequestedPaths.Should().Contain(p =>
-			p.Contains("/acme-corp/widget/main/", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().Contain(p => p.Contains("/acme-corp/widget/main/", StringComparison.Ordinal));
 	}
 
 	[Fact]
@@ -149,7 +160,10 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var localDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		FileSystem.Directory.CreateDirectory(localDir);
 		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(localDir, "1-local.yaml"), EntryAlpha, TestContext.Current.CancellationToken);
+			FileSystem.Path.Join(localDir, "1-local.yaml"),
+			EntryAlpha,
+			TestContext.Current.CancellationToken
+		);
 
 		var configContent =
 			$"""
@@ -168,7 +182,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		handler.RequestedPaths.Should().BeEmpty("local fallback must not reach the CDN");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
@@ -181,7 +197,10 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var localDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		FileSystem.Directory.CreateDirectory(localDir);
 		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(localDir, "1-local.yaml"), EntryAlpha, TestContext.Current.CancellationToken);
+			FileSystem.Path.Join(localDir, "1-local.yaml"),
+			EntryAlpha,
+			TestContext.Current.CancellationToken
+		);
 
 		var configContent =
 			$"""
@@ -207,7 +226,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		handler.RequestedPaths.Should().BeEmpty("use_local_changelogs must not reach the CDN");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
@@ -224,8 +245,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("--all") && d.Message.Contains("--force-local"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--all") && d.Message.Contains("--force-local"));
 	}
 
 	[Fact]
@@ -243,8 +265,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("--input-products") && d.Message.Contains("--force-local"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--input-products") && d.Message.Contains("--force-local"));
 	}
 
 	[Fact]
@@ -262,8 +285,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("--issues") && d.Message.Contains("--force-local"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--issues") && d.Message.Contains("--force-local"));
 	}
 
 	[Fact]
@@ -282,18 +306,25 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
 		var output = OutputPath();
 
-		var result = await service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/999"],
-			Output = output,
-			Repo = "elasticsearch"
-		}, TestContext.Current.CancellationToken);
+		var result =
+			await service.BundleChangelogs(
+				Collector,
+				new BundleChangelogsArguments
+				{
+					Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/999"],
+					Output = output,
+					Repo = "elasticsearch"
+				},
+				TestContext.Current.CancellationToken
+			);
 
 		result.Should().BeTrue("probe miss is a warn, not a fatal error");
 		Collector.Errors.Should().Be(0);
 		// 404 is authoritative on the probe path — not retried.
-		handler.RequestedPaths.Count(p => p.EndsWith("/999.yaml", StringComparison.Ordinal))
-			.Should().Be(1, "404 must not be retried on the probe path");
+		handler.RequestedPaths
+			.Count(p => p.EndsWith("/999.yaml", StringComparison.Ordinal))
+			.Should()
+			.Be(1, "404 must not be retried on the probe path");
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Alpha", "the entry found by probe must appear in the bundle");
 	}
@@ -315,17 +346,29 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			}
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
-		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, maxAttempts: 4, sleep: (_, _) => Task.CompletedTask);
+		var fetcher = new CdnChangelogEntryFetcher(
+			new TestLoggerFactory(Output),
+			handler,
+			maxAttempts: 4,
+			sleep: (_, _) => Task.CompletedTask
+		);
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
 
-		var result = await service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
-			Output = OutputPath(),
-			Repo = "elasticsearch"
-		}, TestContext.Current.CancellationToken);
+		var result =
+			await service.BundleChangelogs(
+				Collector,
+				new BundleChangelogsArguments
+				{
+					Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+					Output = OutputPath(),
+					Repo = "elasticsearch"
+				},
+				TestContext.Current.CancellationToken
+			);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		callCount.Should().BeGreaterThan(1, "5xx must be retried");
 	}
 
@@ -346,14 +389,21 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
 
 		var output = OutputPath();
-		var result = await service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
-			Output = output,
-			Repo = "elasticsearch"
-		}, TestContext.Current.CancellationToken);
+		var result =
+			await service.BundleChangelogs(
+				Collector,
+				new BundleChangelogsArguments
+				{
+					Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
+					Output = output,
+					Repo = "elasticsearch"
+				},
+				TestContext.Current.CancellationToken
+			);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Alpha", "the marker must resolve to its parent entry");
@@ -377,17 +427,21 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
 
 		var output = OutputPath();
-		var result = await service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Prs = [
-				"https://github.com/elastic/elasticsearch/pull/200",
-				"https://github.com/elastic/elasticsearch/pull/201"
-			],
-			Output = output,
-			Repo = "elasticsearch"
-		}, TestContext.Current.CancellationToken);
+		var result =
+			await service.BundleChangelogs(
+				Collector,
+				new BundleChangelogsArguments
+				{
+					Prs = ["https://github.com/elastic/elasticsearch/pull/200", "https://github.com/elastic/elasticsearch/pull/201"],
+					Output = output,
+					Repo = "elasticsearch"
+				},
+				TestContext.Current.CancellationToken
+			);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Split("title: Alpha").Length.Should().Be(2, "exactly one Alpha entry must appear");
@@ -409,16 +463,20 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
 
-		var result = await service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
-			Output = OutputPath(),
-			Repo = "elasticsearch"
-		}, TestContext.Current.CancellationToken);
+		var result =
+			await service.BundleChangelogs(
+				Collector,
+				new BundleChangelogsArguments
+				{
+					Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
+					Output = OutputPath(),
+					Repo = "elasticsearch"
+				},
+				TestContext.Current.CancellationToken
+			);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("Marker chain"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Marker chain"));
 	}
 
 	[Fact]
@@ -435,16 +493,22 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
 
-		var result = await service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
-			Output = OutputPath(),
-			Repo = "elasticsearch"
-		}, TestContext.Current.CancellationToken);
+		var result =
+			await service.BundleChangelogs(
+				Collector,
+				new BundleChangelogsArguments
+				{
+					Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
+					Output = OutputPath(),
+					Repo = "elasticsearch"
+				},
+				TestContext.Current.CancellationToken
+			);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("marker") && d.Message.Contains("100"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("marker") && d.Message.Contains("100"));
 	}
 
 	[Fact]
@@ -457,8 +521,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  output_directory: PLACEHOLDER
 			  owner: elastic
@@ -467,27 +530,28 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			      source: github_release
 			      repo: elasticsearch
 			      output_products: "elasticsearch {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", outputDir);
+			""".Replace(
+			"PLACEHOLDER",
+			outputDir
+		);
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var releaseBody = "* Alpha by @user in https://github.com/elastic/elasticsearch/pull/100\n";
-		A.CallTo(() => releaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.3.0", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = releaseBody });
+		A.CallTo(
+			() => releaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.3.0", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = releaseBody });
 
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, releaseService, Fetcher());
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-release",
-			ProfileArgument = "9.3.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");

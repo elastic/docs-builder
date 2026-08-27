@@ -70,7 +70,8 @@ public class ChangelogBundleAmendService(
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
-	CdnChangelogFetcher? bundleFetcher = null) : IService
+	CdnChangelogFetcher? bundleFetcher = null
+) : IService
 {
 	/// <summary>
 	/// UTF-8 encoding without BOM for writing YAML files.
@@ -111,59 +112,64 @@ public class ChangelogBundleAmendService(
 			}
 
 			var writeDirectory = ResolveWriteDirectory(parent, input, changelogConfig, collector, out var requestedAmendFileName);
-			var (amendsOk, existingAmendBundles, nextAmendNumber) = await LoadExistingAmendBundlesAsync(
-				parent,
-				writeDirectory,
-				collector,
-				ctx);
+			var (amendsOk, existingAmendBundles, nextAmendNumber) =
+				await LoadExistingAmendBundlesAsync(parent, writeDirectory, collector, ctx);
 			if (!amendsOk)
 				return false;
 
 			var parentBundle = parent.Bundle;
 			var useLocalChangelogs = (changelogConfig?.Bundle?.UseLocalChangelogs ?? false) || input.ForceLocal;
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(
-				changelogConfig?.Bundle?.Repo ?? (parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null));
+				changelogConfig?.Bundle?.Repo ?? (parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null)
+			);
 			var useCdn = ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs);
 
 			IReadOnlyDictionary<string, string>? cdnContents = null;
 			if (useCdn)
 			{
-				var fetched = await FetchCdnContentsAsync(
-					collector,
-					new CdnAmendSourceRequest(
-						parentBundle,
-						changelogConfig,
-						authoringRepo!,
-						input.AddFiles,
-						input.RemoveFiles,
-						input.Force),
-					ctx);
+				var fetched =
+					await FetchCdnContentsAsync(
+						collector,
+						new CdnAmendSourceRequest(
+							parentBundle,
+							changelogConfig,
+							authoringRepo!,
+							input.AddFiles,
+							input.RemoveFiles,
+							input.Force
+						),
+						ctx
+					);
 				if (fetched is null)
 					return false;
 				cdnContents = fetched;
 			}
 
-			var addSources = await SourceInputFilesAsync(
-				collector,
-				input.AddFiles,
-				"--add",
-				useCdn,
-				cdnContents,
-				requireContent: true,
-				force: false,
-				ctx);
+			var addSources =
+				await SourceInputFilesAsync(
+					collector,
+					input.AddFiles,
+					"--add",
+					useCdn,
+					cdnContents,
+					requireContent: true,
+					force: false,
+					ctx
+				);
 			if (addSources is null)
 				return false;
 
-			var removeSources = await SourceInputFilesAsync(
-				collector,
-				input.RemoveFiles,
-				"--remove",
-				useCdn,
-				cdnContents,
-				requireContent: false,
-				force: input.Force,
-				ctx);
+			var removeSources =
+				await SourceInputFilesAsync(
+					collector,
+					input.RemoveFiles,
+					"--remove",
+					useCdn,
+					cdnContents,
+					requireContent: false,
+					force: input.Force,
+					ctx
+				);
 			if (removeSources is null)
 				return false;
 
@@ -173,12 +179,7 @@ public class ChangelogBundleAmendService(
 			var excludeEntries = new List<BundledEntry>();
 			foreach (var removeSource in removeSources)
 			{
-				var exclusion = BuildExclusionEntry(
-					collector,
-					removeSource,
-					effectiveEntries,
-					appliedExclusionKeys,
-					input.Force);
+				var exclusion = BuildExclusionEntry(collector, removeSource, effectiveEntries, appliedExclusionKeys, input.Force);
 				if (exclusion == null)
 					return false;
 				if (exclusion is RemoveExclusionResult.Skip)
@@ -199,14 +200,17 @@ public class ChangelogBundleAmendService(
 				{
 					var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
 					var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
-					if (!LinkAllowlistSanitizer.TryApplyBundle(
-						collector,
-						parentBundle,
-						linkAllowRepos!,
-						owner,
-						repo,
-						out _,
-						out var parentHadAllowlistChanges))
+					if (
+						!LinkAllowlistSanitizer.TryApplyBundle(
+							collector,
+							parentBundle,
+							linkAllowRepos!,
+							owner,
+							repo,
+							out _,
+							out var parentHadAllowlistChanges
+						)
+					)
 						return false;
 
 					if (parentHadAllowlistChanges)
@@ -214,8 +218,9 @@ public class ChangelogBundleAmendService(
 						collector.EmitError(
 							string.Empty,
 							"bundle.link_allow_repos requires the parent bundle to already reflect filtered PR/issue references. " +
-							"Re-create the parent bundle with the same bundle.link_allow_repos, " +
-							"or remove bundle.link_allow_repos for amend.");
+								"Re-create the parent bundle with the same bundle.link_allow_repos, " +
+								"or remove bundle.link_allow_repos for amend."
+						);
 						return false;
 					}
 				}
@@ -236,12 +241,15 @@ public class ChangelogBundleAmendService(
 			}
 
 			var amendFileName = $"{parent.BaseName}.amend-{nextAmendNumber}{parent.Extension}";
-			if (!string.IsNullOrWhiteSpace(requestedAmendFileName)
-				&& !string.Equals(requestedAmendFileName, amendFileName, StringComparison.OrdinalIgnoreCase))
+			if (
+				!string.IsNullOrWhiteSpace(requestedAmendFileName)
+				&& !string.Equals(requestedAmendFileName, amendFileName, StringComparison.OrdinalIgnoreCase)
+			)
 			{
 				collector.EmitError(
 					input.Output ?? string.Empty,
-					$"--output file name '{requestedAmendFileName}' must be '{amendFileName}' (next amend number is {nextAmendNumber}).");
+					$"--output file name '{requestedAmendFileName}' must be '{amendFileName}' (next amend number is {nextAmendNumber})."
+				);
 				return false;
 			}
 
@@ -253,7 +261,8 @@ public class ChangelogBundleAmendService(
 					"Dry run: would exclude {ExcludeCount} and add {AddCount} entries at {AmendFilePath}",
 					excludeEntries.Count,
 					entries.Count,
-					amendFilePath);
+					amendFilePath
+				);
 				return true;
 			}
 
@@ -261,17 +270,13 @@ public class ChangelogBundleAmendService(
 				"Creating amend file: {AmendFilePath} (exclude={ExcludeCount}, add={AddCount})",
 				amendFilePath,
 				excludeEntries.Count,
-				entries.Count);
+				entries.Count
+			);
 
 			// Copy the parent's complete products (target, repo, owner) so the amend is self-contained:
 			// upload destination discovery, the registry's per-product target, and :version:-filtered
 			// CDN fetches all derive from a bundle file's own products.
-			var amendBundle = new Bundle
-			{
-				Products = parentBundle.Products,
-				ExcludeEntries = excludeEntries,
-				Entries = entries
-			};
+			var amendBundle = new Bundle { Products = parentBundle.Products, ExcludeEntries = excludeEntries, Entries = entries };
 
 			var bundleForWrite = amendBundle;
 			if (entries.Count > 0 && linkAllowRepos != null)
@@ -279,14 +284,7 @@ public class ChangelogBundleAmendService(
 				var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
 				var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
 
-				if (!LinkAllowlistSanitizer.TryApplyBundle(
-					collector,
-					amendBundle,
-					linkAllowRepos,
-					owner,
-					repo,
-					out var sanitized,
-					out _))
+				if (!LinkAllowlistSanitizer.TryApplyBundle(collector, amendBundle, linkAllowRepos, owner, repo, out var sanitized, out _))
 					return false;
 				bundleForWrite = sanitized;
 
@@ -302,7 +300,8 @@ public class ChangelogBundleAmendService(
 					{
 						collector.EmitWarning(
 							string.Empty,
-							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
+							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}"
+						);
 					}
 				}
 			}
@@ -319,7 +318,8 @@ public class ChangelogBundleAmendService(
 				"Created amend file: {AmendFilePath} with {ExcludeCount} exclusions and {AddCount} additions. Upload with: changelog upload --artifact-type bundle",
 				amendFilePath,
 				excludeEntries.Count,
-				entries.Count);
+				entries.Count
+			);
 
 			return true;
 		}
@@ -341,30 +341,34 @@ public class ChangelogBundleAmendService(
 		string AuthoringRepo,
 		IReadOnlyList<string> AddPaths,
 		IReadOnlyList<string> RemovePaths,
-		bool ForceRemove);
+		bool ForceRemove
+	);
 
 	private readonly record struct CdnPoolLocation(Uri BaseUri, string Owner, string Repo, string Branch);
 
 	private async Task<IReadOnlyDictionary<string, string>?> FetchCdnContentsAsync(
 		IDiagnosticsCollector collector,
 		CdnAmendSourceRequest request,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var parentOwner = request.ParentBundle.Products.Count > 0 ? request.ParentBundle.Products[0].Owner : null;
 		var owner = ChangelogRepoOwnerResolver.ResolveOwner(
-			request.ChangelogConfig?.Bundle?.Owner,
-			request.ChangelogConfig?.Bundle?.Repo,
-			parentOwner) ?? ChangelogEntrySourcing.DefaultOwner;
+				request.ChangelogConfig?.Bundle?.Owner,
+				request.ChangelogConfig?.Bundle?.Repo,
+				parentOwner
+			)
+			?? ChangelogEntrySourcing.DefaultOwner;
 		var configuredBranch = request.ChangelogConfig?.Bundle?.Branch;
-		var branch = string.IsNullOrWhiteSpace(configuredBranch)
-			? ChangelogEntrySourcing.DefaultBranch
-			: configuredBranch;
+		var branch = string.IsNullOrWhiteSpace(configuredBranch) ? ChangelogEntrySourcing.DefaultBranch : configuredBranch;
 
 		var baseUri = ChangelogCdn.ResolveBaseUri();
 		if (baseUri is null)
 		{
-			collector.EmitError(string.Empty,
-				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+			collector.EmitError(
+				string.Empty,
+				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL."
+			);
 			return null;
 		}
 
@@ -400,14 +404,16 @@ public class ChangelogBundleAmendService(
 				continue;
 
 			var captured = new List<string>();
-			var result = await _entryFetcher.FetchNamedAsync(
-				pool.BaseUri,
-				pool.Owner,
-				pool.Repo,
-				pool.Branch,
-				[name],
-				captured.Add,
-				ctx).ConfigureAwait(false);
+			var result =
+				await _entryFetcher.FetchNamedAsync(
+					pool.BaseUri,
+					pool.Owner,
+					pool.Repo,
+					pool.Branch,
+					[name],
+					captured.Add,
+					ctx
+				).ConfigureAwait(false);
 			if (result is not null)
 			{
 				foreach (var entry in result)
@@ -430,33 +436,34 @@ public class ChangelogBundleAmendService(
 		IDiagnosticsCollector collector,
 		CdnPoolLocation pool,
 		IReadOnlyList<string> names,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var fatal = false;
-		var result = await _entryFetcher.FetchNamedAsync(
-			pool.BaseUri,
-			pool.Owner,
-			pool.Repo,
-			pool.Branch,
-			names,
-			msg =>
-			{
-				fatal = true;
-				collector.EmitError(string.Empty, msg);
-			},
-			ctx).ConfigureAwait(false);
+		var result =
+			await _entryFetcher.FetchNamedAsync(
+				pool.BaseUri,
+				pool.Owner,
+				pool.Repo,
+				pool.Branch,
+				names,
+				msg =>
+				{
+					fatal = true;
+					collector.EmitError(string.Empty, msg);
+				},
+				ctx
+			).ConfigureAwait(false);
 		return fatal || result is null ? null : result;
 	}
 
 	private List<string> DistinctFileNames(IReadOnlyList<string> paths) =>
-		paths
-			.Select(p => _fileSystem.Path.GetFileName(p))
+		paths.Select(p => _fileSystem.Path.GetFileName(p))
 			.Where(n => !string.IsNullOrWhiteSpace(n))
 			.Distinct(StringComparer.Ordinal)
 			.ToList();
 
-	private static bool IsNamedFetchNotFound(string message) =>
-		message.Contains("404", StringComparison.Ordinal);
+	private static bool IsNamedFetchNotFound(string message) => message.Contains("404", StringComparison.Ordinal);
 
 	private async Task<IReadOnlyList<SourcedChangelog>?> SourceInputFilesAsync(
 		IDiagnosticsCollector collector,
@@ -466,7 +473,8 @@ public class ChangelogBundleAmendService(
 		IReadOnlyDictionary<string, string>? cdnContents,
 		bool requireContent,
 		bool force,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (files.Count == 0)
 			return [];
@@ -493,7 +501,8 @@ public class ChangelogBundleAmendService(
 					file,
 					requireContent
 						? $"Changelog '{fileName}' was not found in the CDN pool. Ensure the entry was uploaded (changelog upload), or pass --force-local to read a local file."
-						: $"Changelog '{fileName}' was not found in the CDN pool. Ensure the entry was uploaded (changelog upload), pass --force-local to read a local file, or pass --force to exclude by file name.");
+						: $"Changelog '{fileName}' was not found in the CDN pool. Ensure the entry was uploaded (changelog upload), pass --force-local to read a local file, or pass --force to exclude by file name."
+				);
 				return null;
 			}
 
@@ -514,19 +523,17 @@ public class ChangelogBundleAmendService(
 			collector.EmitError(
 				file,
 				$"File does not exist. Current directory: {currentDir}. " +
-				$"Tip: Repeat {optionName} for each file, or use comma-separated values (e.g., {optionName} \"file1.yaml,file2.yaml\"). " +
-				"Paths support tilde (~) expansion and can be relative or absolute. " +
-				"When sourcing from the CDN, paths are matched by file name and do not need to exist locally.");
+					$"Tip: Repeat {optionName} for each file, or use comma-separated values (e.g., {optionName} \"file1.yaml,file2.yaml\"). " +
+					"Paths support tilde (~) expansion and can be relative or absolute. " +
+					"When sourcing from the CDN, paths are matched by file name and do not need to exist locally."
+			);
 			return null;
 		}
 
 		return sourced;
 	}
 
-	private async Task<ResolvedParent?> ResolveParentAsync(
-		string bundlePath,
-		IDiagnosticsCollector collector,
-		Cancel ctx)
+	private async Task<ResolvedParent?> ResolveParentAsync(string bundlePath, IDiagnosticsCollector collector, Cancel ctx)
 	{
 		// Locator syntax is checked before local existence: a bare `bundle/{product}/{file}.yaml`
 		// path is documented as a CDN locator even without a leading slash, so it must win over an
@@ -542,14 +549,12 @@ public class ChangelogBundleAmendService(
 		collector.EmitError(
 			bundlePath,
 			$"Bundle file does not exist. Current directory: {currentDir}. " +
-			"A CDN parent must look like /bundle/{product}/{file}.yaml (or an http(s) URL with that path).");
+				"A CDN parent must look like /bundle/{product}/{file}.yaml (or an http(s) URL with that path)."
+		);
 		return null;
 	}
 
-	private async Task<ResolvedParent?> ResolveLocalParentAsync(
-		string bundlePath,
-		IDiagnosticsCollector collector,
-		Cancel ctx)
+	private async Task<ResolvedParent?> ResolveLocalParentAsync(string bundlePath, IDiagnosticsCollector collector, Cancel ctx)
 	{
 		if (BundleAmendMerger.IsAmendFile(bundlePath))
 		{
@@ -593,7 +598,8 @@ public class ChangelogBundleAmendService(
 		string product,
 		string fileName,
 		IDiagnosticsCollector collector,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (BundleAmendMerger.IsAmendFile(fileName))
 		{
@@ -610,18 +616,26 @@ public class ChangelogBundleAmendService(
 		var baseUri = ChangelogCdn.ResolveBaseUri();
 		if (baseUri is null)
 		{
-			collector.EmitError(string.Empty,
-				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+			collector.EmitError(
+				string.Empty,
+				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL."
+			);
 			return null;
 		}
 
 		var fatal = false;
-		var fetched = await _bundleFetcher.FetchNamedBundleAsync(
-			baseUri,
-			product,
-			fileName,
-			msg => { fatal = true; collector.EmitError(bundlePath, msg); },
-			ctx).ConfigureAwait(false);
+		var fetched =
+			await _bundleFetcher.FetchNamedBundleAsync(
+				baseUri,
+				product,
+				fileName,
+				msg =>
+				{
+					fatal = true;
+					collector.EmitError(bundlePath, msg);
+				},
+				ctx
+			).ConfigureAwait(false);
 
 		if (fatal || fetched is null)
 			return null;
@@ -651,7 +665,8 @@ public class ChangelogBundleAmendService(
 		AmendBundleArguments input,
 		ChangelogConfiguration? changelogConfig,
 		IDiagnosticsCollector collector,
-		out string? requestedAmendFileName)
+		out string? requestedAmendFileName
+	)
 	{
 		requestedAmendFileName = null;
 		if (!parent.IsCdn)
@@ -660,7 +675,8 @@ public class ChangelogBundleAmendService(
 			{
 				collector.EmitWarning(
 					input.Output,
-					"--output is ignored for a local parent bundle; the amend file is written next to the parent.");
+					"--output is ignored for a local parent bundle; the amend file is written next to the parent."
+				);
 			}
 
 			return _fileSystem.Path.GetDirectoryName(parent.LocalPath) ?? string.Empty;
@@ -672,9 +688,7 @@ public class ChangelogBundleAmendService(
 			{
 				requestedAmendFileName = _fileSystem.Path.GetFileName(input.Output);
 				var directory = _fileSystem.Path.GetDirectoryName(input.Output);
-				return string.IsNullOrWhiteSpace(directory)
-					? _fileSystem.Directory.GetCurrentDirectory()
-					: directory;
+				return string.IsNullOrWhiteSpace(directory) ? _fileSystem.Directory.GetCurrentDirectory() : directory;
 			}
 
 			return input.Output;
@@ -690,7 +704,8 @@ public class ChangelogBundleAmendService(
 		ResolvedParent parent,
 		string writeDirectory,
 		IDiagnosticsCollector collector,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var byFileName = new Dictionary<string, Bundle>(StringComparer.OrdinalIgnoreCase);
 
@@ -701,9 +716,7 @@ public class ChangelogBundleAmendService(
 			byFileName[fileName] = bundle;
 		}
 
-		var siblingParentPath = parent.IsCdn
-			? _fileSystem.Path.Join(writeDirectory, parent.FileName)
-			: parent.LocalPath!;
+		var siblingParentPath = parent.IsCdn ? _fileSystem.Path.Join(writeDirectory, parent.FileName) : parent.LocalPath!;
 		foreach (var amendPath in DiscoverAmendFiles(_fileSystem, siblingParentPath))
 		{
 			try
@@ -719,22 +732,13 @@ public class ChangelogBundleAmendService(
 			}
 		}
 
-		var orderedNames = byFileName.Keys
-			.OrderBy(BundleAmendMerger.GetAmendFileNumber)
-			.ToList();
+		var orderedNames = byFileName.Keys.OrderBy(BundleAmendMerger.GetAmendFileNumber).ToList();
 		var bundles = orderedNames.Select(name => byFileName[name]).ToList();
-		var nextNumber = orderedNames
-			.Select(BundleAmendMerger.GetAmendFileNumber)
-			.DefaultIfEmpty(0)
-			.Max() + 1;
+		var nextNumber = orderedNames.Select(BundleAmendMerger.GetAmendFileNumber).DefaultIfEmpty(0).Max() + 1;
 		return (true, bundles, nextNumber);
 	}
 
-	private static bool TryDeserializeAmend(
-		string fileName,
-		string content,
-		IDiagnosticsCollector collector,
-		out Bundle? bundle)
+	private static bool TryDeserializeAmend(string fileName, string content, IDiagnosticsCollector collector, out Bundle? bundle)
 	{
 		try
 		{
@@ -752,8 +756,7 @@ public class ChangelogBundleAmendService(
 	private static bool HasYamlExtension(string path)
 	{
 		var extension = Path.GetExtension(path);
-		return extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase)
-			|| extension.Equals(".yml", StringComparison.OrdinalIgnoreCase);
+		return extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase) || extension.Equals(".yml", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private sealed record ResolvedParent
@@ -772,28 +775,18 @@ public class ChangelogBundleAmendService(
 		SourcedChangelog source,
 		IReadOnlyList<BundledEntry> effectiveEntries,
 		HashSet<string> appliedExclusionKeys,
-		bool force)
+		bool force
+	)
 	{
 		var fileName = source.FileName;
-		var fileChecksum = source.Content is null
-			? string.Empty
-			: ChangelogBundlingService.ComputeSha1(source.Content);
+		var fileChecksum = source.Content is null ? string.Empty : ChangelogBundlingService.ComputeSha1(source.Content);
 
-		var strictExclusion = new BundledEntry
-		{
-			File = new BundledFile
-			{
-				Name = fileName,
-				Checksum = fileChecksum
-			}
-		};
+		var strictExclusion = new BundledEntry { File = new BundledFile { Name = fileName, Checksum = fileChecksum } };
 
 		var exclusionKey = BundleAmendMerger.BuildExclusionKey(strictExclusion);
 		if (!string.IsNullOrEmpty(fileChecksum) && appliedExclusionKeys.Contains(exclusionKey))
 		{
-			collector.EmitWarning(
-				source.DisplayPath,
-				$"Changelog '{fileName}' is already excluded by a prior amend file; skipping.");
+			collector.EmitWarning(source.DisplayPath, $"Changelog '{fileName}' is already excluded by a prior amend file; skipping.");
 			return RemoveExclusionResult.Skip.Instance;
 		}
 
@@ -803,24 +796,16 @@ public class ChangelogBundleAmendService(
 
 		if (matchedEntry == null)
 		{
-			var nameOnlyExclusion = new BundledEntry
-			{
-				File = new BundledFile
-				{
-					Name = fileName,
-					Checksum = string.Empty
-				}
-			};
+			var nameOnlyExclusion = new BundledEntry { File = new BundledFile { Name = fileName, Checksum = string.Empty } };
 
-			var nameMatches = effectiveEntries
-				.Where(entry => BundleAmendMerger.EntryMatchesExclusion(entry, nameOnlyExclusion))
-				.ToList();
+			var nameMatches = effectiveEntries.Where(entry => BundleAmendMerger.EntryMatchesExclusion(entry, nameOnlyExclusion)).ToList();
 
 			if (nameMatches.Count == 0)
 			{
 				collector.EmitError(
 					source.DisplayPath,
-					$"Changelog '{fileName}' was not found in the effective bundle (parent plus existing amend files).");
+					$"Changelog '{fileName}' was not found in the effective bundle (parent plus existing amend files)."
+				);
 				return null;
 			}
 
@@ -829,7 +814,8 @@ public class ChangelogBundleAmendService(
 				collector.EmitError(
 					source.DisplayPath,
 					$"Bundle contains '{fileName}' but with a different checksum than the sourced changelog. " +
-					"Re-create the bundle or use --force to remove by file name only.");
+						"Re-create the bundle or use --force to remove by file name only."
+				);
 				return null;
 			}
 
@@ -839,33 +825,21 @@ public class ChangelogBundleAmendService(
 		var exclusionChecksum = matchedEntry.File?.Checksum ?? fileChecksum;
 		var appliedKey = BundleAmendMerger.BuildExclusionKey(new BundledEntry
 		{
-			File = new BundledFile
-			{
-				Name = fileName,
-				Checksum = exclusionChecksum
-			}
+			File = new BundledFile { Name = fileName, Checksum = exclusionChecksum }
 		});
 		if (appliedExclusionKeys.Contains(appliedKey))
 		{
-			collector.EmitWarning(
-				source.DisplayPath,
-				$"Changelog '{fileName}' is already excluded by a prior amend file; skipping.");
+			collector.EmitWarning(source.DisplayPath, $"Changelog '{fileName}' is already excluded by a prior amend file; skipping.");
 			return RemoveExclusionResult.Skip.Instance;
 		}
 
-		return new RemoveExclusionResult.Add(new BundledEntry
-		{
-			File = new BundledFile
-			{
-				Name = fileName,
-				Checksum = exclusionChecksum
-			}
-		});
+		return new RemoveExclusionResult.Add(new BundledEntry { File = new BundledFile { Name = fileName, Checksum = exclusionChecksum } });
 	}
 
 	private abstract record RemoveExclusionResult
 	{
 		public sealed record Add(BundledEntry Entry) : RemoveExclusionResult;
+
 		public sealed record Skip : RemoveExclusionResult
 		{
 			public static readonly Skip Instance = new();
@@ -876,7 +850,8 @@ public class ChangelogBundleAmendService(
 	private async Task<(bool Ok, Bundle? Bundle)> TryDeserializeParentBundleAsync(
 		string bundlePath,
 		IDiagnosticsCollector collector,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		try
 		{
@@ -886,17 +861,12 @@ public class ChangelogBundleAmendService(
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
 		{
-			collector.EmitError(
-				bundlePath,
-				$"Failed to parse parent bundle YAML: {ex.Message}",
-				ex);
+			collector.EmitError(bundlePath, $"Failed to parse parent bundle YAML: {ex.Message}", ex);
 			return (false, null);
 		}
 	}
 
-	private BundledEntry? LoadChangelogContent(
-		IDiagnosticsCollector collector,
-		SourcedChangelog source)
+	private BundledEntry? LoadChangelogContent(IDiagnosticsCollector collector, SourcedChangelog source)
 	{
 		try
 		{
@@ -912,11 +882,7 @@ public class ChangelogBundleAmendService(
 
 			return new BundledEntry
 			{
-				File = new BundledFile
-				{
-					Name = source.FileName,
-					Checksum = checksum
-				},
+				File = new BundledFile { Name = source.FileName, Checksum = checksum },
 				Type = entry.Type,
 				Title = entry.Title,
 				Products = entry.Products,
@@ -954,7 +920,8 @@ public class ChangelogBundleAmendService(
 		if (!fileSystem.Directory.Exists(directory))
 			return [];
 
-		var amendFiles = fileSystem.Directory.GetFiles(directory, $"{baseName}.amend-*.y*ml")
+		var amendFiles = fileSystem.Directory
+			.GetFiles(directory, $"{baseName}.amend-*.y*ml")
 			.Where(file => string.Equals(fileSystem.Path.GetExtension(file), extension, StringComparison.OrdinalIgnoreCase))
 			.OrderBy(BundleAmendMerger.GetAmendFileNumber)
 			.ToList();

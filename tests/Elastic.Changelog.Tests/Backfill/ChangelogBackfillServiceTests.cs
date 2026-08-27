@@ -26,30 +26,25 @@ public class ChangelogBackfillServiceTests
 
 	public ChangelogBackfillServiceTests(ITestOutputHelper output)
 	{
-		_mockFileSystem = new MockFileSystem(new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+		_mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		_fileSystem = CheckoutsFileSystem.FromWorkingDirectory(_mockFileSystem).Write;
 		_collector = new TestDiagnosticsCollector(output);
-		_httpHandler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
-		{
-			Content = new StringContent(ReleaseNotesFixture.Markdown)
-		});
+		_httpHandler =
+			new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(ReleaseNotesFixture.Markdown) });
 	}
 
-	private ChangelogBackfillService CreateService() =>
-		new(NullLoggerFactory.Instance, _fileSystem, _httpHandler);
+	private ChangelogBackfillService CreateService() => new(NullLoggerFactory.Instance, _fileSystem, _httpHandler);
 
-	private BackfillArguments Args(bool dryRun = false, string[]? products = null, string[]? versions = null) => new()
-	{
-		Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test"),
-		DryRun = dryRun,
-		Products = products ?? [],
-		Versions = versions ?? [],
-		BaseUrl = "https://www.elastic.co/docs",
-		RawBaseUrl = "https://raw.githubusercontent.com"
-	};
+	private BackfillArguments Args(bool dryRun = false, string[]? products = null, string[]? versions = null) =>
+		new()
+		{
+			Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test"),
+			DryRun = dryRun,
+			Products = products ?? [],
+			Versions = versions ?? [],
+			BaseUrl = "https://www.elastic.co/docs",
+			RawBaseUrl = "https://raw.githubusercontent.com"
+		};
 
 	[Fact]
 	public async Task FetchesRepoSourceFromRawGithubusercontent()
@@ -59,10 +54,13 @@ public class ChangelogBackfillServiceTests
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
-		_httpHandler.RequestedUrls.Should().ContainSingle(u =>
-			u.Contains("elastic-otel-java") &&
-			u.Contains("9a61ce4faaf08e272c433a083bcc6f0e96d80e0a") &&
-			u.Contains("docs/release-notes/index.md"));
+		_httpHandler.RequestedUrls
+			.Should()
+			.ContainSingle(
+				u =>
+					u.Contains("elastic-otel-java") && u.Contains("9a61ce4faaf08e272c433a083bcc6f0e96d80e0a") &&
+						u.Contains("docs/release-notes/index.md")
+			);
 	}
 
 	[Fact]
@@ -159,7 +157,15 @@ public class ChangelogBackfillServiceTests
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
-		var bundlePath = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog", "bundles", "1.9.0.yaml");
+		var bundlePath = Path.Join(
+			Paths.WorkingDirectoryRoot.FullName,
+			".artifacts",
+			"backfill-test",
+			"edot-java",
+			"changelog",
+			"bundles",
+			"1.9.0.yaml"
+		);
 		var yaml = _mockFileSystem.File.ReadAllText(bundlePath);
 		var bundle = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeBundle(yaml);
 
@@ -210,7 +216,11 @@ public class ChangelogBackfillServiceTests
 		// 1.4.1 has a fix entry with no PR reference.
 		var changelogDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
 		var noteFiles = _mockFileSystem.AllFiles
-			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal) && Path.GetFileName(f).StartsWith("note-", StringComparison.Ordinal))
+			.Where(
+				f =>
+					f.StartsWith(changelogDir, StringComparison.Ordinal) &&
+						Path.GetFileName(f).StartsWith("note-", StringComparison.Ordinal)
+			)
 			.ToList();
 		noteFiles.Should().NotBeEmpty("at least one PR-less entry should produce a note-*.yaml file");
 	}
@@ -262,7 +272,11 @@ public class ChangelogBackfillServiceTests
 		var prFiles = _mockFileSystem.AllFiles
 			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal))
 			.Where(f => !f.Contains("bundles", StringComparison.Ordinal))
-			.Where(f => Path.GetFileName(f) is var n && !n.StartsWith("note-", StringComparison.Ordinal) && !n.StartsWith("notes-", StringComparison.Ordinal))
+			.Where(
+				f =>
+					Path.GetFileName(f) is var n && !n.StartsWith("note-", StringComparison.Ordinal) &&
+						!n.StartsWith("notes-", StringComparison.Ordinal)
+			)
 			.Select(Path.GetFileName)
 			.ToList();
 

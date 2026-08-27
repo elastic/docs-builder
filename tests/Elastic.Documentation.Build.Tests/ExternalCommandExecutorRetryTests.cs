@@ -53,11 +53,9 @@ public class ExternalCommandExecutorRetryTests
 		succeeded.Should().BeFalse();
 		executor.CallCount.Should().Be(5);
 		executor.Diagnostics.Errors.Should().Be(1);
-		executor.RecordedDelays.Should().Equal(
-			TimeSpan.FromSeconds(1),
-			TimeSpan.FromSeconds(2),
-			TimeSpan.FromSeconds(4),
-			TimeSpan.FromSeconds(8));
+		executor.RecordedDelays
+			.Should()
+			.Equal(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8));
 	}
 
 	[Fact]
@@ -129,8 +127,11 @@ public class ExternalCommandExecutorRetryTests
 		return new RetryTestCommandExecutor(new DiagnosticsCollector([]), workingDirectory, steps);
 	}
 
-	private sealed class RetryTestCommandExecutor(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, Func<int>[] steps)
-		: ExternalCommandExecutor(collector, workingDirectory)
+	private sealed class RetryTestCommandExecutor(
+		IDiagnosticsCollector collector,
+		IDirectoryInfo workingDirectory,
+		Func<int>[] steps
+	) : ExternalCommandExecutor(collector, workingDirectory)
 	{
 		public int CallCount { get; private set; }
 
@@ -140,11 +141,16 @@ public class ExternalCommandExecutorRetryTests
 
 		protected override ILogger Logger { get; } = NullLogger.Instance;
 
-		protected override int ExecInCore(Dictionary<string, string> environmentVars, TimeSpan? attemptTimeout, string binary, params string[] args)
+		protected override int ExecInCore(
+			Dictionary<string, string> environmentVars,
+			TimeSpan? attemptTimeout,
+			string binary,
+			params string[] args
+		)
 		{
 			if (CallCount >= steps.Length)
 				throw new InvalidOperationException($"Unexpected invocation {CallCount + 1}, only {steps.Length} steps were scripted");
-			return steps[CallCount++]();   // may throw ProcExecException
+			return steps[CallCount++](); // may throw ProcExecException
 		}
 
 		protected override void DelayBeforeRetry(TimeSpan delay) => RecordedDelays.Add(delay);

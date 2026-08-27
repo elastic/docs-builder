@@ -12,7 +12,11 @@ using RazorSlices;
 namespace Elastic.Documentation.Assembler.Navigation;
 
 #pragma warning disable CS9113 // collector kept for binary-compatibility; no longer used internally
-public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter
+public class GlobalNavigationHtmlWriter(
+	ILoggerFactory logFactory,
+	SiteNavigation globalNavigation,
+	IDiagnosticsCollector collector
+) : INavigationHtmlWriter
 #pragma warning restore CS9113
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GlobalNavigationHtmlWriter>();
@@ -35,11 +39,14 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		if (renderRoot is not INodeNavigationItem<INavigationModel, INavigationItem> group)
 			return NavigationRenderResult.Empty;
 
-		return await _renderedNavigationCache.GetOrRenderAsync(renderRoot, () =>
-		{
-			_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", renderRoot.NavigationTitle, renderRoot.Id);
-			return ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx);
-		});
+		return await _renderedNavigationCache.GetOrRenderAsync(
+			renderRoot,
+			() =>
+			{
+				_logger.LogInformation("Rendering navigation for {NavigationTitle} ({Id})", renderRoot.NavigationTitle, renderRoot.Id);
+				return ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx);
+			}
+		);
 	}
 
 	private NavigationRenderModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group) =>
@@ -50,5 +57,6 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			// Flag off → dropdown on (matches main); flag on → dropdown off, top nav takes over.
 			isUsingNavigationDropdown: globalNavigation.TopNav is null,
 			isPrimaryNavEnabled: true,
-			isGlobalAssemblyBuild: true);
+			isGlobalAssemblyBuild: true
+		);
 }

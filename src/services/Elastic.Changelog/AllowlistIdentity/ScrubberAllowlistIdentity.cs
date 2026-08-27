@@ -63,7 +63,9 @@ public sealed partial record ScrubberAllowlistIdentity
 	public void Validate(IList<string> problems)
 	{
 		if (SchemaVersion != CurrentSchemaVersion)
-			problems.Add($"Unsupported allowlist identity schema version {SchemaVersion}; this reader understands version {CurrentSchemaVersion}.");
+			problems.Add(
+				$"Unsupported allowlist identity schema version {SchemaVersion}; this reader understands version {CurrentSchemaVersion}."
+			);
 		if (!string.Equals(Artifact, ArtifactKind, StringComparison.Ordinal))
 			problems.Add($"Expected artifact '{ArtifactKind}' but found '{Artifact}'.");
 		if (string.IsNullOrWhiteSpace(AllowlistSha256) || !Sha256Format().IsMatch(AllowlistSha256))
@@ -76,7 +78,11 @@ public sealed partial record ScrubberAllowlistIdentity
 	/// Parses an identity document from JSON. Returns false with the reasons in
 	/// <paramref name="problems"/> when the document is malformed or fails validation.
 	/// </summary>
-	public static bool TryParse(string json, [NotNullWhen(true)] out ScrubberAllowlistIdentity? identity, out IReadOnlyList<string> problems)
+	public static bool TryParse(
+		string json,
+		[NotNullWhen(true)] out ScrubberAllowlistIdentity? identity,
+		out IReadOnlyList<string> problems
+	)
 	{
 		var found = new List<string>();
 		identity = null;

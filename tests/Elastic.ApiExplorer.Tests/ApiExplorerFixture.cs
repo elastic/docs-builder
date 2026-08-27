@@ -47,8 +47,9 @@ public sealed class ApiExplorerFixture : IAsyncLifetime
 
 		var fs = new FileSystem();
 		var path = fs.Path.Combine(AppContext.BaseDirectory, "TestData", "api-explorer-fixture.json");
-		Document = await OpenApiReader.Instance.ReadAsync(fs.FileInfo.New(path))
-			?? throw new InvalidOperationException($"Could not read fixture spec at {path}");
+		Document =
+			await OpenApiReader.Instance.ReadAsync(fs.FileInfo.New(path))
+				?? throw new InvalidOperationException($"Could not read fixture spec at {path}");
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, Context, PassthroughMarkdownRenderer.Instance);
 		Navigation = generator.CreateNavigation("fixture", Document);

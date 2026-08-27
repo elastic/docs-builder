@@ -10,22 +10,9 @@ using Elastic.Mapping.Mappings;
 namespace Elastic.Documentation.Search.Contract;
 
 [ElasticsearchMappingContext]
-[Index<LabsDocument>(
-	NameTemplate = "labs-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(LabsLexicalConfig)
-)]
-[Index<LabsDocument>(
-	NameTemplate = "labs-{type}.semantic-{env}",
-	Variant = "Semantic",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(LabsSemanticConfig)
-)]
-[AiEnrichment<LabsDocument>(
-	Role = "Expert content analyst creating search metadata for Elastic's website pages (blogs, labs articles, product pages, events). Audience: developers, DevOps engineers, security analysts, and IT decision-makers.",
-	MatchField = "url",
-	IndexVariant = "Semantic"
-)]
+[Index<LabsDocument>(NameTemplate = "labs-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(LabsLexicalConfig))]
+[Index<LabsDocument>(NameTemplate = "labs-{type}.semantic-{env}", Variant = "Semantic", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(LabsSemanticConfig))]
+[AiEnrichment<LabsDocument>(Role = "Expert content analyst creating search metadata for Elastic's website pages (blogs, labs articles, product pages, events). Audience: developers, DevOps engineers, security analysts, and IT decision-makers.", MatchField = "url", IndexVariant = "Semantic")]
 public static partial class LabsMappingContext;
 
 public class LabsLexicalConfig : IConfigureElasticsearch<LabsDocument>

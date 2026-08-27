@@ -18,8 +18,8 @@ public record SearchConfiguration
 		init
 		{
 			_synonyms = value;
-			SynonymBiDirectional = value
-				.SelectMany(a =>
+			SynonymBiDirectional =
+				value.SelectMany(a =>
 				{
 					var targets = new List<string[]>();
 					foreach (var s in a)
@@ -42,9 +42,9 @@ public record SearchConfiguration
 
 					return targets;
 				})
-				.Where(a => a.Length > 1)
-				.DistinctBy(a => a[0])
-				.ToDictionary(a => a[0], a => a.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
+					.Where(a => a.Length > 1)
+					.DistinctBy(a => a[0])
+					.ToDictionary(a => a[0], a => a.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
 		}
 	}
 
@@ -139,9 +139,7 @@ public static class SearchConfigurationExtensions
 		new()
 		{
 			RuleId = dto.RuleId,
-			Type = Enum.TryParse<QueryRuleType>(dto.Type, ignoreCase: true, out var ruleType)
-				? ruleType
-				: QueryRuleType.Pinned,
+			Type = Enum.TryParse<QueryRuleType>(dto.Type, ignoreCase: true, out var ruleType) ? ruleType : QueryRuleType.Pinned,
 			Criteria = dto.Criteria.Select(ParseCriteria).ToImmutableArray(),
 			Actions = new QueryRuleActions { Ids = dto.Actions.Ids.ToImmutableArray() }
 		};

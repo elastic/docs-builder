@@ -7,8 +7,7 @@ namespace Elastic.Documentation.Configuration.Suggestions;
 public class Suggestion(IReadOnlySet<string> candidates, string input)
 {
 	private IReadOnlyCollection<string> GetSuggestions() =>
-		candidates
-			.Select(source => (source, Distance: LevenshteinDistance(input, source)))
+		candidates.Select(source => (source, Distance: LevenshteinDistance(input, source)))
 			.OrderBy(suggestion => suggestion.Distance)
 			.Where(suggestion => suggestion.Distance <= 2)
 			.Select(suggestion => suggestion.source)
@@ -21,7 +20,11 @@ public class Suggestion(IReadOnlySet<string> candidates, string input)
 		if (suggestions.Count == 0)
 			return string.Empty;
 
-		return "Did you mean " + string.Join(", ", suggestions.SkipLast(1).Select(s => $"\"{s}\"")) + (suggestions.Count > 1 ? " or " : "") + (suggestions.LastOrDefault() != null ? $"\"{suggestions.LastOrDefault()}\"" : "") + "?";
+		return "Did you mean "
+			+ string.Join(", ", suggestions.SkipLast(1).Select(s => $"\"{s}\""))
+			+ (suggestions.Count > 1 ? " or " : "")
+			+ (suggestions.LastOrDefault() != null ? $"\"{suggestions.LastOrDefault()}\"" : "")
+			+ "?";
 	}
 
 	private static int LevenshteinDistance(string source, string target)
@@ -52,11 +55,7 @@ public class Suggestion(IReadOnlySet<string> candidates, string input)
 			{
 				var cost = (source[i - 1] == target[j - 1]) ? 0 : 1;
 
-				distance[i, j] = Math.Min(
-					Math.Min(
-						distance[i - 1, j] + 1,
-						distance[i, j - 1] + 1),
-					distance[i - 1, j - 1] + cost);
+				distance[i, j] = Math.Min(Math.Min(distance[i - 1, j] + 1, distance[i, j - 1] + 1), distance[i - 1, j - 1] + cost);
 			}
 		}
 

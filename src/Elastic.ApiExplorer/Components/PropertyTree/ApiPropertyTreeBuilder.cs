@@ -34,8 +34,14 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	/// <summary>One renderable property before its display fields are derived.</summary>
 	private sealed record PropertyRow(
-		string Name, IOpenApiSchema Schema, TypeInfo TypeInfo, string AnchorId,
-		bool IsRequired, bool IsLast, bool IsRecursive);
+		string Name,
+		IOpenApiSchema Schema,
+		TypeInfo TypeInfo,
+		string AnchorId,
+		bool IsRequired,
+		bool IsLast,
+		bool IsRecursive
+	);
 
 	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
 	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope)
@@ -56,10 +62,14 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			var typeInfo = _analyzer.GetTypeInfo(propSchema);
 			var propId = string.IsNullOrEmpty(scope.Prefix) ? name : $"{scope.Prefix}-{name}";
 			var row = new PropertyRow(
-				name, propSchema, typeInfo, propId,
+				name,
+				propSchema,
+				typeInfo,
+				propId,
 				IsRequired: requiredProps.Contains(name),
 				IsLast: i == propArray.Length - 1,
-				IsRecursive: DetectRecursion(propSchema, typeInfo, scope.Ancestors));
+				IsRecursive: DetectRecursion(propSchema, typeInfo, scope.Ancestors)
+			);
 			items.Add(BuildProperty(row, scope));
 		}
 
@@ -67,14 +77,20 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	}
 
 	/// <summary>Builds the expanded variants for a top-level oneOf/anyOf union (schema pages).</summary>
-	public ApiUnionVariants? BuildUnionVariantsForSchemas(IList<IOpenApiSchema> unionSchemas, string prefix, IReadOnlySet<string>? ancestors)
+	public ApiUnionVariants? BuildUnionVariantsForSchemas(
+		IList<IOpenApiSchema> unionSchemas,
+		string prefix,
+		IReadOnlySet<string>? ancestors
+	)
 	{
-		var unionOptions = unionSchemas.Where(s => s is not null).Select(s =>
-		{
-			var info = _analyzer.GetTypeInfo(s);
-			var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
-			return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
-		}).ToList();
+		var unionOptions = unionSchemas.Where(s => s is not null)
+			.Select(s =>
+			{
+				var info = _analyzer.GetTypeInfo(s);
+				var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
+				return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
+			})
+			.ToList();
 		return BuildUnionVariants(unionOptions, new PropertyTreeScope { Prefix = prefix, Ancestors = ancestors });
 	}
 
@@ -122,20 +138,15 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return constraints;
 	}
 
-	private bool HasActualProperties(IOpenApiSchema? schema) =>
-		_analyzer.GetSchemaProperties(schema)?.Count > 0;
+	private bool HasActualProperties(IOpenApiSchema? schema) => _analyzer.GetSchemaProperties(schema)?.Count > 0;
 
 	private HtmlString RenderDescription(string name, string? specDescription, PropertyTreeScope scope)
 	{
 		// ponytail: match property Name only. Nested paths if authors need them.
 		var description = scope.IsRequest
 			&& scope.DescriptionOverrides is { Count: > 0 }
-			&& scope.DescriptionOverrides.TryGetValue(name, out var overrideText)
-			? overrideText
-			: specDescription;
-		return string.IsNullOrWhiteSpace(description)
-			? HtmlString.Empty
-			: options.RenderMarkdown(description);
+			&& scope.DescriptionOverrides.TryGetValue(name, out var overrideText) ? overrideText : specDescription;
+		return string.IsNullOrWhiteSpace(description) ? HtmlString.Empty : options.RenderMarkdown(description);
 	}
 
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
@@ -156,9 +167,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			Type = BuildAnnotation(typeInfo, HasActualProperties(propSchema)),
 			DescriptionHtml = RenderDescription(row.Name, propSchema.Description, scope),
 			ShowDeprecatedBadge = options.ShowDeprecated && propSchema.Deprecated,
-			Availability = options.ShowVersionInfo
-				? AvailabilityBadgeHelper.FromSchema(propSchema, options.VersionsConfiguration)
-				: null,
+			Availability = options.ShowVersionInfo ? AvailabilityBadgeHelper.FromSchema(propSchema, options.VersionsConfiguration) : null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			EnumValues = typeInfo is { IsEnum: true, EnumValues.Length: > 0 } ? typeInfo.EnumValues : [],
@@ -168,33 +177,46 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			IsCollapsible = expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
 			NestedCount = expansion.NestedCount,
-			Children = isRecursive
-				? ApiPropertyChildren.None
-				: BuildChildren(row, scope, expansion)
+			Children = isRecursive ? ApiPropertyChildren.None : BuildChildren(row, scope, expansion)
 		};
 	}
 
 	/// <summary>Everything the original view's opening code block derived about a property's expansion.</summary>
 	private sealed record Expansion(
-		bool HasNestedProps, bool HasDictValueProps, IOpenApiSchema? ArrayItemSchema, bool HasArrayItemProps,
-		bool IsSimpleArrayUnion, string? SimpleUnionBaseName, bool HasUnionOptions,
-		bool SimpleUnionHasExpandableProps, IOpenApiSchema? SimpleUnionSchema, List<UnionOption>? SimpleUnionNestedOptions,
-		int NestedCount, bool HasChildren, bool IsCollapsible, bool DefaultExpanded);
+		bool HasNestedProps,
+		bool HasDictValueProps,
+		IOpenApiSchema? ArrayItemSchema,
+		bool HasArrayItemProps,
+		bool IsSimpleArrayUnion,
+		string? SimpleUnionBaseName,
+		bool HasUnionOptions,
+		bool SimpleUnionHasExpandableProps,
+		IOpenApiSchema? SimpleUnionSchema,
+		List<UnionOption>? SimpleUnionNestedOptions,
+		int NestedCount,
+		bool HasChildren,
+		bool IsCollapsible,
+		bool DefaultExpanded
+	);
 
 	private Expansion ComputeExpansion(IOpenApiSchema propSchema, TypeInfo typeInfo, int depth, bool isRecursive)
 	{
 		var dictHasLinkedValue = typeInfo is { IsDictionary: true, HasLink: true };
-		var hasNestedProps = typeInfo is { IsObject: true, HasLink: false } && depth < options.MaxDepth
-			&& HasActualProperties(propSchema);
+		var hasNestedProps = typeInfo is { IsObject: true, HasLink: false } && depth < options.MaxDepth && HasActualProperties(propSchema);
 		var hasDictValueProps = typeInfo is { IsDictionary: true, DictValueSchema: not null }
-			&& depth < options.MaxDepth && !dictHasLinkedValue && HasActualProperties(typeInfo.DictValueSchema);
+			&& depth < options.MaxDepth
+			&& !dictHasLinkedValue
+			&& HasActualProperties(typeInfo.DictValueSchema);
 		var arrayItemSchema = typeInfo.IsArray && propSchema.Items is not null ? propSchema.Items : null;
-		var hasArrayItemProps = arrayItemSchema is not null && !typeInfo.HasLink && depth < options.MaxDepth
+		var hasArrayItemProps = arrayItemSchema is not null
+			&& !typeInfo.HasLink
+			&& depth < options.MaxDepth
 			&& HasActualProperties(arrayItemSchema);
 
 		var (isSimpleArrayUnion, simpleUnionBaseName) = DetectSimpleArrayUnion(typeInfo);
 
-		var hasUnionOptions = typeInfo is { IsUnion: true, AnyOfOptions: not null } && depth < options.MaxDepth
+		var hasUnionOptions = typeInfo is { IsUnion: true, AnyOfOptions: not null }
+			&& depth < options.MaxDepth
 			&& !isSimpleArrayUnion
 			&& typeInfo.AnyOfOptions.Any(_analyzer.UnionOptionHasProperties);
 
@@ -215,15 +237,27 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		else if (simpleUnionHasExpandableProps && simpleUnionSchema is not null)
 			nestedCount = _analyzer.GetSchemaProperties(simpleUnionSchema)?.Count ?? 0;
 
-		var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps) && !isRecursive;
+		var hasChildren = (hasNestedProps || hasDictValueProps || hasArrayItemProps || hasUnionOptions || simpleUnionHasExpandableProps)
+			&& !isRecursive;
 		var isCollapsible = hasChildren && nestedCount > 1 && !hasUnionOptions && !hasDictValueProps;
 		var defaultExpanded = ComputeDefaultExpanded(depth, nestedCount);
 
 		return new Expansion(
-			hasNestedProps, hasDictValueProps, arrayItemSchema, hasArrayItemProps,
-			isSimpleArrayUnion, simpleUnionBaseName, hasUnionOptions,
-			simpleUnionHasExpandableProps, simpleUnionSchema, simpleUnionNestedOptions,
-			nestedCount, hasChildren, isCollapsible, defaultExpanded);
+			hasNestedProps,
+			hasDictValueProps,
+			arrayItemSchema,
+			hasArrayItemProps,
+			isSimpleArrayUnion,
+			simpleUnionBaseName,
+			hasUnionOptions,
+			simpleUnionHasExpandableProps,
+			simpleUnionSchema,
+			simpleUnionNestedOptions,
+			nestedCount,
+			hasChildren,
+			isCollapsible,
+			defaultExpanded
+		);
 	}
 
 	private static (bool IsSimpleArrayUnion, string? BaseName) DetectSimpleArrayUnion(TypeInfo typeInfo)
@@ -246,7 +280,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	}
 
 	private (bool Expandable, IOpenApiSchema? Schema, List<UnionOption>? NestedOptions) ResolveSimpleUnionExpansion(
-		TypeInfo typeInfo, bool isSimpleArrayUnion, string? simpleUnionBaseName, int depth)
+		TypeInfo typeInfo,
+		bool isSimpleArrayUnion,
+		string? simpleUnionBaseName,
+		int depth
+	)
 	{
 		if (!isSimpleArrayUnion || string.IsNullOrEmpty(simpleUnionBaseName) || depth >= options.MaxDepth)
 			return (false, null, null);
@@ -260,9 +298,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			return (false, null, null);
 
 		var directProps = _analyzer.GetSchemaProperties(baseOption.Schema);
-		var nestedOptions = directProps is null or { Count: 0 }
-			? _analyzer.GetNestedUnionOptions(baseOption.Schema)
-			: null;
+		var nestedOptions = directProps is null or { Count: 0 } ? _analyzer.GetNestedUnionOptions(baseOption.Schema) : null;
 		return (true, baseOption.Schema, nestedOptions);
 	}
 
@@ -277,8 +313,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		return new ExternalDocLink(url, IsElasticDocsUrl(url));
 	}
 
-	internal static bool IsElasticDocsUrl(string url) =>
-		url.Contains("www.elastic.co/docs") || url.Contains("elastic.co/guide");
+	internal static bool IsElasticDocsUrl(string url) => url.Contains("www.elastic.co/docs") || url.Contains("elastic.co/guide");
 
 	private TypePageLink? BuildTypeLink(TypeInfo typeInfo, Expansion expansion)
 	{
@@ -308,15 +343,14 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			unionOptionNames.AddRange(typeInfo.AnyOfOptions.Select(o => o.Name));
 		if (typeInfo.UnionOptions is not null)
 			unionOptionNames.AddRange(typeInfo.UnionOptions);
-		var sortedOptions = unionOptionNames.Distinct()
-			.OrderByDescending(o => o.EndsWith("[]"))
-			.ToArray();
+		var sortedOptions = unionOptionNames.Distinct().OrderByDescending(o => o.EndsWith("[]")).ToArray();
 
-		var allEnumLike = sortedOptions.Length > 0 && sortedOptions.All(o =>
-			!o.EndsWith("[]") &&
-			!string.IsNullOrEmpty(o) &&
-			!SchemaHelpers.PrimitiveTypeNames.Contains(o) &&
-			(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_')));
+		var allEnumLike = sortedOptions.Length > 0
+			&& sortedOptions.All(
+				o =>
+					!o.EndsWith("[]") && !string.IsNullOrEmpty(o) && !SchemaHelpers.PrimitiveTypeNames.Contains(o) &&
+						(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_'))
+			);
 
 		if (allEnumLike)
 			return new UnionDisplay { Kind = UnionDisplayKind.EnumLike, EnumLikeValues = sortedOptions };
@@ -343,9 +377,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var baseTypeOption = typeInfo.AnyOfOptions!.FirstOrDefault(o => o.Name == baseName);
 		var baseTypeInfo = baseTypeOption?.Schema is not null ? _analyzer.GetTypeInfo(baseTypeOption.Schema) : null;
 		var isBaseValueType = baseTypeInfo?.IsValueType ?? false;
-		var valueTypePrefix = isBaseValueType && !string.IsNullOrEmpty(baseTypeInfo?.ValueTypeBase)
-			? baseTypeInfo.ValueTypeBase + " "
-			: "";
+		var valueTypePrefix = isBaseValueType && !string.IsNullOrEmpty(baseTypeInfo?.ValueTypeBase) ? baseTypeInfo.ValueTypeBase + " " : "";
 		return new UnionDisplay
 		{
 			Kind = UnionDisplayKind.SimpleArrayUnion,
@@ -356,9 +388,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	}
 
 	internal static bool IsTypeOptionBadge(string option) =>
-		SchemaHelpers.PrimitiveTypeNames.Contains(option) ||
-		SchemaHelpers.PrimitiveTypeNames.Contains(option.TrimEnd('[', ']')) ||
-		char.IsUpper(option[0]) || option.EndsWith("[]");
+		SchemaHelpers.PrimitiveTypeNames.Contains(option)
+			|| SchemaHelpers.PrimitiveTypeNames.Contains(option.TrimEnd('[', ']'))
+			|| char.IsUpper(option[0])
+			|| option.EndsWith("[]");
 
 	private ApiPropertyChildren BuildChildren(PropertyRow row, PropertyTreeScope scope, Expansion expansion)
 	{
@@ -446,8 +479,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				NestedCount = expansion.NestedCount,
 				UseHidden = options.UseHiddenUntilFound && dictIsCollapsible && !dictDefaultExpanded,
 				ValueType = Describe(row.TypeInfo.DictValueSchema),
-				Properties = BuildPropertyList(row.TypeInfo.DictValueSchema, childScope with { Prefix = keyAnchorId, Depth = childScope.Depth + 1 })
-					?? new ApiPropertyList([])
+				Properties =
+					BuildPropertyList(row.TypeInfo.DictValueSchema, childScope with { Prefix = keyAnchorId, Depth = childScope.Depth + 1 })
+						?? new ApiPropertyList([])
 			}
 		};
 	}
@@ -478,18 +512,21 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		if (IsAncestorType(typeInfo.TypeName, ancestors))
 			return true;
 
-		if (typeInfo.IsArray && propSchema.Items is not null
-			&& IsAncestorType(_analyzer.GetTypeInfo(propSchema.Items).TypeName, ancestors))
+		if (typeInfo.IsArray && propSchema.Items is not null && IsAncestorType(_analyzer.GetTypeInfo(propSchema.Items).TypeName, ancestors))
 			return true;
 
-		if (typeInfo is { IsDictionary: true, DictValueSchema: not null }
-			&& IsAncestorType(_analyzer.GetTypeInfo(typeInfo.DictValueSchema).TypeName, ancestors))
+		if (
+			typeInfo is { IsDictionary: true, DictValueSchema: not null }
+			&& IsAncestorType(_analyzer.GetTypeInfo(typeInfo.DictValueSchema).TypeName, ancestors)
+		)
 			return true;
 
-		if (typeInfo is { IsUnion: true, AnyOfOptions: not null }
+		if (
+			typeInfo is { IsUnion: true, AnyOfOptions: not null }
 			&& typeInfo.AnyOfOptions
 				.Select(option => option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name)
-				.Any(baseName => IsAncestorType(baseName, ancestors)))
+				.Any(baseName => IsAncestorType(baseName, ancestors))
+		)
 			return true;
 
 		return DetectDirectUnionRecursion(propSchema, ancestors);
@@ -509,8 +546,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			if (IsAncestorType(baseName, ancestors))
 				return true;
 
-			if (unionTypeInfo.IsArray && unionSchema.Items is not null
-				&& IsAncestorType(_analyzer.GetTypeInfo(unionSchema.Items).TypeName, ancestors))
+			if (
+				unionTypeInfo.IsArray
+				&& unionSchema.Items is not null
+				&& IsAncestorType(_analyzer.GetTypeInfo(unionSchema.Items).TypeName, ancestors)
+			)
 				return true;
 		}
 
@@ -530,9 +570,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			return null;
 
 		// Children of union variants always show deprecated/version/external-docs regardless of page settings.
-		var childBuilder = new ApiPropertyTreeBuilder(document,
+		var childBuilder = new ApiPropertyTreeBuilder(
+			document,
 			options with { ShowDeprecated = true, ShowVersionInfo = true, ShowExternalDocs = true },
-			currentPageType);
+			currentPageType
+		);
 
 		var variants = new List<ApiUnionVariant>(variantsToRender.Count);
 		foreach (var variant in variantsToRender)
@@ -562,9 +604,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				NestedCount = nestedCount,
 				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
 				Properties = showProperties && variant.Schema is not null
-					? childBuilder.BuildPropertyList(variant.Schema,
-						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null })
-						?? new ApiPropertyList([])
+					? childBuilder.BuildPropertyList(
+						variant.Schema,
+						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null }
+					) ?? new ApiPropertyList([])
 					: null
 			});
 		}
@@ -579,20 +622,25 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	}
 
 	private sealed record VariantCandidate(
-		string Name, string BaseName, bool IsArray, bool IsObject,
-		IOpenApiSchema? Schema, IDictionary<string, IOpenApiSchema>? Props);
+		string Name,
+		string BaseName,
+		bool IsArray,
+		bool IsObject,
+		IOpenApiSchema? Schema,
+		IDictionary<string, IOpenApiSchema>? Props
+	);
 
 	private List<VariantCandidate> CollectVariantsToRender(List<UnionOption> unionOptions)
 	{
 		// Sort: array variants first within each base-name group, preserving group order
-		var sortedOptions = unionOptions
-			.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
+		var sortedOptions = unionOptions.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
 			.SelectMany(g => g.OrderByDescending(o => o.Name.EndsWith("[]")))
 			.ToList();
 
-		var typeGroups = sortedOptions
-			.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
-			.ToDictionary(g => g.Key, g => g.ToList());
+		var typeGroups = sortedOptions.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name).ToDictionary(
+			g => g.Key,
+			g => g.ToList()
+		);
 
 		var variantsToRender = new List<VariantCandidate>();
 		foreach (var (baseName, variants) in typeGroups)

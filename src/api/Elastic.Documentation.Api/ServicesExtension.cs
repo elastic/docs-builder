@@ -19,10 +19,14 @@ namespace Elastic.Documentation.Api;
 [EnumExtensions]
 public enum AppEnv
 {
-	[Display(Name = "dev")] Dev,
-	[Display(Name = "staging")] Staging,
-	[Display(Name = "edge")] Edge,
-	[Display(Name = "prod")] Prod
+	[Display(Name = "dev")]
+	Dev,
+	[Display(Name = "staging")]
+	Staging,
+	[Display(Name = "edge")]
+	Edge,
+	[Display(Name = "prod")]
+	Prod
 }
 
 public class AppEnvironment
@@ -46,26 +50,33 @@ public static class ServicesExtension
 		else
 		{
 			var logger = GetLogger(services);
-			logger?.LogWarning("Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
+			logger?.LogWarning(
+				"Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev",
+				appEnvironment
+			);
 			AddElasticDocsApiServices(services, AppEnv.Dev);
 		}
 	}
 
-
 	private static void AddElasticDocsApiServices(this IServiceCollection services, AppEnv appEnv)
 	{
-		_ = services.ConfigureHttpJsonOptions(options =>
-		{
-			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
-		});
+		_ =
+			services.ConfigureHttpJsonOptions(options =>
+			{
+				options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
+			});
 
 		// Configure HttpClient for streaming optimization
-		_ = services.AddHttpClient("StreamingHttpClient", client =>
-		{
-			// Disable response buffering for streaming
-			client.DefaultRequestHeaders.Connection.Add("keep-alive");
-			client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
-		});
+		_ =
+			services.AddHttpClient(
+				"StreamingHttpClient",
+				client =>
+				{
+					// Disable response buffering for streaming
+					client.DefaultRequestHeaders.Connection.Add("keep-alive");
+					client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
+				}
+			);
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddDistributedCache(services, appEnv);
@@ -101,18 +112,19 @@ public static class ServicesExtension
 						logger?.LogInformation("AmazonDynamoDB client registered");
 
 						// Register multi-layer cache (L1: in-memory + L2: DynamoDB)
-						_ = services.AddSingleton<IDistributedCache>(sp =>
-						{
-							var dynamoDb = sp.GetRequiredService<IAmazonDynamoDB>();
-							var tableName = $"docs-api-cache-{appEnv.ToStringFast(true)}";
-							var dynamoLogger = sp.GetRequiredService<ILogger<DynamoDbDistributedCache>>();
-							var multiLogger = sp.GetRequiredService<ILogger<MultiLayerCache>>();
+						_ =
+							services.AddSingleton<IDistributedCache>(sp =>
+							{
+								var dynamoDb = sp.GetRequiredService<IAmazonDynamoDB>();
+								var tableName = $"docs-api-cache-{appEnv.ToStringFast(true)}";
+								var dynamoLogger = sp.GetRequiredService<ILogger<DynamoDbDistributedCache>>();
+								var multiLogger = sp.GetRequiredService<ILogger<MultiLayerCache>>();
 
-							var dynamoCache = new DynamoDbDistributedCache(dynamoDb, tableName, dynamoLogger);
-							var multiLayerCache = new MultiLayerCache(dynamoCache, multiLogger);
-							logger?.LogInformation("Multi-layer cache registered with DynamoDB table: {TableName}", tableName);
-							return multiLayerCache;
-						});
+								var dynamoCache = new DynamoDbDistributedCache(dynamoDb, tableName, dynamoLogger);
+								var multiLayerCache = new MultiLayerCache(dynamoCache, multiLogger);
+								logger?.LogInformation("Multi-layer cache registered with DynamoDB table: {TableName}", tableName);
+								return multiLayerCache;
+							});
 					}
 					catch (Exception ex)
 					{
@@ -168,7 +180,9 @@ public static class ServicesExtension
 			// Register factory as interface implementation
 			_ = services.AddScoped<IAskAiService, AskAiGatewayFactory>();
 			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
-			logger?.LogInformation("Service and transformer factories registered successfully - provider switchable via X-AI-Provider header");
+			logger?.LogInformation(
+				"Service and transformer factories registered successfully - provider switchable via X-AI-Provider header"
+			);
 
 			// Register message feedback service (singleton for connection reuse)
 			_ = services.AddSingleton<IAskAiMessageFeedbackService, ElasticsearchAskAiMessageFeedbackGateway>();
@@ -190,5 +204,4 @@ public static class ServicesExtension
 		_ = services.AddSearchServices();
 		logger?.LogInformation("Full search service registered with hybrid RRF support");
 	}
-
 }

@@ -72,7 +72,8 @@ public class AssembleSources
 			availableExporters
 		);
 
-		var declaredProducts = sources.AssembleSets.Values
+		var declaredProducts = sources.AssembleSets
+			.Values
 			.SelectMany(s => s.BuildContext.Configuration.ReleaseNotesProducts)
 			.Distinct(StringComparer.Ordinal)
 			.ToArray();
@@ -93,9 +94,8 @@ public class AssembleSources
 		return sources;
 	}
 
-	internal static AssembleSources ForTests(
-		AssembleContext context,
-		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets) => new(context, assembleSets);
+	internal static AssembleSources ForTests(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets) =>
+		new(context, assembleSets);
 
 	private AssembleSources(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets)
 	{
@@ -125,11 +125,22 @@ public class AssembleSources
 		UriResolver = uriResolver;
 		CrossLinkResolver = crossLinkResolver;
 		AssembleContext = assembleContext;
-		AssembleSets = checkouts
-			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, releaseNotesResolver, configurationContext, availableExporters))
-			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
-			.ToFrozenDictionary();
+		AssembleSets =
+			checkouts.Where(c => c.Repository is { Skip: false })
+				.Select(
+					c =>
+						new AssemblerDocumentationSet(
+							logFactory,
+							assembleContext,
+							c,
+							crossLinkResolver,
+							releaseNotesResolver,
+							configurationContext,
+							availableExporters
+						)
+				)
+				.ToDictionary(s => s.Checkout.Repository.Name, s => s)
+				.ToFrozenDictionary();
 	}
 
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context)
@@ -189,6 +200,7 @@ public class AssembleSources
 			string? parent,
 			int depth,
 			int order, //TODO Remove this parameter
+
 			Uri? topLevelSource,
 			Uri? parentSource
 		)
@@ -257,17 +269,16 @@ public class AssembleSources
 
 			var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
 			if (string.IsNullOrEmpty(pathPrefix))
-				reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
+				reader.EmitError(
+					$"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect",
+					tocEntry
+				);
 
 			pathPrefix ??= sourcePrefix;
 			topLevelSource ??= sourceUri;
 			parentSource ??= sourceUri;
 
-			var tocTopLevelMapping = new NavigationTocMapping
-			{
-				Source = sourceUri,
-				SourcePathPrefix = pathPrefix,
-			};
+			var tocTopLevelMapping = new NavigationTocMapping { Source = sourceUri, SourcePathPrefix = pathPrefix, };
 			entries.Add(new KeyValuePair<Uri, NavigationTocMapping>(sourceUri, tocTopLevelMapping));
 
 			foreach (var entry in tocEntry.Children)

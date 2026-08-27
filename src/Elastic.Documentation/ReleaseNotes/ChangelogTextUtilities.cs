@@ -23,9 +23,7 @@ public static partial class ChangelogTextUtilities
 			return string.Empty;
 
 		// Capitalize first letter and ensure ends with period
-		var result = text.Length < 2
-			? char.ToUpperInvariant(text[0]).ToString()
-			: char.ToUpperInvariant(text[0]) + text[1..];
+		var result = text.Length < 2 ? char.ToUpperInvariant(text[0]).ToString() : char.ToUpperInvariant(text[0]) + text[1..];
 		if (!result.EndsWith('.'))
 			result += ".";
 		return result;
@@ -59,9 +57,7 @@ public static partial class ChangelogTextUtilities
 		if (string.IsNullOrWhiteSpace(area))
 			return string.Empty;
 
-		var result = area.Length < 2
-			? char.ToUpperInvariant(area[0]).ToString()
-			: char.ToUpperInvariant(area[0]) + area[1..];
+		var result = area.Length < 2 ? char.ToUpperInvariant(area[0]).ToString() : char.ToUpperInvariant(area[0]) + area[1..];
 		return result.Replace("-", " ");
 	}
 
@@ -73,9 +69,7 @@ public static partial class ChangelogTextUtilities
 		if (string.IsNullOrWhiteSpace(subtype))
 			return string.Empty;
 
-		var result = subtype.Length < 2
-			? char.ToUpperInvariant(subtype[0]).ToString()
-			: char.ToUpperInvariant(subtype[0]) + subtype[1..];
+		var result = subtype.Length < 2 ? char.ToUpperInvariant(subtype[0]).ToString() : char.ToUpperInvariant(subtype[0]) + subtype[1..];
 		return result.Replace("-", " ");
 	}
 
@@ -132,10 +126,7 @@ public static partial class ChangelogTextUtilities
 		if (span.Length > 0 && span[0] == ':')
 			span = span[1..].TrimStart();
 
-		if (removedBracketPrefix &&
-			span.Length >= 2 &&
-			span[0] == '-' &&
-			char.IsWhiteSpace(span[1]))
+		if (removedBracketPrefix && span.Length >= 2 && span[0] == '-' && char.IsWhiteSpace(span[1]))
 			span = span[2..].TrimStart();
 
 		return span.ToString();
@@ -168,17 +159,21 @@ public static partial class ChangelogTextUtilities
 	public static int? ExtractPrNumber(string prUrl, string? defaultOwner = null, string? defaultRepo = null)
 	{
 		// Handle full URL: https://github.com/owner/repo/pull/123
-		if (prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			prUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+			|| prUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			try
 			{
 				var uri = new Uri(prUrl);
 				var segments = uri.Segments;
 				// segments[0] is "/", segments[1] is "owner/", segments[2] is "repo/", segments[3] is "pull/", segments[4] is "123"
-				if (segments.Length >= 5 &&
-					segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase) &&
-					int.TryParse(segments[4].TrimEnd('/'), out var prNum))
+				if (
+					segments.Length >= 5
+					&& segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase)
+					&& int.TryParse(segments[4].TrimEnd('/'), out var prNum)
+				)
 					return prNum;
 			}
 			catch (UriFormatException)
@@ -197,8 +192,7 @@ public static partial class ChangelogTextUtilities
 		}
 
 		// Handle just a PR number when owner/repo are provided
-		if (int.TryParse(prUrl, out var prNumber) &&
-			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		if (int.TryParse(prUrl, out var prNumber) && !string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
 			return prNumber;
 
 		return null;
@@ -209,14 +203,18 @@ public static partial class ChangelogTextUtilities
 	/// </summary>
 	public static int? ExtractIssueNumber(string issueUrl, string? defaultOwner = null, string? defaultRepo = null)
 	{
-		if (issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			issueUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+			|| issueUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			var uri = new Uri(issueUrl);
 			var segments = uri.Segments;
-			if (segments.Length >= 5 &&
-				segments[3].Equals("issues/", StringComparison.OrdinalIgnoreCase) &&
-				int.TryParse(segments[4].TrimEnd('/'), out var issueNum))
+			if (
+				segments.Length >= 5
+				&& segments[3].Equals("issues/", StringComparison.OrdinalIgnoreCase)
+				&& int.TryParse(segments[4].TrimEnd('/'), out var issueNum)
+			)
 				return issueNum;
 		}
 
@@ -228,8 +226,11 @@ public static partial class ChangelogTextUtilities
 				return issueNum;
 		}
 
-		if (int.TryParse(issueUrl, out var issueNumber) &&
-			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		if (
+			int.TryParse(issueUrl, out var issueNumber)
+			&& !string.IsNullOrWhiteSpace(defaultOwner)
+			&& !string.IsNullOrWhiteSpace(defaultRepo)
+		)
 			return issueNumber;
 
 		return null;
@@ -268,8 +269,10 @@ public static partial class ChangelogTextUtilities
 		if (trimmed.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
 			return false;
 
-		if (trimmed.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			trimmed.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			trimmed.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+			|| trimmed.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			try
 			{
@@ -282,10 +285,12 @@ public static partial class ChangelogTextUtilities
 					return true;
 				}
 
-				if (segments.Length == 4 &&
-					(segments[2].Equals("pull", StringComparison.OrdinalIgnoreCase) ||
-					 segments[2].Equals("issues", StringComparison.OrdinalIgnoreCase)) &&
-					int.TryParse(segments[3], out _))
+				if (
+					segments.Length == 4
+					&& (segments[2].Equals("pull", StringComparison.OrdinalIgnoreCase)
+						|| segments[2].Equals("issues", StringComparison.OrdinalIgnoreCase))
+					&& int.TryParse(segments[3], out _)
+				)
 				{
 					owner = segments[0];
 					repo = segments[1];
@@ -523,9 +528,7 @@ public static partial class ChangelogTextUtilities
 			return (null, string.Empty);
 
 		var parts = repository.Split('/');
-		return parts.Length >= 2
-			? (parts[0], parts[1])
-			: (null, parts[0]);
+		return parts.Length >= 2 ? (parts[0], parts[1]) : (null, parts[0]);
 	}
 
 	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None)]
@@ -541,8 +544,7 @@ public static partial class ChangelogTextUtilities
 			return "untitled";
 
 		// Split on whitespace and take first N words
-		var words = title
-			.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+		var words = title.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
 			.Take(maxWords)
 			.Select(word => NonAlphanumericRegex().Replace(word.ToLowerInvariant(), string.Empty))
 			.Where(word => !string.IsNullOrEmpty(word))

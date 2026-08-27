@@ -32,9 +32,8 @@ public abstract class ChangelogTestBase : IDisposable
 		Output = output;
 		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		FileSystem = ChangelogFileSystem.FromWorkingDirectory(mockFileSystem);
-		RunnerTempFileSystem = new RunnerTempFileSystem(
-			mockFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-			inner: mockFileSystem);
+		RunnerTempFileSystem =
+			new RunnerTempFileSystem(mockFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: mockFileSystem);
 		// ConfigurationFileProvider writes to AppData/config-runtime, which is outside ChangelogFileSystem's
 		// git-root scope by design. Use a CheckoutsFileSystem (includes AppData) for the config provider only;
 		// it wraps the same mock so both filesystems share in-memory state.
@@ -47,7 +46,8 @@ public abstract class ChangelogTestBase : IDisposable
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Stack, new VersioningSystem
+					VersioningSystemId.Stack,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
 						Current = new SemVersion(9, 2, 0),
@@ -59,7 +59,8 @@ public abstract class ChangelogTestBase : IDisposable
 		var products = new Dictionary<string, Product>
 		{
 			{
-				"elasticsearch", new Product
+				"elasticsearch",
+				new Product
 				{
 					Id = "elasticsearch",
 					DisplayName = "Elasticsearch",
@@ -67,7 +68,8 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			},
 			{
-				"kibana", new Product
+				"kibana",
+				new Product
 				{
 					Id = "kibana",
 					DisplayName = "Kibana",
@@ -75,7 +77,8 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			},
 			{
-				"cloud-hosted", new Product
+				"cloud-hosted",
+				new Product
 				{
 					Id = "cloud-hosted",
 					DisplayName = "Elastic Cloud Hosted",
@@ -83,7 +86,8 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			},
 			{
-				"cloud-serverless", new Product
+				"cloud-serverless",
+				new Product
 				{
 					Id = "cloud-serverless",
 					DisplayName = "Elastic Cloud Serverless",
@@ -91,7 +95,8 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			},
 			{
-				"security", new Product
+				"security",
+				new Product
 				{
 					Id = "security",
 					DisplayName = "Elastic Security",
@@ -108,10 +113,7 @@ public abstract class ChangelogTestBase : IDisposable
 
 		ConfigurationContext = new ConfigurationContext
 		{
-			Endpoints = new DocumentationEndpoints
-			{
-				Elasticsearch = ElasticsearchEndpoint.Default,
-			},
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, configFileSystem),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
@@ -139,8 +141,7 @@ public abstract class ChangelogTestBase : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	[SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1",
-		Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
+	[SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	protected static string ComputeSha1(string content)
 	{
 		var normalized = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.NormalizeYaml(content);
@@ -157,12 +158,13 @@ public abstract class ChangelogTestBase : IDisposable
 	protected static string CreateResolvedBundleContent(string bundleHeaderYaml, params (string FileName, string Changelog)[] changelogs)
 	{
 		var bundle = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeBundle(bundleHeaderYaml);
-		var entries = changelogs
-			.Select(c => Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(c.Changelog).ToBundledEntry() with
-			{
-				File = new Documentation.ReleaseNotes.BundledFile { Name = c.FileName, Checksum = ComputeSha1(c.Changelog) }
-			})
-			.ToList();
+		var entries = changelogs.Select(
+			c =>
+				Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(c.Changelog).ToBundledEntry() with
+				{
+					File = new Documentation.ReleaseNotes.BundledFile { Name = c.FileName, Checksum = ComputeSha1(c.Changelog) }
+				}
+		).ToList();
 		return Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.SerializeBundle(bundle with { Entries = entries });
 	}
 }

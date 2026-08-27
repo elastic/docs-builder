@@ -19,7 +19,10 @@ public class ProductConverter(ProductsConfiguration products) : IYamlTypeConvert
 		if (parser.Current is Scalar)
 		{
 			var value = parser.Consume<Scalar>().Value;
-			throw new InvalidProductException($"Invalid YAML format. Products must be specified as a mapping with an 'id' field. Found scalar value: '{value}'. Example format:\nproducts:\n  - id: apm", products);
+			throw new InvalidProductException(
+				$"Invalid YAML format. Products must be specified as a mapping with an 'id' field. Found scalar value: '{value}'. Example format:\nproducts:\n  - id: apm",
+				products
+			);
 		}
 
 		_ = parser.Consume<MappingStart>();
@@ -48,8 +51,11 @@ public class ProductConverter(ProductsConfiguration products) : IYamlTypeConvert
 	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }
 
-public class InvalidProductException(string invalidValue, ProductsConfiguration products)
-	: Exception(
-		$"Invalid products frontmatter value: \"{invalidValue}\"." +
-		(!string.IsNullOrWhiteSpace(invalidValue) ? " " + new Suggestion(products.PublicReferenceProducts.Select(p => p.Value.Id).ToHashSet(), invalidValue).GetSuggestionQuestion() : "") +
-		"\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products.");
+public class InvalidProductException(string invalidValue, ProductsConfiguration products) : Exception(
+	$"Invalid products frontmatter value: \"{invalidValue}\"." +
+		(!string.IsNullOrWhiteSpace(invalidValue)
+			? " " +
+				new Suggestion(products.PublicReferenceProducts.Select(p => p.Value.Id).ToHashSet(), invalidValue).GetSuggestionQuestion()
+			: "") +
+		"\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products."
+);

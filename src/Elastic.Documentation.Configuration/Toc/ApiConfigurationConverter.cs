@@ -25,15 +25,14 @@ namespace Elastic.Documentation.Configuration.Toc;
 /// </summary>
 public class ApiConfigurationConverter : IYamlTypeConverter
 {
-	private const string ShapeGuidance =
-		"Use the single-entry sequence form instead:\n" +
-		"  <key>:\n" +
-		"    - spec: <path>       # required; its basename resolves the remote version index\n" +
-		"      product: <id>      # required, must match a products.yml entry\n" +
-		"      repository: <org/repo> # optional; only needed if the spec is published from a\n" +
-		"                              # different repo than the current checkout\n" +
-		"      children:          # optional\n" +
-		"        - file: getting-started.md";
+	private const string ShapeGuidance = "Use the single-entry sequence form instead:\n"
+		+ "  <key>:\n"
+		+ "    - spec: <path>       # required; its basename resolves the remote version index\n"
+		+ "      product: <id>      # required, must match a products.yml entry\n"
+		+ "      repository: <org/repo> # optional; only needed if the spec is published from a\n"
+		+ "                              # different repo than the current checkout\n"
+		+ "      children:          # optional\n"
+		+ "        - file: getting-started.md";
 
 	public bool Accepts(Type type) => type == typeof(ApiProductSequence) || type == typeof(ApiProductEntry);
 
@@ -44,8 +43,11 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 	{
 		if (parser.Current is not SequenceStart)
 		{
-			throw new YamlException(parser.Current?.Start ?? Mark.Empty, parser.Current?.End ?? Mark.Empty,
-				$"API configuration for this key must be a sequence with exactly one entry. {ShapeGuidance}");
+			throw new YamlException(
+				parser.Current?.Start ?? Mark.Empty,
+				parser.Current?.End ?? Mark.Empty,
+				$"API configuration for this key must be a sequence with exactly one entry. {ShapeGuidance}"
+			);
 		}
 
 		_ = parser.MoveNext(); // consume SequenceStart
@@ -61,18 +63,17 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 	{
 		if (parser.Current is not MappingStart)
 		{
-			throw new YamlException(parser.Current?.Start ?? Mark.Empty, parser.Current?.End ?? Mark.Empty,
-				$"Each API entry must be a mapping with 'spec', 'product', and optional 'children' keys. {ShapeGuidance}");
+			throw new YamlException(
+				parser.Current?.Start ?? Mark.Empty,
+				parser.Current?.End ?? Mark.Empty,
+				$"Each API entry must be a mapping with 'spec', 'product', and optional 'children' keys. {ShapeGuidance}"
+			);
 		}
 
 		var entryStart = parser.Current.Start;
 		_ = parser.MoveNext(); // consume MappingStart
 
-		var entry = new ApiProductEntry
-		{
-			Line = (int)entryStart.Line,
-			Column = (int)entryStart.Column
-		};
+		var entry = new ApiProductEntry { Line = (int)entryStart.Line, Column = (int)entryStart.Column };
 
 		while (parser.Current is not MappingEnd)
 		{
@@ -128,8 +129,11 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 					entry.Children = ReadChildren(parser);
 					break;
 				case "file":
-					throw new YamlException(key.Start, key.End,
-						$"'file:' entries directly in the api sequence (legacy intro/outro shape) are no longer supported. {ShapeGuidance}");
+					throw new YamlException(
+						key.Start,
+						key.End,
+						$"'file:' entries directly in the api sequence (legacy intro/outro shape) are no longer supported. {ShapeGuidance}"
+					);
 				default:
 					// Forward-compatible: ignore unrecognized keys rather than failing the whole build.
 					parser.SkipThisAndNestedEvents();

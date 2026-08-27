@@ -16,22 +16,28 @@ public class MissingTocFileTests(ITestOutputHelper output)
 	public void TocReferencesMissingFile_DoesNotThrow_AndEmitsClearError()
 	{
 		var logger = new TestLoggerFactory(output);
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "docs/docset.yml", new MockFileData("""
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{
+					"docs/docset.yml",
+					new MockFileData("""
 				project: test
 				toc:
 				- file: missing.md
-				""") },
-			// A markdown file that exists on disk but is not referenced by the TOC.
-			// It keeps the documentation set non-empty so construction reaches the
-			// navigation traversal (VisitNavigation + BuildNavigationLookups) that
-			// previously dereferenced the null Index sentinel and crashed.
-			{ "docs/present.md", new MockFileData("# Present") }
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+				""")
+				},
+				// A markdown file that exists on disk but is not referenced by the TOC.
+				// It keeps the documentation set non-empty so construction reaches the
+				// navigation traversal (VisitNavigation + BuildNavigationLookups) that
+				// previously dereferenced the null Index sentinel and crashed.
+				{
+					"docs/present.md",
+					new MockFileData("# Present")
+				}
+			},
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
@@ -42,9 +48,8 @@ public class MissingTocFileTests(ITestOutputHelper output)
 		act.Should().NotThrow("a missing toc file must surface a validation error, not crash the build");
 
 		collector.Errors.Should().BeGreaterThan(0);
-		collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("missing.md") &&
-			d.Message.Contains("does not exist"));
+		collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("missing.md") && d.Message.Contains("does not exist"));
 	}
 }

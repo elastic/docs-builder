@@ -17,12 +17,14 @@ public static class VersionsConfigurationExtensions
 
 		var versions = versionsDto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),
-			kvp => new VersioningSystem
-			{
-				Id = ToVersioningSystemId(kvp.Key),
-				Base = ToSemVersion(kvp.Value.Base),
-				Current = ToSemVersion(kvp.Value.Current)
-			});
+			kvp =>
+				new VersioningSystem
+				{
+					Id = ToVersioningSystemId(kvp.Key),
+					Base = ToSemVersion(kvp.Value.Base),
+					Current = ToSemVersion(kvp.Value.Current)
+				}
+		);
 		var config = new VersionsConfiguration { VersioningSystems = versions };
 
 		return config;
@@ -64,4 +66,3 @@ internal sealed record VersioningSystemDto
 	[YamlMember(Alias = "current")]
 	public string Current { get; set; } = string.Empty;
 }
-
