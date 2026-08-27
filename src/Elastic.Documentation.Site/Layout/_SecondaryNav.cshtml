@@ -11,12 +11,12 @@
 	     class="bg-grey-10 border-b border-grey-20">
 		@if (topNav is not null)
 		{
-			@* navigation-preview: scrollable section-driven top nav.
+			@* navigation-preview: desktop section-driven top nav.
 			   secondary-nav-dropdown.css lets an open dropdown escape the overflow clipping. *@
 			<div class="
 						secondary-nav-scroll-container
-						w-full min-w-0 overflow-x-auto
-						max-w-(--max-layout-width) flex mx-auto justify-start items-center
+						hidden w-full min-w-0 overflow-x-auto md:flex
+						max-w-(--max-layout-width) mx-auto justify-start items-center
 						px-4 py-6">
 				<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
 					@foreach (var item in topNav.Items)
