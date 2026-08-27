@@ -217,20 +217,20 @@ journey('navigation test', ({ page, params }) => {
     )
 
     step('/docs/api link triggers a full page load, not htmx', async () => {
-        await page.evaluate(() => {
+        const apiUrl = `${docsRoot}/api/`
+        await page.evaluate((href) => {
             const a = document.createElement('a')
-            a.href = '/docs/api/'
+            a.href = href
             a.id = 'synthetic-api-link'
             a.textContent = 'api'
             document.querySelector('#content-container')?.appendChild(a)
-        })
+        }, apiUrl)
         // A full page load is a navigation request; an htmx request would be an
         // XHR carrying the ?v= cache-buster. Status doesn't matter (404 locally).
         const [request] = await Promise.all([
-            page.waitForRequest(
-                (req) => req.url().startsWith(`${docsRoot}/api/`),
-                { timeout: 30000 }
-            ),
+            page.waitForRequest((req) => req.url().startsWith(apiUrl), {
+                timeout: 30000,
+            }),
             page.locator('#synthetic-api-link').click(),
         ])
         expect(request.isNavigationRequest()).toBe(true)
