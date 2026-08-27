@@ -5,6 +5,11 @@ export default () => {
     const config: SyntheticsConfig = {
         params: {
             baseUrl: 'http://localhost:4000',
+            // docsRoot is the URL of the docs site homepage.
+            // Journeys navigate to this URL directly; accessibility paths are relative to it.
+            // For local/prod/staging/edge: baseUrl + '/docs' (set below after the switch).
+            // For preview: the assembler-preview environment_url (no /docs suffix needed).
+            docsRoot: '',
             environment: DOCS_ENVIRONMENT,
         },
         playwrightOptions: {
@@ -46,15 +51,23 @@ export default () => {
             config.params.baseUrl = 'https://dwnz7p9ulv07a.cloudfront.net'
             break
         case 'preview':
-            // DOCS_PREVIEW_BASE_URL is the assembler-preview environment_url, e.g.
+            // DOCS_PREVIEW_BASE_URL is the assembler-preview environment_url:
             // https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/<pr>
-            // Journeys append /docs (and sub-paths) to this, which resolves correctly.
-            config.params.baseUrl =
-                process.env.DOCS_PREVIEW_BASE_URL ?? 'http://localhost:4000'
+            // The assembled site serves pages directly at this root (no /docs suffix).
+            config.params.docsRoot =
+                process.env.DOCS_PREVIEW_BASE_URL ??
+                'http://localhost:4000/docs'
             break
     }
 
-    console.log(`Using docs environment: ${config.params.environment}`)
+    // For all non-preview environments the docs site lives at /docs under the base URL.
+    if (!config.params.docsRoot) {
+        config.params.docsRoot = `${config.params.baseUrl}/docs`
+    }
+
+    console.log(
+        `Using docs environment: ${config.params.environment} (${config.params.docsRoot})`
+    )
 
     return config
 }

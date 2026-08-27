@@ -23,9 +23,9 @@ journey('navigation test', ({ page, params }) => {
         tags: [`env:${params.environment}`],
     })
 
-    const host = params.baseUrl
-    step(`Go to ${host}`, async () => {
-        await page.goto(`${host}/docs`, {
+    const docsRoot = params.docsRoot as string
+    step(`Go to ${docsRoot}`, async () => {
+        await page.goto(docsRoot, {
             timeout: 60000,
             waitUntil: 'domcontentloaded',
         })
@@ -58,7 +58,7 @@ journey('navigation test', ({ page, params }) => {
             .getByRole('link', { name: 'Elastic Fundamentals' })
             .first()
             .click()
-        await expect(page).toHaveURL(`${host}/docs/get-started`)
+        await expect(page).toHaveURL(`${docsRoot}/get-started`)
         await expect(page).toHaveTitle(/Elastic fundamentals/)
         await expect(
             page.getByRole('heading', { name: 'Elastic fundamentals' })
@@ -112,7 +112,7 @@ journey('navigation test', ({ page, params }) => {
             .first()
             .click()
         await expect(page).toHaveURL(
-            `${host}/docs/get-started/deployment-options`
+            `${docsRoot}/get-started/deployment-options`
         )
         await expect(page).toHaveTitle(/Deployment options/)
         await expect(
@@ -142,7 +142,7 @@ journey('navigation test', ({ page, params }) => {
             .first()
             .click()
         await expect(page).toHaveURL(
-            `${host}/docs/deploy-manage/deploy/elastic-cloud`
+            `${docsRoot}/deploy-manage/deploy/elastic-cloud`
         )
         await expect(page).toHaveTitle(/Elastic Cloud/)
 
@@ -170,7 +170,7 @@ journey('navigation test', ({ page, params }) => {
             .locator('#secondary-nav')
             .getByRole('link', { name: 'Reference', exact: true })
             .click()
-        await expect(page).toHaveURL(`${host}/docs/reference`)
+        await expect(page).toHaveURL(`${docsRoot}/reference`)
     })
 
     step(
@@ -228,7 +228,7 @@ journey('navigation test', ({ page, params }) => {
         // XHR carrying the ?v= cache-buster. Status doesn't matter (404 locally).
         const [request] = await Promise.all([
             page.waitForRequest(
-                (req) => req.url().startsWith(`${host}/docs/api/`),
+                (req) => req.url().startsWith(`${docsRoot}/api/`),
                 { timeout: 30000 }
             ),
             page.locator('#synthetic-api-link').click(),

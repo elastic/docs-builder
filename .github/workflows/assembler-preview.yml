@@ -131,6 +131,9 @@ jobs:
         working-directory: src/Elastic.Documentation.Site
         run: npm ci
 
+      - name: Wait for preview to be live
+        run: npx wait-on "https://docs-v3-preview.elastic.dev/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}" --timeout 120000
+
       - name: Run synthetics
         id: synthetics
         working-directory: src/Elastic.Documentation.Site
