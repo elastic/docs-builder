@@ -1,0 +1,6 @@
+# Normalize line endings: always store and checkout C# / F# source as LF.
+# This prevents curb from seeing CRLF on Windows and computing line lengths
+# differently from macOS/Linux, which can cause CURB0001 on boundary lines.
+*.cs text eol=lf
+*.fs text eol=lf
+*.fsx text eol=lf
