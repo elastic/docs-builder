@@ -31,7 +31,10 @@ public sealed class VersionIndexPublisher(IAmazonS3 s3Client, string bucketName)
 	{
 		var keys = await ListSpecKeysAsync(ctx).ConfigureAwait(false);
 		var (index, invalidKeys) = VersionIndexBuilder.Build(keys);
-		var json = JsonSerializer.Serialize(index, VersionIndexJsonContext.Default.SortedDictionaryStringSortedDictionaryStringSortedDictionaryStringVersionIndexEntry);
+		var json = JsonSerializer.Serialize(
+			index,
+			VersionIndexJsonContext.Default.SortedDictionaryStringSortedDictionaryStringSortedDictionaryStringVersionIndexEntry
+		);
 
 		var existing = await TryGetExistingIndexAsync(ctx).ConfigureAwait(false);
 		if (!string.Equals(existing?.Body, json, StringComparison.Ordinal))
@@ -55,7 +58,8 @@ public sealed class VersionIndexPublisher(IAmazonS3 s3Client, string bucketName)
 					keys.Add(s3Object.Key);
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return keys;
 	}
@@ -65,11 +69,8 @@ public sealed class VersionIndexPublisher(IAmazonS3 s3Client, string bucketName)
 	{
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = bucketName,
-				Key = IndexKey
-			}, ctx).ConfigureAwait(false);
+			using var response =
+				await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = bucketName, Key = IndexKey }, ctx).ConfigureAwait(false);
 
 			using var reader = new StreamReader(response.ResponseStream);
 			return (response.ETag, await reader.ReadToEndAsync(ctx).ConfigureAwait(false));

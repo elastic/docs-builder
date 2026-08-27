@@ -15,11 +15,7 @@ namespace Elastic.Markdown.Exporters.Elasticsearch;
 /// Provides common infrastructure for ES API calls with exponential backoff on 429 errors
 /// and polling for async operations (delete_by_query, reindex, update_by_query).
 /// </summary>
-public class ElasticsearchOperations(
-	ITransport transport,
-	ILogger logger,
-	IDiagnosticsCollector? collector = null,
-	int maxRetries = 5)
+public class ElasticsearchOperations(ITransport transport, ILogger logger, IDiagnosticsCollector? collector = null, int maxRetries = 5)
 {
 	private readonly ITransport _transport = transport;
 	private readonly ILogger _logger = logger;
@@ -32,7 +28,8 @@ public class ElasticsearchOperations(
 	public async Task<TResponse> WithRetryAsync<TResponse>(
 		Func<Task<TResponse>> apiCall,
 		string operationName,
-		CancellationToken ct) where TResponse : TransportResponse
+		CancellationToken ct
+	) where TResponse : TransportResponse
 	{
 		for (var attempt = 0; attempt <= _maxRetries; attempt++)
 		{
@@ -49,7 +46,12 @@ public class ElasticsearchOperations(
 				var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 1s, 2s, 4s, 8s, 16s
 				_logger.LogWarning(
 					"Retryable error ({StatusCode}) on {Operation}, retrying in {Delay}s (attempt {Attempt}/{MaxRetries})",
-					statusCode, operationName, delay.TotalSeconds, attempt + 1, _maxRetries);
+					statusCode,
+					operationName,
+					delay.TotalSeconds,
+					attempt + 1,
+					_maxRetries
+				);
 				await Task.Delay(delay, ct);
 				continue;
 			}
@@ -71,17 +73,16 @@ public class ElasticsearchOperations(
 		string sourceIndex,
 		string? destIndex,
 		CancellationToken ct,
-		TimeSpan? maxDuration = null)
+		TimeSpan? maxDuration = null
+	)
 	{
 		maxDuration ??= TimeSpan.FromMinutes(30);
 		var sw = Stopwatch.StartNew();
 		bool completed;
 		do
 		{
-			var taskResponse = await WithRetryAsync(
-				() => _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ct),
-				$"GET _tasks/{taskId}",
-				ct);
+			var taskResponse =
+				await WithRetryAsync(() => _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ct), $"GET _tasks/{taskId}", ct);
 
 			completed = taskResponse.Body.Get<bool>("completed");
 			var total = taskResponse.Body.Get<int>("task.status.total");
@@ -96,31 +97,54 @@ public class ElasticsearchOperations(
 			{
 				_logger.LogInformation(
 					"{Operation}: {Time} '{SourceIndex}' => '{DestIndex}'. Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
-					operation, time.ToString(@"hh\:mm\:ss"), sourceIndex, destIndex, total, updated, created, deleted, batches);
+					operation,
+					time.ToString(@"hh\:mm\:ss"),
+					sourceIndex,
+					destIndex,
+					total,
+					updated,
+					created,
+					deleted,
+					batches
+				);
 			}
 			else
 			{
 				_logger.LogInformation(
 					"{Operation} '{SourceIndex}': {Time} Documents {Total}: {Updated} updated, {Created} created, {Deleted} deleted, {Batches} batches",
-					operation, sourceIndex, time.ToString(@"hh\:mm\:ss"), total, updated, created, deleted, batches);
+					operation,
+					sourceIndex,
+					time.ToString(@"hh\:mm\:ss"),
+					total,
+					updated,
+					created,
+					deleted,
+					batches
+				);
 			}
 
 			if (!completed && sw.Elapsed > maxDuration.Value)
 			{
 				_logger.LogWarning(
 					"Task {TaskId} for {Operation} on '{SourceIndex}' exceeded max duration {MaxDuration} (elapsed: {Elapsed}). Attempting to cancel",
-					taskId, operation, sourceIndex, maxDuration.Value, sw.Elapsed);
+					taskId,
+					operation,
+					sourceIndex,
+					maxDuration.Value,
+					sw.Elapsed
+				);
 
 				await CancelTaskBestEffortAsync(taskId, operation, ct);
 
 				throw new TimeoutException(
-					$"Elasticsearch task {taskId} for {operation} on '{sourceIndex}' did not complete within {maxDuration.Value}");
+					$"Elasticsearch task {taskId} for {operation} on '{sourceIndex}' did not complete within {maxDuration.Value}"
+				);
 			}
 
 			if (!completed)
 				await Task.Delay(TimeSpan.FromSeconds(5), ct);
-
-		} while (!completed);
+		}
+		while (!completed);
 	}
 
 	/// <summary>Attempts to cancel an ES task with a short timeout. Logs on failure but does not throw.</summary>
@@ -131,15 +155,17 @@ public class ElasticsearchOperations(
 
 		try
 		{
-			var response = await _transport.PostAsync<DynamicResponse>(
-				$"/_tasks/{taskId}/_cancel", PostData.Empty, cts.Token);
+			var response = await _transport.PostAsync<DynamicResponse>($"/_tasks/{taskId}/_cancel", PostData.Empty, cts.Token);
 
 			if (response.ApiCallDetails.HasSuccessfulStatusCode)
 				_logger.LogInformation("Successfully requested cancellation of task {TaskId} ({Operation})", taskId, operation);
 			else
 				_logger.LogWarning(
 					"Cancel request for task {TaskId} ({Operation}) returned status {StatusCode}",
-					taskId, operation, response.ApiCallDetails.HttpStatusCode);
+					taskId,
+					operation,
+					response.ApiCallDetails.HttpStatusCode
+				);
 		}
 		catch (Exception ex)
 		{
@@ -152,16 +178,9 @@ public class ElasticsearchOperations(
 	/// Use with wait_for_completion=false URLs.
 	/// </summary>
 	/// <returns>Task ID if successful, null if failed</returns>
-	public async Task<string?> PostAsyncTaskAsync(
-		string url,
-		PostData request,
-		string operationName,
-		CancellationToken ct)
+	public async Task<string?> PostAsyncTaskAsync(string url, PostData request, string operationName, CancellationToken ct)
 	{
-		var response = await WithRetryAsync(
-			() => _transport.PostAsync<DynamicResponse>(url, request, ct),
-			operationName,
-			ct);
+		var response = await WithRetryAsync(() => _transport.PostAsync<DynamicResponse>(url, request, ct), operationName, ct);
 
 		var taskId = response.Body.Get<string>("task");
 		if (string.IsNullOrWhiteSpace(taskId))
@@ -179,10 +198,7 @@ public class ElasticsearchOperations(
 	/// Executes a delete_by_query operation asynchronously (fire-and-forget).
 	/// Returns the task ID without waiting for completion.
 	/// </summary>
-	public async Task<string?> DeleteByQueryFireAndForgetAsync(
-		string index,
-		PostData query,
-		CancellationToken ct)
+	public async Task<string?> DeleteByQueryFireAndForgetAsync(string index, PostData query, CancellationToken ct)
 	{
 		var url = $"/{index}/_delete_by_query?wait_for_completion=false";
 		return await PostAsyncTaskAsync(url, query, $"POST {index}/_delete_by_query", ct);
@@ -191,11 +207,7 @@ public class ElasticsearchOperations(
 	/// <summary>
 	/// Executes a delete_by_query operation and waits for completion.
 	/// </summary>
-	public async Task DeleteByQueryAsync(
-		string index,
-		PostData query,
-		CancellationToken ct,
-		TimeSpan? maxDuration = null)
+	public async Task DeleteByQueryAsync(string index, PostData query, CancellationToken ct, TimeSpan? maxDuration = null)
 	{
 		var taskId = await DeleteByQueryFireAndForgetAsync(index, query, ct)
 			?? throw new InvalidOperationException($"Failed to start _delete_by_query on {index}");
@@ -210,7 +222,8 @@ public class ElasticsearchOperations(
 		PostData request,
 		string destIndex,
 		CancellationToken ct,
-		TimeSpan? maxDuration = null)
+		TimeSpan? maxDuration = null
+	)
 	{
 		var url = "/_reindex?wait_for_completion=false";
 		var taskId = await PostAsyncTaskAsync(url, request, $"POST _reindex ({sourceIndex} => {destIndex})", ct)
@@ -221,12 +234,7 @@ public class ElasticsearchOperations(
 	/// <summary>
 	/// Executes an update_by_query operation and waits for completion.
 	/// </summary>
-	public async Task UpdateByQueryAsync(
-		string index,
-		PostData query,
-		string? pipeline,
-		CancellationToken ct,
-		TimeSpan? maxDuration = null)
+	public async Task UpdateByQueryAsync(string index, PostData query, string? pipeline, CancellationToken ct, TimeSpan? maxDuration = null)
 	{
 		var pipelineParam = pipeline is not null ? $"&pipeline={pipeline}" : "";
 		var url = $"/{index}/_update_by_query?wait_for_completion=false{pipelineParam}";

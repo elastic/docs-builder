@@ -18,8 +18,10 @@ namespace Elastic.Changelog.GitHub;
 /// (commit → PR association). Works for squash and merge commits on protected integration branches;
 /// commits with no associated merged PR are reported, not silently dropped.
 /// </summary>
-public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, GitHubApiTransport? transport = null)
-	: IGitHubCommitRangeService
+public sealed partial class GitHubCommitRangeService(
+	ILoggerFactory logFactory,
+	GitHubApiTransport? transport = null
+) : IGitHubCommitRangeService
 {
 	private const int ComparePageSize = 100;
 	private const int GraphQlBatchSize = 50;
@@ -38,21 +40,26 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 	public async Task<CommitRangeResolution?> ResolvePullRequestsAsync(
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var token = _transport.ResolveToken();
 		if (string.IsNullOrWhiteSpace(token))
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				"Resolving pull requests from a commit range requires GitHub credentials. " +
-				"Set the GITHUB_TOKEN environment variable (the GraphQL API used for commit→PR association does not accept anonymous requests).");
+					"Set the GITHUB_TOKEN environment variable (the GraphQL API used for commit→PR association does not accept anonymous requests)."
+			);
 			return null;
 		}
 
 		if (!SafeGraphQlIdentifierRegex().IsMatch(args.Owner) || !SafeGraphQlIdentifierRegex().IsMatch(args.Repo))
 		{
-			collector.EmitError(string.Empty,
-				$"Invalid repository '{args.Owner}/{args.Repo}': owner and repo must contain only letters, digits, '.', '_' or '-'.");
+			collector.EmitError(
+				string.Empty,
+				$"Invalid repository '{args.Owner}/{args.Repo}': owner and repo must contain only letters, digits, '.', '_' or '-'."
+			);
 			return null;
 		}
 
@@ -62,8 +69,10 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 
 		if (commits.Count == 0)
 		{
-			collector.EmitWarning(string.Empty,
-				$"Commit range {args.StartRef}..{args.EndRef} for {args.Owner}/{args.Repo} contains no commits.");
+			collector.EmitWarning(
+				string.Empty,
+				$"Commit range {args.StartRef}..{args.EndRef} for {args.Owner}/{args.Repo} contains no commits."
+			);
 			return new CommitRangeResolution { TotalCommits = 0, PullRequests = [], CommitsWithoutPullRequest = [] };
 		}
 
@@ -77,7 +86,8 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 	private async Task<IReadOnlyList<string>?> FetchCompareCommitsAsync(
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var basehead = $"{Uri.EscapeDataString(args.StartRef)}...{Uri.EscapeDataString(args.EndRef)}";
 		var commits = new List<string>();
@@ -92,16 +102,20 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 			using var response = await _transport.GetAsync(url, ctx).ConfigureAwait(false);
 			if (response.StatusCode == HttpStatusCode.NotFound)
 			{
-				collector.EmitError(string.Empty,
+				collector.EmitError(
+					string.Empty,
 					$"GitHub could not compare {args.StartRef}...{args.EndRef} in {args.Owner}/{args.Repo} (404). " +
-					"Ensure both refs exist in the repository and the token can read it.");
+						"Ensure both refs exist in the repository and the token can read it."
+				);
 				return null;
 			}
 
 			if (!response.IsSuccessStatusCode)
 			{
-				collector.EmitError(string.Empty,
-					$"GitHub compare request for {args.Owner}/{args.Repo} {args.StartRef}...{args.EndRef} failed: {(int)response.StatusCode} {response.ReasonPhrase}.");
+				collector.EmitError(
+					string.Empty,
+					$"GitHub compare request for {args.Owner}/{args.Repo} {args.StartRef}...{args.EndRef} failed: {(int)response.StatusCode} {response.ReasonPhrase}."
+				);
 				return null;
 			}
 
@@ -116,18 +130,24 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 			if (page == 1)
 			{
 				totalCommits = compare.TotalCommits;
-				if (string.Equals(compare.Status, "behind", StringComparison.OrdinalIgnoreCase) ||
-					string.Equals(compare.Status, "identical", StringComparison.OrdinalIgnoreCase))
+				if (
+					string.Equals(compare.Status, "behind", StringComparison.OrdinalIgnoreCase)
+					|| string.Equals(compare.Status, "identical", StringComparison.OrdinalIgnoreCase)
+				)
 				{
-					collector.EmitWarning(string.Empty,
-						$"Commit range {args.StartRef}...{args.EndRef} for {args.Owner}/{args.Repo} is '{compare.Status}' — the end ref adds no commits over the start ref.");
+					collector.EmitWarning(
+						string.Empty,
+						$"Commit range {args.StartRef}...{args.EndRef} for {args.Owner}/{args.Repo} is '{compare.Status}' — the end ref adds no commits over the start ref."
+					);
 					return [];
 				}
 
 				if (string.Equals(compare.Status, "diverged", StringComparison.OrdinalIgnoreCase))
 				{
-					collector.EmitWarning(string.Empty,
-						$"Refs {args.StartRef} and {args.EndRef} for {args.Owner}/{args.Repo} have diverged; only commits reachable from {args.EndRef} but not {args.StartRef} are considered.");
+					collector.EmitWarning(
+						string.Empty,
+						$"Refs {args.StartRef} and {args.EndRef} for {args.Owner}/{args.Repo} have diverged; only commits reachable from {args.EndRef} but not {args.StartRef} are considered."
+					);
 				}
 			}
 
@@ -143,13 +163,21 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 			page++;
 		}
 
-		_logger.LogInformation("Compare {Start}...{End} for {Owner}/{Repo}: {Count} commit(s)",
-			args.StartRef, args.EndRef, args.Owner, args.Repo, commits.Count);
+		_logger.LogInformation(
+			"Compare {Start}...{End} for {Owner}/{Repo}: {Count} commit(s)",
+			args.StartRef,
+			args.EndRef,
+			args.Owner,
+			args.Repo,
+			commits.Count
+		);
 
 		if (commits.Count < totalCommits)
 		{
-			collector.EmitError(string.Empty,
-				$"GitHub compare pagination for {args.Owner}/{args.Repo} returned {commits.Count} of {totalCommits} commits; refusing to resolve a partial range.");
+			collector.EmitError(
+				string.Empty,
+				$"GitHub compare pagination for {args.Owner}/{args.Repo} returned {commits.Count} of {totalCommits} commits; refusing to resolve a partial range."
+			);
 			return null;
 		}
 
@@ -164,13 +192,13 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
 		IReadOnlyList<string> commits,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var invalidShas = commits.Where(sha => !CommitShaRegex().IsMatch(sha)).ToList();
 		if (invalidShas.Count > 0)
 		{
-			collector.EmitError(string.Empty,
-				$"GitHub compare returned malformed commit sha(s): {string.Join(", ", invalidShas)}.");
+			collector.EmitError(string.Empty, $"GitHub compare returned malformed commit sha(s): {string.Join(", ", invalidShas)}.");
 			return null;
 		}
 
@@ -207,18 +235,20 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 			}
 		}
 
-		var pullRequests = orderedPrNumbers
-			.Select(number => new CommitRangePullRequest
-			{
-				Number = number,
-				Url = prsByNumber[number].Url,
-				CommitShas = prsByNumber[number].Shas
-			})
-			.ToList();
+		var pullRequests = orderedPrNumbers.Select(
+			number => new CommitRangePullRequest { Number = number, Url = prsByNumber[number].Url, CommitShas = prsByNumber[number].Shas }
+		).ToList();
 
 		_logger.LogInformation(
 			"Resolved {PrCount} pull request(s) from {CommitCount} commit(s) in {Owner}/{Repo} {Start}...{End} ({NoPrCount} commit(s) without an associated PR)",
-			pullRequests.Count, commits.Count, args.Owner, args.Repo, args.StartRef, args.EndRef, commitsWithoutPr.Count);
+			pullRequests.Count,
+			commits.Count,
+			args.Owner,
+			args.Repo,
+			args.StartRef,
+			args.EndRef,
+			commitsWithoutPr.Count
+		);
 
 		return new CommitRangeResolution
 		{
@@ -238,19 +268,18 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 		IDiagnosticsCollector collector,
 		string sha,
 		GraphQlCommit? commitNode,
-		string repoFullName)
+		string repoFullName
+	)
 	{
-		var candidates = commitNode?.AssociatedPullRequests?.Nodes?
-			.OfType<GraphQlPullRequest>()
-			.Where(pr => pr.Merged &&
-				string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase))
-			.ToList() ?? [];
+		var candidates = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>().Where(
+				pr => pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase)
+			).ToList()
+			?? [];
 
 		if (candidates.Count == 0)
 			return null;
 
-		var mergeCommitMatches = candidates
-			.Where(pr => string.Equals(pr.MergeCommit?.Oid, sha, StringComparison.OrdinalIgnoreCase))
+		var mergeCommitMatches = candidates.Where(pr => string.Equals(pr.MergeCommit?.Oid, sha, StringComparison.OrdinalIgnoreCase))
 			.OrderBy(pr => pr.Number)
 			.ToList();
 
@@ -262,8 +291,10 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 			var pool = mergeCommitMatches.Count > 0 ? mergeCommitMatches : candidates;
 			var chosen = pool.OrderBy(pr => pr.Number).First();
 			var numbers = string.Join(", ", candidates.Select(pr => pr.Number).Order().Select(n => $"#{n}"));
-			collector.EmitWarning(string.Empty,
-				$"Commit {sha} is associated with multiple merged pull requests ({numbers}); using #{chosen.Number}.");
+			collector.EmitWarning(
+				string.Empty,
+				$"Commit {sha} is associated with multiple merged pull requests ({numbers}); using #{chosen.Number}."
+			);
 			return chosen;
 		}
 
@@ -274,7 +305,8 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
 		IReadOnlyList<string> shas,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var query = BuildBatchQuery(args.Owner, args.Repo, shas);
 		var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
@@ -282,8 +314,10 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 		using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
 		if (!response.IsSuccessStatusCode)
 		{
-			collector.EmitError(string.Empty,
-				$"GitHub GraphQL request for {args.Owner}/{args.Repo} failed: {(int)response.StatusCode} {response.ReasonPhrase}.");
+			collector.EmitError(
+				string.Empty,
+				$"GitHub GraphQL request for {args.Owner}/{args.Repo} failed: {(int)response.StatusCode} {response.ReasonPhrase}."
+			);
 			return null;
 		}
 
@@ -299,8 +333,10 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 
 		if (parsed?.Data?.Repository == null)
 		{
-			collector.EmitError(string.Empty,
-				$"GitHub GraphQL query could not resolve repository {args.Owner}/{args.Repo}. Ensure the token can read it.");
+			collector.EmitError(
+				string.Empty,
+				$"GitHub GraphQL query could not resolve repository {args.Owner}/{args.Repo}. Ensure the token can read it."
+			);
 			return null;
 		}
 
@@ -317,10 +353,17 @@ public sealed partial class GitHubCommitRangeService(ILoggerFactory logFactory, 
 		_ = sb.Append("query { repository(owner: \"").Append(owner).Append("\", name: \"").Append(repo).Append("\") {");
 		for (var i = 0; i < shas.Count; i++)
 		{
-			_ = sb.Append(" c").Append(i).Append(": object(oid: \"").Append(shas[i]).Append("\") { ... on Commit {")
-				.Append(" oid associatedPullRequests(first: ").Append(MaxAssociatedPullRequests).Append(") { nodes {")
-				.Append(" number url merged mergeCommit { oid } baseRepository { nameWithOwner }")
-				.Append(" } } } }");
+			_ =
+				sb.Append(" c")
+					.Append(i)
+					.Append(": object(oid: \"")
+					.Append(shas[i])
+					.Append("\") { ... on Commit {")
+					.Append(" oid associatedPullRequests(first: ")
+					.Append(MaxAssociatedPullRequests)
+					.Append(") { nodes {")
+					.Append(" number url merged mergeCommit { oid } baseRepository { nameWithOwner }")
+					.Append(" } } } }");
 		}
 
 		_ = sb.Append(" } }");

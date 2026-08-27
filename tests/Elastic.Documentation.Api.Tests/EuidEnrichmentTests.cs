@@ -52,26 +52,29 @@ public class EuidEnrichmentTests : IAsyncLifetime
 		{
 			// Mock IAskAiService to avoid external AI service calls
 			var mockAskAiGateway = A.Fake<IAskAiService>();
-			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._))
-				.ReturnsLazily(() =>
-				{
-					var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
-					mockStreams.Add(stream);
-					return Task.FromResult(new AskAiGatewayResponse(stream, GeneratedConversationId: Guid.NewGuid()));
-				});
+			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._)).ReturnsLazily(() =>
+			{
+				var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: test\n\n"));
+				mockStreams.Add(stream);
+				return Task.FromResult(new AskAiGatewayResponse(stream, GeneratedConversationId: Guid.NewGuid()));
+			});
 			services.AddSingleton(mockAskAiGateway);
 
 			// Mock IStreamTransformer
 			var mockTransformer = A.Fake<IStreamTransformer>();
 			A.CallTo(() => mockTransformer.AgentProvider).Returns("test-provider");
 			A.CallTo(() => mockTransformer.AgentId).Returns("test-agent");
-			A.CallTo(() => mockTransformer.TransformAsync(A<Stream>._, A<Guid?>._, A<Activity?>._, A<Cancel>._))
-				.ReturnsLazily((Stream s, Guid? _, Activity? activity, Cancel _) =>
-				{
-					// Dispose the activity if provided (simulating what the real transformer does)
-					activity?.Dispose();
-					return Task.FromResult(s);
-				});
+			A.CallTo(() => mockTransformer.TransformAsync(A<Stream>._, A<Guid?>._, A<Activity?>._, A<Cancel>._)).ReturnsLazily((
+				Stream s,
+				Guid? _,
+				Activity? activity,
+				Cancel _
+			) =>
+			{
+				// Dispose the activity if provided (simulating what the real transformer does)
+				activity?.Dispose();
+				return Task.FromResult(s);
+			});
 			services.AddSingleton(mockTransformer);
 		});
 
@@ -81,12 +84,13 @@ public class EuidEnrichmentTests : IAsyncLifetime
 		// Act - Make request to /ask-ai/stream with euid cookie
 		using var request = new HttpRequestMessage(HttpMethod.Post, "/docs/_api/v1/ask-ai/stream");
 		request.Headers.Add("Cookie", $"euid={expectedEuid}");
-		request.Content = new StringContent(
-													 /*lang=json,strict*/
-													 """{"message":"test question","conversationId":null}""",
-			Encoding.UTF8,
-			"application/json"
-		);
+		request.Content =
+			new StringContent(
+				/*lang=json,strict*/
+				"""{"message":"test question","conversationId":null}""",
+				Encoding.UTF8,
+				"application/json"
+			);
 
 		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
@@ -114,8 +118,9 @@ public class EuidEnrichmentTests : IAsyncLifetime
 		logRecords.Should().NotBeEmpty("Should have captured log records");
 
 		// Find a log entry from the AskAI endpoint handler
-		var askAiLogRecord = logRecords.FirstOrDefault(r =>
-			r.FormattedMessage?.Contains("Starting AskAI", StringComparison.OrdinalIgnoreCase) == true);
+		var askAiLogRecord = logRecords.FirstOrDefault(
+			r => r.FormattedMessage?.Contains("Starting AskAI", StringComparison.OrdinalIgnoreCase) == true
+		);
 		askAiLogRecord.Should().NotBeNull("Should have logged from AskAI endpoint handler");
 
 		// Verify euid is present in OTEL log attributes (mirrors production exporter behavior)

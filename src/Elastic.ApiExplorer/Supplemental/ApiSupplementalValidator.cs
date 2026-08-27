@@ -13,13 +13,12 @@ internal sealed record ApiSupplementalValidationRequest(
 	OpenApiDocument Document,
 	IDiagnosticsCollector Collector,
 	string Moniker,
-	bool EmitUnmatchedBaseFiles);
+	bool EmitUnmatchedBaseFiles
+);
 
 internal static class ApiSupplementalValidator
 {
-	public static void Validate(
-		ApiSupplementalDiscoveryResult discovery,
-		ApiSupplementalValidationRequest request)
+	public static void Validate(ApiSupplementalDiscoveryResult discovery, ApiSupplementalValidationRequest request)
 	{
 		if (request.EmitUnmatchedBaseFiles)
 			EmitUnmatched(discovery.Unmatched, request.Collector, "the latest spec");
@@ -29,17 +28,13 @@ internal static class ApiSupplementalValidator
 		{
 			var (uniqueBySlug, _) = ApiSupplementalDiscovery.IndexTags(tagNames);
 			var tagSlugs = new HashSet<string>(uniqueBySlug.Keys, StringComparer.Ordinal);
-			ValidateVersionSuffixed(
-				discovery.VersionSuffixed, major, operationsById, tagSlugs, request.Document, request.Collector);
+			ValidateVersionSuffixed(discovery.VersionSuffixed, major, operationsById, tagSlugs, request.Document, request.Collector);
 		}
 
 		ValidateOperationOverrides(discovery.Operations, operationsById, request);
 	}
 
-	private static void EmitUnmatched(
-		IReadOnlyList<IFileInfo> unmatched,
-		IDiagnosticsCollector collector,
-		string specLabel)
+	private static void EmitUnmatched(IReadOnlyList<IFileInfo> unmatched, IDiagnosticsCollector collector, string specLabel)
 	{
 		foreach (var file in unmatched)
 			EmitUnmatchedFile(file, collector, specLabel);
@@ -47,9 +42,7 @@ internal static class ApiSupplementalValidator
 
 	private static void EmitUnmatchedFile(IFileInfo file, IDiagnosticsCollector collector, string specLabel)
 	{
-		var kind = file.Name.StartsWith("op-", StringComparison.OrdinalIgnoreCase)
-			? "operationId"
-			: "tag";
+		var kind = file.Name.StartsWith("op-", StringComparison.OrdinalIgnoreCase) ? "operationId" : "tag";
 		collector.EmitError(file, $"API supplemental file '{file.Name}' does not match any {kind} in {specLabel}");
 	}
 
@@ -59,7 +52,8 @@ internal static class ApiSupplementalValidator
 		IReadOnlyDictionary<string, OpenApiOperation> operationsById,
 		IReadOnlySet<string> tagSlugs,
 		OpenApiDocument document,
-		IDiagnosticsCollector collector)
+		IDiagnosticsCollector collector
+	)
 	{
 		var analyzer = new SchemaAnalyzer(document);
 		var specLabel = $"version {major}";
@@ -88,7 +82,8 @@ internal static class ApiSupplementalValidator
 	private static void ValidateOperationOverrides(
 		IReadOnlyDictionary<string, IFileInfo> operationFiles,
 		IReadOnlyDictionary<string, OpenApiOperation> operationsById,
-		ApiSupplementalValidationRequest request)
+		ApiSupplementalValidationRequest request
+	)
 	{
 		var analyzer = new SchemaAnalyzer(request.Document);
 		var specLabel = SpecLabel(request.Moniker);
@@ -101,15 +96,15 @@ internal static class ApiSupplementalValidator
 		}
 	}
 
-	private static string SpecLabel(string moniker) =>
-		int.TryParse(moniker, out var major) ? $"version {major}" : "the latest spec";
+	private static string SpecLabel(string moniker) => int.TryParse(moniker, out var major) ? $"version {major}" : "the latest spec";
 
 	private static void ValidateFileOverrides(
 		IFileInfo file,
 		OpenApiOperation operation,
 		SchemaAnalyzer analyzer,
 		IDiagnosticsCollector collector,
-		string specLabel)
+		string specLabel
+	)
 	{
 		var doc = ApiSupplementalDoc.Parse(file.FileSystem.File.ReadAllText(file.FullName));
 		if (doc is null)
@@ -124,7 +119,8 @@ internal static class ApiSupplementalValidator
 		SchemaAnalyzer analyzer,
 		IDiagnosticsCollector collector,
 		ApiSupplementalDoc doc,
-		string specLabel)
+		string specLabel
+	)
 	{
 		var operationId = operation.OperationId ?? "";
 		if (doc.ParameterOverrides.Count > 0)
@@ -143,7 +139,10 @@ internal static class ApiSupplementalValidator
 			foreach (var key in doc.RequestBodyOverrides.Keys)
 			{
 				if (!bodyNames.Contains(key))
-					collector.EmitError(file, $"API supplemental: Request body field '{key}' not found in operation '{operationId}' in {specLabel}");
+					collector.EmitError(
+						file,
+						$"API supplemental: Request body field '{key}' not found in operation '{operationId}' in {specLabel}"
+					);
 			}
 		}
 	}
@@ -168,11 +167,7 @@ internal static class ApiSupplementalValidator
 		return names;
 	}
 
-	private static void CollectFieldNames(
-		SchemaAnalyzer analyzer,
-		IOpenApiSchema? schema,
-		HashSet<string> names,
-		HashSet<object> visited)
+	private static void CollectFieldNames(SchemaAnalyzer analyzer, IOpenApiSchema? schema, HashSet<string> names, HashSet<object> visited)
 	{
 		var resolved = analyzer.ResolveSchema(schema);
 		if (resolved is null || !visited.Add(resolved))

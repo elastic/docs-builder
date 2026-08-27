@@ -115,14 +115,16 @@ public class ProductFeaturesTests
 	[InlineData("on-release", ReleaseNotesPath.OnRelease)]
 	public void ReleaseNotesFeature_AcceptsBooleansAndPathStrings(string value, ReleaseNotesPath expected)
 	{
-		var config = ParseProducts($"""
+		var config = ParseProducts(
+			$"""
 			products:
 			  widget:
 			    display: 'Widget'
 			    versioning: 'stack'
 			    features:
 			      release-notes: {value}
-			""");
+			"""
+		);
 
 		config.Products["widget"].Features.ReleaseNotes.Should().Be(expected);
 		config.Products["widget"].Features.ParticipatesInReleaseNotes.Should().Be(expected != ReleaseNotesPath.None);
@@ -131,14 +133,16 @@ public class ProductFeaturesTests
 	[Fact]
 	public void ReleaseNotesFeature_OmittedInFeaturesMap_DefaultsToOnRelease()
 	{
-		var config = ParseProducts("""
+		var config = ParseProducts(
+			"""
 			products:
 			  widget:
 			    display: 'Widget'
 			    versioning: 'stack'
 			    features:
 			      public-reference: false
-			""");
+			"""
+		);
 
 		config.Products["widget"].Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
 		config.Products["widget"].Features.PublicReference.Should().BeFalse();
@@ -147,66 +151,82 @@ public class ProductFeaturesTests
 	[Fact]
 	public void ReleaseNotesFeature_InvalidValue_Throws()
 	{
-		var act = () => ParseProducts("""
+		var act =
+			() =>
+				ParseProducts(
+					"""
 			products:
 			  widget:
 			    display: 'Widget'
 			    versioning: 'stack'
 			    features:
 			      release-notes: sideways
-			""");
+			"""
+				);
 
-		act.Should().Throw<InvalidOperationException>()
+		act.Should()
+			.Throw<InvalidOperationException>()
 			.WithMessage("*'release-notes' value 'sideways'*Allowed values: true, false, prestage, on-release*");
 	}
 
 	[Fact]
 	public void PublicReferenceFeature_InvalidValue_Throws()
 	{
-		var act = () => ParseProducts("""
+		var act =
+			() =>
+				ParseProducts(
+					"""
 			products:
 			  widget:
 			    display: 'Widget'
 			    versioning: 'stack'
 			    features:
 			      public-reference: prestage
-			""");
+			"""
+				);
 
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*'public-reference' value 'prestage'*Allowed values: true, false*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*'public-reference' value 'prestage'*Allowed values: true, false*");
 	}
 
 	[Fact]
 	public void ReleaseNotesFeature_PresentButEmpty_Throws()
 	{
 		// A present-but-empty key must be rejected, not silently treated as the omitted-key default.
-		var act = () => ParseProducts("""
+		var act =
+			() =>
+				ParseProducts(
+					"""
 			products:
 			  widget:
 			    display: 'Widget'
 			    versioning: 'stack'
 			    features:
 			      release-notes:
-			""");
+			"""
+				);
 
-		act.Should().Throw<InvalidOperationException>()
+		act.Should()
+			.Throw<InvalidOperationException>()
 			.WithMessage("*has an empty 'release-notes' value*Allowed values: true, false, prestage, on-release*");
 	}
 
 	[Fact]
 	public void PublicReferenceFeature_PresentButEmpty_Throws()
 	{
-		var act = () => ParseProducts("""
+		var act =
+			() =>
+				ParseProducts(
+					"""
 			products:
 			  widget:
 			    display: 'Widget'
 			    versioning: 'stack'
 			    features:
 			      public-reference:
-			""");
+			"""
+				);
 
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*has an empty 'public-reference' value*Allowed values: true, false*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*has an empty 'public-reference' value*Allowed values: true, false*");
 	}
 
 	private static ProductsConfiguration ParseProducts(string yaml)

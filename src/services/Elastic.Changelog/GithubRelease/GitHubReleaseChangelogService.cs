@@ -97,7 +97,8 @@ public class GitHubReleaseChangelogService(
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
-	private readonly ChangelogBundlingService _bundlingService = bundlingService ?? new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
+	private readonly ChangelogBundlingService _bundlingService = bundlingService
+		?? new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 
 	public async Task<bool> CreateChangelogsFromRelease(
@@ -123,9 +124,11 @@ public class GitHubReleaseChangelogService(
 			var product = configurationContext.ProductsConfiguration.GetProductByRepositoryName(repo);
 			if (product == null)
 			{
-				collector.EmitError(string.Empty,
+				collector.EmitError(
+					string.Empty,
 					$"Could not find product for repository '{repo}' in products.yml. " +
-					"Ensure the repository name matches a product ID or a product has 'repository: {repo}' configured.");
+						"Ensure the repository name matches a product ID or a product has 'repository: {repo}' configured."
+				);
 				return false;
 			}
 
@@ -146,9 +149,11 @@ public class GitHubReleaseChangelogService(
 			var release = await _releaseService.FetchReleaseAsync(owner, repo, input.Version, ctx);
 			if (release == null)
 			{
-				collector.EmitError(string.Empty,
+				collector.EmitError(
+					string.Empty,
 					$"Failed to fetch release for {owner}/{repo}@{input.Version}. " +
-					"Ensure the repository exists and the version tag is valid.");
+						"Ensure the repository exists and the version tag is valid."
+				);
 				return false;
 			}
 
@@ -156,8 +161,11 @@ public class GitHubReleaseChangelogService(
 
 			// 5. Parse release notes
 			var parsedNotes = ReleaseNoteParser.Parse(release.Body);
-			_logger.LogInformation("Detected format: {Format}, found {Count} PR references",
-				parsedNotes.Format, parsedNotes.PrReferences.Count);
+			_logger.LogInformation(
+				"Detected format: {Format}, found {Count} PR references",
+				parsedNotes.Format,
+				parsedNotes.PrReferences.Count
+			);
 
 			if (parsedNotes.PrReferences.Count == 0)
 			{
@@ -172,12 +180,7 @@ public class GitHubReleaseChangelogService(
 			_logger.LogInformation("Inferred lifecycle: {Lifecycle}, target version: {Target}", lifecycle, targetVersion);
 
 			// Create product filter with inferred values
-			var productInfo = new ProductArgument
-			{
-				Product = product.Id,
-				Target = targetVersion,
-				Lifecycle = lifecycle
-			};
+			var productInfo = new ProductArgument { Product = product.Id, Target = targetVersion, Lifecycle = lifecycle };
 
 			// 7. Fetch the checked-in entry pool once: entries already uploaded via changelog-upload
 			// take precedence over anything synthesized from PR metadata (same fidelity ladder as
@@ -216,7 +219,8 @@ public class GitHubReleaseChangelogService(
 			// 9. Optionally create bundle file if changelogs were created
 			if (input.CreateBundle && createdFiles.Count > 0)
 			{
-				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, release, ctx);
+				var bundlePath =
+					await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, release, ctx);
 				if (bundlePath != null)
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
 			}
@@ -261,7 +265,8 @@ public class GitHubReleaseChangelogService(
 		ChangelogConfiguration config,
 		string owner,
 		string repo,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (config.Bundle?.UseLocalChangelogs == true)
 			return [];
@@ -270,14 +275,20 @@ public class GitHubReleaseChangelogService(
 
 		var poolOwner = config.Bundle?.Owner ?? owner;
 		var poolBranch = config.Bundle?.Branch ?? "main";
-		var entries = await _entryFetcher.FetchAsync(
-			baseUri,
-			poolOwner,
-			repo,
-			poolBranch,
-			msg => collector.EmitWarning(string.Empty, $"Checked-in changelog entries are unavailable; entries will be synthesized from PR metadata. {msg}"),
-			msg => collector.EmitWarning(string.Empty, msg),
-			ctx);
+		var entries =
+			await _entryFetcher.FetchAsync(
+				baseUri,
+				poolOwner,
+				repo,
+				poolBranch,
+				msg =>
+					collector.EmitWarning(
+						string.Empty,
+						$"Checked-in changelog entries are unavailable; entries will be synthesized from PR metadata. {msg}"
+					),
+				msg => collector.EmitWarning(string.Empty, msg),
+				ctx
+			);
 
 		return entries.Select(e => GitRangeEntryResolver.ParseCandidate(e.FileName, e.Content)).ToList();
 	}
@@ -287,7 +298,8 @@ public class GitHubReleaseChangelogService(
 		GhReleaseEntryContext context,
 		ExtractedPrReference prRef,
 		List<string> createdFiles,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var prUrl = $"https://github.com/{context.Owner}/{context.Repo}/pull/{prRef.PrNumber}";
 
@@ -323,21 +335,28 @@ public class GitHubReleaseChangelogService(
 		var finalTypeString = labelDerivedType ?? prRef.InferredType ?? ChangelogEntryType.Other.ToStringFast(true);
 
 		// Parse to enum
-		var finalType = ChangelogEntryTypeExtensions.TryParse(finalTypeString, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? parsed
-			: ChangelogEntryType.Other;
+		var finalType = ChangelogEntryTypeExtensions.TryParse(
+			finalTypeString,
+			out var parsed,
+			ignoreCase: true,
+			allowMatchingMetadataAttribute: true
+		) ? parsed : ChangelogEntryType.Other;
 
 		// Warn on type mismatch if Release Drafter format and warning enabled
-		if (context.Format == ReleaseNoteFormat.ReleaseDrafter &&
-			context.WarnOnTypeMismatch &&
-			labelDerivedType != null &&
-			prRef.InferredType != null &&
-			!string.Equals(labelDerivedType, prRef.InferredType, StringComparison.OrdinalIgnoreCase))
+		if (
+			context.Format == ReleaseNoteFormat.ReleaseDrafter
+			&& context.WarnOnTypeMismatch
+			&& labelDerivedType != null
+			&& prRef.InferredType != null
+			&& !string.Equals(labelDerivedType, prRef.InferredType, StringComparison.OrdinalIgnoreCase)
+		)
 		{
-			collector.EmitWarning(prUrl,
+			collector.EmitWarning(
+				prUrl,
 				$"Type mismatch for PR #{prRef.PrNumber}: " +
-				$"section header suggests '{prRef.InferredType}' but labels suggest '{labelDerivedType}'. " +
-				"Using label-derived type.");
+					$"section header suggests '{prRef.InferredType}' but labels suggest '{labelDerivedType}'. " +
+					"Using label-derived type."
+			);
 		}
 
 		// Build title
@@ -347,13 +366,9 @@ public class GitHubReleaseChangelogService(
 
 		// Release-note text from the PR body becomes the description — the same extraction path
 		// changelog add uses — so gh-release entries are not title/link-only when the PR carries one.
-		var description = config.Extract.ReleaseNotes
-			? ReleaseNotesExtractor.FindReleaseNote(prInfo?.Body)
-			: null;
+		var description = config.Extract.ReleaseNotes ? ReleaseNotesExtractor.FindReleaseNote(prInfo?.Body) : null;
 
-		var issues = config.Extract.Issues && prInfo?.LinkedIssues is { Count: > 0 } linkedIssues
-			? linkedIssues.ToList()
-			: null;
+		var issues = config.Extract.Issues && prInfo?.LinkedIssues is { Count: > 0 } linkedIssues ? linkedIssues.ToList() : null;
 
 		// Create changelog data
 		var changelogData = new ChangelogEntry
@@ -361,14 +376,22 @@ public class GitHubReleaseChangelogService(
 			Title = title,
 			Type = finalType,
 			Description = description,
-			Products = [new ProductReference
-			{
-				ProductId = context.ProductInfo.Product ?? "",
-				Target = context.ProductInfo.Target,
-				Lifecycle = !string.IsNullOrWhiteSpace(context.ProductInfo.Lifecycle)
-					? (LifecycleExtensions.TryParse(context.ProductInfo.Lifecycle, out var lc, ignoreCase: true, allowMatchingMetadataAttribute: true) ? lc : null)
-					: null
-			}],
+			Products =
+			[
+				new ProductReference
+				{
+					ProductId = context.ProductInfo.Product ?? "",
+					Target = context.ProductInfo.Target,
+					Lifecycle = !string.IsNullOrWhiteSpace(context.ProductInfo.Lifecycle)
+						? (LifecycleExtensions.TryParse(
+							context.ProductInfo.Lifecycle,
+							out var lc,
+							ignoreCase: true,
+							allowMatchingMetadataAttribute: true
+						) ? lc : null)
+						: null
+				}
+			],
 			Areas = labelDerivedAreas,
 			Prs = [prUrl],
 			Issues = issues
@@ -401,7 +424,8 @@ public class GitHubReleaseChangelogService(
 		GhReleaseEntryContext context,
 		ExtractedPrReference prRef,
 		List<string> createdFiles,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var matches = context.PoolCandidates
 			.Where(c => GitRangeEntryResolver.MatchesPr(c, prRef.PrNumber, context.Owner, context.Repo))
@@ -429,8 +453,10 @@ public class GitHubReleaseChangelogService(
 
 			if (match.Entry == null)
 			{
-				collector.EmitError(match.FileName,
-					$"Checked-in changelog entry '{match.FileName}' matches PR #{prRef.PrNumber} but could not be parsed: {match.ParseError}");
+				collector.EmitError(
+					match.FileName,
+					$"Checked-in changelog entry '{match.FileName}' matches PR #{prRef.PrNumber} but could not be parsed: {match.ParseError}"
+				);
 				continue;
 			}
 
@@ -446,8 +472,7 @@ public class GitHubReleaseChangelogService(
 		return wroteAnyFile;
 	}
 
-	private static string GenerateYaml(ChangelogEntry data) =>
-		ReleaseNotesSerialization.SerializeEntry(data);
+	private static string GenerateYaml(ChangelogEntry data) => ReleaseNotesSerialization.SerializeEntry(data);
 
 	private async Task<string?> CreateBundleViaService(
 		IDiagnosticsCollector collector,
@@ -458,7 +483,8 @@ public class GitHubReleaseChangelogService(
 		string repo,
 		CreateChangelogsFromReleaseArguments input,
 		GitHubReleaseInfo release,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Build the bundles subfolder path (mirrors the previous CreateBundleFile convention)
 		var bundlesDir = _fileSystem.Path.Join(outputDir, "bundles");
@@ -471,8 +497,7 @@ public class GitHubReleaseChangelogService(
 
 		// Select exactly the files this run created. A PR-URL filter would miss checked-in pool
 		// entries whose prs references were scrubbed from the public copies.
-		var files = createdFileNames
-			.Distinct(StringComparer.Ordinal)
+		var files = createdFileNames.Distinct(StringComparer.Ordinal)
 			.Select(filename => _fileSystem.Path.Join(outputDir, filename))
 			.ToArray();
 
@@ -501,9 +526,9 @@ public class GitHubReleaseChangelogService(
 	}
 
 	private static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) =>
-		labels
-			.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
-			.FirstOrDefault(mappedType => mappedType != null);
+		labels.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null).FirstOrDefault(
+			mappedType => mappedType != null
+		);
 
 	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
@@ -524,7 +549,8 @@ public class GitHubReleaseChangelogService(
 		ProductArgument productInfo,
 		ChangelogConfiguration config,
 		IDiagnosticsCollector collector,
-		string prUrl)
+		string prUrl
+	)
 	{
 		var createRules = config.Rules?.Create;
 		if (createRules == null)
@@ -545,7 +571,8 @@ public class GitHubReleaseChangelogService(
 		CreateRules rules,
 		IDiagnosticsCollector collector,
 		string prUrl,
-		string? productContext)
+		string? productContext
+	)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
 			return false;
@@ -557,11 +584,15 @@ public class GitHubReleaseChangelogService(
 
 		if (mode == FieldMode.Exclude)
 		{
-			var matchingLabel = rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+			var matchingLabel = rules.Labels.FirstOrDefault(
+				blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase)
+			);
 			if (matchingLabel != null)
 			{
-				collector.EmitWarning(prUrl,
-					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				collector.EmitWarning(
+					prUrl,
+					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
+				);
 				return true;
 			}
 		}
@@ -571,8 +602,10 @@ public class GitHubReleaseChangelogService(
 			if (!hasMatch)
 			{
 				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitWarning(prUrl,
-					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				collector.EmitWarning(
+					prUrl,
+					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
+				);
 				return true;
 			}
 		}

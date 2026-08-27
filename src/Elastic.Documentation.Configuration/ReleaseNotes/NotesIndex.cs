@@ -22,10 +22,6 @@ public sealed record NotesIndex
 	public required IReadOnlyList<string> Notes { get; init; }
 }
 
-[JsonSourceGenerationOptions(
-	WriteIndented = true,
-	PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
-	DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-)]
+[JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(NotesIndex))]
 public sealed partial class NotesIndexJsonContext : JsonSerializerContext;

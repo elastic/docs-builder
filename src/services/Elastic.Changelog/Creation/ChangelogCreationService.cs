@@ -71,11 +71,11 @@ public record CreateChangelogArguments
 /// Service for creating changelog entries
 /// </summary>
 public class ChangelogCreationService(
-ILoggerFactory logFactory,
-IConfigurationContext configurationContext,
-IChangelogFileSystem fileSystem,
-IGitHubPrService? githubPrService = null,
-IEnvironmentVariables? env = null
+	ILoggerFactory logFactory,
+	IConfigurationContext configurationContext,
+	IChangelogFileSystem fileSystem,
+	IGitHubPrService? githubPrService = null,
+	IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
@@ -84,8 +84,7 @@ IEnvironmentVariables? env = null
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
 	private readonly ChangelogFileWriter _fileWriter = new(fileSystem, logFactory.CreateLogger<ChangelogFileWriter>());
-	private readonly ProductInferService _productInferService = new(
-		configurationContext.ProductsConfiguration);
+	private readonly ProductInferService _productInferService = new(configurationContext.ProductsConfiguration);
 
 	public async Task<bool> CreateChangelog(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
 	{
@@ -107,9 +106,7 @@ IEnvironmentVariables? env = null
 
 			// When extraction is disabled (by CLI or config), discard any CI-injected description
 			// that originated from evaluate-pr's release-note extraction.
-			if (input.ExtractionDisabled
-				&& string.IsNullOrWhiteSpace(cliDescription)
-				&& !string.IsNullOrWhiteSpace(input.Description))
+			if (input.ExtractionDisabled && string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description))
 			{
 				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
 				input = input with { Description = null };
@@ -166,9 +163,7 @@ IEnvironmentVariables? env = null
 			input = ApplyConfigDefaults(input, config);
 
 			// Mirror CreateChangelog: discard CI-injected description when extraction is disabled
-			if (input.ExtractionDisabled
-				&& string.IsNullOrWhiteSpace(cliDescription)
-				&& !string.IsNullOrWhiteSpace(input.Description))
+			if (input.ExtractionDisabled && string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description))
 			{
 				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
 				input = input with { Description = null };
@@ -233,13 +228,13 @@ IEnvironmentVariables? env = null
 		// First, try config defaults
 		if (productsConfig?.Default is { Count: > 0 })
 		{
-			var products = productsConfig.Default.Select(d => new ProductArgument
-			{
-				Product = d.Product,
-				Lifecycle = d.Lifecycle
-			}).ToList();
-			_logger.LogInformation("Using default products from config: {Products}",
-				string.Join(", ", products.Select(p => $"{p.Product} ({p.Lifecycle})")));
+			var products = productsConfig.Default
+				.Select(d => new ProductArgument { Product = d.Product, Lifecycle = d.Lifecycle })
+				.ToList();
+			_logger.LogInformation(
+				"Using default products from config: {Products}",
+				string.Join(", ", products.Select(p => $"{p.Product} ({p.Lifecycle})"))
+			);
 			return products;
 		}
 
@@ -259,7 +254,8 @@ IEnvironmentVariables? env = null
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (input.Prs == null || input.Prs.Length == 0)
 			return false;
@@ -275,8 +271,8 @@ IEnvironmentVariables? env = null
 		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()).Where(prTrimmed => !string.IsNullOrWhiteSpace(prTrimmed)))
 		{
 			// Check PR for blockers
-			var (shouldSkip, prInfo) = await _prProcessor.CheckPrForBlockersAsync(
-				collector, prTrimmed, input.Owner, input.Repo, input.Products, config, ctx);
+			var (shouldSkip, prInfo) =
+				await _prProcessor.CheckPrForBlockersAsync(collector, prTrimmed, input.Owner, input.Repo, input.Products, config, ctx);
 
 			if (shouldSkip)
 			{
@@ -304,7 +300,12 @@ IEnvironmentVariables? env = null
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation("Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched", successCount, skippedCount, fetchFailedCount);
+		_logger.LogInformation(
+			"Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched",
+			successCount,
+			skippedCount,
+			fetchFailedCount
+		);
 		return successCount > 0;
 	}
 
@@ -313,7 +314,8 @@ IEnvironmentVariables? env = null
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		Cancel ctx,
-		bool reportFetchFailure = true)
+		bool reportFetchFailure = true
+	)
 	{
 		// Get the PR URL if Prs is provided (for single PR processing)
 		var prUrl = input.Prs is { Length: > 0 } ? input.Prs[0] : null;
@@ -324,9 +326,7 @@ IEnvironmentVariables? env = null
 			return false;
 
 		// Fetch PR info when any derivable field is still missing (title, type, or products)
-		var needsDerivation = string.IsNullOrWhiteSpace(input.Title)
-			|| string.IsNullOrWhiteSpace(input.Type)
-			|| input.Products.Count == 0;
+		var needsDerivation = string.IsNullOrWhiteSpace(input.Title) || string.IsNullOrWhiteSpace(input.Type) || input.Products.Count == 0;
 		if (!string.IsNullOrWhiteSpace(prUrl) && needsDerivation)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
@@ -370,14 +370,16 @@ IEnvironmentVariables? env = null
 			config,
 			string.IsNullOrWhiteSpace(input.Title),
 			string.IsNullOrWhiteSpace(input.Type),
-			ctx);
+			ctx
+		);
 	}
 
 	private async Task<bool> CreateChangelogsForMultipleIssuesAsync(
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (input.Issues == null || input.Issues.Length == 0)
 			return false;
@@ -391,8 +393,8 @@ IEnvironmentVariables? env = null
 
 		foreach (var issueUrl in input.Issues.Select(i => i.Trim()).Where(i => !string.IsNullOrWhiteSpace(i)))
 		{
-			var (shouldSkip, issueInfo) = await _issueProcessor.CheckIssueForBlockersAsync(
-				collector, issueUrl, input.Owner, input.Repo, input.Products, config, ctx);
+			var (shouldSkip, issueInfo) =
+				await _issueProcessor.CheckIssueForBlockersAsync(collector, issueUrl, input.Owner, input.Repo, input.Products, config, ctx);
 
 			if (shouldSkip)
 			{
@@ -416,7 +418,12 @@ IEnvironmentVariables? env = null
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation("Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched", successCount, skippedCount, fetchFailedCount);
+		_logger.LogInformation(
+			"Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched",
+			successCount,
+			skippedCount,
+			fetchFailedCount
+		);
 		return successCount > 0;
 	}
 
@@ -425,7 +432,8 @@ IEnvironmentVariables? env = null
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		Cancel ctx,
-		bool reportFetchFailure = true)
+		bool reportFetchFailure = true
+	)
 	{
 		var issueUrl = input.Issues is { Length: > 0 } ? input.Issues[0] : null;
 
@@ -465,20 +473,26 @@ IEnvironmentVariables? env = null
 			config,
 			string.IsNullOrWhiteSpace(input.Title),
 			string.IsNullOrWhiteSpace(input.Type),
-			ctx);
+			ctx
+		);
 	}
 
 	/// <summary>Emits a single aggregate diagnostic (an error under strict mode) when items could not be fetched from GitHub during bulk creation.</summary>
-	private static void ReportBulkFetchFailures(IDiagnosticsCollector collector, int fetchFailedCount, int total, bool strict, string itemKind)
+	private static void ReportBulkFetchFailures(
+		IDiagnosticsCollector collector,
+		int fetchFailedCount,
+		int total,
+		bool strict,
+		string itemKind
+	)
 	{
 		if (fetchFailedCount <= 0)
 			return;
 
-		var message =
-			$"{fetchFailedCount} of {total} {itemKind}(s) could not be fetched from GitHub. " +
-			$"Their changelogs were created without rules.create label filtering and may be missing title or type, " +
-			$"which will cause 'changelog bundle' to fail. Verify GITHUB_TOKEN is set and can access the referenced " +
-			$"repositories, then delete the generated changelog files and re-run.";
+		var message = $"{fetchFailedCount} of {total} {itemKind}(s) could not be fetched from GitHub. "
+			+ $"Their changelogs were created without rules.create label filtering and may be missing title or type, "
+			+ $"which will cause 'changelog bundle' to fail. Verify GITHUB_TOKEN is set and can access the referenced "
+			+ $"repositories, then delete the generated changelog files and re-run.";
 
 		if (strict)
 			collector.EmitError(string.Empty, message);
@@ -487,9 +501,11 @@ IEnvironmentVariables? env = null
 	}
 
 	private static void EmitStrictFetchError(IDiagnosticsCollector collector, string itemKind, string? url) =>
-		collector.EmitError(string.Empty,
+		collector.EmitError(
+			string.Empty,
 			$"Could not fetch {itemKind} '{url}' from GitHub and --strict-fetch is set. " +
-			"Verify GITHUB_TOKEN is set and can access the repository, then re-run.");
+				"Verify GITHUB_TOKEN is set and can access the repository, then re-run."
+		);
 
 	private static CreateChangelogArguments CreateInputForSinglePr(CreateChangelogArguments input, string prUrl) =>
 		input with { Prs = [prUrl] };
@@ -499,7 +515,9 @@ IEnvironmentVariables? env = null
 		{
 			Title = derived.Title != null && string.IsNullOrWhiteSpace(input.Title) ? derived.Title : input.Title,
 			Type = derived.Type != null && string.IsNullOrWhiteSpace(input.Type) ? derived.Type : input.Type,
-			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description) ? derived.Description : input.Description,
+			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description)
+				? derived.Description
+				: input.Description,
 			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas,
 			Products = derived.Products is { Count: > 0 } && input.Products.Count == 0 ? derived.Products : input.Products,
 			Highlight = derived.Highlight ?? input.Highlight,
@@ -531,13 +549,9 @@ IEnvironmentVariables? env = null
 
 		_logger.LogInformation("CI environment detected, enriching arguments from CHANGELOG_* env vars");
 
-		var enrichedPrs = input.Prs is { Length: > 0 }
-			? input.Prs
-			: !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
+		var enrichedPrs = input.Prs is { Length: > 0 } ? input.Prs : !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
 
-		var enrichedProducts = input.Products.Count > 0
-			? input.Products
-			: ProductArgument.ParseProductSpecs(ciProducts);
+		var enrichedProducts = input.Products.Count > 0 ? input.Products : ProductArgument.ParseProductSpecs(ciProducts);
 
 		var enrichedDescription = !string.IsNullOrWhiteSpace(input.Description)
 			? input.Description

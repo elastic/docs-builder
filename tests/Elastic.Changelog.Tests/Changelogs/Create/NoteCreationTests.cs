@@ -29,7 +29,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
@@ -57,8 +59,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("target"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("target"));
 	}
 
 	[Fact]
@@ -78,8 +81,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("target"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("target"));
 	}
 
 	[Fact]
@@ -100,7 +104,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
 		files.Should().HaveCount(1);
 		FileSystem.Path.GetFileName(files[0]).Should().Be("note-tsdb-gap.yml");
@@ -123,7 +129,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
 		files.Should().HaveCount(1);
 		FileSystem.Path.GetFileName(files[0]).Should().Be("note-fix-slow-rollover.yml");
@@ -147,8 +155,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
 
 	[Fact]
@@ -169,8 +178,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
 
 	[Fact]
@@ -192,7 +202,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
 		files.Should().HaveCount(1);
@@ -219,8 +231,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
 
 	[Fact]
@@ -241,8 +254,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
+		Collector.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
 
 	[Fact]
@@ -290,7 +304,9 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yml");
 		files.Should().HaveCount(1);

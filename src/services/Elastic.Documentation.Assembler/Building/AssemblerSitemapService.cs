@@ -71,7 +71,7 @@ public class AssemblerSitemapService(
 		if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
 			collector.EmitGlobalWarning(
 				$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
-				"Consider implementing sitemap index files."
+					"Consider implementing sitemap index files."
 			);
 
 		var result = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
@@ -79,7 +79,7 @@ public class AssemblerSitemapService(
 		if (result.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
 			collector.EmitGlobalWarning(
 				$"Sitemap file size is {result.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
-				"Consider implementing sitemap index files."
+					"Consider implementing sitemap index files."
 			);
 
 		_logger.LogInformation("Sitemap written to {Path}", assembleContext.OutputWithPathPrefixDirectory.FullName);

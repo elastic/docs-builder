@@ -39,9 +39,6 @@ public sealed record NotesRegistry
 	public required IReadOnlyList<string> Notes { get; init; }
 }
 
-[JsonSourceGenerationOptions(
-	WriteIndented = true,
-	PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
-	DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(NotesRegistry))]
 public sealed partial class BackfillJsonContext : JsonSerializerContext;

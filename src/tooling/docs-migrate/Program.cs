@@ -8,15 +8,18 @@ using Nullean.Argh.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddArgh(args, app =>
-{
-	_ = app.UseCliDescription("docs-migrate — convert Elastic legacy AsciiDoc books to docs-builder Markdown.");
-	_ = app.Map<InitCommand>();
-	_ = app.Map<ListCommand>();
-	_ = app.Map<CloneCommand>();
-	_ = app.Map<ConvertCommand>();
-	_ = app.Map<ServeCommand>();
-});
+builder.Services.AddArgh(
+	args,
+	app =>
+	{
+		_ = app.UseCliDescription("docs-migrate — convert Elastic legacy AsciiDoc books to docs-builder Markdown.");
+		_ = app.Map<InitCommand>();
+		_ = app.Map<ListCommand>();
+		_ = app.Map<CloneCommand>();
+		_ = app.Map<ConvertCommand>();
+		_ = app.Map<ServeCommand>();
+	}
+);
 
 using var host = builder.Build();
 await host.RunAsync();

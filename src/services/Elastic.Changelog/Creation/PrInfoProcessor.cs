@@ -23,18 +23,18 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		string prUrl,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var prInfo = await TryFetchPrInfoAsync(prUrl, input.Owner, input.Repo, ctx);
 
 		if (prInfo == null)
 		{
-			collector.EmitWarning(string.Empty, $"Failed to fetch PR information from GitHub for PR: {prUrl}. Generating basic changelog with provided values.");
-			return new PrProcessingResult
-			{
-				FetchFailed = true,
-				ShouldSkip = false
-			};
+			collector.EmitWarning(
+				string.Empty,
+				$"Failed to fetch PR information from GitHub for PR: {prUrl}. Generating basic changelog with provided values."
+			);
+			return new PrProcessingResult { FetchFailed = true, ShouldSkip = false };
 		}
 
 		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
@@ -45,23 +45,13 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Check for label blockers using effective products (including label-derived ones)
 		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl))
 		{
-			return new PrProcessingResult
-			{
-				FetchFailed = false,
-				ShouldSkip = true
-			};
+			return new PrProcessingResult { FetchFailed = false, ShouldSkip = true };
 		}
 
 		// Process PR info and derive fields
 		var derivedFields = DeriveFieldsFromPr(collector, input, config, prInfo, prUrl);
 
-		return new PrProcessingResult
-		{
-			FetchFailed = false,
-			ShouldSkip = false,
-			DerivedFields = derivedFields,
-			PrInfo = prInfo
-		};
+		return new PrProcessingResult { FetchFailed = false, ShouldSkip = false, DerivedFields = derivedFields, PrInfo = prInfo };
 	}
 
 	/// <summary>
@@ -74,13 +64,17 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		string? repo,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var prInfo = await TryFetchPrInfoAsync(prUrl, owner, repo, ctx);
 
 		if (prInfo == null)
 		{
-			collector.EmitWarning(string.Empty, $"Failed to fetch PR information from GitHub for PR: {prUrl}. Generating basic changelog with provided values.");
+			collector.EmitWarning(
+				string.Empty,
+				$"Failed to fetch PR information from GitHub for PR: {prUrl}. Generating basic changelog with provided values."
+			);
 			return (false, null);
 		}
 
@@ -98,7 +92,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		GitHubPrInfo prInfo,
-		string prUrl)
+		string prUrl
+	)
 	{
 		var derived = new DerivedPrFields();
 
@@ -118,7 +113,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		{
 			if (string.IsNullOrWhiteSpace(prInfo.Title))
 			{
-				collector.EmitError(string.Empty, $"PR {prUrl} does not have a title. Please provide --title or ensure the PR has a title.");
+				collector.EmitError(
+					string.Empty,
+					$"PR {prUrl} does not have a title. Please provide --title or ensure the PR has a title."
+				);
 				return null;
 			}
 
@@ -137,7 +135,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		{
 			if (config.LabelToType == null || config.LabelToType.Count == 0)
 			{
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml.");
+				collector.EmitError(
+					string.Empty,
+					$"Cannot derive type from PR {prUrl} labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml."
+				);
 				return null;
 			}
 
@@ -145,7 +146,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (mappedType == null)
 			{
 				var availableLabels = prInfo.Labels.Count > 0 ? string.Join(", ", prInfo.Labels) : "none";
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in type mapping. Please provide --type or add pivot.types with labels in changelog.yml.");
+				collector.EmitError(
+					string.Empty,
+					$"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in type mapping. Please provide --type or add pivot.types with labels in changelog.yml."
+				);
 				return null;
 			}
 			derived.Type = mappedType;
@@ -170,8 +174,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Check highlight labels if CLI highlight not set
 		if (input.Highlight == null && config.HighlightLabels is { Count: > 0 })
 		{
-			var hasHighlightLabel = prInfo.Labels.Any(label =>
-				config.HighlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase));
+			var hasHighlightLabel = prInfo.Labels.Any(label => config.HighlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase));
 			if (hasHighlightLabel)
 			{
 				derived.Highlight = true;
@@ -213,8 +216,11 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (prInfo.LinkedIssues.Count > 0)
 			{
 				derived.Issues = prInfo.LinkedIssues.ToArray();
-				logger.LogInformation("Extracted {Count} linked issues from PR body: {Issues}",
-					prInfo.LinkedIssues.Count, string.Join(", ", prInfo.LinkedIssues));
+				logger.LogInformation(
+					"Extracted {Count} linked issues from PR body: {Issues}",
+					prInfo.LinkedIssues.Count,
+					string.Join(", ", prInfo.LinkedIssues)
+				);
 			}
 		}
 		else if (input.Issues is { Length: > 0 })
@@ -228,7 +234,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
 		IDiagnosticsCollector collector,
-		string prUrl)
+		string prUrl
+	)
 	{
 		var createRules = config.Rules?.Create;
 		if (createRules == null)
@@ -261,7 +268,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		CreateRules rules,
 		IDiagnosticsCollector collector,
 		string prUrl,
-		string? productContext)
+		string? productContext
+	)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
 			return false;
@@ -276,18 +284,23 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			// Exclude mode: skip if any/all/conjunction labels match
 			var matchingLabel = match switch
 			{
-				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
-					? string.Join(", ", prLabels)
-					: null,
-				MatchMode.Conjunction => rules.Labels.All(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
-					? string.Join(", ", rules.Labels)
-					: null,
+				MatchMode.All =>
+					prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+						? string.Join(", ", prLabels)
+						: null,
+				MatchMode.Conjunction =>
+					rules.Labels.All(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
+						? string.Join(", ", rules.Labels)
+						: null,
 				_ => rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
 			};
 
 			if (matchingLabel != null)
 			{
-				collector.EmitWarning(string.Empty, $"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				collector.EmitWarning(
+					string.Empty,
+					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
+				);
 				return true;
 			}
 		}
@@ -304,7 +317,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (!hasMatch)
 			{
 				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitWarning(string.Empty, $"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				collector.EmitWarning(
+					string.Empty,
+					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
+				);
 				return true;
 			}
 		}
@@ -328,10 +344,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		}
 		catch (Exception ex)
 		{
-			if (ex is OutOfMemoryException or
-				StackOverflowException or
-				AccessViolationException or
-				ThreadAbortException)
+			if (ex is OutOfMemoryException or StackOverflowException or AccessViolationException or ThreadAbortException)
 				throw;
 			logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
 			return null;
@@ -393,9 +406,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return rules.Mode == FieldMode.Exclude ? labelsMatch : !labelsMatch;
 	}
 
-	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
-		.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
-		.FirstOrDefault(mappedType => mappedType != null);
+	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) =>
+		labels.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null).FirstOrDefault(
+			mappedType => mappedType != null
+		);
 
 	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
@@ -450,7 +464,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	internal static string? MapLabelsToFeatureId(
 		string[] labels,
 		IReadOnlyDictionary<string, string> labelToFeaturesMapping,
-		IDiagnosticsCollector collector)
+		IDiagnosticsCollector collector
+	)
 	{
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var featureIds = new List<string>();
@@ -471,8 +486,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 		if (featureIds.Count > 1)
 		{
-			collector.EmitWarning(string.Empty,
-				$"Multiple feature-id values matched from labels ({string.Join(", ", featureIds)}). Using first match '{featureIds[0]}'. Provide --feature-id to override.");
+			collector.EmitWarning(
+				string.Empty,
+				$"Multiple feature-id values matched from labels ({string.Join(", ", featureIds)}). Using first match '{featureIds[0]}'. Provide --feature-id to override."
+			);
 		}
 
 		return featureIds[0];

@@ -8,8 +8,10 @@ using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
-public class RuleDocumentationFileExporter(IFileSystem readFileSystem, IFileSystem writeFileSystem)
-	: DocumentationFileExporterBase(readFileSystem, writeFileSystem)
+public class RuleDocumentationFileExporter(IFileSystem readFileSystem, IFileSystem writeFileSystem) : DocumentationFileExporterBase(
+	readFileSystem,
+	writeFileSystem
+)
 {
 	public override string Name { get; } = nameof(RuleDocumentationFileExporter);
 
@@ -21,7 +23,13 @@ public class RuleDocumentationFileExporter(IFileSystem readFileSystem, IFileSyst
 		switch (context.File)
 		{
 			case DetectionRuleFile df:
-				context.MarkdownDocument = await htmlWriter.WriteAsync(DetectionRuleFile.OutputPath(outputFile, context.BuildContext), df, conversionCollector, ctx);
+				context.MarkdownDocument =
+					await htmlWriter.WriteAsync(
+						DetectionRuleFile.OutputPath(outputFile, context.BuildContext),
+						df,
+						conversionCollector,
+						ctx
+					);
 				break;
 			case MarkdownFile markdown:
 				context.MarkdownDocument = await htmlWriter.WriteAsync(outputFile, markdown, conversionCollector, ctx);

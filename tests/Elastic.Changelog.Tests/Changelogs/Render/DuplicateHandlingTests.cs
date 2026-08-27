@@ -36,8 +36,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -55,11 +54,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles =
-			[
-				new BundleInput { BundleFile = bundle1 },
-				new BundleInput { BundleFile = bundle2 }
-			],
+			Bundles = [new BundleInput { BundleFile = bundle1 }, new BundleInput { BundleFile = bundle2 }],
 			Output = outputDir
 		};
 
@@ -70,9 +65,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("appears in multiple bundles"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
 	}
 
 	[Fact]
@@ -99,8 +92,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -110,14 +102,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
-		var input = new RenderChangelogsArguments
-		{
-			Bundles =
-			[
-				new BundleInput { BundleFile = bundleFile }
-			],
-			Output = outputDir
-		};
+		var input = new RenderChangelogsArguments { Bundles = [new BundleInput { BundleFile = bundleFile }], Output = outputDir };
 
 		// Act
 		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -126,10 +111,13 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("appears multiple times in the same bundle") &&
-			d.File == bundleFile);
+		Collector.Diagnostics
+			.Should()
+			.Contain(
+				d =>
+					d.Severity == Severity.Warning && d.Message.Contains("appears multiple times in the same bundle") &&
+						d.File == bundleFile
+			);
 	}
 
 	[Fact]
@@ -165,8 +153,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -184,11 +171,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles =
-			[
-				new BundleInput { BundleFile = bundle1 },
-				new BundleInput { BundleFile = bundle2 }
-			],
+			Bundles = [new BundleInput { BundleFile = bundle1 }, new BundleInput { BundleFile = bundle2 }],
 			Output = outputDir
 		};
 
@@ -199,8 +182,6 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("appears in multiple bundles"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
 	}
 }

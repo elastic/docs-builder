@@ -14,7 +14,6 @@ public interface IDescriptionGenerator
 	string GenerateDescription(MarkdownDocument document);
 }
 
-
 public class DescriptionGenerator : IDescriptionGenerator
 {
 	private const int MaxLength = 150;

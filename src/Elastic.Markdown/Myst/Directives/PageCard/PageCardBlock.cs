@@ -7,8 +7,7 @@ using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.PageCard;
 
-public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "page-card";
 
@@ -33,8 +32,7 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 		Title = match.Groups[1].Value;
 		var url = match.Groups[2].Value;
 
-		if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-			url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+		if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 		{
 			this.EmitError($"page-card url must be a local .md path or crosslink, not an absolute URL: {url}");
 			return;

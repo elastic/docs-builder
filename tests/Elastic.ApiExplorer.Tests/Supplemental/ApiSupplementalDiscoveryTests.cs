@@ -39,15 +39,9 @@ public class ApiSupplementalDiscoveryTests
 	[Fact]
 	public void Discover_MatchesExactOperationId()
 	{
-		var folder = FolderWith(
-			"op-search.md",
-			"op-getAlertingHealth.md",
-			"op-cluster-health.md");
+		var folder = FolderWith("op-search.md", "op-getAlertingHealth.md", "op-cluster-health.md");
 
-		var result = ApiSupplementalDiscovery.Discover(
-			folder,
-			["search", "getAlertingHealth", "cluster.health"],
-			[]);
+		var result = ApiSupplementalDiscovery.Discover(folder, ["search", "getAlertingHealth", "cluster.health"], []);
 
 		result.Operations.Keys.Should().BeEquivalentTo("search", "getAlertingHealth");
 		result.Unmatched.Select(f => f.Name).Should().ContainSingle().Which.Should().Be("op-cluster-health.md");
@@ -67,15 +61,9 @@ public class ApiSupplementalDiscoveryTests
 	[Fact]
 	public void Discover_MatchesTagUrlSlug()
 	{
-		var folder = FolderWith(
-			"tag-ml-anomaly.md",
-			"tag-health_report.md",
-			"tag-apm-agent-configuration.md");
+		var folder = FolderWith("tag-ml-anomaly.md", "tag-health_report.md", "tag-apm-agent-configuration.md");
 
-		var result = ApiSupplementalDiscovery.Discover(
-			folder,
-			[],
-			["ml anomaly", "health_report", "APM agent configuration"]);
+		var result = ApiSupplementalDiscovery.Discover(folder, [], ["ml anomaly", "health_report", "APM agent configuration"]);
 
 		result.Tags.Should().ContainKey("ml anomaly");
 		result.Tags.Should().ContainKey("health_report");
@@ -150,7 +138,8 @@ public class ApiSupplementalDiscoveryTests
 	public async Task Discover_InlineOperationTagsWithoutDocumentTags_MatchTagFile()
 	{
 		var folder = FolderWith("tag-search.md");
-		var specJson = /*lang=json,strict*/ """
+		var specJson = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.3",
 		  "info": { "title": "t", "version": "1" },
@@ -164,10 +153,7 @@ public class ApiSupplementalDiscoveryTests
 		  }
 		}
 		""";
-		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			["/spec.json"] = new MockFileData(specJson)
-		});
+		var fs = new MockFileSystem(new Dictionary<string, MockFileData> { ["/spec.json"] = new MockFileData(specJson) });
 		var document = await OpenApiReader.Instance.ReadAsync(fs.FileInfo.New("/spec.json"))
 			?? throw new InvalidOperationException("Could not read spec");
 
@@ -179,9 +165,7 @@ public class ApiSupplementalDiscoveryTests
 
 	private static System.IO.Abstractions.IDirectoryInfo FolderWith(params string[] fileNames)
 	{
-		var files = fileNames.ToDictionary(
-			name => $"{Folder}/{name}",
-			_ => new MockFileData("# supplemental"));
+		var files = fileNames.ToDictionary(name => $"{Folder}/{name}", _ => new MockFileData("# supplemental"));
 		var fs = new MockFileSystem(files);
 		return fs.DirectoryInfo.New(Folder);
 	}

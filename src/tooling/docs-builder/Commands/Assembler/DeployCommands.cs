@@ -40,15 +40,24 @@ internal sealed class DeployCommands(
 	[RequiresAuth]
 	[MutationScope(MutationScope.Global)]
 	[NoOptionsInjection]
-	public async Task<int> Plan(string environment, string s3BucketName, [ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null, float? deleteThreshold = null, CancellationToken ct = default)
+	public async Task<int> Plan(
+		string environment,
+		string s3BucketName,
+		[ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null,
+		float? deleteThreshold = null,
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
-		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
-			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, [], ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(context, s3BucketName, @out, deleteThreshold),
+			static async (s, collector, state, ctx) =>
+				await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, [], ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -62,15 +71,23 @@ internal sealed class DeployCommands(
 	[CommandIntent(Intent.Destructive)]
 	[MutationScope(MutationScope.Global)]
 	[NoOptionsInjection]
-	public async Task<int> Apply(string environment, string s3BucketName, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile, CancellationToken ct = default)
+	public async Task<int> Apply(
+		string environment,
+		string s3BucketName,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile,
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
-		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
-			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(context, s3BucketName, planFile),
+			static async (s, collector, state, ctx) =>
+				await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -84,13 +101,21 @@ internal sealed class DeployCommands(
 	/// Use for per-docset isolated builds that should not remove other repos' redirects.
 	/// </param>
 	[NoOptionsInjection]
-	public async Task<int> UpdateRedirects(string environment, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null, bool noDelete = false, CancellationToken ct = default)
+	public async Task<int> UpdateRedirects(
+		string environment,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null,
+		bool noDelete = false,
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new DeployUpdateRedirectsService(logFactory, CheckoutsFileSystem.FromWorkingDirectory());
-		serviceInvoker.AddCommand(service, (environment, redirectsFile, noDelete),
-			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile?.FullName, noDelete: state.noDelete, ctx: ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(environment, redirectsFile, noDelete),
+			static async (s, collector, state, ctx) =>
+				await s.UpdateRedirects(collector, state.environment, state.redirectsFile?.FullName, noDelete: state.noDelete, ctx: ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

@@ -36,8 +36,12 @@ public class ChangelogPrepareArtifactService(
 	public async Task<bool> PrepareArtifact(IDiagnosticsCollector collector, PrepareArtifactArguments input, Cancel ctx)
 	{
 		var status = ResolveStatus(input.EvaluateStatus, input.GenerateOutcome);
-		_logger.LogInformation("Resolved artifact status: {Status} (evaluate={Evaluate}, generate={Generate})",
-			status, input.EvaluateStatus, input.GenerateOutcome);
+		_logger.LogInformation(
+			"Resolved artifact status: {Status} (evaluate={Evaluate}, generate={Generate})",
+			status,
+			input.EvaluateStatus,
+			input.GenerateOutcome
+		);
 
 		_ = _fileSystem.Directory.CreateDirectory(input.OutputDir);
 

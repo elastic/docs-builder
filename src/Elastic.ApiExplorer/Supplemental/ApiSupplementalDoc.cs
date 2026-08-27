@@ -18,14 +18,11 @@ internal sealed partial record ApiSupplementalDoc(
 	IReadOnlyList<ApiSupplementalSection> PostSections
 )
 {
-	public string? DescriptionOr(string? spec) =>
-		string.IsNullOrWhiteSpace(Description) ? spec : Description;
+	public string? DescriptionOr(string? spec) => string.IsNullOrWhiteSpace(Description) ? spec : Description;
 
-	public string? ParameterOr(string name, string? spec) =>
-		ParameterOverrides.TryGetValue(name, out var value) ? value : spec;
+	public string? ParameterOr(string name, string? spec) => ParameterOverrides.TryGetValue(name, out var value) ? value : spec;
 
-	public string? RequestBodyOr(string name, string? spec) =>
-		RequestBodyOverrides.TryGetValue(name, out var value) ? value : spec;
+	public string? RequestBodyOr(string name, string? spec) => RequestBodyOverrides.TryGetValue(name, out var value) ? value : spec;
 
 	public static IReadOnlyDictionary<string, ApiSupplementalDoc> Load(IReadOnlyDictionary<string, IFileInfo> files)
 	{
@@ -53,9 +50,7 @@ internal sealed partial record ApiSupplementalDoc(
 		var trimmed = rawContent.Trim();
 		if (string.IsNullOrWhiteSpace(trimmed))
 		{
-			return string.IsNullOrWhiteSpace(frontMatter)
-				? null
-				: Empty(frontMatter, description: null);
+			return string.IsNullOrWhiteSpace(frontMatter) ? null : Empty(frontMatter, description: null);
 		}
 
 		if (!trimmed.Contains("\n## ") && !trimmed.StartsWith("## ", StringComparison.Ordinal))
@@ -89,21 +84,15 @@ internal sealed partial record ApiSupplementalDoc(
 				postSections.Add(new ApiSupplementalSection(heading, body.Trim()));
 		}
 
-		return new ApiSupplementalDoc(
-			frontMatter,
-			description,
-			parameterOverrides,
-			requestBodyOverrides,
-			postSections);
+		return new ApiSupplementalDoc(frontMatter, description, parameterOverrides, requestBodyOverrides, postSections);
 	}
 
-	private static ApiSupplementalDoc Empty(string? frontMatter, string? description) =>
-		new(frontMatter, description, [], [], []);
+	private static ApiSupplementalDoc Empty(string? frontMatter, string? description) => new(frontMatter, description, [], [], []);
 
 	private static bool IsParametersHeading(string heading) =>
 		heading.Equals("Parameters", StringComparison.OrdinalIgnoreCase)
-		|| heading.Equals("Query parameters", StringComparison.OrdinalIgnoreCase)
-		|| heading.Equals("Path parameters", StringComparison.OrdinalIgnoreCase);
+			|| heading.Equals("Query parameters", StringComparison.OrdinalIgnoreCase)
+			|| heading.Equals("Path parameters", StringComparison.OrdinalIgnoreCase);
 
 	private static (string? FrontMatter, string Content) ExtractFrontMatter(string raw)
 	{

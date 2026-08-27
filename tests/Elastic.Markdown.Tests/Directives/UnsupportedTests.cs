@@ -8,9 +8,9 @@ using Elastic.Markdown.Myst.Directives;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class UnsupportedDirectiveTests(ITestOutputHelper output, string directive)
-	: DirectiveTest<UnsupportedDirectiveBlock>(output,
-$$"""
+public abstract class UnsupportedDirectiveTests(ITestOutputHelper output, string directive) : DirectiveTest<UnsupportedDirectiveBlock>(
+	output,
+	$$"""
 Content before bad directive
 
 ```{{{directive}}}
@@ -34,17 +34,24 @@ A regular paragraph.
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Warning);
-		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.StartsWith($"Directive block '{directive}' is unsupported."));
+		Collector.Diagnostics.Should().OnlyContain(d => d.Message.StartsWith($"Directive block '{directive}' is unsupported."));
 	}
 }
 
 public class BibliographyDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "bibliography");
+
 public class BlockQuoteDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "blockquote");
+
 public class FrameDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "iframe");
+
 public class CsvTableDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "csv-table");
+
 public class MystDirectiveDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "myst");
+
 public class TopicDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "topic");
+
 public class ExerciseDirectiveTest(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "exercise");
+
 public class SolutionDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "solution");
+
 public class TocTreeDirectiveTests(ITestOutputHelper output) : UnsupportedDirectiveTests(output, "solution");

@@ -30,6 +30,7 @@ public class IsolatedBuildRedirectTests
 		var prefix = "/en/docs-builder";
 		IsolatedBuildService.ToAbsoluteUrl(path, prefix)
 			.TrimEnd('/')
-			.Should().Be(IsolatedBuildService.ToAbsoluteUrl(to, prefix).TrimEnd('/'));
+			.Should()
+			.Be(IsolatedBuildService.ToAbsoluteUrl(to, prefix).TrimEnd('/'));
 	}
 }

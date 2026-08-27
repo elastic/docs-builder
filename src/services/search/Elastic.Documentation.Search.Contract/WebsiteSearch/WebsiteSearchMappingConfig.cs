@@ -10,17 +10,8 @@ using Elastic.Mapping.Mappings;
 namespace Elastic.Documentation.Search.Contract;
 
 [ElasticsearchMappingContext]
-[Index<WebsiteSearchDocument>(
-	NameTemplate = "ws-catalog.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(WebsiteSearchLexicalConfig)
-)]
-[Index<WebsiteSearchDocument>(
-	NameTemplate = "ws-catalog.semantic-{env}",
-	Variant = "Semantic",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(WebsiteSearchSemanticConfig)
-)]
+[Index<WebsiteSearchDocument>(NameTemplate = "ws-catalog.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(WebsiteSearchLexicalConfig))]
+[Index<WebsiteSearchDocument>(NameTemplate = "ws-catalog.semantic-{env}", Variant = "Semantic", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(WebsiteSearchSemanticConfig))]
 public static partial class WebsiteSearchMappingContext;
 
 public class WebsiteSearchLexicalConfig : IConfigureElasticsearch<WebsiteSearchDocument>
@@ -30,7 +21,8 @@ public class WebsiteSearchLexicalConfig : IConfigureElasticsearch<WebsiteSearchD
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
-		mappings.AddSearchDocumentMappings().AddSiteMappings()
+		mappings.AddSearchDocumentMappings()
+			.AddSiteMappings()
 			// WebsiteSearchDocument has no C# property for applies_to (DocumentationDocument-only) and
 			// its inherited parents field lacks the docs-specific keyword/multi-field topology — merge
 			// DocumentationDocument's mapping (additive-only; existing fields here always win) so docs-*
@@ -46,6 +38,7 @@ public class WebsiteSearchSemanticConfig : IConfigureElasticsearch<WebsiteSearch
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
-		mappings.AddSearchDocumentMappings(semantic: true).AddSiteMappings()
+		mappings.AddSearchDocumentMappings(semantic: true)
+			.AddSiteMappings()
 			.Merge(DocumentationMappingContext.DocumentationDocumentSemantic, d => d.AddDocumentationMappings());
 }

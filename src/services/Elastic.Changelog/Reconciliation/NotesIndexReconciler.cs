@@ -96,7 +96,8 @@ public sealed class NotesIndexReconciler(
 					var (target, paths) = kvp;
 					var indexKey = ChangelogKeys.NotesIndexKey(org, repo, target);
 					await WriteIndexAsync(indexKey, [.. paths.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)], ct);
-				});
+				}
+			);
 		}
 		finally
 		{
@@ -107,11 +108,7 @@ public sealed class NotesIndexReconciler(
 
 	private async Task<IReadOnlyList<string>> ListExistingNotesIndexes(ChangelogScope notesScope, Cancel ctx)
 	{
-		var request = new ListObjectsV2Request
-		{
-			BucketName = publicBucketName,
-			Prefix = notesScope.Prefix
-		};
+		var request = new ListObjectsV2Request { BucketName = publicBucketName, Prefix = notesScope.Prefix };
 
 		var keys = new List<string>();
 		ListObjectsV2Response response;
@@ -124,7 +121,8 @@ public sealed class NotesIndexReconciler(
 					keys.Add(obj.Key);
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return keys;
 	}
@@ -134,7 +132,8 @@ public sealed class NotesIndexReconciler(
 		HashSet<string> currentTargets,
 		string org,
 		string repo,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// "changelog/{org}/{repo}/notes-" — the stable prefix shared by all notes-*.json keys for this repo.
 		var notesKeyPrefix = $"{ChangelogKeys.ChangelogPrefix}{org}/{repo}/notes-";
@@ -150,11 +149,7 @@ public sealed class NotesIndexReconciler(
 
 			try
 			{
-				_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest
-				{
-					BucketName = publicBucketName,
-					Key = key
-				}, ctx);
+				_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
 				_logger.LogInformation("Removed stale notes index {Key}", key);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
@@ -192,25 +187,23 @@ public sealed class NotesIndexReconciler(
 				_metrics.IncrementObjectsListed();
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return files;
 	}
 
 	private static bool IsNoteFileName(string fileName) =>
 		fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase)
-		&& (fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
-		&& !fileName.Contains('/', StringComparison.Ordinal);
+			&& (fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+				|| fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
+			&& !fileName.Contains('/', StringComparison.Ordinal);
 
 	private async Task<IReadOnlyList<string>> ExtractTargetsAsync(string key, Cancel ctx)
 	{
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = _sourceBucketName,
-				Key = key
-			}, ctx);
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = _sourceBucketName, Key = key }, ctx);
 
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
@@ -223,11 +216,18 @@ public sealed class NotesIndexReconciler(
 				return [];
 
 			var valid = new List<string>();
-			foreach (var target in dto.Products.Select(p => p.Target).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.Ordinal))
+			foreach (var target in dto.Products
+				.Select(p => p.Target)
+				.Where(t => !string.IsNullOrWhiteSpace(t))
+				.Distinct(StringComparer.Ordinal))
 			{
 				if (target!.Contains('/', StringComparison.Ordinal))
 				{
-					_logger.LogWarning("Note {Key} has target '{Target}' containing '/'; skipping — targets must be single path segments", key, target);
+					_logger.LogWarning(
+						"Note {Key} has target '{Target}' containing '/'; skipping — targets must be single path segments",
+						key,
+						target
+					);
 					continue;
 				}
 				valid.Add(target);
@@ -256,13 +256,17 @@ public sealed class NotesIndexReconciler(
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				_ = await s3Client.PutObjectAsync(new PutObjectRequest
-				{
-					BucketName = publicBucketName,
-					Key = key,
-					ContentBody = json,
-					ContentType = "application/json"
-				}, ctx);
+				_ =
+					await s3Client.PutObjectAsync(
+						new PutObjectRequest
+						{
+							BucketName = publicBucketName,
+							Key = key,
+							ContentBody = json,
+							ContentType = "application/json"
+						},
+						ctx
+					);
 
 				_metrics.IncrementRegistryWrites();
 				_logger.LogInformation("Wrote notes index {Key} with {Count} path(s)", key, paths.Count);
@@ -274,7 +278,14 @@ public sealed class NotesIndexReconciler(
 					throw;
 
 				var delay = _retryBaseDelay * attempt;
-				_logger.LogDebug(ex, "Notes index write {Key} failed (attempt {A}/{Max}); retrying in {Delay}", key, attempt, MaxWriteAttempts, delay);
+				_logger.LogDebug(
+					ex,
+					"Notes index write {Key} failed (attempt {A}/{Max}); retrying in {Delay}",
+					key,
+					attempt,
+					MaxWriteAttempts,
+					delay
+				);
 				await Task.Delay(delay, ctx);
 			}
 		}

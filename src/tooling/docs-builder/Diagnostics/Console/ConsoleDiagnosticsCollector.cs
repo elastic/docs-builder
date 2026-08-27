@@ -10,8 +10,10 @@ using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Documentation.Builder.Diagnostics.Console;
 
-public class ConsoleDiagnosticsCollector(ILoggerFactory logFactory, ICoreService? githubActions = null)
-	: DiagnosticsCollector([new Log(logFactory.CreateLogger<Log>()), new GithubAnnotationOutput(githubActions)])
+public class ConsoleDiagnosticsCollector(ILoggerFactory logFactory, ICoreService? githubActions = null) : DiagnosticsCollector([
+	new Log(logFactory.CreateLogger<Log>()),
+	new GithubAnnotationOutput(githubActions)
+])
 {
 	private readonly List<Diagnostic> _errors = [];
 	private readonly List<Diagnostic> _warnings = [];
@@ -41,7 +43,9 @@ public class ConsoleDiagnosticsCollector(ILoggerFactory logFactory, ICoreService
 		repository.WriteDiagnosticsToConsole(_errors, _warnings, _hints);
 
 		AnsiConsole.WriteLine();
-		AnsiConsole.Write(new Markup($"	[bold red]{Errors} Errors[/] / [bold blue]{Warnings} Warnings[/] / [bold yellow]{Hints} Hints[/]"));
+		AnsiConsole.Write(
+			new Markup($"	[bold red]{Errors} Errors[/] / [bold blue]{Warnings} Warnings[/] / [bold yellow]{Hints} Hints[/]")
+		);
 		AnsiConsole.WriteLine();
 		AnsiConsole.WriteLine();
 	}

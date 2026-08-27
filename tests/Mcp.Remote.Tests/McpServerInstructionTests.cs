@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Mcp.Remote;
 using AwesomeAssertions;
+using Elastic.Documentation.Mcp.Remote;
 
 namespace Mcp.Remote.Tests;
 
@@ -88,9 +88,7 @@ public class McpServerInstructionTests
 	{
 		var act = () => McpServerProfile.Resolve("unknown");
 
-		act.Should().Throw<ArgumentException>()
-			.WithMessage("*Unknown MCP server profile*")
-			.WithParameterName("name");
+		act.Should().Throw<ArgumentException>().WithMessage("*Unknown MCP server profile*").WithParameterName("name");
 	}
 
 	[Fact]
@@ -98,7 +96,8 @@ public class McpServerInstructionTests
 	{
 		var instructions = McpServerProfile.Public.ComposeServerInstructions();
 
-		var expected = """
+		var expected =
+			"""
 			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs.
 
 			<triggers>
@@ -125,7 +124,8 @@ public class McpServerInstructionTests
 	{
 		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
 
-		var expected = """
+		var expected =
+			"""
 			Use this server to search and retrieve Elastic internal documentation: team processes, run books, architecture, and other internal knowledge.
 
 			<triggers>
@@ -146,8 +146,7 @@ public class McpServerInstructionTests
 	}
 
 	private static List<string> ExtractBullets(string instructions) =>
-		instructions
-			.Split('\n')
+		instructions.Split('\n')
 			.Where(l => l.TrimStart().StartsWith("- ", StringComparison.Ordinal))
 			.Select(l => l.TrimStart()[2..])
 			.ToList();

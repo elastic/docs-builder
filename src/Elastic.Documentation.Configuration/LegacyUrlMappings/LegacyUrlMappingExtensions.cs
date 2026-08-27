@@ -9,19 +9,26 @@ namespace Elastic.Documentation.Configuration.LegacyUrlMappings;
 
 public static class LegacyUrlMappingExtensions
 {
-	public static LegacyUrlMappingConfiguration CreateLegacyUrlMappings(this ConfigurationFileProvider provider, ProductsConfiguration products)
+	public static LegacyUrlMappingConfiguration CreateLegacyUrlMappings(
+		this ConfigurationFileProvider provider,
+		ProductsConfiguration products
+	)
 	{
 		var legacyUrlMappingsFilePath = provider.LegacyUrlMappingsFile;
 
-		var legacyUrlMappingsDto = ConfigurationFileProvider.Deserializer.Deserialize<LegacyUrlMappingConfigDto>(legacyUrlMappingsFilePath.OpenText());
+		var legacyUrlMappingsDto = ConfigurationFileProvider.Deserializer.Deserialize<LegacyUrlMappingConfigDto>(
+			legacyUrlMappingsFilePath.OpenText()
+		);
 
-		var legacyUrlMappings = legacyUrlMappingsDto.Mappings.Select(kvp =>
-			new LegacyUrlMapping
-			{
-				BaseUrl = kvp.Key,
-				Product = products.Products[kvp.Value.Product],
-				LegacyVersions = kvp.Value.LegacyVersions.ToImmutableList()
-			});
+		var legacyUrlMappings = legacyUrlMappingsDto.Mappings.Select(
+			kvp =>
+				new LegacyUrlMapping
+				{
+					BaseUrl = kvp.Key,
+					Product = products.Products[kvp.Value.Product],
+					LegacyVersions = kvp.Value.LegacyVersions.ToImmutableList()
+				}
+		);
 
 		return new LegacyUrlMappingConfiguration { Mappings = legacyUrlMappings.ToImmutableList() };
 	}

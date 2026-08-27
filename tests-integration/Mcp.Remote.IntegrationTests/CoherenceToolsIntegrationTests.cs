@@ -24,10 +24,12 @@ public class CoherenceToolsIntegrationTests(ITestOutputHelper output) : McpTools
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson = await coherenceTools.CheckCoherence(
-			"elasticsearch security",
-			limit: 10,
-			cancellationToken: TestContext.Current.CancellationToken);
+		var resultJson =
+			await coherenceTools.CheckCoherence(
+				"elasticsearch security",
+				limit: 10,
+				cancellationToken: TestContext.Current.CancellationToken
+			);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -55,10 +57,12 @@ public class CoherenceToolsIntegrationTests(ITestOutputHelper output) : McpTools
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson = await coherenceTools.FindInconsistencies(
-			"authentication",
-			focusArea: "configuration",
-			cancellationToken: TestContext.Current.CancellationToken);
+		var resultJson =
+			await coherenceTools.FindInconsistencies(
+				"authentication",
+				focusArea: "configuration",
+				cancellationToken: TestContext.Current.CancellationToken
+			);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");

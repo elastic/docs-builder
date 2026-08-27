@@ -9,8 +9,10 @@ using Nullean.Argh.Middleware;
 
 namespace Documentation.Builder.Middleware;
 
-internal sealed class InfoLoggerMiddleware(ILogger<InfoLoggerMiddleware> logger, ConfigurationFileProvider fileProvider)
-	: ICommandMiddleware
+internal sealed class InfoLoggerMiddleware(
+	ILogger<InfoLoggerMiddleware> logger,
+	ConfigurationFileProvider fileProvider
+) : ICommandMiddleware
 {
 	public async ValueTask InvokeAsync(CommandContext context, CommandMiddlewareDelegate next)
 	{

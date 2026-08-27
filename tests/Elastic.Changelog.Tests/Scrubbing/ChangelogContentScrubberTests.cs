@@ -53,11 +53,7 @@ public class ChangelogContentScrubberTests
 	[Fact]
 	public async Task ScrubAsync_NormalEntry_LinkIsNull()
 	{
-		var yaml =
-			"title: Fix search performance\n" +
-			"type: bug-fix\n" +
-			"products:\n" +
-			"  - product: elasticsearch\n";
+		var yaml = "title: Fix search performance\n" + "type: bug-fix\n" + "products:\n" + "  - product: elasticsearch\n";
 		var scrubber = Scrubber();
 
 		var result = await scrubber.ScrubAsync("changelog/elastic/elasticsearch/main/12345.yaml", yaml, CancellationToken.None);
@@ -70,15 +66,13 @@ public class ChangelogContentScrubberTests
 	[Fact]
 	public async Task ScrubAsync_NonCanonicalKey_ReturnsCanonicalKey()
 	{
-		var yaml =
-			"title: Fix search performance\n" +
-			"type: bug-fix\n" +
-			"prs:\n" +
-			"  - https://github.com/elastic/elasticsearch/pull/12345\n";
+		var yaml = "title: Fix search performance\n"
+			+ "type: bug-fix\n"
+			+ "prs:\n"
+			+ "  - https://github.com/elastic/elasticsearch/pull/12345\n";
 		var scrubber = Scrubber(["elastic/elasticsearch"]);
 
-		var result = await scrubber.ScrubAsync(
-			"changelog/elastic/elasticsearch/main/12345-fix.yaml", yaml, CancellationToken.None);
+		var result = await scrubber.ScrubAsync("changelog/elastic/elasticsearch/main/12345-fix.yaml", yaml, CancellationToken.None);
 
 		result.CanonicalKey.Should().Be("changelog/elastic/elasticsearch/main/12345.yaml");
 		result.Markers.Should().BeEmpty();
@@ -87,15 +81,13 @@ public class ChangelogContentScrubberTests
 	[Fact]
 	public async Task ScrubAsync_AlreadyCanonicalKey_CanonicalKeyIsNull()
 	{
-		var yaml =
-			"title: Fix search performance\n" +
-			"type: bug-fix\n" +
-			"prs:\n" +
-			"  - https://github.com/elastic/elasticsearch/pull/12345\n";
+		var yaml = "title: Fix search performance\n"
+			+ "type: bug-fix\n"
+			+ "prs:\n"
+			+ "  - https://github.com/elastic/elasticsearch/pull/12345\n";
 		var scrubber = Scrubber(["elastic/elasticsearch"]);
 
-		var result = await scrubber.ScrubAsync(
-			"changelog/elastic/elasticsearch/main/12345.yaml", yaml, CancellationToken.None);
+		var result = await scrubber.ScrubAsync("changelog/elastic/elasticsearch/main/12345.yaml", yaml, CancellationToken.None);
 
 		result.CanonicalKey.Should().BeNull("source key is already canonical");
 	}
@@ -104,17 +96,15 @@ public class ChangelogContentScrubberTests
 	public async Task ScrubAsync_MultiPrEntry_WritesMarkersForNonPrimaryPrs()
 	{
 		// prs [100, 200, 300] → primary is 100 (min), markers for 200 and 300
-		var yaml =
-			"title: Multi-PR feature\n" +
-			"type: feature\n" +
-			"prs:\n" +
-			"  - https://github.com/elastic/elasticsearch/pull/300\n" +
-			"  - https://github.com/elastic/elasticsearch/pull/100\n" +
-			"  - https://github.com/elastic/elasticsearch/pull/200\n";
+		var yaml = "title: Multi-PR feature\n"
+			+ "type: feature\n"
+			+ "prs:\n"
+			+ "  - https://github.com/elastic/elasticsearch/pull/300\n"
+			+ "  - https://github.com/elastic/elasticsearch/pull/100\n"
+			+ "  - https://github.com/elastic/elasticsearch/pull/200\n";
 		var scrubber = Scrubber(["elastic/elasticsearch"]);
 
-		var result = await scrubber.ScrubAsync(
-			"changelog/elastic/elasticsearch/main/100.yaml", yaml, CancellationToken.None);
+		var result = await scrubber.ScrubAsync("changelog/elastic/elasticsearch/main/100.yaml", yaml, CancellationToken.None);
 
 		result.CanonicalKey.Should().BeNull("source key already matches the min PR");
 		result.Markers.Should().HaveCount(2);
@@ -132,16 +122,15 @@ public class ChangelogContentScrubberTests
 	[Fact]
 	public async Task ScrubAsync_NoteFile_PassesThroughWithNoCanonicalKey()
 	{
-		var yaml =
-			"title: Known issue with rollover\n" +
-			"type: known-issue\n" +
-			"products:\n" +
-			"  - product: elasticsearch\n" +
-			"    target: 9.2.0\n";
+		var yaml = "title: Known issue with rollover\n"
+			+ "type: known-issue\n"
+			+ "products:\n"
+			+ "  - product: elasticsearch\n"
+			+ "    target: 9.2.0\n";
 		var scrubber = Scrubber(["elastic/elasticsearch"]);
 
-		var result = await scrubber.ScrubAsync(
-			"changelog/elastic/elasticsearch/main/note-slow-rollover.yaml", yaml, CancellationToken.None);
+		var result =
+			await scrubber.ScrubAsync("changelog/elastic/elasticsearch/main/note-slow-rollover.yaml", yaml, CancellationToken.None);
 
 		result.CanonicalKey.Should().BeNull("note-* files are already canonical and need no rename");
 		result.Markers.Should().BeEmpty();

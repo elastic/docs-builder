@@ -67,7 +67,9 @@ public class AssemblerBuildService(
 		// --assume-build is not allowed on CI: it could serve stale content from a previous/cached build
 		// CI builds must always produce fresh, reproducible output
 		if (assumeBuild.GetValueOrDefault(false) && _env.IsRunningOnCI)
-			throw new InvalidOperationException("The --assume-build flag is not allowed on CI. CI builds must always produce fresh output to ensure reproducibility and prevent stale content.");
+			throw new InvalidOperationException(
+				"The --assume-build flag is not allowed on CI. CI builds must always produce fresh output to ensure reproducibility and prevent stale content."
+			);
 
 		// Early return if --assume-build is specified and output already exists
 		if (assumeBuild.GetValueOrDefault(false))
@@ -75,7 +77,10 @@ public class AssemblerBuildService(
 			var indexHtmlPath = Path.Join(assembleContext.OutputDirectory.FullName, "docs", "index.html");
 			if (assembleContext.OutputDirectory.Exists && fileSystem.File.Exists(indexHtmlPath))
 			{
-				_logger.LogInformation("Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.", indexHtmlPath);
+				_logger.LogInformation(
+					"Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.",
+					indexHtmlPath
+				);
 				return true;
 			}
 			_logger.LogInformation("--assume-build specified but output directory does not exist or is incomplete. Proceeding with build.");
@@ -103,23 +108,37 @@ public class AssemblerBuildService(
 			throw new Exception("No checkouts found");
 
 		_logger.LogInformation("Preparing all assemble sources for build");
-		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
+		var assembleSources =
+			await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
-		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix, navigationPreviewEnabled);
+		var navigation = new SiteNavigation(
+			siteNavigationFile,
+			assembleContext,
+			documentationSets,
+			assembleContext.Environment.PathPrefix,
+			navigationPreviewEnabled
+		);
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
+		if (
+			!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
+			|| assembleContext.Collector.Errors > 0
+		)
 			return false;
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageService(logFactory);
-		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
+		var historyMapper = new PageLegacyUrlMapper(
+			legacyPageChecker,
+			assembleContext.VersionsConfiguration,
+			assembleSources.LegacyUrlMappings
+		);
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 
@@ -142,25 +161,26 @@ public class AssemblerBuildService(
 			// Build-time sitemap uses current date as placeholder for backwards compatibility.
 			// Production sitemap with correct content_last_updated dates is generated via
 			// `assembler sitemap` after ES indexing, which overwrites this file.
-			var urls = navigation.NavigationItems
-				.SelectMany(SitemapNavigationHelper.Flatten)
-				.Select(n => n.Url)
-				.Distinct();
+			var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(n => n.Url).Distinct();
 			var now = DateTimeOffset.UtcNow;
 			var entries = urls.ToDictionary(u => u, _ => now);
 
 			if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
 				collector.EmitGlobalWarning(
 					$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
-					"Consider implementing sitemap index files."
+						"Consider implementing sitemap index files."
 				);
 
-			var sitemapResult = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+			var sitemapResult = SitemapBuilder.Generate(
+				entries,
+				assembleContext.WriteFileSystem,
+				assembleContext.OutputWithPathPrefixDirectory
+			);
 
 			if (sitemapResult.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
 				collector.EmitGlobalWarning(
 					$"Sitemap file size is {sitemapResult.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
-					"Consider implementing sitemap index files."
+						"Consider implementing sitemap index files."
 				);
 		}
 
@@ -178,7 +198,12 @@ public class AssemblerBuildService(
 		return strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
 	}
 
-	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
+	private static async Task EnhanceLlmsTxtFile(
+		AssembleContext context,
+		SiteNavigation navigation,
+		LlmsNavigationEnhancer enhancer,
+		Cancel ctx
+	)
 	{
 		var pathPrefixedOutputFolder = context.OutputWithPathPrefixDirectory;
 		var llmsTxtPath = context.ReadFileSystem.Path.Join(pathPrefixedOutputFolder.FullName, "llms.txt");

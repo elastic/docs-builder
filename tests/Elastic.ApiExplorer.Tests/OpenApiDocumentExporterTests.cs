@@ -70,7 +70,8 @@ public class OpenApiDocumentExporterTests
 		// Test each URL in parallel
 		var failures = new ConcurrentBag<(string Url, int StatusCode)>();
 
-		await Parallel.ForEachAsync(sample,
+		await Parallel.ForEachAsync(
+			sample,
 			new ParallelOptions { MaxDegreeOfParallelism = 10, CancellationToken = TestContext.Current.CancellationToken },
 			async (url, ct) =>
 			{
@@ -81,8 +82,14 @@ public class OpenApiDocumentExporterTests
 					using var request = new HttpRequestMessage(HttpMethod.Head, fullUrl);
 
 					// Mimic browser headers
-					request.Headers.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-					request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
+					request.Headers.Add(
+						"User-Agent",
+						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+					);
+					request.Headers.Add(
+						"Accept",
+						"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+					);
 					request.Headers.Add("Accept-Language", "en-US,en;q=0.9");
 					request.Headers.Add("Accept-Encoding", "gzip, deflate, br");
 					request.Headers.Add("DNT", "1");
@@ -94,11 +101,7 @@ public class OpenApiDocumentExporterTests
 					request.Headers.Add("Sec-Fetch-User", "?1");
 					request.Headers.Add("Cache-Control", "max-age=0");
 
-					var response = await HttpClient.SendAsync(
-						request,
-						HttpCompletionOption.ResponseHeadersRead,
-						ct
-					);
+					var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
 
 					if (!response.IsSuccessStatusCode)
 					{
@@ -109,7 +112,8 @@ public class OpenApiDocumentExporterTests
 				{
 					failures.Add((url, -1)); // Use -1 to indicate exception
 				}
-			});
+			}
+		);
 
 		// Assert all URLs returned 200
 		failures.Should().BeEmpty(

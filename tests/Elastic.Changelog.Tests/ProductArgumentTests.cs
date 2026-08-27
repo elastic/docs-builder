@@ -23,11 +23,7 @@ public class ProductArgumentTests
 	[Fact]
 	public void FormatProductSpecs_MultipleProducts_JoinsWithComma()
 	{
-		var products = new List<ProductArgument>
-		{
-			new() { Product = "cloud-hosted" },
-			new() { Product = "cloud-serverless" }
-		};
+		var products = new List<ProductArgument> { new() { Product = "cloud-hosted" }, new() { Product = "cloud-serverless" } };
 
 		ProductArgument.FormatProductSpecs(products).Should().Be("cloud-hosted, cloud-serverless");
 	}
@@ -48,8 +44,7 @@ public class ProductArgumentTests
 	[InlineData(null)]
 	[InlineData("")]
 	[InlineData("  ")]
-	public void ParseProductSpecs_NullOrEmpty_ReturnsEmpty(string? input) =>
-		ProductArgument.ParseProductSpecs(input).Should().BeEmpty();
+	public void ParseProductSpecs_NullOrEmpty_ReturnsEmpty(string? input) => ProductArgument.ParseProductSpecs(input).Should().BeEmpty();
 
 	[Fact]
 	public void ParseProductSpecs_SingleProduct_ParsesCorrectly()

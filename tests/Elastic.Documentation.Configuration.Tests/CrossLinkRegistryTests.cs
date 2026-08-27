@@ -39,8 +39,12 @@ public class CrossLinkRegistryTests
 		var docSet = CreateDocSet("internal", ["other-internal-repo"]);
 		var config = CreateConfiguration(docSet);
 
-		config.CrossLinkEntries.Should().ContainSingle()
-			.Which.Should().Be(new CrossLinkEntry("other-internal-repo", DocSetRegistry.Internal));
+		config.CrossLinkEntries
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Be(new CrossLinkEntry("other-internal-repo", DocSetRegistry.Internal));
 	}
 
 	[Fact]
@@ -72,8 +76,7 @@ public class CrossLinkRegistryTests
 		var config = CreateConfiguration(docSet);
 
 		// Public docsets cannot link to internal; the invalid entry is excluded
-		config.CrossLinkEntries.Should().ContainSingle()
-			.Which.Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
+		config.CrossLinkEntries.Should().ContainSingle().Which.Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
 	}
 
 	[Fact]
@@ -102,19 +105,13 @@ public class CrossLinkRegistryTests
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ configFilePath, new MockFileData("") }
-		}, root);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { configFilePath, new MockFileData("") } }, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-		};
+		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
@@ -129,13 +126,15 @@ public class CrossLinkRegistryTests
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,
-		IDirectoryInfo documentationSourceDirectory)
-		: IDocumentationSetContext
+		IDirectoryInfo documentationSourceDirectory
+	) : IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
 		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName);
 		public DocumentationWriteFileSystem WriteFileSystem { get; } = new DocumentationWriteFileSystem(
-			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: fileSystem);
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: fileSystem
+		);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

@@ -170,7 +170,12 @@ public static partial class AsciidocLexer
 				if (IsMatchingDelimiter(line, verbatimDelimiter))
 				{
 					inVerbatimBlock = false;
-					tokens.Add(new Token(TokenType.BlockDelimiter, line, lineNumber, new TokenMetadata { DelimiterChar = verbatimDelimiter[..1] }));
+					tokens.Add(new Token(
+						TokenType.BlockDelimiter,
+						line,
+						lineNumber,
+						new TokenMetadata { DelimiterChar = verbatimDelimiter[..1] }
+					));
 				}
 				else
 				{
@@ -238,22 +243,29 @@ public static partial class AsciidocLexer
 				var condStart = ConditionalStartRegex.Match(line);
 				if (condStart.Success)
 				{
-					tokens.Add(new Token(TokenType.ConditionalStart, line, lineNumber, new TokenMetadata
-					{
-						Condition = condStart.Groups[2].Value,
-						Content = condStart.Groups[3].Value,
-						BlockStyle = condStart.Groups[1].Value
-					}));
+					tokens.Add(new Token(
+						TokenType.ConditionalStart,
+						line,
+						lineNumber,
+						new TokenMetadata
+						{
+							Condition = condStart.Groups[2].Value,
+							Content = condStart.Groups[3].Value,
+							BlockStyle = condStart.Groups[1].Value
+						}
+					));
 					continue;
 				}
 
 				var condEnd = ConditionalEndRegex.Match(line);
 				if (condEnd.Success)
 				{
-					tokens.Add(new Token(TokenType.ConditionalEnd, line, lineNumber, new TokenMetadata
-					{
-						Condition = condEnd.Groups[1].Value
-					}));
+					tokens.Add(new Token(
+						TokenType.ConditionalEnd,
+						line,
+						lineNumber,
+						new TokenMetadata { Condition = condEnd.Groups[1].Value }
+					));
 					continue;
 				}
 
@@ -311,64 +323,60 @@ public static partial class AsciidocLexer
 		var m = SectionRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.SectionTitle, line, lineNumber, new TokenMetadata
-			{
-				Level = m.Groups[1].Value.Length - 1,
-				Title = m.Groups[2].Value.Trim()
-			});
+			token =
+				new Token(
+					TokenType.SectionTitle,
+					line,
+					lineNumber,
+					new TokenMetadata { Level = m.Groups[1].Value.Length - 1, Title = m.Groups[2].Value.Trim() }
+				);
 			return true;
 		}
 
 		m = AttributeUnsetRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.AttributeUnset, line, lineNumber, new TokenMetadata
-			{
-				AttributeName = m.Groups[1].Value
-			});
+			token = new Token(TokenType.AttributeUnset, line, lineNumber, new TokenMetadata { AttributeName = m.Groups[1].Value });
 			return true;
 		}
 
 		m = AttributeEntryRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.AttributeEntry, line, lineNumber, new TokenMetadata
-			{
-				AttributeName = m.Groups[1].Value,
-				AttributeValue = m.Groups[2].Value
-			});
+			token =
+				new Token(
+					TokenType.AttributeEntry,
+					line,
+					lineNumber,
+					new TokenMetadata { AttributeName = m.Groups[1].Value, AttributeValue = m.Groups[2].Value }
+				);
 			return true;
 		}
 
 		m = BlockAnchorRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.BlockAnchor, line, lineNumber, new TokenMetadata
-			{
-				Id = m.Groups[1].Value
-			});
+			token = new Token(TokenType.BlockAnchor, line, lineNumber, new TokenMetadata { Id = m.Groups[1].Value });
 			return true;
 		}
 
 		m = ConditionalStartRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.ConditionalStart, line, lineNumber, new TokenMetadata
-			{
-				Condition = m.Groups[2].Value,
-				Content = m.Groups[3].Value,
-				BlockStyle = m.Groups[1].Value
-			});
+			token =
+				new Token(
+					TokenType.ConditionalStart,
+					line,
+					lineNumber,
+					new TokenMetadata { Condition = m.Groups[2].Value, Content = m.Groups[3].Value, BlockStyle = m.Groups[1].Value }
+				);
 			return true;
 		}
 
 		m = ConditionalEndRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.ConditionalEnd, line, lineNumber, new TokenMetadata
-			{
-				Condition = m.Groups[1].Value
-			});
+			token = new Token(TokenType.ConditionalEnd, line, lineNumber, new TokenMetadata { Condition = m.Groups[1].Value });
 			return true;
 		}
 
@@ -376,11 +384,13 @@ public static partial class AsciidocLexer
 		if (m.Success)
 		{
 			var attrs = ParseBlockAttributeContent(m.Groups[2].Value);
-			token = new Token(TokenType.IncludeDirective, line, lineNumber, new TokenMetadata
-			{
-				Path = m.Groups[1].Value,
-				NamedAttributes = attrs
-			});
+			token =
+				new Token(
+					TokenType.IncludeDirective,
+					line,
+					lineNumber,
+					new TokenMetadata { Path = m.Groups[1].Value, NamedAttributes = attrs }
+				);
 			return true;
 		}
 
@@ -388,23 +398,31 @@ public static partial class AsciidocLexer
 		if (m.Success)
 		{
 			var attrs = ParseInlineAttributes(m.Groups[2].Value);
-			token = new Token(TokenType.ImageBlock, line, lineNumber, new TokenMetadata
-			{
-				Path = m.Groups[1].Value,
-				Title = attrs.GetValueOrDefault("alt") ?? attrs.GetValueOrDefault("0"),
-				NamedAttributes = attrs
-			});
+			token =
+				new Token(
+					TokenType.ImageBlock,
+					line,
+					lineNumber,
+					new TokenMetadata
+					{
+						Path = m.Groups[1].Value,
+						Title = attrs.GetValueOrDefault("alt") ?? attrs.GetValueOrDefault("0"),
+						NamedAttributes = attrs
+					}
+				);
 			return true;
 		}
 
 		m = AdmonitionRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.AdmonitionParagraph, line, lineNumber, new TokenMetadata
-			{
-				BlockStyle = m.Groups[1].Value,
-				Content = m.Groups[2].Value
-			});
+			token =
+				new Token(
+					TokenType.AdmonitionParagraph,
+					line,
+					lineNumber,
+					new TokenMetadata { BlockStyle = m.Groups[1].Value, Content = m.Groups[2].Value }
+				);
 			return true;
 		}
 
@@ -430,32 +448,33 @@ public static partial class AsciidocLexer
 		m = UnorderedListRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.ListItemUnordered, line, lineNumber, new TokenMetadata
-			{
-				Level = m.Groups[1].Value.Length,
-				Content = m.Groups[2].Value
-			});
+			token =
+				new Token(
+					TokenType.ListItemUnordered,
+					line,
+					lineNumber,
+					new TokenMetadata { Level = m.Groups[1].Value.Length, Content = m.Groups[2].Value }
+				);
 			return true;
 		}
 
 		m = OrderedListRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.ListItemOrdered, line, lineNumber, new TokenMetadata
-			{
-				Level = m.Groups[1].Value.Length,
-				Content = m.Groups[2].Value
-			});
+			token =
+				new Token(
+					TokenType.ListItemOrdered,
+					line,
+					lineNumber,
+					new TokenMetadata { Level = m.Groups[1].Value.Length, Content = m.Groups[2].Value }
+				);
 			return true;
 		}
 
 		m = CommentRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.Comment, line, lineNumber, new TokenMetadata
-			{
-				Content = m.Groups[1].Value
-			});
+			token = new Token(TokenType.Comment, line, lineNumber, new TokenMetadata { Content = m.Groups[1].Value });
 			return true;
 		}
 
@@ -487,23 +506,20 @@ public static partial class AsciidocLexer
 					language = second;
 			}
 
-			token = new Token(TokenType.BlockAttribute, line, lineNumber, new TokenMetadata
-			{
-				BlockStyle = style,
-				Language = language,
-				Content = content,
-				NamedAttributes = parsed
-			});
+			token =
+				new Token(
+					TokenType.BlockAttribute,
+					line,
+					lineNumber,
+					new TokenMetadata { BlockStyle = style, Language = language, Content = content, NamedAttributes = parsed }
+				);
 			return true;
 		}
 
 		m = BlockTitleRegex.Match(line);
 		if (m.Success)
 		{
-			token = new Token(TokenType.BlockTitle, line, lineNumber, new TokenMetadata
-			{
-				Title = m.Groups[1].Value
-			});
+			token = new Token(TokenType.BlockTitle, line, lineNumber, new TokenMetadata { Title = m.Groups[1].Value });
 			return true;
 		}
 
@@ -515,12 +531,13 @@ public static partial class AsciidocLexer
 			var desc = m.Groups[3].Value;
 			if (!term.Contains("://") && !term.StartsWith("http", StringComparison.OrdinalIgnoreCase))
 			{
-				token = new Token(TokenType.DescriptionListItem, line, lineNumber, new TokenMetadata
-				{
-					Title = term,
-					Content = desc,
-					Level = separator.Length
-				});
+				token =
+					new Token(
+						TokenType.DescriptionListItem,
+						line,
+						lineNumber,
+						new TokenMetadata { Title = term, Content = desc, Level = separator.Length }
+					);
 				return true;
 			}
 		}

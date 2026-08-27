@@ -106,7 +106,8 @@ internal static partial class CliMarkdownGenerator
 		string? binaryName = null,
 		string[]? reservedMetaCommands = null,
 		Action<string>? emitError = null,
-		List<CliShortcutSchema>? shortcuts = null)
+		List<CliShortcutSchema>? shortcuts = null
+	)
 	{
 		var sb = new StringBuilder();
 		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : ns.Segment;
@@ -196,7 +197,8 @@ internal static partial class CliMarkdownGenerator
 		Action<string>? emitError = null,
 		IReadOnlyList<(string Segment, List<CliParamSchema>? Options)>? ancestorNamespaceOptions = null,
 		List<CliParamSchema>? globalOptions = null,
-		List<CliShortcutSchema>? shortcuts = null)
+		List<CliShortcutSchema>? shortcuts = null
+	)
 	{
 		var sb = new StringBuilder();
 		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : cmd.Name;
@@ -209,9 +211,7 @@ internal static partial class CliMarkdownGenerator
 			? CleanUsage(cmd.Usage, reservedMetaCommands)
 			: GenerateUsage(cmd, fullPath, binaryName);
 
-		var allUsages = new[] { canonicalUsage }
-			.Concat(AliasUsages(fullPath, binaryName, canonicalUsage, shortcuts))
-			.ToList();
+		var allUsages = new[] { canonicalUsage }.Concat(AliasUsages(fullPath, binaryName, canonicalUsage, shortcuts)).ToList();
 		var shortestUsage = allUsages.MinBy(u => u.Length) ?? canonicalUsage;
 		var otherUsages = allUsages.Where(u => u != shortestUsage).ToList();
 
@@ -234,9 +234,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine();
 		}
 
-		var behaviorParams = cmd.Parameters
-			.Where(p => p.Role is "dryRun" or "confirmationSkip" or "output" && !p.Hidden)
-			.ToList();
+		var behaviorParams = cmd.Parameters.Where(p => p.Role is "dryRun" or "confirmationSkip" or "output" && !p.Hidden).ToList();
 		if (behaviorParams.Count > 0)
 			AppendBehaviorParams(sb, behaviorParams);
 
@@ -265,10 +263,12 @@ internal static partial class CliMarkdownGenerator
 		{
 			var flagNames = new HashSet<string>(
 				cmd.Parameters.Where(p => p.Role != "positional").Select(p => p.Name),
-				StringComparer.OrdinalIgnoreCase);
+				StringComparer.OrdinalIgnoreCase
+			);
 			var positionalNames = new HashSet<string>(
 				cmd.Parameters.Where(p => p.Role == "positional").Select(p => p.Name),
-				StringComparer.OrdinalIgnoreCase);
+				StringComparer.OrdinalIgnoreCase
+			);
 			foreach (var key in supplemental.OptionOverrides.Keys)
 			{
 				if (!flagNames.Contains(key))
@@ -385,8 +385,10 @@ internal static partial class CliMarkdownGenerator
 			var flagName = p.Role == "positional" ? $"`<{p.Name}>`" : $"`--{p.Name}`";
 			var desc = p.Role switch
 			{
-				"dryRun" => !string.IsNullOrWhiteSpace(p.Summary) ? CleanSummary(p.Summary).description : "Preview changes without applying them.",
-				"confirmationSkip" => !string.IsNullOrWhiteSpace(p.Summary) ? CleanSummary(p.Summary).description : "Skip the confirmation prompt.",
+				"dryRun" =>
+					!string.IsNullOrWhiteSpace(p.Summary) ? CleanSummary(p.Summary).description : "Preview changes without applying them.",
+				"confirmationSkip" =>
+					!string.IsNullOrWhiteSpace(p.Summary) ? CleanSummary(p.Summary).description : "Skip the confirmation prompt.",
 				"output" => !string.IsNullOrWhiteSpace(p.Summary) ? CleanSummary(p.Summary).description : "Control output format.",
 				_ => CleanSummary(p.Summary).description
 			};
@@ -395,14 +397,23 @@ internal static partial class CliMarkdownGenerator
 		_ = sb.AppendLine();
 	}
 
-	private static void AppendDefaultCommand(StringBuilder sb, CliDefaultSchema defaultCmd, CliNamespaceSchema ns, string[]? fullPath, string? binaryName, string[]? reservedMetaCommands)
+	private static void AppendDefaultCommand(
+		StringBuilder sb,
+		CliDefaultSchema defaultCmd,
+		CliNamespaceSchema ns,
+		string[]? fullPath,
+		string? binaryName,
+		string[]? reservedMetaCommands
+	)
 	{
 		_ = sb.AppendLine("## Running without a subcommand");
 		_ = sb.AppendLine();
 
 		// If Kind matches a named command, emit an alias note instead of duplicating parameters
-		if (!string.IsNullOrWhiteSpace(defaultCmd.Kind) &&
-			(ns.Commands ?? []).Any(c => c.Name.Equals(defaultCmd.Kind, StringComparison.OrdinalIgnoreCase)))
+		if (
+			!string.IsNullOrWhiteSpace(defaultCmd.Kind)
+			&& (ns.Commands ?? []).Any(c => c.Name.Equals(defaultCmd.Kind, StringComparison.OrdinalIgnoreCase))
+		)
 		{
 			_ = sb.AppendLine($"> Running without a subcommand is an alias for [{defaultCmd.Kind}](./{CommandPath(defaultCmd.Kind)}.md).");
 			_ = sb.AppendLine();
@@ -421,9 +432,7 @@ internal static partial class CliMarkdownGenerator
 		if (fullPath is { Length: > 0 })
 			usageParts.AddRange(fullPath);
 
-		var rawUsage = !string.IsNullOrWhiteSpace(defaultCmd.Usage)
-			? defaultCmd.Usage
-			: string.Join(" ", usageParts) + " [options]";
+		var rawUsage = !string.IsNullOrWhiteSpace(defaultCmd.Usage) ? defaultCmd.Usage : string.Join(" ", usageParts) + " [options]";
 		var usageLine = CleanUsage(rawUsage, reservedMetaCommands);
 
 		_ = sb.AppendLine("```bash");
@@ -465,7 +474,6 @@ internal static partial class CliMarkdownGenerator
 				_ = sb.AppendLine();
 			}
 		}
-
 	}
 
 	private static string CleanUsage(string usage, string[]? reservedMetaCommands)
@@ -477,8 +485,7 @@ internal static partial class CliMarkdownGenerator
 		return usage.Trim();
 	}
 
-	private static string CommandPath(string name) =>
-		name.Equals("index", StringComparison.OrdinalIgnoreCase) ? $"cmd-{name}" : name;
+	private static string CommandPath(string name) => name.Equals("index", StringComparison.OrdinalIgnoreCase) ? $"cmd-{name}" : name;
 
 	private static void AppendPageCard(StringBuilder sb, string title, string url, string? summary)
 	{
@@ -490,10 +497,7 @@ internal static partial class CliMarkdownGenerator
 		_ = sb.AppendLine();
 	}
 
-	private static void AppendParameters(
-		StringBuilder sb,
-		IEnumerable<CliParamSchema> parameters,
-		Dictionary<string, string>? overrides)
+	private static void AppendParameters(StringBuilder sb, IEnumerable<CliParamSchema> parameters, Dictionary<string, string>? overrides)
 	{
 		var filtered = parameters.Where(p => p.Name != "_" && !p.Hidden).ToList();
 		var positionals = filtered.Where(p => p.Role == "positional");
@@ -542,9 +546,7 @@ internal static partial class CliMarkdownGenerator
 				_ = sb.AppendLine($"    {string.Join(". ", parts)}.");
 			}
 
-			var values = p.EnumValues is { Length: > 0 }
-				? string.Join(", ", p.EnumValues)
-				: legacyValues;
+			var values = p.EnumValues is { Length: > 0 } ? string.Join(", ", p.EnumValues) : legacyValues;
 
 			if (!string.IsNullOrWhiteSpace(values))
 			{
@@ -552,9 +554,8 @@ internal static partial class CliMarkdownGenerator
 				_ = sb.AppendLine($"    **Values:** {values.Trim()}");
 			}
 
-			var defaultValue = (!string.IsNullOrWhiteSpace(p.DefaultValue) && !p.DefaultValue.Equals("default", StringComparison.OrdinalIgnoreCase))
-				? p.DefaultValue
-				: legacySummaryDefault;
+			var defaultValue = (!string.IsNullOrWhiteSpace(p.DefaultValue)
+				&& !p.DefaultValue.Equals("default", StringComparison.OrdinalIgnoreCase)) ? p.DefaultValue : legacySummaryDefault;
 			if (!string.IsNullOrWhiteSpace(defaultValue))
 			{
 				_ = sb.AppendLine();
@@ -596,16 +597,12 @@ internal static partial class CliMarkdownGenerator
 				"existing" => "must exist",
 				"rejectsymboliclinks" => "symbolic links not allowed",
 				"expanduserprofile" => "supports `~` home expansion",
-				"urischeme" when v.Values is { Length: > 0 } =>
-					$"must be a {string.Join(" or ", v.Values)} URI",
-				"range" when v.Min is not null && v.Max is not null =>
-					$"between {v.Min} and {v.Max}",
+				"urischeme" when v.Values is { Length: > 0 } => $"must be a {string.Join(" or ", v.Values)} URI",
+				"range" when v.Min is not null && v.Max is not null => $"between {v.Min} and {v.Max}",
 				"range" when v.Min is not null => $"minimum {v.Min}",
 				"range" when v.Max is not null => $"maximum {v.Max}",
-				"timespanrange" when v.Min is not null && v.Max is not null =>
-					$"duration between {v.Min} and {v.Max}",
-				"fileextensions" when v.Values is { Length: > 0 } =>
-					$"extensions: {string.Join(", ", v.Values)}",
+				"timespanrange" when v.Min is not null && v.Max is not null => $"duration between {v.Min} and {v.Max}",
+				"fileextensions" when v.Values is { Length: > 0 } => $"extensions: {string.Join(", ", v.Values)}",
 				"pattern" when v.Pattern is not null => $"must match `{v.Pattern}`",
 				_ => null
 			};
@@ -677,11 +674,8 @@ internal static partial class CliMarkdownGenerator
 			if (defIdx < 0)
 				return (EscapeSubstitutions(normalized), string.Empty, string.Empty);
 
-			return (
-				EscapeSubstitutions(normalized[..defIdx].Trim()),
-				string.Empty,
-				normalized[(defIdx + defaultSep.Length)..].Trim().TrimEnd('.')
-			);
+			return (EscapeSubstitutions(normalized[..defIdx].Trim()), string.Empty, normalized[(defIdx +
+				defaultSep.Length)..].Trim().TrimEnd('.'));
 		}
 
 		var description = normalized[..valuesIdx].Trim();
@@ -707,9 +701,9 @@ internal static partial class CliMarkdownGenerator
 	}
 
 	private static bool IsBoolFlag(string type) =>
-		type.Equals("boolean", StringComparison.OrdinalIgnoreCase) ||
-		type.StartsWith("Primitive:bool", StringComparison.OrdinalIgnoreCase) ||
-		type.Equals("Primitive", StringComparison.OrdinalIgnoreCase);
+		type.Equals("boolean", StringComparison.OrdinalIgnoreCase)
+			|| type.StartsWith("Primitive:bool", StringComparison.OrdinalIgnoreCase)
+			|| type.Equals("Primitive", StringComparison.OrdinalIgnoreCase);
 
 	private static string FormatTypeHint(CliParamSchema p)
 	{
@@ -722,12 +716,13 @@ internal static partial class CliMarkdownGenerator
 			"number" => "number",
 			"boolean" => string.Empty,
 			"enum" => "enum",
-			"array" => p.ElementType switch
-			{
-				"enum" => "enum[]",
-				"integer" => "int[]",
-				_ => "string[]"
-			},
+			"array" =>
+				p.ElementType switch
+				{
+					"enum" => "enum[]",
+					"integer" => "int[]",
+					_ => "string[]"
+				},
 			_ => FormatKindV1(type)
 		};
 	}
@@ -744,12 +739,13 @@ internal static partial class CliMarkdownGenerator
 			"Collection<string>" => "string[]",
 			"Collection<int>" or "Collection<Int32>" => "int[]",
 			"Enum" => right.Contains('.') ? right[(right.LastIndexOf('.') + 1)..] : right,
-			"Primitive" => right switch
-			{
-				"string" or "string?" => "string",
-				"int" or "int?" or "Int32" or "Int32?" => "int",
-				_ => string.Empty
-			},
+			"Primitive" =>
+				right switch
+				{
+					"string" or "string?" => "string",
+					"int" or "int?" or "Int32" or "Int32?" => "int",
+					_ => string.Empty
+				},
 			"FileInfo" => "path",
 			"DirectoryInfo" => "path",
 			_ when left.StartsWith("Collection<") => left["Collection<".Length..].TrimEnd('>') + "[]",
@@ -777,9 +773,11 @@ internal static partial class CliMarkdownGenerator
 		while (i < tokens.Length)
 		{
 			var token = tokens[i];
-			if ((token.StartsWith("--") || (token.StartsWith('-') && token.Length == 2))
+			if (
+				(token.StartsWith("--") || (token.StartsWith('-') && token.Length == 2))
 				&& i + 1 < tokens.Length
-				&& (tokens[i + 1].StartsWith('<') || tokens[i + 1].StartsWith("[<")))
+				&& (tokens[i + 1].StartsWith('<') || tokens[i + 1].StartsWith("[<"))
+			)
 			{
 				groups.Add(token + " " + tokens[i + 1]);
 				i += 2;
@@ -810,8 +808,7 @@ internal static partial class CliMarkdownGenerator
 			return [];
 
 		var heading = string.Join(" ", fullPath);
-		return shortcuts
-			.Where(s => string.Join(" ", s.To).Equals(heading, StringComparison.OrdinalIgnoreCase))
+		return shortcuts.Where(s => string.Join(" ", s.To).Equals(heading, StringComparison.OrdinalIgnoreCase))
 			.Select(s => s.From)
 			.ToList();
 	}
@@ -831,7 +828,8 @@ internal static partial class CliMarkdownGenerator
 		string[]? fullPath,
 		string? binaryName,
 		string canonicalUsage,
-		List<CliShortcutSchema>? shortcuts)
+		List<CliShortcutSchema>? shortcuts
+	)
 	{
 		if (shortcuts is not { Count: > 0 } || fullPath is not { Length: > 1 })
 			yield break;
@@ -855,15 +853,11 @@ internal static partial class CliMarkdownGenerator
 				continue;
 
 			// Build alias usage by replacing the canonical prefix in the original usage line
-			var canonicalPrefix = string.Join(" ", binaryName is not null
-				? [binaryName, .. to]
-				: to);
+			var canonicalPrefix = string.Join(" ", binaryName is not null ? [binaryName, .. to] : to);
 			if (!canonicalUsage.StartsWith(canonicalPrefix, StringComparison.OrdinalIgnoreCase))
 				continue; // can't safely rewrite; skip this alias variant
 			var suffix = canonicalUsage[canonicalPrefix.Length..];
-			var aliasBase = binaryName is not null
-				? $"{binaryName} {shortcut.From}"
-				: shortcut.From;
+			var aliasBase = binaryName is not null ? $"{binaryName} {shortcut.From}" : shortcut.From;
 			yield return aliasBase + suffix;
 		}
 	}

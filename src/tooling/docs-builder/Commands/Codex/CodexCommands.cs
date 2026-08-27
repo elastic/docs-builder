@@ -28,11 +28,7 @@ namespace Documentation.Builder.Commands.Codex;
 /// (<c>codex.yml</c>) lists which repositories to include and how to compose the portal.
 /// </para>
 /// </remarks>
-internal sealed class CodexCommands(
-	ILoggerFactory logFactory,
-	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext
-)
+internal sealed class CodexCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector, IConfigurationContext configurationContext)
 {
 	/// <summary>Clone all repositories and build the portal in one step.</summary>
 	/// <remarks>
@@ -52,7 +48,8 @@ internal sealed class CodexCommands(
 		bool assumeCloned = false,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? output = null,
 		bool serve = false,
-		CancellationToken ct = default)
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new CodexFileSystem(config.FullName, output?.FullName);
@@ -65,22 +62,30 @@ internal sealed class CodexCommands(
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		CodexCloneResult? cloneResult = null;
 
-		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict,
+		serviceInvoker.AddCommand(
+			cloneService,
+			(codexContext, fetchLatest, assumeCloned),
+			strict,
 			async (s, col, state, c) =>
 			{
 				cloneResult = await s.CloneAll(state.codexContext, state.fetchLatest, state.assumeCloned, c);
 				return cloneResult.Checkouts.Count > 0;
-			});
+			}
+		);
 
 		var buildService = new CodexBuildService(logFactory, configurationContext);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
+		serviceInvoker.AddCommand(
+			buildService,
+			(codexContext, cloneResult, fs),
+			strict,
 			async (s, col, state, c) =>
 			{
 				if (state.cloneResult == null)
 					return false;
 				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
-			});
+			}
+		);
 
 		var result = await serviceInvoker.InvokeAsync(ct);
 
@@ -106,7 +111,8 @@ internal sealed class CodexCommands(
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
-		CancellationToken ct = default)
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new CodexFileSystem(config.FullName);
@@ -117,12 +123,16 @@ internal sealed class CodexCommands(
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
-		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict,
+		serviceInvoker.AddCommand(
+			cloneService,
+			(codexContext, fetchLatest, assumeCloned),
+			strict,
 			async (s, col, state, c) =>
 			{
 				var result = await s.CloneAll(state.codexContext, state.fetchLatest, state.assumeCloned, c);
 				return result.Checkouts.Count > 0;
-			});
+			}
+		);
 
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -138,7 +148,8 @@ internal sealed class CodexCommands(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? output = null,
-		CancellationToken ct = default)
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = new CodexFileSystem(config.FullName, output?.FullName);
@@ -155,12 +166,16 @@ internal sealed class CodexCommands(
 		}
 
 		var buildService = new CodexBuildService(logFactory, configurationContext);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
+		serviceInvoker.AddCommand(
+			buildService,
+			(codexContext, cloneResult, fs),
+			strict,
 			async (s, col, state, c) =>
 			{
 				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
-			});
+			}
+		);
 
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -169,9 +184,12 @@ internal sealed class CodexCommands(
 	/// <remarks>Run after <c>codex build</c>. Does not rebuild on file changes.</remarks>
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="path">Path to the portal output. Defaults to <c>.artifacts/codex/docs/</c>.</param>
-
 	[NoOptionsInjection]
-	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
+	public async Task Serve(
+		int port = 4000,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null,
+		CancellationToken ct = default
+	)
 	{
 		var servePath = path?.FullName ?? Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 

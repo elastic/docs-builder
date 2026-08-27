@@ -32,7 +32,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		ChangelogConfiguration config,
 		bool titleMissing,
 		bool typeMissing,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Build changelog data from input
 		var changelogData = BuildChangelogData(input);
@@ -62,10 +63,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return true;
 	}
 
-	public async Task<bool> WriteNoteAsync(
-		CreateChangelogArguments input,
-		ChangelogConfiguration config,
-		Cancel ctx)
+	public async Task<bool> WriteNoteAsync(CreateChangelogArguments input, ChangelogConfiguration config, Cancel ctx)
 	{
 		var changelogData = BuildChangelogData(input);
 		var yamlContent = input.Concise
@@ -134,29 +132,37 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			{
 				var joined = $"{string.Join("-", numbers)}.yaml";
 				if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
+
 					return joined;
 				// Too many PRs: use compact format to avoid path-too-long errors
 				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
 			}
 		}
 
-		collector.EmitError(string.Empty,
-			"Could not derive a PR number from the provided --prs values. " +
-			"Changelog entries must be anchored to a PR number. " +
-			"For items with no PR use 'changelog note' instead.");
+		collector.EmitError(
+			string.Empty,
+			"Could not derive a PR number from the provided --prs values. " + "Changelog entries must be anchored to a PR number. " +
+				"For items with no PR use 'changelog note' instead."
+		);
 		return null;
 	}
 
 	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input)
 	{
-		var entryType = ChangelogEntryTypeExtensions.TryParse(input.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? parsed
-			: ChangelogEntryType.Other;
+		var entryType = ChangelogEntryTypeExtensions.TryParse(
+			input.Type,
+			out var parsed,
+			ignoreCase: true,
+			allowMatchingMetadataAttribute: true
+		) ? parsed : ChangelogEntryType.Other;
 
 		var subtype = !string.IsNullOrWhiteSpace(input.Subtype)
-			? (ChangelogEntrySubtypeExtensions.TryParse(input.Subtype, out var subtypeParsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
-				? subtypeParsed
-				: (ChangelogEntrySubtype?)null)
+			? (ChangelogEntrySubtypeExtensions.TryParse(
+				input.Subtype,
+				out var subtypeParsed,
+				ignoreCase: true,
+				allowMatchingMetadataAttribute: true
+			) ? subtypeParsed : (ChangelogEntrySubtype?)null)
 			: null;
 
 		return new()
@@ -241,10 +247,11 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			}
 
 			// Find the first non-empty, non-comment line (start of actual YAML data)
-			var insertIndex = lines.FindIndex(line =>
-				!string.IsNullOrWhiteSpace(line) &&
-				!line.TrimStart().StartsWith('#') &&
-				!line.TrimStart().StartsWith("---", StringComparison.Ordinal));
+			var insertIndex = lines.FindIndex(
+				line =>
+					!string.IsNullOrWhiteSpace(line) && !line.TrimStart().StartsWith('#') &&
+						!line.TrimStart().StartsWith("---", StringComparison.Ordinal)
+			);
 
 			lines.InsertRange(insertIndex >= 0 ? insertIndex : lines.Count, commentedFields);
 
@@ -261,7 +268,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var lifecyclesList = string.Join("\n", config.Lifecycles.Select(l => $"#       - {l.ToStringFast(true)}"));
 
 		// Add schema comments using raw string literal
-		var result = $"""
+		var result =
+			$"""
 			##### Required fields #####
 
 			# title:

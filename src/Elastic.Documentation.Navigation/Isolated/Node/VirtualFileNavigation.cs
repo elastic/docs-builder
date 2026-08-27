@@ -11,9 +11,11 @@ namespace Elastic.Documentation.Navigation.Isolated.Node;
 
 /// Represents a file navigation item that defines children which are not part of the file tree.
 [DebuggerDisplay("{Url}")]
-public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
-	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation
-	where TModel : IDocumentationFile
+public class VirtualFileNavigation<TModel>(
+	TModel model,
+	IFileInfo fileInfo,
+	VirtualFileNavigationArgs args
+) : INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation where TModel : IDocumentationFile
 {
 	/// <inheritdoc />
 	public string Url => Index.Url;
@@ -38,11 +40,22 @@ public class VirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, Vir
 	public string Id => ShortId.Create(NavigationRoot.Id, Index.Url);
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<TModel> Index { get; } =
-		new FileNavigationLeaf<TModel>(model, fileInfo, new FileNavigationArgs(args.RelativePathToDocumentationSet, args.RelativePathToTableOfContents, args.Hidden, args.NavigationIndex, args.Parent, args.HomeAccessor));
+	public ILeafNavigationItem<TModel> Index { get; } = new FileNavigationLeaf<TModel>(
+		model,
+		fileInfo,
+		new FileNavigationArgs(
+			args.RelativePathToDocumentationSet,
+			args.RelativePathToTableOfContents,
+			args.Hidden,
+			args.NavigationIndex,
+			args.Parent,
+			args.HomeAccessor
+		)
+	);
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
 
-	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => NavigationItems = navigationItems;
 }

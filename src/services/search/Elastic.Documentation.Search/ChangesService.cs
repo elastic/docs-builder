@@ -29,29 +29,17 @@ public partial class ChangesService(
 		var cursor = DecodeCursor(request.Cursor);
 		var pageSize = Math.Clamp(request.PageSize, 1, ChangesDefaults.MaxPageSize);
 
-		var internalRequest = new ChangesInternalRequest
-		{
-			Since = request.Since,
-			PageSize = pageSize,
-			Cursor = cursor
-		};
+		var internalRequest = new ChangesInternalRequest { Since = request.Since, PageSize = pageSize, Cursor = cursor };
 
 		var result = await GetChangesInternalAsync(internalRequest, ctx);
 
-		var nextCursor = result.NextCursor is not null
-			? EncodeCursor(result.NextCursor)
-			: null;
+		var nextCursor = result.NextCursor is not null ? EncodeCursor(result.NextCursor) : null;
 
 		var hasMore = nextCursor is not null;
 
 		LogChanges(logger, request.Since, result.Pages.Count, hasMore);
 
-		return new ChangesResponse
-		{
-			Pages = result.Pages,
-			HasMore = hasMore,
-			NextCursor = nextCursor
-		};
+		return new ChangesResponse { Pages = result.Pages, HasMore = hasMore, NextCursor = nextCursor };
 	}
 
 	private async Task<ChangesResult> GetChangesInternalAsync(ChangesInternalRequest request, Cancel ctx = default)
@@ -90,68 +78,58 @@ public partial class ChangesService(
 		}
 	}
 
-	private async Task<EsSearchResponse> Search(
-		ChangesInternalRequest request, string pitId, int fetchSize, Cancel ctx
-	) =>
-		await clientAccessor.Client.SearchAsync<DocumentationDocument>(s =>
-		{
-			_ = s
-				.Size(fetchSize)
-				.TrackTotalHits(t => t.Enabled(false))
-				.Pit(p => p.Id(pitId).KeepAlive(SharedPointInTimeManager.PitKeepAlive))
-				.Query(q => q.Range(r => r
-					.Date(dr => dr
-						.Field(f => f.ContentLastUpdated)
-						.Gt(request.Since.ToString("O"))
-					)
-				))
-				.Sort(
-					so => so.Field(f => f.ContentLastUpdated, sf => sf.Order(SortOrder.Asc)),
-					so => so.Field(f => f.Path, sf => sf.Order(SortOrder.Asc))
-				)
-				.Source(sf => sf
-					.Filter(f => f
-						.Includes(
-							e => e.Path,
-							e => e.Title,
-							e => e.SearchTitle,
-							e => e.ContentType,
-							e => e.ContentLastUpdated
-						)
-					)
-				);
-
-			if (request.Cursor is { } cursor)
+	private async Task<EsSearchResponse> Search(ChangesInternalRequest request, string pitId, int fetchSize, Cancel ctx) =>
+		await clientAccessor.Client.SearchAsync<DocumentationDocument>(
+			s =>
 			{
-				_ = s.SearchAfter(
-					FieldValue.Long(cursor.ContentLastUpdatedEpochMs),
-					FieldValue.String(cursor.Url)
-				);
-			}
-		}, ctx);
+				_ =
+					s.Size(fetchSize)
+						.TrackTotalHits(t => t.Enabled(false))
+						.Pit(p => p.Id(pitId).KeepAlive(SharedPointInTimeManager.PitKeepAlive))
+						.Query(q => q.Range(r => r.Date(dr => dr.Field(f => f.ContentLastUpdated).Gt(request.Since.ToString("O")))))
+						.Sort(
+							so => so.Field(f => f.ContentLastUpdated, sf => sf.Order(SortOrder.Asc)),
+							so => so.Field(f => f.Path, sf => sf.Order(SortOrder.Asc))
+						)
+						.Source(
+							sf =>
+								sf.Filter(
+									f =>
+										f.Includes(
+											e => e.Path,
+											e => e.Title,
+											e => e.SearchTitle,
+											e => e.ContentType,
+											e => e.ContentLastUpdated
+										)
+								)
+						);
+
+				if (request.Cursor is { } cursor)
+				{
+					_ = s.SearchAfter(FieldValue.Long(cursor.ContentLastUpdatedEpochMs), FieldValue.String(cursor.Url));
+				}
+			},
+			ctx
+		);
 
 	private static bool IsExpiredPit(EsSearchResponse response) =>
 		response.ElasticsearchServerError?.Error?.Type is "search_phase_execution_exception"
-		|| response.ElasticsearchServerError?.Error?.Reason?.Contains("point in time", StringComparison.OrdinalIgnoreCase) == true
-		|| response.ElasticsearchServerError?.Error?.Reason?.Contains("No search context found", StringComparison.OrdinalIgnoreCase) == true;
+			|| response.ElasticsearchServerError?.Error?.Reason?.Contains("point in time", StringComparison.OrdinalIgnoreCase) == true
+			|| response.ElasticsearchServerError?.Error?.Reason?.Contains("No search context found", StringComparison.OrdinalIgnoreCase)
+				== true;
 
 	private static ChangesResult BuildResult(EsSearchResponse response, int pageSize)
 	{
 		var hits = response.Hits.ToList();
 		var hasMore = hits.Count > pageSize;
 
-		var pages = hits
-			.Take(pageSize)
+		var pages = hits.Take(pageSize)
 			.Where(h => h.Source is not null)
 			.Select(h =>
 			{
 				var doc = h.Source!;
-				return new ChangedPageDto
-				{
-					Url = doc.Path,
-					Title = doc.Title,
-					LastUpdated = doc.ContentLastUpdated
-				};
+				return new ChangedPageDto { Url = doc.Path, Title = doc.Title, LastUpdated = doc.ContentLastUpdated };
 			})
 			.ToList();
 
@@ -165,20 +143,16 @@ public partial class ChangesService(
 				var sortUrl = lastHit.Sort.ElementAt(1);
 
 				// ES returns date sort values as double (JSON has no int/float distinction)
-				var epochMs = sortEpoch.TryGetLong(out var l) ? l!.Value
-					: sortEpoch.TryGetDouble(out var d) ? (long)d!.Value
-					: default(long?);
+				var epochMs = sortEpoch.TryGetLong(out var l)
+					? l!.Value
+					: sortEpoch.TryGetDouble(out var d) ? (long)d!.Value : default(long?);
 
 				if (epochMs is not null && sortUrl.TryGetString(out var url))
 					nextCursor = new ChangesPageCursor(epochMs.Value, url!);
 			}
 		}
 
-		return new ChangesResult
-		{
-			Pages = pages,
-			NextCursor = nextCursor
-		};
+		return new ChangesResult { Pages = pages, NextCursor = nextCursor };
 	}
 
 	private static ChangesPageCursor? DecodeCursor(string? cursor)
@@ -190,10 +164,7 @@ public partial class ChangesService(
 		{
 			var remainder = cursor.Length % 4;
 			var paddingLength = (4 - remainder) % 4;
-			var base64 = cursor
-				.Replace('-', '+')
-				.Replace('_', '/')
-				+ new string('=', paddingLength);
+			var base64 = cursor.Replace('-', '+').Replace('_', '/') + new string('=', paddingLength);
 
 			var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
 			using var doc = JsonDocument.Parse(json);
@@ -225,14 +196,10 @@ public partial class ChangesService(
 		writer.WriteEndArray();
 		writer.Flush();
 
-		return Convert.ToBase64String(buffer.WrittenSpan)
-			.TrimEnd('=')
-			.Replace('+', '-')
-			.Replace('/', '_');
+		return Convert.ToBase64String(buffer.WrittenSpan).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 	}
 
-	[LoggerMessage(Level = LogLevel.Information,
-		Message = "Changes feed returned {Count} pages since {Since} (hasMore: {HasMore})")]
+	[LoggerMessage(Level = LogLevel.Information, Message = "Changes feed returned {Count} pages since {Since} (hasMore: {HasMore})")]
 	private static partial void LogChanges(ILogger logger, DateTimeOffset since, int count, bool hasMore);
 
 	[LoggerMessage(Level = LogLevel.Warning, Message = "PIT expired or not found, opening a new one and retrying with existing search_after position")]

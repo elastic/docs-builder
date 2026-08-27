@@ -29,14 +29,11 @@ public static class SectionTopNavBuilder
 		// Index plain toc: items by Identifier for fast lookup.
 		// Sections with children now live in the tree as SectionNavigation nodes and
 		// are looked up by title instead.
-		var byIdentifier = topLevel
-			.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+		var byIdentifier = topLevel.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
 			.Where(item => item is not SectionNavigation)
 			.ToDictionary(item => item.Identifier);
 
-		var sectionsByTitle = topLevel
-			.OfType<SectionNavigation>()
-			.ToDictionary(s => s.Title, StringComparer.OrdinalIgnoreCase);
+		var sectionsByTitle = topLevel.OfType<SectionNavigation>().ToDictionary(s => s.Title, StringComparer.OrdinalIgnoreCase);
 
 		var items = new List<TopNavRenderItem>();
 
@@ -58,8 +55,7 @@ public static class SectionTopNavBuilder
 
 					if (tabUrl is not null)
 					{
-						items.Add(new TopNavLinkItem(section.Title, tabUrl, IsExternal: false,
-							SectionId: sectionNav.Id));
+						items.Add(new TopNavLinkItem(section.Title, tabUrl, IsExternal: false, SectionId: sectionNav.Id));
 					}
 				}
 			}
@@ -68,11 +64,7 @@ public static class SectionTopNavBuilder
 				// Plain toc: entry — one tab, active when NavigationRoot.Id == item.Id
 				if (byIdentifier.TryGetValue(tocRef.Source, out var navItem))
 				{
-					items.Add(new TopNavLinkItem(
-						navItem.NavigationTitle,
-						navItem.Index.Url,
-						IsExternal: false,
-						SectionId: navItem.Id));
+					items.Add(new TopNavLinkItem(navItem.NavigationTitle, navItem.Index.Url, IsExternal: false, SectionId: navItem.Id));
 				}
 			}
 		}

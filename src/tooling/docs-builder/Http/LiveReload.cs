@@ -14,6 +14,7 @@ using Microsoft.Extensions.Hosting;
 // ReSharper disable once CheckNamespace
 #pragma warning disable IDE0130
 namespace Westwind.AspNetCore.LiveReload;
+
 #pragma warning restore IDE0130
 
 // This exists to disable AOT trimming error messages for the LiveReload middleware's own AddLiveReload() method.
@@ -25,7 +26,6 @@ public static class LiveReloadMiddlewareExtensions
 {
 	public static IServiceCollection AddAotLiveReload(this IServiceCollection services, Action<LiveReloadConfiguration> configAction)
 	{
-
 		var provider = services.BuildServiceProvider();
 		var configuration = provider.GetService<IConfiguration>();
 
@@ -63,20 +63,20 @@ public static class LiveReloadMiddlewareExtensions
 		return services;
 	}
 
-	public static IApplicationBuilder UseLiveReloadWithManualScriptInjection(this IApplicationBuilder builder, IHostApplicationLifetime webApplicationLifetime)
+	public static IApplicationBuilder UseLiveReloadWithManualScriptInjection(
+		this IApplicationBuilder builder,
+		IHostApplicationLifetime webApplicationLifetime
+	)
 	{
 		var config = LiveReloadConfiguration.Current;
 
 		if (config.LiveReloadEnabled)
 		{
-			var webSocketOptions = new WebSocketOptions
-			{
-				KeepAliveInterval = TimeSpan.FromSeconds(300)
-			};
+			var webSocketOptions = new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(300) };
 			_ = builder.UseWebSockets(webSocketOptions);
 
-			_ = builder
-				.Use((context, next) =>
+			_ =
+				builder.Use((context, next) =>
 				{
 					var middleWare = new NoInjectLiveReloadMiddleware(next, webApplicationLifetime);
 					return middleWare.InvokeAsync(context);
@@ -90,12 +90,14 @@ public static class LiveReloadMiddlewareExtensions
 	}
 }
 
-
 /// <inheritdoc />
 public class NoInjectLiveReloadMiddleware(RequestDelegate next, IHostApplicationLifetime lifeTime) : LiveReloadMiddleware(next, lifeTime)
 {
 	private readonly MethodInfo _handleWebSocketRequest =
-		typeof(LiveReloadMiddleware).GetMethod("HandleWebSocketRequest", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod)!;
+		typeof(LiveReloadMiddleware).GetMethod(
+			"HandleWebSocketRequest",
+			BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod
+		)!;
 
 	private readonly RequestDelegate _next = next;
 

@@ -17,8 +17,7 @@ public class AwsS3SyncPlanStrategy(
 	string bucketName,
 	IDocsSyncContext context,
 	IS3EtagCalculator? calculator = null
-)
-	: IDocsSyncPlanStrategy
+) : IDocsSyncPlanStrategy
 {
 	private readonly IS3EtagCalculator _s3EtagCalculator = calculator ?? new S3EtagCalculator(logFactory, context.ReadFileSystem);
 
@@ -28,8 +27,7 @@ public class AwsS3SyncPlanStrategy(
 		return fileInfo.LinkTarget != null;
 	}
 
-	private static bool IsExcluded(string destinationPath, Glob[] globs) =>
-		globs.Length > 0 && globs.Any(g => g.IsMatch(destinationPath));
+	private static bool IsExcluded(string destinationPath, Glob[] globs) => globs.Length > 0 && globs.Any(g => g.IsMatch(destinationPath));
 
 	/// <summary>
 	/// Normalize an exclude pattern so it behaves like <c>aws s3 sync --exclude</c>, where
@@ -46,57 +44,47 @@ public class AwsS3SyncPlanStrategy(
 
 		// Start S3 listing in background while scanning local files concurrently
 		var listTask = ListObjects(ctx);
-		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories)
-			.Where(f => !IsSymlink(f.FullName))
-			.ToArray();
+		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories).Where(f => !IsSymlink(f.FullName)).ToArray();
 		var (readToCompletion, remoteObjects) = await listTask;
 		var deleteRequests = new ConcurrentBag<DeleteRequest>();
 		var addRequests = new ConcurrentBag<AddRequest>();
 		var updateRequests = new ConcurrentBag<UpdateRequest>();
 		var skipRequests = new ConcurrentBag<SkipRequest>();
 
-		await Parallel.ForEachAsync(localObjects, ctx, async (localFile, token) =>
-		{
-			var relativePath = Path.GetRelativePath(context.OutputDirectory.FullName, localFile.FullName);
-			var destinationPath = relativePath.Replace('\\', '/');
-
-			if (IsExcluded(destinationPath, excludeGlobs))
-				return;
-
-			if (remoteObjects.TryGetValue(destinationPath, out var remoteObject))
+		await Parallel.ForEachAsync(
+			localObjects,
+			ctx,
+			async (localFile, token) =>
 			{
-				// Check if the ETag differs for updates
-				var localETag = await _s3EtagCalculator.CalculateS3ETag(localFile.FullName, token);
-				var remoteETag = remoteObject.ETag.Trim('"'); // Remove quotes from remote ETag
-				if (localETag == remoteETag)
+				var relativePath = Path.GetRelativePath(context.OutputDirectory.FullName, localFile.FullName);
+				var destinationPath = relativePath.Replace('\\', '/');
+
+				if (IsExcluded(destinationPath, excludeGlobs))
+					return;
+
+				if (remoteObjects.TryGetValue(destinationPath, out var remoteObject))
 				{
-					var skipRequest = new SkipRequest
+					// Check if the ETag differs for updates
+					var localETag = await _s3EtagCalculator.CalculateS3ETag(localFile.FullName, token);
+					var remoteETag = remoteObject.ETag.Trim('"'); // Remove quotes from remote ETag
+					if (localETag == remoteETag)
 					{
-						LocalPath = localFile.FullName,
-						DestinationPath = remoteObject.Key
-					};
-					skipRequests.Add(skipRequest);
+						var skipRequest = new SkipRequest { LocalPath = localFile.FullName, DestinationPath = remoteObject.Key };
+						skipRequests.Add(skipRequest);
+					}
+					else
+					{
+						var updateRequest = new UpdateRequest() { LocalPath = localFile.FullName, DestinationPath = remoteObject.Key };
+						updateRequests.Add(updateRequest);
+					}
 				}
 				else
 				{
-					var updateRequest = new UpdateRequest()
-					{
-						LocalPath = localFile.FullName,
-						DestinationPath = remoteObject.Key
-					};
-					updateRequests.Add(updateRequest);
+					var addRequest = new AddRequest { LocalPath = localFile.FullName, DestinationPath = destinationPath };
+					addRequests.Add(addRequest);
 				}
 			}
-			else
-			{
-				var addRequest = new AddRequest
-				{
-					LocalPath = localFile.FullName,
-					DestinationPath = destinationPath
-				};
-				addRequests.Add(addRequest);
-			}
-		});
+		);
 
 		// Find deletions (files in S3 but not locally), honouring excludes
 		foreach (var remoteObject in remoteObjects)
@@ -106,10 +94,7 @@ public class AwsS3SyncPlanStrategy(
 			var localPath = Path.Join(context.OutputDirectory.FullName, remoteObject.Key.Replace('/', Path.DirectorySeparatorChar));
 			if (context.ReadFileSystem.File.Exists(localPath))
 				continue;
-			var deleteRequest = new DeleteRequest
-			{
-				DestinationPath = remoteObject.Key
-			};
+			var deleteRequest = new DeleteRequest { DestinationPath = remoteObject.Key };
 			deleteRequests.Add(deleteRequest);
 		}
 
@@ -130,11 +115,7 @@ public class AwsS3SyncPlanStrategy(
 
 	private async Task<(bool readToCompletion, Dictionary<string, S3Object> objects)> ListObjects(Cancel ctx = default)
 	{
-		var listBucketRequest = new ListObjectsV2Request
-		{
-			BucketName = bucketName,
-			MaxKeys = 1000
-		};
+		var listBucketRequest = new ListObjectsV2Request { BucketName = bucketName, MaxKeys = 1000 };
 		var objects = new List<S3Object>();
 		var bucketExists = await S3BucketExists(ctx);
 		if (!bucketExists)
@@ -159,7 +140,8 @@ public class AwsS3SyncPlanStrategy(
 			}
 			objects.AddRange(response.S3Objects);
 			listBucketRequest.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return (readToCompletion, objects.ToDictionary(o => o.Key));
 	}
@@ -169,10 +151,7 @@ public class AwsS3SyncPlanStrategy(
 		//https://docs.aws.amazon.com/code-library/latest/ug/s3_example_s3_Scenario_DoesBucketExist_section.html
 		try
 		{
-			_ = await s3Client.GetBucketAclAsync(new GetBucketAclRequest
-			{
-				BucketName = bucketName
-			}, ctx);
+			_ = await s3Client.GetBucketAclAsync(new GetBucketAclRequest { BucketName = bucketName }, ctx);
 			return true;
 		}
 		catch
