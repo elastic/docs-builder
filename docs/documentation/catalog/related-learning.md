@@ -23,7 +23,7 @@ links:
 * `title`: The link text shown on the page. Required.
 * `url`: An absolute `http` or `https` URL. Required.
 
-Pages are not listed in this file. Authors place `{related-learning}` on the page and pass `:ids:` for the destinations to show.
+Pages are not listed in this file. Authors place `{related-learning}` on the page and pass catalog IDs as the directive argument.
 
 ## Starter entries
 

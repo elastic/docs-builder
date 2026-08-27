@@ -10,8 +10,7 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
 """
-:::{related-learning}
-:ids: apm-with-elastic
+:::{related-learning} apm-with-elastic
 :::
 """
 )
@@ -71,8 +70,7 @@ public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest
 
 public class RelatedLearningOrderTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
 """
-:::{related-learning}
-:ids: index-basics, apm-with-elastic
+:::{related-learning} index-basics, apm-with-elastic
 :::
 """
 )
@@ -90,8 +88,7 @@ public class RelatedLearningOrderTests(ITestOutputHelper output) : DirectiveTest
 
 public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
 """
-:::{related-learning}
-:ids: elastic-agent
+:::{related-learning} elastic-agent
 :heading: Learn Elastic Agent
 :::
 """
@@ -124,8 +121,7 @@ public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : Dir
 
 public class RelatedLearningUnknownIdTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
 """
-:::{related-learning}
-:ids: not-a-module
+:::{related-learning} not-a-module
 :::
 """
 )
@@ -143,8 +139,7 @@ public class RelatedLearningUnknownIdTests(ITestOutputHelper output) : Directive
 
 public class RelatedLearningDuplicateIdTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
 """
-:::{related-learning}
-:ids: apm-with-elastic, apm-with-elastic
+:::{related-learning} apm-with-elastic, apm-with-elastic
 :::
 """
 )
@@ -166,10 +161,10 @@ public class RelatedLearningEmptyIdsTests(ITestOutputHelper output) : DirectiveT
 )
 {
 	[Fact]
-	public void EmitsErrorWhenIdsMissing()
+	public void EmitsErrorWhenArgumentMissing()
 	{
 		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("requires :ids:"));
+			d.Severity == Severity.Error && d.Message.Contains("requires at least one catalog ID as an argument"));
 		Block!.Items.Should().BeEmpty();
 	}
 }

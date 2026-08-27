@@ -51,17 +51,17 @@ public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext con
 
 	private IReadOnlyList<RelatedLearningLink> ResolveItems(ParserContext context)
 	{
-		var raw = Prop("ids");
+		var raw = Arguments?.Trim();
 		if (string.IsNullOrWhiteSpace(raw))
 		{
-			this.EmitError("{related-learning} requires :ids: with at least one catalog ID.");
+			this.EmitError("{related-learning} requires at least one catalog ID as an argument.");
 			return [];
 		}
 
 		var ids = raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 		if (ids.Length == 0)
 		{
-			this.EmitError("{related-learning} requires :ids: with at least one catalog ID.");
+			this.EmitError("{related-learning} requires at least one catalog ID as an argument.");
 			return [];
 		}
 

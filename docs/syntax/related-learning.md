@@ -4,25 +4,22 @@ The `{related-learning}` directive adds a **Related learning** section that link
 
 The heading is part of the directive, so it appears in **On this page**.
 
-:::{related-learning}
-:ids: apm-with-elastic
+:::{related-learning} apm-with-elastic
 :::
 
 ## Basic usage
 
-List one or more catalog IDs. Display order matches `:ids:`.
+List one or more catalog IDs as the directive argument. Display order matches the argument.
 
 :::::::{tab-set}
 ::::::{tab-item} Output
-:::{related-learning}
-:ids: apm-with-elastic
+:::{related-learning} apm-with-elastic
 :::
 ::::::
 
 ::::::{tab-item} Markdown
 ```markdown
-:::{related-learning}
-:ids: apm-with-elastic
+:::{related-learning} apm-with-elastic
 :::
 ```
 ::::::
@@ -33,8 +30,7 @@ List one or more catalog IDs. Display order matches `:ids:`.
 Separate IDs with commas. Order is the order of the list.
 
 ```markdown
-:::{related-learning}
-:ids: index-basics, data-types-and-mappings
+:::{related-learning} index-basics, data-types-and-mappings
 :::
 ```
 
@@ -43,15 +39,14 @@ Separate IDs with commas. Order is the order of the list.
 `:heading:` is optional. The default is `Related learning`. A custom heading also changes the **On this page** slug (the default heading uses the slug `related-learning-heading`).
 
 ```markdown
-:::{related-learning}
-:ids: elastic-agent
+:::{related-learning} elastic-agent
 :heading: Learn Elastic Agent
 :::
 ```
 
-## Options
+## Argument and options
 
-`:ids:`
+Argument
 :   Required. Comma-separated catalog IDs. Unknown IDs fail the build. Duplicate IDs emit a warning and are skipped.
 
 `:heading:`
