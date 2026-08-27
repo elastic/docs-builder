@@ -34,6 +34,8 @@ api/docs-builder-elasticsearch/
 
 A top-level `.md` file that is not `op-*.md` or `tag-*.md` is not a supplemental file. If you want that file as its own page, list it under `children:`.
 
+If the file lives under the documentation source directory, give it a `#` title so the docset scanner has a page title. That heading is not the operation description. Use `## Description` for the generated API page.
+
 ## Heading rules
 
 Headings control how {{dbuild}} merges the file into the generated page.
