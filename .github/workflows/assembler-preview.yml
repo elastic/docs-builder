@@ -147,7 +147,7 @@ jobs:
         env:
           DOCS_ENV: preview
           DOCS_PREVIEW_BASE_URL: https://docs-v3-preview.elastic.dev/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
-        run: npm run synthetics:test
+        run: npm run synthetics:test:preview
 
       - name: Run accessibility synthetics
         id: synthetics-accessibility

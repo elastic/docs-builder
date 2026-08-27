@@ -180,10 +180,10 @@ journey('navigation test', ({ page, params }) => {
                 page.locator('#pages-nav .pages-nav-v2__heading-text')
             ).toHaveText('Reference')
             await page
-                .locator('#pages-nav a[href$="/docs/reference/elasticsearch"]')
+                .locator('#pages-nav a[href$="/reference/elasticsearch"]')
                 .first()
                 .click()
-            await expect(page).toHaveURL(/\/docs\/reference\/elasticsearch/)
+            await expect(page).toHaveURL(/\/reference\/elasticsearch/)
             await expect(
                 page.locator('#pages-nav .pages-nav-v2__heading-text')
             ).toHaveText('Elasticsearch')
@@ -191,7 +191,7 @@ journey('navigation test', ({ page, params }) => {
                 page.locator('#pages-nav .nav-v2-nav-text').first()
             ).toHaveText('Overview')
             await page.goBack()
-            await expect(page).toHaveURL(/\/docs\/reference\/?$/)
+            await expect(page).toHaveURL(/\/reference\/?$/)
             await expect(
                 page.locator('#pages-nav .pages-nav-v2__heading-text')
             ).toHaveText('Reference')
