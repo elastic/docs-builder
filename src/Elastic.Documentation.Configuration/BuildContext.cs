@@ -20,8 +20,11 @@ namespace Elastic.Documentation.Configuration;
 
 public record BuildContext : IDocumentationSetContext, IDocumentationConfigurationContext
 {
-	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
-		.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
+	public static string Version { get; } = Assembly
+		.GetExecutingAssembly()
+		.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+		.FirstOrDefault()?.InformationalVersion
+		?? "0.0.0";
 
 	/// <summary>The resolved documentation filesystem. All other path/scope properties are computed from this.</summary>
 	public DocumentationFileSystem FileSystem { get; }
@@ -70,11 +73,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public OptimizelyConfiguration Optimizely { get; init; }
 	public Uri? CanonicalBaseUrl { get; init; }
 
-	public string? UrlPathPrefix
-	{
-		get => string.IsNullOrWhiteSpace(field) ? "" : $"/{field.Trim('/')}";
-		init;
-	}
+	public string? UrlPathPrefix { get => string.IsNullOrWhiteSpace(field) ? "" : $"/{field.Trim('/')}"; init; }
 
 	/// <summary>Site root path for HTMX (e.g. codex root). When set, overrides derivation from UrlPathPrefix.</summary>
 	public string? SiteRootPath { get; init; }
@@ -103,7 +102,6 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
 		Optimizely = new OptimizelyConfiguration { Enabled = false };
-
 
 		ConfigurationYaml = ConfigurationPath.Exists
 			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, fileSystem.Read)

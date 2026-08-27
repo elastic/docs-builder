@@ -18,7 +18,8 @@ namespace Elastic.Changelog.Tests.Changelogs;
 public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
 	// language=yaml
-	private const string Entry = """
+	private const string Entry =
+		"""
 		title: Sample change
 		type: feature
 		products:
@@ -33,11 +34,19 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 	{
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
-		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(_changelogDir, "entry.yaml"), Entry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(_changelogDir, "entry.yaml"),
+			Entry,
+			TestContext.Current.CancellationToken
+		);
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent.Replace("CHANGELOG_DIR", _changelogDir), TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			configContent.Replace("CHANGELOG_DIR", _changelogDir),
+			TestContext.Current.CancellationToken
+		);
 		return configPath;
 	}
 
@@ -46,7 +55,8 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public async Task ProfileWithOutputPattern_EmitsHardError()
 	{
-		var configPath = await WriteConfig("""
+		var configPath = await WriteConfig(
+			"""
 			bundle:
 			  directory: CHANGELOG_DIR
 			  use_local_changelogs: true
@@ -54,16 +64,21 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 			    es-release:
 			      products: "elasticsearch {version} *"
 			      output: "elasticsearch-{version}.yaml"
-			""");
+			"""
+		);
 
 		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("'output' is no longer supported") &&
-			d.Message.Contains("{product}-{version}.yaml"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("'output' is no longer supported") && d.Message.Contains(
+					"{product}-{version}.yaml"
+				)
+			);
 	}
 
 	[Fact]
@@ -71,7 +86,8 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// The validation covers every profile in the file, not just the invoked one — a stale
 		// output: elsewhere would silently produce an unexpected path on its next invocation.
-		var configPath = await WriteConfig("""
+		var configPath = await WriteConfig(
+			"""
 			bundle:
 			  directory: CHANGELOG_DIR
 			  use_local_changelogs: true
@@ -81,20 +97,21 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 			    legacy:
 			      products: "cloud-hosted {version} *"
 			      output: "legacy-{version}.yaml"
-			""");
+			"""
+		);
 
 		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("Profile 'legacy'"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Profile 'legacy'"));
 	}
 
 	[Fact]
 	public async Task ProfilesCollidingOnPrimaryProduct_EmitError()
 	{
-		var configPath = await WriteConfig("""
+		var configPath = await WriteConfig(
+			"""
 			bundle:
 			  directory: CHANGELOG_DIR
 			  use_local_changelogs: true
@@ -105,22 +122,28 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 			    es-all:
 			      products: "elasticsearch {version} *"
 			      output_products: "elasticsearch {version}"
-			""");
+			"""
+		);
 
 		var input = new BundleChangelogsArguments { Profile = "es-ga", ProfileArgument = "9.3.0", Config = configPath };
 		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("'es-all', 'es-ga'") &&
-			d.Message.Contains("elasticsearch-{version}.yaml"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("'es-all', 'es-ga'") && d.Message.Contains(
+					"elasticsearch-{version}.yaml"
+				)
+			);
 	}
 
 	[Fact]
 	public async Task ProfileWithoutOutput_WritesConventionalName()
 	{
-		var configPath = await WriteConfig("""
+		var configPath = await WriteConfig(
+			"""
 			bundle:
 			  directory: CHANGELOG_DIR
 			  use_local_changelogs: true
@@ -128,33 +151,40 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 			    es-release:
 			      products: "elasticsearch {version} *"
 			      output_products: "elasticsearch {version}"
-			""");
+			"""
+		);
 
 		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
-		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch-9.3.0.yaml"))
-			.Should().BeTrue("bundle names derive from the primary output product and version");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch-9.3.0.yaml"))
+			.Should()
+			.BeTrue("bundle names derive from the primary output product and version");
 	}
 
 	[Fact]
 	public async Task Plan_ProfileWithOutputPattern_FailsTheSameWay()
 	{
-		var configPath = await WriteConfig("""
+		var configPath = await WriteConfig(
+			"""
 			bundle:
 			  directory: CHANGELOG_DIR
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} *"
 			      output: "elasticsearch-{version}.yaml"
-			""");
+			"""
+		);
 
 		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 		var plan = await Service().PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		plan.Should().BeNull();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("'output' is no longer supported"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("'output' is no longer supported"));
 	}
 }

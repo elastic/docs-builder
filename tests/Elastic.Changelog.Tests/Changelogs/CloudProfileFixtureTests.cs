@@ -32,7 +32,8 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 	// A feature entry whose only PR points at an allowlisted public repo (kept on scrub) plus a PR to a
 	// non-allowlisted repo (scrubbed away).
 	// language=yaml
-	private const string FeatureEntry = """
+	private const string FeatureEntry =
+		"""
 		title: Faster hosted search
 		type: feature
 		products:
@@ -46,7 +47,8 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 
 	// A docs entry that matches the product/target filter but must be dropped by rules.bundle.exclude_types.
 	// language=yaml
-	private const string DocsEntry = """
+	private const string DocsEntry =
+		"""
 		title: Tidy up the hosted docs
 		type: docs
 		products:
@@ -59,7 +61,8 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 
 	// A feature for a different product; excluded by the profile's cloud-hosted product filter.
 	// language=yaml
-	private const string OtherProductEntry = """
+	private const string OtherProductEntry =
+		"""
 		title: Serverless-only change
 		type: feature
 		products:
@@ -74,19 +77,20 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 	private const string RegistryJson =
 		"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "1-feature.yaml" }, { "file": "2-docs.yaml" }, { "file": "3-other.yaml" } ] }""";
 
-	private StubHandler RepoPoolHandler() => new(req =>
-	{
-		var path = req.RequestUri!.AbsolutePath;
-		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-			return Json(RegistryJson);
-		if (path.EndsWith("1-feature.yaml", StringComparison.Ordinal))
-			return Yaml(FeatureEntry);
-		if (path.EndsWith("2-docs.yaml", StringComparison.Ordinal))
-			return Yaml(DocsEntry);
-		if (path.EndsWith("3-other.yaml", StringComparison.Ordinal))
-			return Yaml(OtherProductEntry);
-		return new HttpResponseMessage(HttpStatusCode.NotFound);
-	});
+	private StubHandler RepoPoolHandler() =>
+		new(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("1-feature.yaml", StringComparison.Ordinal))
+				return Yaml(FeatureEntry);
+			if (path.EndsWith("2-docs.yaml", StringComparison.Ordinal))
+				return Yaml(DocsEntry);
+			if (path.EndsWith("3-other.yaml", StringComparison.Ordinal))
+				return Yaml(OtherProductEntry);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
 
 	private CdnChangelogEntryFetcher Fetcher(StubHandler handler) =>
 		new(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
@@ -100,13 +104,24 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		// Write entries to a local changelog directory (use_local_changelogs: true forces local sourcing).
 		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		FileSystem.Directory.CreateDirectory(changelogDir);
-		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(changelogDir, "1-feature.yaml"), FeatureEntry, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(changelogDir, "2-docs.yaml"), DocsEntry, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(changelogDir, "3-other.yaml"), OtherProductEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "1-feature.yaml"),
+			FeatureEntry,
+			TestContext.Current.CancellationToken
+		);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "2-docs.yaml"),
+			DocsEntry,
+			TestContext.Current.CancellationToken
+		);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "3-other.yaml"),
+			OtherProductEntry,
+			TestContext.Current.CancellationToken
+		);
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			products:
 			  available:
 			    - cloud-hosted
@@ -134,7 +149,10 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 			    wh-monthly:
 			      products: "cloud-hosted {version}-* *"
 			      output_products: "cloud-hosted {version}"
-			""".Replace("OUTPUT_DIR", outputDir).Replace("CHANGELOG_DIR", changelogDir);
+			""".Replace(
+			"OUTPUT_DIR",
+			outputDir
+		).Replace("CHANGELOG_DIR", changelogDir);
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -143,16 +161,13 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		var handler = RepoPoolHandler();
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler));
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "wh-monthly",
-			ProfileArgument = "2026-05",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "wh-monthly", ProfileArgument = "2026-05", Config = configPath };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		// use_local_changelogs: true forces local sourcing; the CDN must not be touched.
@@ -173,8 +188,10 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		// Link allowlist: the allowlisted public PR is kept verbatim; the non-allowlisted repo reference is
 		// rewritten to a "# PRIVATE:" sentinel rather than left as a live link.
 		bundle.Should().Contain("- https://github.com/elastic/elasticsearch/pull/100");
-		bundle.Should().Contain("# PRIVATE: https://github.com/elastic/widget-internal/pull/7",
-			"non-allowlisted PR links must be scrubbed to a PRIVATE sentinel in bundle output");
+		bundle.Should().Contain(
+			"# PRIVATE: https://github.com/elastic/widget-internal/pull/7",
+			"non-allowlisted PR links must be scrubbed to a PRIVATE sentinel in bundle output"
+		);
 
 		// release_dates: false → no auto-populated release date.
 		bundle.Should().NotContain("release_date");

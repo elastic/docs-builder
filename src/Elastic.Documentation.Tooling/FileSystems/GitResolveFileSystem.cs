@@ -29,16 +29,11 @@ public class GitResolveFileSystem : ScopedFileSystem
 		IDirectoryInfo anchor,
 		int maxParents = 1,
 		IReadOnlyList<string>? gitDirectories = null,
-		IFileSystem? inner = null)
-		: base(inner ?? new FileSystem(), BuildOptions(anchor, maxParents, gitDirectories))
-	{
-	}
+		IFileSystem? inner = null
+	) : base(inner ?? new FileSystem(), BuildOptions(anchor, maxParents, gitDirectories)) { }
 #pragma warning restore IDE0290
 
-	private static ScopedFileSystemOptions BuildOptions(
-		IDirectoryInfo anchor,
-		int maxParents,
-		IReadOnlyList<string>? gitDirectories)
+	private static ScopedFileSystemOptions BuildOptions(IDirectoryInfo anchor, int maxParents, IReadOnlyList<string>? gitDirectories)
 	{
 		// Walk maxParents above the anchor to get the scope root.
 		var root = anchor;

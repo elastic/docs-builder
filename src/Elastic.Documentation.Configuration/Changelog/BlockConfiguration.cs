@@ -214,9 +214,7 @@ public static class BundleRulesExtensions
 		if (bundleRules.ByProduct is { Count: > 0 })
 			return BundleFilterMode.PerProductContext;
 
-		if ((bundleRules.ExcludeProducts?.Count ?? 0) > 0 ||
-			(bundleRules.IncludeProducts?.Count ?? 0) > 0 ||
-			bundleRules.Blocker != null)
+		if ((bundleRules.ExcludeProducts?.Count ?? 0) > 0 || (bundleRules.IncludeProducts?.Count ?? 0) > 0 || bundleRules.Blocker != null)
 			return BundleFilterMode.GlobalContent;
 
 		return BundleFilterMode.NoFiltering;

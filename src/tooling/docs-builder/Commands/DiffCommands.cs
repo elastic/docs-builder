@@ -14,11 +14,7 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands;
 
-internal sealed class DiffCommand(
-	ILoggerFactory logFactory,
-	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext
-)
+internal sealed class DiffCommand(ILoggerFactory logFactory, IDiagnosticsCollector collector, IConfigurationContext configurationContext)
 {
 	/// <summary>Verify every renamed or removed page in the current branch has a redirect entry.</summary>
 	/// <remarks>
@@ -35,8 +31,10 @@ internal sealed class DiffCommand(
 		var service = new LocalChangeTrackingService(logFactory, configurationContext);
 		var fs = DocumentationFileSystem.Resolve(path ?? Paths.WorkingDirectoryRoot.FullName);
 
-		serviceInvoker.AddCommand(service, (path, fs),
-			async static (s, collector, state, _) => await s.ValidateRedirects(collector, state.path, state.fs)
+		serviceInvoker.AddCommand(
+			service,
+			(path, fs),
+			static async (s, collector, state, _) => await s.ValidateRedirects(collector, state.path, state.fs)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

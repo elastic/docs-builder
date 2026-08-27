@@ -21,10 +21,7 @@ public class ZeroVersion() : SemVersion(0, 0, 0)
 /// <summary>
 /// A semver2 compatible version.
 /// </summary>
-public partial class SemVersion :
-	IEquatable<SemVersion>,
-	IComparable<SemVersion>,
-	IComparable
+public partial class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable
 {
 	// https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
 	private static readonly Regex Regex = MyRegex();
@@ -194,11 +191,7 @@ public partial class SemVersion :
 	/// <param name="metadata">The metadata version part, or <c>null</c> to keep the current value.</param>
 	/// <returns></returns>
 	public SemVersion Update(int? major = null, int? minor = null, int? patch = null, string? prerelease = null, string? metadata = null) =>
-		new(major ?? Major,
-			minor ?? Minor,
-			patch ?? Patch,
-			prerelease ?? Prerelease,
-			metadata ?? Metadata);
+		new(major ?? Major, minor ?? Minor, patch ?? Patch, prerelease ?? Prerelease, metadata ?? Metadata);
 
 	/// <summary>
 	/// Compares the current version to another version in a natural way (by component/part precedence).
@@ -234,11 +227,13 @@ public partial class SemVersion :
 
 	/// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
 	public bool Equals(SemVersion? other) =>
-		other is not null && (
-			ReferenceEquals(this, other)
-			|| (Major == other.Major && Minor == other.Minor && Patch == other.Patch
-				&& Prerelease == other.Prerelease && Metadata == other.Metadata)
-		);
+		other is not null
+			&& (ReferenceEquals(this, other)
+				|| (Major == other.Major
+					&& Minor == other.Minor
+					&& Patch == other.Patch
+					&& Prerelease == other.Prerelease
+					&& Metadata == other.Metadata));
 
 	/// <inheritdoc cref="object.Equals(object)"/>
 	public override bool Equals(object? obj) => ReferenceEquals(this, obj) || (obj is SemVersion other && Equals(other));

@@ -35,10 +35,7 @@ public class ElasticsearchClientAccessor : IDisposable
 	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; }
 	public IReadOnlyCollection<string> DiminishTerms { get; }
 
-	public ElasticsearchClientAccessor(
-		DocumentationEndpoints endpoints,
-		SearchConfiguration searchConfiguration
-	)
+	public ElasticsearchClientAccessor(DocumentationEndpoints endpoints, SearchConfiguration searchConfiguration)
 	{
 		var endpoint = endpoints.Elasticsearch;
 		Endpoint = endpoint;
@@ -46,32 +43,24 @@ public class ElasticsearchClientAccessor : IDisposable
 		SynonymBiDirectional = searchConfiguration.SynonymBiDirectional;
 		DiminishTerms = searchConfiguration.DiminishTerms;
 
-		var computedIndex = DocumentationMappingContext.DocumentationDocumentSemantic
+		var computedIndex = DocumentationMappingContext
+			.DocumentationDocumentSemantic
 			.CreateContext(type: endpoints.BuildType, env: endpoints.Environment)
 			.ResolveReadTarget();
 
-		SearchIndex = !string.IsNullOrEmpty(endpoints.SearchIndexOverride)
-			? endpoints.SearchIndexOverride
-			: computedIndex;
+		SearchIndex = !string.IsNullOrEmpty(endpoints.SearchIndexOverride) ? endpoints.SearchIndexOverride : computedIndex;
 
-		RulesetName = searchConfiguration.Rules.Count > 0
-			? $"docs-ruleset-{endpoints.BuildType}-{endpoints.Environment}"
-			: null;
+		RulesetName = searchConfiguration.Rules.Count > 0 ? $"docs-ruleset-{endpoints.BuildType}-{endpoints.Environment}" : null;
 
 		_nodePool = new SingleNodePool(endpoint.Uri);
 		var auth = endpoint.ApiKey is { } apiKey
 			? (AuthorizationHeader)new ApiKey(apiKey)
-			: endpoint is { Username: { } username, Password: { } password }
-				? new BasicAuthentication(username, password)
-				: null!;
+			: endpoint is { Username: { } username, Password: { } password } ? new BasicAuthentication(username, password) : null!;
 
 		_clientSettings = new ElasticsearchClientSettings(
-				_nodePool,
-				sourceSerializer: (_, settings) => new DefaultSourceSerializer(
-					settings,
-					ElasticsearchClientJsonResolver.Default
-					)
-				)
+			_nodePool,
+			sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, ElasticsearchClientJsonResolver.Default)
+		)
 			.DefaultIndex(SearchIndex)
 			.Authentication(auth)
 			// Unlimited connections so a load surge actually reaches the (serverless) cluster and lets it

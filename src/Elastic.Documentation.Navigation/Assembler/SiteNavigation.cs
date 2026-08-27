@@ -104,9 +104,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 				}
 
 				// Resolve section URL from first child once children are built.
-				var firstChildUrl = sectionChildren
-					.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
-					.FirstOrDefault()?.Index.Url;
+				var firstChildUrl = sectionChildren.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>().FirstOrDefault()?.Index.Url;
 				if (firstChildUrl is not null)
 					sectionNav.Url = firstChildUrl;
 
@@ -281,7 +279,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
 			{
 				context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
-				pathPrefix += $"bad-mapping-{tocRef.Source.Scheme}-{tocRef.Source.Host}-{tocRef.Source.AbsolutePath}".TrimEnd('/').TrimEnd('-');
+				pathPrefix += $"bad-mapping-{tocRef.Source.Scheme}-{tocRef.Source.Host}-{tocRef.Source.AbsolutePath}".TrimEnd('/').TrimEnd(
+					'-'
+				);
 				pathPrefix += "/";
 			}
 			else
@@ -302,12 +302,18 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Look up the node in the collected nodes
 		if (!_nodes.TryGetValue(tocRef.Source, out var node))
 		{
-			context.EmitError(context.ConfigurationPath, $"Could not find navigation node for identifier: {tocRef.Source} (from source: {tocRef.Source})");
+			context.EmitError(
+				context.ConfigurationPath,
+				$"Could not find navigation node for identifier: {tocRef.Source} (from source: {tocRef.Source})"
+			);
 			return null;
 		}
 		if (node is not INavigationHomeAccessor homeAccessor)
 		{
-			context.EmitError(context.ConfigurationPath, $"Navigation contains an node navigation that does not implement: {nameof(INavigationHomeAccessor)} (from source: {tocRef.Source})");
+			context.EmitError(
+				context.ConfigurationPath,
+				$"Navigation contains an node navigation that does not implement: {nameof(INavigationHomeAccessor)} (from source: {tocRef.Source})"
+			);
 			return null;
 		}
 
@@ -347,13 +353,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			var childIndex = 0;
 			foreach (var child in tocRef.Children)
 			{
-				var childItem = CreateSiteTableOfContentsNavigation(
-					child,
-					childIndex++,
-					context,
-					node,
-					root
-				);
+				var childItem = CreateSiteTableOfContentsNavigation(child, childIndex++, context, node, root);
 				if (childItem != null)
 				{
 					// Nested `toc:` entries in navigation.yml are islands (arrow + own
@@ -390,5 +390,4 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 		return node;
 	}
-
 }
