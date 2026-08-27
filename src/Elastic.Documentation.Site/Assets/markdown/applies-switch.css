@@ -13,7 +13,7 @@
 			}
 		}
 
-		& > .applies-switch-label > .applies-item {
+		.applies-switch-label > .applies-item {
 			@apply cursor-pointer text-inherit;
 
 			&:hover {
@@ -55,6 +55,143 @@
 
 		.applies-switch-fallback {
 			@apply text-sm font-medium;
+		}
+
+		/* Dropdown appearance: a tab-shaped trigger chip sits attached to the
+		   content's first block at its upper-right corner; opening it shows a
+		   detached floating panel with the other options. The trigger groups
+		   all inputs and labels in .applies-switch-select (only the checked
+		   one is visible); the panel rows are extra labels pointing at the
+		   same radios. Content visibility and the panel's current-row hiding
+		   are handled by applies-switch.ts. */
+		&.applies-switch--dropdown {
+			@apply relative block;
+
+			.applies-switch-select {
+				@apply border-grey-30 absolute top-0 right-0 z-10 flex w-max cursor-pointer flex-col items-stretch overflow-hidden border-1 border-b-0 bg-white;
+				border-top-left-radius: 0.5rem;
+				border-top-right-radius: 0.5rem;
+				box-shadow: 0 -2px 6px rgb(0 0 0 / 0.05);
+			}
+
+			/* The invisible absolutely-positioned radios all stack at the
+			   chip's top-left corner and would intercept clicks there (dead
+			   clicks or silent switches). Labels are the only pointer
+			   targets; the radios stay keyboard-focusable. */
+			.applies-switch-input {
+				pointer-events: none;
+			}
+
+			.applies-switch-label {
+				@apply flex items-center border-0 px-3;
+				column-gap: 0.5rem;
+				/* Collapsed options stay in the layout (invisible, zero
+				   height) so the chip is always as wide as the widest
+				   option and never resizes on selection. */
+				visibility: hidden;
+				height: 0;
+				padding-top: 0;
+				padding-bottom: 0;
+				overflow: hidden;
+				margin-left: 0;
+				margin-bottom: 0;
+
+				&:hover {
+					@apply bg-grey-10;
+					border-bottom: 0;
+					transition: background-color 0.12s ease;
+				}
+			}
+
+			/* Text color comes from the component base rule: checked labels
+			   are text-blue-elastic, the docs' interactive accent. The
+			   chevron follows via currentColor. */
+			.applies-switch-input:checked + .applies-switch-label {
+				visibility: visible;
+				height: 2.25rem;
+				border-bottom: 0;
+			}
+
+			.applies-switch-chevron {
+				@apply shrink-0;
+				margin-left: auto;
+				transition: transform 0.18s ease;
+			}
+
+			.applies-switch-short {
+				@apply text-sm font-medium whitespace-nowrap;
+			}
+
+			/* Floating options panel, right-aligned 4px below the chip. */
+			.applies-switch-panel {
+				@apply absolute right-0 z-20 w-max rounded-lg bg-white p-1;
+				top: calc(2.25rem + 1px + 4px);
+				border: 1px solid var(--color-grey-20);
+				box-shadow:
+					0 8px 24px rgb(0 0 0 / 0.12),
+					0 2px 6px rgb(0 0 0 / 0.08);
+				opacity: 0;
+				transform: translateY(-4px);
+				pointer-events: none;
+				transition:
+					opacity 0.16s ease,
+					transform 0.16s ease;
+			}
+
+			.applies-switch-panel-row {
+				@apply text-ink-light flex cursor-pointer items-center rounded-md px-3 text-sm whitespace-nowrap;
+				height: 1.875rem;
+				transition: background-color 0.12s ease;
+
+				&:hover {
+					@apply bg-grey-10 text-black;
+				}
+
+				/* The current selection is visible in the chip right above;
+				   the panel only lists the alternatives. */
+				&.applies-switch-panel-row--current {
+					display: none;
+				}
+			}
+
+			/* The chip sits flush on the content's first block: no frame, and
+			   the top padding matches the chip's outer height exactly
+			   (2.25rem label + 1px top border) so the block's top edge runs
+			   at the same line beside and under the chip. */
+			.applies-switch-content {
+				@apply hidden w-full border-0 px-0 pb-0;
+				padding-top: calc(2.25rem + 1px);
+
+				& > :first-child {
+					@apply mt-0;
+
+					.highlight {
+						@apply mt-0;
+					}
+
+					/* The chip covers the block's top-right corner; a rounded
+					   corner would leave a light notch under it. */
+					pre code:first-child {
+						@apply rounded-tr-none;
+					}
+				}
+			}
+
+			.applies-switch-content--active {
+				@apply block;
+			}
+
+			&.open {
+				.applies-switch-panel {
+					opacity: 1;
+					transform: translateY(0);
+					pointer-events: auto;
+				}
+
+				.applies-switch-chevron {
+					transform: rotate(180deg);
+				}
+			}
 		}
 	}
 }

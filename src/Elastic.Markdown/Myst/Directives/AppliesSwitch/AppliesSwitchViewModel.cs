@@ -4,5 +4,12 @@
 
 namespace Elastic.Markdown.Myst.Directives.AppliesSwitch;
 
-public class AppliesSwitchViewModel : DirectiveViewModel;
+public class AppliesSwitchViewModel : DirectiveViewModel
+{
+	public required bool IsDropdown { get; init; }
 
+	/// Item view models for the selector labels; only populated for the dropdown
+	/// appearance, where the switch view renders all inputs and labels itself so
+	/// they can be grouped into a single overlay menu.
+	public required IReadOnlyList<AppliesItemViewModel> Items { get; init; }
+}

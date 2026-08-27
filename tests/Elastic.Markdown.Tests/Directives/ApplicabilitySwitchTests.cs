@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Markdown.Exporters;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -294,5 +295,207 @@ Content for removed version
 		var allKeys = expectedKeys.Values.ToList();
 		allKeys.Distinct().Should().HaveCount(expectedKeys.Count,
 			"Different applies_to definitions must produce different sync keys");
+	}
+}
+
+public class ApplicabilitySwitchDropdownTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+:appearance: dropdown
+
+::::{applies-item} stack: preview 9.4
+```console
+GET /_search
+```
+::::
+
+::::{applies-item} { serverless: ga, stack: ga 9.5 }
+:selected:
+```console
+GET /_search?size=10
+```
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void ParsesDropdownAppearance() => Block!.IsDropdown.Should().BeTrue();
+
+	[Fact]
+	public void RendersDropdownModifierClass() =>
+		Html.Should().Contain("applies-switch applies-switch--dropdown");
+
+	[Fact]
+	public void SelectedItemRendersChecked() =>
+		Html.Should().MatchRegex("""checked="checked" id="applies-switch-item-\d+-1""");
+
+	[Fact]
+	public void FirstItemDoesNotRenderCheckedWhenAnotherIsSelected() =>
+		Html.Should().NotMatchRegex("""checked="checked" id="applies-switch-item-\d+-0""");
+
+	[Fact]
+	public void RendersSelectorOverlay() =>
+		Html.Should().Contain("applies-switch-select");
+
+	[Fact]
+	public void RendersPanelRowsPointingAtTheRadios()
+	{
+		Html.Should().Contain("applies-switch-panel");
+		Html.Should().MatchRegex("""applies-switch-panel-row" for="applies-switch-item-\d+-0" data-index="0""");
+		Html.Should().MatchRegex("""applies-switch-panel-row" for="applies-switch-item-\d+-1" data-index="1""");
+	}
+
+	[Fact]
+	public void ActiveContentPaneMatchesSelectedItem()
+	{
+		Html.Should().Contain("applies-switch-content applies-switch-content--active\" data-index=\"1\"");
+		Html.Should().NotContain("applies-switch-content applies-switch-content--active\" data-index=\"0\"");
+	}
+
+	[Fact]
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+public class ApplicabilitySwitchInvalidAppearanceTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+:appearance: accordion
+
+::::{applies-item} stack: ga 9.1
+Content
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void FallsBackToTabs() => Block!.IsDropdown.Should().BeFalse();
+
+	[Fact]
+	public void EmitsWarning() =>
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("appearance 'accordion' is not supported"));
+}
+
+public class ApplicabilitySwitchMultipleSelectedTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+
+::::{applies-item} stack: ga 9.1
+:selected:
+Content A
+::::
+
+::::{applies-item} serverless: ga
+:selected:
+Content B
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void FirstSelectedItemWins() =>
+		Html.Should().MatchRegex("""checked="checked" id="applies-switch-item-\d+-0""");
+
+	[Fact]
+	public void EmitsWarning() =>
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("multiple items marked :selected:"));
+}
+
+public class ApplicabilitySwitchDropdownShortLabelTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+:appearance: dropdown
+
+::::{applies-item} { stack: ga 8.0+, ess: ga 8.0+ }
+```console
+GET /_search
+```
+::::
+
+::::{applies-item} stack: preview =7.17
+```console
+GET /_search?size=10
+```
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void RendersCompactSegmentsForCompoundDefinition() =>
+		// Razor html-encodes the + sign
+		Html.Should().Contain("<span class=\"applies-switch-short\">8.0&#x2B;, ECH 8.0&#x2B;</span>");
+
+	[Fact]
+	public void RendersExactVersionWithLifecycleInParentheses() =>
+		Html.Should().Contain("<span class=\"applies-switch-short\">7.17 (preview)</span>");
+
+	[Fact]
+	public void DropdownDoesNotRenderBadges() =>
+		Html.Should().NotContain("applies-to-popover");
+}
+
+public class ApplicabilitySwitchDropdownGuardTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+:appearance: dropdown
+
+::::{applies-item} stack: ga 9.1
+Prose content without a code block.
+::::
+
+::::{applies-item} serverless: ga
+```console
+GET /_search
+```
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void FallsBackToTabs() => Block!.IsDropdown.Should().BeFalse();
+
+	[Fact]
+	public void EmitsWarning() =>
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires every {applies-item} to start with a code block"));
+
+	[Fact]
+	public void RendersAsTabs() => Html.Should().NotContain("applies-switch--dropdown");
+}
+
+// Regression: a code block with no content lines has a null Lines array and
+// crashed llms.txt generation; dropdown switches also exercise code blocks
+// nested in directives through the LLM renderer.
+public class ApplicabilitySwitchDropdownLlmExportTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+:appearance: dropdown
+
+::::{applies-item} stack: ga 9.1
+```json
+{ "size": 10 }
+```
+::::
+
+:::::
+
+```console
+```
+"""
+)
+{
+	[Fact]
+	public void ConvertsToLlmMarkdownWithoutThrowing()
+	{
+		var llm = LlmMarkdownExporter.ConvertToLlmMarkdown(Document, Block!.Build);
+		llm.Should().Contain("\"size\": 10");
 	}
 }

@@ -1,0 +1,41 @@
+@using Elastic.Markdown.Myst.Components
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.AppliesSwitch.AppliesItemViewModel>
+
+@{
+	var id = $"applies-switch-item-{Model.AppliesSwitchIndex}-{Model.Index}";
+}
+
+<input class="applies-switch-input" checked="@(Model.Checked ? "checked" : "")" id="@id" name="applies-switch-set-@Model.AppliesSwitchIndex" type="radio" tabindex="0" data-index="@Model.Index">
+<label class="applies-switch-label" data-sync-id="@Model.SyncKey" data-sync-group="@Model.AppliesSwitchGroupKey" for="@id" title="@(Model.IsDropdown ? Model.AppliesToDefinition : null)">
+	@if (Model.IsDropdown)
+	{
+		<span class="applies-switch-short">@Model.ShortLabel()</span>
+		<svg class="applies-switch-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+	}
+	else
+	{
+		@try
+		{
+			@if (Model.AppliesTo is not null)
+			{
+				<span class="applies applies-item">
+					@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
+					{
+						AppliesTo = Model.AppliesTo,
+						Inline = true,
+						ShowTooltip = false,
+						VersionsConfig = Model.BuildContext.VersionsConfiguration
+					}))
+				</span>
+			}
+			else
+			{
+				<span class="applies-switch-fallback">@Model.AppliesToDefinition</span>
+			}
+		}
+		catch
+		{
+			<span class="applies-switch-fallback">@Model.AppliesToDefinition</span>
+		}
+	}
+</label>

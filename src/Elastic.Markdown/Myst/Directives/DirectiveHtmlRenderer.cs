@@ -578,27 +578,48 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteAppliesSwitch(HtmlRenderer renderer, AppliesSwitchBlock block)
 	{
-		var slice = AppliesSwitchView.Create(new AppliesSwitchViewModel { DirectiveBlock = block });
+		var slice = AppliesSwitchView.Create(new AppliesSwitchViewModel
+		{
+			DirectiveBlock = block,
+			IsDropdown = block.IsDropdown,
+			Items = block.IsDropdown
+				? [.. block.OfType<AppliesItemBlock>().Select(BuildAppliesItemViewModel)]
+				: []
+		});
 		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteAppliesItem(HtmlRenderer renderer, AppliesItemBlock block)
 	{
+		var slice = AppliesItemView.Create(BuildAppliesItemViewModel(block));
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static AppliesItemViewModel BuildAppliesItemViewModel(AppliesItemBlock block)
+	{
 		// Parse the applies_to definition to get the ApplicableTo object
 		// Use the pre-parsed AppliesTo from the block (implementing IBlockAppliesTo)
 		var appliesTo = block.AppliesTo ?? (block.AppliesToDefinition is not null ? ParseApplicableTo(block.AppliesToDefinition, block) : null);
-		var slice = AppliesItemView.Create(new AppliesItemViewModel
+		return new AppliesItemViewModel
 		{
 			DirectiveBlock = block,
 			Index = block.Index,
+			Checked = IsDefaultChecked(block),
+			IsDropdown = (block.Parent as AppliesSwitchBlock)?.IsDropdown ?? false,
 			AppliesToDefinition = block.AppliesToDefinition,
 			AppliesTo = appliesTo,
 			AppliesSwitchIndex = block.AppliesSwitchIndex,
 			SyncKey = block.SyncKey,
 			AppliesSwitchGroupKey = block.AppliesSwitchGroupKey,
 			BuildContext = block.Build
-		});
-		RenderRazorSlice(slice, renderer);
+		};
+	}
+
+	private static bool IsDefaultChecked(AppliesItemBlock block)
+	{
+		var siblings = block.Parent?.OfType<AppliesItemBlock>().ToList() ?? [];
+		var selectedIndex = siblings.FindIndex(i => i.Selected);
+		return selectedIndex >= 0 ? block.Index == selectedIndex : block.Index == 0;
 	}
 
 	private static ApplicableTo? ParseApplicableTo(string yaml, DirectiveBlock block)
