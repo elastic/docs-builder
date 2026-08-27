@@ -33,12 +33,12 @@ let private version _ =
     printfn $"Informational version: %s{version.AsString}"
     printfn $"Semantic version: %s{version.Normalize()}"
 
-let private format (_formatArgs: ParseResults<FormatArgs>) =
+let private format _ =
     exec { run "dotnet" ["curb"; "format"; "."] }
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
-let private lint (_lintArgs: ParseResults<LintArgs>) =
+let private lint _ =
     match exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
     | 0 -> printfn "No formatting violations found."
     | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
@@ -219,8 +219,6 @@ let private validateLicenses _ =
     exec { run "dotnet" (["dotnet-project-licenses"] @ args) }
 
 let Setup (parsed:ParseResults<Build>) =
-    let emptyLintArgs = ArgumentParser.Create<LintArgs>().Parse([||])
-    
     let wireCommandLine (t: Build) =
         match t with
         // commands
@@ -229,7 +227,7 @@ let Setup (parsed:ParseResults<Build>) =
         | Compile -> Build.Step compile
         | Build ->
             Build.Cmd
-                [Clean; Lint emptyLintArgs; Compile] [] build
+                [Clean; Lint; Compile] [] build
         
         | Test -> Build.Cmd [Compile] [] <| runTests TestSuite.All
         | Unit_Test -> Build.Cmd [Compile] [] <| runTests TestSuite.Unit
@@ -247,11 +245,11 @@ let Setup (parsed:ParseResults<Build>) =
                 [PublishBinaries; PublishContainers]
                 release
 
-        | Format formatArgs -> Build.Step (fun _ -> format formatArgs)
+        | Format -> Build.Step format
         | Watch -> Build.Step watch
 
         // steps
-        | Lint lintArgs -> Build.Step (fun _ -> lint lintArgs)
+        | Lint -> Build.Step lint
         | PristineCheck -> Build.Step pristineCheck
         | PublishBinaries -> Build.Step publishBinaries
         | PublishContainers -> Build.Step publishContainers

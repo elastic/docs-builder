@@ -14,9 +14,9 @@
     {
       "name": "dotnet-lint",
       "group": "pre-commit",
-      "command": "bash",
-      "args": ["./build.sh", "lint"],
-      "include": ["**/*.cs", "**/*.fs"]
+      "command": "dotnet",
+      "args": ["curb", "check", ".", "--cache", ".artifacts/curb.cache"],
+      "include": ["**/*.cs"]
     },
     {
       "name": "prettier",
