@@ -301,8 +301,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		foreach (var pr in criteria.PrsToMatch)
 		{
 			var normalizedPrToMatch = ChangelogBundlingService.NormalizePrForComparison(pr, criteria.DefaultOwner, criteria.DefaultRepo);
-			if (ChangelogPrIdentity.TryParseNumberFromNormalized(normalizedPrToMatch, out var prNumber)
-				&& fileNumbers.Contains(prNumber))
+			if (ChangelogPrIdentity.TryParseNumberFromNormalized(normalizedPrToMatch, out var prNumber) && fileNumbers.Contains(prNumber))
 			{
 				_ = matchedPrs.Add(pr);
 				return true;

@@ -6,15 +6,17 @@ namespace Elastic.Changelog.Bundling;
 
 /// <summary>
 /// Shared identity for matching a changelog entry to a pull request: leading numeric filename
-/// segments (survive scrubbing) or normalized YAML <c>prs:</c> references.
+/// segments or normalized YAML <c>prs:</c> references.
 /// </summary>
 internal static class ChangelogPrIdentity
 {
 	/// <summary>
-	/// Parses PR numbers from the leading dash-separated numeric segments of an entry file name,
-	/// covering the PR-number naming schemes (<c>123.yaml</c>, <c>123-456.yaml</c>,
-	/// <c>123-bug-fix-slug.yaml</c>). File names survive scrubbing, so this match works for
-	/// private pools whose <c>prs</c> references were removed from the public copies.
+	/// Parses PR numbers from the leading dash-separated numeric segments of an entry file name
+	/// (for example <c>123.yaml</c>). Leftover hyphenated names may still yield leading digits.
+	/// Current multi-PR authoring writes one <c>{n}.yaml</c> per PR; after upload the scrubber
+	/// adds <c>{extra}.yaml</c> markers with <c>link: {canonical}</c> rather than combined
+	/// filenames. File names survive scrubbing, so this match works when <c>prs:</c> is absent
+	/// from the YAML the matcher reads (including local files where an author removed <c>prs:</c>).
 	/// </summary>
 	public static IReadOnlyList<int> ParseLeadingPrNumbers(string fileName)
 	{

@@ -264,7 +264,7 @@ https://github.com/elastic/elasticsearch/pull/136886
 https://github.com/elastic/elasticsearch/pull/137126
 ```
 
-A changelog matches a listed PR when the file name starts with that PR number (`12345.yaml`) or when the `prs:` field contains it. File names survive scrubbing, so `--prs` still matches PR-numbered files after public copies have `prs:` removed. Timestamp-slug files (`1735-foo.yaml`) need `prs:` in the YAML the command reads, or use [`--files`](#changelog-bundle-files) instead.
+A changelog matches a listed PR when the file name's leading dash-separated numeric segments include that PR number (for example `12345.yaml`) or when the `prs:` field contains it. That is the same rule git-range matching uses. Local `--prs` therefore also matches leftover hyphenated or timestamp-prefix names whose leading digits equal the requested PR. Use [`--files`](#changelog-bundle-files) when you need to select entries by path. CDN `--prs` is separate: it probes `{n}.yaml` by object key and does not scan the directory.
 
 By default all matching changelogs are included in the bundle.
 To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/data/release-notes/configure-ref.md#rules-bundle) configuration settings.
@@ -411,7 +411,7 @@ In profile mode, pass the same path list as a positional argument:
 docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelog_files.txt
 ```
 
-`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN pool entries by file name and do not need to exist locally. Use this when you already know the object names — for example timestamp-slug files whose public copies no longer have `prs:` or `issues:` after scrubbing, so [`--prs`](#changelog-bundle-pr) and `--issues` cannot join on YAML. PR-numbered file names still match `--prs` without this path list. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
+`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN pool entries by file name and do not need to exist locally. Use this when you already know the object names — for example leftover timestamp-slug files that CDN [`--prs`](#changelog-bundle-pr) cannot find (CDN probes `{n}.yaml` only) or that you want to select by path rather than by leading filename digits or YAML `prs:` / `issues:`. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
 
 ### Force local entry sourcing [changelog-bundle-force-local]
 
