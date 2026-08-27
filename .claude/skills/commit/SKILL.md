@@ -44,7 +44,7 @@ Stage specific files by name — never `git add -A` or `git add .` blindly. Excl
 
 - **First line**: Imperative mood, ≤72 chars, no trailing period. Front-load the outcome — a reader scanning `git log` sees this line only.
 - **Body** (optional): One short paragraph explaining *why*, not what. Skip if the title is self-explanatory. Follow the sentence mechanics in `writing-style.md`.
-- **Trailer**: `Co-Authored-By: <model> <noreply@anthropic.com>` where `<model>` is the model name shown in your system prompt (e.g. `Claude Opus 5` or `Claude Sonnet 5`). Never hardcode a specific version — check the system prompt each time.
+- **Trailer**: Add a `Co-Authored-By:` line that identifies the model that helped write this commit. Use whatever attribution feels accurate — the model name you know yourself to be running as, or simply `Claude` if you are uncertain. The address is always `noreply@anthropic.com`. The point is honest attribution, not a precise version string.
 
 Always pass the message via HEREDOC to avoid shell escaping issues:
 
@@ -54,7 +54,7 @@ Title here
 
 Optional body explaining why.
 
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 ```
