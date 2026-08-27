@@ -18,20 +18,13 @@ public class NavigationTestsBase : IAsyncLifetime
 	protected NavigationTestsBase(ITestOutputHelper output)
 	{
 		LoggerFactory = new TestLoggerFactory(output);
-		var mockWriteFs = new MockFileSystem(new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+		var mockWriteFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		var docsTestsPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests");
 		var invocation = new System.IO.Abstractions.FileSystem().DirectoryInfo.New(docsTestsPath);
 		FileSystem = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { InnerWrite = mockWriteFs });
 		var collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem.Read);
-		var context = new BuildContext(collector, FileSystem, configurationContext)
-		{
-			Force = false,
-			UrlPathPrefix = null
-		};
+		var context = new BuildContext(collector, FileSystem, configurationContext) { Force = false, UrlPathPrefix = null };
 
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, LoggerFactory, linkResolver);

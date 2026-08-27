@@ -33,7 +33,8 @@ public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper
 	{
 		//Skipping on CI since this relies on checking out private repositories
 		Assert.SkipWhen(!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")), "Skipping in CI");
-		var builder = Host.CreateApplicationBuilder()
+		var builder = Host
+			.CreateApplicationBuilder()
 			.AddDocumentationServiceDefaults((s, p) =>
 			{
 				_ = s.AddSingleton(AssemblyConfiguration.Create(p));
@@ -47,8 +48,7 @@ public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper
 		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fs);
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector,
-			assembleFs);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, assembleFs);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();
@@ -59,7 +59,14 @@ public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper
 			throw new Exception("No checkouts found");
 
 		var ctx = TestContext.Current.CancellationToken;
-		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, new HashSet<Exporter>(), ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(
+			logFactory,
+			assembleContext,
+			checkouts,
+			configurationContext,
+			new HashSet<Exporter>(),
+			ctx
+		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
@@ -68,10 +75,22 @@ public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper
 
 		var allowedRoots = navigation.TopLevelItems.Concat([navigation]).ToHashSet();
 		foreach (var item in ((INavigationTraversable)navigation).YieldAll())
-			item.NavigationRoot.Should().BeOneOf(allowedRoots, "Navigation for '{0}' has bad root '{1}'", item.Url, item.NavigationRoot.Identifier);
+			item
+				.NavigationRoot
+				.Should()
+				.BeOneOf(allowedRoots, "Navigation for '{0}' has bad root '{1}'", item.Url, item.NavigationRoot.Identifier);
 
 		foreach (var item in ((INavigationTraversable)navigation).NavigationIndexedByOrder.Values)
-			item.NavigationRoot.Should().BeOneOf(allowedRoots, "Navigation for '{0}' has bad root '{1}' indexed by order {2}", item.Url, item.NavigationRoot.Identifier, item.NavigationIndex);
+			item
+				.NavigationRoot
+				.Should()
+				.BeOneOf(
+					allowedRoots,
+					"Navigation for '{0}' has bad root '{1}' indexed by order {2}",
+					item.Url,
+					item.NavigationRoot.Identifier,
+					item.NavigationIndex
+				);
 
 		collector.Errors.Should().Be(0);
 	}

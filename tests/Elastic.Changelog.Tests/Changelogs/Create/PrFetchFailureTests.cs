@@ -22,7 +22,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Title = "Manual title provided",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -32,12 +32,9 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().Be(0);
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
 
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -56,19 +53,16 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 	public async Task CreateChangelog_WithPrOptionButPrFetchFails_WithoutTitleAndType_CreatesChangelogWithCommentedFields()
 	{
 		// Arrange
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns((GitHubPrInfo?)null);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(
+			(GitHubPrInfo?)null
+		);
 
 		var service = CreateService();
 
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -106,12 +100,9 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 	public async Task CreateChangelog_WithMultiplePrsButPrFetchFails_GeneratesBasicChangelogs()
 	{
 		// Arrange
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns((GitHubPrInfo?)null);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(
+			(GitHubPrInfo?)null
+		);
 
 		var service = CreateService();
 
@@ -120,7 +111,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
 			Title = "Shared title",
 			Type = "bug-fix",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -151,26 +142,25 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		yamlContent.Should().Contain("type: bug-fix");
 		// Should reference at least one of the PRs (when filenames collide, the last one wins)
 		yamlContent.Should().Contain("prs:");
-		yamlContent.Should().MatchRegex(@"(https://github\.com/elastic/elasticsearch/pull/12345|https://github\.com/elastic/elasticsearch/pull/67890)");
+		yamlContent.Should().MatchRegex(
+			@"(https://github\.com/elastic/elasticsearch/pull/12345|https://github\.com/elastic/elasticsearch/pull/67890)"
+		);
 	}
 
 	[Fact]
 	public async Task CreateChangelog_WithMultiplePrsFetchFails_EmitsAggregateWarningSummary()
 	{
 		// Arrange
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns((GitHubPrInfo?)null);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(
+			(GitHubPrInfo?)null
+		);
 
 		var service = CreateService();
 
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -180,29 +170,30 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		// Assert: by default the bulk fetch failure is a single, loud summary warning (not an error).
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("2 of 2") &&
-			d.Message.Contains("could not be fetched from GitHub"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("2 of 2") && d.Message.Contains(
+					"could not be fetched from GitHub"
+				)
+			);
 	}
 
 	[Fact]
 	public async Task CreateChangelog_WithMultiplePrsFetchFailsAndStrictFetch_EmitsError()
 	{
 		// Arrange
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns((GitHubPrInfo?)null);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(
+			(GitHubPrInfo?)null
+		);
 
 		var service = CreateService();
 
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			StrictFetch = true,
 			Output = CreateOutputDirectory()
 		};
@@ -214,28 +205,23 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		// but the best-effort files are still written so they can be inspected.
 		result.Should().BeTrue();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("could not be fetched from GitHub"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not be fetched from GitHub"));
 	}
 
 	[Fact]
 	public async Task CreateChangelog_WithMultipleIssuesFetchFailsAndStrictFetch_EmitsError()
 	{
 		// Arrange
-		A.CallTo(() => MockGitHubService.FetchIssueInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns((GitHubIssueInfo?)null);
+		A.CallTo(() => MockGitHubService.FetchIssueInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(
+			(GitHubIssueInfo?)null
+		);
 
 		var service = CreateService();
 
 		var input = new CreateChangelogArguments
 		{
 			Issues = ["https://github.com/elastic/elasticsearch/issues/12345", "https://github.com/elastic/elasticsearch/issues/67890"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			StrictFetch = true,
 			Output = CreateOutputDirectory()
 		};
@@ -248,28 +234,23 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		// the caller must use 'changelog note' for issue-only entries.
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("could not be fetched from GitHub"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not be fetched from GitHub"));
 	}
 
 	[Fact]
 	public async Task CreateChangelog_WithSinglePrFetchFailsAndStrictFetch_EmitsError()
 	{
 		// Arrange
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns((GitHubPrInfo?)null);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(
+			(GitHubPrInfo?)null
+		);
 
 		var service = CreateService();
 
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			StrictFetch = true,
 			Output = CreateOutputDirectory()
 		};
@@ -280,8 +261,6 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("--strict-fetch"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("--strict-fetch"));
 	}
 }

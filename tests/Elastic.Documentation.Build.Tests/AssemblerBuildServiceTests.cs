@@ -122,10 +122,14 @@ public class AssemblerBuildServiceTests : IDisposable
 	}
 
 	[Theory]
-	[InlineData(true, true)]   // CI + assumeBuild=true -> should throw
-	[InlineData(true, false)]  // CI + assumeBuild=false -> should not throw
-	[InlineData(false, true)]  // Local + assumeBuild=true -> should not throw
+	[InlineData(true, true)] // CI + assumeBuild=true -> should throw
+
+	[InlineData(true, false)] // CI + assumeBuild=false -> should not throw
+
+	[InlineData(false, true)] // Local + assumeBuild=true -> should not throw
+
 	[InlineData(false, false)] // Local + assumeBuild=false -> should not throw
+
 	public void AssumeBuildValidation_FollowsTruthTable(bool isCI, bool assumeBuild)
 	{
 		// This test validates the truth table behavior for assumeBuild validation.

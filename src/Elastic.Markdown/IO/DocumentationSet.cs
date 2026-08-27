@@ -100,7 +100,9 @@ public class DocumentationSet : INavigationTraversable
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
-			: Context.DocumentationCheckoutDirectory.Name ?? Context.DocumentationSourceDirectory.Parent?.Name ?? Context.DocumentationSourceDirectory.Name;
+			: Context.DocumentationCheckoutDirectory.Name
+				?? Context.DocumentationSourceDirectory.Parent?.Name
+				?? Context.DocumentationSourceDirectory.Name;
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, "links.json"));
 
@@ -199,7 +201,8 @@ public class DocumentationSet : INavigationTraversable
 
 			markdownFile.AnchorRemapping = markdownFile.AnchorRemapping?.Concat(valueAnchors)
 				.DistinctBy(kv => kv.Key)
-				.ToDictionary(kv => kv.Key, kv => kv.Value) ?? valueAnchors;
+				.ToDictionary(kv => kv.Key, kv => kv.Value)
+				?? valueAnchors;
 		}
 	}
 
@@ -221,7 +224,11 @@ public class DocumentationSet : INavigationTraversable
 			return true;
 
 		_ = CrossLinkResolver.TryResolve(
-			s => Context.Collector.EmitError(Configuration.SourceFile.FullName, $"Redirect {from} points to {to} which is not a valid cross-link", s),
+			s => Context.Collector.EmitError(
+				Configuration.SourceFile.FullName,
+				$"Redirect {from} points to {to} which is not a valid cross-link",
+				s
+			),
 			uri,
 			out _
 		);
@@ -233,7 +240,8 @@ public class DocumentationSet : INavigationTraversable
 
 	public FrozenSet<MarkdownFile> MarkdownFiles { get; }
 
-	public string FirstInterestingUrl => NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().First().Url;
+	public string FirstInterestingUrl =>
+		NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().First().Url;
 
 	public DocumentationFile? TryFindDocument(IFileInfo sourceFile)
 	{
@@ -263,8 +271,16 @@ public class DocumentationSet : INavigationTraversable
 		// MinimalParseAsync is ~60 % blocked on open() / file I/O; the default
 		// ProcessorCount cap starves the IO queue.  4× gives a wide-enough flight
 		// without runaway RSS growth (each in-flight parse holds a MarkdownDocument).
-		var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount * 4, 32), CancellationToken = ctx };
-		await Parallel.ForEachAsync(MarkdownFiles, options, async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
+		var options = new ParallelOptions
+		{
+			MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount * 4, 32),
+			CancellationToken = ctx
+		};
+		await Parallel.ForEachAsync(
+			MarkdownFiles,
+			options,
+			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token)
+		);
 
 		_resolved = true;
 	}

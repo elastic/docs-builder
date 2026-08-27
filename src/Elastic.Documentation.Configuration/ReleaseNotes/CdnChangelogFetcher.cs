@@ -12,6 +12,12 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
+/// One named parent bundle plus its amend sidecars, fetched from the product bundle tree
+/// (<c>bundle/{product}/</c>) without downloading the rest of the catalog.
+/// </summary>
+public readonly record struct CdnNamedBundle(string FileName, string Content, IReadOnlyList<CdnChangelogEntry> AmendSidecars);
+
+/// <summary>
 /// Fetches changelog bundles for a single product from the public CDN. It reads
 /// <c>{base}/bundle/{product}/registry.json</c> to enumerate bundles, downloads each
 /// <c>{base}/bundle/{product}/{file}</c>, and parses them via
@@ -52,12 +58,11 @@ public sealed class CdnChangelogFetcher : IDisposable
 	/// bounds DNS staleness in long-lived <c>serve</c>/watch runs. It is intentionally never disposed — it
 	/// lives for the lifetime of the process.
 	/// </summary>
-	private static readonly HttpClient SharedHttpClient = new(
-		new SocketsHttpHandler
-		{
-			AutomaticDecompression = DecompressionMethods.All,
-			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-		})
+	private static readonly HttpClient SharedHttpClient = new(new SocketsHttpHandler
+	{
+		AutomaticDecompression = DecompressionMethods.All,
+		PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+	})
 	{ Timeout = FetchTimeout };
 
 	private readonly ILogger _logger;
@@ -109,7 +114,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 		string? version,
 		Action<string> emitError,
 		Action<string> emitWarning,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Defense-in-depth mirroring the entry fetcher's pool validation: reject anything the producer
 		// would have refused to upload before building the URI, so normalization (e.g. a ".." product)
@@ -150,7 +156,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 		if (registry.SchemaVersion > SupportedSchemaVersion)
 		{
 			emitError(
-				$"Changelog registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
+				$"Changelog registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder."
+			);
 			return [];
 		}
 
@@ -165,6 +172,101 @@ public sealed class CdnChangelogFetcher : IDisposable
 	}
 
 	/// <summary>
+	/// Fetches a single parent bundle and its listed <c>{name}.amend-N</c> sidecars from the
+	/// product tree. Reads <c>bundle/{product}/registry.json</c> (the scrubber-maintained bundle
+	/// index, not the changelog-entry pool) so sibling amends can be enumerated without downloading
+	/// the rest of the catalog. Returns <c>null</c> after emitting an error when the registry cannot
+	/// be read, the file is not listed, or a listed parent/amend cannot be fetched.
+	/// </summary>
+	public async Task<CdnNamedBundle?> FetchNamedBundleAsync(
+		Uri baseUri,
+		string product,
+		string fileName,
+		Action<string> emitError,
+		Cancel ctx
+	)
+	{
+		if (!ChangelogKeys.IsValidProduct(product))
+		{
+			emitError($"Invalid changelog product '{product}': must be non-empty ASCII letters, digits, '_' or '-'.");
+			return null;
+		}
+
+		if (!ChangelogKeys.IsSafeFileName(fileName))
+		{
+			emitError($"Invalid changelog bundle file name '{fileName}'.");
+			return null;
+		}
+
+		var registryUri = Combine(baseUri, [.. ChangelogKeys.BundleSegments(product), ChangelogKeys.RegistryFileName]);
+
+		ChangelogRegistry? registry;
+		try
+		{
+			_logger.LogInformation("Fetching changelog registry {RegistryUri}", registryUri);
+			var registryText = await FetchTextAsync(registryUri, ctx).ConfigureAwait(false);
+			registry = JsonSerializer.Deserialize(registryText, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			emitError($"Could not fetch changelog registry for product '{product}' from {registryUri}: {ex.Message}");
+			return null;
+		}
+
+		if (registry is null)
+		{
+			emitError($"Changelog registry for product '{product}' at {registryUri} was empty or unparseable.");
+			return null;
+		}
+
+		if (registry.SchemaVersion > SupportedSchemaVersion)
+		{
+			emitError(
+				$"Changelog registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder."
+			);
+			return null;
+		}
+
+		var listed = registry.Bundles.Where(b => ChangelogKeys.IsSafeFileName(b.File)).ToList();
+
+		var parentEntry = listed.Find(b => string.Equals(b.File, fileName, StringComparison.OrdinalIgnoreCase));
+		if (parentEntry?.File is null)
+		{
+			emitError($"Bundle '{fileName}' is not listed in the changelog registry for product '{product}'.");
+			return null;
+		}
+
+		var parent = await DownloadOrCacheBundleAsync(baseUri, product, parentEntry.File, parentEntry.ETag, emitError, ctx).ConfigureAwait(
+			false
+		);
+		if (parent is null)
+			return null;
+
+		var amendEntries = listed
+			.Where(
+				b => b.File is not null && BundleAmendMerger.IsAmendFile(b.File) && string.Equals(
+					BundleAmendMerger.GetParentBundlePath(b.File),
+					parent.Value.FileName,
+					StringComparison.OrdinalIgnoreCase
+				)
+			)
+			.OrderBy(b => BundleAmendMerger.GetAmendFileNumber(b.File!))
+			.ToList();
+
+		var amends = new List<CdnChangelogEntry>(amendEntries.Count);
+		foreach (var amend in amendEntries)
+		{
+			ctx.ThrowIfCancellationRequested();
+			var fetched = await DownloadOrCacheBundleAsync(baseUri, product, amend.File!, amend.ETag, emitError, ctx).ConfigureAwait(false);
+			if (fetched is null)
+				return null;
+			amends.Add(new CdnChangelogEntry(fetched.Value.FileName, fetched.Value.Content));
+		}
+
+		return new CdnNamedBundle(parent.Value.FileName, parent.Value.Content, amends);
+	}
+
+	/// <summary>
 	/// The product's opaque change token from the tree's shallow map, or null when the map is
 	/// unavailable or does not list the product — in which case the caller fetches the per-product
 	/// registry exactly as it did before the map existed.
@@ -173,7 +275,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 	{
 		var lazyMap = _shallowMaps.GetOrAdd(
 			baseUri.AbsoluteUri,
-			_ => new Lazy<Task<Dictionary<string, string>?>>(() => FetchShallowMapAsync(baseUri, ctx)));
+			_ => new Lazy<Task<Dictionary<string, string>?>>(() => FetchShallowMapAsync(baseUri, ctx))
+		);
 		Dictionary<string, string>? map;
 		try
 		{
@@ -210,7 +313,11 @@ public sealed class CdnChangelogFetcher : IDisposable
 			using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
 			_ = response.EnsureSuccessStatusCode();
 			await using var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
-			return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.DictionaryStringString, ctx).ConfigureAwait(false);
+			return await JsonSerializer.DeserializeAsync(
+				stream,
+				ChangelogRegistryJsonContext.Default.DictionaryStringString,
+				ctx
+			).ConfigureAwait(false);
 		}
 		catch (OperationCanceledException) when (!ctx.IsCancellationRequested)
 		{
@@ -222,7 +329,11 @@ public sealed class CdnChangelogFetcher : IDisposable
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
-			_logger.LogDebug("Shallow changelog map at {MapUri} is unavailable ({Message}); fetching every product registry as usual", mapUri, ex.Message);
+			_logger.LogDebug(
+				"Shallow changelog map at {MapUri} is unavailable ({Message}); fetching every product registry as usual",
+				mapUri,
+				ex.Message
+			);
 			return null;
 		}
 	}
@@ -245,7 +356,10 @@ public sealed class CdnChangelogFetcher : IDisposable
 		{
 			var registry = JsonSerializer.Deserialize(cached, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
 			if (registry is not null)
-				_logger.LogInformation("Changelog folder 'bundle/{Product}' is unchanged per the shallow map; using the cached registry", product);
+				_logger.LogInformation(
+					"Changelog folder 'bundle/{Product}' is unchanged per the shallow map; using the cached registry",
+					product
+				);
 			return registry;
 		}
 		catch (JsonException)
@@ -260,7 +374,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 		string? version,
 		ChangelogRegistry registry,
 		Action<string> emitWarning,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var selected = SelectBundles(version, registry.Bundles);
 		var tasks = new List<Task<(string FileName, string Content)?>>(selected.Count);
@@ -286,7 +401,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 		string fileName,
 		string? etag,
 		Action<string> emitWarning,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var cached = TryGetCachedBundle(product, fileName, etag);
 		if (cached is not null)
@@ -322,13 +438,9 @@ public sealed class CdnChangelogFetcher : IDisposable
 		if (string.IsNullOrWhiteSpace(version))
 			return [.. bundles];
 
-		var selected = bundles
-			.Where(b => ChangelogVersionMatch.Matches(version, b.Target, b.File))
-			.ToList();
+		var selected = bundles.Where(b => ChangelogVersionMatch.Matches(version, b.Target, b.File)).ToList();
 
-		var selectedFiles = new HashSet<string>(
-			selected.Select(b => b.File).OfType<string>(),
-			StringComparer.OrdinalIgnoreCase);
+		var selectedFiles = new HashSet<string>(selected.Select(b => b.File).OfType<string>(), StringComparer.OrdinalIgnoreCase);
 
 		foreach (var bundle in bundles)
 		{
@@ -408,19 +520,16 @@ public sealed class CdnChangelogFetcher : IDisposable
 		}
 	}
 
-	private static string BundleCacheKey(string product, string fileName, string etag) =>
-		$"changelog-{product}-{fileName}-{etag}";
+	private static string BundleCacheKey(string product, string fileName, string etag) => $"changelog-{product}-{fileName}-{etag}";
 
 	/// <summary>
 	/// Registry cache entries embed the shallow token in the key: a token mismatch is simply a cache
 	/// miss under the new key, which re-fetches and records the fresh registry alongside it — the same
 	/// convention the ETag-keyed bundle cache follows.
 	/// </summary>
-	private static string RegistryCacheKey(string product, string token) =>
-		$"registry-{product}-{token}";
+	private static string RegistryCacheKey(string product, string token) => $"registry-{product}-{token}";
 
-	private static string CachePath(string cacheKey) =>
-		Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", cacheKey);
+	private static string CachePath(string cacheKey) => Path.Join(Paths.ApplicationData.FullName, "changelog-bundles", cacheKey);
 
 	/// <summary>
 	/// Disposes the per-instance <see cref="HttpClient"/> created for an injected handler. The shared

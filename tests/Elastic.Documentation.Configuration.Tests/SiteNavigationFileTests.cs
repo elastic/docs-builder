@@ -13,7 +13,8 @@ public class SiteNavigationFileTests
 	public void DeserializesSiteNavigationFile()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           phantoms:
 		             - toc: elasticsearch://reference
 		             - toc: docs-content://
@@ -53,7 +54,8 @@ public class SiteNavigationFileTests
 	public void DeserializesSiteNavigationFileWithNestedChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: platform
 		               path_prefix: /platform
@@ -103,7 +105,8 @@ public class SiteNavigationFileTests
 	public void PreservesSchemeWhenPresent()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: elasticsearch://reference/current
 		             - toc: kibana://reference/8.0
@@ -128,7 +131,8 @@ public class SiteNavigationFileTests
 	public void DeserializesIslandOnTocEntry()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: observability://
 		               path_prefix: observability
@@ -159,7 +163,9 @@ public class SiteNavigationFileTests
 
 		var act = () => SiteNavigationFile.Deserialize(yaml);
 
-		act.Should().Throw<YamlDotNet.Core.YamlException>()
+		act
+			.Should()
+			.Throw<YamlDotNet.Core.YamlException>()
 			.WithInnerException<InvalidOperationException>()
 			.WithMessage("Invalid TOC source: '://invalid' could not be parsed as a URI");
 	}
@@ -176,15 +182,15 @@ public class SiteNavigationFileTests
 		// A typo (no 'toc:' or 'section:' key) must throw rather than silently drop the entry.
 		var act = () => SiteNavigationFile.Deserialize(yaml);
 
-		act.Should().Throw<YamlDotNet.Core.YamlException>()
-			.WithMessage("*has no 'toc:' key*");
+		act.Should().Throw<YamlDotNet.Core.YamlException>().WithMessage("*has no 'toc:' key*");
 	}
 
 	[Fact]
 	public void DeserializesSectionWithChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - section: Guides
 		               children:
@@ -214,7 +220,8 @@ public class SiteNavigationFileTests
 	public void DeserializesExternalSection()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - section: APIs
 		               external: https://www.elastic.co/docs/api/

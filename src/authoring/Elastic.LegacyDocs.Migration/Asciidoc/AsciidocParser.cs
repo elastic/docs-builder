@@ -375,32 +375,26 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 		return delimChar switch
 		{
-			"-" when openingDelim.Length >= 4 || style == "source" => new CodeBlockNode
-			{
-				Language = blockAttr?.Language,
-				Source = string.Join('\n', contentLines),
-				Callouts = callouts
-			},
+			"-" when openingDelim.Length >= 4 || style == "source" =>
+				new CodeBlockNode { Language = blockAttr?.Language, Source = string.Join('\n', contentLines), Callouts = callouts },
 			"." => new LiteralBlockNode(string.Join('\n', contentLines)),
-			"=" when IsAdmonitionStyle(style) => new AdmonitionNode
-			{
-				Type = ParseAdmonitionType(style!),
-				Children = children
-			},
+			"=" when IsAdmonitionStyle(style) => new AdmonitionNode { Type = ParseAdmonitionType(style!), Children = children },
 			"=" => new ExampleNode { Children = children },
 			"*" => new SidebarNode { Children = children },
 			"+" => new PassthroughNode(string.Join('\n', contentLines)),
-			"-" when openingDelim == "--" => style switch
-			{
-				"source" => new CodeBlockNode { Language = blockAttr?.Language, Source = string.Join('\n', contentLines) },
-				_ when IsAdmonitionStyle(style) => new AdmonitionNode
+			"-" when openingDelim == "--" =>
+				style switch
 				{
-					Type = ParseAdmonitionType(style!),
-					Children = children.Count > 0 ? children : WrapAsBlocks(contentLines)
+					"source" => new CodeBlockNode { Language = blockAttr?.Language, Source = string.Join('\n', contentLines) },
+					_ when IsAdmonitionStyle(style) =>
+						new AdmonitionNode
+						{
+							Type = ParseAdmonitionType(style!),
+							Children = children.Count > 0 ? children : WrapAsBlocks(contentLines)
+						},
+					"sidebar" => new SidebarNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) },
+					_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
 				},
-				"sidebar" => new SidebarNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) },
-				_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
-			},
 			"/" => null,
 			_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
 		};
@@ -435,13 +429,17 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	private List<string> ResolveVerbatimIncludes(List<string> lines)
 	{
 		// Fast path: nothing to do
-		if (!lines.Any(l =>
-			l.Contains("include-tagged::", StringComparison.Ordinal) ||
-			l.Contains("include::", StringComparison.Ordinal) ||
-			l.Contains("ifeval::", StringComparison.Ordinal) ||
-			l.Contains("ifdef::", StringComparison.Ordinal) ||
-			l.Contains("ifndef::", StringComparison.Ordinal) ||
-			l.Contains("endif::", StringComparison.Ordinal)))
+		if (
+			!lines.Any(
+				l => l.Contains("include-tagged::", StringComparison.Ordinal) || l.Contains(
+					"include::",
+					StringComparison.Ordinal
+				) || l.Contains("ifeval::", StringComparison.Ordinal) || l.Contains("ifdef::", StringComparison.Ordinal) || l.Contains(
+					"ifndef::",
+					StringComparison.Ordinal
+				) || l.Contains("endif::", StringComparison.Ordinal)
+			)
+		)
 			return lines;
 
 		var result = new List<string>(lines.Count);
@@ -483,9 +481,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	private IEnumerable<string> ResolveTaggedInclude(string rawPathToken, string tag, string originalLine)
 	{
 		var rawPath = SubstituteAttributes(rawPathToken);
-		var resolvedPath = Path.IsPathRooted(rawPath)
-			? Path.GetFullPath(rawPath)
-			: Path.GetFullPath(Path.Combine(_basePath, rawPath));
+		var resolvedPath = Path.IsPathRooted(rawPath) ? Path.GetFullPath(rawPath) : Path.GetFullPath(Path.Combine(_basePath, rawPath));
 
 		var fileContent = ReadFile(resolvedPath);
 		if (fileContent is null)
@@ -500,9 +496,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	private IEnumerable<string> ResolveFullFileInclude(string rawPathToken, string originalLine)
 	{
 		var rawPath = SubstituteAttributes(rawPathToken);
-		var resolvedPath = Path.IsPathRooted(rawPath)
-			? Path.GetFullPath(rawPath)
-			: Path.GetFullPath(Path.Combine(_basePath, rawPath));
+		var resolvedPath = Path.IsPathRooted(rawPath) ? Path.GetFullPath(rawPath) : Path.GetFullPath(Path.Combine(_basePath, rawPath));
 
 		var fileContent = ReadFile(resolvedPath);
 		if (fileContent is null)
@@ -543,9 +537,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 				continue;
 
 			// Dedent by the leading whitespace of the tag:: line
-			result.Add(dedentWidth is > 0 && line.Length >= dedentWidth
-				? line[dedentWidth.Value..]
-				: line);
+			result.Add(dedentWidth is > 0 && line.Length >= dedentWidth ? line[dedentWidth.Value..] : line);
 		}
 		return result;
 	}
@@ -754,9 +746,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 			if (cur.Type == listType && cur.Metadata!.Level!.Value > level)
 			{
-				var nested = listType == TokenType.ListItemUnordered
-					? ParseUnorderedList()
-					: ParseOrderedList();
+				var nested = listType == TokenType.ListItemUnordered ? ParseUnorderedList() : ParseOrderedList();
 				children.Add(nested);
 				continue;
 			}
@@ -999,8 +989,10 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 	private static bool HasHeaderOption(TokenMetadata? blockAttr)
 	{
-		if (blockAttr?.NamedAttributes?.TryGetValue("options", out var opts) == true
-			&& opts.Contains("header", StringComparison.OrdinalIgnoreCase))
+		if (
+			blockAttr?.NamedAttributes?.TryGetValue("options", out var opts) == true
+			&& opts.Contains("header", StringComparison.OrdinalIgnoreCase)
+		)
 			return true;
 
 		var content = blockAttr?.Content ?? blockAttr?.BlockStyle ?? "";
@@ -1077,12 +1069,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 	private TableRowNode BuildTableRow(List<string> cellTexts)
 	{
-		var cells = cellTexts
-			.Select(text => new TableCellNode
-			{
-				Content = [new ParagraphNode { Inlines = ParseInlines(SubstituteAttributes(text)) }]
-			})
-			.ToList();
+		var cells = cellTexts.Select(
+			text => new TableCellNode { Content = [new ParagraphNode { Inlines = ParseInlines(SubstituteAttributes(text)) }] }
+		).ToList();
 		return new TableRowNode { Cells = cells };
 	}
 
@@ -1193,19 +1182,17 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	}
 
 	private static bool IsAdmonitionStyle(string? style) =>
-		style is "note" or "tip" or "warning" or "important" or "caution" or
-			"NOTE" or "TIP" or "WARNING" or "IMPORTANT" or "CAUTION";
+		style is "note" or "tip" or "warning" or "important" or "caution" or "NOTE" or "TIP" or "WARNING" or "IMPORTANT" or "CAUTION";
 
-	private static AdmonitionType ParseAdmonitionType(string style) =>
-		style.ToUpperInvariant() switch
-		{
-			"NOTE" => AdmonitionType.Note,
-			"TIP" => AdmonitionType.Tip,
-			"WARNING" => AdmonitionType.Warning,
-			"IMPORTANT" => AdmonitionType.Important,
-			"CAUTION" => AdmonitionType.Caution,
-			_ => AdmonitionType.Note
-		};
+	private static AdmonitionType ParseAdmonitionType(string style) => style.ToUpperInvariant() switch
+	{
+		"NOTE" => AdmonitionType.Note,
+		"TIP" => AdmonitionType.Tip,
+		"WARNING" => AdmonitionType.Warning,
+		"IMPORTANT" => AdmonitionType.Important,
+		"CAUTION" => AdmonitionType.Caution,
+		_ => AdmonitionType.Note
+	};
 
 	private static string? ExtractInlineAnchor(string title)
 	{
@@ -1223,9 +1210,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			throw new InvalidOperationException($"Include depth exceeded maximum of {options.MaxIncludeDepth}");
 
 		var rawPath = SubstituteAttributes(token.Metadata!.Path!);
-		var resolvedPath = Path.IsPathRooted(rawPath)
-			? Path.GetFullPath(rawPath)
-			: Path.GetFullPath(Path.Combine(_basePath, rawPath));
+		var resolvedPath = Path.IsPathRooted(rawPath) ? Path.GetFullPath(rawPath) : Path.GetFullPath(Path.Combine(_basePath, rawPath));
 		var content = ReadFile(resolvedPath);
 		if (content is null)
 		{
@@ -1417,7 +1402,9 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 				var parts = trimmed.Split("..");
 				var start = int.TryParse(parts[0], out var s) ? s : 1;
 				var endStr = parts.Length > 1 ? parts[1] : "";
-				var end = endStr == "-1" || string.IsNullOrEmpty(endStr) ? allLines.Length : int.TryParse(endStr, out var e) ? e : allLines.Length;
+				var end = endStr == "-1" || string.IsNullOrEmpty(endStr)
+					? allLines.Length
+					: int.TryParse(endStr, out var e) ? e : allLines.Length;
 
 				for (var i = Math.Max(1, start); i <= Math.Min(end, allLines.Length); i++)
 					result.Add(allLines[i - 1]);
@@ -1512,26 +1499,44 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		return File.Exists(path) ? File.ReadAllText(path) : null;
 	}
 
-	[GeneratedRegex(
-		@"link:([^\[]+)\[([^\]]*)\]|" +            // groups 1,2: link
-		@"<<([^,>]+)(?:,([\s\S]+?))?>>>|" +         // groups 3,4: triple-xref (allow newlines in text)
-		@"<<([^,>]+)(?:,([\s\S]+?))?>>" + "|" +   // groups 5,6: xref (allow newlines in text)
-		@"image:([^\[]+)\[([^\]]*)\]|" +           // groups 7,8: image
-		@"footnote:\[([^\]]*)\]|" +                // group 9: footnote
-		@"pass:\[([^\]]*)\]|" +                    // group 10: pass:[] passthrough
-		@"\[([a-zA-Z][a-zA-Z0-9_-]*)\]#([^#]+)#|" + // groups 11,12: [role]#text#
-		@"\*\*([^\*<]+)\*\*|" +                    // group 13: unconstrained bold (no < prevents spanning xref markers)
-		@"\*([^\*<]+)\*|" +                        // group 14: constrained bold (no < prevents spanning xref markers)
-		@"_([^_<]+)_|" +                           // group 15: italic (no < prevents spanning xref markers)
-		@"(?<!`)`([^`]+)`|" +                      // group 16: mono (lookbehind prevents ``curly-quote'' from opening a code span)
-		@"\^([^\^]+)\^|" +                         // group 17: superscript
-		@"~([^~]+)~|" +                            // group 18: subscript
-		@"\{([a-zA-Z0-9_-]+)\}|" +                // group 19: attr-ref
-		@"(https?://[^\[\s]+)\[([^\]]*)\]|" +      // groups 20,21: url
-		@"(?<![a-zA-Z0-9.])\+([^\+]+)\+" + "|" +  // group 22: +inline+ passthrough (constrained: not after alphanum)
-		@"``([^`']+)''|" +                         // group 23: AsciiDoc typographic quotes -> "text"
-		@"\s*\+\s*$"                               // line-break (no capture)
-	)]
+	[GeneratedRegex(@"link:([^\[]+)\[([^\]]*)\]|"
+		+ // groups 1,2: link
+		 @"<<([^,>]+)(?:,([\s\S]+?))?>>>|"
+		+ // groups 3,4: triple-xref (allow newlines in text)
+		 @"<<([^,>]+)(?:,([\s\S]+?))?>>"
+		+ "|"
+		+ // groups 5,6: xref (allow newlines in text)
+		 @"image:([^\[]+)\[([^\]]*)\]|"
+		+ // groups 7,8: image
+		 @"footnote:\[([^\]]*)\]|"
+		+ // group 9: footnote
+		 @"pass:\[([^\]]*)\]|"
+		+ // group 10: pass:[] passthrough
+		 @"\[([a-zA-Z][a-zA-Z0-9_-]*)\]#([^#]+)#|"
+		+ // groups 11,12: [role]#text#
+		 @"\*\*([^\*<]+)\*\*|"
+		+ // group 13: unconstrained bold (no < prevents spanning xref markers)
+		 @"\*([^\*<]+)\*|"
+		+ // group 14: constrained bold (no < prevents spanning xref markers)
+		 @"_([^_<]+)_|"
+		+ // group 15: italic (no < prevents spanning xref markers)
+		 @"(?<!`)`([^`]+)`|"
+		+ // group 16: mono (lookbehind prevents ``curly-quote'' from opening a code span)
+		 @"\^([^\^]+)\^|"
+		+ // group 17: superscript
+		 @"~([^~]+)~|"
+		+ // group 18: subscript
+		 @"\{([a-zA-Z0-9_-]+)\}|"
+		+ // group 19: attr-ref
+		 @"(https?://[^\[\s]+)\[([^\]]*)\]|"
+		+ // groups 20,21: url
+		 @"(?<![a-zA-Z0-9.])\+([^\+]+)\+"
+		+ "|"
+		+ // group 22: +inline+ passthrough (constrained: not after alphanum)
+		 @"``([^`']+)''|"
+		+ // group 23: AsciiDoc typographic quotes -> "text"
+		 @"\s*\+\s*$" // line-break (no capture)
+		)]
 	private static partial Regex InlineCombinedRegex();
 
 	[GeneratedRegex(@"\{([a-zA-Z0-9_-]+)\}")]
@@ -1549,7 +1554,6 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		// Normalize `<<<<target>>, text>>` (double-nested xref source bug) to `<<target, text>>`
 		if (text.Contains("<<<<", StringComparison.Ordinal))
 			text = DoubleXrefRegex().Replace(text, "<<$1$2>>");
-
 
 		var result = new List<IInlineNode>();
 		var lastIndex = 0;
@@ -1617,8 +1621,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		});
 	}
 
-	private static string? NullIfEmpty(string value) =>
-		string.IsNullOrEmpty(value) ? null : value;
+	private static string? NullIfEmpty(string value) => string.IsNullOrEmpty(value) ? null : value;
 
 	// Collapse newlines and surrounding whitespace in captured inline text to a single space.
 	private static string NormalizeWhitespace(string value) =>

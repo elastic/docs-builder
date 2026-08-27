@@ -25,9 +25,8 @@ namespace Elastic.Documentation.FileSystems;
 public class RunnerTempFileSystem(
 	IDirectoryInfo workingRoot,
 	IEnumerable<string>? ciPaths = null,
-	IFileSystem? inner = null)
-	: ScopedFileSystem(inner ?? Physical, BuildOptions(workingRoot, ciPaths)),
-	IRunnerTempFileSystem
+	IFileSystem? inner = null
+) : ScopedFileSystem(inner ?? Physical, BuildOptions(workingRoot, ciPaths)), IRunnerTempFileSystem
 {
 	private static readonly FileSystem Physical = new();
 
@@ -63,9 +62,7 @@ public class RunnerTempFileSystem(
 		var fs = inner ?? Physical;
 		var workingRoot = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var runnerTemp = env.GetEnvironmentVariable("RUNNER_TEMP");
-		return new RunnerTempFileSystem(workingRoot,
-			ciPaths: string.IsNullOrWhiteSpace(runnerTemp) ? null : [runnerTemp],
-			inner: inner);
+		return new RunnerTempFileSystem(workingRoot, ciPaths: string.IsNullOrWhiteSpace(runnerTemp) ? null : [runnerTemp], inner: inner);
 	}
 
 	public static RunnerTempFileSystem ForEvaluateArtifact(string metadataPath, IFileSystem? inner = null)
@@ -73,9 +70,7 @@ public class RunnerTempFileSystem(
 		var fs = inner ?? Physical;
 		var workingRoot = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var metadataDir = System.IO.Path.GetDirectoryName(metadataPath);
-		return new RunnerTempFileSystem(workingRoot,
-			ciPaths: string.IsNullOrWhiteSpace(metadataDir) ? null : [metadataDir],
-			inner: inner);
+		return new RunnerTempFileSystem(workingRoot, ciPaths: string.IsNullOrWhiteSpace(metadataDir) ? null : [metadataDir], inner: inner);
 	}
 
 	public static RunnerTempFileSystem ForPrepareArtifact(string? stagingDir, string? outputDir, IFileSystem? inner = null)

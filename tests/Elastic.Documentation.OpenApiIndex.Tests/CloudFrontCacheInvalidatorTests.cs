@@ -17,7 +17,8 @@ public class CloudFrontCacheInvalidatorTests
 	private readonly List<CreateInvalidationRequest> _requests = [];
 
 	public CloudFrontCacheInvalidatorTests() =>
-		A.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._))
+		A
+			.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._))
 			.Invokes((CreateInvalidationRequest request, Cancel _) => _requests.Add(request))
 			.Returns(new CreateInvalidationResponse());
 
@@ -45,15 +46,15 @@ public class CloudFrontCacheInvalidatorTests
 
 		await invalidator.InvalidateAsync([], "request-id-1", TestContext.Current.CancellationToken);
 
-		A.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
 	public async Task InvalidateAsync_CloudFrontFailure_PropagatesException()
 	{
-		A.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._))
-			.Throws(new AmazonCloudFrontException("Access denied"));
+		A.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._)).Throws(
+			new AmazonCloudFrontException("Access denied")
+		);
 
 		var act = () => CreateInvalidator().InvalidateAsync(["/index.json"], "request-id-1", TestContext.Current.CancellationToken);
 

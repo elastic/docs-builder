@@ -33,7 +33,8 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 	{
 		//Skipping on CI since this relies on checking out private repositories
 		Assert.SkipWhen(!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")), "Skipping in CI");
-		var builder = Host.CreateApplicationBuilder()
+		var builder = Host
+			.CreateApplicationBuilder()
 			.AddDocumentationServiceDefaults((s, p) =>
 			{
 				_ = s.AddSingleton(AssemblyConfiguration.Create(p));
@@ -47,8 +48,7 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fs);
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector,
-			assembleFs);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, assembleFs);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();
@@ -59,7 +59,14 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			throw new Exception("No checkouts found");
 
 		var ctx = TestContext.Current.CancellationToken;
-		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, new HashSet<Exporter>(), ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(
+			logFactory,
+			assembleContext,
+			checkouts,
+			configurationContext,
+			new HashSet<Exporter>(),
+			ctx
+		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
@@ -79,12 +86,15 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			root.Parent.Should().BeOfType<SiteNavigation>();
 		}*/
 
-		var slice = _TocTree.Create(NavigationRenderModel.Create(
-			tree: navigation,
-			topLevelItems: navigation.TopLevelItems,
-			isUsingNavigationDropdown: true,
-			isPrimaryNavEnabled: true,
-			isGlobalAssemblyBuild: true));
+		var slice = _TocTree.Create(
+			NavigationRenderModel.Create(
+				tree: navigation,
+				topLevelItems: navigation.TopLevelItems,
+				isUsingNavigationDropdown: true,
+				isPrimaryNavEnabled: true,
+				isGlobalAssemblyBuild: true
+			)
+		);
 		var html = await slice.RenderAsync(cancellationToken: ctx);
 		var context = BrowsingContext.New();
 		var document = await context.OpenAsync(req => req.Content(html), ctx);
@@ -113,10 +123,8 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 
 		await collector.StopAsync(TestContext.Current.CancellationToken);
 
-
 		collector.Errors.Should().Be(0);
 	}
-
 
 	private static void RecurseNav(INodeNavigationItem<INavigationModel, INavigationItem> navigation)
 	{
@@ -156,7 +164,6 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			foreach (var url in GetAllNavigationUrls(child))
 				yield return url;
 	}
-
 
 	/// <inheritdoc />
 	public ValueTask DisposeAsync()

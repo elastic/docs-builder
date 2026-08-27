@@ -14,8 +14,7 @@ public class BundlePlanTests : ChangelogTestBase
 {
 	private ChangelogBundlingService Service { get; }
 
-	public BundlePlanTests(ITestOutputHelper output) : base(output) =>
-		Service = new(LoggerFactory, FileSystem, ConfigurationContext);
+	public BundlePlanTests(ITestOutputHelper output) : base(output) => Service = new(LoggerFactory, FileSystem, ConfigurationContext);
 
 	private async Task<string> CreateConfigAsync(string configContent)
 	{
@@ -69,12 +68,7 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
@@ -103,12 +97,7 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
@@ -133,12 +122,7 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "serverless",
-			ProfileArgument = "2026-03",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "serverless", ProfileArgument = "2026-03", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
@@ -162,12 +146,7 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
@@ -192,12 +171,7 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-release",
-			ProfileArgument = "v9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "v9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
@@ -228,27 +202,24 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "dotnet-release",
-			ProfileArgument = "1.0.0-beta.1",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "dotnet-release", ProfileArgument = "1.0.0-beta.1", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
 		// ExtractBaseVersion strips the pre-release suffix at run time too, so plan's file name must
 		// drop "-beta.1" the same way to stay in sync with the bundle 'run' actually writes.
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
 	public async Task Plan_NoOutput_FallsBackToConfigOutputDirectory()
 	{
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  output_directory: docs/releases
 			""";
@@ -275,17 +246,11 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "nonexistent-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "nonexistent-profile", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 	}
-
 }

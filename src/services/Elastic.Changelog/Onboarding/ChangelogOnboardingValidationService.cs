@@ -29,7 +29,8 @@ public record ValidateOnboardingArguments
 public class ChangelogOnboardingValidationService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
-	GitHubApiTransport? transport = null) : IService
+	GitHubApiTransport? transport = null
+) : IService
 {
 	/// <summary>Workflow files every Prestage repository must carry (RFC onboarding steps).</summary>
 	internal static readonly string[] RequiredWorkflows =
@@ -41,18 +42,17 @@ public class ChangelogOnboardingValidationService(
 	];
 
 	/// <summary>Accepted changelog configuration locations, in discovery order.</summary>
-	internal static readonly string[] ChangelogConfigCandidates =
-	[
-		"docs/changelog.yml",
-		"changelog.yml"
-	];
+	internal static readonly string[] ChangelogConfigCandidates = ["docs/changelog.yml", "changelog.yml"];
 
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogOnboardingValidationService>();
 	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
 	public async Task<bool> ValidateOnboardingAsync(IDiagnosticsCollector collector, ValidateOnboardingArguments args, Cancel ctx)
 	{
-		var prestageProducts = configurationContext.ProductsConfiguration.Products.Values
+		var prestageProducts = configurationContext
+			.ProductsConfiguration
+			.Products
+			.Values
 			.Where(p => p.Features.ReleaseNotes == ReleaseNotesPath.Prestage)
 			.OrderBy(p => p.Id, StringComparer.Ordinal)
 			.ToList();
@@ -107,9 +107,11 @@ public class ChangelogOnboardingValidationService(
 
 		if (missing.Count > 0)
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"Product '{productId}' declares 'features.release-notes: prestage' but {owner}/{repo} is missing required onboarding file(s): {string.Join(", ", missing)}. " +
-				"See the Prestage onboarding steps in the release-notes documentation, or change the product's release-notes path in products.yml.");
+					"See the Prestage onboarding steps in the release-notes documentation, or change the product's release-notes path in products.yml."
+			);
 			return false;
 		}
 
@@ -131,9 +133,11 @@ public class ChangelogOnboardingValidationService(
 		if (response.StatusCode == HttpStatusCode.NotFound)
 			return false;
 
-		collector.EmitError(string.Empty,
+		collector.EmitError(
+			string.Empty,
 			$"Could not probe {owner}/{repo} for '{path}': {(int)response.StatusCode} {response.ReasonPhrase}. " +
-			"Ensure GITHUB_TOKEN is set and can read the repository.");
+				"Ensure GITHUB_TOKEN is set and can read the repository."
+		);
 		return null;
 	}
 }

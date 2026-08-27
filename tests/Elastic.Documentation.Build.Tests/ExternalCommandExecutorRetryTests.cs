@@ -53,11 +53,10 @@ public class ExternalCommandExecutorRetryTests
 		succeeded.Should().BeFalse();
 		executor.CallCount.Should().Be(5);
 		executor.Diagnostics.Errors.Should().Be(1);
-		executor.RecordedDelays.Should().Equal(
-			TimeSpan.FromSeconds(1),
-			TimeSpan.FromSeconds(2),
-			TimeSpan.FromSeconds(4),
-			TimeSpan.FromSeconds(8));
+		executor
+			.RecordedDelays
+			.Should()
+			.Equal(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8));
 	}
 
 	[Fact]
@@ -113,6 +112,27 @@ public class ExternalCommandExecutorRetryTests
 		executor.Diagnostics.Errors.Should().Be(1);
 	}
 
+	[Fact]
+	public void ExecInWithRetry_OnRetry_CallsOnBeforeRetryOncePerRetryNotBeforeFirstAttempt()
+	{
+		var executor = CreateExecutor(ExitCode(1), ExitCode(1), ExitCode(0));
+
+		var succeeded = executor.Retry(FiveAttempts);
+
+		succeeded.Should().BeTrue();
+		executor.OnBeforeRetryCallCount.Should().Be(2);
+	}
+
+	[Fact]
+	public void ExecInWithRetry_OnFirstAttemptSuccess_OnBeforeRetryNeverCalled()
+	{
+		var executor = CreateExecutor(ExitCode(0));
+
+		executor.Retry(FiveAttempts);
+
+		executor.OnBeforeRetryCallCount.Should().Be(0);
+	}
+
 	// ── Helpers ──────────────────────────────────────────────────────────────────
 
 	/// <summary>Scripts a normal process exit.</summary>
@@ -129,10 +149,15 @@ public class ExternalCommandExecutorRetryTests
 		return new RetryTestCommandExecutor(new DiagnosticsCollector([]), workingDirectory, steps);
 	}
 
-	private sealed class RetryTestCommandExecutor(IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, Func<int>[] steps)
-		: ExternalCommandExecutor(collector, workingDirectory)
+	private sealed class RetryTestCommandExecutor(
+		IDiagnosticsCollector collector,
+		IDirectoryInfo workingDirectory,
+		Func<int>[] steps
+	) : ExternalCommandExecutor(collector, workingDirectory)
 	{
 		public int CallCount { get; private set; }
+
+		public int OnBeforeRetryCallCount { get; private set; }
 
 		public List<TimeSpan> RecordedDelays { get; } = [];
 
@@ -140,12 +165,19 @@ public class ExternalCommandExecutorRetryTests
 
 		protected override ILogger Logger { get; } = NullLogger.Instance;
 
-		protected override int ExecInCore(Dictionary<string, string> environmentVars, TimeSpan? attemptTimeout, string binary, params string[] args)
+		protected override int ExecInCore(
+			Dictionary<string, string> environmentVars,
+			TimeSpan? attemptTimeout,
+			string binary,
+			params string[] args
+		)
 		{
 			if (CallCount >= steps.Length)
 				throw new InvalidOperationException($"Unexpected invocation {CallCount + 1}, only {steps.Length} steps were scripted");
-			return steps[CallCount++]();   // may throw ProcExecException
+			return steps[CallCount++](); // may throw ProcExecException
 		}
+
+		protected override void OnBeforeRetry() => OnBeforeRetryCallCount++;
 
 		protected override void DelayBeforeRetry(TimeSpan delay) => RecordedDelays.Add(delay);
 

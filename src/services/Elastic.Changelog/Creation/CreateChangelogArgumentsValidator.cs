@@ -19,9 +19,11 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 	/// </summary>
 	public bool ValidatePrFormat(IDiagnosticsCollector collector, string? prUrl, string? owner, string? repo)
 	{
-		if (!string.IsNullOrWhiteSpace(prUrl)
+		if (
+			!string.IsNullOrWhiteSpace(prUrl)
 			&& int.TryParse(prUrl, out _)
-			&& (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
+			&& (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo))
+		)
 		{
 			collector.EmitError(string.Empty, "When --prs is specified as just a number, both --owner and --repo must be provided");
 			return false;
@@ -50,9 +52,11 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 	/// </summary>
 	public bool ValidateIssueFormat(IDiagnosticsCollector collector, string? issueUrl, string? owner, string? repo)
 	{
-		if (!string.IsNullOrWhiteSpace(issueUrl)
+		if (
+			!string.IsNullOrWhiteSpace(issueUrl)
 			&& int.TryParse(issueUrl.Trim(), out _)
-			&& (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo)))
+			&& (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo))
+		)
 		{
 			collector.EmitError(string.Empty, "When --issues is specified as just a number, both --owner and --repo must be provided");
 			return false;
@@ -83,13 +87,17 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		bool prFetchFailed,
-		bool fromIssue = false)
+		bool fromIssue = false
+	)
 	{
 		// Validate title
 		if (string.IsNullOrWhiteSpace(input.Title))
 		{
 			if (prFetchFailed)
-				collector.EmitWarning(string.Empty, "Title is missing. The changelog will be created with title commented out. Please manually update the title field.");
+				collector.EmitWarning(
+					string.Empty,
+					"Title is missing. The changelog will be created with title commented out. Please manually update the title field."
+				);
 			else
 			{
 				var titleHint = fromIssue ? "specify --issues to derive it from the issue" : "specify --prs or --issues to derive it";
@@ -102,11 +110,17 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		if (string.IsNullOrWhiteSpace(input.Type))
 		{
 			if (prFetchFailed)
-				collector.EmitWarning(string.Empty, "Type is missing. The changelog will be created with type commented out. Please manually update the type field.");
+				collector.EmitWarning(
+					string.Empty,
+					"Type is missing. The changelog will be created with type commented out. Please manually update the type field."
+				);
 			else
 			{
 				var source = fromIssue ? "issue" : "PR";
-				collector.EmitError(string.Empty, $"Type is required. Provide --type or specify --prs/--issues to derive it from {source} labels (requires pivot.types mapping in changelog.yml).");
+				collector.EmitError(
+					string.Empty,
+					$"Type is required. Provide --type or specify --prs/--issues to derive it from {source} labels (requires pivot.types mapping in changelog.yml)."
+				);
 				return false;
 			}
 		}
@@ -121,15 +135,48 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		return true;
 	}
 
+	/// <summary>
+	/// Validates that every product in a <c>changelog note</c> has at least one concrete version
+	/// in its <see cref="ProductReference.Versions"/> list. The <c>target</c> field is obsolete and
+	/// must not be used; the CLI now parses the middle positional slot as a pipe-separated version
+	/// list into <see cref="ProductReference.Versions"/>.
+	/// </summary>
 	public bool ValidateNoteProducts(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
 		foreach (var product in input.Products)
 		{
-			if (string.IsNullOrWhiteSpace(product.Target) || product.Target == "*")
+			if (product.Versions.Count == 0)
 			{
-				collector.EmitError(string.Empty,
-					$"Product '{product.Product}' must have a specific target for 'changelog note'. " +
-					"Use --products 'product target lifecycle' with a concrete target value (for example, '9.2.0' or '2026-05-15').");
+				collector.EmitError(
+					string.Empty,
+					$"Product '{product.Product}' must have at least one specific version for 'changelog note'. " +
+						"Use --products 'product version[|version2...] [lifecycle]' with a concrete version " +
+						"(for example, 'elasticsearch 9.3.0|9.4.0 ga' or 'cloud-serverless 2026-05-15')."
+				);
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/// <summary>
+	/// Validates that no product in a <c>changelog add</c> entry carries a specific version target.
+	/// The <c>target</c> field is obsolete for entries; applicability is expressed through the origin
+	/// branch. Wildcards (<c>*</c>) and absent values are still accepted for bundle filter profiles.
+	/// </summary>
+	public bool ValidateNoVersionTarget(IDiagnosticsCollector collector, CreateChangelogArguments input)
+	{
+		foreach (var product in input.Products)
+		{
+			if (product.Versions.Count > 0)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Product '{product.Product}' specifies version(s) '{string.Join("|", product.Versions)}', " +
+						"but changelog entries do not carry version applicability — the origin branch is the address. " +
+						"For PR-less items that apply to specific release versions (known issues, security advisories) " +
+						"use 'changelog note' instead."
+				);
 				return false;
 			}
 		}
@@ -139,22 +186,25 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 	/// <summary>
 	/// Validates input values against configuration.
 	/// </summary>
-	public bool ValidateAgainstConfiguration(
-		IDiagnosticsCollector collector,
-		CreateChangelogArguments input,
-		ChangelogConfiguration config)
+	public bool ValidateAgainstConfiguration(IDiagnosticsCollector collector, CreateChangelogArguments input, ChangelogConfiguration config)
 	{
 		// Validate type is in allowed list (only if type is provided)
 		if (!string.IsNullOrWhiteSpace(input.Type) && !config.Types.Contains(input.Type))
 		{
-			collector.EmitError(string.Empty, $"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.Types)}");
+			collector.EmitError(
+				string.Empty,
+				$"Type '{input.Type}' is not in the list of available types. Available types: {string.Join(", ", config.Types)}"
+			);
 			return false;
 		}
 
 		// Validate subtype if provided
 		if (!string.IsNullOrWhiteSpace(input.Subtype) && !config.SubTypes.Contains(input.Subtype))
 		{
-			collector.EmitError(string.Empty, $"Subtype '{input.Subtype}' is not in the list of available subtypes. Available subtypes: {string.Join(", ", config.SubTypes)}");
+			collector.EmitError(
+				string.Empty,
+				$"Subtype '{input.Subtype}' is not in the list of available subtypes. Available subtypes: {string.Join(", ", config.SubTypes)}"
+			);
 			return false;
 		}
 
@@ -163,7 +213,10 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		{
 			foreach (var area in input.Areas.Where(area => !config.Areas.Contains(area)))
 			{
-				collector.EmitError(string.Empty, $"Area '{area}' is not in the list of available areas. Available areas: {string.Join(", ", config.Areas)}");
+				collector.EmitError(
+					string.Empty,
+					$"Area '{area}' is not in the list of available areas. Available areas: {string.Join(", ", config.Areas)}"
+				);
 				return false;
 			}
 		}
@@ -177,7 +230,10 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 			if (!validProductIds.Contains(normalizedProductId))
 			{
 				var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-				collector.EmitError(string.Empty, $"Product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+				collector.EmitError(
+					string.Empty,
+					$"Product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+				);
 				return false;
 			}
 		}
@@ -186,10 +242,15 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		var availableLifecycleStrings = config.Lifecycles.Select(l => l.ToStringFast(true)).ToList();
 		foreach (var product in input.Products.Where(product => !string.IsNullOrWhiteSpace(product.Lifecycle)))
 		{
-			if (!LifecycleExtensions.TryParse(product.Lifecycle, out _, ignoreCase: true, allowMatchingMetadataAttribute: true)
-				|| !availableLifecycleStrings.Contains(product.Lifecycle, StringComparer.OrdinalIgnoreCase))
+			if (
+				!LifecycleExtensions.TryParse(product.Lifecycle, out _, ignoreCase: true, allowMatchingMetadataAttribute: true)
+				|| !availableLifecycleStrings.Contains(product.Lifecycle, StringComparer.OrdinalIgnoreCase)
+			)
 			{
-				collector.EmitError(string.Empty, $"Lifecycle '{product.Lifecycle}' for product '{product.Product}' is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", availableLifecycleStrings)}");
+				collector.EmitError(
+					string.Empty,
+					$"Lifecycle '{product.Lifecycle}' for product '{product.Product}' is not in the list of available lifecycles. Available lifecycles: {string.Join(", ", availableLifecycleStrings)}"
+				);
 				return false;
 			}
 		}

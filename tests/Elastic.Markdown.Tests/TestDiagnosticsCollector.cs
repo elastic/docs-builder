@@ -17,8 +17,7 @@ public class TestDiagnosticsOutput(ITestOutputHelper output) : IDiagnosticsOutpu
 	}
 }
 
-public class TestDiagnosticsCollector(ITestOutputHelper output)
-	: DiagnosticsCollector([new TestDiagnosticsOutput(output)])
+public class TestDiagnosticsCollector(ITestOutputHelper output) : DiagnosticsCollector([new TestDiagnosticsOutput(output)])
 {
 	private readonly List<Diagnostic> _diagnostics = [];
 

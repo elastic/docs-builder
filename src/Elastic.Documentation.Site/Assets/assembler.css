@@ -10,6 +10,9 @@
 	:root {
 		--offset-top: calc(var(--spacing) * 18);
 	}
+	body.navigation-preview {
+		--offset-top: 56px;
+	}
 }
 
 /* Reserve the space used by elastic-nav.js before its asynchronous render.

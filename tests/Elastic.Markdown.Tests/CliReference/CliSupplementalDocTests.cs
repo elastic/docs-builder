@@ -16,7 +16,8 @@ public class CliSupplementalDocTests
 		// Generator no longer owns frontmatter — BuildMarkdown() in CliRootFile/CliNamespaceFile/
 		// CliCommandFile prepends it. Verify the generator starts at the heading.
 		var schema = CreateSchema();
-		const string raw = """
+		const string raw =
+			"""
 			---
 			description: Use the Elastic CLI from the command line.
 			applies_to:
@@ -36,7 +37,8 @@ public class CliSupplementalDocTests
 	{
 		// CliRootFile.BuildMarkdown() prepends supplemental.FrontMatter before the generated body.
 		// Verify the property is correctly populated so the prepend produces valid YAML frontmatter.
-		const string raw = """
+		const string raw =
+			"""
 			---
 			description: Use the Elastic CLI from the command line.
 			applies_to:
@@ -67,7 +69,7 @@ public class CliSupplementalDocTests
 
 		var supplemental = CliSupplementalDoc.Parse(raw);
 		var body = CliMarkdownGenerator.RootPage(schema, supplemental).ReplaceLineEndings("\n");
-		var combined = $"{supplemental!.FrontMatter.ReplaceLineEndings("\n")}\n\n{body}";
+		var combined = $"{supplemental!.FrontMatter?.ReplaceLineEndings("\n")}\n\n{body}";
 
 		combined.Should().StartWith("---\n");
 		combined.Should().Contain("---\n\n# elastic");
@@ -79,7 +81,8 @@ public class CliSupplementalDocTests
 	public void RootPage_StripsFrontMatterBeforeParsingDescription()
 	{
 		var schema = CreateSchema();
-		const string raw = """
+		const string raw =
+			"""
 			---
 			description: Metadata description.
 			---
@@ -94,13 +97,14 @@ public class CliSupplementalDocTests
 		markdown.Should().NotContain("Metadata description.");
 	}
 
-	private static CliSchema CreateSchema() => new(
-		SchemaVersion: 1,
-		Name: "elastic",
-		Description: "Schema description.",
-		GlobalOptions: [],
-		RootDefault: null,
-		Commands: [],
-		Namespaces: []
-	);
+	private static CliSchema CreateSchema() =>
+		new(
+			SchemaVersion: 1,
+			Name: "elastic",
+			Description: "Schema description.",
+			GlobalOptions: [],
+			RootDefault: null,
+			Commands: [],
+			Namespaces: []
+		);
 }

@@ -84,7 +84,6 @@ public sealed record BackfillScope
 			RepoPath = "docs/release-notes/index.md",
 			Cutoff = "1.10.0"
 		},
-
 		// Site-source entries: published elastic.co pages that render expanded release-notes content.
 		new() { ProductId = "elasticsearch", Path = "elasticsearch" },
 		new() { ProductId = "kibana", Path = "kibana" },
@@ -148,8 +147,10 @@ public sealed record BackfillScope
 		if (unknown.Count > 0)
 		{
 			var known = string.Join(", ", All.Select(s => s.ProductId).Order(StringComparer.Ordinal));
-			collector.EmitError(string.Empty,
-				$"Unknown product id(s) in --products: {string.Join(", ", unknown)}. Products in the checked-in backfill scope: {known}. Add an entry to BackfillScope.All to include a new product.");
+			collector.EmitError(
+				string.Empty,
+				$"Unknown product id(s) in --products: {string.Join(", ", unknown)}. Products in the checked-in backfill scope: {known}. Add an entry to BackfillScope.All to include a new product."
+			);
 			return null;
 		}
 

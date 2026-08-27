@@ -25,7 +25,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		IDiagnosticsCollector collector,
 		IReadOnlyList<string> yamlFiles,
 		ChangelogFilterCriteria criteria,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var changelogEntries = new List<MatchedChangelogFile>();
 		var markers = new List<(string FileName, string Link)>();
@@ -70,7 +71,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		IDiagnosticsCollector collector,
 		IReadOnlyList<(string FileName, string Content)> contents,
 		ChangelogFilterCriteria criteria,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var changelogEntries = new List<MatchedChangelogFile>();
 		var markers = new List<(string FileName, string Link)>();
@@ -100,7 +102,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		List<(string FileName, string Link)> markers,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs,
-		HashSet<string> matchedIssues)
+		HashSet<string> matchedIssues
+	)
 	{
 		ResolveMarkers(collector, markers, changelogEntries);
 
@@ -116,38 +119,41 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 				collector.EmitWarning(string.Empty, $"No changelog file found for issue: {issue}");
 		}
 
-		return new ChangelogMatchResult
-		{
-			Entries = changelogEntries,
-			MatchedPrs = matchedPrs,
-			MatchedIssues = matchedIssues
-		};
+		return new ChangelogMatchResult { Entries = changelogEntries, MatchedPrs = matchedPrs, MatchedIssues = matchedIssues };
 	}
 
 	private static void ResolveMarkers(
 		IDiagnosticsCollector collector,
 		List<(string FileName, string Link)> markers,
-		List<MatchedChangelogFile> entries)
+		List<MatchedChangelogFile> entries
+	)
 	{
 		foreach (var (markerFile, link) in markers)
 		{
-			var parent = entries.FirstOrDefault(e =>
-				e.FileName.Equals($"{link}.yaml", StringComparison.OrdinalIgnoreCase) ||
-				e.FileName.Equals($"{link}.yml", StringComparison.OrdinalIgnoreCase));
+			var parent = entries.FirstOrDefault(
+				e => e.FileName.Equals($"{link}.yaml", StringComparison.OrdinalIgnoreCase) || e.FileName.Equals(
+					$"{link}.yml",
+					StringComparison.OrdinalIgnoreCase
+				)
+			);
 
 			if (parent == null)
 			{
-				collector.EmitError(string.Empty,
+				collector.EmitError(
+					string.Empty,
 					$"Marker '{markerFile}' references PR {link} but no entry for that PR was found. " +
-					"The canonical entry may not have been uploaded yet.");
+						"The canonical entry may not have been uploaded yet."
+				);
 				continue;
 			}
 
 			if (parent.Data.Link != null)
 			{
-				collector.EmitError(string.Empty,
+				collector.EmitError(
+					string.Empty,
 					$"Marker '{markerFile}' references '{parent.FileName}' which is itself a marker. " +
-					"Marker chains (depth > 1) are not supported.");
+						"Marker chains (depth > 1) are not supported."
+				);
 			}
 			// Parent is already included in entries; the marker contributes no new entry.
 		}
@@ -176,7 +182,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		ChangelogFilterCriteria criteria,
 		HashSet<string> seenChangelogs,
 		HashSet<string> matchedPrs,
-		HashSet<string> matchedIssues)
+		HashSet<string> matchedIssues
+	)
 	{
 		try
 		{
@@ -203,13 +210,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			// Convert to domain type
 			var data = ReleaseNotesSerialization.ConvertEntry(yamlDto);
 
-			return new MatchedChangelogFile
-			{
-				Data = data,
-				FilePath = filePath,
-				FileName = fileName,
-				Checksum = checksum
-			};
+			return new MatchedChangelogFile { Data = data, FilePath = filePath, FileName = fileName, Checksum = checksum };
 		}
 		catch (YamlException ex)
 		{
@@ -229,7 +230,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		ChangelogEntryDto data,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs,
-		HashSet<string> matchedIssues)
+		HashSet<string> matchedIssues
+	)
 	{
 		if (criteria.IncludeAll)
 			return true;
@@ -246,9 +248,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		return true;
 	}
 
-	private static bool MatchesProductFilter(
-		ChangelogEntryDto data,
-		IReadOnlyList<ProductFilter> productFilters)
+	private static bool MatchesProductFilter(ChangelogEntryDto data, IReadOnlyList<ProductFilter> productFilters)
 	{
 		if (data.Products == null || data.Products.Count == 0)
 			return false;
@@ -259,7 +259,26 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			foreach (var changelogProduct in data.Products)
 			{
 				var productMatches = MatchesPattern(changelogProduct.Product, filter.ProductPattern);
-				var targetMatches = MatchesPattern(changelogProduct.Target, filter.TargetPattern);
+
+				// Target filtering: null or "*" pattern matches everything.
+				// For notes (Versions list), any version matching the pattern counts.
+				// For legacy entries that still carry Target (read-side compat), fall back to that.
+				bool targetMatches;
+				if (filter.TargetPattern is null or "*")
+				{
+					targetMatches = true;
+				}
+				else if (changelogProduct.Versions is { Count: > 0 })
+				{
+					targetMatches = changelogProduct.Versions.Any(v => MatchesPattern(v, filter.TargetPattern));
+				}
+				else
+				{
+#pragma warning disable CS0618 // reading obsolete Target for backward compat with legacy entries
+					targetMatches = MatchesPattern(changelogProduct.Target, filter.TargetPattern);
+#pragma warning restore CS0618
+				}
+
 				var lifecycleMatches = MatchesPattern(changelogProduct.Lifecycle, filter.LifecyclePattern);
 
 				if (productMatches && targetMatches && lifecycleMatches)
@@ -270,10 +289,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		return false;
 	}
 
-	private static bool MatchesPrFilter(
-		ChangelogEntryDto data,
-		ChangelogFilterCriteria criteria,
-		HashSet<string> matchedPrs)
+	private static bool MatchesPrFilter(ChangelogEntryDto data, ChangelogFilterCriteria criteria, HashSet<string> matchedPrs)
 	{
 		var prs = data.Prs ?? (data.Pr != null ? [data.Pr] : null);
 		if (prs is not { Count: > 0 })
@@ -284,7 +300,11 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(dataPr, criteria.DefaultOwner, criteria.DefaultRepo);
 			foreach (var pr in criteria.PrsToMatch)
 			{
-				var normalizedPrToMatch = ChangelogBundlingService.NormalizePrForComparison(pr, criteria.DefaultOwner, criteria.DefaultRepo);
+				var normalizedPrToMatch = ChangelogBundlingService.NormalizePrForComparison(
+					pr,
+					criteria.DefaultOwner,
+					criteria.DefaultRepo
+				);
 				if (normalizedPr == normalizedPrToMatch)
 				{
 					_ = matchedPrs.Add(pr);
@@ -305,10 +325,18 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		{
 			if (string.IsNullOrWhiteSpace(dataIssue))
 				continue;
-			var normalizedIssue = ChangelogBundlingService.NormalizeIssueForComparison(dataIssue, criteria.DefaultOwner, criteria.DefaultRepo);
+			var normalizedIssue = ChangelogBundlingService.NormalizeIssueForComparison(
+				dataIssue,
+				criteria.DefaultOwner,
+				criteria.DefaultRepo
+			);
 			foreach (var issue in criteria.IssuesToMatch)
 			{
-				var normalizedIssueToMatch = ChangelogBundlingService.NormalizeIssueForComparison(issue, criteria.DefaultOwner, criteria.DefaultRepo);
+				var normalizedIssueToMatch = ChangelogBundlingService.NormalizeIssueForComparison(
+					issue,
+					criteria.DefaultOwner,
+					criteria.DefaultRepo
+				);
 				if (normalizedIssue == normalizedIssueToMatch)
 				{
 					_ = matchedIssues.Add(issue);

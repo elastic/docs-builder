@@ -22,14 +22,10 @@ public class DocumentInferrerServiceTests
 		foreach (var id in Enum.GetValues<VersioningSystemId>())
 		{
 			// Create a versionless system for "All" type IDs
-			var isVersionless = id is VersioningSystemId.All or VersioningSystemId.Serverless
-				or VersioningSystemId.Ess or VersioningSystemId.Ech
-				or VersioningSystemId.ElasticsearchProject or VersioningSystemId.ObservabilityProject
-				or VersioningSystemId.SecurityProject;
+			var isVersionless =
+				id is VersioningSystemId.All or VersioningSystemId.Serverless or VersioningSystemId.Ess or VersioningSystemId.Ech or VersioningSystemId.ElasticsearchProject or VersioningSystemId.ObservabilityProject or VersioningSystemId.SecurityProject;
 
-			var version = isVersionless
-				? new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0)
-				: new SemVersion(9, 2, 0);
+			var version = isVersionless ? new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0) : new SemVersion(9, 2, 0);
 
 			versioningSystems[id] = new VersioningSystem
 			{
@@ -128,7 +124,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: null);
+			applicableTo: null
+		);
 
 		result.Product.Should().NotBeNull();
 		result.Product.Id.Should().Be("elasticsearch");
@@ -151,7 +148,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: null);
+			applicableTo: null
+		);
 
 		result.Product.Should().NotBeNull();
 		result.Product.Id.Should().Be("apm-agent-java");
@@ -174,7 +172,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: mappedPages,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: null);
+			applicableTo: null
+		);
 
 		result.Product.Should().NotBeNull();
 		result.Product.Id.Should().Be("elasticsearch");
@@ -199,7 +198,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: applicableTo);
+			applicableTo: applicableTo
+		);
 
 		result.Product.Should().NotBeNull();
 		result.Product.Id.Should().Be("curator");
@@ -225,7 +225,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: mappedPages,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: applicableTo);
+			applicableTo: applicableTo
+		);
 
 		// Legacy mapping should take priority
 		result.Product.Should().NotBeNull();
@@ -251,7 +252,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: applicableTo);
+			applicableTo: applicableTo
+		);
 
 		// Applicability should take priority over repository match
 		result.Product.Should().NotBeNull();
@@ -278,7 +280,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: mappedPages,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: applicableTo);
+			applicableTo: applicableTo
+		);
 
 		// Should collect all products: elasticsearch (from legacy), curator (from applicability), kibana (from repo)
 		result.RelatedProducts.Should().HaveCount(3);
@@ -303,7 +306,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: [],
 			frontmatterProducts: frontmatterProducts,
-			applicableTo: null);
+			applicableTo: null
+		);
 
 		result.RelatedProducts.Should().HaveCount(2);
 		result.RelatedProducts.Select(p => p.Id).Should().Contain("elasticsearch");
@@ -327,7 +331,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: docsetProducts,
 			frontmatterProducts: frontmatterProducts,
-			applicableTo: null);
+			applicableTo: null
+		);
 
 		// Should merge both docset and frontmatter products
 		result.RelatedProducts.Should().HaveCount(2);
@@ -351,7 +356,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: docsetProducts,
 			frontmatterProducts: null,
-			applicableTo: null);
+			applicableTo: null
+		);
 
 		// Should include docset products even when no frontmatter products
 		result.RelatedProducts.Should().HaveCount(1);
@@ -372,7 +378,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: null);
+			applicableTo: null
+		);
 
 		result.Product.Should().BeNull();
 		result.Repository.Should().Be("unknown-repo");
@@ -410,7 +417,8 @@ public class DocumentInferrerServiceTests
 			mappedPages: null,
 			docsetProducts: [],
 			frontmatterProducts: null,
-			applicableTo: null);
+			applicableTo: null
+		);
 
 		result.Product.Should().NotBeNull();
 		result.Product.Id.Should().Be("serverless-es");
