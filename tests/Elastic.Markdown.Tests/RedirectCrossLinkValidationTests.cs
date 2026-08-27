@@ -17,18 +17,20 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 	[Fact]
 	public void ValidateRedirectsExists_KibanaDocsPrefix_EmitsError()
 	{
-		var collector = CreateSet("""
+		var collector = CreateSet(
+			"""
 			redirects:
 			  'old-page.md': 'kibana://docs/reference/advanced-settings.md'
-			""");
+			"""
+		);
 
 		collector
 			.Diagnostics
 			.Should()
 			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("kibana://docs/reference/advanced-settings.md") && d.Message.Contains(
-					"docs/reference/advanced-settings.md"
-				) && d.Message.Contains("kibana")
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"kibana://docs/reference/advanced-settings.md"
+				) && d.Message.Contains("docs/reference/advanced-settings.md") && d.Message.Contains("kibana")
 			);
 	}
 
@@ -57,10 +59,12 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 	[Fact]
 	public void ValidateRedirectsExists_HttpsTarget_NoError()
 	{
-		var collector = CreateSet("""
+		var collector = CreateSet(
+			"""
 			redirects:
 			  'old-page.md': 'https://www.elastic.co/docs/get-started'
-			""");
+			"""
+		);
 
 		RedirectErrors(collector).Should().BeEmpty();
 	}
@@ -82,7 +86,10 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 			"""
 		);
 
-		collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("kibana://docs/reference/advanced-settings.md"));
+		collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("kibana://docs/reference/advanced-settings.md"));
 	}
 
 	[Fact]
@@ -107,11 +114,13 @@ public class RedirectCrossLinkValidationTests(ITestOutputHelper output)
 			{
 				{
 					"docs/docset.yml",
-					new MockFileData("""
+					new MockFileData(
+						"""
 					project: test
 					toc:
 					- file: index.md
-					""")
+					"""
+					)
 				},
 				{ "docs/redirects.yml", new MockFileData(redirectYaml) },
 				{ "docs/index.md", new MockFileData("# Home") }
