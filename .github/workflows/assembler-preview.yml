@@ -14,7 +14,6 @@ permissions:
   deployments: write
   id-token: write
   pull-requests: read
-  checks: write
 
 concurrency:
   group: assembler-preview-${{ github.event.pull_request.number || inputs.pr_number }}
@@ -132,7 +131,7 @@ jobs:
         run: npm ci
 
       - name: Wait for preview to be live
-        run: npx wait-on "https://docs-v3-preview.elastic.dev/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}" --timeout 120000
+        run: npx wait-on "https://docs-v3-preview.elastic.dev/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --timeout 120000
 
       - name: Run synthetics
         id: synthetics
