@@ -96,7 +96,7 @@ public class OpenApiGeneratorMultiVersionTests
 			SpecDocument("Elasticsearch 8"));
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
-		var documents = await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken)).Documents;
 
 		documents.Should().HaveCount(3);
 		documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9", "8"]);
@@ -123,7 +123,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 		var apiConfig = ApiConfig(product, specFileName: "elastic-cloud-serverless.yml", repository: "elastic/serverless-api-specification");
 
-		var documents = await generator.ResolveDocumentsForProduct("cloud-serverless", apiConfig, TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct("cloud-serverless", apiConfig, TestContext.Current.CancellationToken)).Documents;
 
 		documents.Should().ContainSingle();
 		documents[0].Version.Moniker.Should().Be("main");
@@ -146,7 +146,7 @@ public class OpenApiGeneratorMultiVersionTests
 			.ReturnsLazily((Stream _, string _) => SpecDocument("Elasticsearch remote"));
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
-		var documents = await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product, localFile), TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product, localFile), TestContext.Current.CancellationToken)).Documents;
 
 		documents.Should().HaveCount(3);
 		documents.Should().ContainSingle(d => d.Version.Moniker == "main" && d.Document == localDocument);
@@ -154,6 +154,44 @@ public class OpenApiGeneratorMultiVersionTests
 		documents.Should().ContainSingle(d => d.Version.Moniker == "8");
 		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).MustHaveHappened(2, Times.Exactly);
+	}
+
+	[Fact]
+	public async Task ResolveDocumentsForProduct_MainFetchFails_DoesNotMarkOlderSpecForUnmatchedBaseFiles()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var handler = new StubHandler(request =>
+		{
+			var path = request.RequestUri!.AbsolutePath;
+			if (path.EndsWith("index.json", StringComparison.Ordinal))
+				return IndexResponse(/*lang=json,strict*/ """
+					{
+						"elastic/elasticsearch": {
+							"elasticsearch-openapi.json": {
+								"main": { "version": "main" },
+								"9": { "version": "9.4" },
+								"8": { "version": "8.19" }
+							}
+						}
+					}
+					""");
+			if (path.Contains("/main/", StringComparison.Ordinal))
+				return new HttpResponseMessage(HttpStatusCode.NotFound);
+			return SpecResponse();
+		});
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, maxAttempts: 1, sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(
+			SpecDocument("Elasticsearch 9"),
+			SpecDocument("Elasticsearch 8"));
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		var resolved = await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
+
+		resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
+		resolved.UnmatchedBaseFilesMoniker.Should().BeNull();
 	}
 
 	[Fact]
