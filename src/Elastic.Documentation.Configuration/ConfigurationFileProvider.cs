@@ -258,10 +258,7 @@ public partial class ConfigurationFileProvider
 				var reader = _fileSystem.File.OpenText(fallbackPath);
 				return reader;
 			}
-			_logger.LogWarning(
-				"Local configuration file '{FileName}' is missing from {Directory}; using embedded copy",
-				fileName, LocalConfigurationDirectory);
-			return GetEmbeddedStream(fileName, fallback);
+			throw new Exception($"Can not read {fileName} in directory {LocalConfigurationDirectory}");
 		}
 
 		var appDataPath = GetAppDataPath(fileName);
@@ -278,10 +275,7 @@ public partial class ConfigurationFileProvider
 				var reader = _fileSystem.File.OpenText(fallbackPath);
 				return reader;
 			}
-			_logger.LogWarning(
-				"Remote configuration file '{FileName}' is missing from {Directory}; using embedded copy",
-				fileName, AppDataConfigurationDirectory);
-			return GetEmbeddedStream(fileName, fallback);
+			throw new Exception($"Can not read {fileName} in directory {AppDataConfigurationDirectory}");
 		}
 		return GetEmbeddedStream(fileName, fallback);
 	}
