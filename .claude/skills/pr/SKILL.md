@@ -57,9 +57,11 @@ Required structure:
  Three to five sections total.>
 
 ## Verify
-<How the reviewer confirms this works. Commands in fenced blocks with a language
- tag, never inline. One context line above a block if the command needs it.
- Non-command checks (a URL, a CI job, a log line) stay as prose.>
+<How a reviewer confirms this locally. Use real commands they would run:
+ `./build.sh`, `dotnet test`, `npm run test`, `dotnet run --project …`.
+ If there is no clear local verification step, omit this section entirely.
+ Do not list CI checks, YAML linting, or bash scripts an agent would run
+ to prove their own work — those are not reviewer steps.>
 ```
 
 Conditional add-ons — each is one or two sentences with a bold lead-in, no heading:
