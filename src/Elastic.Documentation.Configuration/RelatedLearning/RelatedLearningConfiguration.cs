@@ -19,8 +19,7 @@ public record RelatedLearningConfiguration
 	/// <summary>Catalog entries keyed by ID.</summary>
 	public required IReadOnlyDictionary<string, RelatedLearningLink> Links { get; init; }
 
-	public bool TryGet(string id, [NotNullWhen(true)] out RelatedLearningLink? link) =>
-		Links.TryGetValue(id, out link);
+	public bool TryGet(string id, [NotNullWhen(true)] out RelatedLearningLink? link) => Links.TryGetValue(id, out link);
 
 	/// <summary>Parses and validates a <c>related-learning.yml</c> document.</summary>
 	public static RelatedLearningConfiguration Parse(string yaml)
@@ -77,21 +76,16 @@ public static class RelatedLearningConfigurationExtensions
 			{
 				throw new InvalidOperationException(
 					$"related-learning.yml link '{id}' has invalid url '{linkDto.Url}'. " +
-					"Every url must be an absolute http or https URL.");
+						"Every url must be an absolute http or https URL."
+				);
 			}
 
-			links[id] = new RelatedLearningLink
-			{
-				Id = id,
-				Title = linkDto.Title,
-				Url = linkDto.Url
-			};
+			links[id] = new RelatedLearningLink { Id = id, Title = linkDto.Title, Url = linkDto.Url };
 		}
 
 		return new RelatedLearningConfiguration { Links = links.ToFrozenDictionary(StringComparer.Ordinal) };
 	}
 
 	private static bool IsAbsoluteHttpUrl(string url) =>
-		Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-		(uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
+		Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
 }

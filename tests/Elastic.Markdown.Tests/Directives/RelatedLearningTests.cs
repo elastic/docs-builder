@@ -8,8 +8,9 @@ using Elastic.Markdown.Myst.Directives.RelatedLearning;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
-"""
+public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
+	output,
+	"""
 :::{related-learning} apm-with-elastic
 :::
 """
@@ -68,8 +69,9 @@ public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest
 	}
 }
 
-public class RelatedLearningOrderTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
-"""
+public class RelatedLearningOrderTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
+	output,
+	"""
 :::{related-learning} index-basics, apm-with-elastic
 :::
 """
@@ -86,8 +88,9 @@ public class RelatedLearningOrderTests(ITestOutputHelper output) : DirectiveTest
 	}
 }
 
-public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
-"""
+public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
+	output,
+	"""
 :::{related-learning} elastic-agent
 :heading: Learn Elastic Agent
 :::
@@ -119,8 +122,9 @@ public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : Dir
 	}
 }
 
-public class RelatedLearningUnknownIdTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
-"""
+public class RelatedLearningUnknownIdTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
+	output,
+	"""
 :::{related-learning} not-a-module
 :::
 """
@@ -129,16 +133,19 @@ public class RelatedLearningUnknownIdTests(ITestOutputHelper output) : Directive
 	[Fact]
 	public void EmitsErrorAndRendersNothing()
 	{
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("unknown catalog ID 'not-a-module'"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("unknown catalog ID 'not-a-module'"));
 		Block!.Items.Should().BeEmpty();
 		Html.Should().NotContain("related-learning");
 		File.PageTableOfContent.Should().NotContainKey(RelatedLearningBlock.DefaultSlug);
 	}
 }
 
-public class RelatedLearningDuplicateIdTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
-"""
+public class RelatedLearningDuplicateIdTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
+	output,
+	"""
 :::{related-learning} apm-with-elastic, apm-with-elastic
 :::
 """
@@ -148,13 +155,16 @@ public class RelatedLearningDuplicateIdTests(ITestOutputHelper output) : Directi
 	public void WarnsAndKeepsFirstOccurrence()
 	{
 		Block!.Items.Should().ContainSingle().Which.Id.Should().Be("apm-with-elastic");
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning && d.Message.Contains("duplicate catalog ID 'apm-with-elastic'"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("duplicate catalog ID 'apm-with-elastic'"));
 	}
 }
 
-public class RelatedLearningEmptyIdsTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
-"""
+public class RelatedLearningEmptyIdsTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
+	output,
+	"""
 :::{related-learning}
 :::
 """
@@ -163,8 +173,10 @@ public class RelatedLearningEmptyIdsTests(ITestOutputHelper output) : DirectiveT
 	[Fact]
 	public void EmitsErrorWhenArgumentMissing()
 	{
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("requires at least one catalog ID as an argument"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("requires at least one catalog ID as an argument"));
 		Block!.Items.Should().BeEmpty();
 	}
 }

@@ -10,8 +10,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Directives.RelatedLearning;
 
-public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public const string DefaultHeading = "Related learning";
 	public const string DefaultSlug = "related-learning-heading";
@@ -24,8 +23,7 @@ public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext con
 
 	public IReadOnlyList<RelatedLearningLink> Items { get; private set; } = [];
 
-	public override IEnumerable<string> GeneratedAnchors =>
-		Items.Count == 0 ? [] : [Slug];
+	public override IEnumerable<string> GeneratedAnchors => Items.Count == 0 ? [] : [Slug];
 
 	/// <summary>
 	/// Inserts a real H2 before each resolved directive so GetAnchors and HTML share one slug.
@@ -33,9 +31,7 @@ public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext con
 	/// </summary>
 	public static void InsertHeadings(MarkdownDocument document)
 	{
-		var blocks = document.Descendants<RelatedLearningBlock>()
-			.Where(b => b.Items.Count > 0)
-			.ToArray();
+		var blocks = document.Descendants<RelatedLearningBlock>().Where(b => b.Items.Count > 0).ToArray();
 		foreach (var block in blocks)
 			InsertHeading(block);
 	}
@@ -97,16 +93,10 @@ public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext con
 		if (index < 0)
 			return;
 
-		if (index > 0
-			&& parent[index - 1] is HeadingBlock existing
-			&& (existing.GetData("anchor") as string) == block.Slug)
+		if (index > 0 && parent[index - 1] is HeadingBlock existing && (existing.GetData("anchor") as string) == block.Slug)
 			return;
 
-		var heading = new HeadingBlock(null!)
-		{
-			Level = 2,
-			Line = block.Line
-		};
+		var heading = new HeadingBlock(null!) { Level = 2, Line = block.Line };
 		heading.SetData("header", block.Heading);
 		heading.SetData("anchor", block.Slug);
 		heading.Inline = new ContainerInline();

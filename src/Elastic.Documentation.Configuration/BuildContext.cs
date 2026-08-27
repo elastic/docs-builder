@@ -99,8 +99,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ProductsConfiguration = configurationContext.ProductsConfiguration;
-		RelatedLearningConfiguration = configurationContext.ConfigurationFileProvider
-			.CreateRelatedLearningConfiguration();
+		RelatedLearningConfiguration = configurationContext.ConfigurationFileProvider.CreateRelatedLearningConfiguration();
 		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 		Endpoints = configurationContext.Endpoints;
 

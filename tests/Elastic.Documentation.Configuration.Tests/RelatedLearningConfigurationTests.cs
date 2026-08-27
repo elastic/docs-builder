@@ -37,44 +37,45 @@ public class RelatedLearningConfigurationTests
 	[Fact]
 	public void Parse_MissingTitle_Throws()
 	{
-		var act = () => RelatedLearningConfiguration.Parse(
-			"""
+		var act =
+			() => RelatedLearningConfiguration.Parse(
+				"""
 			links:
 			  widget:
 			    url: https://www.elastic.co/training/widget
-			""");
+			"""
+			);
 
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*link 'widget' is missing required 'title'*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*link 'widget' is missing required 'title'*");
 	}
 
 	[Fact]
 	public void Parse_MissingUrl_Throws()
 	{
-		var act = () => RelatedLearningConfiguration.Parse(
-			"""
+		var act =
+			() => RelatedLearningConfiguration.Parse("""
 			links:
 			  widget:
 			    title: Widget
 			""");
 
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*link 'widget' is missing required 'url'*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*link 'widget' is missing required 'url'*");
 	}
 
 	[Fact]
 	public void Parse_RelativeUrl_Throws()
 	{
-		var act = () => RelatedLearningConfiguration.Parse(
-			"""
+		var act =
+			() => RelatedLearningConfiguration.Parse(
+				"""
 			links:
 			  widget:
 			    title: Widget
 			    url: /training/widget
-			""");
+			"""
+			);
 
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*invalid url '/training/widget'*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*invalid url '/training/widget'*");
 	}
 
 	[Fact]
