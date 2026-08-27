@@ -75,6 +75,8 @@ Do **not** backtick prose nouns that merely share a name with code — the assem
 
 ## Anti-mechanical rules for "What" sections
 
+`## What` uses `####` subheadings, not bullet points. Each subheading names the thing that changed (a file, a command, a concept). The prose under it states what changed and why it matters — two to four sentences, same plain-language rules as everywhere else.
+
 Lead with the behaviour change; name the symbol second when the reviewer needs it to find the code.
 
 | Wrong | Right |
@@ -82,12 +84,12 @@ Lead with the behaviour change; name the symbol second when the reviewer needs i
 | `` `GitLocks.ClearStale` sweeps `*.lock` files before each retry `` | A retry clears stale `*.lock` files under `.git/` before it runs |
 | `` **`IsolatedBuildService.Build`**: captures the `GenerateAll` result `` | The build result is captured and `redirects.json` is written to the output directory |
 
-**Banned openers** for bullet points:
+**Banned openers** for the prose paragraph:
 - "Added", "Updated", "Changed", "Refactored", "Modified"
-- Any bullet that starts with a file path or a symbol name
-- Any bullet that only restates a filename
+- Any sentence that starts with a file path or a symbol name
+- Any paragraph that only restates the subheading
 
-**Three to five items in a "What".** More than five is a signal the change should be split.
+**Three to five `####` sections in a "What".** More than five is a signal the change should be split.
 
 ---
 

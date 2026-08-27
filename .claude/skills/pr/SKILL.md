@@ -50,8 +50,11 @@ Required structure:
  for current behaviour. Do not open with the history of a prior PR.>
 
 ## What
-<Three to five items. Each leads with the behaviour change; name a symbol only
- when the reviewer needs it to find the code.>
+
+#### <name or short label>
+<Prose paragraph. Lead with behaviour, not a symbol or path. Name a symbol only
+ when the reviewer needs it to find the code. Two to four sentences max.
+ Three to five sections total.>
 
 ## Verify
 <How the reviewer confirms this works. Commands in fenced blocks with a language
