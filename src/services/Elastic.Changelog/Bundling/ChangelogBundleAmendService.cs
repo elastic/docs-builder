@@ -941,17 +941,21 @@ public class ChangelogBundleAmendService(
 	private readonly record struct SourcedChangelog(string FileName, string? Content, string DisplayPath);
 
 	/// <summary>
-	/// Discovers amend files for a bundle
+	/// Discovers amend files for a bundle. Only sidecars sharing the parent's exact <c>.yaml</c>/<c>.yml</c>
+	/// extension are returned, per the <c>{parent}.amend-N</c> naming convention — a sibling amend file
+	/// with the opposite extension belongs to a different (same-stem) bundle and must not be merged in.
 	/// </summary>
 	public static IReadOnlyList<string> DiscoverAmendFiles(IFileSystem fileSystem, string bundlePath)
 	{
 		var directory = fileSystem.Path.GetDirectoryName(bundlePath) ?? string.Empty;
 		var baseName = fileSystem.Path.GetFileNameWithoutExtension(bundlePath);
+		var extension = fileSystem.Path.GetExtension(bundlePath);
 
 		if (!fileSystem.Directory.Exists(directory))
 			return [];
 
 		var amendFiles = fileSystem.Directory.GetFiles(directory, $"{baseName}.amend-*.y*ml")
+			.Where(file => string.Equals(fileSystem.Path.GetExtension(file), extension, StringComparison.OrdinalIgnoreCase))
 			.OrderBy(BundleAmendMerger.GetAmendFileNumber)
 			.ToList();
 

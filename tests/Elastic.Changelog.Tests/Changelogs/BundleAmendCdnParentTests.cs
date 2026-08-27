@@ -192,6 +192,49 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 	}
 
 	[Fact]
+	public void DiscoverAmendFiles_IgnoresSiblingSidecarWithDifferentExtension()
+	{
+		var bundleDir = CreateDir();
+		var parentPath = FileSystem.Path.Join(bundleDir, "9.3.0.yml");
+		FileSystem.File.WriteAllText(parentPath, "products: []\nentries: []\n");
+		// Same stem, wrong extension: belongs to a different (same-stem) .yaml bundle and must not
+		// be treated as this .yml parent's amend history.
+		FileSystem.File.WriteAllText(FileSystem.Path.Join(bundleDir, "9.3.0.amend-2.yaml"), "products: []\nentries: []\n");
+		FileSystem.File.WriteAllText(FileSystem.Path.Join(bundleDir, "9.3.0.amend-1.yml"), "products: []\nentries: []\n");
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, parentPath);
+
+		amendFiles.Should().ContainSingle().Which.Should().EndWith("9.3.0.amend-1.yml");
+	}
+
+	[Fact]
+	public async Task Amend_CdnParent_YmlExtension_IgnoresMismatchedExtensionSidecar_WritesAmend1()
+	{
+		var outputDir = CreateDir();
+		// A stray same-stem .yaml sidecar in the output directory must not be mistaken for existing
+		// history of the .yml parent (it would otherwise bump the next amend number to 3 and merge
+		// its entries/exclusions in).
+		FileSystem.File.WriteAllText(
+			FileSystem.Path.Join(outputDir, "9.3.0.amend-2.yaml"),
+			AmendSidecarYaml("unrelated.yaml"));
+		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry, parentExtension: ".yml");
+		var service = Service(handler);
+
+		var result = await service.AmendBundle(Collector, new AmendBundleArguments
+		{
+			BundlePath = "/bundle/elasticsearch/9.3.0.yml",
+			AddFiles = ["late.yaml"],
+			Output = outputDir
+		}, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		var amendPath = FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yml");
+		FileSystem.File.Exists(amendPath).Should().BeTrue();
+		var amend = await FileSystem.File.ReadAllTextAsync(amendPath, TestContext.Current.CancellationToken);
+		amend.Should().NotContain("unrelated.yaml", "the mismatched-extension sidecar must not be merged in");
+	}
+
+	[Fact]
 	public async Task Amend_LocalFileMatchingLocatorShape_PrefersCdnParent()
 	{
 		var outputDir = CreateDir();
@@ -327,11 +370,13 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		  title: Prior amend
 		""";
 
-	private static StubHandler CombinedHandler(string parentYaml, string lateYaml, string? cdnAmendYaml = null)
+	private static StubHandler CombinedHandler(string parentYaml, string lateYaml, string? cdnAmendYaml = null, string parentExtension = ".yaml")
 	{
+		var parentFile = $"9.3.0{parentExtension}";
+		var amendFile = $"9.3.0.amend-1{parentExtension}";
 		var bundleRegistry = cdnAmendYaml is null
-			? /*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "9.3.0.yaml", "target": "9.3.0" } ] }"""
-			: /*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "9.3.0.yaml", "target": "9.3.0" }, { "file": "9.3.0.amend-1.yaml", "target": "9.3.0" } ] }""";
+			? /*lang=json,strict*/ $$"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "{{parentFile}}", "target": "9.3.0" } ] }"""
+			: /*lang=json,strict*/ $$"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "{{parentFile}}", "target": "9.3.0" }, { "file": "{{amendFile}}", "target": "9.3.0" } ] }""";
 		var poolRegistry = /*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "late.yaml" } ] }""";
 		return new StubHandler(req =>
 		{
@@ -340,9 +385,9 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 				return Json(bundleRegistry);
 			if (path.Contains("/changelog/", StringComparison.Ordinal) && path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(poolRegistry);
-			if (path.EndsWith("/9.3.0.yaml", StringComparison.Ordinal))
+			if (path.EndsWith("/" + parentFile, StringComparison.Ordinal))
 				return Yaml(parentYaml);
-			if (path.EndsWith("/9.3.0.amend-1.yaml", StringComparison.Ordinal) && cdnAmendYaml is not null)
+			if (path.EndsWith("/" + amendFile, StringComparison.Ordinal) && cdnAmendYaml is not null)
 				return Yaml(cdnAmendYaml);
 			if (path.EndsWith("/late.yaml", StringComparison.Ordinal))
 				return Yaml(lateYaml);
