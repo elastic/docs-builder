@@ -119,7 +119,7 @@ public class OpenApiGenerator(
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
-		var highestMajor = monikers.Max(m => int.TryParse(m, out var n) ? n : (int?)null);
+		var highestMajor = monikers.Max(TryParseMajor);
 		foreach (var versioned in versionedDocuments)
 		{
 			var switcherItems = ApiVersionSwitcher.Build(
@@ -231,9 +231,10 @@ public class OpenApiGenerator(
 	/// unversioned URL matches the current-major overlay (the one page CLI authors expect).
 	/// </summary>
 	internal static int? SupplementalMajor(string moniker, int? highestNumericMoniker) =>
-		int.TryParse(moniker, out var major)
-			? major
-			: moniker == "main" ? highestNumericMoniker : null;
+		TryParseMajor(moniker) ?? (moniker == "main" ? highestNumericMoniker : null);
+
+	private static int? TryParseMajor(string moniker) =>
+		int.TryParse(moniker, out var major) ? major : null;
 
 	private async Task<OpenApiDocument?> ResolveDocumentForVersion(
 		string apiKey,

@@ -77,8 +77,7 @@ internal sealed partial record ApiSupplementalDoc(
 				continue;
 
 			copy ??= new Dictionary<string, ApiSupplementalDoc>(baseline, StringComparer.Ordinal);
-			copy.TryGetValue(key, out var existing);
-			copy[key] = Overlay(existing, parsed);
+			copy[key] = Overlay(copy.TryGetValue(key, out var existing) ? existing : null, parsed);
 		}
 
 		return copy ?? baseline;
