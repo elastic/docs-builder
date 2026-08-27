@@ -192,6 +192,59 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 	}
 
 	[Fact]
+	public async Task Amend_LocalFileMatchingLocatorShape_PrefersCdnParent()
+	{
+		var outputDir = CreateDir();
+		var shadowedDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "bundle", "elasticsearch");
+		FileSystem.Directory.CreateDirectory(shadowedDir);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(shadowedDir, "9.3.0.yaml"),
+			"this on-disk file must not be read; locator syntax takes precedence",
+			TestContext.Current.CancellationToken);
+		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
+		var service = Service(handler);
+
+		var result = await service.AmendBundle(Collector, new AmendBundleArguments
+		{
+			BundlePath = "bundle/elasticsearch/9.3.0.yaml",
+			AddFiles = ["late.yaml"],
+			Output = outputDir
+		}, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/registry.json",
+			"a path matching the locator shape must resolve via the CDN even if a local file exists at that relative path");
+		FileSystem.File.Exists(FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yaml")).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task Amend_LocalParent_Symlink_FailsWithoutWriting()
+	{
+		var bundleDir = CreateDir();
+		var realBundlePath = FileSystem.Path.Join(bundleDir, "real-bundle.yaml");
+		await FileSystem.File.WriteAllTextAsync(
+			realBundlePath,
+			ParentBundleYaml("existing.yaml", ExistingEntry),
+			TestContext.Current.CancellationToken);
+		var symlinkPath = FileSystem.Path.Join(bundleDir, "bundle.yaml");
+		FileSystem.File.CreateSymbolicLink(symlinkPath, realBundlePath);
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
+		var service = Service(handler);
+
+		var result = await service.AmendBundle(Collector, new AmendBundleArguments
+		{
+			BundlePath = symlinkPath,
+			AddFiles = ["late.yaml"],
+			ForceLocal = true
+		}, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error && d.Message.Contains("symlink"));
+		handler.RequestedPaths.Should().BeEmpty();
+	}
+
+	[Fact]
 	public async Task Amend_BadPathShape_FailsWithoutWriting()
 	{
 		var outputDir = CreateDir();

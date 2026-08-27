@@ -3409,7 +3409,7 @@
               "name": "bundle-path",
               "type": "string",
               "required": true,
-              "summary": "Required: Local path to the parent bundle, or a CDN locator /bundle/{product}/{file}.yaml (leading slash optional; an absolute http(s) URL with that path is also accepted). Local paths support tilde (~) expansion and must be a .yml/.yaml file that exists on disk."
+              "summary": "Required: Local path to the parent bundle, or a CDN locator /bundle/{product}/{file}.yaml (leading slash optional; an absolute http(s) URL with that path is also accepted). Locator syntax takes precedence: prefix with ./ to force local resolution of a relative path that would otherwise match the locator shape. Local paths support tilde (~) expansion and must be a .yml/.yaml file that exists on disk."
             },
             {
               "role": "flag",

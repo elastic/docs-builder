@@ -528,11 +528,15 @@ public class ChangelogBundleAmendService(
 		IDiagnosticsCollector collector,
 		Cancel ctx)
 	{
-		if (_fileSystem.File.Exists(bundlePath))
-			return await ResolveLocalParentAsync(bundlePath, collector, ctx).ConfigureAwait(false);
-
+		// Locator syntax is checked before local existence: a bare `bundle/{product}/{file}.yaml`
+		// path is documented as a CDN locator even without a leading slash, so it must win over an
+		// on-disk file that happens to live at that same relative path. Prefix a local path with
+		// `./` to force local resolution when it would otherwise match the locator shape.
 		if (ChangelogKeys.TryParseBundleLocator(bundlePath, out var product, out var fileName))
 			return await ResolveCdnParentAsync(bundlePath, product, fileName, collector, ctx).ConfigureAwait(false);
+
+		if (_fileSystem.File.Exists(bundlePath))
+			return await ResolveLocalParentAsync(bundlePath, collector, ctx).ConfigureAwait(false);
 
 		var currentDir = _fileSystem.Directory.GetCurrentDirectory();
 		collector.EmitError(
@@ -556,6 +560,15 @@ public class ChangelogBundleAmendService(
 		if (!HasYamlExtension(bundlePath))
 		{
 			collector.EmitError(bundlePath, "The parent bundle must be a .yaml or .yml file.");
+			return null;
+		}
+
+		// The [Existing, RejectSymbolicLinks, FileExtensions] argument attributes only apply to
+		// FileInfo parameters; bundlePath is a plain string here because it may also be a CDN
+		// locator, so symlink rejection for the local-parent branch is enforced explicitly.
+		if (_fileSystem.FileInfo.New(bundlePath).LinkTarget != null)
+		{
+			collector.EmitError(bundlePath, "The parent bundle must not be a symlink.");
 			return null;
 		}
 
