@@ -28,7 +28,7 @@
     <!-- Static graph evaluation speeds up restore by evaluating the dependency graph once up front -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
     <!-- Analyzers add meaningful build time; only require them where they gate merges (CI) or Release builds -->
-    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringBuild Condition="'$(CI)' != 'true' AND '$(Configuration)' != 'Release'">false</RunAnalyzersDuringBuild>
   </PropertyGroup>
 
   <ItemGroup>
