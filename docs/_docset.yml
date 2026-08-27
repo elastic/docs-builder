@@ -216,6 +216,7 @@ toc:
           - file: llm.md
           - file: okf.md
           - file: plain-text.md
+          - file: git-diff.md
       - folder: release-notes
         children:
           - file: index.md

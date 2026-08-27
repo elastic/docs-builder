@@ -4,6 +4,7 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.GitDiff;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.State;
 using Elastic.Documentation.Versions;
@@ -29,4 +30,5 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(SemVersion))]
 [JsonSerializable(typeof(VersionSpec))]
 [JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(ChangedPagesExport))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

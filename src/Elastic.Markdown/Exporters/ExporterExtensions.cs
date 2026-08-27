@@ -5,6 +5,7 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Exporters.Elasticsearch;
+using Elastic.Markdown.Exporters.GitDiff;
 using Elastic.Markdown.Exporters.Pagefind;
 using Microsoft.Extensions.Logging;
 
@@ -30,6 +31,8 @@ public static class ExporterExtensions
 			markdownExporters.Add(new OkfMarkdownExporter());
 		if (exportOptions.Contains(Exporter.Pagefind))
 			markdownExporters.Add(new PagefindMarkdownExporter(logFactory));
+		if (exportOptions.Contains(Exporter.GitDiff))
+			markdownExporters.Add(new GitDiffMarkdownExporter(logFactory));
 		return markdownExporters;
 	}
 }

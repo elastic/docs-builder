@@ -59,6 +59,9 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 				case "pagefind":
 					_ = set.Add(Exporter.Pagefind);
 					break;
+				case "gitdiff":
+					_ = set.Add(Exporter.GitDiff);
+					break;
 				case "none":
 					break;
 				case "default":
@@ -71,7 +74,7 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 					break;
 				default:
 					throw new ArgumentException(
-						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, pagefind, default, metadata, none.");
+						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, pagefind, gitdiff, default, metadata, none.");
 			}
 		}
 		result = set;
