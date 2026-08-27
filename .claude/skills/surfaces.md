@@ -50,7 +50,7 @@ Named for what a reader *loses* when it breaks, not for the project that impleme
 | `Automation` | `.github/workflows/`, `build.sh`, `Directory.Packages.props` | CI, release plumbing, the build itself |
 | `Documentation` | `docs/` | This repo's own documentation |
 | `Migration` | `src/authoring/Elastic.LegacyDocs.Migration/`, `src/Elastic.Documentation.LegacyDocs/`, `src/tooling/docs-migrate/`, `src/tooling/adoc-compare/` | Legacy AsciiDoc migration tooling |
-| `Contributor workflow` | `.claude/skills/`, `.github/ISSUE_TEMPLATE/`, `.github/*.md` | How contributors file issues and write PRs in this repo |
+| `Agentic Skills` | `.claude/skills/`, `.github/ISSUE_TEMPLATE/`, `.github/*.md` | The AI-assisted workflows for commits, PRs, issues, and reviews |
 
 ---
 
