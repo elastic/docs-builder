@@ -12,18 +12,20 @@ using Actions.Core.Services;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
 using Elastic.Changelog.AllowlistIdentity;
+using Elastic.Changelog.Backfill;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
-using Elastic.Changelog.Migration;
+using Elastic.Changelog.Onboarding;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
@@ -481,29 +483,12 @@ internal sealed partial class ChangelogCommands(
 		// Use provided products or empty list (service will infer from repo/config if empty)
 		var resolvedProducts = (IReadOnlyList<ProductArgument>?)products ?? [];
 
-		if (usePrNumber && useIssueNumber)
+		// Changelog entries are always keyed by PR number. --use-issue-number was removed.
+		if (useIssueNumber)
 		{
-			collector.EmitError(string.Empty, "--use-pr-number and --use-issue-number are mutually exclusive; specify only one.");
-			_ = collector.StartAsync(ctx);
-			await collector.WaitForDrain();
-			await collector.StopAsync(ctx);
-			return 1;
-		}
-
-		// --use-pr-number with --issues is allowed: PRs can be extracted from the issue body (Fixed by #123, etc.)
-		if (usePrNumber && (parsedPrs == null || parsedPrs.Length == 0) && (parsedIssues == null || parsedIssues.Length == 0))
-		{
-			collector.EmitError(string.Empty, "--use-pr-number requires --prs, --issues, or --report to be specified.");
-			_ = collector.StartAsync(ctx);
-			await collector.WaitForDrain();
-			await collector.StopAsync(ctx);
-			return 1;
-		}
-
-		// --use-issue-number with --prs is allowed: issues can be extracted from the PR body (Fixes #123, etc.)
-		if (useIssueNumber && (parsedIssues == null || parsedIssues.Length == 0) && (parsedPrs == null || parsedPrs.Length == 0))
-		{
-			collector.EmitError(string.Empty, "--use-issue-number requires --prs or --issues to be specified.");
+			collector.EmitError(string.Empty,
+				"--use-issue-number is no longer supported. Changelog entries are always keyed by PR number. " +
+				"For items with no PR use 'changelog note' instead.");
 			_ = collector.StartAsync(ctx);
 			await collector.WaitForDrain();
 			await collector.StopAsync(ctx);
@@ -529,7 +514,6 @@ internal sealed partial class ChangelogCommands(
 			Output = resolvedOutput,
 			Config = config?.FullName,
 			UsePrNumber = usePrNumber,
-			UseIssueNumber = useIssueNumber,
 			StripTitlePrefix = stripTitlePrefixResolved,
 			ExtractReleaseNotes = extractReleaseNotes,
 			ExtractIssues = extractIssues,
@@ -539,6 +523,178 @@ internal sealed partial class ChangelogCommands(
 
 		serviceInvoker.AddCommand(service, input,
 			async static (s, collector, state, ctx) => await s.CreateChangelog(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>Create a <c>note-*.yml</c> changelog fragment for items that have no associated PR.</summary>
+	/// <remarks>
+	/// Use this command for release notes that are not tied to a specific pull request — for example, a
+	/// known-issue entry or a cross-cutting change that spans many PRs. Every product listed must have a
+	/// concrete <c>target</c> (not a wildcard); <c>--prs</c> and <c>--issues</c> are still accepted as
+	/// optional citations but do not affect the output filename.
+	/// </remarks>
+	/// <param name="name">Explicit slug for the note filename. Defaults to a slug derived from the title.</param>
+	/// <param name="products">Products in format "product target lifecycle, ..." (for example, "elasticsearch 9.2.0 ga"). Target is required for all products.</param>
+	/// <param name="action">Optional action text.</param>
+	/// <param name="areas">Optional area tags.</param>
+	/// <param name="concise">Omit schema reference comments from the generated YAML.</param>
+	/// <param name="config">Path to the changelog.yml configuration file.</param>
+	/// <param name="description">Entry description.</param>
+	/// <param name="noExtractReleaseNotes">Skip extracting release note text from PR/issue descriptions.</param>
+	/// <param name="noExtractIssues">Skip extracting linked issues/PRs from PR/issue body.</param>
+	/// <param name="featureId">Optional feature ID.</param>
+	/// <param name="highlight">Mark the entry as a highlight.</param>
+	/// <param name="impact">Optional impact text.</param>
+	/// <param name="issues">Optional issue URLs (cited but not used as anchor).</param>
+	/// <param name="owner">GitHub owner. Falls back to <c>bundle.owner</c> or "elastic".</param>
+	/// <param name="output">Output directory.</param>
+	/// <param name="prs">Optional PR URLs (cited but not used as anchor).</param>
+	/// <param name="repo">GitHub repository name.</param>
+	/// <param name="stripTitlePrefix">Strip a repo-name prefix from the title.</param>
+	/// <param name="strictFetch">Treat GitHub fetch failures as errors.</param>
+	/// <param name="subtype">Entry subtype.</param>
+	/// <param name="title">Entry title (required).</param>
+	/// <param name="type">Entry type (required).</param>
+	/// <param name="ct"></param>
+	[NoOptionsInjection]
+	public async Task<int> Note(
+		string? name = null,
+		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? products = null,
+		string? action = null,
+		string[]? areas = null,
+		bool concise = false,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		string? description = null,
+		bool noExtractReleaseNotes = false,
+		bool noExtractIssues = false,
+		string? featureId = null,
+		bool? highlight = null,
+		string? impact = null,
+		string[]? issues = null,
+		string? owner = null,
+		string? output = null,
+		string[]? prs = null,
+		string? repo = null,
+		bool stripTitlePrefix = false,
+		bool strictFetch = false,
+		string? subtype = null,
+		string? title = null,
+		string? type = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+			.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
+		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
+		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
+		var extractReleaseNotes = noExtractReleaseNotes ? false : (bool?)null;
+		var extractIssues = noExtractIssues ? false : (bool?)null;
+
+		string[]? parsedPrs = null;
+		if (prs is { Length: > 0 })
+		{
+			var allPrs = new List<string>();
+			foreach (var trimmedValue in prs.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.Trim()))
+			{
+				var normalizedPath = NormalizePath(trimmedValue);
+				if (_fileSystem.File.Exists(normalizedPath))
+				{
+					try
+					{
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
+						foreach (var line in fileLines)
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+								allPrs.Add(line.Trim());
+						}
+					}
+					catch (Exception ex) when (ex is IOException or SecurityException)
+					{
+						collector.EmitError(string.Empty, $"Failed to read PRs from file '{normalizedPath}': {ex.Message}", ex);
+						return 1;
+					}
+				}
+				else
+				{
+					allPrs.AddRange(trimmedValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+				}
+			}
+			parsedPrs = allPrs.ToArray();
+		}
+
+		string[]? parsedIssues = null;
+		if (issues is { Length: > 0 })
+		{
+			var allIssues = new List<string>();
+			foreach (var trimmedValue in issues.Where(i => !string.IsNullOrWhiteSpace(i)).Select(i => i.Trim()))
+			{
+				var normalizedPath = NormalizePath(trimmedValue);
+				if (_fileSystem.File.Exists(normalizedPath))
+				{
+					try
+					{
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
+						foreach (var line in fileLines)
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+								allIssues.Add(line.Trim());
+						}
+					}
+					catch (Exception ex) when (ex is IOException or SecurityException)
+					{
+						collector.EmitError(string.Empty, $"Failed to read issues from file '{normalizedPath}': {ex.Message}", ex);
+						return 1;
+					}
+				}
+				else
+				{
+					allIssues.AddRange(trimmedValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+				}
+			}
+			parsedIssues = allIssues.ToArray();
+		}
+
+		var resolvedProducts = (IReadOnlyList<ProductArgument>?)products ?? [];
+
+		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
+		var service = new ChangelogCreationService(logFactory, configurationContext, _fileSystem, githubPrService, env: SystemEnvironmentVariables.Instance);
+
+		var input = new CreateChangelogArguments
+		{
+			Title = title,
+			Type = type,
+			Products = resolvedProducts,
+			Subtype = subtype,
+			Areas = areas ?? [],
+			Prs = parsedPrs,
+			Owner = resolvedOwner,
+			Repo = resolvedRepo,
+			Issues = parsedIssues ?? [],
+			Description = description,
+			Impact = impact,
+			Action = action,
+			FeatureId = featureId,
+			Highlight = highlight,
+			Output = resolvedOutput,
+			Config = config?.FullName,
+			StripTitlePrefix = stripTitlePrefixResolved,
+			ExtractReleaseNotes = extractReleaseNotes,
+			ExtractIssues = extractIssues,
+			Concise = concise,
+			StrictFetch = strictFetch,
+			IsNote = true,
+			NoteName = name
+		};
+
+		serviceInvoker.AddCommand(service, input,
+			async static (s, collector, state, ctx) => await s.CreateNote(collector, state, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);
@@ -567,7 +723,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
-	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output</c>.</param>
+	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as <c>{product}-{version}.yaml</c> from the profile's primary output product.</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output_products</c>.</param>
 	/// <param name="owner">GitHub repository owner for PR/issue numbers or --release-version. Falls back to <c>bundle.owner</c> or "elastic". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.owner</c> or <c>bundle.profiles.&lt;name&gt;.owner</c>.</param>
 	/// <param name="branch">Branch whose CDN changelog entry pool (<c>changelog/{org}/{repo}/{branch}/...</c>) is sourced from. Falls back to <c>bundle.branch</c> or "main". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.branch</c> or <c>bundle.profiles.&lt;name&gt;.branch</c>.</param>
@@ -1330,19 +1486,29 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
-	/// <remarks>Creates an immutable <c>.amend-N.yaml</c> sidecar file alongside the original bundle.</remarks>
-	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
-	/// <param name="add">Optional: Changelog YAML paths to add. Repeat <c>--add</c> or pass a comma-separated list in one value (for example, <c>--add "file1.yaml,file2.yaml"</c>). Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="remove">Optional: Changelog YAML paths to exclude from the effective bundle. Repeat <c>--remove</c> or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.</param>
+	/// <remarks>
+	/// Creates an immutable <c>.amend-N</c> sidecar using the same <c>.yaml</c> or <c>.yml</c> extension
+	/// as the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator
+	/// <c>/bundle/{product}/{file}.yaml</c> (the sidecar is written under <c>--output</c>,
+	/// <c>bundle.output_directory</c>, or the current directory).
+	/// Upload the sidecar separately with <c>changelog upload --artifact-type bundle</c>.
+	/// </remarks>
+	/// <param name="bundlePath">Required: Local path to the parent bundle, or a CDN locator <c>/bundle/{product}/{file}.yaml</c> (leading slash optional; an absolute http(s) URL with that path is also accepted). Locator syntax takes precedence: prefix with <c>./</c> to force local resolution of a relative path that would otherwise match the locator shape. Local paths support tilde (~) expansion and must be a <c>.yml</c>/<c>.yaml</c> file that exists on disk.</param>
+	/// <param name="add">Optional: Changelog YAML paths to add. Repeat <c>--add</c> or pass a comma-separated list in one value (for example, <c>--add "file1.yaml,file2.yaml"</c>). Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN (the default when bundle.repo or the parent bundle's repo resolves), paths are matched by file name and do not need to exist locally; with local sourcing (--force-local or bundle.use_local_changelogs) the paths must exist on disk.</param>
+	/// <param name="remove">Optional: Changelog YAML paths to exclude from the effective bundle. Repeat <c>--remove</c> or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN, paths are matched by file name and do not need to exist locally; with local sourcing the paths must exist on disk unless <c>--force</c> is used to exclude by file name.</param>
+	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the sourced changelog, or when no YAML can be sourced (inferred git-ref entries).</param>
+	/// <param name="forceLocal">Optional: Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config).</param>
 	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
+	/// <param name="output">Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a <c>.yaml</c>/<c>.yml</c> path whose file name must be <c>{parent}.amend-N</c> plus the same extension as the parent for the next unused N. Falls back to <c>bundle.output_directory</c> in changelog.yml, then the current directory. Ignored for a local parent.</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
-		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
+		[Argument] string bundlePath,
 		string[]? add = null,
 		string[]? remove = null,
 		bool force = false,
+		bool forceLocal = false,
 		bool dryRun = false,
+		string? output = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1367,7 +1533,10 @@ internal sealed partial class ChangelogCommands(
 			return 1;
 		}
 
-		var normalizedBundlePath = bundlePath.FullName;
+		var trimmedBundlePath = bundlePath.Trim();
+		var normalizedBundlePath = ChangelogKeys.TryParseBundleLocator(trimmedBundlePath, out _, out _)
+			? trimmedBundlePath
+			: NormalizePath(trimmedBundlePath);
 
 		var input = new AmendBundleArguments
 		{
@@ -1375,7 +1544,9 @@ internal sealed partial class ChangelogCommands(
 			AddFiles = normalizedAddFiles,
 			RemoveFiles = normalizedRemoveFiles,
 			Force = force,
-			DryRun = dryRun
+			ForceLocal = forceLocal,
+			DryRun = dryRun,
+			Output = string.IsNullOrWhiteSpace(output) ? null : NormalizePath(output)
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1711,6 +1882,29 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
+	/// <summary>Validate that every product registered with <c>features.release-notes: prestage</c> has the required onboarding files in its repository.</summary>
+	/// <remarks>
+	/// Probes each Prestage product's repository (resolved from <c>products.yml</c>: the product key
+	/// or its <c>repository:</c> override) via the GitHub contents API for the changelog
+	/// configuration (<c>docs/changelog.yml</c> or <c>changelog.yml</c>) and the
+	/// <c>changelog-validate</c>, <c>changelog-submit</c>, <c>changelog-upload</c>, and
+	/// <c>changelog-bundle-stage</c> workflows. Exits non-zero when anything is missing, so CI can
+	/// gate on registration drift. Set <c>GITHUB_TOKEN</c> to probe private repositories.
+	/// </remarks>
+	/// <param name="owner">GitHub owner (org) the product repositories live under.</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> ValidateOnboarding(string owner = "elastic", CancellationToken ct = default)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+		var service = new ChangelogOnboardingValidationService(logFactory, configurationContext);
+		var args = new ValidateOnboardingArguments { Owner = owner };
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.ValidateOnboardingAsync(c, state, ct));
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
 	/// <summary>Resolve the link allowlist identity of the deployed changelog scrubber.</summary>
 	/// <remarks>
 	/// The scrubber Lambda embeds its link allowlist from <c>config/assembler.yml</c> at build time, so the
@@ -1760,28 +1954,29 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>TEMPORARY: One-off migration of published release notes into the S3 bundle store; removed after elastic/docs-eng-team#683.</summary>
+	/// <summary>Backfill changelog entries, notes, and bundles from published release-notes pages.</summary>
 	/// <remarks>
-	/// <para>Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the
-	/// checked-in scope table), maps it to the existing bundle YAML shape, and uploads to
-	/// <c>bundle/{product}/</c> with create-only semantics (<c>If-None-Match: *</c>) — existing keys are
-	/// skipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and
-	/// object ETag) suitable for pasting into the tracking issue.</para>
-	/// <para>Migrates every product in the checked-in scope table by default. The table lives in code
-	/// (<c>MigrateFromWebScope.All</c>: product id → source repo, release-notes path, pinned ref, version
-	/// cutoff) and grows per rollout wave; use <c>--products</c> to narrow a run for tests and pilots.
-	/// Tracked by elastic/docs-eng-team#736.</para>
+	/// <para>Fetches every product's release-notes Markdown — either from the published elastic.co site page
+	/// or from a pinned raw.githubusercontent.com ref for products whose published page is an empty
+	/// &lt;changelog&gt; stub — parses it into typed bundle YAML, and writes all output to
+	/// <c>--output</c> (default: <c>.artifacts/release-notes-backfill/</c>). Nothing is written to S3;
+	/// use <c>changelog upload --directory &lt;product&gt;/changelog/bundles</c> to publish.</para>
+	/// <para>The scope table (<c>BackfillScope.All</c>) covers 38 products (37 site-source + 1 repo-source); use <c>--products</c> to narrow
+	/// a run. Entries without a PR reference are emitted as <c>note-*.yaml</c> files. Sourced from a
+	/// prototype (<c>scripts/scrape-release-notes.py</c>, 2026-08-25).</para>
 	/// </remarks>
-	/// <param name="products">Optional: restrict the run to specific product ids (comma-separated or repeated), e.g. "edot-java". Defaults to every product in the checked-in scope table.</param>
-	/// <param name="s3BucketName">Destination S3 bucket. Required unless --dry-run; when provided with --dry-run, existing keys are still inspected so the report distinguishes would-create from skipped.</param>
-	/// <param name="versions">Optional: restrict the run to specific versions (comma-separated or repeated). Versions above a product's cutoff are always skipped.</param>
-	/// <param name="dryRun">Do everything except the S3 writes and report what would be created.</param>
+	/// <param name="products">Restrict the run to specific product ids (comma-separated or repeated). Defaults to every product in the scope table.</param>
+	/// <param name="versions">Restrict the run to specific versions (comma-separated or repeated).</param>
+	/// <param name="output">Output directory. Defaults to <c>.artifacts/release-notes-backfill/</c> under the checkout root.</param>
+	/// <param name="concurrency">Maximum number of pages fetched concurrently (1–16, default 4).</param>
+	/// <param name="dryRun">Fetch and parse every page but write nothing to disk.</param>
 	/// <param name="ct">Cancellation token</param>
 	[NoOptionsInjection]
-	public async Task<int> MigrateFromWeb(
+	public async Task<int> Backfill(
 		string[]? products = null,
-		string s3BucketName = "",
 		string[]? versions = null,
+		string? output = null,
+		int concurrency = 4,
 		[DryRun] bool dryRun = false,
 		CancellationToken ct = default
 	)
@@ -1789,26 +1984,28 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		if (!dryRun && string.IsNullOrWhiteSpace(s3BucketName))
-		{
-			collector.EmitError(string.Empty, "--s3-bucket-name is required unless --dry-run is specified.");
-			_ = collector.StartAsync(ctx);
-			await collector.WaitForDrain();
-			await collector.StopAsync(ctx);
-			return 1;
-		}
+		var checkout = Paths.WorkingDirectoryRoot;
+		var resolved = string.IsNullOrWhiteSpace(output)
+			? Path.Join(checkout.FullName, ".artifacts", "release-notes-backfill")
+			: Path.GetFullPath(output);
 
-		var service = new WebMigrationService(logFactory, CheckoutsFileSystem.FromWorkingDirectory().Write);
-		var args = new MigrateFromWebArguments
+		var physical = new System.IO.Abstractions.FileSystem();
+		var fs = new CheckoutsFileSystem(
+			physical.DirectoryInfo.New(checkout.FullName),
+			physical.DirectoryInfo.New(resolved)).Write;
+
+		var service = new ChangelogBackfillService(logFactory, fs);
+		var args = new BackfillArguments
 		{
 			Products = ExpandCommaSeparated(products),
-			S3BucketName = s3BucketName,
-			DryRun = dryRun,
-			Versions = ExpandCommaSeparated(versions)
+			Versions = ExpandCommaSeparated(versions),
+			Output = resolved,
+			Concurrency = concurrency,
+			DryRun = dryRun
 		};
 
 		serviceInvoker.AddCommand(service, args,
-			static async (s, c, state, ct) => await s.MigrateFromWeb(c, state, ct)
+			static async (s, c, state, ct) => await s.Backfill(c, state, ct)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}

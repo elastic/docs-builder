@@ -58,6 +58,7 @@ environments:
       enabled: false
     feature_flags:
       NAVIGATION_PREVIEW: true
+      ASSEMBLER_API_EXPLORER: true
   air-gapped:
     uri: http://localhost:8080
     path_prefix: docs
@@ -93,6 +94,10 @@ narrative:
 #             # 'partial' --cone sparse-checkout of only the 'docs' folder with --filter=blob:none
 #   current: <git_ref>
 #   next: <git_ref>
+#   clone_timeout: <duration>
+#             # Per-attempt timeout for network git operations (fetch, pull) in CI.
+#             # Accepts a positive integer followed by 's' (seconds) or 'm' (minutes), e.g. '30s' or '15m'.
+#             # When omitted the global default of 10m applies in CI (unbounded locally).
 ###
 references:
 

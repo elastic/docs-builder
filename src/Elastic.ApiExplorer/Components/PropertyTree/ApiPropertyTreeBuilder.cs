@@ -22,6 +22,7 @@ public sealed record PropertyTreeScope
 	public bool IsRequest { get; init; }
 	public int Depth { get; init; }
 	public IReadOnlySet<string>? Ancestors { get; init; }
+	public IReadOnlyDictionary<string, string>? DescriptionOverrides { get; init; }
 
 	/// <summary>Overrides the schema's own required set at the top level; never inherited by children.</summary>
 	public ISet<string>? RequiredProperties { get; init; }
@@ -124,6 +125,19 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private bool HasActualProperties(IOpenApiSchema? schema) =>
 		_analyzer.GetSchemaProperties(schema)?.Count > 0;
 
+	private HtmlString RenderDescription(string name, string? specDescription, PropertyTreeScope scope)
+	{
+		// ponytail: match property Name only. Nested paths if authors need them.
+		var description = scope.IsRequest
+			&& scope.DescriptionOverrides is { Count: > 0 }
+			&& scope.DescriptionOverrides.TryGetValue(name, out var overrideText)
+			? overrideText
+			: specDescription;
+		return string.IsNullOrWhiteSpace(description)
+			? HtmlString.Empty
+			: options.RenderMarkdown(description);
+	}
+
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
 		var (_, propSchema, typeInfo, _, _, _, isRecursive) = row;
@@ -140,9 +154,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			IsRecursive = isRecursive,
 			IsRequest = scope.IsRequest,
 			Type = BuildAnnotation(typeInfo, HasActualProperties(propSchema)),
-			DescriptionHtml = string.IsNullOrWhiteSpace(propSchema.Description)
-				? HtmlString.Empty
-				: options.RenderMarkdown(propSchema.Description),
+			DescriptionHtml = RenderDescription(row.Name, propSchema.Description, scope),
 			ShowDeprecatedBadge = options.ShowDeprecated && propSchema.Deprecated,
 			Availability = options.ShowVersionInfo
 				? AvailabilityBadgeHelper.FromSchema(propSchema, options.VersionsConfiguration)

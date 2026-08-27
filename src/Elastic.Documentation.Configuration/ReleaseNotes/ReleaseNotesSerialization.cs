@@ -165,7 +165,9 @@ public static partial class ReleaseNotesSerialization
 		Impact = dto.Impact,
 		Action = dto.Action,
 		FeatureId = dto.FeatureId,
-		Highlight = dto.Highlight
+		Highlight = dto.Highlight,
+		Link = dto.Link,
+		SourceRedirect = dto.SourceRedirect ?? false
 	};
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) => new()
@@ -181,15 +183,29 @@ public static partial class ReleaseNotesSerialization
 		Impact = entry.Impact,
 		Action = entry.Action,
 		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight
+		Highlight = entry.Highlight,
+		Link = entry.Link
 	};
 
-	private static ProductReference ToProductReference(ProductInfoDto dto) => new()
+	private static ProductReference ToProductReference(ProductInfoDto dto)
 	{
-		ProductId = dto.Product ?? "",
-		Target = dto.Target,
-		Lifecycle = ParseLifecycle(dto.Lifecycle)
-	};
+		// Read the new `versions` list; fall back to wrapping the legacy `target` string
+		// for backward compat with already-published pool objects.
+#pragma warning disable CS0618 // reading obsolete Target for backward compat
+		IReadOnlyList<string> versions =
+			dto.Versions is { Count: > 0 }
+				? dto.Versions
+				: !string.IsNullOrWhiteSpace(dto.Target)
+					? [dto.Target]
+					: [];
+		return new()
+		{
+			ProductId = dto.Product ?? "",
+			Versions = versions,
+			Lifecycle = ParseLifecycle(dto.Lifecycle)
+		};
+#pragma warning restore CS0618
+	}
 
 	private static Bundle ToBundle(BundleDto dto) => new()
 	{
@@ -225,7 +241,8 @@ public static partial class ReleaseNotesSerialization
 		Subtype = ParseEntrySubtype(dto.Subtype),
 		Areas = dto.Areas,
 		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
-		Issues = dto.Issues
+		Issues = dto.Issues,
+		Link = dto.Link
 	};
 
 	private static BundledFile ToBundledFile(BundledFileDto dto) => new()
@@ -281,28 +298,44 @@ public static partial class ReleaseNotesSerialization
 
 	// Reverse mappings (Domain → DTO) for serialization
 
-	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
+	private static ChangelogEntryDto ToDto(ChangelogEntry entry)
 	{
-		Prs = entry.Prs?.ToList(),
-		Issues = entry.Issues?.ToList(),
-		Type = EntryTypeToString(entry.Type),
-		Subtype = EntrySubtypeToString(entry.Subtype),
-		Products = entry.Products?.Select(ToDto).ToList(),
-		Areas = entry.Areas?.ToList(),
-		Title = entry.Title,
-		Description = entry.Description,
-		Impact = entry.Impact,
-		Action = entry.Action,
-		FeatureId = entry.FeatureId,
-		Highlight = entry.Highlight
-	};
+		// Marker entries are link-only; emitting any other field would violate the marker contract.
+		// Source pointers also carry source-redirect: true so the delete path can distinguish them
+		// from ordinary PR markers without ambiguity.
+		if (entry.IsMarker)
+			return new ChangelogEntryDto { Link = entry.Link, SourceRedirect = entry.SourceRedirect ? true : null };
 
-	private static ProductInfoDto ToDto(ProductReference product) => new()
-	{
-		Product = product.ProductId,
-		Target = product.Target,
-		Lifecycle = LifecycleToString(product.Lifecycle)
-	};
+		return new ChangelogEntryDto
+		{
+			Prs = entry.Prs?.ToList(),
+			Issues = entry.Issues?.ToList(),
+			Type = EntryTypeToString(entry.Type),
+			Subtype = EntrySubtypeToString(entry.Subtype),
+			Products = entry.Products?.Select(ToDto).ToList(),
+			Areas = entry.Areas?.ToList(),
+			Title = entry.Title,
+			Description = entry.Description,
+			Impact = entry.Impact,
+			Action = entry.Action,
+			FeatureId = entry.FeatureId,
+			Highlight = entry.Highlight,
+			Link = entry.Link
+		};
+	}
+
+	private static ProductInfoDto ToDto(ProductReference product) =>
+		// Never write `target` — it is obsolete. Write `versions` when populated (notes only).
+		// `target` is still *read* from existing pool objects (see ToProductReference), but never written.
+#pragma warning disable CS0618 // deliberately not forwarding Target
+		new()
+		{
+			Product = product.ProductId,
+			Versions = product.Versions.Count > 0 ? product.Versions.ToList() : null,
+			Lifecycle = LifecycleToString(product.Lifecycle)
+		};
+#pragma warning restore CS0618
+
 
 	private static BundleDto ToDto(Bundle bundle) => new()
 	{
@@ -338,7 +371,8 @@ public static partial class ReleaseNotesSerialization
 		Subtype = EntrySubtypeToString(entry.Subtype),
 		Areas = entry.Areas?.ToList(),
 		Prs = entry.Prs?.ToList(),
-		Issues = entry.Issues?.ToList()
+		Issues = entry.Issues?.ToList(),
+		Link = entry.Link
 	};
 
 	private static BundledFileDto ToDto(BundledFile file) => new()

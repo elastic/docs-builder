@@ -82,12 +82,10 @@ api:
 - Child pages are fully rendered Markdown with access to all MyST directives, substitutions, and cross-links.
 - Child files are automatically excluded from normal HTML generation — you do not need to add them to the `exclude:` list.
 
-**What you cannot do today:** there is no way to override or augment an individual operation,
-tag, schema, or parameter description using a local Markdown file. Every description for generated
-operations, tags, and schema types comes verbatim from the OpenAPI JSON. For per-operation and
-per-parameter enrichment see the [CLI reference](../cli-schema/index.md), which provides a
-fine-grained supplemental mechanism as a reference model for what future API augmentation could
-look like.
+Per-operation and per-tag Markdown files in `api/<key>/` (`op-*.md`, `tag-*.md`) override
+descriptions and can append extra sections. Parameter and request-body field text can be
+replaced with definition lists. Schema type pages still take descriptions from the OpenAPI
+spec only. Full authoring rules will land with the content-enrichment docs.
 
 #### Child file naming and validation
 
@@ -226,14 +224,17 @@ api:
 
 ## When the API Explorer runs
 
-The API Explorer generates documentation in two scenarios:
+The API Explorer generates documentation in these scenarios:
 
 - **`docs-builder build`**: API docs are generated as part of the standard build. Use `--skip-api` to skip generation for faster iteration on content.
 - **`docs-builder serve`**: API docs are generated on startup and regenerated automatically when spec files change.
+- **Assembler builds**: API docs are generated when the `ASSEMBLER_API_EXPLORER` feature flag is on. That flag is on for the `staging` and `preview` environments. Production stays off until cutover.
 
 :::{note}
 API generation is skipped when running `docs-builder serve --watch`. This is a performance optimization for `dotnet watch` workflows. Run `serve` without `--watch` to include API docs in your local preview.
 :::
+
+This repository's own `_docset.yml` declares a local `docs-builder-elasticsearch` API that reads `elasticsearch.json` and sets `repository: elastic/elasticsearch-specification`. Use that entry to preview ApiExplorer and supplemental files during isolated `docs-builder serve` (open `/api/doc/docs-builder-elasticsearch/`). The key is not `elasticsearch`, so assembler preview does not collide with docs-content.
 
 ## Link to API pages in navigation
 

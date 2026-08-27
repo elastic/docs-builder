@@ -335,6 +335,7 @@ jobs:
           && steps.internal-docs-build.outputs.skip != 'true'
           && steps.internal-docs-build.outcome == 'success'
           && steps.internal-validate-path-prefixes.outcome == 'success'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
 
       - name: Upload to S3
         id: s3-upload
@@ -343,6 +344,7 @@ jobs:
           && !cancelled()
           && steps.internal-docs-build.outputs.skip != 'true'
           && steps.internal-docs-build.outcome == 'success'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         env:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
@@ -351,6 +353,21 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
+
+      - name: Deploy redirects to CloudFront KVS
+        if: >
+          env.MATCH == 'true'
+          && !cancelled()
+          && needs.check.outputs.any_modified != 'false'
+          && github.event_name == 'push'
+          && steps.s3-upload.outcome == 'success'
+        # Best-effort: the preview role may not yet have cloudfront-keyvaluestore:PutKey granted.
+        # Don't block the preview deploy on it; treat a permissions gap as a follow-up, not an outage.
+        continue-on-error: true
+        run: |
+          if [ -f .artifacts/docs/html/redirects.json ]; then
+            dotnet run --project src/tooling/docs-builder -- assembler deploy update-redirects --no-delete preview --redirectsFile .artifacts/docs/html/redirects.json
+          fi
 
       - name: Update Link Index
         if: >

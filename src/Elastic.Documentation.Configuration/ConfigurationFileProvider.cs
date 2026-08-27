@@ -26,6 +26,7 @@ public partial class ConfigurationFileProvider
 	public static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
 		.WithTypeConverter(new HintTypeSetConverter())
+		.WithTypeConverter(new DurationYamlConverter())
 		.WithTypeConverter(new ApplicableToYamlConverter([]))
 		.WithTypeConverter(new TocItemCollectionYamlConverter())
 		.WithTypeConverter(new TocItemYamlConverter())

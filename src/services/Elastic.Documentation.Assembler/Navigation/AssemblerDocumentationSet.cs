@@ -78,7 +78,8 @@ public record AssemblerDocumentationSet
 				Id = env.Optimizely.Id
 			},
 			CanonicalBaseUrl = new Uri("https://www.elastic.co"), // Always use the production URL. In case a page is leaked to a search engine, it should point to the production site.
-			BuildType = BuildType.Assembler
+			BuildType = BuildType.Assembler,
+			ContentSource = env.ContentSource
 		};
 		BuildContext = buildContext;
 

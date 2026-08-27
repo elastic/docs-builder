@@ -21,7 +21,7 @@ public class ReaderTests
 	private static IFileInfo LocalSpecFile()
 	{
 		var fileSystem = new FileSystem();
-		var path = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch-openapi-docs.json");
+		var path = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json");
 		return fileSystem.FileInfo.New(path);
 	}
 

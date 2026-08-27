@@ -47,6 +47,22 @@ public record ChangelogEntry
 	public bool? Highlight { get; init; }
 
 	/// <summary>
+	/// Marker reference: a bare PR number pointing to the authoritative entry in the same pool.
+	/// Non-null only on machine-written marker objects emitted by the pipeline for non-primary PRs
+	/// in a multi-PR entry. A marker carries <c>link:</c> and nothing else.
+	/// </summary>
+	public string? Link { get; init; }
+
+	/// <summary>True when this entry is a pipeline-written marker that redirects to another PR's entry.</summary>
+	public bool IsMarker => Link is not null;
+
+	/// <summary>
+	/// When true, this entry is a scrubber-written source pointer in the public bucket that traces
+	/// to a canonical key. Distinguishes source pointers from ordinary link-only PR markers.
+	/// </summary>
+	public bool SourceRedirect { get; init; }
+
+	/// <summary>
 	/// Converts this ChangelogEntry to a BundledEntry for embedding in bundles.
 	/// File property is set to null; set it separately using a 'with' expression.
 	/// </summary>
@@ -64,6 +80,7 @@ public record ChangelogEntry
 		Subtype = Subtype,
 		Areas = Areas,
 		Prs = Prs,
-		Issues = Issues
+		Issues = Issues,
+		Link = Link
 	};
 }

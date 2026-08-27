@@ -53,7 +53,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -117,7 +117,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
 			Products =
 			[
-				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" },
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-08-05" }
 			],
 			Config = configPath,
@@ -183,7 +183,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
 			Products =
 			[
-				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" },
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-08-05" }
 			],
 			Config = configPath,

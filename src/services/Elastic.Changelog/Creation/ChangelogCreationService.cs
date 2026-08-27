@@ -37,7 +37,6 @@ public record CreateChangelogArguments
 	public string? Output { get; init; }
 	public string? Config { get; init; }
 	public bool UsePrNumber { get; init; }
-	public bool UseIssueNumber { get; init; }
 	public bool? StripTitlePrefix { get; init; }
 	/// <summary>
 	/// Whether to extract release note text from PR/issue descriptions for the entry description. null = use config default.
@@ -63,6 +62,9 @@ public record CreateChangelogArguments
 	/// unauthorized GITHUB_TOKEN would otherwise silently produce unfiltered, title-less changelogs.
 	/// </summary>
 	public bool StrictFetch { get; init; }
+
+	public bool IsNote { get; init; }
+	public string? NoteName { get; init; }
 }
 
 /// <summary>
@@ -147,26 +149,81 @@ IEnvironmentVariables? env = null
 		}
 	}
 
-	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config)
+	public async Task<bool> CreateNote(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
 	{
-		var usePrNumber = input.UsePrNumber;
-		var useIssueNumber = input.UseIssueNumber;
-
-		if (!usePrNumber && !useIssueNumber)
+		try
 		{
-			usePrNumber = config.Filename == FilenameStrategy.Pr;
-			useIssueNumber = config.Filename == FilenameStrategy.Issue;
-		}
+			var cliDescription = input.Description;
+			input = EnrichFromCI(input);
 
-		return input with
+			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			if (config == null)
+			{
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
+				return false;
+			}
+
+			input = ApplyConfigDefaults(input, config);
+
+			// Mirror CreateChangelog: discard CI-injected description when extraction is disabled
+			if (input.ExtractionDisabled
+				&& string.IsNullOrWhiteSpace(cliDescription)
+				&& !string.IsNullOrWhiteSpace(input.Description))
+			{
+				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
+				input = input with { Description = null };
+			}
+
+			// Validate PR citation format (same rule as `add`: numeric refs require --owner/--repo)
+			if (input.Prs is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultiplePrFormat(collector, input.Prs, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidatePrFormat(collector, input.Prs?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			// Validate issue citation format
+			if (input.Issues is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultipleIssueFormat(collector, input.Issues, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidateIssueFormat(collector, input.Issues?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed: false))
+				return false;
+
+			if (!_validator.ValidateNoteProducts(collector, input))
+				return false;
+
+			if (!_validator.ValidateAgainstConfiguration(collector, input, config))
+				return false;
+
+			return await _fileWriter.WriteNoteAsync(input, config, ctx);
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error creating note: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied creating note: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
+	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config) =>
+		// Filename strategy is always Pr now; UsePrNumber is kept for backward compat but is effectively always true.
+		input with
 		{
 			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
 			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues,
 			StripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix,
-			UsePrNumber = usePrNumber,
-			UseIssueNumber = useIssueNumber
+			UsePrNumber = true
 		};
-	}
 
 	/// <summary>
 	/// Infers products from configuration defaults or repository name.
@@ -302,6 +359,10 @@ IEnvironmentVariables? env = null
 		if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
 			return false;
 
+		// Entries must not carry version targets; applicability comes from the origin branch
+		if (!_validator.ValidateNoVersionTarget(collector, input))
+			return false;
+
 		// Validate against configuration
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
 			return false;
@@ -397,6 +458,10 @@ IEnvironmentVariables? env = null
 		}
 
 		if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
+			return false;
+
+		// Entries must not carry version targets; applicability comes from the origin branch
+		if (!_validator.ValidateNoVersionTarget(collector, input))
 			return false;
 
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))

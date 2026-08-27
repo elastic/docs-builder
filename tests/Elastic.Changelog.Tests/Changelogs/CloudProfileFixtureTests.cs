@@ -97,6 +97,13 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
+		// Write entries to a local changelog directory (use_local_changelogs: true forces local sourcing).
+		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
+		FileSystem.Directory.CreateDirectory(changelogDir);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(changelogDir, "1-feature.yaml"), FeatureEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(changelogDir, "2-docs.yaml"), DocsEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(changelogDir, "3-other.yaml"), OtherProductEntry, TestContext.Current.CancellationToken);
+
 		// language=yaml
 		var configContent =
 			"""
@@ -114,19 +121,20 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 			  bundle:
 			    exclude_types: "docs"
 			bundle:
-			  output_directory: PLACEHOLDER
+			  output_directory: OUTPUT_DIR
+			  directory: CHANGELOG_DIR
 			  repo: widget
 			  owner: elastic
 			  release_dates: false
+			  use_local_changelogs: true
 			  link_allow_repos:
 			    - elastic/elasticsearch
 			    - elastic/kibana
 			  profiles:
 			    wh-monthly:
 			      products: "cloud-hosted {version}-* *"
-			      output: "widget-{version}.yaml"
 			      output_products: "cloud-hosted {version}"
-			""".Replace("PLACEHOLDER", outputDir);
+			""".Replace("OUTPUT_DIR", outputDir).Replace("CHANGELOG_DIR", changelogDir);
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -147,14 +155,12 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		// Entries are sourced once from the authoring pool (changelog/{org}/{repo}/{branch}/...), not from
-		// any product-scoped path. Owner comes from bundle.owner; branch defaults to "main".
-		handler.RequestedPaths.Should().Contain($"/changelog/elastic/{AuthoringRepo}/main/registry.json");
-		handler.RequestedPaths.Should().NotContain(p => p.Contains("/cloud-hosted/changelog/", StringComparison.Ordinal));
+		// use_local_changelogs: true forces local sourcing; the CDN must not be touched.
+		handler.RequestedPaths.Should().BeEmpty("use_local_changelogs must not reach the CDN");
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle("the monthly profile writes a single bundle file");
-		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-2026-05.yaml");
+		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("cloud-hosted-2026-05.yaml");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 

@@ -57,7 +57,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		};
 		var context = CreateContext(collector, versionless, products);
 		var localFile = new FileSystem().FileInfo.New(
-			Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch-openapi-docs.json"));
+			Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json"));
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
 		A.CallTo(() => reader.ReadAsync(localFile)).Returns(expectedDocument);
@@ -71,8 +71,8 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			versionIndexClient,
 			reader);
 
-		var documents = await generator.ResolveDocumentsForProduct(
-			"cloud-serverless", ApiConfig(product, localFile), TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"cloud-serverless", ApiConfig(product, localFile), TestContext.Current.CancellationToken)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.CallCount.Should().Be(0, "a versionless local spec must short-circuit remote version resolution");
@@ -112,8 +112,8 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 
 		var errorsBeforeResolution = collector.Errors;
 
-		var documents = await generator.ResolveDocumentsForProduct(
-			"elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.RequestedPaths.Should().BeEquivalentTo(
@@ -145,8 +145,8 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			reader);
 		var errorsBeforeResolution = collector.Errors;
 
-		var documents = await generator.ResolveDocumentsForProduct(
-			"elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken)).Documents;
 
 		documents.Should().BeEmpty();
 		collector.Errors.Should().BeGreaterThan(errorsBeforeResolution);

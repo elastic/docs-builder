@@ -1359,24 +1359,36 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot have both 'exclude_products' and 'include_products'"));
 	}
 
-	[Theory]
-	[InlineData("pr", FilenameStrategy.Pr)]
-	[InlineData("issue", FilenameStrategy.Issue)]
-	[InlineData("timestamp", FilenameStrategy.Timestamp)]
-	public async Task LoadChangelogConfiguration_Filename_ParsesStrategy(string yamlValue, FilenameStrategy expected)
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Pr_ParsesStrategy()
 	{
-		var config = await LoadConfig(
-			$"""
-			filename: {yamlValue}
-			""");
+		var config = await LoadConfig("filename: pr");
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config.Filename.Should().Be(expected);
+		config.Filename.Should().Be(FilenameStrategy.Pr);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToTimestamp()
+	public async Task LoadChangelogConfiguration_Filename_Issue_ReturnsError()
+	{
+		var config = await LoadConfig("filename: issue");
+
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Timestamp_ReturnsError()
+	{
+		var config = await LoadConfig("filename: timestamp");
+
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToPr()
 	{
 		var config = await LoadConfig(
 			"""
@@ -1386,7 +1398,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config.Filename.Should().Be(FilenameStrategy.Timestamp);
+		config.Filename.Should().Be(FilenameStrategy.Pr);
 	}
 
 	[Fact]

@@ -303,15 +303,27 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 
 		// Process filename strategy
-		var filenameStrategy = FilenameStrategy.Timestamp;
+		var filenameStrategy = FilenameStrategy.Pr;
 		if (!string.IsNullOrWhiteSpace(yamlConfig.Filename))
 		{
 			if (!FilenameStrategyExtensions.TryParse(yamlConfig.Filename, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true))
 			{
-				var valid = string.Join(", ", FilenameStrategyExtensions.GetValues().Select(v => v.ToStringFast(true)));
-				collector.EmitError(configPath, $"filename: '{yamlConfig.Filename}' is not valid. Use one of: {valid}");
+				collector.EmitError(configPath, $"filename: '{yamlConfig.Filename}' is not valid. The only supported value is 'pr'. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'.");
 				return null;
 			}
+
+			if (parsed == FilenameStrategy.Timestamp)
+			{
+				collector.EmitError(configPath, "filename: 'timestamp' is no longer supported. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'.");
+				return null;
+			}
+
+			if (parsed == FilenameStrategy.Issue)
+			{
+				collector.EmitError(configPath, "filename: 'issue' is no longer supported. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'.");
+				return null;
+			}
+
 			filenameStrategy = parsed;
 		}
 
@@ -522,7 +534,9 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					: new BundleProfile
 					{
 						Products = kvp.Value.Products,
+#pragma warning disable CS0618 // Output stays parseable for one release cycle so ValidateProfileOutputs can emit an actionable error
 						Output = kvp.Value.Output,
+#pragma warning restore CS0618
 						OutputProducts = kvp.Value.OutputProducts,
 						Description = kvp.Value.Description,
 						Repo = kvp.Value.Repo,

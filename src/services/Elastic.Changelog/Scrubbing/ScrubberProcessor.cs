@@ -2,12 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
 using Elastic.Changelog.Reconciliation;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Scrubbing;
@@ -31,6 +33,8 @@ public sealed class ScrubberProcessor(
 	IChangelogContentScrubber scrubber,
 	BundleRegistryReconciler reconciler,
 	ShallowRegistryReconciler shallowReconciler,
+	NotesIndexReconciler notesReconciler,
+	NoteAmendReconciler noteAmendReconciler,
 	ReconcileMetrics? metrics = null
 )
 {
@@ -75,6 +79,7 @@ public sealed class ScrubberProcessor(
 	{
 		var objectWork = new Dictionary<string, ObjectWork>(StringComparer.Ordinal);
 		var groupWork = new Dictionary<string, GroupWork>(StringComparer.Ordinal);
+		var notesWork = new Dictionary<string, GroupWork>(StringComparer.Ordinal);
 		var shallowWork = new Dictionary<ChangelogScopeKind, ShallowWork>();
 		var failedIds = new HashSet<string>(StringComparer.Ordinal);
 
@@ -87,7 +92,7 @@ public sealed class ScrubberProcessor(
 				{
 					var key = Uri.UnescapeDataString(record.S3.Object.Key.Replace('+', ' '));
 					_logger.LogInformation("Batch names key={Key} (event={EventName})", key, record.EventName?.Value);
-					Classify(message.MessageId, record.S3.Bucket.Name, key, objectWork, groupWork, shallowWork);
+					Classify(message.MessageId, record.S3.Bucket.Name, key, objectWork, groupWork, notesWork, shallowWork);
 				}
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
@@ -125,6 +130,21 @@ public sealed class ScrubberProcessor(
 			}
 		}
 
+		foreach (var work in notesWork.Values)
+		{
+			ctx.ThrowIfCancellationRequested();
+			try
+			{
+				var notesByVersion = await notesReconciler.ReconcileRepoAsync(work.Scope, ctx);
+				await noteAmendReconciler.ReconcileAsync(work.Scope, notesByVersion, ctx);
+			}
+			catch (Exception e) when (e is not OperationCanceledException)
+			{
+				_logger.LogError(e, "Notes reconcile for {Scope} failed; failing its {Count} contributing message(s)", work.Scope, work.MessageIds.Count);
+				failedIds.UnionWith(work.MessageIds);
+			}
+		}
+
 		foreach (var work in shallowWork.Values)
 		{
 			ctx.ThrowIfCancellationRequested();
@@ -149,6 +169,7 @@ public sealed class ScrubberProcessor(
 		string key,
 		Dictionary<string, ObjectWork> objectWork,
 		Dictionary<string, GroupWork> groupWork,
+		Dictionary<string, GroupWork> notesWork,
 		Dictionary<ChangelogScopeKind, ShallowWork> shallowWork)
 	{
 		var hasScope = ChangelogScope.TryFromKey(key, out var scope);
@@ -158,15 +179,23 @@ public sealed class ScrubberProcessor(
 			if (!hasScope)
 				return;
 
-			// The two trees part ways here. Bundle manifests are reconciler-owned: the event only
-			// schedules a group reconcile, so client-authored JSON never reaches the public bucket
-			// for the tree consumers enumerate. Pool manifests stay client-authored pass-through —
-			// `changelog bundle` still enumerates a pool through its manifest today, and 404-probing
-			// only works once entries are guaranteed one-per-PR — until Phase 3 retires them.
+			// Bundle manifests are reconciler-owned: the event schedules a group reconcile so
+			// client-authored JSON never reaches the public bucket directly. Pool registry keys
+			// (changelog/{org}/{repo}/{branch}/registry.json) are no longer written by any client
+			// — the pool index was retired in #3760. Drop them with a debug log; a stale event
+			// from an old client is harmless and does not need to copy anything.
 			if (scope!.Kind == ChangelogScopeKind.Bundle)
 				AddGroup(groupWork, scope, messageId);
 			else
-				AddObject(objectWork, key, sourceBucket, messageId, passThrough: true);
+				_logger.LogDebug("Ignoring retired pool registry key: {Key}", key);
+			return;
+		}
+
+		// Notes indexes (notes-{target}.json) are reconciler-owned; a client that uploads one is
+		// rejected here — the reconciler writes directly to the public bucket, so no copy is needed.
+		if (ChangelogKeys.IsNotesIndex(key))
+		{
+			_logger.LogWarning("Rejecting client-uploaded notes index {Key}; notes indexes are reconciler-owned", key);
 			return;
 		}
 
@@ -190,8 +219,24 @@ public sealed class ScrubberProcessor(
 
 		if (scope!.Kind == ChangelogScopeKind.Bundle)
 			AddGroup(groupWork, scope, messageId);
+
+		// A note-*.yml upload triggers a notes-index reconcile for the whole repo — all targets
+		// whose index lists this note must be rebuilt. The Changelog scope's group is {org}/{repo}/{branch};
+		// the notes scope is the two-segment {org}/{repo} prefix.
+		if (scope.Kind == ChangelogScopeKind.Changelog)
+		{
+			var fileName = key[scope.Prefix.Length..];
+			if (IsNoteFileName(fileName))
+				AddNotesGroup(notesWork, scope.Group, messageId);
+		}
+
 		AddShallow(shallowWork, scope, messageId);
 	}
+
+	private static bool IsNoteFileName(string fileName) =>
+		fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase)
+		&& (fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
+		&& !fileName.Contains('/', StringComparison.Ordinal);
 
 	private static void AddObject(
 		Dictionary<string, ObjectWork> objectWork,
@@ -215,6 +260,24 @@ public sealed class ScrubberProcessor(
 		{
 			work = new GroupWork(scope);
 			groupWork[scope.Prefix] = work;
+		}
+		_ = work.MessageIds.Add(messageId);
+	}
+
+	private static void AddNotesGroup(Dictionary<string, GroupWork> notesWork, string changelogGroup, string messageId)
+	{
+		// changelogGroup is {org}/{repo}/{branch...}; extract {org}/{repo} by taking the first two segments.
+		var parts = changelogGroup.Split('/');
+		if (parts.Length < 2)
+			return;
+		var org = parts[0];
+		var repo = parts[1];
+		if (!ChangelogScope.TryCreateNotes(org, repo, out var notesScope))
+			return;
+		if (!notesWork.TryGetValue(notesScope.Prefix, out var work))
+		{
+			work = new GroupWork(notesScope);
+			notesWork[notesScope.Prefix] = work;
 		}
 		_ = work.MessageIds.Add(messageId);
 	}
@@ -254,13 +317,88 @@ public sealed class ScrubberProcessor(
 				}
 				else
 				{
-					var scrubbed = await scrubber.ScrubAsync(key, source.Content, ctx);
-					await PutPublicObject(key, scrubbed, "application/yaml", ctx);
-					_logger.LogInformation("Scrubbed and wrote {Key} to public bucket", key);
+					var scrubResult = await scrubber.ScrubAsync(key, source.Content, ctx);
+					var publicKey = scrubResult.CanonicalKey ?? key;
+
+					// Read the current public entry before overwriting so we can derive which
+					// marker objects it previously produced and delete any that are no longer needed.
+					var oldPublicContent = await TryGetPublicObject(publicKey, ctx);
+
+					// Issue 1 guard: a private marker derived from raw (pre-allowlist) PRs can race
+					// with the scrubber writing canonical public content at the same key. If canonical
+					// content already occupies the public key, skip the marker write so it cannot
+					// overwrite the canonical entry that the primary object's scrub already produced.
+					// A null return from TryDeserializeEntry (unparseable content) is treated as
+					// canonical — the safest assumption when we cannot classify the existing object.
+					var skipWrite = scrubResult.IsMarker
+						&& oldPublicContent is not null
+						&& TryDeserializeEntry(oldPublicContent)?.IsMarker != true;
+
+					if (skipWrite)
+					{
+						_logger.LogInformation(
+							"Skipped pass-through marker {Key}: canonical content in public bucket takes precedence", key);
+					}
+					else
+					{
+						await PutPublicObject(publicKey, scrubResult.Content, "application/yaml", ctx);
+						if (scrubResult.CanonicalKey is not null)
+						{
+							_logger.LogInformation("Scrubbed {Key} → canonical public key {CanonicalKey}", key, scrubResult.CanonicalKey);
+							// Issue 2: write a source pointer at the source key in the public bucket so
+							// that a delete event for 'key' can trace back to the canonical key and clean
+							// it up (see delete path below). The pointer uses the same link: format as
+							// secondary-PR markers; the non-canonical filename makes it distinguishable.
+							await WriteSourcePointerAsync(key, scrubResult.CanonicalKey, ctx);
+						}
+						else
+							_logger.LogInformation("Scrubbed and wrote {Key} to public bucket", key);
+
+						foreach (var (markerKey, markerContent) in scrubResult.Markers)
+						{
+							await PutPublicObject(markerKey, markerContent, "application/yaml", ctx);
+							_logger.LogInformation("Wrote marker {MarkerKey} → {PrimaryKey}", markerKey, publicKey);
+						}
+
+						// Remove marker objects that existed in the previous scrub result but are no
+						// longer produced (e.g. an entry shrank from 3 PRs to 1).
+						await DeleteStaleMarkersAsync(publicKey, oldPublicContent, scrubResult.Markers, ctx);
+					}
 				}
 			}
 			else
 			{
+				// Private object is gone. Read the public bucket to discover what was previously
+				// written for this source key so we can clean it up completely.
+				//
+				// Two sub-cases:
+				// (a) Source key carries a scrubber-written source pointer (SourceRedirect == true):
+				//     the scrubber routed canonical content to a different public key and left a
+				//     breadcrumb here. Trace the pointer to the canonical key, delete it and all its
+				//     markers, then delete the pointer itself. SourceRedirect is processor-owned —
+				//     the scrubber strips it from private-authored markers on the way through.
+				// (b) Any other key (canonical entry, secondary-PR marker, note-* file): clean up
+				//     any markers the canonical may have emitted and delete the key itself.
+				var publicContent = await TryGetPublicObject(key, ctx);
+				var publicEntry = publicContent is not null ? TryDeserializeEntry(publicContent) : null;
+
+				if (publicEntry?.SourceRedirect == true)
+				{
+					var lastSlash = key.LastIndexOf('/');
+					var keyPrefix = lastSlash >= 0 ? key[..(lastSlash + 1)] : string.Empty;
+					var canonicalKey = $"{keyPrefix}{publicEntry.Link}.yaml";
+					var canonicalContent = await TryGetPublicObject(canonicalKey, ctx);
+					await DeleteStaleMarkersAsync(canonicalKey, canonicalContent, [], ctx);
+					await DeletePublicObject(canonicalKey, ctx);
+					_logger.LogInformation(
+						"Source pointer {Key} traced to canonical {CanonicalKey}; deleted canonical and its markers",
+						key, canonicalKey);
+				}
+				else if (publicContent is not null)
+				{
+					await DeleteStaleMarkersAsync(key, publicContent, [], ctx);
+				}
+
 				await DeletePublicObject(key, ctx);
 				_logger.LogInformation("Private {Key} is gone; removed its public copy", key);
 			}
@@ -323,6 +461,110 @@ public sealed class ScrubberProcessor(
 		{
 			return null;
 		}
+	}
+
+	private static ChangelogEntry? TryDeserializeEntry(string? content)
+	{
+		if (content is null)
+			return null;
+		try
+		{ return ReleaseNotesSerialization.DeserializeEntry(content); }
+		catch { return null; }
+	}
+
+	private async Task WriteSourcePointerAsync(string sourceKey, string canonicalKey, Cancel ctx)
+	{
+		var lastSlash = canonicalKey.LastIndexOf('/');
+		var canonicalFileName = lastSlash >= 0 ? canonicalKey[(lastSlash + 1)..] : canonicalKey;
+		var stem = Path.GetFileNameWithoutExtension(canonicalFileName);
+		if (!int.TryParse(stem, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+			return; // Not a PR-based canonical key; nothing to point to.
+		var pointerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = stem, SourceRedirect = true });
+		await PutPublicObject(sourceKey, pointerContent, "application/yaml", ctx);
+		_logger.LogInformation("Wrote source pointer {SourceKey} → canonical {CanonicalKey}", sourceKey, canonicalKey);
+	}
+
+
+	private async Task<string?> TryGetPublicObject(string key, Cancel ctx)
+	{
+		try
+		{
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
+			{
+				BucketName = publicBucketName,
+				Key = key
+			}, ctx);
+			await using var stream = response.ResponseStream;
+			using var reader = new StreamReader(stream);
+			return await reader.ReadToEndAsync(ctx);
+		}
+		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+		{
+			return null;
+		}
+	}
+
+	private async Task DeleteStaleMarkersAsync(
+		string publicKey,
+		string? oldPublicContent,
+		IReadOnlyList<(string Key, string Content)> newMarkers,
+		Cancel ctx)
+	{
+		if (oldPublicContent is null)
+			return;
+
+		IReadOnlyList<string> oldMarkerKeys;
+		try
+		{
+			oldMarkerKeys = DeriveMarkerKeys(publicKey, oldPublicContent);
+		}
+		catch
+		{
+			// If the old content can't be parsed, we can't derive old markers — skip cleanup.
+			return;
+		}
+
+		if (oldMarkerKeys.Count == 0)
+			return;
+
+		var newMarkerKeySet = newMarkers.Select(m => m.Key).ToHashSet(StringComparer.Ordinal);
+		foreach (var staleKey in oldMarkerKeys)
+		{
+			if (newMarkerKeySet.Contains(staleKey))
+				continue;
+			await DeletePublicObject(staleKey, ctx);
+			_logger.LogInformation("Deleted stale marker {StaleKey} (no longer referenced by {PrimaryKey})", staleKey, publicKey);
+		}
+	}
+
+	private static IReadOnlyList<string> DeriveMarkerKeys(string publicKey, string content)
+	{
+		var entry = ReleaseNotesSerialization.DeserializeEntry(content);
+		if (entry.IsMarker || entry.Prs is not { Count: > 0 })
+			return [];
+
+		var lastSlash = publicKey.LastIndexOf('/');
+		if (lastSlash < 0)
+			return [];
+		var keyPrefix = publicKey[..(lastSlash + 1)];
+
+		var prNumbers = entry.Prs
+			.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr))
+			.Where(n => n.HasValue)
+			.Select(n => n!.Value)
+			.Distinct()
+			.OrderBy(n => n)
+			.ToList();
+
+		if (prNumbers.Count <= 1)
+			return [];
+
+		var primaryPr = prNumbers[0];
+		return prNumbers
+			.Skip(1)
+			.Select(pr => $"{keyPrefix}{pr}.yaml")
+			.Where(k => !string.Equals(k, $"{keyPrefix}{primaryPr}.yaml", StringComparison.OrdinalIgnoreCase))
+			.ToList();
 	}
 
 	private async Task PutPublicObject(string key, string content, string contentType, Cancel ctx) =>

@@ -159,7 +159,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 		foreach (var pr in resolution.PullRequests)
 		{
-			var matches = parsedCandidates.Where(c => MatchesPr(c, pr.Number, options)).ToList();
+			var matches = parsedCandidates.Where(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)).ToList();
 			if (matches.Count > 0)
 			{
 				var fileNames = new List<string>();
@@ -214,9 +214,15 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		};
 	}
 
-	private sealed record ParsedCandidate(string FileName, IReadOnlyList<int> FileNameNumbers, MatchedChangelogFile? Entry, string? ParseError, IReadOnlyList<string> NormalizedPrs);
+	internal sealed record ChangelogPoolCandidate(
+		string FileName,
+		string Content,
+		IReadOnlyList<int> FileNameNumbers,
+		MatchedChangelogFile? Entry,
+		string? ParseError,
+		IReadOnlyList<string> Prs);
 
-	private static ParsedCandidate ParseCandidate(string fileName, string content)
+	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content)
 	{
 		var numbers = ParseLeadingPrNumbers(fileName);
 		try
@@ -232,11 +238,11 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 				Checksum = checksum
 			};
 			var prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : new List<string>());
-			return new ParsedCandidate(fileName, numbers, entry, null, prs);
+			return new ChangelogPoolCandidate(fileName, content, numbers, entry, null, prs);
 		}
 		catch (YamlException ex)
 		{
-			return new ParsedCandidate(fileName, numbers, null, ex.Message, []);
+			return new ChangelogPoolCandidate(fileName, content, numbers, null, ex.Message, []);
 		}
 	}
 
@@ -265,14 +271,19 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		return numbers;
 	}
 
-	private static bool MatchesPr(ParsedCandidate candidate, int prNumber, GitRangeEntryResolutionOptions options)
+	/// <summary>
+	/// Whether a pool entry belongs to a PR: by file-name-derived PR numbers (file names survive
+	/// scrubbing, so this works for private pools whose <c>prs</c> references were removed from the
+	/// public copies) or by the entry's <c>prs</c> references.
+	/// </summary>
+	internal static bool MatchesPr(ChangelogPoolCandidate candidate, int prNumber, string owner, string repo)
 	{
 		if (candidate.FileNameNumbers.Contains(prNumber))
 			return true;
 
-		var expected = $"{options.Owner}/{options.Repo}#{prNumber}".ToLowerInvariant();
-		return candidate.NormalizedPrs.Any(pr =>
-			ChangelogBundlingService.NormalizePrForComparison(pr, options.Owner, options.Repo) == expected);
+		var expected = $"{owner}/{repo}#{prNumber}".ToLowerInvariant();
+		return candidate.Prs.Any(pr =>
+			ChangelogBundlingService.NormalizePrForComparison(pr, owner, repo) == expected);
 	}
 
 	/// <summary>

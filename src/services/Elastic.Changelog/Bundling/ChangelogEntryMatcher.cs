@@ -28,18 +28,37 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		Cancel ctx)
 	{
 		var changelogEntries = new List<MatchedChangelogFile>();
+		var markers = new List<(string FileName, string Link)>();
 		var matchedPrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var matchedIssues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var seenChangelogs = new HashSet<string>();
 
 		foreach (var filePath in yamlFiles)
 		{
-			var entry = await ProcessFileAsync(collector, filePath, criteria, seenChangelogs, matchedPrs, matchedIssues, ctx);
+			ctx.ThrowIfCancellationRequested();
+			string content;
+			try
+			{
+				content = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
+			}
+			catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException or StackOverflowException or ThreadAbortException))
+			{
+				logger.LogWarning(ex, "Error reading file {FilePath}", filePath);
+				collector.EmitError(filePath, $"Error processing file: {ex.Message}");
+				continue;
+			}
+			var fileName = fileSystem.Path.GetFileName(filePath);
+			if (TryExtractMarkerLink(content, out var link))
+			{
+				markers.Add((fileName, link!));
+				continue;
+			}
+			var entry = ProcessContent(collector, filePath, fileName, content, criteria, seenChangelogs, matchedPrs, matchedIssues);
 			if (entry != null)
 				changelogEntries.Add(entry);
 		}
 
-		return BuildResult(collector, changelogEntries, criteria, matchedPrs, matchedIssues);
+		return BuildResult(collector, changelogEntries, markers, criteria, matchedPrs, matchedIssues);
 	}
 
 	/// <summary>
@@ -54,6 +73,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		Cancel ctx)
 	{
 		var changelogEntries = new List<MatchedChangelogFile>();
+		var markers = new List<(string FileName, string Link)>();
 		var matchedPrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var matchedIssues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var seenChangelogs = new HashSet<string>();
@@ -61,21 +81,29 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		foreach (var (fileName, content) in contents)
 		{
 			ctx.ThrowIfCancellationRequested();
+			if (TryExtractMarkerLink(content, out var link))
+			{
+				markers.Add((fileName, link!));
+				continue;
+			}
 			var entry = ProcessContent(collector, fileName, fileName, content, criteria, seenChangelogs, matchedPrs, matchedIssues);
 			if (entry != null)
 				changelogEntries.Add(entry);
 		}
 
-		return BuildResult(collector, changelogEntries, criteria, matchedPrs, matchedIssues);
+		return BuildResult(collector, changelogEntries, markers, criteria, matchedPrs, matchedIssues);
 	}
 
 	private static ChangelogMatchResult BuildResult(
 		IDiagnosticsCollector collector,
 		List<MatchedChangelogFile> changelogEntries,
+		List<(string FileName, string Link)> markers,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs,
 		HashSet<string> matchedIssues)
 	{
+		ResolveMarkers(collector, markers, changelogEntries);
+
 		if (criteria.PrsToMatch.Count > 0)
 		{
 			foreach (var pr in criteria.PrsToMatch.Where(pr => !matchedPrs.Contains(pr)))
@@ -96,29 +124,48 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		};
 	}
 
-	private async Task<MatchedChangelogFile?> ProcessFileAsync(
+	private static void ResolveMarkers(
 		IDiagnosticsCollector collector,
-		string filePath,
-		ChangelogFilterCriteria criteria,
-		HashSet<string> seenChangelogs,
-		HashSet<string> matchedPrs,
-		HashSet<string> matchedIssues,
-		Cancel ctx)
+		List<(string FileName, string Link)> markers,
+		List<MatchedChangelogFile> entries)
 	{
-		string fileContent;
-		try
+		foreach (var (markerFile, link) in markers)
 		{
-			fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
-		}
-		catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException or StackOverflowException or ThreadAbortException))
-		{
-			logger.LogWarning(ex, "Error reading file {FilePath}", filePath);
-			collector.EmitError(filePath, $"Error processing file: {ex.Message}");
-			return null;
-		}
+			var parent = entries.FirstOrDefault(e =>
+				e.FileName.Equals($"{link}.yaml", StringComparison.OrdinalIgnoreCase) ||
+				e.FileName.Equals($"{link}.yml", StringComparison.OrdinalIgnoreCase));
 
-		var fileName = fileSystem.Path.GetFileName(filePath);
-		return ProcessContent(collector, filePath, fileName, fileContent, criteria, seenChangelogs, matchedPrs, matchedIssues);
+			if (parent == null)
+			{
+				collector.EmitError(string.Empty,
+					$"Marker '{markerFile}' references PR {link} but no entry for that PR was found. " +
+					"The canonical entry may not have been uploaded yet.");
+				continue;
+			}
+
+			if (parent.Data.Link != null)
+			{
+				collector.EmitError(string.Empty,
+					$"Marker '{markerFile}' references '{parent.FileName}' which is itself a marker. " +
+					"Marker chains (depth > 1) are not supported.");
+			}
+			// Parent is already included in entries; the marker contributes no new entry.
+		}
+	}
+
+	private static bool TryExtractMarkerLink(string content, out string? link)
+	{
+		link = null;
+		var normalized = content.Trim();
+		if (!normalized.StartsWith("link:", StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		var value = normalized["link:".Length..].Trim();
+		if (value.Contains('\n') || string.IsNullOrWhiteSpace(value))
+			return false;
+
+		link = value;
+		return true;
 	}
 
 	private MatchedChangelogFile? ProcessContent(
@@ -212,7 +259,26 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 			foreach (var changelogProduct in data.Products)
 			{
 				var productMatches = MatchesPattern(changelogProduct.Product, filter.ProductPattern);
-				var targetMatches = MatchesPattern(changelogProduct.Target, filter.TargetPattern);
+
+				// Target filtering: null or "*" pattern matches everything.
+				// For notes (Versions list), any version matching the pattern counts.
+				// For legacy entries that still carry Target (read-side compat), fall back to that.
+				bool targetMatches;
+				if (filter.TargetPattern is null or "*")
+				{
+					targetMatches = true;
+				}
+				else if (changelogProduct.Versions is { Count: > 0 })
+				{
+					targetMatches = changelogProduct.Versions.Any(v => MatchesPattern(v, filter.TargetPattern));
+				}
+				else
+				{
+#pragma warning disable CS0618 // reading obsolete Target for backward compat with legacy entries
+					targetMatches = MatchesPattern(changelogProduct.Target, filter.TargetPattern);
+#pragma warning restore CS0618
+				}
+
 				var lifecycleMatches = MatchesPattern(changelogProduct.Lifecycle, filter.LifecyclePattern);
 
 				if (productMatches && targetMatches && lifecycleMatches)

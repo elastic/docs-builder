@@ -22,7 +22,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Title = "Manual title provided",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -68,7 +68,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -120,7 +120,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
 			Title = "Shared title",
 			Type = "bug-fix",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -170,7 +170,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -202,7 +202,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			StrictFetch = true,
 			Output = CreateOutputDirectory()
 		};
@@ -235,7 +235,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var input = new CreateChangelogArguments
 		{
 			Issues = ["https://github.com/elastic/elasticsearch/issues/12345", "https://github.com/elastic/elasticsearch/issues/67890"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			StrictFetch = true,
 			Output = CreateOutputDirectory()
 		};
@@ -243,9 +243,10 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		// Act
 		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert: mirrors the PR path — under --strict-fetch the bulk fetch failure escalates to an error
-		// (non-zero exit), but the best-effort files are still written so they can be inspected.
-		result.Should().BeTrue();
+		// Assert: under --strict-fetch the bulk fetch failure escalates to an error.
+		// No files are written because filename derivation requires a PR number;
+		// the caller must use 'changelog note' for issue-only entries.
+		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d =>
 			d.Severity == Severity.Error &&
@@ -268,7 +269,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			StrictFetch = true,
 			Output = CreateOutputDirectory()
 		};

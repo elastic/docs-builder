@@ -61,7 +61,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var firstAgain = await writer.RenderNavigation(sections[0], sections[0].Index, TestContext.Current.CancellationToken);
 
 		first.Id.Should().NotBe(second.Id);
-		firstAgain.Should().BeSameAs(first);
+		firstAgain.Id.Should().Be(first.Id);
+		firstAgain.Html.Should().Be(first.Html);
 	}
 
 	[Fact]

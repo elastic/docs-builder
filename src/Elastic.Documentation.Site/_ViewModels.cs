@@ -72,6 +72,14 @@ public record GlobalLayoutViewModel
 		}
 	}
 
+	public string? VersionDropdownSerializedModel { get; init; }
+
+	public string? CurrentVersion { get; init; }
+
+	public string? AllVersionsUrl { get; init; }
+
+	public bool ShowVersionDropdown { get; init; }
+
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
 	/// the URL of its nearest visible ancestor. The client uses this to highlight the correct

@@ -420,7 +420,7 @@ public record ConfigurationFile
 				continue;
 			}
 
-			if (!resolved.Features.ReleaseNotes)
+			if (!resolved.Features.ParticipatesInReleaseNotes)
 			{
 				context.EmitError(context.ConfigurationPath,
 					$"Product '{product}' declared in 'release_notes' does not participate in the release-notes system (it lacks the 'release-notes' feature in products.yml).");
@@ -563,7 +563,9 @@ public record ConfigurationFile
 			repository = candidate;
 		}
 
-		var children = ResolveApiChildren(productKey, entry.Children, context);
+		var apiContentDirectory = context.ReadFileSystem.DirectoryInfo.New(
+			Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
+		var children = ResolveApiChildren(productKey, entry.Children, context, apiContentDirectory);
 
 		return new ResolvedApiConfiguration
 		{
@@ -572,19 +574,21 @@ public record ConfigurationFile
 			SpecFileName = specFileName,
 			LocalSpecFile = localSpecFile,
 			Repository = repository,
-			Children = children
+			Children = children,
+			ApiContentDirectory = apiContentDirectory
 		};
 	}
 
 	/// Children resolve only under 'api/&lt;key&gt;/'; escaping paths and symlinks are rejected the
 	/// same way branding image paths are (see <see cref="ValidateBrandingImage"/>).
-	private static List<IFileInfo> ResolveApiChildren(string productKey, List<ApiEntryChild> children, IDocumentationSetContext context)
+	private static List<IFileInfo> ResolveApiChildren(
+		string productKey,
+		List<ApiEntryChild> children,
+		IDocumentationSetContext context,
+		IDirectoryInfo childrenDirectory)
 	{
 		if (children.Count == 0)
 			return [];
-
-		var childrenDirectory = context.ReadFileSystem.DirectoryInfo.New(
-			Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
 
 		var resolved = new List<IFileInfo>();
 		foreach (var child in children)
@@ -620,11 +624,23 @@ public record ConfigurationFile
 				continue;
 			}
 
+			if (IsTopLevelSupplementalChild(childFile, childrenDirectory))
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"Child page '{child.File}' for API '{productKey}' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:.");
+				continue;
+			}
+
 			resolved.Add(childFile);
 		}
 
 		return resolved;
 	}
+
+	private static bool IsTopLevelSupplementalChild(IFileInfo childFile, IDirectoryInfo apiDirectory) =>
+		childFile.Directory is not null
+		&& string.Equals(childFile.Directory.FullName, apiDirectory.FullName, StringComparison.OrdinalIgnoreCase)
+		&& ResolvedApiConfiguration.IsSupplementalFileName(childFile.Name);
 
 	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
 	{

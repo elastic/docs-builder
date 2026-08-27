@@ -99,6 +99,159 @@ public static class ChangelogKeys
 		$"{ChangelogPrefix}{poolGroup}/{RegistryFileName}";
 
 	/// <summary>
+	/// The notes-index key for one release version within a repo: <c>changelog/{org}/{repo}/notes-{version}.json</c>.
+	/// Repo-level and branch-agnostic — all notes for a version, regardless of which branch they were authored on.
+	/// </summary>
+	/// <remarks>
+	/// The slug in the key is the release version (e.g. <c>9.3.0</c> or <c>2026-05-15</c>).
+	/// Previously this parameter was named <c>target</c> to match the obsolete <c>target:</c> YAML field;
+	/// it was renamed to <c>version</c> when that field was replaced by <c>versions:</c> on notes.
+	/// The key layout (<c>notes-{slug}.json</c>) is unchanged — no migration is needed.
+	/// </remarks>
+	public static string NotesIndexKey(string org, string repo, string version) =>
+		$"{ChangelogPrefix}{org}/{repo}/notes-{version}.json";
+
+	/// <summary>
+	/// The S3 prefix that covers all branches and notes indexes of one repo: <c>changelog/{org}/{repo}/</c>.
+	/// Used by the notes reconciler to list the full repo tree.
+	/// </summary>
+	public static string RepoPrefix(string org, string repo) =>
+		$"{ChangelogPrefix}{org}/{repo}/";
+
+	/// <summary>
+	/// Returns true when <paramref name="key"/> is a notes-index key of the form
+	/// <c>changelog/{org}/{repo}/notes-{target}.json</c> (exactly two group segments, then
+	/// a <c>notes-</c>-prefixed JSON file with a non-empty target slug).
+	/// </summary>
+	public static bool IsNotesIndex(string key)
+	{
+		if (!key.StartsWith(ChangelogPrefix, StringComparison.Ordinal))
+			return false;
+		if (!key.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		var rest = key.AsSpan(ChangelogPrefix.Length);
+
+		// Expect exactly {org}/{repo}/notes-{target}.json
+		var firstSlash = rest.IndexOf('/');
+		if (firstSlash <= 0)
+			return false;
+		var org = rest[..firstSlash];
+
+		var afterOrg = rest[(firstSlash + 1)..];
+		var secondSlash = afterOrg.IndexOf('/');
+		if (secondSlash <= 0)
+			return false;
+		var repo = afterOrg[..secondSlash];
+
+		var file = afterOrg[(secondSlash + 1)..];
+
+		// No further slashes — this must be a direct child of {org}/{repo}/
+		if (file.IndexOf('/') >= 0)
+			return false;
+
+		// Validate org/repo segments and require the notes- prefix with a non-empty target slug
+		if (!IsValidSegment(org, SegmentKind.Org) || !IsValidSegment(repo, SegmentKind.RepoOrBranch))
+			return false;
+
+		const string notesPrefix = "notes-";
+		if (!file.StartsWith(notesPrefix, StringComparison.Ordinal))
+			return false;
+
+		var targetSlug = file[notesPrefix.Length..^".json".Length];
+		return targetSlug.Length > 0 && IsValidSegment(targetSlug, SegmentKind.RepoOrBranch);
+	}
+
+	/// <summary>
+	/// Extracts the <c>{org}/{repo}</c> group from a <c>changelog/{org}/{repo}/notes-{target}.json</c> key.
+	/// Returns null when the key is not a valid notes-index key.
+	/// </summary>
+	public static string? ExtractNotesRepo(string key)
+	{
+		if (!IsNotesIndex(key))
+			return null;
+
+		var rest = key.AsSpan(ChangelogPrefix.Length);
+		var firstSlash = rest.IndexOf('/');
+		var afterOrg = rest[(firstSlash + 1)..];
+		var secondSlash = afterOrg.IndexOf('/');
+		return $"{rest[..firstSlash]}/{afterOrg[..secondSlash]}";
+	}
+
+	/// <summary>
+	/// Parses a CDN bundle locator into product and file name. Accepts
+	/// <c>/bundle/{product}/{file}</c> (leading slash optional) or an absolute http(s) URL whose path
+	/// contains that layout as a path segment (<c>bundle/</c> at the start of the path or after a
+	/// slash). Returns false for changelog-pool paths. Amend sidecars still parse as
+	/// locators; callers that need a parent should reject them with <c>BundleAmendMerger.IsAmendFile</c>.
+	/// </summary>
+	public static bool TryParseBundleLocator(
+		string? input,
+		[NotNullWhen(true)] out string? product,
+		[NotNullWhen(true)] out string? fileName)
+	{
+		product = null;
+		fileName = null;
+		if (string.IsNullOrWhiteSpace(input))
+			return false;
+
+		var trimmed = input.Trim();
+		string key;
+		if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
+		{
+			var path = uri.AbsolutePath.TrimStart('/');
+			if (!TryGetBundlePrefixIndex(path, out var prefixAt))
+				return false;
+			key = path[prefixAt..];
+		}
+		else
+		{
+			key = trimmed.TrimStart('/');
+			if (!key.StartsWith(BundlePrefix, StringComparison.Ordinal))
+				return false;
+		}
+
+		product = ExtractBundleGroup(key);
+		if (product is null)
+			return false;
+
+		var fileStart = BundlePrefix.Length + product.Length + 1;
+		if (key.Length <= fileStart)
+			return false;
+
+		fileName = key[fileStart..];
+		if (!IsSafeFileName(fileName))
+		{
+			product = null;
+			fileName = null;
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Index of a path-segment <c>bundle/</c> in an already slash-trimmed URL path, or false when
+	/// the substring only appears inside another segment (for example <c>notbundle/</c>).
+	/// </summary>
+	private static bool TryGetBundlePrefixIndex(string path, out int prefixAt)
+	{
+		prefixAt = -1;
+		if (path.StartsWith(BundlePrefix, StringComparison.Ordinal))
+		{
+			prefixAt = 0;
+			return true;
+		}
+
+		var nested = path.IndexOf("/" + BundlePrefix, StringComparison.Ordinal);
+		if (nested < 0)
+			return false;
+
+		prefixAt = nested + 1;
+		return true;
+	}
+
+	/// <summary>
 	/// Extracts the product group from a <c>bundle/{product}/{file}</c> key, or null when
 	/// <paramref name="s3Key"/> is not a bundle key with a valid product segment ahead of the file name.
 	/// The segment is validated on extraction so an out-of-class group can never be re-composed into a

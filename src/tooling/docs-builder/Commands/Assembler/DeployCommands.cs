@@ -79,14 +79,18 @@ internal sealed class DeployCommands(
 	/// <remarks>Run after <c>assembler build</c> produces a <c>redirects.json</c>.</remarks>
 	/// <param name="environment">Named deployment target.</param>
 	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/docs/redirects.json</c>.</param>
+	/// <param name="noDelete">
+	/// Only PUT the new entries without deleting any existing KVS keys.
+	/// Use for per-docset isolated builds that should not remove other repos' redirects.
+	/// </param>
 	[NoOptionsInjection]
-	public async Task<int> UpdateRedirects(string environment, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null, CancellationToken ct = default)
+	public async Task<int> UpdateRedirects(string environment, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null, bool noDelete = false, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new DeployUpdateRedirectsService(logFactory, CheckoutsFileSystem.FromWorkingDirectory());
-		serviceInvoker.AddCommand(service, (environment, redirectsFile),
-			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile?.FullName, ctx: ctx)
+		serviceInvoker.AddCommand(service, (environment, redirectsFile, noDelete),
+			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile?.FullName, noDelete: state.noDelete, ctx: ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

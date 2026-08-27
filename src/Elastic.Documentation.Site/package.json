@@ -82,7 +82,7 @@
     "@types/lodash": "^4.17.25",
     "@types/testing-library__jest-dom": "6.0.0",
     "babel-jest": "30.4.1",
-    "eslint": "10.8.0",
+    "eslint": "10.8.1",
     "globals": "17.9.0",
     "identity-obj-proxy": "3.0.0",
     "jest": "30.4.2",
@@ -99,7 +99,7 @@
     "svgo": "^4.0.2",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.65.0",
+    "typescript-eslint": "8.66.0",
     "wait-on": "9.1.0"
   },
   "browserslist": [

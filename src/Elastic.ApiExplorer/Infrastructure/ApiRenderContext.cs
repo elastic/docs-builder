@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
@@ -31,4 +33,10 @@ public record ApiRenderContext(
 	public ILogger? ApiExplorerLog { get; init; }
 
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
+
+	internal IReadOnlyDictionary<string, ApiSupplementalDoc> OperationSupplemental { get; init; } =
+		FrozenDictionary<string, ApiSupplementalDoc>.Empty;
+
+	internal IReadOnlyDictionary<string, ApiSupplementalDoc> TagSupplemental { get; init; } =
+		FrozenDictionary<string, ApiSupplementalDoc>.Empty;
 }

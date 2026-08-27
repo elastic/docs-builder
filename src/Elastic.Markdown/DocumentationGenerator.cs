@@ -53,6 +53,7 @@ public partial class DocumentationGenerator
 	public DocumentationSet DocumentationSet { get; }
 	public BuildContext Context { get; }
 	public IMarkdownStringRenderer MarkdownStringRenderer => HtmlWriter;
+	private HashSet<string> ApiMarkdownExcludePaths { get; }
 
 	public DocumentationGenerator(
 		DocumentationSet docSet,
@@ -76,6 +77,7 @@ public partial class DocumentationGenerator
 		DocumentationSet = docSet;
 		PositionalNavigation = positionalNavigation ?? docSet;
 		Context = docSet.Context;
+		ApiMarkdownExcludePaths = BuildApiMarkdownExcludePaths();
 
 		// Use the provided inferrer or create a default one
 		_documentInferrer = documentInferrer ?? new DocumentInferrerService(
@@ -502,26 +504,29 @@ public partial class DocumentationGenerator
 	}
 
 	/// <summary>
-	/// Checks if a file path is registered as an explicit <c>children:</c> page in any API
-	/// configuration. These files render via the API pipeline rather than normal HTML generation.
+	/// True when the file is an API <c>children:</c> page or a convention supplemental file.
+	/// Those files skip the normal HTML pipeline.
 	/// </summary>
 	private bool IsApiMarkdownFile(string relativePath)
 	{
 		var normalized = relativePath.Replace(Path.DirectorySeparatorChar, '/');
+		return ApiMarkdownExcludePaths.Contains(normalized);
+	}
 
-		if (Context.Configuration.ApiConfigurations == null)
-			return false;
+	private HashSet<string> BuildApiMarkdownExcludePaths()
+	{
+		var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (Context.Configuration.ApiConfigurations is null)
+			return set;
 
+		var docsRoot = Context.DocumentationSourceDirectory.FullName;
 		foreach (var apiConfig in Context.Configuration.ApiConfigurations.Values)
 		{
-			foreach (var childPath in apiConfig.GetMarkdownPathsToExclude(Context.DocumentationSourceDirectory.FullName))
-			{
-				if (string.Equals(normalized, childPath, StringComparison.OrdinalIgnoreCase))
-					return true;
-			}
+			foreach (var path in apiConfig.GetMarkdownPathsToExclude(docsRoot))
+				_ = set.Add(path);
 		}
 
-		return false;
+		return set;
 	}
 
 }
