@@ -192,8 +192,7 @@ public class ResolvedApiConfiguration
 	public static bool IsSupplementalFileName(string fileName)
 	{
 		var name = Path.GetFileName(fileName);
-		return name.StartsWith("op-", StringComparison.OrdinalIgnoreCase)
-			|| name.StartsWith("tag-", StringComparison.OrdinalIgnoreCase);
+		return name.StartsWith("op-", StringComparison.OrdinalIgnoreCase) || name.StartsWith("tag-", StringComparison.OrdinalIgnoreCase);
 	}
 
 	/// <summary>

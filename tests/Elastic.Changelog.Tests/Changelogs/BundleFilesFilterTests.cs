@@ -69,13 +69,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(skip, EntrySkip, TestContext.Current.CancellationToken);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			Files = [keep],
-			Output = output,
-			ForceLocal = true
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, Files = [keep], Output = output, ForceLocal = true };
 
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
@@ -99,8 +93,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("File does not exist"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("File does not exist"));
 	}
 
 	[Fact]
@@ -120,8 +113,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("Multiple filter options"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Multiple filter options"));
 	}
 
 	[Fact]
@@ -137,12 +129,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(listFile, $"{keep}\n", TestContext.Current.CancellationToken);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			Files = [listFile],
-			Output = output
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, Files = [listFile], Output = output };
 
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
@@ -155,7 +142,8 @@ public class BundleFilesFilterTests : ChangelogTestBase
 	[Fact]
 	public async Task Bundle_WithProfile_PathListFile_FiltersCorrectly()
 	{
-		var configContent = $"""
+		var configContent =
+			$"""
 			bundle:
 			  directory: {_changelogDir}
 			  profiles:
@@ -194,8 +182,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 	[Fact]
 	public async Task Bundle_WithProfile_MixedUrlsAndPaths_ReturnsError()
 	{
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  profiles:
 			    release:
@@ -209,7 +196,8 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(
 			listFile,
 			"https://github.com/elastic/elasticsearch/pull/100\nkeep.yaml\n",
-			TestContext.Current.CancellationToken);
+			TestContext.Current.CancellationToken
+		);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -222,8 +210,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("not a mix"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not a mix"));
 	}
 
 	[Fact]
@@ -234,7 +221,8 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(feature, EntryKeep, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(bugFix, EntryBugFix, TestContext.Current.CancellationToken);
 
-		var configContent = $"""
+		var configContent =
+			$"""
 			bundle:
 			  directory: {_changelogDir}
 			  use_local_changelogs: true
@@ -247,12 +235,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Config = configPath,
-			Files = [feature, bugFix],
-			Output = output
-		};
+		var input = new BundleChangelogsArguments { Config = configPath, Files = [feature, bugFix], Output = output };
 
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
@@ -268,7 +251,8 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var keep = FileSystem.Path.Join(_changelogDir, "keep.yaml");
 		await FileSystem.File.WriteAllTextAsync(keep, EntryKeep, TestContext.Current.CancellationToken);
 
-		var configContent = $"""
+		var configContent =
+			$"""
 			bundle:
 			  directory: {_changelogDir}
 			  repo: elasticsearch
@@ -282,13 +266,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Config = configPath,
-			Files = [keep],
-			ForceLocal = true,
-			Output = output
-		};
+		var input = new BundleChangelogsArguments { Config = configPath, Files = [keep], ForceLocal = true, Output = output };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
@@ -309,12 +287,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var service = ServiceWithCdn(handler);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Config = configPath,
-			Files = ["docs/changelog/keep.yaml"],
-			Output = output
-		};
+		var input = new BundleChangelogsArguments { Config = configPath, Files = ["docs/changelog/keep.yaml"], Output = output };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
@@ -344,8 +317,10 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		result.Should().BeFalse();
 		// --files uses FetchNamedAsync: a 404 means "entry does not exist in the pool"
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("pool"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("pool"));
 	}
 
 	[Fact]
@@ -355,7 +330,8 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		// only in S3. The list must select pool entries by file name instead of requiring local files.
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
-		var configContent = $"""
+		var configContent =
+			$"""
 			bundle:
 			  output_directory: {outputDir}
 			  repo: elasticsearch
@@ -388,31 +364,34 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
 		handler.RequestedPaths.Should().NotContain("/changelog/elastic/elasticsearch/main/registry.json");
 		var bundle = await FileSystem.File.ReadAllTextAsync(
-			FileSystem.Path.Join(outputDir, "changelog-bundle.yaml"), TestContext.Current.CancellationToken);
+			FileSystem.Path.Join(outputDir, "changelog-bundle.yaml"),
+			TestContext.Current.CancellationToken
+		);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
 	}
 
-	private static StubHandler CdnPoolHandler() => new(req =>
-	{
-		var path = req.RequestUri!.AbsolutePath;
-		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-			return new HttpResponseMessage(HttpStatusCode.OK)
-			{
-				Content = new StringContent(CdnRegistryJson, System.Text.Encoding.UTF8, "application/json")
-			};
-		if (path.EndsWith("keep.yaml", StringComparison.Ordinal))
-			return new HttpResponseMessage(HttpStatusCode.OK)
-			{
-				Content = new StringContent(EntryKeep, System.Text.Encoding.UTF8, "text/yaml")
-			};
-		if (path.EndsWith("skip.yaml", StringComparison.Ordinal))
-			return new HttpResponseMessage(HttpStatusCode.OK)
-			{
-				Content = new StringContent(EntrySkip, System.Text.Encoding.UTF8, "text/yaml")
-			};
-		return new HttpResponseMessage(HttpStatusCode.NotFound);
-	});
+	private static StubHandler CdnPoolHandler() =>
+		new(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return new HttpResponseMessage(HttpStatusCode.OK)
+				{
+					Content = new StringContent(CdnRegistryJson, System.Text.Encoding.UTF8, "application/json")
+				};
+			if (path.EndsWith("keep.yaml", StringComparison.Ordinal))
+				return new HttpResponseMessage(HttpStatusCode.OK)
+				{
+					Content = new StringContent(EntryKeep, System.Text.Encoding.UTF8, "text/yaml")
+				};
+			if (path.EndsWith("skip.yaml", StringComparison.Ordinal))
+				return new HttpResponseMessage(HttpStatusCode.OK)
+				{
+					Content = new StringContent(EntrySkip, System.Text.Encoding.UTF8, "text/yaml")
+				};
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
 
 	private ChangelogBundlingService ServiceWithCdn(StubHandler handler)
 	{
@@ -423,8 +402,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 	private async Task<string> WriteRepoOnlyConfigAsync()
 	{
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  repo: elasticsearch
 			""";
@@ -440,7 +418,8 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var local = FileSystem.Path.Join(_changelogDir, "1-local.yaml");
 		await FileSystem.File.WriteAllTextAsync(local, EntryKeep, TestContext.Current.CancellationToken);
 
-		var configContent = $"""
+		var configContent =
+			$"""
 			bundle:
 			  directory: {_changelogDir}
 			  repo: elasticsearch
@@ -454,13 +433,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, fetcher);
 
 		var output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Config = configPath,
-			All = true,
-			ForceLocal = true,
-			Output = output
-		};
+		var input = new BundleChangelogsArguments { Config = configPath, All = true, ForceLocal = true, Output = output };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 

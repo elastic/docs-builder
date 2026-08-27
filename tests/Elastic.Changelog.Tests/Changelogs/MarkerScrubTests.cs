@@ -17,8 +17,10 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// </summary>
 public class MarkerScrubTests
 {
-	private readonly IChangelogContentScrubber _scrubber =
-		new ChangelogContentScrubber(NullLoggerFactory.Instance, ["elastic/elasticsearch"]);
+	private readonly IChangelogContentScrubber _scrubber = new ChangelogContentScrubber(
+		NullLoggerFactory.Instance,
+		["elastic/elasticsearch"]
+	);
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;
 
@@ -60,8 +62,7 @@ public class MarkerScrubTests
 
 		var act = async () => await _scrubber.ScrubAsync(key, content, Ctx);
 
-		await act.Should().ThrowAsync<InvalidOperationException>()
-			.WithMessage("*link:*content fields*");
+		await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*link:*content fields*");
 	}
 
 	[Fact]
@@ -82,7 +83,8 @@ public class MarkerScrubTests
 	public async Task Marker_WithPrs_ThrowsInvalidOperation()
 	{
 		const string key = "changelog/elastic/elasticsearch/main/200.yaml";
-		const string content = """
+		const string content =
+			"""
 			link: 100
 			prs:
 			  - "https://github.com/elastic/elasticsearch/pull/100"

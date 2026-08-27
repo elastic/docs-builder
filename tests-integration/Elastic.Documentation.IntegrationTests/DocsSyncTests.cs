@@ -32,40 +32,44 @@ public class DocsSyncTests
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
 		var collector = new DiagnosticsCollector(diagnosticsOutputs);
 		var mockS3Client = A.Fake<IAmazonS3>();
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "docs/add1.md", new MockFileData("# New Document 1") },
-			{ "docs/add2.md", new MockFileData("# New Document 2") },
-			{ "docs/add3.md", new MockFileData("# New Document 3") },
-			{ "docs/skip.md", new MockFileData("# Skipped Document") },
-			{ "docs/update.md", new MockFileData("# Existing Document") },
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
-		});
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ "docs/add1.md", new MockFileData("# New Document 1") },
+				{ "docs/add2.md", new MockFileData("# New Document 2") },
+				{ "docs/add3.md", new MockFileData("# New Document 3") },
+				{ "docs/skip.md", new MockFileData("# Skipped Document") },
+				{ "docs/update.md", new MockFileData("# Existing Document") },
+			},
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
-		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
-			.Returns(new ListObjectsV2Response
-			{
-				S3Objects =
-				[
-					new S3Object { Key = "docs/delete.md" },
-					new S3Object
-					{
-						Key = "docs/skip.md",
-						ETag = "\"69048c0964c9577a399b138b706a467a\""
-					}, // This is the result of CalculateS3ETag
-					new S3Object
-					{
-						Key = "docs/update.md",
-						ETag = "\"existing-etag\""
-					}
-				]
-			});
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			assembleFs,
+			null,
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+		);
+		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._)).Returns(new ListObjectsV2Response
+		{
+			S3Objects =
+			[
+				new S3Object { Key = "docs/delete.md" },
+				new S3Object
+				{
+					Key = "docs/skip.md",
+					ETag = "\"69048c0964c9577a399b138b706a467a\""
+				}, // This is the result of CalculateS3ETag
+
+				new S3Object { Key = "docs/update.md", ETag = "\"existing-etag\"" }
+			]
+		});
 		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
 
 		// Act
@@ -131,7 +135,10 @@ public class DocsSyncTests
 		else if (plan.TotalSyncRequests <= 1000)
 			validationResult.DeleteThreshold.Should().Be(Math.Max(deleteThreshold, 0.5f));
 
-		validationResult.Valid.Should().Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
+		validationResult
+			.Valid
+			.Should()
+			.Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
 	}
 
 	[Theory]
@@ -169,11 +176,18 @@ public class DocsSyncTests
 		else if (plan.TotalSyncRequests <= 1000)
 			validationResult.DeleteThreshold.Should().Be(Math.Max(deleteThreshold, 0.5f));
 
-		validationResult.Valid.Should().Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
+		validationResult
+			.Valid
+			.Should()
+			.Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
 	}
 
 	private static async Task<(DocsSyncPlanValidator validator, AwsS3SyncPlanStrategy planStrategy, SyncPlan plan)> SetupS3SyncContextSetup(
-		int localFiles, int remoteFiles, float? deleteThreshold = null, string etag = "etag")
+		int localFiles,
+		int remoteFiles,
+		float? deleteThreshold = null,
+		string etag = "etag"
+	)
 	{
 		// Arrange
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
@@ -189,23 +203,26 @@ public class DocsSyncTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs2, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			assembleFs2,
+			null,
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+		);
 
 		var s3Objects = new List<S3Object>();
 		foreach (var i in Enumerable.Range(0, remoteFiles))
 		{
-			s3Objects.Add(new S3Object
-			{
-				Key = $"docs/file-{i}.md",
-				ETag = etag
-			});
+			s3Objects.Add(new S3Object { Key = $"docs/file-{i}.md", ETag = etag });
 		}
 
-		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
-			.Returns(new ListObjectsV2Response
-			{
-				S3Objects = s3Objects
-			});
+		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._)).Returns(new ListObjectsV2Response
+		{
+			S3Objects = s3Objects
+		});
 
 		var mockEtagCalculator = A.Fake<IS3EtagCalculator>();
 		A.CallTo(() => mockEtagCalculator.CalculateS3ETag(A<string>._, A<Cancel>._)).Returns("etag");
@@ -225,17 +242,17 @@ public class DocsSyncTests
 		var collector = new DiagnosticsCollector(diagnosticsOutputs);
 		var moxS3Client = A.Fake<IAmazonS3>();
 		var moxTransferUtility = A.Fake<ITransferUtility>();
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "docs/add1.md", new MockFileData("# New Document 1") },
-			{ "docs/add2.md", new MockFileData("# New Document 2") },
-			{ "docs/add3.md", new MockFileData("# New Document 3") },
-			{ "docs/skip.md", new MockFileData("# Skipped Document") },
-			{ "docs/update.md", new MockFileData("# Existing Document") },
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
-		});
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ "docs/add1.md", new MockFileData("# New Document 1") },
+				{ "docs/add2.md", new MockFileData("# New Document 2") },
+				{ "docs/add3.md", new MockFileData("# New Document 3") },
+				{ "docs/skip.md", new MockFileData("# Skipped Document") },
+				{ "docs/update.md", new MockFileData("# Existing Document") },
+			},
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var checkoutDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
@@ -249,39 +266,33 @@ public class DocsSyncTests
 			TotalRemoteFiles = 0,
 			TotalSourceFiles = 5,
 			TotalSyncRequests = 6,
-			AddRequests = [
+			AddRequests =
+			[
 				new AddRequest { LocalPath = "docs/add1.md", DestinationPath = "docs/add1.md" },
 				new AddRequest { LocalPath = "docs/add2.md", DestinationPath = "docs/add2.md" },
 				new AddRequest { LocalPath = "docs/add3.md", DestinationPath = "docs/add3.md" }
 			],
-			UpdateRequests = [
-				new UpdateRequest
-					{ LocalPath = "docs/update.md", DestinationPath = "docs/update.md" }
-			],
-			SkipRequests = [
-				new SkipRequest
-					{ LocalPath = "docs/skip.md", DestinationPath = "docs/skip.md" }
-			],
-			DeleteRequests = [
-				new DeleteRequest
-					{ DestinationPath = "docs/delete.md" }
-			]
+			UpdateRequests = [new UpdateRequest { LocalPath = "docs/update.md", DestinationPath = "docs/update.md" }],
+			SkipRequests = [new SkipRequest { LocalPath = "docs/skip.md", DestinationPath = "docs/skip.md" }],
+			DeleteRequests = [new DeleteRequest { DestinationPath = "docs/delete.md" }]
 		};
-		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
-			.Returns(new DeleteObjectsResponse
-			{
-				HttpStatusCode = System.Net.HttpStatusCode.OK
-			});
+		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._)).Returns(new DeleteObjectsResponse
+		{
+			HttpStatusCode = System.Net.HttpStatusCode.OK
+		});
 		var transferredFiles = Array.Empty<string>();
-		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
-			.Invokes((TransferUtilityUploadDirectoryRequest request, Cancel _) =>
-			{
-				transferredFiles = fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
-			});
+		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).Invokes((
+			TransferUtilityUploadDirectoryRequest request,
+			Cancel _
+		) =>
+		{
+			transferredFiles = fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption);
+		});
 
 		// Configure OpenTelemetry to capture telemetry
 		var exportedActivities = new List<Activity>();
-		using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+		using var tracerProvider = Sdk
+			.CreateTracerProviderBuilder()
 			.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName)
 			.AddInMemoryExporter(exportedActivities)
 			.Build();
@@ -295,11 +306,11 @@ public class DocsSyncTests
 		transferredFiles.Length.Should().Be(4); // 3 add requests + 1 update request
 		transferredFiles.Should().NotContain("docs/skip.md");
 
-		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => moxS3Client.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
 
-		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)
+		).MustHaveHappenedOnceExactly();
 
 		// Assert - Telemetry spans are created
 		exportedActivities.Should().Contain(a => a.DisplayName == "sync apply");
@@ -309,10 +320,20 @@ public class DocsSyncTests
 		// Assert - Telemetry tags contain correct aggregate counts
 		var syncActivity = exportedActivities.First(a => a.DisplayName == "sync apply");
 		var tagObjects = syncActivity.TagObjects.ToList();
-		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.added" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 3);
-		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.updated" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
-		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.deleted" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
-		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.skipped" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1);
-		tagObjects.Should().Contain(t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 6);
+		tagObjects.Should().Contain(
+			t => t.Key == "docs.sync.files.added" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 3
+		);
+		tagObjects.Should().Contain(
+			t => t.Key == "docs.sync.files.updated" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1
+		);
+		tagObjects.Should().Contain(
+			t => t.Key == "docs.sync.files.deleted" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1
+		);
+		tagObjects.Should().Contain(
+			t => t.Key == "docs.sync.files.skipped" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 1
+		);
+		tagObjects.Should().Contain(
+			t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 6
+		);
 	}
 }

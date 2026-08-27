@@ -20,23 +20,23 @@ public record SectionHeader(string Title, string Anchor, string? Route = null, s
 public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
 {
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
-	[
-		"paths",
-		"prerequisites",
-		"description",
-		"query-params",
-		"request-body",
-		"response",
-		"responses",
-		"code-examples",
-		"request-examples",
-		"response-examples",
-		"examples-jump-btn"
-	], StringComparer.Ordinal);
+		[
+			"paths",
+			"prerequisites",
+			"description",
+			"query-params",
+			"request-body",
+			"response",
+			"responses",
+			"code-examples",
+			"request-examples",
+			"response-examples",
+			"examples-jump-btn"
+		],
+		StringComparer.Ordinal
+	);
 
-	internal static IReadOnlyList<ApiPostSection> From(
-		ApiRenderContext context,
-		IReadOnlyList<ApiSupplementalSection> sections)
+	internal static IReadOnlyList<ApiPostSection> From(ApiRenderContext context, IReadOnlyList<ApiSupplementalSection> sections)
 	{
 		if (sections.Count == 0)
 			return [];
@@ -68,8 +68,7 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
 		return (title.Length == 0 ? trimmed : title, id);
 	}
 
-	internal static string AnchorFor(string heading) =>
-		heading.Trim().ToLowerInvariant().Replace(' ', '-');
+	internal static string AnchorFor(string heading) => heading.Trim().ToLowerInvariant().Replace(' ', '-');
 
 	internal static string ResolveAnchor(string title, string? explicitId, ISet<string> used) =>
 		UniqueAnchor(explicitId ?? AnchorFor(title), used);

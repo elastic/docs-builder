@@ -15,18 +15,16 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesSquareBracketsAndColon()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "[ES|QL]: Update Vector Similarity To Support BFLOAT16",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "[ES|QL]: Update Vector Similarity To Support BFLOAT16", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -48,7 +46,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
@@ -77,18 +75,16 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesSquareBracketsWithoutColon()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "[Security] Improve authentication handling",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "[Security] Improve authentication handling", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -110,7 +106,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
@@ -138,18 +134,16 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesMultipleSquareBracketPrefixes()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "[Discover][ESQL] Fix filtering by multiline string fields",
-			Labels = ["type:bug-fix"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "[Discover][ESQL] Fix filtering by multiline string fields", Labels = ["type:bug-fix"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -171,7 +165,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
@@ -199,18 +193,11 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 	[Fact]
 	public async Task CreateChangelog_WithStripTitlePrefix_StripsKibanaStyleTeamHyphenSeparator()
 	{
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "[Cases] - Enable cases numerical id service",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "[Cases] - Enable cases numerical id service", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"https://github.com/elastic/kibana/pull/238555",
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync("https://github.com/elastic/kibana/pull/238555", null, null, A<CancellationToken>._)
+		).Returns(prInfo);
 
 		var configContent =
 			"""
@@ -231,7 +218,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/kibana/pull/238555"],
-			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "kibana", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
@@ -257,18 +244,9 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 	public async Task CreateChangelog_WithExplicitTitle_OverridesPrTitle()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "PR Title from GitHub",
-			Labels = []
-		};
+		var prInfo = new GitHubPrInfo { Title = "PR Title from GitHub", Labels = [] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		var service = CreateService();
 
@@ -277,7 +255,7 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Title = "Custom Title Override",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -314,12 +292,8 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		{
 			Title = "Fix multiple issues",
 			Type = "bug-fix",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
-			Issues =
-			[
-				"https://github.com/elastic/elasticsearch/issues/123",
-				"https://github.com/elastic/elasticsearch/issues/456"
-			],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
+			Issues = ["https://github.com/elastic/elasticsearch/issues/123", "https://github.com/elastic/elasticsearch/issues/456"],
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};

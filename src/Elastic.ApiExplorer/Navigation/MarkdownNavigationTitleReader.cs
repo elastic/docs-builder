@@ -58,7 +58,8 @@ public static class MarkdownNavigationTitleReader
 
 	/// <summary>Converts kebab-case/snake_case file names to a title-cased navigation title.</summary>
 	internal static string TitleCaseFromFileName(string fileName) =>
-		Path.GetFileNameWithoutExtension(fileName)
+		Path
+			.GetFileNameWithoutExtension(fileName)
 			.Replace('-', ' ')
 			.Replace('_', ' ')
 			.Split(' ', StringSplitOptions.RemoveEmptyEntries)

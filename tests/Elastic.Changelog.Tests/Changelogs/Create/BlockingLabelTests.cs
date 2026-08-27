@@ -15,18 +15,9 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithBlockingLabel_SkipsChangelogCreation()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "PR with blocking label",
-			Labels = ["type:feature", "skip:releaseNotes"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "PR with blocking label", Labels = ["type:feature", "skip:releaseNotes"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -53,7 +44,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -64,7 +55,10 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
 
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -77,18 +71,9 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithBlockingLabelForSpecificProduct_OnlyBlocksForThatProduct()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "PR with blocking label",
-			Labels = ["type:feature", "ILM"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "PR with blocking label", Labels = ["type:feature", "ILM"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -117,7 +102,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
 			Products =
 			[
-				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" },
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-08-05" }
 			],
 			Config = configPath,
@@ -143,18 +128,9 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 	public async Task CreateChangelog_WithCommaSeparatedProductIdsInAddBlockers_ExpandsCorrectly()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "PR with blocking label",
-			Labels = ["type:feature", ">non-issue"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "PR with blocking label", Labels = ["type:feature", ">non-issue"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -183,7 +159,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234"],
 			Products =
 			[
-				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
+				new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" },
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-08-05" }
 			],
 			Config = configPath,
@@ -216,12 +192,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			Labels = ["type:feature", ":stack/elasticsearch", "skip:releaseNotes"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -260,7 +231,10 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		// Assert — product-specific rule should have blocked creation
 		result.Should().BeTrue(); // Succeed but skip
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
 
 		var outputDir = input.Output;
 		if (!FileSystem.Directory.Exists(outputDir))

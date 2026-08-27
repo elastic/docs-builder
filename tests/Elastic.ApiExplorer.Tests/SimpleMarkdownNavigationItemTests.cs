@@ -47,18 +47,15 @@ public class SimpleMarkdownNavigationItemTests
 	[InlineData("operation", "operation")]
 	public void ValidateSlugForCollisions_ThrowsForReservedSegments(string slug, string reservedSegment)
 	{
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			slug, "elasticsearch", "/docs/file.md");
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, "elasticsearch", "/docs/file.md");
 
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage($"*conflicts with reserved API Explorer segment*{reservedSegment}*");
+		act.Should().Throw<InvalidOperationException>().WithMessage($"*conflicts with reserved API Explorer segment*{reservedSegment}*");
 	}
 
 	[Fact]
 	public void ValidateSlugForCollisions_AllowsSlugThatMatchesOperationId()
 	{
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			"search", "elasticsearch", "/docs/search.md");
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("search", "elasticsearch", "/docs/search.md");
 
 		act.Should().NotThrow();
 	}
@@ -66,8 +63,7 @@ public class SimpleMarkdownNavigationItemTests
 	[Fact]
 	public void ValidateSlugForCollisions_AllowsValidSlug()
 	{
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			"overview", "elasticsearch", "/docs/overview.md");
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("overview", "elasticsearch", "/docs/overview.md");
 
 		act.Should().NotThrow();
 	}

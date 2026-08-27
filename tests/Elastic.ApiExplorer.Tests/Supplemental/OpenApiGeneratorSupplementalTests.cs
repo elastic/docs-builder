@@ -60,21 +60,15 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : ICl
 			Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" },
 			SpecFileName = "api-explorer-fixture.json",
 			ApiContentDirectory = fs.DirectoryInfo.New(folder),
-			Children =
-			[
-				fs.FileInfo.New($"{folder}/getting-started.md"),
-				fs.FileInfo.New($"{folder}/knn-guide.v9.md")
-			]
+			Children = [fs.FileInfo.New($"{folder}/getting-started.md"), fs.FileInfo.New($"{folder}/knn-guide.v9.md")]
 		};
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, fixture.Context, PassthroughMarkdownRenderer.Instance);
 		var nav9 = generator.CreateNavigation("fixture", fixture.Document, apiConfig, versionMajor: 9);
 		var nav8 = generator.CreateNavigation("fixture", fixture.Document, apiConfig, versionMajor: 8);
 
-		nav9.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug)
-			.Should().Equal("getting-started", "knn-guide");
-		nav8.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug)
-			.Should().Equal("getting-started");
+		nav9.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug).Should().Equal("getting-started", "knn-guide");
+		nav8.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug).Should().Equal("getting-started");
 	}
 
 	[Theory]
@@ -82,8 +76,6 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : ICl
 	[InlineData("9", 9, 9)]
 	[InlineData("main", 9, 9)]
 	[InlineData("main", null, null)]
-	public void SupplementalMajor_NumericOrMainUsesHighest(string moniker, int? highest, int? expected)
-	{
+	public void SupplementalMajor_NumericOrMainUsesHighest(string moniker, int? highest, int? expected) =>
 		OpenApiGenerator.SupplementalMajor(moniker, highest).Should().Be(expected);
-	}
 }

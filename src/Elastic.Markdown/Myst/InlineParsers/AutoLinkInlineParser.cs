@@ -88,7 +88,11 @@ public class AutoLinkInlineParser : InlineParser
 
 		// Emit hint for elastic.co/docs URLs (after setting Inline so position is correct)
 		if (url.Contains("elastic.co/docs", StringComparison.OrdinalIgnoreCase))
-			processor.EmitHint(linkInline, HintType.AutolinkElasticCoDocs, "Autolink points to elastic.co/docs. Consider using a crosslink or relative link instead.");
+			processor.EmitHint(
+				linkInline,
+				HintType.AutolinkElasticCoDocs,
+				"Autolink points to elastic.co/docs. Consider using a crosslink or relative link instead."
+			);
 
 		// Advance the slice past the URL
 		var end = slice.Start + urlLength;

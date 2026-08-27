@@ -26,12 +26,7 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 
 	private static HttpClient CreateHttpClient()
 	{
-		var handler = new SocketsHttpHandler
-		{
-			AllowAutoRedirect = false,
-			ConnectTimeout = TimeSpan.FromSeconds(10),
-			UseProxy = false
-		};
+		var handler = new SocketsHttpHandler { AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(10), UseProxy = false };
 		var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
 		client.DefaultRequestHeaders.Add("User-Agent", "docs-builder");
 		client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
@@ -39,11 +34,14 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 	}
 
 	private static bool IsAllowedUrl(string url) =>
-		Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-		uri.Scheme == Uri.UriSchemeHttps &&
-		AllowedHosts.Any(domain =>
-			uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
-			uri.Host.EndsWith($".{domain}", StringComparison.OrdinalIgnoreCase));
+		Uri.TryCreate(url, UriKind.Absolute, out var uri)
+			&& uri.Scheme == Uri.UriSchemeHttps
+			&& AllowedHosts.Any(
+				domain => uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) || uri.Host.EndsWith(
+					$".{domain}",
+					StringComparison.OrdinalIgnoreCase
+				)
+			);
 
 	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex GitHubPrUrlRegex();
@@ -57,8 +55,10 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 			return ProfileArgumentType.Unknown;
 
 		// Check if it's a URL
-		if (argument.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-			argument.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+		if (
+			argument.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+			|| argument.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+		)
 			return ProfileArgumentType.PromotionReportUrl;
 
 		// Check if it's a file path that exists (could be a promotion report file)
@@ -71,8 +71,7 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 	/// <summary>
 	/// Parses a promotion report and returns the extracted PR URLs, or <c>null</c> on failure (emitting errors).
 	/// </summary>
-	public async Task<string[]?> ParseReportToPrUrlsAsync(
-		IDiagnosticsCollector collector, string source, Cancel ctx)
+	public async Task<string[]?> ParseReportToPrUrlsAsync(IDiagnosticsCollector collector, string source, Cancel ctx)
 	{
 		var result = await ParsePromotionReportAsync(source, ctx);
 		if (result.IsValid)
@@ -91,8 +90,10 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 		{
 			string htmlContent;
 
-			if (source.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-				source.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+			if (
+				source.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+				|| source.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+			)
 			{
 				var (content, error) = await FetchReportUrlAsync(source, ctx);
 				if (error != null)
@@ -106,22 +107,14 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 			}
 			else
 			{
-				return new PromotionReportResult
-				{
-					IsValid = false,
-					ErrorMessage = $"Promotion report source not found: {source}"
-				};
+				return new PromotionReportResult { IsValid = false, ErrorMessage = $"Promotion report source not found: {source}" };
 			}
 
 			var prUrls = ExtractPrUrlsFromHtml(htmlContent);
 
 			if (prUrls.Count == 0)
 			{
-				return new PromotionReportResult
-				{
-					IsValid = false,
-					ErrorMessage = "No PR URLs found in promotion report"
-				};
+				return new PromotionReportResult { IsValid = false, ErrorMessage = "No PR URLs found in promotion report" };
 			}
 
 			_logger.LogInformation("Extracted {Count} PR URLs from promotion report", prUrls.Count);
@@ -131,20 +124,12 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 		catch (HttpRequestException ex)
 		{
 			_logger.LogWarning(ex, "HTTP error fetching promotion report");
-			return new PromotionReportResult
-			{
-				IsValid = false,
-				ErrorMessage = $"HTTP error fetching promotion report: {ex.Message}"
-			};
+			return new PromotionReportResult { IsValid = false, ErrorMessage = $"HTTP error fetching promotion report: {ex.Message}" };
 		}
 		catch (IOException ex)
 		{
 			_logger.LogWarning(ex, "IO error reading promotion report");
-			return new PromotionReportResult
-			{
-				IsValid = false,
-				ErrorMessage = $"IO error reading promotion report: {ex.Message}"
-			};
+			return new PromotionReportResult { IsValid = false, ErrorMessage = $"IO error reading promotion report: {ex.Message}" };
 		}
 	}
 

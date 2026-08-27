@@ -33,14 +33,18 @@ public class IsolatedIndexService(
 		var cfg = _configurationContext.Endpoints.Elasticsearch;
 		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
 
-		return await Build(collector, new IsolatedBuildOptions
-		{
-			Path = path != null ? new DirectoryInfo(path) : null,
-			MetadataOnly = true,
-			Strict = false,
-			Force = true,
-			SkipApi = true,
-			Exporters = new HashSet<Exporter> { Elasticsearch }
-		}, ctx: ctx);
+		return await Build(
+			collector,
+			new IsolatedBuildOptions
+			{
+				Path = path != null ? new DirectoryInfo(path) : null,
+				MetadataOnly = true,
+				Strict = false,
+				Force = true,
+				SkipApi = true,
+				Exporters = new HashSet<Exporter> { Elasticsearch }
+			},
+			ctx: ctx
+		);
 	}
 }

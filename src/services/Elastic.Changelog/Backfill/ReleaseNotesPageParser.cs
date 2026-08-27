@@ -67,7 +67,8 @@ public static partial class ReleaseNotesPageParser
 		IDiagnosticsCollector collector,
 		string markdown,
 		string sourceId,
-		BackfillScope scope)
+		BackfillScope scope
+	)
 	{
 		var lines = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
 		var releases = new List<MigratedRelease>();
@@ -172,7 +173,10 @@ public static partial class ReleaseNotesPageParser
 			}
 
 			if (dateMatch.Success)
-				collector.EmitWarning(sourceId, $"Could not parse release date '{dateMatch.Groups["date"].Value}' for {version}; keeping the line as description text.");
+				collector.EmitWarning(
+					sourceId,
+					$"Could not parse release date '{dateMatch.Groups["date"].Value}' for {version}; keeping the line as description text."
+				);
 
 			// Lifecycle directive lines override the scope default for this release.
 			if (AppliesToLineRegex().IsMatch(line))
@@ -238,7 +242,10 @@ public static partial class ReleaseNotesPageParser
 				else
 				{
 					// Prose: emit warning, dump heading and this line into description.
-					collector.EmitWarning(sourceId, $"Unrecognized subsection '### {_pendingUnrecognizedTitle?.Trim()}' under {version}; preserving it in the bundle description.");
+					collector.EmitWarning(
+						sourceId,
+						$"Unrecognized subsection '### {_pendingUnrecognizedTitle?.Trim()}' under {version}; preserving it in the bundle description."
+					);
 					AppendDescriptionLine(_pendingUnrecognizedHeadingLine);
 					_pendingUnrecognizedHeadingLine = null;
 					_pendingUnrecognizedTitle = null;

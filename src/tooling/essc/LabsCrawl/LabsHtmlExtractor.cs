@@ -63,12 +63,12 @@ public class LabsHtmlExtractor(ILogger<LabsHtmlExtractor> logger) : IDocumentExt
 		}
 
 		// Get main content - try various selectors for site pages
-		var contentDiv = document.QuerySelector("main") ??
-						 document.QuerySelector("article") ??
-						 document.QuerySelector(".content") ??
-						 document.QuerySelector(".main-content") ??
-						 document.QuerySelector("#content") ??
-						 document.Body;
+		var contentDiv = document.QuerySelector("main")
+			?? document.QuerySelector("article")
+			?? document.QuerySelector(".content")
+			?? document.QuerySelector(".main-content")
+			?? document.QuerySelector("#content")
+			?? document.Body;
 
 		if (contentDiv is null)
 		{
@@ -117,10 +117,8 @@ public class LabsHtmlExtractor(ILogger<LabsHtmlExtractor> logger) : IDocumentExt
 			var slugLabel = HtmlMetaExtractor.TitleCaseSlug(slug);
 
 			(title, description) = listingKind == ListingKind.Tag
-				? ($"Articles tagged with '{slugLabel}'",
-				   $"Recent {sectionLabel} articles tagged {slug}. A curated listing of {sectionLabel} blog posts, tutorials, and articles about {slug}.")
-				: ($"Articles written by {slugLabel}",
-				   $"Articles written by {slugLabel} for {sectionLabel}. A listing of {sectionLabel} blog posts, tutorials, and articles authored by {slugLabel}.");
+				? ($"Articles tagged with '{slugLabel}'", $"Recent {sectionLabel} articles tagged {slug}. A curated listing of {sectionLabel} blog posts, tutorials, and articles about {slug}.")
+				: ($"Articles written by {slugLabel}", $"Articles written by {slugLabel} for {sectionLabel}. A listing of {sectionLabel} blog posts, tutorials, and articles authored by {slugLabel}.");
 
 			textContent = string.Empty;
 			headings = [];
@@ -137,10 +135,7 @@ public class LabsHtmlExtractor(ILogger<LabsHtmlExtractor> logger) : IDocumentExt
 
 		// Determine last updated date
 		// Priority: article:modified_time > sitemap lastmod > article:published_time > current time
-		var lastUpdated = modifiedDate
-						  ?? sitemapLastModified
-						  ?? publishedDate
-						  ?? DateTimeOffset.UtcNow;
+		var lastUpdated = modifiedDate ?? sitemapLastModified ?? publishedDate ?? DateTimeOffset.UtcNow;
 
 		// Calculate content hash
 		var hash = ComputeHash(title + textContent);
@@ -175,22 +170,9 @@ public class LabsHtmlExtractor(ILogger<LabsHtmlExtractor> logger) : IDocumentExt
 			Author = author,
 			PublishedDate = publishedDate,
 			ModifiedDate = modifiedDate,
-			Og = new OpenGraphData
-			{
-				Title = ogTitle,
-				Description = ogDescription,
-				Image = ogImage
-			},
-			Twitter = new TwitterCardData
-			{
-				Image = twitterImage,
-				Card = twitterCard
-			},
-			Http = new HttpMetadata
-			{
-				Etag = httpEtag,
-				LastModified = httpLastModified
-			}
+			Og = new OpenGraphData { Title = ogTitle, Description = ogDescription, Image = ogImage },
+			Twitter = new TwitterCardData { Image = twitterImage, Card = twitterCard },
+			Http = new HttpMetadata { Etag = httpEtag, LastModified = httpLastModified }
 		};
 	}
 
@@ -202,12 +184,18 @@ public class LabsHtmlExtractor(ILogger<LabsHtmlExtractor> logger) : IDocumentExt
 
 	private static readonly string[] BoilerplateSelectors =
 	[
-		"[class*='blog_ctaDivider']",   // "New to Elasticsearch? Join our ..." CTA banner
-		"[class*='PageActions']",       // Copy / Share buttons
-		"[class*='Rating_']",           // "How helpful was this content?" feedback widget
-		"[class*='containerDivider']",  // "Related Content" cards
-		"[class*='PostPreview_']",      // individual related-post previews
-		"[class*='ready-to-build']",    // bottom marketing CTA
+		"[class*='blog_ctaDivider']", // "New to Elasticsearch? Join our ..." CTA banner
+
+		"[class*='PageActions']", // Copy / Share buttons
+
+		"[class*='Rating_']", // "How helpful was this content?" feedback widget
+
+		"[class*='containerDivider']", // "Related Content" cards
+
+		"[class*='PostPreview_']", // individual related-post previews
+
+		"[class*='ready-to-build']", // bottom marketing CTA
+
 	];
 
 	/// <summary>
@@ -237,9 +225,7 @@ public class LabsHtmlExtractor(ILogger<LabsHtmlExtractor> logger) : IDocumentExt
 
 	private static int ComputeNavigationDepth(string url)
 	{
-		var path = url.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-			? new Uri(url).AbsolutePath
-			: url;
+		var path = url.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? new Uri(url).AbsolutePath : url;
 		return path.Split('/', StringSplitOptions.RemoveEmptyEntries).Length;
 	}
 
@@ -397,11 +383,13 @@ public class LabsHtmlExtractor(ILogger<LabsHtmlExtractor> logger) : IDocumentExt
 			return "about";
 
 		// Product pages
-		if (path.Contains("/elasticsearch", StringComparison.OrdinalIgnoreCase) ||
-			path.Contains("/kibana", StringComparison.OrdinalIgnoreCase) ||
-			path.Contains("/observability", StringComparison.OrdinalIgnoreCase) ||
-			path.Contains("/security", StringComparison.OrdinalIgnoreCase) ||
-			path.Contains("/enterprise-search", StringComparison.OrdinalIgnoreCase))
+		if (
+			path.Contains("/elasticsearch", StringComparison.OrdinalIgnoreCase)
+			|| path.Contains("/kibana", StringComparison.OrdinalIgnoreCase)
+			|| path.Contains("/observability", StringComparison.OrdinalIgnoreCase)
+			|| path.Contains("/security", StringComparison.OrdinalIgnoreCase)
+			|| path.Contains("/enterprise-search", StringComparison.OrdinalIgnoreCase)
+		)
 			return "product";
 
 		return "marketing";

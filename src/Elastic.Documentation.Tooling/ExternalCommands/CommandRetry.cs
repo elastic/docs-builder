@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using ProcNet;
 
 namespace Elastic.Documentation.ExternalCommands;
@@ -13,8 +14,7 @@ public readonly record struct RetryPolicy(int MaxAttempts, TimeSpan BaseDelay, T
 {
 	public static RetryPolicy None { get; } = new(1, TimeSpan.Zero);
 
-	public TimeSpan DelayBeforeAttempt(int attempt) =>
-		attempt <= 1 ? TimeSpan.Zero : BaseDelay * Math.Pow(2, attempt - 2);
+	public TimeSpan DelayBeforeAttempt(int attempt) => attempt <= 1 ? TimeSpan.Zero : BaseDelay * Math.Pow(2, attempt - 2);
 }
 
 /// <summary>Outcome of a single command attempt.</summary>
@@ -22,10 +22,7 @@ public readonly record struct RetryPolicy(int MaxAttempts, TimeSpan BaseDelay, T
 /// <param name="Exception">The exception that ended the attempt, or null when it exited cleanly.</param>
 public readonly record struct CommandFailure(int ExitCode, Exception? Exception)
 {
-	public override string ToString() =>
-		Exception is not null
-			? $"exit {ExitCode}: {Exception.Message}"
-			: $"exit {ExitCode}";
+	public override string ToString() => Exception is not null ? $"exit {ExitCode}: {Exception.Message}" : $"exit {ExitCode}";
 }
 
 /// <summary>
@@ -44,11 +41,7 @@ public static class CommandRetry
 	/// <param name="invoke">Factory that runs the command and returns its exit code.</param>
 	/// <param name="delay">Called with the computed back-off interval before each retry (not called before attempt 1).</param>
 	/// <param name="onRetry">Called after each failed attempt that has a retry remaining.</param>
-	public static CommandFailure? Invoke(
-		RetryPolicy policy,
-		Func<int> invoke,
-		Action<TimeSpan> delay,
-		Action<CommandFailure> onRetry)
+	public static CommandFailure? Invoke(RetryPolicy policy, Func<int> invoke, Action<TimeSpan> delay, Action<CommandFailure> onRetry)
 	{
 		CommandFailure last = default;
 		for (var attempt = 1; attempt <= policy.MaxAttempts; attempt++)
@@ -90,8 +83,32 @@ public static class GitTimeouts
 	/// Default per-attempt timeout applied to network git operations in CI.
 	/// Returns <c>null</c> (no timeout) outside CI so local first-clones are not killed.
 	/// </summary>
-	public static TimeSpan? CiDefault =>
-		string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI"))
-			? null
-			: TimeSpan.FromMinutes(10);
+	public static TimeSpan? CiDefault => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) ? null : TimeSpan.FromMinutes(10);
+}
+
+/// <summary>
+/// Cleans up orphaned git lock files left behind when a git process is killed by a per-attempt timeout.
+/// Safe to call only from a retry path — never before the first attempt.
+/// </summary>
+public static class GitLocks
+{
+	public static void ClearStale(IFileSystem fileSystem, string workingDirectory, Action<string> onCleared)
+	{
+		var gitDir = fileSystem.Path.Join(workingDirectory, ".git");
+		if (!fileSystem.Directory.Exists(gitDir))
+			return;
+
+		foreach (var lockFile in fileSystem.Directory.EnumerateFiles(gitDir, "*.lock", SearchOption.AllDirectories))
+		{
+			try
+			{
+				fileSystem.File.Delete(lockFile);
+				onCleared(lockFile);
+			}
+			catch
+			{
+				// Another process may hold it; leave it and let git report the error.
+			}
+		}
+	}
 }

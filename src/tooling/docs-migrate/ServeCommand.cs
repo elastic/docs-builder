@@ -22,13 +22,22 @@ internal sealed class ServeCommand
 			return 1;
 		}
 
-		string[] args = ["run", "--project", "src/tooling/docs-builder", "--", "serve", "--path", outputDir, "--port", $"{port}", "--no-hud"];
+		string[] args =
+		[
+			"run",
+			"--project",
+			"src/tooling/docs-builder",
+			"--",
+			"serve",
+			"--path",
+			outputDir,
+			"--port",
+			$"{port}",
+			"--no-hud"
+		];
 		Console.WriteLine($"dotnet {string.Join(' ', args)}");
 
-		var arguments = new ExecArguments("dotnet", args)
-		{
-			WorkingDirectory = Paths.WorkingDirectoryRoot.FullName
-		};
+		var arguments = new ExecArguments("dotnet", args) { WorkingDirectory = Paths.WorkingDirectoryRoot.FullName };
 		try
 		{
 			return await Proc.ExecAsync(arguments, ct);

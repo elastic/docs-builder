@@ -38,7 +38,9 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 		{
 			// Wait for AssemblerServe to be ready (it hosts the embedded Lambda API)
 			Console.WriteLine("Waiting for AssemblerServe (with embedded API) to become healthy...");
-			await fixture.DistributedApplication.ResourceNotifications
+			await fixture
+				.DistributedApplication
+				.ResourceNotifications
 				.WaitForResourceHealthyAsync(ResourceNames.AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
 				.WaitAsync(TimeSpan.FromMinutes(2), TestContext.Current.CancellationToken);
 
@@ -67,15 +69,15 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 
 			// The indexer always has WithExplicitStart(), so we must manually start it
 			// Get the ResourceLoggerService to send the start command
-			fixture.DistributedApplication.Services
-				.GetRequiredService<ResourceLoggerService>();
+			fixture.DistributedApplication.Services.GetRequiredService<ResourceLoggerService>();
 
 			// Get the resource notification service to find the resource
-			fixture.DistributedApplication.Services
-				.GetRequiredService<ResourceNotificationService>();
+			fixture.DistributedApplication.Services.GetRequiredService<ResourceNotificationService>();
 
 			// Wait for the resource to be available
-			var resourceEvent = await fixture.DistributedApplication.ResourceNotifications
+			var resourceEvent = await fixture
+				.DistributedApplication
+				.ResourceNotifications
 				.WaitForResourceAsync(ResourceNames.ElasticsearchIngest, _ => true, TestContext.Current.CancellationToken)
 				.WaitAsync(TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
 
@@ -83,8 +85,7 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			var resource = resourceEvent.Resource;
 
 			// Execute the start command using ResourceCommandAnnotation
-			var startCommand = resource.Annotations.OfType<ResourceCommandAnnotation>()
-				.FirstOrDefault(a => a.Name == "resource-start");
+			var startCommand = resource.Annotations.OfType<ResourceCommandAnnotation>().FirstOrDefault(a => a.Name == "resource-start");
 			var logger = fixture.DistributedApplication.Services.GetService<ILogger<ExecuteCommandContext>>()
 				?? NullLoggerFactory.Instance.CreateLogger<ExecuteCommandContext>();
 
@@ -115,9 +116,14 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			Console.WriteLine("Waiting for indexer to complete...");
 
 			// Wait for the indexer to complete
-			_ = await fixture.DistributedApplication.ResourceNotifications
-				.WaitForResourceAsync(ResourceNames.ElasticsearchIngest, KnownResourceStates.TerminalStates,
-					cancellationToken: TestContext.Current.CancellationToken)
+			_ = await fixture
+				.DistributedApplication
+				.ResourceNotifications
+				.WaitForResourceAsync(
+					ResourceNames.ElasticsearchIngest,
+					KnownResourceStates.TerminalStates,
+					cancellationToken: TestContext.Current.CancellationToken
+				)
 				.WaitAsync(TimeSpan.FromMinutes(10), TestContext.Current.CancellationToken);
 
 			Console.WriteLine("Elasticsearch indexer reached terminal state. Validating exit code...");
@@ -130,8 +136,7 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 		catch (Exception e)
 		{
 			Console.WriteLine($"Failed to initialize test: {e.Message}");
-			Console.WriteLine(string.Join(Environment.NewLine,
-				fixture.InMemoryLogger.RecordedLogs.Reverse().Take(50).Reverse()));
+			Console.WriteLine(string.Join(Environment.NewLine, fixture.InMemoryLogger.RecordedLogs.Reverse().Take(50).Reverse()));
 			throw;
 		}
 	}
@@ -195,8 +200,7 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 
 	private async ValueTask ValidateResourceExitCode(string resourceName)
 	{
-		var eventResource = await fixture.DistributedApplication.ResourceNotifications
-			.WaitForResourceAsync(resourceName, _ => true);
+		var eventResource = await fixture.DistributedApplication.ResourceNotifications.WaitForResourceAsync(resourceName, _ => true);
 		var id = eventResource.ResourceId;
 
 		if (!fixture.DistributedApplication.ResourceNotifications.TryGetCurrentState(id, out var state))
@@ -204,10 +208,10 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 
 		if (state.Snapshot.ExitCode is not 0)
 		{
-			var recentLogs = string.Join(Environment.NewLine,
-				fixture.InMemoryLogger.RecordedLogs.Reverse().Take(100).Reverse());
+			var recentLogs = string.Join(Environment.NewLine, fixture.InMemoryLogger.RecordedLogs.Reverse().Take(100).Reverse());
 			throw new Exception(
-				$"Exit code should be 0 for {resourceName}, but was {state.Snapshot.ExitCode}. Recent logs:{Environment.NewLine}{recentLogs}");
+				$"Exit code should be 0 for {resourceName}, but was {state.Snapshot.ExitCode}. Recent logs:{Environment.NewLine}{recentLogs}"
+			);
 		}
 
 		Console.WriteLine($"{resourceName} completed with exit code 0");

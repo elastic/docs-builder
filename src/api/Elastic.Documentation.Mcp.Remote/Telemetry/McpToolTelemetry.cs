@@ -17,10 +17,16 @@ public static class McpToolTelemetry
 
 	private static readonly ActivitySource McpActivitySource = new(McpToolSourceName);
 	private static readonly Meter McpMeter = new(McpMeterName);
-	private static readonly Counter<long> ToolCallsCounter =
-		McpMeter.CreateCounter<long>("mcp.tool.calls", unit: "{call}", description: "Number of MCP tool calls");
-	private static readonly Histogram<double> ToolDurationHistogram =
-		McpMeter.CreateHistogram<double>("mcp.tool.duration", unit: "s", description: "Duration of MCP tool calls in seconds");
+	private static readonly Counter<long> ToolCallsCounter = McpMeter.CreateCounter<long>(
+		"mcp.tool.calls",
+		unit: "{call}",
+		description: "Number of MCP tool calls"
+	);
+	private static readonly Histogram<double> ToolDurationHistogram = McpMeter.CreateHistogram<double>(
+		"mcp.tool.duration",
+		unit: "s",
+		description: "Duration of MCP tool calls in seconds"
+	);
 
 	private static readonly McpServerProfile ServerProfile = ResolveServerProfile();
 	private static readonly string? ServerVersion = ResolveServerVersion();
@@ -28,9 +34,11 @@ public static class McpToolTelemetry
 	private const string McpMethodToolsCall = "tools/call";
 
 	public static string ResolveToolName(string template) =>
-		template
-			.Replace("{resource}", ServerProfile.ResourceNoun, StringComparison.Ordinal)
-			.Replace("{scope}", ServerProfile.ScopePrefix, StringComparison.Ordinal);
+		template.Replace("{resource}", ServerProfile.ResourceNoun, StringComparison.Ordinal).Replace(
+			"{scope}",
+			ServerProfile.ScopePrefix,
+			StringComparison.Ordinal
+		);
 
 	public static Activity? StartActivity(string toolName)
 	{
@@ -78,9 +86,7 @@ public static class McpToolTelemetry
 
 	public static PayloadMetadata SetPayloadMetadata(Activity? activity, IReadOnlyDictionary<string, object?> arguments)
 	{
-		var argumentKeys = arguments.Keys
-			.OrderBy(k => k, StringComparer.Ordinal)
-			.ToArray();
+		var argumentKeys = arguments.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray();
 		var argKeys = string.Join(",", argumentKeys);
 
 		_ = activity?.SetTag("mcp.payload.arg_count", argumentKeys.Length);
@@ -130,7 +136,8 @@ public static class McpToolTelemetry
 			toolName,
 			ServerProfile.Name,
 			metadata.ArgCount,
-			metadata.ArgKeys);
+			metadata.ArgKeys
+		);
 
 	public static void LogCompletion(ILogger logger, string toolName, long durationMs, string outcome)
 	{
@@ -139,7 +146,8 @@ public static class McpToolTelemetry
 			toolName,
 			ServerProfile.Name,
 			durationMs,
-			outcome);
+			outcome
+		);
 
 		var tags = new TagList
 		{
@@ -160,8 +168,7 @@ public static class McpToolTelemetry
 
 	private static string? ResolveServerVersion()
 	{
-		var informationalVersion = Assembly.GetExecutingAssembly()
-			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+		var informationalVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
 		return informationalVersion?.Split(['+', '-'])[0];
 	}

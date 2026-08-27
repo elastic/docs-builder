@@ -35,27 +35,28 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		return context;
 	}
 
-	private static Product PrestageProduct(string id, string? repository = null) => new()
-	{
-		Id = id,
-		DisplayName = id,
-		Repository = repository ?? id,
-		Features = new ProductFeatures { PublicReference = true, ReleaseNotes = ReleaseNotesPath.Prestage }
-	};
+	private static Product PrestageProduct(string id, string? repository = null) =>
+		new()
+		{
+			Id = id,
+			DisplayName = id,
+			Repository = repository ?? id,
+			Features = new ProductFeatures { PublicReference = true, ReleaseNotes = ReleaseNotesPath.Prestage }
+		};
 
 	private ChangelogOnboardingValidationService Service(IConfigurationContext context, StubHandler handler) =>
 		new(LoggerFactory, context, new GitHubApiTransport(handler, "test-token"));
 
 	/// <summary>Responds 200 for the given repo paths, 404 for everything else.</summary>
-	private static StubHandler RepoWith(string repo, params string[] existingPaths) => new(req =>
-	{
-		var path = req.RequestUri!.AbsolutePath;
-		var prefix = $"/repos/elastic/{repo}/contents/";
-		if (path.StartsWith(prefix, StringComparison.Ordinal) &&
-			existingPaths.Contains(path[prefix.Length..], StringComparer.Ordinal))
-			return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") };
-		return new HttpResponseMessage(HttpStatusCode.NotFound);
-	});
+	private static StubHandler RepoWith(string repo, params string[] existingPaths) =>
+		new(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			var prefix = $"/repos/elastic/{repo}/contents/";
+			if (path.StartsWith(prefix, StringComparison.Ordinal) && existingPaths.Contains(path[prefix.Length..], StringComparer.Ordinal))
+				return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") };
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
 
 	private static readonly string[] AllScaffolding =
 	[
@@ -72,7 +73,11 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var handler = RepoWith("widget", AllScaffolding);
 		var service = Service(ContextWith(PrestageProduct("widget")), handler);
 
-		var result = await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -82,34 +87,46 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 	[Fact]
 	public async Task PrestageProductMissingWorkflow_FailsListingTheFile()
 	{
-		var handler = RepoWith("widget",
+		var handler = RepoWith(
+			"widget",
 			".github/workflows/changelog-validate.yml",
 			".github/workflows/changelog-submit.yml",
 			".github/workflows/changelog-upload.yml",
-			"docs/changelog.yml");
+			"docs/changelog.yml"
+		);
 		var service = Service(ContextWith(PrestageProduct("widget")), handler);
 
-		var result = await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("widget") &&
-			d.Message.Contains("changelog-bundle-stage.yml"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("widget") && d.Message.Contains("changelog-bundle-stage.yml"));
 	}
 
 	[Fact]
 	public async Task RootChangelogConfig_IsAcceptedAsFallback()
 	{
-		var handler = RepoWith("widget",
+		var handler = RepoWith(
+			"widget",
 			".github/workflows/changelog-validate.yml",
 			".github/workflows/changelog-submit.yml",
 			".github/workflows/changelog-upload.yml",
 			".github/workflows/changelog-bundle-stage.yml",
-			"changelog.yml");
+			"changelog.yml"
+		);
 		var service = Service(ContextWith(PrestageProduct("widget")), handler);
 
-		var result = await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -121,7 +138,11 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var handler = RepoWith("widget-src", AllScaffolding);
 		var service = Service(ContextWith(PrestageProduct("widget", repository: "widget-src")), handler);
 
-		var result = await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		handler.RequestedPaths.Should().OnlyContain(p => p.StartsWith("/repos/elastic/widget-src/", StringComparison.Ordinal));
@@ -134,7 +155,11 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var handler = RepoWith("widget");
 		var service = Service(ContextWith(onRelease), handler);
 
-		var result = await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		handler.RequestedPaths.Should().BeEmpty();
@@ -146,11 +171,14 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
 		var service = Service(ContextWith(PrestageProduct("widget")), handler);
 
-		var result = await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("GITHUB_TOKEN"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("GITHUB_TOKEN"));
 	}
 
 	internal sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

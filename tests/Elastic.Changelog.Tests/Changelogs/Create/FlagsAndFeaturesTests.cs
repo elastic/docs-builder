@@ -19,7 +19,7 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		{
 			Title = "Important feature",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Highlight = true,
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
@@ -57,7 +57,7 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		{
 			Title = "New feature with flag",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			FeatureId = "feature:new-search-api",
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
@@ -95,12 +95,8 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		{
 			Title = "Fix multiple issues",
 			Type = "bug-fix",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
-			Issues =
-			[
-				"https://github.com/elastic/elasticsearch/issues/123",
-				"https://github.com/elastic/elasticsearch/issues/456"
-			],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
+			Issues = ["https://github.com/elastic/elasticsearch/issues/123", "https://github.com/elastic/elasticsearch/issues/456"],
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
