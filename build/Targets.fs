@@ -35,6 +35,7 @@ let private version _ =
 
 let private format _ =
     exec { run "dotnet" ["curb"; "format"; "."] }
+    exec { run "dotnet" ["curb"; "cleanup"; "--forward"] }
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
