@@ -2,7 +2,7 @@
 
 The [`related-learning.yml`](https://github.com/elastic/docs-builder/blob/main/config/related-learning.yml) file is a global catalog of learning destinations (training modules, labs, and similar). Pages opt in with the [`{related-learning}`](/syntax/related-learning.md) directive by catalog ID.
 
-This catalog ships with {{dbuild}} and is available in both isolated and assembler builds. Content repositories pick up catalog changes on the next {{dbuild}} version.
+This catalog ships with {{dbuild}} and is available in both isolated and assembler builds. Content repositories pick up catalog changes on the next {{dbuild}} version. If a locally cloned `config/` is older than the binary (for example after `assembler config init` before this file lands on `main`), {{dbuild}} uses the embedded copy of any missing catalog file.
 
 ## Example
 
