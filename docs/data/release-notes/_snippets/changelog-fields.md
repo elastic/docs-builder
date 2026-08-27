@@ -23,7 +23,7 @@ products:
       versions:
 
       # Note files only — a required list of release versions this note applies to.
-      # Entries derive their release line from their origin branch; this field is not valid on entries.
+      # This field is mandatory only when the changelog is a note (i.e. doesn't have a PR).
       # Example: [9.3.0, 9.4.0]
 
       lifecycle:
