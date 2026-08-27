@@ -14,17 +14,21 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeSameTargetTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMergeSameTargetTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Cloud Serverless scenario: multiple repos contributing to the same dated release
-		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/kibana-2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: kibana
 			  target: 2025-08-05
@@ -38,11 +42,15 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			  - Dashboard
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/elasticsearch-2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 2025-08-05
@@ -63,11 +71,15 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  prs:
 			  - "222223"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/serverless-2025-08-05.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/serverless-2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch-serverless
 			  target: 2025-08-05
@@ -81,12 +93,16 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			  - API
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// A different release date with single bundle
-		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-01.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/kibana-2025-08-01.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: kibana
 			  target: 2025-08-01
@@ -98,7 +114,9 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-01
 			  prs:
 			  - "444444"
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -177,17 +195,21 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeDifferentTargetsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMergeDifferentTargetsTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Bundles with different targets should remain separate
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -199,11 +221,15 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -215,11 +241,15 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			    target: 9.2.0
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.1.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.1.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.1.0
@@ -231,7 +261,9 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			    target: 9.1.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -266,14 +298,19 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeSingleBundleTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMergeSingleBundleTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -292,19 +329,18 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "111112"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
-	public void SingleBundleRemainsUnchanged() =>
-		Block!.LoadedBundles.Should().HaveCount(1);
+	public void SingleBundleRemainsUnchanged() => Block!.LoadedBundles.Should().HaveCount(1);
 
 	[Fact]
-	public void SingleBundleHasCorrectVersion() =>
-		Block!.LoadedBundles[0].Version.Should().Be("9.3.0");
+	public void SingleBundleHasCorrectVersion() => Block!.LoadedBundles[0].Version.Should().Be("9.3.0");
 
 	[Fact]
-	public void SingleBundleHasAllEntries() =>
-		Block!.LoadedBundles[0].Entries.Should().HaveCount(2);
+	public void SingleBundleHasAllEntries() => Block!.LoadedBundles[0].Entries.Should().HaveCount(2);
 
 	[Fact]
 	public void SingleBundleRendersCorrectly()
@@ -319,17 +355,21 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeMixedVersionTypesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMergeMixedVersionTypesTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Semver version
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -341,12 +381,16 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
+			"""
+			)
+		);
 
 		// Date-based version
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: kibana
 			  target: 2025-08-05
@@ -358,7 +402,9 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 			    target: 2025-08-05
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]

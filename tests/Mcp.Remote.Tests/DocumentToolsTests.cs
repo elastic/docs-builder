@@ -60,8 +60,7 @@ public class DocumentToolsTests
 
 	private sealed class StubDocumentGateway(DocumentResult? result) : IDocumentGateway
 	{
-		public Task<DocumentResult?> GetByUrlAsync(string url, CancellationToken ct = default) =>
-			Task.FromResult(result);
+		public Task<DocumentResult?> GetByUrlAsync(string url, CancellationToken ct = default) => Task.FromResult(result);
 
 		public Task<DocumentStructure?> GetStructureAsync(string url, CancellationToken ct = default) =>
 			Task.FromResult<DocumentStructure?>(null);

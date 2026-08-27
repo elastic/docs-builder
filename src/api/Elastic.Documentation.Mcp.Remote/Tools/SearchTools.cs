@@ -24,29 +24,32 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
 	/// </summary>
-	[McpServerTool, McpToolName("search_{resource}"), Description(
-		"Searches all published {docs} by meaning. " +
-		"Use when the user asks about Elastic product features, needs to find existing docs pages, " +
-		"verify published content, or research what documentation exists on a topic. " +
-		"Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
+	[McpServerTool, McpToolName("search_{resource}"), Description("Searches all published {docs} by meaning. "
+		+ "Use when the user asks about Elastic product features, needs to find existing docs pages, "
+		+ "verify published content, or research what documentation exists on a topic. "
+		+ "Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
 	public async Task<string> SemanticSearch(
 		[Description("The search query - can be a question or keywords")] string query,
 		[Description("Page number (1-based, default: 1)")] int pageNumber = 1,
 		[Description("Number of results per page (default: 10, max: 50)")] int pageSize = 10,
 		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana')")] string? productFilter = null,
 		[Description("Filter by navigation section (e.g., 'reference', 'getting-started')")] string? sectionFilter = null,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default
+	)
 	{
 		var toolName = McpToolTelemetry.ResolveToolName("search_{resource}");
 		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
-		{
-			["query"] = query,
-			["pageNumber"] = pageNumber,
-			["pageSize"] = pageSize,
-			["productFilter"] = productFilter,
-			["sectionFilter"] = sectionFilter
-		});
+		var payload = McpToolTelemetry.SetPayloadMetadata(
+			activity,
+			new Dictionary<string, object?>
+			{
+				["query"] = query,
+				["pageNumber"] = pageNumber,
+				["pageSize"] = pageSize,
+				["productFilter"] = productFilter,
+				["sectionFilter"] = sectionFilter
+			}
+		);
 		McpToolTelemetry.LogStart(logger, toolName, payload);
 		var duration = Stopwatch.StartNew();
 		var outcome = "failure";
@@ -73,17 +76,22 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 				Query = query,
 				TotalHits = result.TotalResults,
 				IsSemanticQuery = result.IsSemanticQuery,
-				Results = result.Results.Select(r => new SearchResultDto
-				{
-					Url = r.Url,
-					Title = r.Title,
-					Description = r.Description,
-					Score = r.Score,
-					AiShortSummary = r.AiShortSummary,
-					NavigationSection = r.NavigationSection,
-					Product = r.Product?.DisplayName,
-					LastUpdated = r.LastUpdated
-				}).ToList()
+				Results = result
+					.Results
+					.Select(
+						r => new SearchResultDto
+						{
+							Url = r.Url,
+							Title = r.Title,
+							Description = r.Description,
+							Score = r.Score,
+							AiShortSummary = r.AiShortSummary,
+							NavigationSection = r.NavigationSection,
+							Product = r.Product?.DisplayName,
+							LastUpdated = r.LastUpdated
+						}
+					)
+					.ToList()
 			};
 
 			McpToolTelemetry.MarkSuccess(activity);
@@ -120,24 +128,22 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 	/// <summary>
 	/// Finds documents related to a given topic or document URL.
 	/// </summary>
-	[McpServerTool, McpToolName("find_related_{resource}"), Description(
-		"Finds {docs} pages related to a given topic. " +
-		"Use when exploring what documentation exists around a subject, building context for writing, " +
-		"or discovering related content the user should be aware of.")]
+	[McpServerTool, McpToolName("find_related_{resource}"), Description("Finds {docs} pages related to a given topic. "
+		+ "Use when exploring what documentation exists around a subject, building context for writing, "
+		+ "or discovering related content the user should be aware of.")]
 	public async Task<string> FindRelatedDocs(
 		[Description("Topic or search terms to find related documents for")] string topic,
 		[Description("Maximum number of related documents to return (default: 10)")] int limit = 10,
 		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana')")] string? productFilter = null,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default
+	)
 	{
 		var toolName = McpToolTelemetry.ResolveToolName("find_related_{resource}");
 		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
-		{
-			["topic"] = topic,
-			["limit"] = limit,
-			["productFilter"] = productFilter
-		});
+		var payload = McpToolTelemetry.SetPayloadMetadata(
+			activity,
+			new Dictionary<string, object?> { ["topic"] = topic, ["limit"] = limit, ["productFilter"] = productFilter }
+		);
 		McpToolTelemetry.LogStart(logger, toolName, payload);
 		var duration = Stopwatch.StartNew();
 		var outcome = "failure";
@@ -161,15 +167,20 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 			{
 				Topic = topic,
 				Count = result.Results.Count,
-				RelatedDocs = result.Results.Select(r => new RelatedDocDto
-				{
-					Url = r.Url,
-					Title = r.Title,
-					Description = r.Description,
-					Score = r.Score,
-					AiShortSummary = r.AiShortSummary,
-					Product = r.Product?.DisplayName
-				}).ToList()
+				RelatedDocs = result
+					.Results
+					.Select(
+						r => new RelatedDocDto
+						{
+							Url = r.Url,
+							Title = r.Title,
+							Description = r.Description,
+							Score = r.Score,
+							AiShortSummary = r.AiShortSummary,
+							Product = r.Product?.DisplayName
+						}
+					)
+					.ToList()
 			};
 
 			McpToolTelemetry.MarkSuccess(activity);

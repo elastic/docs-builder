@@ -8,13 +8,11 @@ using Elastic.Markdown.Myst.Directives.Math;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class MathBlockTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+public class MathBlockTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output, """
 :::{math}
 E = mc^2
 :::
-"""
-)
+""")
 {
 	[Fact]
 	public void ParsesMathBlock() => Block.Should().NotBeNull();
@@ -32,8 +30,9 @@ E = mc^2
 	public void RendersMathSpan() => Html.Should().Contain("<span class=\"math\">E = mc^2</span>");
 }
 
-public class MathBlockDisplayMathTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+public class MathBlockDisplayMathTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(
+	output,
+	"""
 :::{math}
 \[
 \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
@@ -55,8 +54,9 @@ public class MathBlockDisplayMathTests(ITestOutputHelper output) : DirectiveTest
 	public void RendersDisplayMathDiv() => Html.Should().Contain("<div class=\"math\">");
 }
 
-public class MathBlockWithLabelTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+public class MathBlockWithLabelTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(
+	output,
+	"""
 :::{math}
 :label: einstein-mass-energy
 E = mc^2
@@ -74,29 +74,26 @@ E = mc^2
 	public void RendersWithId() => Html.Should().Contain("id=\"einstein-mass-energy\"");
 }
 
-public class MathBlockEmptyTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+public class MathBlockEmptyTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output, """
 :::{math}
 :::
-"""
-)
+""")
 {
 	[Fact]
-	public void EmptyContentGeneratesError() =>
-		Collector.Errors.Should().Be(1);
+	public void EmptyContentGeneratesError() => Collector.Errors.Should().Be(1);
 
 	[Fact]
 	public void EmitsErrorForEmptyContent()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.StartsWith("Math directive requires content."));
+		Collector.Diagnostics.Should().OnlyContain(d => d.Message.StartsWith("Math directive requires content."));
 	}
 }
 
-public class MathBlockComplexExpressionTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+public class MathBlockComplexExpressionTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(
+	output,
+	"""
 :::{math}
 \begin{align}
 \frac{\partial f}{\partial x} &= \lim_{h \to 0} \frac{f(x+h) - f(x)}{h} \\

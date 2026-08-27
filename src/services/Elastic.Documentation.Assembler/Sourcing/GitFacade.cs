@@ -24,16 +24,22 @@ public interface IGitRepository
 
 // This git repository implementation is optimized for pull and fetching single commits.
 // It uses `git pull --depth 1` and `git fetch --depth 1` to minimize the amount of data transferred.
-public class SingleCommitOptimizedGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, TimeSpan? cloneTimeout = null)
-	: ExternalCommandExecutor(collector, workingDirectory)
-		, IGitRepository
+public class SingleCommitOptimizedGitRepository(
+	ILoggerFactory logFactory,
+	IDiagnosticsCollector collector,
+	IDirectoryInfo workingDirectory,
+	TimeSpan? cloneTimeout = null
+) : ExternalCommandExecutor(collector, workingDirectory), IGitRepository
 {
 	private static readonly Dictionary<string, string> EnvironmentVars = new()
 	{
 		// Disable git editor prompts:
 		// There are cases where `git pull` would prompt for an editor to write a commit message.
 		// This env variable prevents that.
-		{ "GIT_EDITOR", "true" }
+		{
+			"GIT_EDITOR",
+			"true"
+		}
 	};
 
 	// Network-bound operations retry up to 3 times with exponential back-off.
@@ -43,22 +49,52 @@ public class SingleCommitOptimizedGitRepository(ILoggerFactory logFactory, IDiag
 	private readonly RetryPolicy _networkRetry = new(
 		MaxAttempts: 3,
 		BaseDelay: TimeSpan.FromSeconds(5),
-		AttemptTimeout: cloneTimeout ?? GitTimeouts.CiDefault);
+		AttemptTimeout: cloneTimeout ?? GitTimeouts.CiDefault
+	);
 
 	/// <inheritdoc />
 	protected override ILogger Logger { get; } = logFactory.CreateLogger<SingleCommitOptimizedGitRepository>();
 
 	protected override void OnBeforeRetry() =>
-		GitLocks.ClearStale(WorkingDirectory.FileSystem, WorkingDirectory.FullName,
-			f => Logger.LogWarning("{RepositoryName}: Removed stale git lock file {LockFile}", WorkingDirectory.Name, f));
+		GitLocks.ClearStale(
+			WorkingDirectory.FileSystem,
+			WorkingDirectory.FullName,
+			f => Logger.LogWarning("{RepositoryName}: Removed stale git lock file {LockFile}", WorkingDirectory.Name, f)
+		);
 
 	public string GetCurrentCommit() => Capture("git", "rev-parse", "HEAD");
 
 	public void Init() => ExecIn(EnvironmentVars, "git", "init");
 	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));
-	public bool Pull(string branch) => ExecInWithRetry(EnvironmentVars, _networkRetry, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", branch);
-	public bool Fetch(string reference) => ExecInWithRetry(EnvironmentVars, _networkRetry, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
-	public void EnableSparseCheckout(string[] folders) => ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);
+	public bool Pull(string branch) =>
+		ExecInWithRetry(
+			EnvironmentVars,
+			_networkRetry,
+			"git",
+			"pull",
+			"--depth",
+			"1",
+			"--allow-unrelated-histories",
+			"--no-ff",
+			"origin",
+			branch
+		);
+	public bool Fetch(string reference) =>
+		ExecInWithRetry(
+			EnvironmentVars,
+			_networkRetry,
+			"git",
+			"fetch",
+			"--no-tags",
+			"--prune",
+			"--no-recurse-submodules",
+			"--depth",
+			"1",
+			"origin",
+			reference
+		);
+	public void EnableSparseCheckout(string[] folders) =>
+		ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);
 
 	public void DisableSparseCheckout() => ExecIn(EnvironmentVars, "git", "sparse-checkout", "disable");
 	public void Checkout(string reference) => ExecIn(EnvironmentVars, "git", "checkout", "--force", reference);

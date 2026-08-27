@@ -24,14 +24,13 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	private static readonly TopNavRenderModel TopNav = new([
 		new TopNavLinkItem("Reference", "/docs/reference/", false, SectionId: ReferenceSectionId),
 		new TopNavLinkItem("APIs", "https://www.elastic.co/docs/api/", true),
-		new TopNavDropdownItem("Products", [
-			new TopNavGroup("Stack products", [
-				new TopNavLinkItem("Elasticsearch", "/docs/products/elasticsearch/", false)
-			]),
-			new TopNavGroup(null, [
-				new TopNavLinkItem("All products", "/docs/products/", false)
-			])
-		])
+		new TopNavDropdownItem(
+			"Products",
+			[
+				new TopNavGroup("Stack products", [new TopNavLinkItem("Elasticsearch", "/docs/products/elasticsearch/", false)]),
+				new TopNavGroup(null, [new TopNavLinkItem("All products", "/docs/products/", false)])
+			]
+		)
 	]);
 
 	private static readonly TopNavRenderModel LinkOnlyTopNav = new([
@@ -73,7 +72,11 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	[Fact]
 	public async Task TopNavLinksRenderInMobileDrawer()
 	{
-		var html = await RenderPagesNav(LinkOnlyTopNav, currentUrl: "/docs/reference/some-page", root: new MockSectionRoot(ReferenceSectionId));
+		var html = await RenderPagesNav(
+			LinkOnlyTopNav,
+			currentUrl: "/docs/reference/some-page",
+			root: new MockSectionRoot(ReferenceSectionId)
+		);
 
 		html.Should().Contain("secondary-nav-mobile-menu");
 		html.Should().Contain(">Section<");
@@ -139,7 +142,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		html.Should().Contain("<version-dropdown");
 		html.Should().Contain("all-versions-url=\"/docs/versions/\"");
 		html.Should().Contain("8.19");
-		html.IndexOf("secondary-nav-list", StringComparison.Ordinal)
+		html
+			.IndexOf("secondary-nav-list", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("secondary-nav-actions", StringComparison.Ordinal));
 	}
@@ -229,7 +233,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		string currentUrl,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
 		bool showVersionDropdown = false,
-		bool navigationPreviewEnabled = true)
+		bool navigationPreviewEnabled = true
+	)
 	{
 		var model = CreateModel(topNav, currentUrl, root, navigationPreviewEnabled);
 		if (showVersionDropdown)
@@ -251,7 +256,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		string currentUrl,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
 		bool showVersionDropdown = false,
-		bool navigationPreviewEnabled = true)
+		bool navigationPreviewEnabled = true
+	)
 	{
 		var model = CreateModel(topNav, currentUrl, root, navigationPreviewEnabled) with
 		{
@@ -269,7 +275,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		TopNavRenderModel? topNav,
 		string currentUrl,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
-		bool navigationPreviewEnabled = true)
+		bool navigationPreviewEnabled = true
+	)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -306,7 +313,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	/// <summary>The secondary nav only reads <see cref="INavigationItem.Url"/> off the current page.</summary>
 	private sealed record StubNavigationItem(
 		string Url,
-		IRootNavigationItem<INavigationModel, INavigationItem>? Root = null) : INavigationItem
+		IRootNavigationItem<INavigationModel, INavigationItem>? Root = null
+	) : INavigationItem
 	{
 		public string NavigationTitle => "stub";
 		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => Root ?? null!;
@@ -319,8 +327,9 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	/// Stands in for <c>SiteNavigation</c> as the outermost parent so
 	/// <see cref="GlobalLayoutViewModel.TopNav"/> resolves correctly.
 	/// </summary>
-	private sealed class MockSiteNavigationRoot(TopNavRenderModel? topNav)
-		: INodeNavigationItem<INavigationModel, INavigationItem>, ISiteNavigationRoot
+	private sealed class MockSiteNavigationRoot(
+		TopNavRenderModel? topNav
+	) : INodeNavigationItem<INavigationModel, INavigationItem>, ISiteNavigationRoot
 	{
 		public TopNavRenderModel? TopNav { get; } = topNav;
 		public string Id => "mock-site";
@@ -338,8 +347,7 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	/// Minimal root stub — <c>_SecondaryNav.cshtml</c> reads <see cref="INavigationItem.NavigationRoot"/>
 	/// and compares its Id against each tab's SectionId(s).
 	/// </summary>
-	private sealed class MockSectionRoot(string id)
-		: IRootNavigationItem<INavigationModel, INavigationItem>
+	private sealed class MockSectionRoot(string id) : IRootNavigationItem<INavigationModel, INavigationItem>
 	{
 		public string Id => id;
 		public Uri Identifier => new($"section://{id}");

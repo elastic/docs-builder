@@ -36,13 +36,7 @@ public class MarkerResolutionTests
 		new(new MockFileSystem(), ReleaseNotesSerialization.GetEntryDeserializer(), NullLogger.Instance);
 
 	private static ChangelogFilterCriteria AllEntries() =>
-		new()
-		{
-			IncludeAll = true,
-			ProductFilters = [],
-			PrsToMatch = [],
-			IssuesToMatch = []
-		};
+		new() { IncludeAll = true, ProductFilters = [], PrsToMatch = [], IssuesToMatch = [] };
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;
 
@@ -50,11 +44,7 @@ public class MarkerResolutionTests
 	public async Task Marker_IsExcludedFromOutput_ParentIncludedOnce()
 	{
 		var matcher = BuildMatcher();
-		var contents = new List<(string FileName, string Content)>
-		{
-			("100.yaml", RealEntry),
-			("200.yaml", "link: 100\n")
-		};
+		var contents = new List<(string FileName, string Content)> { ("100.yaml", RealEntry), ("200.yaml", "link: 100\n") };
 		await using var collector = new DiagnosticsCollector([]);
 
 		var result = matcher.MatchChangelogContents(collector, contents, AllEntries(), Ctx);
@@ -68,10 +58,7 @@ public class MarkerResolutionTests
 	public async Task Marker_MissingParent_EmitsError()
 	{
 		var matcher = BuildMatcher();
-		var contents = new List<(string FileName, string Content)>
-		{
-			("200.yaml", "link: 100\n")
-		};
+		var contents = new List<(string FileName, string Content)> { ("200.yaml", "link: 100\n") };
 		await using var collector = new DiagnosticsCollector([]);
 
 		_ = matcher.MatchChangelogContents(collector, contents, AllEntries(), Ctx);
@@ -118,10 +105,7 @@ public class MarkerResolutionTests
 	public async Task NoMarkers_NormalEntries_Unaffected()
 	{
 		var matcher = BuildMatcher();
-		var contents = new List<(string FileName, string Content)>
-		{
-			("100.yaml", RealEntry)
-		};
+		var contents = new List<(string FileName, string Content)> { ("100.yaml", RealEntry) };
 		await using var collector = new DiagnosticsCollector([]);
 
 		var result = matcher.MatchChangelogContents(collector, contents, AllEntries(), Ctx);

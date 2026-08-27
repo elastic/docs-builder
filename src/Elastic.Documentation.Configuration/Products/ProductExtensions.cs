@@ -20,35 +20,33 @@ public static class ProductExtensions
 	{
 		var productsDto = ConfigurationFileProvider.Deserializer.Deserialize<ProductConfigDto>(reader);
 
-		var products = productsDto.Products.ToDictionary(
-			kvp => kvp.Key,
-			kvp =>
+		var products = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp =>
+		{
+			var features = ResolveFeatures(kvp.Key, kvp.Value.Features);
+			var versioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key);
+
+			versioningSystem ??= !features.PublicReference
+				? VersioningSystem.None
+				: throw new InvalidOperationException(
+					$"Product '{kvp.Key}' has invalid or missing versioning '{kvp.Value.Versioning ?? kvp.Key}' while 'public-reference' is enabled."
+				);
+
+			return new Product
 			{
-				var features = ResolveFeatures(kvp.Key, kvp.Value.Features);
-				var versioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key);
+				Id = kvp.Key,
+				DisplayName = kvp.Value.Display,
+				VersioningSystem = versioningSystem,
+				Repository = kvp.Value.Repository ?? kvp.Key,
+				Features = features
+			};
+		});
 
-				versioningSystem ??= !features.PublicReference
-					? VersioningSystem.None
-					: throw new InvalidOperationException(
-						$"Product '{kvp.Key}' has invalid or missing versioning '{kvp.Value.Versioning ?? kvp.Key}' while 'public-reference' is enabled.");
-
-				return new Product
-				{
-					Id = kvp.Key,
-					DisplayName = kvp.Value.Display,
-					VersioningSystem = versioningSystem,
-					Repository = kvp.Value.Repository ?? kvp.Key,
-					Features = features
-				};
-			});
-
-		var publicReferenceProducts = products
-			.Where(kvp => kvp.Value.Features.PublicReference)
-			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
-		var productDisplayNames = productsDto.Products.ToDictionary(
+		var publicReferenceProducts = products.Where(kvp => kvp.Value.Features.PublicReference).ToDictionary(
 			kvp => kvp.Key,
-			kvp => kvp.Value.Display);
+			kvp => kvp.Value
+		);
+
+		var productDisplayNames = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Display);
 
 		return new ProductsConfiguration
 		{
@@ -68,9 +66,7 @@ public static class ProductExtensions
 		if (featuresDto is null)
 			return ProductFeatures.All;
 
-		var unknownKeys = featuresDto.Keys
-			.Where(k => !ProductFeatures.KnownKeys.Contains(k))
-			.ToList();
+		var unknownKeys = featuresDto.Keys.Where(k => !ProductFeatures.KnownKeys.Contains(k)).ToList();
 
 		if (unknownKeys is { Count: > 0 })
 		{
@@ -92,12 +88,10 @@ public static class ProductExtensions
 		if (!featuresDto.TryGetValue(key, out var value))
 			return true;
 		if (string.IsNullOrWhiteSpace(value))
-			throw new InvalidOperationException(
-				$"Product '{productId}' has an empty '{key}' value. Allowed values: true, false.");
+			throw new InvalidOperationException($"Product '{productId}' has an empty '{key}' value. Allowed values: true, false.");
 		if (bool.TryParse(value, out var enabled))
 			return enabled;
-		throw new InvalidOperationException(
-			$"Product '{productId}' has invalid '{key}' value '{value}'. Allowed values: true, false.");
+		throw new InvalidOperationException($"Product '{productId}' has invalid '{key}' value '{value}'. Allowed values: true, false.");
 	}
 
 	/// <summary>
@@ -112,7 +106,8 @@ public static class ProductExtensions
 
 		if (string.IsNullOrWhiteSpace(value))
 			throw new InvalidOperationException(
-				$"Product '{productId}' has an empty 'release-notes' value. Allowed values: true, false, prestage, on-release.");
+				$"Product '{productId}' has an empty 'release-notes' value. Allowed values: true, false, prestage, on-release."
+			);
 
 		if (bool.TryParse(value, out var enabled))
 			return enabled ? ReleaseNotesPath.OnRelease : ReleaseNotesPath.None;
@@ -121,8 +116,10 @@ public static class ProductExtensions
 		{
 			"prestage" => ReleaseNotesPath.Prestage,
 			"on-release" => ReleaseNotesPath.OnRelease,
-			_ => throw new InvalidOperationException(
-				$"Product '{productId}' has invalid 'release-notes' value '{value}'. Allowed values: true, false, prestage, on-release.")
+			_ =>
+				throw new InvalidOperationException(
+					$"Product '{productId}' has invalid 'release-notes' value '{value}'. Allowed values: true, false, prestage, on-release."
+				)
 		};
 	}
 }
@@ -134,6 +131,7 @@ internal sealed record ProductConfigDto
 	[YamlMember(Alias = "products")]
 	public Dictionary<string, ProductDto> Products { get; set; } = [];
 }
+
 internal sealed record ProductDto
 {
 	[YamlMember(Alias = "display")]

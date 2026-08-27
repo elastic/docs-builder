@@ -18,7 +18,8 @@ public class ScrubberAllowlistIdentityTests
 		int schemaVersion = ScrubberAllowlistIdentity.CurrentSchemaVersion,
 		string artifact = ScrubberAllowlistIdentity.ArtifactKind,
 		string sha = ValidSha,
-		string commit = ValidCommit) =>
+		string commit = ValidCommit
+	) =>
 		$$"""
 		{
 			"schema_version": {{schemaVersion}},

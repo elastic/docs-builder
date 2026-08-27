@@ -33,17 +33,15 @@ public class StaticWebHost
 		if (!dir.IsSubPathOf(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)))
 			throw new Exception($"Can not serve directory outside of: {Paths.WorkingDirectoryRoot.FullName}");
 
-		var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-		{
-			ContentRootPath = _contentRoot
-		});
+		var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = _contentRoot });
 
 		_ = builder.AddDocumentationServiceDefaults();
 #if DEBUG
 		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
-		_ = builder.Logging
+		_ = builder
+			.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
@@ -79,26 +77,24 @@ public class StaticWebHost
 				throw; // Re-throw to let ASP.NET Core handle it
 			}
 		});
-		_ =
-			WebApplication
-				.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
-				.Use(async (context, next) =>
+		_ = WebApplication
+			.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
+			.Use(async (context, next) =>
+			{
+				context.Response.OnStarting(() =>
 				{
-					context.Response.OnStarting(() =>
-					{
-						var type = context.Response.ContentType;
-						if (type?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
-							context.Response.Headers.CacheControl = "no-store";
-						return Task.CompletedTask;
-					});
-					await next();
-				})
-				.UseRouting();
+					var type = context.Response.ContentType;
+					if (type?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
+						context.Response.Headers.CacheControl = "no-store";
+					return Task.CompletedTask;
+				});
+				await next();
+			})
+			.UseRouting();
 
 		_ = WebApplication.MapGet("/", ServeRootIndex);
 
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
-
 
 #if DEBUG
 		var apiV1 = WebApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
@@ -156,7 +152,6 @@ public class StaticWebHost
 			};
 			return Results.File(fileInfo.FullName, mimetype);
 		}
-
 
 		return Results.NotFound();
 	}

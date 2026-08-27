@@ -21,8 +21,7 @@ internal static class SharedOptions
 
 	public static readonly DirectoryInfo DefaultWorkDir = ResolveDefaultWorkDir();
 
-	public static string ResolveWorkDir(string? workDir) =>
-		workDir ?? DefaultWorkDir.FullName;
+	public static string ResolveWorkDir(string? workDir) => workDir ?? DefaultWorkDir.FullName;
 
 	private static DirectoryInfo ResolveDefaultWorkDir()
 	{
@@ -65,8 +64,7 @@ internal static class SharedOptions
 		return JsonSerializer.Deserialize<FilterOptions>(json, JsonOptions) ?? new FilterOptions();
 	}
 
-	public static FilterOptions ResolveFilterOptions(
-		string workDir, int? majors, bool? all, int? minVersion, string? book, int? minors)
+	public static FilterOptions ResolveFilterOptions(string workDir, int? majors, bool? all, int? minVersion, string? book, int? minors)
 	{
 		var saved = LoadFilterOptions(workDir);
 
@@ -80,7 +78,8 @@ internal static class SharedOptions
 	}
 
 	public static List<LegacyBook> FilterBooks(LegacyConf conf, string? bookFilter) =>
-		conf.Contents
+		conf
+			.Contents
 			.SelectMany(c => c.Sections)
 			.Where(b => bookFilter is null || b.Prefix.StartsWith(bookFilter, StringComparison.OrdinalIgnoreCase))
 			.ToList();
@@ -90,9 +89,9 @@ internal static class SharedOptions
 		var branches = book.Branches.ToList();
 
 		if (minVersion is not null)
-			branches = branches
-				.Where(b => TryParseMajorMinor(b.VersionLabel) is var p && p.HasValue && p.Value.Major >= minVersion)
-				.ToList();
+			branches = branches.Where(
+				b => TryParseMajorMinor(b.VersionLabel) is var p && p.HasValue && p.Value.Major >= minVersion
+			).ToList();
 
 		if (all)
 			return EnsureCurrent(book, SortDescending(branches));
@@ -126,8 +125,7 @@ internal static class SharedOptions
 		if (versions.Any(v => v.VersionLabel == book.Current))
 			return versions;
 
-		var currentBranch = book.Branches.FirstOrDefault(b => b.VersionLabel == book.Current)
-			?? new BranchRef(book.Current);
+		var currentBranch = book.Branches.FirstOrDefault(b => b.VersionLabel == book.Current) ?? new BranchRef(book.Current);
 
 		versions.Insert(0, currentBranch);
 		return versions;

@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <summary>
@@ -12,11 +13,9 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public static partial class ApiUrlBuilder
 {
-	public static string ApiRoot(string? urlPathPrefix) =>
-		$"{urlPathPrefix?.TrimEnd('/')}/api";
+	public static string ApiRoot(string? urlPathPrefix) => $"{urlPathPrefix?.TrimEnd('/')}/api";
 
-	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) =>
-		$"{ApiRoot(urlPathPrefix)}/doc/{apiUrlSuffix}";
+	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/doc/{apiUrlSuffix}";
 
 	/// <summary>
 	/// URL path suffix for one API product version: <c>{key}</c> for <c>main</c>,
@@ -39,8 +38,7 @@ public static partial class ApiUrlBuilder
 	}
 
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>
-	public static string SchemaMoniker(string schemaId) =>
-		schemaId.Replace('.', '-').ToLowerInvariant();
+	public static string SchemaMoniker(string schemaId) => schemaId.Replace('.', '-').ToLowerInvariant();
 
 	/// <summary>
 	/// URL slug for a tag, without the <c>endpoint-</c> prefix. Spaces become hyphens and the

@@ -125,7 +125,12 @@ public sealed class ScrubberProcessor(
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
 			{
-				_logger.LogError(e, "Group reconcile for {Scope} failed; failing its {Count} contributing message(s)", work.Scope, work.MessageIds.Count);
+				_logger.LogError(
+					e,
+					"Group reconcile for {Scope} failed; failing its {Count} contributing message(s)",
+					work.Scope,
+					work.MessageIds.Count
+				);
 				failedIds.UnionWith(work.MessageIds);
 			}
 		}
@@ -140,7 +145,12 @@ public sealed class ScrubberProcessor(
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
 			{
-				_logger.LogError(e, "Notes reconcile for {Scope} failed; failing its {Count} contributing message(s)", work.Scope, work.MessageIds.Count);
+				_logger.LogError(
+					e,
+					"Notes reconcile for {Scope} failed; failing its {Count} contributing message(s)",
+					work.Scope,
+					work.MessageIds.Count
+				);
 				failedIds.UnionWith(work.MessageIds);
 			}
 		}
@@ -154,7 +164,12 @@ public sealed class ScrubberProcessor(
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
 			{
-				_logger.LogError(e, "Shallow map reconcile for the {Kind} tree failed; failing its {Count} contributing message(s)", work.Kind, work.MessageIds.Count);
+				_logger.LogError(
+					e,
+					"Shallow map reconcile for the {Kind} tree failed; failing its {Count} contributing message(s)",
+					work.Kind,
+					work.MessageIds.Count
+				);
 				failedIds.UnionWith(work.MessageIds);
 			}
 		}
@@ -170,7 +185,8 @@ public sealed class ScrubberProcessor(
 		Dictionary<string, ObjectWork> objectWork,
 		Dictionary<string, GroupWork> groupWork,
 		Dictionary<string, GroupWork> notesWork,
-		Dictionary<ChangelogScopeKind, ShallowWork> shallowWork)
+		Dictionary<ChangelogScopeKind, ShallowWork> shallowWork
+	)
 	{
 		var hasScope = ChangelogScope.TryFromKey(key, out var scope);
 
@@ -205,8 +221,7 @@ public sealed class ScrubberProcessor(
 			return;
 		}
 
-		if (!key.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) &&
-			!key.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
+		if (!key.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) && !key.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
 		{
 			_logger.LogInformation("Skipping non-YAML key: {Key}", key);
 			return;
@@ -235,15 +250,17 @@ public sealed class ScrubberProcessor(
 
 	private static bool IsNoteFileName(string fileName) =>
 		fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase)
-		&& (fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
-		&& !fileName.Contains('/', StringComparison.Ordinal);
+			&& (fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+				|| fileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
+			&& !fileName.Contains('/', StringComparison.Ordinal);
 
 	private static void AddObject(
 		Dictionary<string, ObjectWork> objectWork,
 		string key,
 		string sourceBucket,
 		string messageId,
-		bool passThrough)
+		bool passThrough
+	)
 	{
 		if (!objectWork.TryGetValue(key, out var work))
 		{
@@ -337,7 +354,9 @@ public sealed class ScrubberProcessor(
 					if (skipWrite)
 					{
 						_logger.LogInformation(
-							"Skipped pass-through marker {Key}: canonical content in public bucket takes precedence", key);
+							"Skipped pass-through marker {Key}: canonical content in public bucket takes precedence",
+							key
+						);
 					}
 					else
 					{
@@ -392,7 +411,9 @@ public sealed class ScrubberProcessor(
 					await DeletePublicObject(canonicalKey, ctx);
 					_logger.LogInformation(
 						"Source pointer {Key} traced to canonical {CanonicalKey}; deleted canonical and its markers",
-						key, canonicalKey);
+						key,
+						canonicalKey
+					);
 				}
 				else if (publicContent is not null)
 				{
@@ -418,22 +439,22 @@ public sealed class ScrubberProcessor(
 			_metrics.IncrementObjectReconcileRetries();
 			_logger.LogInformation(
 				"Private {Key} changed while its reconcile was in flight (attempt {Attempt}/{Max}); redoing from current state",
-				key, attempt, MaxObjectAttempts);
+				key,
+				attempt,
+				MaxObjectAttempts
+			);
 		}
 
 		throw new InvalidOperationException(
-			$"Private {key} kept changing during {MaxObjectAttempts} reconcile attempts; failing the message for redelivery.");
+			$"Private {key} kept changing during {MaxObjectAttempts} reconcile attempts; failing the message for redelivery."
+		);
 	}
 
 	private async Task<(string Content, string ETag)?> TryGetPrivateObject(string sourceBucket, string key, Cancel ctx)
 	{
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = sourceBucket,
-				Key = key
-			}, ctx);
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = sourceBucket, Key = key }, ctx);
 
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
@@ -450,11 +471,10 @@ public sealed class ScrubberProcessor(
 	{
 		try
 		{
-			var response = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
-			{
-				BucketName = sourceBucket,
-				Key = key
-			}, ctx);
+			var response = await s3Client.GetObjectMetadataAsync(
+				new GetObjectMetadataRequest { BucketName = sourceBucket, Key = key },
+				ctx
+			);
 			return NormalizeETag(response.ETag);
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -468,8 +488,13 @@ public sealed class ScrubberProcessor(
 		if (content is null)
 			return null;
 		try
-		{ return ReleaseNotesSerialization.DeserializeEntry(content); }
-		catch { return null; }
+		{
+			return ReleaseNotesSerialization.DeserializeEntry(content);
+		}
+		catch
+		{
+			return null;
+		}
 	}
 
 	private async Task WriteSourcePointerAsync(string sourceKey, string canonicalKey, Cancel ctx)
@@ -484,16 +509,11 @@ public sealed class ScrubberProcessor(
 		_logger.LogInformation("Wrote source pointer {SourceKey} → canonical {CanonicalKey}", sourceKey, canonicalKey);
 	}
 
-
 	private async Task<string?> TryGetPublicObject(string key, Cancel ctx)
 	{
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = key
-			}, ctx);
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
 			return await reader.ReadToEndAsync(ctx);
@@ -508,7 +528,8 @@ public sealed class ScrubberProcessor(
 		string publicKey,
 		string? oldPublicContent,
 		IReadOnlyList<(string Key, string Content)> newMarkers,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (oldPublicContent is null)
 			return;
@@ -548,7 +569,8 @@ public sealed class ScrubberProcessor(
 			return [];
 		var keyPrefix = publicKey[..(lastSlash + 1)];
 
-		var prNumbers = entry.Prs
+		var prNumbers = entry
+			.Prs
 			.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr))
 			.Where(n => n.HasValue)
 			.Select(n => n!.Value)
@@ -568,23 +590,16 @@ public sealed class ScrubberProcessor(
 	}
 
 	private async Task PutPublicObject(string key, string content, string contentType, Cancel ctx) =>
-		_ = await s3Client.PutObjectAsync(new PutObjectRequest
-		{
-			BucketName = publicBucketName,
-			Key = key,
-			ContentBody = content,
-			ContentType = contentType
-		}, ctx);
+		_ = await s3Client.PutObjectAsync(
+			new PutObjectRequest { BucketName = publicBucketName, Key = key, ContentBody = content, ContentType = contentType },
+			ctx
+		);
 
 	private async Task DeletePublicObject(string key, Cancel ctx)
 	{
 		try
 		{
-			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = key
-			}, ctx);
+			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 		{

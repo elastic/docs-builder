@@ -22,8 +22,7 @@ public record ApiRenderContext(
 	BuildContext BuildContext,
 	OpenApiDocument Model,
 	StaticFileContentHashProvider StaticFileContentHashProvider
-)
-	: RenderContext<OpenApiDocument>(BuildContext, Model)
+) : RenderContext<OpenApiDocument>(BuildContext, Model)
 {
 	public required string NavigationHtml { get; init; }
 	public required INavigationItem CurrentNavigation { get; init; }
@@ -34,9 +33,15 @@ public record ApiRenderContext(
 
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
 
-	internal IReadOnlyDictionary<string, ApiSupplementalDoc> OperationSupplemental { get; init; } =
-		FrozenDictionary<string, ApiSupplementalDoc>.Empty;
+	internal IReadOnlyDictionary<string, ApiSupplementalDoc> OperationSupplemental
+	{
+		get;
+		init;
+	} = FrozenDictionary<string, ApiSupplementalDoc>.Empty;
 
-	internal IReadOnlyDictionary<string, ApiSupplementalDoc> TagSupplemental { get; init; } =
-		FrozenDictionary<string, ApiSupplementalDoc>.Empty;
+	internal IReadOnlyDictionary<string, ApiSupplementalDoc> TagSupplemental
+	{
+		get;
+		init;
+	} = FrozenDictionary<string, ApiSupplementalDoc>.Empty;
 }

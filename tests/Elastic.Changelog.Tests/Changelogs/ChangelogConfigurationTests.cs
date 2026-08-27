@@ -23,8 +23,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config without pivot - should use defaults
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			lifecycles:
 			  - ga
 			""";
@@ -282,10 +281,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().BeNull();
 			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics.Should().Contain(d =>
-				d.Severity == Severity.Error &&
-				d.Message.Contains("Type 'invalid-type' in pivot.types") &&
-				d.Message.Contains("is not a valid type"));
+			Collector
+				.Diagnostics
+				.Should()
+				.Contain(
+					d => d.Severity == Severity.Error && d.Message.Contains("Type 'invalid-type' in pivot.types") && d.Message.Contains(
+						"is not a valid type"
+					)
+				);
 		}
 		finally
 		{
@@ -304,8 +307,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config missing required type 'breaking-change'
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			pivot:
 			  types:
 			    feature:
@@ -324,9 +326,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().BeNull();
 			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics.Should().Contain(d =>
-				d.Severity == Severity.Error &&
-				d.Message.Contains("Required type 'breaking-change' is missing"));
+			Collector
+				.Diagnostics
+				.Should()
+				.Contain(d => d.Severity == Severity.Error && d.Message.Contains("Required type 'breaking-change' is missing"));
 		}
 		finally
 		{
@@ -369,10 +372,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().BeNull();
 			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics.Should().Contain(d =>
-				d.Severity == Severity.Error &&
-				d.Message.Contains("Type 'feature' has subtypes defined") &&
-				d.Message.Contains("subtypes are only allowed for 'breaking-change' type"));
+			Collector
+				.Diagnostics
+				.Should()
+				.Contain(
+					d => d.Severity == Severity.Error && d.Message.Contains("Type 'feature' has subtypes defined") && d.Message.Contains(
+						"subtypes are only allowed for 'breaking-change' type"
+					)
+				);
 		}
 		finally
 		{
@@ -459,10 +466,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().BeNull();
 			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics.Should().Contain(d =>
-				d.Severity == Severity.Error &&
-				d.Message.Contains("Subtype 'invalid-subtype'") &&
-				d.Message.Contains("is not a valid subtype"));
+			Collector
+				.Diagnostics
+				.Should()
+				.Contain(
+					d => d.Severity == Severity.Error && d.Message.Contains("Subtype 'invalid-subtype'") && d.Message.Contains(
+						"is not a valid subtype"
+					)
+				);
 		}
 		finally
 		{
@@ -484,7 +495,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			rules:
 			  create:
 			    exclude: ">non-issue, >test, >skip"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -512,7 +524,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - ">non-issue"
 			      - ">test"
 			      - ">skip"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -537,16 +550,22 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			rules:
 			  publish:
 			    exclude_types: "deprecation, known-issue"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		config.Rules.Publish.Should().BeNull(); // rules.publish is retired
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("rules.publish is deprecated") &&
-			d.Message.Contains("no longer used by the changelog render command"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains("rules.publish is deprecated") && d.Message.Contains(
+					"no longer used by the changelog render command"
+				)
+			);
 	}
 
 	[Fact]
@@ -565,13 +584,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    exclude_types:
 			      - deprecation
 			      - known-issue
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		config.Rules.Publish.Should().BeNull(); // rules.publish is retired
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
@@ -589,13 +609,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			rules:
 			  publish:
 			    exclude_areas: "Internal, Experimental"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		config.Rules.Publish.Should().BeNull(); // rules.publish is retired
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
@@ -615,13 +636,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    exclude_areas:
 			      - Internal
 			      - Experimental
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		config.Rules.Publish.Should().BeNull(); // rules.publish is retired
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
@@ -637,7 +659,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    bug-fix:
 			    breaking-change:
 			  highlight: ">highlight, >release-highlight"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -659,7 +682,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  highlight:
 			    - ">highlight"
 			    - ">release-highlight"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -683,7 +707,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - ":Search/Search"
 			      - ":Search/Ranking"
 			    Security: ":Security/Security"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -719,7 +744,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      labels:
 			        - ">breaking"
 			        - ">bc"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -754,7 +780,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			          - ">api-breaking"
 			          - ">api-change"
 			        behavioral: ">behavioral-breaking"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -788,7 +815,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			        exclude:
 			          - ">test"
 			          - ">skip"
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -833,7 +861,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    exclude_types: "deprecation, known-issue"
 			    exclude_areas:
 			      - Internal
-			""");
+			"""
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -846,7 +875,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 
 		// publish.exclude_types as string, publish.exclude_areas as list are deprecated
-		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		config.Rules.Publish.Should().BeNull(); // rules.publish is retired
 
 		// highlight as list
 		config.HighlightLabels.Should().BeEquivalentTo([">highlight"]);
@@ -906,7 +935,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(configPath,
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
 			"""
 			bundle:
 			  repo: apm-agent-dotnet
@@ -947,7 +977,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(configPath,
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
 			"""
 			lifecycles:
 			  - ga
@@ -1009,7 +1040,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(configPath,
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
 			"""
 			bundle:
 			  release_dates: false
@@ -1060,7 +1092,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(configPath,
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
 			"""
 			bundle:
 			  repo: test-repo
@@ -1390,8 +1423,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToPr()
 	{
-		var config = await LoadConfig(
-			"""
+		var config = await LoadConfig("""
 			lifecycles:
 			  - ga
 			""");
@@ -1404,16 +1436,16 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public async Task LoadChangelogConfiguration_Filename_Invalid_ReturnsError()
 	{
-		var config = await LoadConfig(
-			"""
+		var config = await LoadConfig("""
 			filename: random-value
 			""");
 
 		config.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("filename: 'random-value' is not valid"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("filename: 'random-value' is not valid"));
 	}
 
 	[Fact]
@@ -1424,8 +1456,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  bundle:
 			    exclude_products: not-a-real-product
@@ -1438,7 +1469,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		// Assert
 		config.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
 	}
 
 	[Fact]
@@ -1449,8 +1483,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  publish:
 			    exclude_types: docs
@@ -1518,8 +1551,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_True_LoadsCorrectly()
 	{
 		// Arrange
-		var config = await LoadConfig(
-			"""
+		var config = await LoadConfig("""
 			extract:
 			  strip_title_prefix: true
 			""");
@@ -1535,8 +1567,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_False_LoadsCorrectly()
 	{
 		// Arrange
-		var config = await LoadConfig(
-			"""
+		var config = await LoadConfig("""
 			extract:
 			  strip_title_prefix: false
 			""");
@@ -1552,8 +1583,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_Missing_DefaultsFalse()
 	{
 		// Arrange
-		var config = await LoadConfig(
-			"""
+		var config = await LoadConfig("""
 			lifecycles:
 			  - ga
 			""");
@@ -1575,7 +1605,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  release_notes: false
 			  issues: true
 			  strip_title_prefix: true
-			""");
+			"""
+		);
 
 		// Act & Assert
 		config.Should().NotBeNull();
@@ -1770,8 +1801,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: docs/changelog
 			""";
@@ -1793,8 +1823,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: docs/changelog
 			  resolve: true
@@ -1809,9 +1838,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().Be(0);
 		config.Bundle.Should().NotBeNull();
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("bundle.resolve is deprecated and ignored"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("bundle.resolve is deprecated and ignored"));
 	}
 
 	[Fact]

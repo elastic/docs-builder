@@ -31,7 +31,8 @@ public record ProductArgument
 	public IReadOnlyList<string> Versions =>
 		string.IsNullOrWhiteSpace(Target) || Target == "*"
 			? []
-			: Target.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+			: Target
+				.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 				.Where(v => v.Length > 0 && v != "*")
 				.ToList();
 
@@ -49,16 +50,10 @@ public record ProductArgument
 		new() { ProductId = Product ?? "", Versions = Versions, Lifecycle = ParseLifecycle(Lifecycle) };
 #pragma warning restore CS0618
 
-
 	/// <summary>
 	/// Converts this ProductArgument to a BundledProduct domain type.
 	/// </summary>
-	public BundledProduct ToBundledProduct() => new()
-	{
-		ProductId = Product ?? "",
-		Target = Target,
-		Lifecycle = ParseLifecycle(Lifecycle)
-	};
+	public BundledProduct ToBundledProduct() => new() { ProductId = Product ?? "", Target = Target, Lifecycle = ParseLifecycle(Lifecycle) };
 
 	/// <summary>
 	/// Formats a product spec string matching the CLI format: "product [target] [lifecycle]".
@@ -116,8 +111,6 @@ public record ProductArgument
 		if (string.IsNullOrEmpty(value))
 			return null;
 
-		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? result
-			: null;
+		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true) ? result : null;
 	}
 }

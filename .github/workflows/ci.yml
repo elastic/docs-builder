@@ -18,6 +18,7 @@ env:
 
 jobs:
   validate-assembler:
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -35,9 +36,11 @@ jobs:
         run: dotnet run --project src/tooling/docs-builder -c release -- assembler content-source validate
 
   build-link-index-updater-lambda:
+    needs: [lint]
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
 
   build-openapi-index-lambda:
+    needs: [lint]
     uses: ./.github/workflows/build-openapi-index-lambda.yml
 
   npm:
@@ -87,14 +90,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Bootstrap Action Workspace
-        id: bootstrap
-        uses: ./.github/actions/bootstrap
-
       - name: Lint
-        run: dotnet run --project build -c release -- lint
+        uses: nullean/curb@c399bcd201b5ca466cfbcf5776825a629abf4f4b # 0.7.1
+        with:
+          command: check
+          path: .
 
   build:
+    needs: [lint]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

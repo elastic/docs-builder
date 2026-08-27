@@ -71,9 +71,17 @@ public record CliCommandFile : IO.MarkdownFile
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
 		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
-		var body = CliMarkdownGenerator.CommandPage(_command, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
+		var body = CliMarkdownGenerator.CommandPage(
+			_command,
+			supplemental,
+			_fullPath,
+			_binaryName,
+			_reservedMetaCommands,
 			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error),
-			_ancestorNamespaceOptions, _globalOptions, _shortcuts);
+			_ancestorNamespaceOptions,
+			_globalOptions,
+			_shortcuts
+		);
 		// Prepend supplemental front matter so applies_to (or any other field) in cmd-*.md overrides the fallback
 		return supplemental?.FrontMatter is { } fm ? $"{fm}\n\n{body}" : body;
 	}

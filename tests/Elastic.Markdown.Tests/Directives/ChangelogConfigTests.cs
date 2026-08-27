@@ -10,18 +10,22 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigLoadAutoDiscoverTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigLoadAutoDiscoverTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""")
+		"""
+		)
 	{
 		// Create bundles with entries of different types
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -52,18 +56,24 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 			  impact: Some users may be affected.
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// Add changelog config with publish blockers
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - deprecation
 			      - known-issue
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -90,17 +100,21 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 
 public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigLoadExplicitPathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigLoadExplicitPathTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:config: custom/path/my-changelog.yml
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -121,17 +135,23 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 			  - Internal
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 		// Add custom config at explicit path
-		FileSystem.AddFile("docs/custom/path/my-changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/custom/path/my-changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_areas:
 			      - Internal
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -151,16 +171,20 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 
 public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigLoadFromDocsSubfolderTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigLoadFromDocsSubfolderTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -179,17 +203,23 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 		// Add config in docs/docs/changelog.yml (docs subfolder)
-		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - other
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -206,14 +236,19 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 
 public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigNotFoundTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigNotFoundTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -225,7 +260,9 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 		    target: 9.3.0
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void PublishBlockerIsNullWhenNoConfig() => Block!.PublishBlocker.Should().BeNull();
@@ -234,21 +271,25 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 	public void RendersAllEntriesWhenNoConfig() => Html.Should().Contain("Regular feature");
 
 	[Fact]
-	public void NoErrorsEmittedForMissingConfig() =>
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("changelog.yml"));
+	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("changelog.yml"));
 }
 
 public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigExplicitPathNotFoundTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigExplicitPathNotFoundTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:config: nonexistent/config.yml
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -260,7 +301,9 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 		    target: 9.3.0
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void PublishBlockerIsNullWhenExplicitConfigNotFound() => Block!.PublishBlocker.Should().BeNull();
@@ -275,17 +318,21 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 
 public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigPriorityTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigPriorityTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -314,26 +361,36 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// Add both config files - root should take priority
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - deprecation
-			"""));
-
-		FileSystem.AddFile("docs/docs/changelog.yml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - other
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -348,16 +405,20 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 
 public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigEmptyBlockTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigEmptyBlockTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -369,18 +430,24 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
+			"""
+			)
+		);
 
 		// Config file exists but has no block section
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			lifecycles:
 			  - preview
 			  - beta
 			  - ga
 			  - experimental
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -392,17 +459,21 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 
 public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigMixedBlockersTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigMixedBlockersTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -444,19 +515,25 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "444444"
-			"""));
+			"""
+			)
+		);
 
 		// Config with both type and area blockers
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - deprecation
 			    exclude_areas:
 			      - Internal
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -473,18 +550,22 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
-public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
+	output,
 	// language=markdown
 	"""
 		:::{changelog}
 		:::
-		""")
+		"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
-		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: kibana
 			  target: 9.3.0
@@ -514,12 +595,16 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 			  - Elastic Observability
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// Config with product-specific blocker for kibana
-		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_areas:
@@ -529,7 +614,9 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 			        exclude_areas:
 			          - Internal
 			          - Elastic Observability
-			"""));
+			"""
+			)
+		);
 	}
 
 	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
@@ -547,18 +634,22 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 	}
 }
 
-public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
+	output,
 	// language=markdown
 	"""
 		:::{changelog}
 		:::
-		""")
+		"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
-		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -579,12 +670,16 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 			  - Internal
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 		// Config with product-specific blockers
-		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_areas:
@@ -593,7 +688,9 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 			      elasticsearch:
 			        exclude_areas:
 			          - Internal
-			"""));
+			"""
+			)
+		);
 	}
 
 	// Docset with multiple products - should fall back to global blocker
@@ -611,19 +708,23 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 	}
 }
 
-public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
+	output,
 	// language=markdown
 	"""
 		:::{changelog}
 		:product: elasticsearch
 		:::
-		""")
+		"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
-		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -653,12 +754,16 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelpe
 			  - Kibana Internal
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// Config with different blockers for different products
-		fileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    products:
@@ -668,15 +773,16 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelpe
 			      kibana:
 			        exclude_areas:
 			          - Kibana Internal
-			"""));
+			"""
+			)
+		);
 	}
 
 	// Docset has kibana as single product, but directive explicitly requests elasticsearch
 	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
 
 	[Fact]
-	public void ExplicitProductOptionIsSet() =>
-		Block!.ProductId.Should().Be("elasticsearch");
+	public void ExplicitProductOptionIsSet() => Block!.ProductId.Should().Be("elasticsearch");
 
 	[Fact]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();

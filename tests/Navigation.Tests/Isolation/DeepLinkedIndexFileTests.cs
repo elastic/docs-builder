@@ -19,7 +19,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 	public void ChildlessDeepLinkedIndexFileBecomesFolderRef()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: reference/1password/index.md
@@ -41,7 +42,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 	public void BareIndexFileIsNotConverted()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -62,7 +64,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 	public void DeepLinkedIndexFileWithChildrenStaysVirtualFile()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: reference/aws/index.md
@@ -86,7 +89,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 	public async Task ChildlessDeepLinkedIndexFileRendersAsSingleLinkFolder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -114,7 +118,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 	public async Task FolderWithChildlessIndexFileChildrenKeepsEveryEntry()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: reference
@@ -140,8 +145,10 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 
 		// All three entries survive as their own subfolders; none is consumed as the parent's index.
 		var childFolders = reference.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().ToList();
-		childFolders.Select(f => f.Url).Should().BeEquivalentTo(
-			["/reference/1password", "/reference/abnormal_security", "/reference/activemq"]);
+		childFolders
+			.Select(f => f.Url)
+			.Should()
+			.BeEquivalentTo(["/reference/1password", "/reference/abnormal_security", "/reference/activemq"]);
 		childFolders.Should().AllSatisfy(f => f.NavigationItems.Should().BeEmpty());
 		context.Collector.Errors.Should().Be(0);
 	}
@@ -150,7 +157,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 	public async Task ChildlessIndexFileChildrenUnderVirtualFileResolveWithoutPathDoubling()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: reference/apache-intro.md
@@ -186,7 +194,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		// child (e.g. "integrations/aws/index.md") must resolve relative to its parent folder, exactly
 		// like a plain FileRef child would -- not relative to the containing toc.yml/docset.yml.
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: reference
@@ -217,7 +226,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 	public async Task ProbePlainFileChildUnderVirtualFileWithFullPath()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: reference/apache-intro.md

@@ -14,16 +14,17 @@ public class ParcelWatchService : IHostedService
 
 	public Task StartAsync(Cancel cancellationToken)
 	{
-		_process = Process.Start(new ProcessStartInfo
-		{
-			FileName = "npm",
-			Arguments = "run watch",
-			RedirectStandardOutput = true,
-			RedirectStandardError = true,
-			UseShellExecute = false,
-			CreateNoWindow = true,
-			WorkingDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.Site")
-		})!;
+		_process =
+			Process.Start(new ProcessStartInfo
+			{
+				FileName = "npm",
+				Arguments = "run watch",
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				WorkingDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.Site")
+			})!;
 
 		_process.EnableRaisingEvents = true;
 		_process.OutputDataReceived += (_, e) => Console.WriteLine($"[npm run watch]: {e.Data}");

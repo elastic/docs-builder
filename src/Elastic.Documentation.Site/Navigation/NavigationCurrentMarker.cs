@@ -13,8 +13,8 @@ namespace Elastic.Documentation.Site.Navigation;
 /// </summary>
 public static class NavigationCurrentMarker
 {
-	public static NavigationRenderResult Apply(NavigationRenderResult result, INavigationItem current)
-		=> Apply(result, ResolveActiveUrl(current));
+	public static NavigationRenderResult Apply(NavigationRenderResult result, INavigationItem current) =>
+		Apply(result, ResolveActiveUrl(current));
 
 	public static NavigationRenderResult Apply(NavigationRenderResult result, string? currentUrl)
 	{

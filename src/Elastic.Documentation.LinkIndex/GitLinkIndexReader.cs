@@ -19,20 +19,16 @@ namespace Elastic.Documentation.LinkIndex;
 public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 {
 	private const string LinkIndexOrigin = "elastic/codex-link-index";
-	private static readonly string CloneDirectory = Path.Join(
-		Paths.ApplicationData.FullName,
-		"codex-link-index");
+	private static readonly string CloneDirectory = Path.Join(Paths.ApplicationData.FullName, "codex-link-index");
 
-	private static readonly Dictionary<string, string> GitEnvironmentVars = new()
-	{
-		{ "GIT_EDITOR", "true" }
-	};
+	private static readonly Dictionary<string, string> GitEnvironmentVars = new() { { "GIT_EDITOR", "true" } };
 
 	// Fetch retries up to 3 times with exponential back-off, each bounded by the CI default timeout.
 	private static readonly RetryPolicy FetchRetry = new(
 		MaxAttempts: 3,
 		BaseDelay: TimeSpan.FromSeconds(5),
-		AttemptTimeout: GitTimeouts.CiDefault);
+		AttemptTimeout: GitTimeouts.CiDefault
+	);
 
 	private readonly string _environment;
 	private readonly IFileSystem _fileSystem;
@@ -43,7 +39,10 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	public GitLinkIndexReader(string environment, ApplicationDataFileSystem? fileSystem = null, bool skipFetch = false)
 	{
 		if (string.IsNullOrWhiteSpace(environment))
-			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));
+			throw new ArgumentException(
+				"Environment must be specified in the codex configuration (e.g., 'internal', 'security').",
+				nameof(environment)
+			);
 
 		_environment = environment;
 		_fileSystem = fileSystem ?? new ApplicationDataFileSystem();
@@ -76,7 +75,9 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		EnsureSafeRelativePath(_environment, nameof(_environment));
 		var registryPath = Path.Join(CloneDirectory, _environment, "link-index.json");
 		if (!_fileSystem.File.Exists(registryPath))
-			throw new FileNotFoundException($"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {_environment}/link-index.json.");
+			throw new FileNotFoundException(
+				$"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {_environment}/link-index.json."
+			);
 
 		var json = await _fileSystem.File.ReadAllTextAsync(registryPath, cancellationToken);
 		return LinkRegistry.Deserialize(json);
@@ -108,7 +109,8 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			{
 				if (!_fileSystem.Directory.Exists(gitDir))
 					throw new InvalidOperationException(
-						$"Codex link index not found at {CloneDirectory}. Run 'docs-builder codex clone' first.");
+						$"Codex link index not found at {CloneDirectory}. Run 'docs-builder codex clone' first."
+					);
 				_ensuredClone = true;
 				return;
 			}
@@ -153,17 +155,19 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	/// </summary>
 	private void RunGitWithRetry(string workingDirectory, RetryPolicy policy, params string[] args)
 	{
-		var failure = CommandRetry.Invoke(
-			policy,
-			invoke: () => ExecGit(workingDirectory, args, policy.AttemptTimeout),
-			delay: d => Thread.Sleep(d),
-			onRetry: f =>
-			{
-				GitLocks.ClearStale(_fileSystem, workingDirectory,
-					l => Console.Error.WriteLine($"[git {string.Join(" ", args)}] Removed stale lock file {l}"));
-				Console.Error.WriteLine($"[git {string.Join(" ", args)}] {f}; retrying…");
-			}
-		);
+		var failure = CommandRetry.Invoke(policy, invoke: () => ExecGit(
+			workingDirectory,
+			args,
+			policy.AttemptTimeout
+		), delay: d => Thread.Sleep(d), onRetry: f =>
+		{
+			GitLocks.ClearStale(
+				_fileSystem,
+				workingDirectory,
+				l => Console.Error.WriteLine($"[git {string.Join(" ", args)}] Removed stale lock file {l}")
+			);
+			Console.Error.WriteLine($"[git {string.Join(" ", args)}] {f}; retrying…");
+		});
 
 		if (failure is not null)
 			throw new InvalidOperationException($"Git command failed after {policy.MaxAttempts} attempts (last: {failure.Value}).");

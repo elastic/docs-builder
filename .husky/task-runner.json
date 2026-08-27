@@ -13,10 +13,10 @@
   "tasks": [
     {
       "name": "dotnet-lint",
-      "group": "pre-push",
-      "command": "bash",
-      "args": ["./build.sh", "lint", "${push-files}"],
-      "include": ["**/*.cs", "**/*.fs"]
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": ["curb", "check", ".", "--cache", ".artifacts/curb.cache"],
+      "include": ["**/*.cs"]
     },
     {
       "name": "prettier",

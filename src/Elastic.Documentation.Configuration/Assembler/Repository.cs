@@ -69,5 +69,4 @@ public record Repository
 		ContentSource.Edge => GitReferenceEdge,
 		_ => throw new ArgumentException($"The content source {contentSource} is not supported.", nameof(contentSource))
 	};
-
 }

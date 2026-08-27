@@ -92,24 +92,22 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		var synonymSetName = $"docs-{_buildType}-{_environment}";
 
-		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument
-			.CreateContext(type: _buildType, env: endpoints.Environment) with
+		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument.CreateContext(
+			type: _buildType,
+			env: endpoints.Environment
+		) with
 		{
 			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
-			IndexSettings = new Dictionary<string, string>
-			{
-				["index.default_pipeline"] = _contentDateEnrichment.PipelineName
-			}
+			IndexSettings = new Dictionary<string, string> { ["index.default_pipeline"] = _contentDateEnrichment.PipelineName }
 		};
 
-		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic
-			.CreateContext(type: _buildType, env: endpoints.Environment) with
+		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(
+			type: _buildType,
+			env: endpoints.Environment
+		) with
 		{
 			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
-			IndexSettings = new Dictionary<string, string>
-			{
-				["index.final_pipeline"] = _contentDateEnrichment.PipelineName
-			}
+			IndexSettings = new Dictionary<string, string> { ["index.final_pipeline"] = _contentDateEnrichment.PipelineName }
 		};
 
 		if (es.EnableAiEnrichment)
@@ -119,7 +117,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			var infra = provider.CreateInfrastructure($"{_semanticTypeContext.IndexStrategy!.WriteTarget}-ai-cache");
 			_logger.LogInformation(
 				"AI enrichment enabled — pipeline: {Pipeline}, policy: {Policy}, lookup: {Lookup}",
-				infra.PipelineName, infra.EnrichPolicyName, infra.LookupIndexName);
+				infra.PipelineName,
+				infra.EnrichPolicyName,
+				infra.LookupIndexName
+			);
 
 			var semanticSettings = new Dictionary<string, string>(_semanticTypeContext.IndexSettings ?? new Dictionary<string, string>())
 			{
@@ -136,21 +137,34 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		{
 			ConfigurePrimary = opts => ConfigureChannelOptions("primary", opts),
 			ConfigureSecondary = opts => ConfigureChannelOptions("secondary", opts),
-			OnPostComplete = _aiEnrichment is not null
-				? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct)
-				: null,
-			OnRolloverDecision = info =>
-				_logger.LogInformation(
+			OnPostComplete = _aiEnrichment is not null ? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct) : null,
+			OnRolloverDecision =
+				info => _logger.LogInformation(
 					"[{Label}] rollover={RolledOver}, localHash={LocalHash}, remoteHash={RemoteHash}",
-					info.Label, info.RolledOver, info.LocalHash, info.RemoteHash),
-			OnReindexProgress = (label, p) =>
-				_logger.LogInformation(
+					info.Label,
+					info.RolledOver,
+					info.LocalHash,
+					info.RemoteHash
+				),
+			OnReindexProgress =
+				(label, p) => _logger.LogInformation(
 					"[{Label}] total={Total} created={Created} updated={Updated} deleted={Deleted} noops={Noops} completed={IsCompleted}",
-					label, p.Total, p.Created, p.Updated, p.Deleted, p.Noops, p.IsCompleted),
-			OnDeleteByQueryProgress = (label, p) =>
-				_logger.LogInformation(
+					label,
+					p.Total,
+					p.Created,
+					p.Updated,
+					p.Deleted,
+					p.Noops,
+					p.IsCompleted
+				),
+			OnDeleteByQueryProgress =
+				(label, p) => _logger.LogInformation(
 					"[{Label}] total={Total} deleted={Deleted} completed={IsCompleted}",
-					label, p.Total, p.Deleted, p.IsCompleted)
+					label,
+					p.Total,
+					p.Deleted,
+					p.IsCompleted
+				)
 		};
 		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
 		{
@@ -185,8 +199,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			var indexed = label == "primary"
 				? Interlocked.Add(ref _primaryIndexed, sent - errors)
 				: Interlocked.Add(ref _secondaryIndexed, sent - errors);
-			_logger.LogInformation("[{Label}] indexed {Indexed} items. {Errors} errors. sent: {Sent} items",
-				label, indexed, errors, sent);
+			_logger.LogInformation("[{Label}] indexed {Indexed} items. {Errors} errors. sent: {Sent} items", label, indexed, errors, sent);
 			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 				_logger.LogWarning("[{Label}] {DebugInfo}", label, response.ApiCallDetails.DebugInformation);
 		};
@@ -205,7 +218,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			foreach (var (doc, responseItem) in items)
 			{
 				_collector.EmitGlobalError(
-					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Path}");
+					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Path}"
+				);
 			}
 		};
 	}
@@ -219,7 +233,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
-			orchestratorContext.Strategy, orchestratorContext.PrimaryWriteAlias, orchestratorContext.SecondaryWriteAlias);
+			orchestratorContext.Strategy,
+			orchestratorContext.PrimaryWriteAlias,
+			orchestratorContext.SecondaryWriteAlias
+		);
 	}
 
 	/// <inheritdoc />
@@ -251,7 +268,11 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		if (last is not null)
 			_logger.LogInformation(
 				"AI enrichment complete in {Elapsed}: {Enriched} enriched, {Failed} failed, {Candidates} candidates",
-				sw.Elapsed.ToString(@"hh\:mm\:ss"), last.Enriched, last.Failed, last.TotalCandidates);
+				sw.Elapsed.ToString(@"hh\:mm\:ss"),
+				last.Enriched,
+				last.Failed,
+				last.TotalCandidates
+			);
 	}
 
 	/// <summary>Whether AI enrichment infrastructure is wired up for this endpoint.</summary>
@@ -281,9 +302,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var setName = $"docs-{_buildType}-{_environment}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
-		var synonymRules = _synonyms
-			.Select(s => new SynonymRule { Id = s[0], Synonyms = string.Join(", ", s) })
-			.ToList();
+		var synonymRules = _synonyms.Select(s => new SynonymRule { Id = s[0], Synonyms = string.Join(", ", s) }).ToList();
 
 		var synonymsSet = new SynonymsSet { Synonyms = synonymRules };
 		await PutSynonyms(synonymsSet, setName, ctx);
@@ -296,11 +315,13 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var response = await _operations.WithRetryAsync(
 			() => _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx),
 			$"PUT _synonyms/{setName}",
-			ctx);
+			ctx
+		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			_collector.EmitGlobalError(
-				$"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+				$"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}"
+			);
 		else
 			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
 	}
@@ -316,18 +337,25 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var rulesetName = $"docs-ruleset-{_buildType}-{_environment}";
 		_logger.LogInformation("Publishing query ruleset '{RulesetName}' with {Count} rules to Elasticsearch", rulesetName, _rules.Count);
 
-		var rulesetRules = _rules.Select(r => new QueryRulesetRule
-		{
-			RuleId = r.RuleId,
-			Type = r.Type.ToString().ToLowerInvariant(),
-			Criteria = r.Criteria.Select(c => new QueryRulesetCriteria
+		var rulesetRules = _rules.Select(
+			r => new QueryRulesetRule
 			{
-				Type = c.Type.ToString().ToLowerInvariant(),
-				Metadata = c.Metadata,
-				Values = c.Values.ToList()
-			}).ToList(),
-			Actions = new QueryRulesetActions { Ids = r.Actions.Ids.ToList() }
-		}).ToList();
+				RuleId = r.RuleId,
+				Type = r.Type.ToString().ToLowerInvariant(),
+				Criteria = r
+					.Criteria
+					.Select(
+						c => new QueryRulesetCriteria
+						{
+							Type = c.Type.ToString().ToLowerInvariant(),
+							Metadata = c.Metadata,
+							Values = c.Values.ToList()
+						}
+					)
+					.ToList(),
+				Actions = new QueryRulesetActions { Ids = r.Actions.Ids.ToList() }
+			}
+		).ToList();
 
 		var ruleset = new QueryRuleset { Rules = rulesetRules };
 		await PutQueryRuleset(ruleset, rulesetName, ctx);
@@ -340,11 +368,13 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var response = await _operations.WithRetryAsync(
 			() => _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx),
 			$"PUT _query_rules/{rulesetName}",
-			ctx);
+			ctx
+		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			_collector.EmitGlobalError(
-				$"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+				$"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}"
+			);
 		else
 			_logger.LogInformation("Successfully published query ruleset '{RulesetName}'.", rulesetName);
 	}

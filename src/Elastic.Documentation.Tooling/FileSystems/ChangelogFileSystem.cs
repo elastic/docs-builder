@@ -14,13 +14,14 @@ namespace Elastic.Documentation.FileSystems;
 /// the conventional <c>.artifacts</c> CI staging directory. Does not include
 /// AppData — changelog operates only within the repo working tree.
 /// </summary>
-public class ChangelogFileSystem(IDirectoryInfo root, IFileSystem? inner = null)
-	: ScopedFileSystem(inner ?? Physical, new ScopedFileSystemOptions([root.FullName])
+public class ChangelogFileSystem(IDirectoryInfo root, IFileSystem? inner = null) : ScopedFileSystem(
+	inner ?? Physical,
+	new ScopedFileSystemOptions([root.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
-	}),
-	IChangelogFileSystem
+	}
+), IChangelogFileSystem
 {
 	private static readonly FileSystem Physical = new();
 
