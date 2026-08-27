@@ -278,7 +278,7 @@ To apply additional filtering by the changelog type, areas, or products, add [bu
 ## Amend bundles [changelog-bundle-amend]
 
 When you need to add changelogs to an existing bundle, you can use the `docs-builder changelog bundle-amend` command, which creates _amend bundles_.
-The parent bundle path must be a local file (the amend sidecar is written next to it). `--add` and `--remove` accept the same CDN paths as `changelog bundle --files` when the authoring repo resolves. For example:
+The parent bundle path must be a local file (the amend sidecar is written next to it). `--add` and `--remove` accept the same CDN paths as `changelog bundle --files` when the authoring repo resolves; only the file name is used to GET from the resolved authoring pool. For example:
 
 ```sh
 docs-builder changelog bundle-amend \

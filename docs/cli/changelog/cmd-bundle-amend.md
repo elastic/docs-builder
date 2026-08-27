@@ -61,7 +61,7 @@ Amend bundles created by older docs-builder versions may omit `products`; they a
 
 `rules.bundle` filtering does not apply to `changelog bundle-amend`. The command is a direct-injection escape hatch: the files you specify with `--add` are always included regardless of any product, type, or area filter configuration.
 
-`--add` and `--remove` follow the same entry-sourcing gate as [](/cli/changelog/bundle.md): CDN by default when `bundle.repo` or the parent bundle's `repo` resolves; local disk when `--force-local` or `bundle.use_local_changelogs` is set, or when no authoring repo can be resolved. In CDN mode, paths are matched by file name (including CDN paths such as `/changelog/elastic/kibana/main/247279.yaml`) and do not need to exist locally. Use `--force-local` to read local changelogs from disk.
+`--add` and `--remove` use the same CDN-versus-local gate as [](/cli/changelog/bundle.md), except `bundle-amend` has no `--directory` or `--repo` flags: CDN by default when `bundle.repo` or the parent bundle's `repo` resolves; local disk when `--force-local` or `bundle.use_local_changelogs` is set, or when no authoring repo can be resolved. In CDN mode, only the file name is used (including CDN paths such as `/changelog/elastic/kibana/main/247279.yaml`). The GET uses the resolved authoring org/repo/branch from `changelog.yml` or the parent bundle, not the org/repo/branch segments in the path you pass. Use `--force-local` to read local changelogs from disk.
 
 The parent bundle argument is always a local file. The command writes `{parent}.amend-N.yaml` next to it and does not fetch the parent from the CDN.
 :::
@@ -96,7 +96,7 @@ docs-builder changelog bundle-amend \
 ```
 
 The CLI computes the checksum of the sourced YAML and matches it against the effective bundle (parent plus any existing amend files).
-If the bundle contains the file with a different checksum, the command fails unless you pass `--force` to remove by file name only.
+If the bundle contains the file with a different checksum, or no YAML can be sourced (for example a git-ref entry that exists only in the bundle), the command fails unless you pass `--force` to remove by file name only.
 
 ### Add multiple changelogs to a bundle
 
