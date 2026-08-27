@@ -47,11 +47,15 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 
 		// Built-in links present
 		html.Should().Contain("Release notes").And.Contain("Troubleshoot").And.Contain("Reference");
+		html.Should().Contain("href=\"#icon-refresh-time\"");
+		html.Should().Contain("href=\"#icon-wrench\"");
+		html.Should().Contain("href=\"#icon-list-bullet\"");
 		html.Should().NotContain("secondary-nav-dropdown");
-		html.Should().Contain("id=\"htmx-indicator\"");
-		// Flag-off: Docs brand link and justify-between layout match main exactly
-		html.Should().Contain(">Docs<");
-		html.Should().Contain("justify-between").And.NotContain("justify-start");
+		html.Should().NotContain("id=\"htmx-indicator\"");
+		html.Should().Contain("id=\"secondary-nav-host\"");
+		html.Should().NotContain("hx-preserve");
+		html.Should().Contain("secondary-nav-home").And.Contain(">Docs<");
+		html.Should().Contain("href=\"/docs/\"");
 	}
 
 	[Fact]
@@ -62,7 +66,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		html.Should().Contain("href=\"/docs/reference/\"");
 		// the built-in links are gone once top_nav is configured
 		html.Should().NotContain("Release notes").And.NotContain("Troubleshoot");
-		html.Should().Contain("id=\"htmx-indicator\"");
+		html.Should().NotContain("id=\"htmx-indicator\"");
+		html.Should().Contain("data-section-ids=\"ref-section-id\"");
 	}
 
 	[Fact]
@@ -101,22 +106,72 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	}
 
 	[Fact]
-	public async Task WithTopNavTheBarIsLeftAlignedAndCarriesNoBrandLink()
+	public async Task TopNavMobileDrawerIncludesDocsHome()
 	{
-		var html = await Render(TopNav, "/docs/");
+		var html = await RenderPagesNav(LinkOnlyTopNav, currentUrl: "/docs/");
 
-		html.Should().NotContain(">Docs<");
-		html.Should().Contain("secondary-nav-scroll-container");
-		html.Should().Contain("justify-start");
+		html.Should().Contain("secondary-nav-mobile-menu");
+		html.Should().Contain("href=\"/docs/\"");
+		html.Should().Contain(">Docs<");
 	}
 
 	[Fact]
-	public async Task WithoutTopNavTheBarHasDocsBrandLinkAndIsJustifiedBetween()
+	public async Task ConfiguredItemsRenderEuiIcons()
+	{
+		var html = await Render(TopNav, currentUrl: "/docs/");
+
+		html.Should().Contain("href=\"#icon-list-bullet\"");
+		html.Should().Contain("href=\"#icon-code\"");
+		html.Should().Contain("href=\"#icon-grid\"");
+		html.Should().Contain("href=\"#icon-chevron-down\"");
+		html.Should().Contain("href=\"#icon-external\"");
+
+		var linkOnly = await Render(LinkOnlyTopNav, currentUrl: "/docs/");
+		linkOnly.Should().Contain("href=\"#icon-documentation\"");
+	}
+
+	[Fact]
+	public async Task VersionDropdownRendersOnTheRightOfTheTopBar()
+	{
+		var html = await Render(TopNav, currentUrl: "/docs/", showVersionDropdown: true);
+
+		html.Should().Contain("secondary-nav-actions");
+		html.Should().Contain("<version-dropdown");
+		html.Should().Contain("all-versions-url=\"/docs/versions/\"");
+		html.Should().Contain("8.19");
+		html.IndexOf("secondary-nav-list", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("secondary-nav-actions", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task VersionDropdownRendersOnTheBuiltInBar()
+	{
+		var html = await Render(topNav: null, currentUrl: "/docs/", showVersionDropdown: true);
+
+		html.Should().Contain("secondary-nav-actions");
+		html.Should().Contain("<version-dropdown");
+	}
+
+	[Fact]
+	public async Task WithTopNavTheBarIsLeftAlignedAndIncludesDocsHome()
+	{
+		var html = await Render(TopNav, "/docs/");
+
+		html.Should().Contain("secondary-nav-home").And.Contain(">Docs<");
+		html.Should().Contain("href=\"/docs/\"");
+		html.Should().Contain("secondary-nav-bar--desktop");
+		html.Should().Contain("secondary-nav-scroll-container");
+		html.Should().Contain("secondary-nav-bar");
+	}
+
+	[Fact]
+	public async Task WithoutTopNavTheBarHasDocsBrandLink()
 	{
 		var html = await Render(null, "/docs/");
 
-		html.Should().Contain(">Docs<");
-		html.Should().Contain("justify-between").And.NotContain("justify-start");
+		html.Should().Contain("secondary-nav-home").And.Contain(">Docs<");
+		html.Should().Contain("href=\"/docs/\"");
 	}
 
 	[Fact]
@@ -151,15 +206,13 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		var reference = await Render(TopNav, currentUrl: "/docs/reference/some-page", root: refRoot);
 		var desktopTabs = reference.Split("<ul").Last();
 		var referenceListItem = desktopTabs.Split("<li").First(li => li.Contains("Reference"));
-		referenceListItem.Should().Contain("text-blue-elastic").And.NotContain("hover:text-blue-elastic");
+		referenceListItem.Should().Contain("secondary-nav-item--active");
 
 		// Dropdown tabs have no tree backing — they are never marked active via section ID.
 		var product = await Render(TopNav, currentUrl: "/docs/products/elasticsearch/index");
 		desktopTabs = product.Split("<ul").Last();
 		var productListItem = desktopTabs.Split("<li").First(li => li.Contains("Products"));
-		// "hover:text-blue-elastic" present means the inactive CSS variant is applied, not the active one.
-		productListItem.Should().Contain("hover:text-blue-elastic")
-			.And.NotContain("relative text-blue-elastic\"");
+		productListItem.Should().NotContain("secondary-nav-item--active");
 	}
 
 	[Fact]
@@ -168,15 +221,27 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		var html = await Render(TopNav, currentUrl: "/docs/troubleshoot/");
 
 		foreach (var listItem in html.Split("<li").Skip(1))
-			listItem.Should().Contain("hover:text-blue-elastic");
+			listItem.Should().NotContain("secondary-nav-item--active");
 	}
 
 	private async Task<string> Render(
 		TopNavRenderModel? topNav,
 		string currentUrl,
-		IRootNavigationItem<INavigationModel, INavigationItem>? root = null)
+		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
+		bool showVersionDropdown = false,
+		bool navigationPreviewEnabled = true)
 	{
-		var model = CreateModel(topNav, currentUrl, root);
+		var model = CreateModel(topNav, currentUrl, root, navigationPreviewEnabled);
+		if (showVersionDropdown)
+		{
+			model = model with
+			{
+				ShowVersionDropdown = true,
+				AllVersionsUrl = "/docs/versions/",
+				CurrentVersion = "8.19",
+				VersionDropdownSerializedModel = "[]"
+			};
+		}
 
 		return await _SecondaryNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 	}
@@ -185,9 +250,10 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 		TopNavRenderModel? topNav,
 		string currentUrl,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
-		bool showVersionDropdown = false)
+		bool showVersionDropdown = false,
+		bool navigationPreviewEnabled = true)
 	{
-		var model = CreateModel(topNav, currentUrl, root) with
+		var model = CreateModel(topNav, currentUrl, root, navigationPreviewEnabled) with
 		{
 			NavigationHtml = "<ul id=\"nav-tree-test\"></ul>",
 			ShowVersionDropdown = showVersionDropdown,
@@ -202,7 +268,8 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 	private GlobalLayoutViewModel CreateModel(
 		TopNavRenderModel? topNav,
 		string currentUrl,
-		IRootNavigationItem<INavigationModel, INavigationItem>? root = null)
+		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
+		bool navigationPreviewEnabled = true)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -225,7 +292,9 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = new FeatureFlags([]),
+			Features = navigationPreviewEnabled
+				? new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
+				: new FeatureFlags([]),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),

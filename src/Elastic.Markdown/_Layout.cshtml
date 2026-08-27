@@ -34,7 +34,7 @@
 						mx-auto
 						md:px-4
 			">
-				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
 					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] lg:justify-end lg:gap-4 mx-4 md:col-start-2 md:row-start-1">
 						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
@@ -71,7 +71,7 @@
 						mx-auto
 						md:px-4
 			">
-				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
 					<main id="content-container" class="min-w-0 mx-4 md:col-start-2 md:row-start-1">
 						@* Keeps the markdown-content id, which hljs, smooth-scroll and toc-nav select on,
 						   but not the class. typography.css is unlayered and hub.css sits in @@layer

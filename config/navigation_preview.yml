@@ -29,6 +29,7 @@ toc:
       - toc: explore-analyze
       - toc: deploy-manage
       - toc: cloud-account
+        navigation_title: Manage your Cloud account
       - toc: extend
         children:
           - toc: kibana://extend

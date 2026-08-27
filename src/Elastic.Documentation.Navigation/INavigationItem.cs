@@ -93,6 +93,15 @@ public interface IAssignableIslandNavigation
 	bool IsIsland { get; set; }
 }
 
+/// <summary>
+/// Optional assembler-side label. When set, replaces the index page title in navigation
+/// (sidebar, dropdowns, back-links) without changing the page H1.
+/// </summary>
+public interface IAssignableNavigationTitle
+{
+	string? NavigationTitleOverride { get; set; }
+}
+
 public interface IRootNavigationItem<out TIndex, out TChildNavigation> : INodeNavigationItem<TIndex, TChildNavigation>, IAssignableChildrenNavigation
 	where TIndex : INavigationModel
 	where TChildNavigation : INavigationItem

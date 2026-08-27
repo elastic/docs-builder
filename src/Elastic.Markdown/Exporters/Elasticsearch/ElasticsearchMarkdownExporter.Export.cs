@@ -111,7 +111,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		// this section gets promoted in the navigation we don't want it to be promoted in the search results
 		// e.g. `Use high-contrast mode in Kibana - ( docs cloud-account high contrast`
-		if (doc.Section == "manage your cloud account and preferences")
+		if (doc.Section is "manage your cloud account and preferences" or "manage your cloud account")
 			doc.Navigation.Depth *= 2;
 
 		// API reference pages have no navigation item to classify from — treat them as plain reference content.

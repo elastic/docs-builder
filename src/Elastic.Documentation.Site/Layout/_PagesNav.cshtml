@@ -6,12 +6,20 @@
 	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
 	var activeMobileLink = topNavLinks.FirstOrDefault(item => item.IsActive(currentSectionId));
 	var mobileSummary = activeMobileLink?.Title ?? "Docs Home";
-	var hasMobileDrawerControls = topNavLinks.Length > 0 || Model.ShowVersionDropdown;
+	var navigationPreviewEnabled = Model.Features.NavigationPreviewEnabled;
+	var hasMobileDrawerControls = navigationPreviewEnabled && (topNavLinks.Length > 0 || Model.ShowVersionDropdown);
+	var asideClass = navigationPreviewEnabled
+		? "sidebar font-sans bg-white md:bg-transparent fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 md:border-0 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1 flex flex-col min-h-0"
+		: "sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1";
+	var navClass = navigationPreviewEnabled
+		? "sidebar-nav min-h-0 flex-1 flex flex-col"
+		: "sidebar-nav h-full simple-scrollbar";
 }
-<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
+<aside class="@asideClass">
 	<nav
 		id="pages-nav"
-		class="sidebar-nav h-full simple-scrollbar">
+		@(navigationPreviewEnabled ? "hx-preserve" : "")
+		class="@navClass">
 		@if (hasMobileDrawerControls)
 		{
 			<div class="md:hidden border-b border-grey-20 px-4 py-4">
@@ -29,6 +37,9 @@
 								</svg>
 							</summary>
 							<div class="mt-2 rounded-md border border-grey-20 bg-white py-1 text-sm font-semibold shadow-sm">
+								<a href="@Model.Link("/")"
+								   preload="mousedown"
+								   class="block px-3 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
 								@foreach (var link in topNavLinks)
 								{
 									var isActive = link.IsActive(currentSectionId);
@@ -76,5 +87,5 @@
 </aside>
 @* ReSharper disable once Html.IdNotResolved *@
 <label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
-	
+
 </label>

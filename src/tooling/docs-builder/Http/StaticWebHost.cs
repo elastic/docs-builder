@@ -82,6 +82,17 @@ public class StaticWebHost
 		_ =
 			WebApplication
 				.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
+				.Use(async (context, next) =>
+				{
+					context.Response.OnStarting(() =>
+					{
+						var type = context.Response.ContentType;
+						if (type?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
+							context.Response.Headers.CacheControl = "no-store";
+						return Task.CompletedTask;
+					});
+					await next();
+				})
 				.UseRouting();
 
 		_ = WebApplication.MapGet("/", ServeRootIndex);
