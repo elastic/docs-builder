@@ -94,7 +94,11 @@ public class BundleBuilder
 					continue;
 				foreach (var product in entry.Data.Products)
 				{
-					var version = product.Target ?? string.Empty;
+					// `Target` is obsolete; prefer the first entry of `Versions` (notes).
+					// For PR-anchored entries neither field is set → version is "".
+#pragma warning disable CS0618 // reading obsolete Target for backward compat
+					var version = (product.Versions.Count > 0 ? product.Versions[0] : null) ?? product.Target ?? string.Empty;
+#pragma warning restore CS0618
 					_ = productVersions.Add((product.ProductId, version, product.Lifecycle));
 				}
 			}

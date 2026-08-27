@@ -39,8 +39,10 @@ public class ScrubberProcessorTests
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
 		var notesReconciler = new NotesIndexReconciler(
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, sourceBucketName: PrivateBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
+		var noteAmendReconciler = new NoteAmendReconciler(
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, notesReconciler, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
 		_processor = new ScrubberProcessor(
-			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, shallowReconciler, notesReconciler, _metrics);
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, shallowReconciler, notesReconciler, noteAmendReconciler, _metrics);
 	}
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;

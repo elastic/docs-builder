@@ -70,7 +70,7 @@ public class AddReportOptionTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = prUrls,
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			UsePrNumber = true

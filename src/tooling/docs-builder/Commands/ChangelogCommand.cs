@@ -25,6 +25,7 @@ using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
@@ -1485,19 +1486,29 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
-	/// <remarks>Creates an immutable <c>.amend-N.yaml</c> sidecar file alongside the original bundle.</remarks>
-	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
-	/// <param name="add">Optional: Changelog YAML paths to add. Repeat <c>--add</c> or pass a comma-separated list in one value (for example, <c>--add "file1.yaml,file2.yaml"</c>). Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="remove">Optional: Changelog YAML paths to exclude from the effective bundle. Repeat <c>--remove</c> or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.</param>
+	/// <remarks>
+	/// Creates an immutable <c>.amend-N</c> sidecar using the same <c>.yaml</c> or <c>.yml</c> extension
+	/// as the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator
+	/// <c>/bundle/{product}/{file}.yaml</c> (the sidecar is written under <c>--output</c>,
+	/// <c>bundle.output_directory</c>, or the current directory).
+	/// Upload the sidecar separately with <c>changelog upload --artifact-type bundle</c>.
+	/// </remarks>
+	/// <param name="bundlePath">Required: Local path to the parent bundle, or a CDN locator <c>/bundle/{product}/{file}.yaml</c> (leading slash optional; an absolute http(s) URL with that path is also accepted). Locator syntax takes precedence: prefix with <c>./</c> to force local resolution of a relative path that would otherwise match the locator shape. Local paths support tilde (~) expansion and must be a <c>.yml</c>/<c>.yaml</c> file that exists on disk.</param>
+	/// <param name="add">Optional: Changelog YAML paths to add. Repeat <c>--add</c> or pass a comma-separated list in one value (for example, <c>--add "file1.yaml,file2.yaml"</c>). Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN (the default when bundle.repo or the parent bundle's repo resolves), paths are matched by file name and do not need to exist locally; with local sourcing (--force-local or bundle.use_local_changelogs) the paths must exist on disk.</param>
+	/// <param name="remove">Optional: Changelog YAML paths to exclude from the effective bundle. Repeat <c>--remove</c> or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN, paths are matched by file name and do not need to exist locally; with local sourcing the paths must exist on disk unless <c>--force</c> is used to exclude by file name.</param>
+	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the sourced changelog, or when no YAML can be sourced (inferred git-ref entries).</param>
+	/// <param name="forceLocal">Optional: Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config).</param>
 	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
+	/// <param name="output">Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a <c>.yaml</c>/<c>.yml</c> path whose file name must be <c>{parent}.amend-N</c> plus the same extension as the parent for the next unused N. Falls back to <c>bundle.output_directory</c> in changelog.yml, then the current directory. Ignored for a local parent.</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
-		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
+		[Argument] string bundlePath,
 		string[]? add = null,
 		string[]? remove = null,
 		bool force = false,
+		bool forceLocal = false,
 		bool dryRun = false,
+		string? output = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1522,7 +1533,10 @@ internal sealed partial class ChangelogCommands(
 			return 1;
 		}
 
-		var normalizedBundlePath = bundlePath.FullName;
+		var trimmedBundlePath = bundlePath.Trim();
+		var normalizedBundlePath = ChangelogKeys.TryParseBundleLocator(trimmedBundlePath, out _, out _)
+			? trimmedBundlePath
+			: NormalizePath(trimmedBundlePath);
 
 		var input = new AmendBundleArguments
 		{
@@ -1530,7 +1544,9 @@ internal sealed partial class ChangelogCommands(
 			AddFiles = normalizedAddFiles,
 			RemoveFiles = normalizedRemoveFiles,
 			Force = force,
-			DryRun = dryRun
+			ForceLocal = forceLocal,
+			DryRun = dryRun,
+			Output = string.IsNullOrWhiteSpace(output) ? null : NormalizePath(output)
 		};
 
 		serviceInvoker.AddCommand(service, input,

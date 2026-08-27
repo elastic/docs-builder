@@ -364,7 +364,12 @@ public class GitHubReleaseChangelogService(
 			Products = [new ProductReference
 			{
 				ProductId = context.ProductInfo.Product ?? "",
-				Target = context.ProductInfo.Target,
+				// `Target` is obsolete; carry forward via `Versions` for compat with existing pool objects.
+#pragma warning disable CS0618 // reading obsolete Target for backward compat
+				Versions = context.ProductInfo.Versions is { Count: > 0 }
+					? context.ProductInfo.Versions
+					: context.ProductInfo.Target is not null ? [context.ProductInfo.Target] : [],
+#pragma warning restore CS0618
 				Lifecycle = !string.IsNullOrWhiteSpace(context.ProductInfo.Lifecycle)
 					? (LifecycleExtensions.TryParse(context.ProductInfo.Lifecycle, out var lc, ignoreCase: true, allowMatchingMetadataAttribute: true) ? lc : null)
 					: null

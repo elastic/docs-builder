@@ -23,9 +23,10 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		if (renderRoot is not INodeNavigationItem<INavigationModel, INavigationItem> group)
 			return NavigationRenderResult.Empty;
 
-		return await _renderedNavigationCache.GetOrRenderAsync(
+		var rendered = await _renderedNavigationCache.GetOrRenderAsync(
 			renderRoot,
 			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx));
+		return NavigationCurrentMarker.Apply(rendered, currentNavigationItem);
 	}
 
 	/// <summary>
@@ -54,6 +55,7 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			topLevelItems: topLevelItems,
 			isUsingNavigationDropdown: isUsingDropdown,
 			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false,
+			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled);
 	}
 }

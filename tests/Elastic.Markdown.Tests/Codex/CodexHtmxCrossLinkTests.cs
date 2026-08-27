@@ -12,7 +12,7 @@ using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests.Codex;
 
-/// <summary>Codex cross-links resolve to path-only URLs; navigation relies on body-level hx-boost, so links carry no per-link htmx attributes.</summary>
+/// <summary>Codex cross-links resolve to path-only URLs; navigation relies on hx-boost targeting #main-container, so links carry no per-link htmx attributes.</summary>
 public class CodexHtmxCrossLinkTests(ITestOutputHelper output) : LinkTestBase(output, "Go to [test](kibana://index.md)")
 {
 	protected override BuildContext CreateBuildContext(

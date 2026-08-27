@@ -211,7 +211,7 @@ public class CdnChangelogEntryFetcherTests
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{"notes":["main/note-slow-rollover.yml","9.0/note-gap.yml"]}""");
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0},{"path":"9.0/note-gap.yml","bundle_seq":0}]}""");
 			return Yaml(SampleEntry);
 		});
 		var (errors, _, emitError, _) = Diagnostics();
@@ -234,7 +234,7 @@ public class CdnChangelogEntryFetcherTests
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{"notes":["main/note-missing.yml"]}""");
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-missing.yml","bundle_seq":0}]}""");
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var (errors, _, emitError, _) = Diagnostics();
@@ -249,7 +249,7 @@ public class CdnChangelogEntryFetcherTests
 	[Fact]
 	public async Task FetchNotesAsync_EmptyIndex_ReturnsEmpty()
 	{
-		var handler = new StubHandler(_ => Json(/*lang=json,strict*/ """{"notes":[]}"""));
+		var handler = new StubHandler(_ => Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[]}"""));
 		var (errors, _, emitError, _) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);

@@ -183,9 +183,8 @@ public partial class ChangelogBundlingService(
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
 
-	// Defaults applied when sourcing CDN entries and the org/branch are not otherwise resolvable.
-	private const string DefaultOwner = "elastic";
-	private const string DefaultBranch = "main";
+	private const string DefaultOwner = ChangelogEntrySourcing.DefaultOwner;
+	private const string DefaultBranch = ChangelogEntrySourcing.DefaultBranch;
 
 	/// <summary>
 	/// UTF-8 encoding without BOM for writing YAML files.
@@ -272,7 +271,7 @@ public partial class ChangelogBundlingService(
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
 			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
 			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
-			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
+			var useCdn = ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
 
 			// Commit-range mode replaces the filter pipeline: the PR list is derived from git and
 			// each PR's entry is sourced pool-first with PR-metadata fallback.
@@ -1028,7 +1027,7 @@ public partial class ChangelogBundlingService(
 			|| input.ForceLocal;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
-		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
+		if (ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
 			needsNetwork = true;
 
 		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults: the
@@ -1367,7 +1366,10 @@ public partial class ChangelogBundlingService(
 			if (noteEntries == null)
 				return null;
 
-			foreach (var note in noteEntries)
+			// Backport collision: same leaf from different branches at the same version → prefer main/master.
+			var deduped = DeduplicateNotesByLeaf(noteEntries, noteTarget);
+
+			foreach (var note in deduped)
 			{
 				if (seen.Add(note.Checksum))
 					combined.Add(note);
@@ -1375,6 +1377,72 @@ public partial class ChangelogBundlingService(
 		}
 		return combined;
 	}
+
+	/// <summary>
+	/// Within a single version's note list, groups by leaf file name and resolves collisions from
+	/// backported notes on multiple branches. The <c>main</c>/<c>master</c> copy wins; when neither
+	/// branch is present the ordinal-first path is kept so the choice is deterministic. A warning is
+	/// logged for each discarded copy.
+	/// </summary>
+	private IReadOnlyList<MatchedChangelogFile> DeduplicateNotesByLeaf(
+		IReadOnlyList<MatchedChangelogFile> notes,
+		string version)
+	{
+		var byLeaf = new Dictionary<string, List<MatchedChangelogFile>>(StringComparer.OrdinalIgnoreCase);
+		foreach (var note in notes)
+		{
+			var leaf = NoteLeafName(note.FileName);
+			if (!byLeaf.TryGetValue(leaf, out var group))
+			{
+				group = [];
+				byLeaf[leaf] = group;
+			}
+			group.Add(note);
+		}
+
+		var result = new List<MatchedChangelogFile>(notes.Count);
+		foreach (var (leaf, group) in byLeaf)
+		{
+			if (group.Count == 1)
+			{
+				result.Add(group[0]);
+				continue;
+			}
+
+			// Prefer main/master; fall back to ordinal-first for a deterministic pick.
+			var winner = group.FirstOrDefault(n => IsMainOrMasterBranch(NoteBranchOf(n.FileName)))
+				?? group.OrderBy(n => n.FileName, StringComparer.Ordinal).First();
+
+			result.Add(winner);
+
+			foreach (var discarded in group.Where(n => !ReferenceEquals(n, winner)))
+			{
+				_logger.LogWarning(
+					"Backport collision for '{Leaf}' at version {Version}: keeping '{Winner}', discarding '{Discarded}'",
+					leaf, version, winner.FileName, discarded.FileName);
+			}
+		}
+
+		return result;
+	}
+
+	private static string NoteLeafName(string fileName)
+	{
+		var normalized = fileName.Replace('\\', '/');
+		var slash = normalized.LastIndexOf('/');
+		return slash >= 0 ? normalized[(slash + 1)..] : normalized;
+	}
+
+	private static string NoteBranchOf(string fileName)
+	{
+		var normalized = fileName.Replace('\\', '/');
+		var slash = normalized.IndexOf('/');
+		return slash > 0 ? normalized[..slash] : string.Empty;
+	}
+
+	private static bool IsMainOrMasterBranch(string branch) =>
+		string.Equals(branch, "main", StringComparison.OrdinalIgnoreCase)
+		|| string.Equals(branch, "master", StringComparison.OrdinalIgnoreCase);
 
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnProbedEntriesAsync(
 		IDiagnosticsCollector collector,
@@ -1490,14 +1558,6 @@ public partial class ChangelogBundlingService(
 		if (!string.Equals(prRepo, authoringRepo, StringComparison.OrdinalIgnoreCase))
 			return false;
 		return int.TryParse(normalized[(hashIndex + 1)..], out prNumber) && prNumber > 0;
-	}
-
-	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--directory</c>), and a CDN base is configured.</summary>
-	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
-	{
-		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))
-			return false;
-		return ChangelogCdn.ResolveBaseUri() is not null;
 	}
 
 	/// <summary>

@@ -361,6 +361,58 @@ public class CdnChangelogFetcherTests
 	}
 
 	[Fact]
+	public async Task FetchNamedBundleAsync_DownloadsParentAndSiblingAmendsOnly()
+	{
+		// language=yaml
+		const string amendBundle = """
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - type: bug-fix
+			    title: Amended fix
+			""";
+		var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch
+		{
+			var p when p.EndsWith("/registry.json", StringComparison.Ordinal) =>
+				Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "9.3.0.yaml", "target": "9.3.0" }, { "file": "9.3.0.amend-1.yaml", "target": "9.3.0" } ] }"""),
+			var p when p.EndsWith("/9.3.0.amend-1.yaml", StringComparison.Ordinal) => Yaml(amendBundle),
+			_ => Yaml(SampleBundle)
+		});
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var named = await fetcher.FetchNamedBundleAsync(BaseUri, "elasticsearch", "9.3.0.yaml", emitError, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		named.Should().NotBeNull();
+		named!.Value.FileName.Should().Be("9.3.0.yaml");
+		named.Value.Content.Should().Contain("Sample enhancement");
+		named.Value.AmendSidecars.Should().ContainSingle().Which.FileName.Should().Be("9.3.0.amend-1.yaml");
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/registry.json");
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.yaml");
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.amend-1.yaml");
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/9.4.0.yaml", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task FetchNamedBundleAsync_UnknownFile_EmitsErrorWithoutDownloadingYaml()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0" } ] }""")
+				: Yaml(SampleBundle));
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var named = await fetcher.FetchNamedBundleAsync(BaseUri, "elasticsearch", "missing.yaml", emitError, TestContext.Current.CancellationToken);
+
+		named.Should().BeNull();
+		errors.Should().ContainSingle(e => e.Contains("missing.yaml") && e.Contains("not listed"));
+		handler.RequestedPaths.Should().Equal("/bundle/elasticsearch/registry.json");
+	}
+
+	[Fact]
 	public async Task FetchAsync_NullETag_AlwaysFetchesFromCdn()
 	{
 		var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch

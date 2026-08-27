@@ -58,7 +58,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("target"));
+			d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("version"));
 	}
 
 	[Fact]
@@ -79,7 +79,7 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("target"));
+			d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("version"));
 	}
 
 	[Fact]

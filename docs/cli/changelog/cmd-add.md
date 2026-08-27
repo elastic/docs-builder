@@ -76,6 +76,10 @@ For example:
 - `"cloud-serverless 2025-08-05"`
 - `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
 
+:::{note}
+Specifying a version in the `--products` spec (the middle slot, for example `"elasticsearch 9.3.0 ga"`) is an error for `changelog add`. Entries derive their release line from their origin branch, not from a contributor-supplied version. To create an item that explicitly targets one or more versions — such as a known issue or a CVE — use [`changelog note`](/cli/changelog/note.md) instead, which accepts `versions` in place of a target.
+:::
+
 The `changelog add` command resolves product values in the following order:
 
 1. The `--products` CLI option always takes priority.
