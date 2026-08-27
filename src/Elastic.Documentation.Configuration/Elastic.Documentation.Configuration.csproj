@@ -44,5 +44,6 @@
     <EmbeddedResource Include="$(SolutionRoot)\config\navigation_preview.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\legacy-url-mappings.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\search.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\related-learning.yml" />
   </ItemGroup>
 </Project>

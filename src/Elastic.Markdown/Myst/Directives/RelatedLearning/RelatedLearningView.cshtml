@@ -1,0 +1,17 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.RelatedLearning.RelatedLearningViewModel>
+@if (Model.Items is { Count: > 0 })
+{
+	<aside class="related-learning" aria-labelledby="@Model.Slug">
+		<div class="heading-wrapper" id="@Model.Slug">
+			<h2><a class="headerlink" href="#@Model.Slug">@Model.Heading</a></h2>
+		</div>
+		<ul class="related-learning__list">
+			@foreach (var link in Model.Items)
+			{
+				<li class="related-learning__item">
+					<a class="related-learning__link" href="@link.Url" target="_blank" rel="noopener noreferrer">@link.Title</a>
+				</li>
+			}
+		</ul>
+	</aside>
+}

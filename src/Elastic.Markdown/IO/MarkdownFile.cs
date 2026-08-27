@@ -15,6 +15,7 @@ using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -234,7 +235,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		// We also track the last heading seen so that IncludeBlocks can be annotated
 		// with their preceding heading level at discovery time, eliminating any need for
 		// a position index or secondary traversal.
-		// IncludeBlock / StepBlock / ChangelogBlock / SettingsBlock all extend DirectiveBlock,
+		// IncludeBlock / StepBlock / ChangelogBlock / SettingsBlock / RelatedLearningBlock all extend DirectiveBlock,
 		// so one bucket covers them all.
 		List<HeadingBlock> headings = [];
 		List<DirectiveBlock> directives = [];
@@ -362,10 +363,17 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.SelectMany(settings => settings.GeneratedTableOfContent
 				.Select(tocItem => new { TocItem = tocItem, settings.Line }));
 
+		var relatedLearningTocs = directives
+			.OfType<RelatedLearningBlock>()
+			.Where(related => !IsNestedInOtherDirective(related))
+			.SelectMany(related => related.GeneratedTableOfContent
+				.Select(tocItem => new { TocItem = tocItem, related.Line }));
+
 		var toc = headingTocs
 			.Concat(stepperTocs)
 			.Concat(changelogTocs)
 			.Concat(settingsTocs)
+			.Concat(relatedLearningTocs)
 			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)

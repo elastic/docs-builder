@@ -110,6 +110,7 @@ public partial class ConfigurationFileProvider
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
 		// reading from synonyms.yml is temporary. If you spot this again as a future reader, feel free to remove it.
 		SearchFile = CreateTemporaryConfigurationFile("search.yml", "synonyms.yml");
+		RelatedLearningFile = CreateTemporaryConfigurationFile("related-learning.yml");
 	}
 
 	public bool SkipPrivateRepositories { get; }
@@ -127,6 +128,9 @@ public partial class ConfigurationFileProvider
 	public IFileInfo LegacyUrlMappingsFile { get; }
 
 	public IFileInfo SearchFile { get; }
+
+	public IFileInfo RelatedLearningFile { get; }
+
 	/// <summary>
 	/// Repoints <see cref="NavigationFile"/> at <c>config/navigation_preview.yml</c>.
 	/// Must be called before any reader accesses <see cref="NavigationFile"/> —

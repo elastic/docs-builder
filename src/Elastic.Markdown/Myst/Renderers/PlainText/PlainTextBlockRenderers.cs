@@ -14,6 +14,7 @@ using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -305,6 +306,10 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 					renderer.WriteLine(agentSkillBlock.Url);
 				renderer.EnsureLine();
 				return;
+
+			case RelatedLearningBlock relatedLearningBlock:
+				WriteRelatedLearningBlock(renderer, relatedLearningBlock);
+				return;
 		}
 
 		renderer.EnsureBlockSpacing();
@@ -333,6 +338,18 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 		// Render directive content
 		renderer.WriteChildren(obj);
+		renderer.EnsureLine();
+	}
+
+	private static void WriteRelatedLearningBlock(PlainTextRenderer renderer, RelatedLearningBlock block)
+	{
+		if (block.Items.Count == 0)
+			return;
+
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine(block.Heading);
+		foreach (var item in block.Items)
+			renderer.WriteLine($"{item.Title} {item.Url}");
 		renderer.EnsureLine();
 	}
 
