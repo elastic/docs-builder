@@ -18,6 +18,7 @@ env:
 
 jobs:
   validate-assembler:
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -35,12 +36,15 @@ jobs:
         run: dotnet run --project src/tooling/docs-builder -c release -- assembler content-source validate
 
   build-link-index-updater-lambda:
+    needs: [lint]
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
 
   build-openapi-index-lambda:
+    needs: [lint]
     uses: ./.github/workflows/build-openapi-index-lambda.yml
 
   synthetics:
+    needs: [lint]
     runs-on: ubuntu-latest
     env:
       MSBuildNoWarn: IDE0032
@@ -133,6 +137,7 @@ jobs:
           path: .
 
   build:
+    needs: [lint]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
