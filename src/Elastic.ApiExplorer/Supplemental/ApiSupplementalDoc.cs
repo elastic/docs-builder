@@ -43,6 +43,47 @@ internal sealed partial record ApiSupplementalDoc(
 		return parsed;
 	}
 
+	internal static ApiSupplementalDoc Overlay(ApiSupplementalDoc? baseline, ApiSupplementalDoc overlay)
+	{
+		if (baseline is null)
+			return overlay;
+
+		return new(
+			overlay.FrontMatter ?? baseline.FrontMatter,
+			overlay.Description ?? baseline.Description,
+			MergeMaps(baseline.ParameterOverrides, overlay.ParameterOverrides),
+			MergeMaps(baseline.RequestBodyOverrides, overlay.RequestBodyOverrides),
+			OverlayPostSections(baseline.PostSections, overlay.PostSections));
+	}
+
+	internal static IReadOnlyDictionary<string, ApiSupplementalDoc> OverlayVersionFiles(
+		IReadOnlyDictionary<string, ApiSupplementalDoc> baseline,
+		IReadOnlyList<ApiSupplementalVersionedFile> versioned,
+		int major,
+		Func<string, ApiSupplementalKind, string?> resolveKey)
+	{
+		Dictionary<string, ApiSupplementalDoc>? copy = null;
+		foreach (var versionedFile in versioned)
+		{
+			if (versionedFile.Name.VersionMajor != major)
+				continue;
+
+			var key = resolveKey(versionedFile.Name.Stem, versionedFile.Name.Kind);
+			if (key is null)
+				continue;
+
+			var parsed = Parse(versionedFile.File.FileSystem.File.ReadAllText(versionedFile.File.FullName));
+			if (parsed is null)
+				continue;
+
+			copy ??= new Dictionary<string, ApiSupplementalDoc>(baseline, StringComparer.Ordinal);
+			copy.TryGetValue(key, out var existing);
+			copy[key] = Overlay(existing, parsed);
+		}
+
+		return copy ?? baseline;
+	}
+
 	public static ApiSupplementalDoc? Parse(string? raw)
 	{
 		if (raw is null)
@@ -99,6 +140,45 @@ internal sealed partial record ApiSupplementalDoc(
 
 	private static ApiSupplementalDoc Empty(string? frontMatter, string? description) =>
 		new(frontMatter, description, [], [], []);
+
+	private static Dictionary<string, string> MergeMaps(
+		Dictionary<string, string> baseline,
+		Dictionary<string, string> overlay)
+	{
+		if (overlay.Count == 0)
+			return baseline;
+
+		var merged = new Dictionary<string, string>(baseline, StringComparer.OrdinalIgnoreCase);
+		foreach (var (key, value) in overlay)
+			merged[key] = value;
+		return merged;
+	}
+
+	private static IReadOnlyList<ApiSupplementalSection> OverlayPostSections(
+		IReadOnlyList<ApiSupplementalSection> baseline,
+		IReadOnlyList<ApiSupplementalSection> overlay)
+	{
+		if (overlay.Count == 0)
+			return baseline;
+		if (baseline.Count == 0)
+			return overlay;
+
+		var remaining = new Dictionary<string, ApiSupplementalSection>(StringComparer.OrdinalIgnoreCase);
+		foreach (var section in overlay)
+			remaining[section.Heading] = section;
+
+		var result = new List<ApiSupplementalSection>(baseline.Count + overlay.Count);
+		foreach (var section in baseline)
+			result.Add(remaining.Remove(section.Heading, out var replacement) ? replacement : section);
+
+		foreach (var section in overlay)
+		{
+			if (remaining.Remove(section.Heading, out var extra))
+				result.Add(extra);
+		}
+
+		return result;
+	}
 
 	private static bool IsParametersHeading(string heading) =>
 		heading.Equals("Parameters", StringComparison.OrdinalIgnoreCase)

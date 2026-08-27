@@ -316,4 +316,212 @@ public class ApiSupplementalDocTests
 		docs["search"].Description.Should().Be("Supplemental search description.");
 		docs.Should().NotContainKey("empty");
 	}
+
+	[Fact]
+	public void Overlay_NullBaseline_ReturnsOverlay()
+	{
+		var overlay = ApiSupplementalDoc.Parse("Version-only description.")!;
+
+		var merged = ApiSupplementalDoc.Overlay(null, overlay);
+
+		merged.Should().BeSameAs(overlay);
+	}
+
+	[Fact]
+	public void Overlay_DescriptionWins_KeepsUnspecifiedBaseSections()
+	{
+		var baseline = ApiSupplementalDoc.Parse("""
+			## Description
+
+			Base description.
+
+			## Best practices
+
+			Base practices.
+			""")!;
+		var overlay = ApiSupplementalDoc.Parse("""
+			## Description
+
+			V8 description.
+			""")!;
+
+		var merged = ApiSupplementalDoc.Overlay(baseline, overlay);
+
+		merged.Description.Should().Be("V8 description.");
+		merged.PostSections.Should().ContainSingle()
+			.Which.Should().Be(new ApiSupplementalSection("Best practices", "Base practices."));
+	}
+
+	[Fact]
+	public void Overlay_BareText_ReplacesDescriptionOnly()
+	{
+		var baseline = ApiSupplementalDoc.Parse("""
+			## Description
+
+			Base description.
+
+			## Parameters
+
+			: `q`
+			  Base query.
+			""")!;
+		var overlay = ApiSupplementalDoc.Parse("Bare version description.")!;
+
+		var merged = ApiSupplementalDoc.Overlay(baseline, overlay);
+
+		merged.Description.Should().Be("Bare version description.");
+		merged.ParameterOverrides["q"].Should().Be("Base query.");
+	}
+
+	[Fact]
+	public void Overlay_ParametersOnly_KeepsBaseDescriptionAndMergesKeys()
+	{
+		var baseline = ApiSupplementalDoc.Parse("""
+			## Description
+
+			Base description.
+
+			## Parameters
+
+			: `allow_no_indices`
+			  Base allow.
+
+			: `q`
+			  Base query.
+			""")!;
+		var overlay = ApiSupplementalDoc.Parse("""
+			## Parameters
+
+			: `knn`
+			  Version knn.
+
+			: `q`
+			  Version query.
+			""")!;
+
+		var merged = ApiSupplementalDoc.Overlay(baseline, overlay);
+
+		merged.Description.Should().Be("Base description.");
+		merged.ParameterOverrides.Should().HaveCount(3);
+		merged.ParameterOverrides["allow_no_indices"].Should().Be("Base allow.");
+		merged.ParameterOverrides["q"].Should().Be("Version query.");
+		merged.ParameterOverrides["knn"].Should().Be("Version knn.");
+	}
+
+	[Fact]
+	public void Overlay_RequestBodyKeys_ReplaceAndAdd()
+	{
+		var baseline = ApiSupplementalDoc.Parse("""
+			## Request body
+
+			: `query`
+			  Base query.
+
+			: `aggs`
+			  Base aggs.
+			""")!;
+		var overlay = ApiSupplementalDoc.Parse("""
+			## Request body
+
+			: `query`
+			  Version query.
+
+			: `knn`
+			  Version knn.
+			""")!;
+
+		var merged = ApiSupplementalDoc.Overlay(baseline, overlay);
+
+		merged.RequestBodyOverrides.Should().HaveCount(3);
+		merged.RequestBodyOverrides["query"].Should().Be("Version query.");
+		merged.RequestBodyOverrides["aggs"].Should().Be("Base aggs.");
+		merged.RequestBodyOverrides["knn"].Should().Be("Version knn.");
+	}
+
+	[Fact]
+	public void Overlay_PostSections_ReplaceSameHeadingAndAppendNew()
+	{
+		var baseline = ApiSupplementalDoc.Parse("""
+			## Best practices
+
+			Base practices.
+
+			## Common patterns
+
+			Base patterns.
+			""")!;
+		var overlay = ApiSupplementalDoc.Parse("""
+			## Best practices
+
+			Version practices.
+
+			## Migration
+
+			Version migration.
+			""")!;
+
+		var merged = ApiSupplementalDoc.Overlay(baseline, overlay);
+
+		merged.PostSections.Should().Equal(
+			new ApiSupplementalSection("Best practices", "Version practices."),
+			new ApiSupplementalSection("Common patterns", "Base patterns."),
+			new ApiSupplementalSection("Migration", "Version migration."));
+	}
+
+	[Fact]
+	public void Overlay_TagStyle_UsesSameMerge()
+	{
+		var baseline = ApiSupplementalDoc.Parse("""
+			## Description
+
+			Base tag description.
+
+			## Getting started
+
+			Base getting started.
+			""")!;
+		var overlay = ApiSupplementalDoc.Parse("""
+			## Description
+
+			Version tag description.
+
+			## After you start
+
+			Version after text.
+			""")!;
+
+		var merged = ApiSupplementalDoc.Overlay(baseline, overlay);
+
+		merged.Description.Should().Be("Version tag description.");
+		merged.ParameterOverrides.Should().BeEmpty();
+		merged.RequestBodyOverrides.Should().BeEmpty();
+		merged.PostSections.Should().Equal(
+			new ApiSupplementalSection("Getting started", "Base getting started."),
+			new ApiSupplementalSection("After you start", "Version after text."));
+	}
+
+	[Fact]
+	public void OverlayVersionFiles_MatchingMajor_OverlaysBase()
+	{
+		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			["/op-search.v8.md"] = new("## Description\n\nV8 description.")
+		});
+		var baseline = new Dictionary<string, ApiSupplementalDoc>
+		{
+			["search"] = ApiSupplementalDoc.Parse("## Description\n\nBase description.")!
+		};
+		var versioned = new List<ApiSupplementalVersionedFile>
+		{
+			new(fs.FileInfo.New("/op-search.v8.md"), new(ApiSupplementalKind.Operation, "search", 8))
+		};
+
+		var v8 = ApiSupplementalDoc.OverlayVersionFiles(
+			baseline, versioned, 8, (stem, kind) => kind == ApiSupplementalKind.Operation ? stem : null);
+		var v9 = ApiSupplementalDoc.OverlayVersionFiles(
+			baseline, versioned, 9, (stem, kind) => kind == ApiSupplementalKind.Operation ? stem : null);
+
+		v8["search"].Description.Should().Be("V8 description.");
+		v9["search"].Description.Should().Be("Base description.");
+	}
 }

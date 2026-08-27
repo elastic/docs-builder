@@ -56,4 +56,23 @@ public class ApiSupplementalNameTests
 		ApiUrlBuilder.TagMoniker("").Should().Be("endpoint-unknown");
 		ApiUrlBuilder.TagMoniker(null).Should().Be("endpoint-unknown");
 	}
+
+	[Theory]
+	[InlineData("knn-guide.v9.md", "knn-guide", 9)]
+	[InlineData("migration-from-v7.v8.md", "migration-from-v7", 8)]
+	[InlineData("op-search.v8.md", "op-search", 8)]
+	public void TryParseVersionSuffix_PeelsMajor(string fileName, string stem, int major)
+	{
+		ApiSupplementalName.TryParseVersionSuffix(fileName, out var parsedStem, out var parsedMajor).Should().BeTrue();
+		parsedStem.Should().Be(stem);
+		parsedMajor.Should().Be(major);
+	}
+
+	[Theory]
+	[InlineData("getting-started.md")]
+	[InlineData("knn-guide.md")]
+	public void TryParseVersionSuffix_Unsuffixed_ReturnsFalse(string fileName)
+	{
+		ApiSupplementalName.TryParseVersionSuffix(fileName, out _, out _).Should().BeFalse();
+	}
 }

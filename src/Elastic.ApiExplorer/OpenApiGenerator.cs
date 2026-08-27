@@ -34,7 +34,8 @@ internal sealed record ApiProductGeneration(
 	ResolvedApiConfiguration? ApiConfig,
 	IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems,
 	string Moniker,
-	bool EmitUnmatchedBaseFiles);
+	bool EmitUnmatchedBaseFiles,
+	int? SupplementalMajor);
 
 /// <summary>
 /// Renders API explorer pages for every configured OpenAPI specification: builds the navigation
@@ -58,8 +59,12 @@ public class OpenApiGenerator(
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
 
-	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null) =>
-		new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig);
+	public LandingNavigationItem CreateNavigation(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		ResolvedApiConfiguration? apiConfig = null,
+		int? versionMajor = null) =>
+		new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig, versionMajor);
 
 	public async Task Generate(Cancel ctx = default)
 	{
@@ -114,6 +119,7 @@ public class OpenApiGenerator(
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
+		var highestMajor = monikers.Max(m => int.TryParse(m, out var n) ? n : (int?)null);
 		foreach (var versioned in versionedDocuments)
 		{
 			var switcherItems = ApiVersionSwitcher.Build(
@@ -126,7 +132,8 @@ public class OpenApiGenerator(
 						apiConfig,
 						switcherItems,
 						versioned.Version.Moniker,
-						EmitUnmatchedBaseFiles: versioned.Version.Moniker == resolved.UnmatchedBaseFilesMoniker),
+						EmitUnmatchedBaseFiles: versioned.Version.Moniker == resolved.UnmatchedBaseFilesMoniker,
+						SupplementalMajor: SupplementalMajor(versioned.Version.Moniker, highestMajor)),
 					ctx)
 				.ConfigureAwait(false);
 		}
@@ -219,6 +226,15 @@ public class OpenApiGenerator(
 	private static bool IsVersionlessProduct(Product product) =>
 		product.VersioningSystem?.IsVersionless == true;
 
+	/// <summary>
+	/// Numeric monikers map 1:1. <c>main</c> uses the highest rendered numeric major so the
+	/// unversioned URL matches the current-major overlay (the one page CLI authors expect).
+	/// </summary>
+	internal static int? SupplementalMajor(string moniker, int? highestNumericMoniker) =>
+		int.TryParse(moniker, out var major)
+			? major
+			: moniker == "main" ? highestNumericMoniker : null;
+
 	private async Task<OpenApiDocument?> ResolveDocumentForVersion(
 		string apiKey,
 		ResolvedApiConfiguration apiConfig,
@@ -265,10 +281,27 @@ public class OpenApiGenerator(
 			context.Collector,
 			generation.Moniker,
 			EmitUnmatchedBaseFiles: generation.EmitUnmatchedBaseFiles));
-		var navigation = CreateNavigation(generation.Prefix, generation.Document, generation.ApiConfig);
+		var navigation = CreateNavigation(
+			generation.Prefix, generation.Document, generation.ApiConfig, versionMajor: generation.SupplementalMajor);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", generation.Document.Info?.Title ?? "<no title>");
 
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+
+		var operations = ApiSupplementalDoc.Load(discovery.Operations);
+		var tags = ApiSupplementalDoc.Load(discovery.Tags);
+		if (generation.SupplementalMajor is { } major && discovery.VersionSuffixed.Count > 0)
+		{
+			var (_, tagNames) = ApiSupplementalDiscovery.CollectEntities(generation.Document);
+			var (tagBySlug, _) = ApiSupplementalDiscovery.IndexTags(tagNames);
+			operations = ApiSupplementalDoc.OverlayVersionFiles(
+				operations, discovery.VersionSuffixed, major,
+				(stem, kind) => kind == ApiSupplementalKind.Operation ? stem : null);
+			tags = ApiSupplementalDoc.OverlayVersionFiles(
+				tags, discovery.VersionSuffixed, major,
+				(stem, kind) => kind == ApiSupplementalKind.Tag && tagBySlug.TryGetValue(stem, out var name)
+					? name
+					: null);
+		}
 
 		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
@@ -277,8 +310,8 @@ public class OpenApiGenerator(
 			MarkdownRenderer = markdownStringRenderer,
 			ApiExplorerLog = _logger,
 			VersionSwitcherItems = generation.VersionSwitcherItems,
-			OperationSupplemental = ApiSupplementalDoc.Load(discovery.Operations),
-			TagSupplemental = ApiSupplementalDoc.Load(discovery.Tags)
+			OperationSupplemental = operations,
+			TagSupplemental = tags
 		};
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
