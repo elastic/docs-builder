@@ -21,7 +21,7 @@
   </Choose>
   <ItemGroup>
     <GlobalPackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
-    <GlobalPackageReference Include="curb" Version="0.7.0" PrivateAssets="All" />
+    <GlobalPackageReference Include="curb" Version="0.7.1" PrivateAssets="All" />
   </ItemGroup>
   <!-- AWS -->
   <ItemGroup>
