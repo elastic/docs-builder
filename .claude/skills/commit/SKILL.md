@@ -5,6 +5,8 @@ description: Stage relevant files and create a well-formed git commit for the do
 
 # Commit Skill
 
+Read [`.claude/skills/writing-style.md`](../writing-style.md) before writing the commit message.
+
 Creates a clean, well-formed commit following the docs-builder project conventions.
 
 ## Steps
@@ -24,7 +26,6 @@ Do not run `git config` yourself. Do not use `--no-verify`.
 
 ### 2. Understand what changed
 
-Run these in parallel:
 ```bash
 git status
 git diff
@@ -41,19 +42,19 @@ Stage specific files by name — never `git add -A` or `git add .` blindly. Excl
 
 ### 4. Write the commit message
 
-Rules:
-- **First line**: Imperative mood, ≤72 chars, no trailing period (e.g. `Add async timeout handling to assembler`)
-- **Body** (optional): One short paragraph explaining *why*, not what. Skip if the title is self-explanatory.
-- **Trailer**: Always append `Co-Authored-By: Claude Sonnet 4.6 (1M context) <noreply@anthropic.com>`
+- **First line**: Imperative mood, ≤72 chars, no trailing period. Front-load the outcome — a reader scanning `git log` sees this line only.
+- **Body** (optional): One short paragraph explaining *why*, not what. Skip if the title is self-explanatory. Follow the sentence mechanics in `writing-style.md`.
+- **Trailer**: `Co-Authored-By: <model> <noreply@anthropic.com>` where `<model>` is the model name shown in your system prompt (e.g. `Claude Opus 5` or `Claude Sonnet 5`). Never hardcode a specific version — check the system prompt each time.
 
 Always pass the message via HEREDOC to avoid shell escaping issues:
+
 ```bash
 git commit -m "$(cat <<'EOF'
 Title here
 
 Optional body explaining why.
 
-Co-Authored-By: Claude Sonnet 4.6 (1M context) <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
 )"
 ```
@@ -72,4 +73,8 @@ If a hook fails:
 
 ### 6. Verify success
 
-Run `git status` after the commit to confirm a clean working tree.
+```bash
+git status
+```
+
+Confirm a clean working tree.
