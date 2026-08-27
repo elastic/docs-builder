@@ -151,16 +151,6 @@ csharp_style_expression_bodied_accessors = true:suggestion
 csharp_style_expression_bodied_local_functions = when_on_single_line:error
 dotnet_style_prefer_conditional_expression_over_return = false
 
-csharp_alignment_tab_fill_style=optimal_fill
-csharp_align_multiline_parameter=false
-csharp_align_multiline_extends_list=false
-csharp_align_multiline_array_and_object_initializer=false
-csharp_align_multiline_switch_expression=false
-csharp_align_multiline_property_pattern=false
-csharp_align_multiline_list_pattern=false
-indent_braces_inside_statement_conditions=false
-
-
 # Suggest more modern language features when available
 csharp_style_pattern_matching_over_is_with_cast_check = true:error
 csharp_style_pattern_matching_over_as_with_null_check = true:error
@@ -202,7 +192,6 @@ csharp_preserve_single_line_blocks = true
 csharp_place_simple_initializer_on_single_line = true
 csharp_max_initializer_elements_on_line = 5
 csharp_wrap_object_and_collection_initializer_style = chop_if_long
-resharper_wrap_object_and_collection_initializer_style = chop_always
 csharp_wrap_chained_method_calls = chop_if_long
 csharp_wrap_chained_binary_expressions = chop_if_long
 csharp_wrap_before_binary_opsign = true
