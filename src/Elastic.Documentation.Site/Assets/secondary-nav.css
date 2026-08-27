@@ -1,9 +1,11 @@
 @layer components {
-	.secondary-nav-mobile-menu summary {
+	.secondary-nav-mobile-menu summary,
+	.secondary-nav-mobile-submenu summary {
 		list-style: none;
 	}
 
-	.secondary-nav-mobile-menu summary::-webkit-details-marker {
+	.secondary-nav-mobile-menu summary::-webkit-details-marker,
+	.secondary-nav-mobile-submenu summary::-webkit-details-marker {
 		display: none;
 	}
 
@@ -13,7 +15,10 @@
 		transition: transform 0.15s ease;
 	}
 
-	.secondary-nav-mobile-menu[open] .secondary-nav-mobile-chevron {
+	.secondary-nav-mobile-menu[open] > summary .secondary-nav-mobile-chevron,
+	.secondary-nav-mobile-submenu[open]
+		> summary
+		.secondary-nav-mobile-chevron {
 		transform: rotate(180deg);
 	}
 }

@@ -9,12 +9,14 @@ namespace Elastic.Documentation.Navigation.Assembler;
 /// <summary>
 /// Builds a <see cref="TopNavRenderModel"/> from the top-level navigation entries in
 /// <c>navigation_preview.yml</c> when the <c>navigation-preview</c> feature flag is on.
-/// Supports two entry shapes:
+/// Supports three <c>section:</c> shapes:
 /// <list type="bullet">
-/// <item><c>toc:</c> — a single navigation root, becomes one tab.</item>
-/// <item><c>section:</c> — a named group of toc: refs, becomes one tab whose active state
-///   matches the section's navigation root. External sections become external-link tabs.</item>
+/// <item><c>external:</c> — external-link tab, never active.</item>
+/// <item><c>dropdown:</c> — a panel of links, never active (no tree membership).</item>
+/// <item><c>children:</c> — maps to a <see cref="SectionNavigation"/> tree node; active when the
+///   current page's NavigationRoot.Id equals the section's Id.</item>
 /// </list>
+/// Plain <c>toc:</c> entries also produce one tab, active when NavigationRoot.Id == item.Id.
 /// Active state is determined by comparing the current page's NavigationRoot.Id to each
 /// tab's stored <see cref="TopNavLinkItem.SectionId"/>.
 /// </summary>
@@ -47,6 +49,15 @@ public static class SectionTopNavBuilder
 				if (section.IsExternal)
 				{
 					items.Add(new TopNavLinkItem(section.Title, section.ExternalUrl!, IsExternal: true));
+				}
+				else if (section.IsDropdown)
+				{
+					// Resolve each link URL against the site prefix so hrefs in the template are site-absolute.
+					var sitePrefix = navigation.Url.TrimEnd('/');
+					var links = section.DropdownLinks
+						.Select(l => new TopNavLinkItem(l.Title, sitePrefix + "/" + l.Url.TrimStart('/'), IsExternal: false))
+						.ToArray();
+					items.Add(new TopNavDropdownItem(section.Title, [new TopNavGroup(null, links)]));
 				}
 				else if (sectionsByTitle.TryGetValue(section.Title, out var sectionNav))
 				{
