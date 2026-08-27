@@ -14,6 +14,7 @@ permissions:
   deployments: write
   id-token: write
   pull-requests: read
+  checks: write
 
 concurrency:
   group: assembler-preview-${{ github.event.pull_request.number || inputs.pr_number }}
@@ -120,6 +121,32 @@ jobs:
             --distribution-id EKT7LT5PM8RKS \
             --paths "/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "/${ASSEMBLER_PREVIEW_PATH_PREFIX}/*"
 
+      - uses: actions/setup-node@v7.0.0
+        with:
+          cache: npm
+          cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
+          node-version-file: .nvmrc
+
+      - name: Install frontend dependencies
+        working-directory: src/Elastic.Documentation.Site
+        run: npm ci
+
+      - name: Run synthetics
+        id: synthetics
+        working-directory: src/Elastic.Documentation.Site
+        env:
+          DOCS_ENV: preview
+          DOCS_PREVIEW_BASE_URL: https://docs-v3-preview.elastic.dev/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
+        run: npm run synthetics:test
+
+      - name: Run accessibility synthetics
+        id: synthetics-accessibility
+        working-directory: src/Elastic.Documentation.Site
+        env:
+          DOCS_ENV: preview
+          DOCS_PREVIEW_BASE_URL: https://docs-v3-preview.elastic.dev/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
+        run: npm run synthetics:test:accessibility
+
       - name: Update Deployment Status
         if: always() && steps.deployment.outputs.result
         uses: actions/github-script@v9
@@ -129,7 +156,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ steps.s3-upload.outcome == 'success' && 'success' || 'failure' }}",
+              state: "${{ steps.s3-upload.outcome == 'success' && steps.synthetics.outcome != 'failure' && steps.synthetics-accessibility.outcome != 'failure' && 'success' || 'failure' }}",
               environment_url: `https://docs-v3-preview.elastic.dev/${process.env.ASSEMBLER_PREVIEW_PATH_PREFIX}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })

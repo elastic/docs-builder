@@ -45,6 +45,13 @@ export default () => {
         case 'staging':
             config.params.baseUrl = 'https://dwnz7p9ulv07a.cloudfront.net'
             break
+        case 'preview':
+            // DOCS_PREVIEW_BASE_URL is the assembler-preview environment_url, e.g.
+            // https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/<pr>
+            // Journeys append /docs (and sub-paths) to this, which resolves correctly.
+            config.params.baseUrl =
+                process.env.DOCS_PREVIEW_BASE_URL ?? 'http://localhost:4000'
+            break
     }
 
     console.log(`Using docs environment: ${config.params.environment}`)
