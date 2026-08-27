@@ -1,20 +1,17 @@
-.related-learning {
+.heading-wrapper:has(+ .related-learning) {
 	margin-block-start: 2.5rem;
 	padding-block-start: 1.5rem;
 	border-top: 1px solid var(--color-grey-20);
 }
 
-.related-learning .heading-wrapper {
-	margin-block-start: 0;
-	padding-block-start: 0;
-	border-top: none;
+.related-learning {
+	margin-block-start: 0.75rem;
 }
 
 .related-learning__list {
 	list-style: disc;
 	padding-inline-start: 1.25rem;
-	margin-block-start: 0.75rem;
-	margin-block-end: 0;
+	margin: 0;
 }
 
 .related-learning__item {

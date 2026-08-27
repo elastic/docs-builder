@@ -146,6 +146,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			_ = await MinimalParseAsync(documentationFileLookup, ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
+		RelatedLearningBlock.InsertHeadings(document);
 		return document;
 	}
 
@@ -209,6 +210,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 
+		RelatedLearningBlock.InsertHeadings(document);
+
 		var toc = GetAnchors(Collector, documentationFileLookup, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 
 		_pageTableOfContent.Clear();
@@ -235,7 +238,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		// We also track the last heading seen so that IncludeBlocks can be annotated
 		// with their preceding heading level at discovery time, eliminating any need for
 		// a position index or secondary traversal.
-		// IncludeBlock / StepBlock / ChangelogBlock / SettingsBlock / RelatedLearningBlock all extend DirectiveBlock,
+		// IncludeBlock / StepBlock / ChangelogBlock / SettingsBlock all extend DirectiveBlock,
 		// so one bucket covers them all.
 		List<HeadingBlock> headings = [];
 		List<DirectiveBlock> directives = [];
@@ -363,17 +366,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.SelectMany(settings => settings.GeneratedTableOfContent
 				.Select(tocItem => new { TocItem = tocItem, settings.Line }));
 
-		var relatedLearningTocs = directives
-			.OfType<RelatedLearningBlock>()
-			.Where(related => !IsNestedInOtherDirective(related))
-			.SelectMany(related => related.GeneratedTableOfContent
-				.Select(tocItem => new { TocItem = tocItem, related.Line }));
-
 		var toc = headingTocs
 			.Concat(stepperTocs)
 			.Concat(changelogTocs)
 			.Concat(settingsTocs)
-			.Concat(relatedLearningTocs)
 			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)

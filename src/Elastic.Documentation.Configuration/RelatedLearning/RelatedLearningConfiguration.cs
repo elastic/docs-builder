@@ -21,6 +21,14 @@ public record RelatedLearningConfiguration
 
 	public bool TryGet(string id, [NotNullWhen(true)] out RelatedLearningLink? link) =>
 		Links.TryGetValue(id, out link);
+
+	/// <summary>Parses and validates a <c>related-learning.yml</c> document.</summary>
+	public static RelatedLearningConfiguration Parse(string yaml)
+	{
+		var dto = ConfigurationFileProvider.Deserializer.Deserialize<RelatedLearningConfigDto>(yaml)
+			?? throw new InvalidOperationException("related-learning.yml deserialized to null.");
+		return RelatedLearningConfigurationExtensions.FromDto(dto);
+	}
 }
 
 /// <summary>A single named learning destination from <c>related-learning.yml</c>.</summary>
@@ -52,20 +60,8 @@ public static class RelatedLearningConfigurationExtensions
 {
 	public static RelatedLearningConfiguration CreateRelatedLearningConfiguration(this ConfigurationFileProvider provider)
 	{
-		var file = provider.RelatedLearningFile;
-		if (!file.Exists)
-			return RelatedLearningConfiguration.Empty;
-
-		using var reader = file.OpenText();
-		return Parse(reader.ReadToEnd());
-	}
-
-	/// <summary>Parses and validates a <c>related-learning.yml</c> document.</summary>
-	public static RelatedLearningConfiguration Parse(string yaml)
-	{
-		var dto = ConfigurationFileProvider.Deserializer.Deserialize<RelatedLearningConfigDto>(yaml)
-			?? throw new InvalidOperationException("related-learning.yml deserialized to null.");
-		return FromDto(dto);
+		using var reader = provider.RelatedLearningFile.OpenText();
+		return RelatedLearningConfiguration.Parse(reader.ReadToEnd());
 	}
 
 	internal static RelatedLearningConfiguration FromDto(RelatedLearningConfigDto dto)

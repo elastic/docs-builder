@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.RelatedLearning;
-using Elastic.Markdown;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Directives.RelatedLearning;
 
@@ -23,21 +24,21 @@ public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext con
 
 	public IReadOnlyList<RelatedLearningLink> Items { get; private set; } = [];
 
-	public IEnumerable<PageTocItem> GeneratedTableOfContent =>
-		Items.Count == 0
-			? []
-			:
-			[
-				new PageTocItem
-				{
-					Heading = Heading,
-					Slug = Slug,
-					Level = 2
-				}
-			];
-
 	public override IEnumerable<string> GeneratedAnchors =>
 		Items.Count == 0 ? [] : [Slug];
+
+	/// <summary>
+	/// Inserts a real H2 before each resolved directive so GetAnchors and HTML share one slug.
+	/// Call on both the minimal-parse and full-parse documents.
+	/// </summary>
+	public static void InsertHeadings(MarkdownDocument document)
+	{
+		var blocks = document.Descendants<RelatedLearningBlock>()
+			.Where(b => b.Items.Count > 0)
+			.ToArray();
+		foreach (var block in blocks)
+			InsertHeading(block);
+	}
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
@@ -85,5 +86,31 @@ public class RelatedLearningBlock(DirectiveBlockParser parser, ParserContext con
 		}
 
 		return items;
+	}
+
+	private static void InsertHeading(RelatedLearningBlock block)
+	{
+		if (block.Parent is not { } parent)
+			return;
+
+		var index = parent.IndexOf(block);
+		if (index < 0)
+			return;
+
+		if (index > 0
+			&& parent[index - 1] is HeadingBlock existing
+			&& (existing.GetData("anchor") as string) == block.Slug)
+			return;
+
+		var heading = new HeadingBlock(null!)
+		{
+			Level = 2,
+			Line = block.Line
+		};
+		heading.SetData("header", block.Heading);
+		heading.SetData("anchor", block.Slug);
+		heading.Inline = new ContainerInline();
+		_ = heading.Inline.AppendChild(new LiteralInline(block.Heading));
+		parent.Insert(index, heading);
 	}
 }

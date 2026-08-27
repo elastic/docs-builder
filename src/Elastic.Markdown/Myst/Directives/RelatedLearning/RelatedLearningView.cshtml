@@ -2,9 +2,6 @@
 @if (Model.Items is { Count: > 0 })
 {
 	<aside class="related-learning" aria-labelledby="@Model.Slug">
-		<div class="heading-wrapper" id="@Model.Slug">
-			<h2><a class="headerlink" href="#@Model.Slug">@Model.Heading</a></h2>
-		</div>
 		<ul class="related-learning__list">
 			@foreach (var link in Model.Items)
 			{

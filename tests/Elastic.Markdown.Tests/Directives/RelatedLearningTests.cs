@@ -36,10 +36,13 @@ public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest
 	public void RendersHeadingIdAndExternalLink()
 	{
 		Html.Should().Contain("id=\"related-learning-heading\"");
+		Html.Should().Contain("<h2>");
+		Html.Should().Contain("Related learning");
 		Html.Should().Contain("href=\"https://www.elastic.co/training/apm-with-elastic\"");
 		Html.Should().Contain("target=\"_blank\"");
 		Html.Should().Contain("rel=\"noopener noreferrer\"");
 		Html.Should().Contain("APM with Elastic");
+		CountOccurrences(Html, "id=\"related-learning-heading\"").Should().Be(1);
 	}
 
 	[Fact]
@@ -52,6 +55,18 @@ public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest
 
 	[Fact]
 	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+
+	private static int CountOccurrences(string haystack, string needle)
+	{
+		var count = 0;
+		var index = 0;
+		while ((index = haystack.IndexOf(needle, index, StringComparison.Ordinal)) >= 0)
+		{
+			count++;
+			index += needle.Length;
+		}
+		return count;
+	}
 }
 
 public class RelatedLearningOrderTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(output,
@@ -90,6 +105,20 @@ public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : Dir
 		Html.Should().Contain("id=\"learn-elastic-agent\"");
 		Html.Should().Contain("Learn Elastic Agent");
 		File.PageTableOfContent.Should().ContainKey("learn-elastic-agent");
+		CountId(Html, "learn-elastic-agent").Should().Be(1);
+	}
+
+	private static int CountId(string html, string id)
+	{
+		var needle = $"id=\"{id}\"";
+		var count = 0;
+		var index = 0;
+		while ((index = html.IndexOf(needle, index, StringComparison.Ordinal)) >= 0)
+		{
+			count++;
+			index += needle.Length;
+		}
+		return count;
 	}
 }
 
