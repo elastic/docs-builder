@@ -20,12 +20,11 @@ products:
       # filters, and categorization.
       # Refer to https://github.com/elastic/docs-builder/blob/main/config/products.yml for the acceptable values.
       
-      target:
+      versions:
 
-      # An optional string that facilitates pre-release doc previews.
-      # For products with version releases, it contains the target version number (V.R.M).
-      # For products with date releases, it contains the target release date
-      # or the date the PR was merged.
+      # Note files only — a required list of release versions this note applies to.
+      # This field is mandatory only when the changelog is a note (i.e. doesn't have a PR).
+      # Example: [9.3.0, 9.4.0]
 
       lifecycle:
 

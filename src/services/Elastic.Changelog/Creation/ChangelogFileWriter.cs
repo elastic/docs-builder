@@ -281,8 +281,10 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#       A required string with a valid product ID.
 			#       Valid values are defined in https://github.com/elastic/docs-builder/blob/main/config/products.yml
 			#
-			#     target:
-			#       An optional string with the target version or date.
+			#     versions:
+			#       Note-only. A list of release versions this note applies to.
+			#       Example: [9.3.0, 9.4.0] or [2026-05-15]
+			#       For PR-anchored entries, leave this absent — the branch is the address.
 			#
 			#     lifecycle:
 			#       An optional string for new features or enhancements that have a specific availability.

@@ -121,15 +121,44 @@ public class CreateChangelogArgumentsValidator(IConfigurationContext configurati
 		return true;
 	}
 
+	/// <summary>
+	/// Validates that every product in a <c>changelog note</c> has at least one concrete version
+	/// in its <see cref="ProductReference.Versions"/> list. The <c>target</c> field is obsolete and
+	/// must not be used; the CLI now parses the middle positional slot as a pipe-separated version
+	/// list into <see cref="ProductReference.Versions"/>.
+	/// </summary>
 	public bool ValidateNoteProducts(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
 		foreach (var product in input.Products)
 		{
-			if (string.IsNullOrWhiteSpace(product.Target) || product.Target == "*")
+			if (product.Versions.Count == 0)
 			{
 				collector.EmitError(string.Empty,
-					$"Product '{product.Product}' must have a specific target for 'changelog note'. " +
-					"Use --products 'product target lifecycle' with a concrete target value (for example, '9.2.0' or '2026-05-15').");
+					$"Product '{product.Product}' must have at least one specific version for 'changelog note'. " +
+					"Use --products 'product version[|version2...] [lifecycle]' with a concrete version " +
+					"(for example, 'elasticsearch 9.3.0|9.4.0 ga' or 'cloud-serverless 2026-05-15').");
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/// <summary>
+	/// Validates that no product in a <c>changelog add</c> entry carries a specific version target.
+	/// The <c>target</c> field is obsolete for entries; applicability is expressed through the origin
+	/// branch. Wildcards (<c>*</c>) and absent values are still accepted for bundle filter profiles.
+	/// </summary>
+	public bool ValidateNoVersionTarget(IDiagnosticsCollector collector, CreateChangelogArguments input)
+	{
+		foreach (var product in input.Products)
+		{
+			if (product.Versions.Count > 0)
+			{
+				collector.EmitError(string.Empty,
+					$"Product '{product.Product}' specifies version(s) '{string.Join("|", product.Versions)}', " +
+					"but changelog entries do not carry version applicability — the origin branch is the address. " +
+					"For PR-less items that apply to specific release versions (known issues, security advisories) " +
+					"use 'changelog note' instead.");
 				return false;
 			}
 		}

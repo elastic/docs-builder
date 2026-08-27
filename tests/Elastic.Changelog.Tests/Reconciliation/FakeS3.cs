@@ -23,6 +23,7 @@ namespace Elastic.Changelog.Tests.Reconciliation;
 /// </summary>
 internal sealed class FakeS3
 {
+	private readonly Lock _lock = new();
 	private readonly Dictionary<string, Dictionary<string, (string Content, string ETag)>> _buckets =
 		[with(StringComparer.Ordinal)];
 
@@ -110,10 +111,14 @@ internal sealed class FakeS3
 
 	private ListObjectsV2Response List(ListObjectsV2Request request)
 	{
-		ListCalls++;
-		OnList?.Invoke(ListCalls);
+		int n;
+		lock (_lock)
+			n = ++ListCalls;
+		OnList?.Invoke(n);
 
-		var store = Store(request.BucketName);
+		Dictionary<string, (string Content, string ETag)> store;
+		lock (_lock)
+			store = Store(request.BucketName).ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
 		var prefix = request.Prefix ?? string.Empty;
 		var objects = new List<S3Object>();
 		var commonPrefixes = new SortedSet<string>(StringComparer.Ordinal);
@@ -154,11 +159,15 @@ internal sealed class FakeS3
 
 	private GetObjectResponse Get(GetObjectRequest request)
 	{
-		Gets.Add(request);
-		_gets++;
-
-		if (!Store(request.BucketName).TryGetValue(request.Key, out var obj))
-			throw NotFound();
+		(string Content, string ETag) obj;
+		int n;
+		lock (_lock)
+		{
+			Gets.Add(request);
+			n = ++_gets;
+			if (!Store(request.BucketName).TryGetValue(request.Key, out obj))
+				throw NotFound();
+		}
 
 		// Capture the response before the hook runs, so a hook that reseeds the key simulates a
 		// write landing right after this read.
@@ -167,14 +176,18 @@ internal sealed class FakeS3
 			ETag = $"\"{obj.ETag}\"",
 			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(obj.Content))
 		};
-		AfterGet?.Invoke(request.Key, _gets);
+		AfterGet?.Invoke(request.Key, n);
 		return response;
 	}
 
 	private GetObjectMetadataResponse Head(GetObjectMetadataRequest request)
 	{
-		if (!Store(request.BucketName).TryGetValue(request.Key, out var obj))
-			throw NotFound();
+		(string Content, string ETag) obj;
+		lock (_lock)
+		{
+			if (!Store(request.BucketName).TryGetValue(request.Key, out obj))
+				throw NotFound();
+		}
 
 		var response = new GetObjectMetadataResponse
 		{
@@ -186,40 +199,50 @@ internal sealed class FakeS3
 
 	private PutObjectResponse Put(PutObjectRequest request)
 	{
-		_puts++;
-		BeforePut?.Invoke(_puts);
+		int n;
+		lock (_lock)
+			n = ++_puts;
+		BeforePut?.Invoke(n);
 
-		Puts.Add(request);
+		lock (_lock)
+		{
+			Puts.Add(request);
 
-		var store = Store(request.BucketName);
-		var exists = store.TryGetValue(request.Key, out var current);
-		if (request.IfNoneMatch == "*" && exists)
-			throw PreconditionFailed();
-		if (request.IfMatch is { } ifMatch && (!exists || ifMatch.Trim('"') != current.ETag))
-			throw PreconditionFailed();
+			var store = Store(request.BucketName);
+			var exists = store.TryGetValue(request.Key, out var current);
+			if (request.IfNoneMatch == "*" && exists)
+				throw PreconditionFailed();
+			if (request.IfMatch is { } ifMatch && (!exists || ifMatch.Trim('"') != current.ETag))
+				throw PreconditionFailed();
 
-		_ = Seed(request.BucketName, request.Key, request.ContentBody);
+			_ = Seed(request.BucketName, request.Key, request.ContentBody);
+		}
 		return new PutObjectResponse();
 	}
 
 	private DeleteObjectResponse Delete(DeleteObjectRequest request)
 	{
-		_deletes++;
-		BeforeDelete?.Invoke(_deletes);
+		int n;
+		lock (_lock)
+			n = ++_deletes;
+		BeforeDelete?.Invoke(n);
 
-		Deletes.Add(request);
-
-		var store = Store(request.BucketName);
-		var exists = store.TryGetValue(request.Key, out var current);
-		if (request.IfMatch is { } ifMatch)
+		lock (_lock)
 		{
-			if (!exists)
-				throw NotFound();
-			if (ifMatch.Trim('"') != current.ETag)
-				throw PreconditionFailed();
-		}
+			Deletes.Add(request);
 
-		_ = store.Remove(request.Key);
+			var store = Store(request.BucketName);
+			var exists = store.TryGetValue(request.Key, out var current);
+			if (request.IfMatch is { } ifMatch)
+			{
+				if (!exists)
+					throw NotFound();
+				if (ifMatch.Trim('"') != current.ETag)
+					throw PreconditionFailed();
+			}
+
+			_ = store.Remove(request.Key);
+		}
 		return new DeleteObjectResponse();
 	}
 

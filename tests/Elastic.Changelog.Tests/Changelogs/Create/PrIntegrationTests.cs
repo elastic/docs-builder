@@ -49,7 +49,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -119,7 +119,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/140034"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			UsePrNumber = true
@@ -198,7 +198,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234", "https://github.com/elastic/elasticsearch/pull/5678"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			UsePrNumber = true
@@ -255,7 +255,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		{
 			Issues = ["https://github.com/elastic/kibana/issues/233425"],
 			Prs = ["https://github.com/elastic/kibana/pull/250840"],
-			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "kibana", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			Title = "Release notes test",
@@ -286,7 +286,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			Repo = "elasticsearch",
 			Title = "Update documentation",
 			Type = "docs",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
@@ -352,7 +352,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1234", "https://github.com/elastic/elasticsearch/pull/5678"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -461,7 +461,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = parsedPrs, // PRs read from file
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -565,7 +565,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var input = new CreateChangelogArguments
 		{
 			Prs = allPrs.ToArray(), // Mixed PRs from comma-separated and file
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -639,7 +639,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			Prs = ["155500"],
 			Owner = "elastic",
 			Repo = "cloud",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			UsePrNumber = true,

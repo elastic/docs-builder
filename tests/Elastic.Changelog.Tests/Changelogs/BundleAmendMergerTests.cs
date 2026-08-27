@@ -58,6 +58,8 @@ public class BundleAmendMergerTests
 	[InlineData("repo-9.3.0.amend-12.yml", "repo-9.3.0.yml")]
 	[InlineData("cloud-2025-11.AMEND-2.YAML", "cloud-2025-11.YAML")]
 	[InlineData("/releases/9.3.0.amend-1.yaml", "/releases/9.3.0.yaml")]
+	[InlineData("elasticsearch-9.3.0.amend-notes.yaml", "elasticsearch-9.3.0.yaml")]
+	[InlineData("cloud-2025-11.amend-notes.yml", "cloud-2025-11.yml")]
 	public void GetParentBundlePath_AmendFile_StripsAmendSuffix(string amendPath, string expectedParent) =>
 		BundleAmendMerger.GetParentBundlePath(amendPath).Should().Be(expectedParent);
 

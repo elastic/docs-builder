@@ -239,7 +239,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		{
 			Title = "Test BOM handling",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.1.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
 			Output = tempOutput,

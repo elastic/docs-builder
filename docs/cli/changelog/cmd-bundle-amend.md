@@ -3,6 +3,10 @@
 Amend a bundle with additional or excluded changelog entries without modifying the parent bundle file.
 Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}` plus the same `.yaml` or `.yml` extension as the parent, where `{N}` is a sequence number.
 
+:::{note}
+The suffix `.amend-notes` (for example `9.3.0.amend-notes.yaml`) is reserved for use by the changelog scrubber Lambda. The Lambda generates and manages these files automatically; you must not create, edit, or delete them manually.
+:::
+
 Specify at least one of `--add` or `--remove`.
 
 To create a bundle, use [](/cli/changelog/bundle.md).

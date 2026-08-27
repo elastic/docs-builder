@@ -187,12 +187,25 @@ public static partial class ReleaseNotesSerialization
 		Link = entry.Link
 	};
 
-	private static ProductReference ToProductReference(ProductInfoDto dto) => new()
+	private static ProductReference ToProductReference(ProductInfoDto dto)
 	{
-		ProductId = dto.Product ?? "",
-		Target = dto.Target,
-		Lifecycle = ParseLifecycle(dto.Lifecycle)
-	};
+		// Read the new `versions` list; fall back to wrapping the legacy `target` string
+		// for backward compat with already-published pool objects.
+#pragma warning disable CS0618 // reading obsolete Target for backward compat
+		IReadOnlyList<string> versions =
+			dto.Versions is { Count: > 0 }
+				? dto.Versions
+				: !string.IsNullOrWhiteSpace(dto.Target)
+					? [dto.Target]
+					: [];
+		return new()
+		{
+			ProductId = dto.Product ?? "",
+			Versions = versions,
+			Lifecycle = ParseLifecycle(dto.Lifecycle)
+		};
+#pragma warning restore CS0618
+	}
 
 	private static Bundle ToBundle(BundleDto dto) => new()
 	{
@@ -311,12 +324,18 @@ public static partial class ReleaseNotesSerialization
 		};
 	}
 
-	private static ProductInfoDto ToDto(ProductReference product) => new()
-	{
-		Product = product.ProductId,
-		Target = product.Target,
-		Lifecycle = LifecycleToString(product.Lifecycle)
-	};
+	private static ProductInfoDto ToDto(ProductReference product) =>
+		// Never write `target` — it is obsolete. Write `versions` when populated (notes only).
+		// `target` is still *read* from existing pool objects (see ToProductReference), but never written.
+#pragma warning disable CS0618 // deliberately not forwarding Target
+		new()
+		{
+			Product = product.ProductId,
+			Versions = product.Versions.Count > 0 ? product.Versions.ToList() : null,
+			Lifecycle = LifecycleToString(product.Lifecycle)
+		};
+#pragma warning restore CS0618
+
 
 	private static BundleDto ToDto(Bundle bundle) => new()
 	{

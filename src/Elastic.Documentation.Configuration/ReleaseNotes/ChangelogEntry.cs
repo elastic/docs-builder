@@ -51,6 +51,26 @@ public record ChangelogEntryDto
 public record ProductInfoDto
 {
 	public string? Product { get; set; }
+
+	/// <summary>
+	/// Obsolete — entries derive applicability from their origin branch; notes use <see cref="Versions"/>.
+	/// Still deserialized for backward compatibility with already-published pool objects.
+	/// </summary>
+	[Obsolete("Entries derive applicability from their origin branch; notes use Versions.")]
 	public string? Target { get; set; }
+
+	/// <summary>
+	/// The releases this note applies to (note-only field). For entries this is always null or empty.
+	/// Expressed in the YAML as a sequence:
+	/// <code>
+	/// versions: [9.3.0, 9.4.0, 9.5.0]
+	/// </code>
+	/// or as a pipe-separated string in the <c>--products</c> CLI flag:
+	/// <code>
+	/// --products 'elasticsearch 9.3.0|9.4.0|9.5.0 ga'
+	/// </code>
+	/// </summary>
+	public List<string>? Versions { get; set; }
+
 	public string? Lifecycle { get; set; }
 }

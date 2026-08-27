@@ -359,6 +359,10 @@ IEnvironmentVariables? env = null
 		if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
 			return false;
 
+		// Entries must not carry version targets; applicability comes from the origin branch
+		if (!_validator.ValidateNoVersionTarget(collector, input))
+			return false;
+
 		// Validate against configuration
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
 			return false;
@@ -454,6 +458,10 @@ IEnvironmentVariables? env = null
 		}
 
 		if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
+			return false;
+
+		// Entries must not carry version targets; applicability comes from the origin branch
+		if (!_validator.ValidateNoVersionTarget(collector, input))
 			return false;
 
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))

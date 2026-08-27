@@ -34,6 +34,7 @@ public sealed class ScrubberProcessor(
 	BundleRegistryReconciler reconciler,
 	ShallowRegistryReconciler shallowReconciler,
 	NotesIndexReconciler notesReconciler,
+	NoteAmendReconciler noteAmendReconciler,
 	ReconcileMetrics? metrics = null
 )
 {
@@ -134,7 +135,8 @@ public sealed class ScrubberProcessor(
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				await notesReconciler.ReconcileRepoAsync(work.Scope, ctx);
+				var notesByVersion = await notesReconciler.ReconcileRepoAsync(work.Scope, ctx);
+				await noteAmendReconciler.ReconcileAsync(work.Scope, notesByVersion, ctx);
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
 			{

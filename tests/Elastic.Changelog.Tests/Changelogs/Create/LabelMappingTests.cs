@@ -51,7 +51,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -340,7 +340,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			// Explicit product takes precedence over label mapping
-			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "kibana" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -404,7 +404,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -495,7 +495,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -691,7 +691,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -748,7 +748,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			FeatureId = "feature:cli-override",
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -803,7 +803,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
@@ -857,7 +857,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};

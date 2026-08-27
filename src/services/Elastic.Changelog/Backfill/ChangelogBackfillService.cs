@@ -461,7 +461,10 @@ public partial class ChangelogBackfillService(
 			Areas = bundled.Areas,
 			Prs = bundled.Prs,
 			Issues = bundled.Issues,
-			Products = [new ProductReference { ProductId = scope.ProductId, Target = version }]
+			// `Target` is obsolete; backfill notes carry their version in `Versions`.
+#pragma warning disable CS0618 // deliberately not populating the obsolete Target
+			Products = [new ProductReference { ProductId = scope.ProductId, Versions = [version] }]
+#pragma warning restore CS0618
 		};
 		return ReleaseNotesSerialization.SerializeEntry(entry);
 	}
