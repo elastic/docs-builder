@@ -59,7 +59,8 @@ public sealed class NoteAmendReconciler(
 	public async Task ReconcileAsync(
 		ChangelogScope notesScope,
 		IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>> notesByVersion,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (notesByVersion.Count == 0)
 			return;
@@ -83,20 +84,21 @@ public sealed class NoteAmendReconciler(
 		}
 
 		// Re-write notes indexes with the updated bundle_seq values.
-		await Parallel.ForEachAsync(
-			notesByVersion,
-			new ParallelOptions { MaxDegreeOfParallelism = MaxParallelWrites, CancellationToken = ctx },
-			async (kvp, ct) =>
-			{
-				var (version, notes) = kvp;
-				var seqs = seqMap[version];
-				var updatedEntries = notes
-					.Select(n => n with { BundleSeq = seqs.TryGetValue(n.Path, out var s) ? s : 0 })
-					.OrderBy(n => n.Path, StringComparer.Ordinal)
-					.ToList<NoteIndexEntry>();
-				var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
-				await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ct);
-			});
+		await Parallel.ForEachAsync(notesByVersion, new ParallelOptions
+		{
+			MaxDegreeOfParallelism = MaxParallelWrites,
+			CancellationToken = ctx
+		}, async (kvp, ct) =>
+		{
+			var (version, notes) = kvp;
+			var seqs = seqMap[version];
+			var updatedEntries = notes
+				.Select(n => n with { BundleSeq = seqs.TryGetValue(n.Path, out var s) ? s : 0 })
+				.OrderBy(n => n.Path, StringComparer.Ordinal)
+				.ToList<NoteIndexEntry>();
+			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
+			await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ct);
+		});
 	}
 
 	// -----------------------------------------------------------------------------------------
@@ -106,12 +108,7 @@ public sealed class NoteAmendReconciler(
 	private async Task<IReadOnlyList<string>> ListBundleProductsAsync(Cancel ctx)
 	{
 		var products = new List<string>();
-		var request = new ListObjectsV2Request
-		{
-			BucketName = publicBucketName,
-			Prefix = ChangelogKeys.BundlePrefix,
-			Delimiter = "/"
-		};
+		var request = new ListObjectsV2Request { BucketName = publicBucketName, Prefix = ChangelogKeys.BundlePrefix, Delimiter = "/" };
 
 		ListObjectsV2Response response;
 		do
@@ -126,7 +123,8 @@ public sealed class NoteAmendReconciler(
 					products.Add(product);
 			}
 			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+		}
+		while (response.IsTruncated == true);
 
 		return products;
 	}
@@ -137,21 +135,20 @@ public sealed class NoteAmendReconciler(
 		string product,
 		IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>> notesByVersion,
 		Dictionary<string, Dictionary<string, int>> seqMap,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Read this product's bundle registry.
 		var registryKey = ChangelogKeys.BundleRegistryKey(product);
 		ChangelogRegistry? registry;
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = registryKey
-			}, ctx);
+			using var response = await s3Client.GetObjectAsync(
+				new GetObjectRequest { BucketName = publicBucketName, Key = registryKey },
+				ctx
+			);
 			await using var stream = response.ResponseStream;
-			registry = await JsonSerializer.DeserializeAsync(
-				stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx);
+			registry = await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx);
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 		{
@@ -172,11 +169,13 @@ public sealed class NoteAmendReconciler(
 			ctx.ThrowIfCancellationRequested();
 
 			// Parent bundle: not an amend file, target matches the version.
-			var parentBundle = registry.Bundles
-				.FirstOrDefault(b =>
-					!string.IsNullOrEmpty(b.File)
-					&& !BundleAmendMerger.IsAmendFile(b.File)
-					&& ChangelogVersionMatch.Matches(version, b.Target, b.File));
+			var parentBundle = registry.Bundles.FirstOrDefault(
+				b => !string.IsNullOrEmpty(b.File) && !BundleAmendMerger.IsAmendFile(b.File) && ChangelogVersionMatch.Matches(
+					version,
+					b.Target,
+					b.File
+				)
+			);
 
 			if (parentBundle is null)
 				continue; // No bundle yet → every note stays at bundle_seq 0.
@@ -194,7 +193,8 @@ public sealed class NoteAmendReconciler(
 		string version,
 		IReadOnlyList<NoteIndexEntry> notes,
 		Dictionary<string, int> seqByPath,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var parentFile = parentRegistryBundle.File!;
 		var parentKey = $"{ChangelogKeys.BundlePrefix}{product}/{parentFile}";
@@ -210,20 +210,20 @@ public sealed class NoteAmendReconciler(
 		{
 			_logger.LogDebug(
 				"Parent bundle {Key} has no file annotations; skipping amend-notes reconcile for version {Version}",
-				parentKey, version);
+				parentKey,
+				version
+			);
 			return;
 		}
 
 		// Read existing numeric amend bundles (in order) to compute the full merged set.
-		var numericAmends = registry.Bundles
-			.Where(b =>
-				!string.IsNullOrEmpty(b.File)
-				&& BundleAmendMerger.IsAmendFile(b.File)
-				&& BundleAmendMerger.GetAmendFileNumber(b.File) > 0
-				&& string.Equals(
-					BundleAmendMerger.GetParentBundlePath(b.File),
-					parentFile,
-					StringComparison.OrdinalIgnoreCase))
+		var numericAmends = registry
+			.Bundles
+			.Where(
+				b => !string.IsNullOrEmpty(b.File) && BundleAmendMerger.IsAmendFile(b.File) && BundleAmendMerger.GetAmendFileNumber(
+					b.File
+				) > 0 && string.Equals(BundleAmendMerger.GetParentBundlePath(b.File), parentFile, StringComparison.OrdinalIgnoreCase)
+			)
 			.OrderBy(b => BundleAmendMerger.GetAmendFileNumber(b.File!))
 			.ToList();
 
@@ -252,6 +252,7 @@ public sealed class NoteAmendReconciler(
 			var leaf = LeafName(note.Path);
 			if (leaf is not null && shippedLeaves.Contains(leaf))
 				seqByPath[note.Path] = 1; // shipped in original bundle or a human amend
+
 			else
 				lateNotes.Add(note);
 		}
@@ -291,7 +292,8 @@ public sealed class NoteAmendReconciler(
 		string org,
 		string repo,
 		IReadOnlyList<NoteIndexEntry> lateNotes,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var entries = new List<BundledEntry>(lateNotes.Count);
 		foreach (var note in lateNotes)
@@ -300,11 +302,7 @@ public sealed class NoteAmendReconciler(
 			var key = $"changelog/{org}/{repo}/{note.Path}";
 			try
 			{
-				using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-				{
-					BucketName = publicBucketName,
-					Key = key
-				}, ctx);
+				using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
 
 				await using var stream = response.ResponseStream;
 				using var reader = new StreamReader(stream);
@@ -315,14 +313,7 @@ public sealed class NoteAmendReconciler(
 				var entry = ReleaseNotesSerialization.ConvertEntry(dto);
 				var checksum = ChangelogBundlingService.ComputeSha1(yaml);
 
-				entries.Add(entry.ToBundledEntry() with
-				{
-					File = new BundledFile
-					{
-						Name = note.Path,
-						Checksum = checksum
-					}
-				});
+				entries.Add(entry.ToBundledEntry() with { File = new BundledFile { Name = note.Path, Checksum = checksum } });
 			}
 			catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 			{
@@ -352,11 +343,10 @@ public sealed class NoteAmendReconciler(
 				string? currentETag = null;
 				try
 				{
-					var head = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
-					{
-						BucketName = publicBucketName,
-						Key = key
-					}, ctx);
+					var head = await s3Client.GetObjectMetadataAsync(
+						new GetObjectMetadataRequest { BucketName = publicBucketName, Key = key },
+						ctx
+					);
 					currentETag = head.ETag;
 				}
 				catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound) { }
@@ -366,11 +356,10 @@ public sealed class NoteAmendReconciler(
 				{
 					try
 					{
-						using var existing = await s3Client.GetObjectAsync(new GetObjectRequest
-						{
-							BucketName = publicBucketName,
-							Key = key
-						}, ctx);
+						using var existing = await s3Client.GetObjectAsync(
+							new GetObjectRequest { BucketName = publicBucketName, Key = key },
+							ctx
+						);
 						await using var existStream = existing.ResponseStream;
 						using var existReader = new StreamReader(existStream);
 						var existingJson = await existReader.ReadToEndAsync(ctx);
@@ -428,19 +417,13 @@ public sealed class NoteAmendReconciler(
 	{
 		try
 		{
-			var head = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
-			{
-				BucketName = publicBucketName,
-				Key = key
-			}, ctx);
+			var head = await s3Client.GetObjectMetadataAsync(
+				new GetObjectMetadataRequest { BucketName = publicBucketName, Key = key },
+				ctx
+			);
 			var etag = head.ETag;
 
-			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = key,
-				IfMatch = etag
-			}, ctx);
+			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key, IfMatch = etag }, ctx);
 			_logger.LogInformation("Deleted stale amend-notes sidecar {Key}", key);
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -466,11 +449,7 @@ public sealed class NoteAmendReconciler(
 	{
 		try
 		{
-			using var response = await s3Client.GetObjectAsync(new GetObjectRequest
-			{
-				BucketName = publicBucketName,
-				Key = key
-			}, ctx);
+			using var response = await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
 			var yaml = await reader.ReadToEndAsync(ctx);

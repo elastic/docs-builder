@@ -11,9 +11,7 @@ public static class LegacyConfParser
 {
 	private static readonly IDeserializer RawDeserializer = new DeserializerBuilder().Build();
 
-	private static readonly ISerializer RoundTripSerializer = new SerializerBuilder()
-		.DisableAliases()
-		.Build();
+	private static readonly ISerializer RoundTripSerializer = new SerializerBuilder().DisableAliases().Build();
 
 	private static readonly IDeserializer TypedDeserializer = new DeserializerBuilder()
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -32,9 +30,7 @@ public static class LegacyConfParser
 
 	private static LegacyConf Flatten(LegacyConf conf)
 	{
-		var flatCategories = conf.Contents
-			.Select(c => c with { Sections = FlattenBooks(c.Sections, "") })
-			.ToList();
+		var flatCategories = conf.Contents.Select(c => c with { Sections = FlattenBooks(c.Sections, "") }).ToList();
 		return conf with { Contents = flatCategories };
 	}
 
@@ -49,9 +45,7 @@ public static class LegacyConfParser
 		{
 			var dir = parentBaseDir.Length > 0 && book.BaseDir.Length > 0
 				? $"{parentBaseDir}/{book.BaseDir}"
-				: parentBaseDir.Length > 0
-					? parentBaseDir
-					: book.BaseDir;
+				: parentBaseDir.Length > 0 ? parentBaseDir : book.BaseDir;
 
 			if (book.Sections.Count > 0)
 			{

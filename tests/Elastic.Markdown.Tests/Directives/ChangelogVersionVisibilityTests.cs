@@ -17,22 +17,25 @@ namespace Elastic.Markdown.Tests.Directives;
 /// (staging), and never filters local/isolated builds or products without a semver versioning
 /// system. The test versions configuration pins stack current to 8.0.0.
 /// </summary>
-public abstract class ChangelogVersionVisibilityTestBase(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+public abstract class ChangelogVersionVisibilityTestBase(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
+	output,
 	// language=markdown
 	"""
 	:::{changelog}
 	:cdn: elasticsearch
 	:::
-	""")
+	"""
+)
 {
 	protected const string ReleasedTitle = "Released change";
 	protected const string UnreleasedTitle = "Unreleased staged change";
 
 	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
-		ChangelogCdnTestResolver.For("elasticsearch",
+		ChangelogCdnTestResolver.For(
+			"elasticsearch",
 			("7.9.0.yaml",
-				// language=yaml
-				"""
+			// language=yaml
+			"""
 				products:
 				- product: elasticsearch
 				  target: 7.9.0
@@ -48,8 +51,8 @@ public abstract class ChangelogVersionVisibilityTestBase(ITestOutputHelper outpu
 				  - "100"
 				"""),
 			("8.1.0.yaml",
-				// language=yaml
-				"""
+			// language=yaml
+			"""
 				products:
 				- product: elasticsearch
 				  target: 8.1.0
@@ -63,7 +66,8 @@ public abstract class ChangelogVersionVisibilityTestBase(ITestOutputHelper outpu
 				    target: 8.1.0
 				  prs:
 				  - "200"
-				"""));
+				""")
+		);
 }
 
 public class ChangelogVisibilityOnProductionTests(ITestOutputHelper output) : ChangelogVersionVisibilityTestBase(output)
@@ -79,8 +83,7 @@ public class ChangelogVisibilityOnProductionTests(ITestOutputHelper output) : Ch
 
 	[Fact]
 	public void EmitsHintForHiddenBundle() =>
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Hint && d.Message.Contains("elasticsearch 8.1.0"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Hint && d.Message.Contains("elasticsearch 8.1.0"));
 }
 
 public class ChangelogVisibilityOnStagingTests(ITestOutputHelper output) : ChangelogVersionVisibilityTestBase(output)
@@ -111,21 +114,24 @@ public class ChangelogVisibilityOnIsolatedBuildTests(ITestOutputHelper output) :
 /// Products without a registered semver versioning system (date-promotion products, products not in
 /// products.yml) are never filtered — their targets are dates or unknown schemes, not stack versions.
 /// </summary>
-public class ChangelogVisibilityUnversionedProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+public class ChangelogVisibilityUnversionedProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
+	output,
 	// language=markdown
 	"""
 	:::{changelog}
 	:cdn: cdn-visibility-unversioned
 	:::
-	""")
+	"""
+)
 {
 	protected override ContentSource? GetContentSource() => ContentSource.Current;
 
 	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
-		ChangelogCdnTestResolver.For("cdn-visibility-unversioned",
+		ChangelogCdnTestResolver.For(
+			"cdn-visibility-unversioned",
 			("9.9.0.yaml",
-				// language=yaml
-				"""
+			// language=yaml
+			"""
 				products:
 				- product: cdn-visibility-unversioned
 				  target: 9.9.0
@@ -139,9 +145,9 @@ public class ChangelogVisibilityUnversionedProductTests(ITestOutputHelper output
 				    target: 9.9.0
 				  prs:
 				  - "300"
-				"""));
+				""")
+		);
 
 	[Fact]
-	public void DoesNotFilterProductsWithoutVersioningSystem() =>
-		Html.Should().Contain("Future-looking change");
+	public void DoesNotFilterProductsWithoutVersioningSystem() => Html.Should().Contain("Future-looking change");
 }

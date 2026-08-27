@@ -9,5 +9,6 @@ public interface ISitemapParser
 	Task<IReadOnlyList<SitemapEntry>> ParseAsync(
 		Uri sitemapUrl,
 		Action<int, int, string>? onProgress = null,
-		CancellationToken ctx = default);
+		CancellationToken ctx = default
+	);
 }

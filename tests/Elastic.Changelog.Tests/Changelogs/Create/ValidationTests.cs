@@ -15,18 +15,9 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 	public async Task CreateChangelog_WithPrOptionButNoLabelMapping_ReturnsError()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Some PR",
-			Labels = ["some-label"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Some PR", Labels = ["some-label"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// Config without pivot.types mapping
 		// language=yaml
@@ -150,8 +141,10 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("invalid-product") && d.Message.Contains("not in available products"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("invalid-product") && d.Message.Contains("not in available products"));
 	}
 
 	[Fact]

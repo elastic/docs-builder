@@ -77,11 +77,7 @@ public class ApiProductSequenceTests
 	{
 		var sequence = new ApiProductSequence
 		{
-			Entries =
-			[
-				new ApiProductEntry { Product = "elasticsearch" },
-				new ApiProductEntry { Product = "kibana" }
-			]
+			Entries = [new ApiProductEntry { Product = "elasticsearch" }, new ApiProductEntry { Product = "kibana" }]
 		};
 
 		sequence.IsValid.Should().BeFalse();
@@ -91,14 +87,13 @@ public class ApiProductSequenceTests
 
 public class ApiConfigurationConverterTests
 {
-	private readonly IDeserializer _deserializer = new DeserializerBuilder()
-		.WithTypeConverter(new ApiConfigurationConverter())
-		.Build();
+	private readonly IDeserializer _deserializer = new DeserializerBuilder().WithTypeConverter(new ApiConfigurationConverter()).Build();
 
 	[Fact]
 	public void AcceptsStrictEntry_WithSpecProductAndChildren()
 	{
-		const string yaml = """
+		const string yaml =
+			"""
 			- spec: elasticsearch-openapi.json
 			  product: elasticsearch
 			  children:
@@ -166,7 +161,8 @@ public class ApiConfigurationConverterTests
 	[Fact]
 	public void SkipsUnknownKeys()
 	{
-		const string yaml = """
+		const string yaml =
+			"""
 			- spec: api.json
 			  product: elasticsearch
 			  unknown_key: some value
@@ -180,7 +176,8 @@ public class ApiConfigurationConverterTests
 	[Fact]
 	public void MultipleEntries_ParseButAreStructurallyInvalid()
 	{
-		const string yaml = """
+		const string yaml =
+			"""
 			- spec: api1.json
 			  product: elasticsearch
 			- spec: api2.json
@@ -196,7 +193,8 @@ public class ApiConfigurationConverterTests
 	[Fact]
 	public void AcceptsRepositoryOverride()
 	{
-		const string yaml = """
+		const string yaml =
+			"""
 			- spec: elasticsearch-openapi.json
 			  product: elasticsearch
 			  repository: elastic/elasticsearch-specification
@@ -253,8 +251,7 @@ public class ApiConfigurationConverterTests
 
 		var act = () => _deserializer.Deserialize<ApiProductSequence>(yaml);
 
-		act.Should().Throw<YamlException>()
-			.WithMessage("*legacy intro/outro shape*");
+		act.Should().Throw<YamlException>().WithMessage("*legacy intro/outro shape*");
 	}
 }
 
@@ -367,10 +364,7 @@ public class ConfigurationFileApiTests
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
-				["elasticsearch"] = new()
-				{
-					Entries = [new ApiProductEntry { Spec = "../../outside.json", Product = "elasticsearch" }]
-				}
+				["elasticsearch"] = new() { Entries = [new ApiProductEntry { Spec = "../../outside.json", Product = "elasticsearch" }] }
 			}
 		};
 
@@ -424,7 +418,10 @@ public class ConfigurationFileApiTests
 		{
 			Api = new Dictionary<string, ApiProductSequence>
 			{
-				["dashboard"] = new() { Entries = [new ApiProductEntry { Spec = "dashboard-openapi.json", Product = "under_score_product" }] }
+				["dashboard"] = new()
+				{
+					Entries = [new ApiProductEntry { Spec = "dashboard-openapi.json", Product = "under_score_product" }]
+				}
 			}
 		};
 
@@ -517,11 +514,7 @@ public class ConfigurationFileApiTests
 			{
 				["elasticsearch"] = new()
 				{
-					Entries =
-					[
-						new ApiProductEntry { Product = "elasticsearch" },
-						new ApiProductEntry { Product = "elasticsearch" }
-					]
+					Entries = [new ApiProductEntry { Product = "elasticsearch" }, new ApiProductEntry { Product = "elasticsearch" }]
 				}
 			}
 		};
@@ -668,13 +661,12 @@ public class ConfigurationFileApiTests
 
 		var (config, collector) = CreateConfiguration(
 			docSetFile,
-			extraMarkdownFiles: ["op-search.md", "tag-documents.md", "random-notes.md"]);
+			extraMarkdownFiles: ["op-search.md", "tag-documents.md", "random-notes.md"]
+		);
 
 		collector.Errors.Should().Be(0);
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs");
-		var excluded = config.ApiConfigurations!["elasticsearch"]
-			.GetMarkdownPathsToExclude(docsRoot)
-			.ToArray();
+		var excluded = config.ApiConfigurations!["elasticsearch"].GetMarkdownPathsToExclude(docsRoot).ToArray();
 
 		excluded.Should().Contain("api/elasticsearch/getting-started.md");
 		excluded.Should().Contain("api/elasticsearch/op-search.md");
@@ -706,7 +698,11 @@ public class ConfigurationFileApiTests
 	private static readonly string[] DefaultProductIds = ["elasticsearch", "kibana"];
 
 	private static (ConfigurationFile Config, DiagnosticsCollector Collector) CreateConfiguration(
-		DocumentationSetFile docSet, string[]? extraProducts = null, bool withLocalSpecFile = true, string[]? extraMarkdownFiles = null)
+		DocumentationSetFile docSet,
+		string[]? extraProducts = null,
+		bool withLocalSpecFile = true,
+		string[]? extraMarkdownFiles = null
+	)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -727,16 +723,10 @@ public class ConfigurationFileApiTests
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-		};
+		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 
 		var productIds = DefaultProductIds.Concat(extraProducts ?? []);
-		var products = productIds.ToDictionary(
-			id => id,
-			id => new Product { Id = id, DisplayName = id },
-			StringComparer.OrdinalIgnoreCase);
+		var products = productIds.ToDictionary(id => id, id => new Product { Id = id, DisplayName = id }, StringComparer.OrdinalIgnoreCase);
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
@@ -752,14 +742,18 @@ public class ConfigurationFileApiTests
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,
-		IDirectoryInfo documentationSourceDirectory)
-		: IDocumentationSetContext
+		IDirectoryInfo documentationSourceDirectory
+	) : IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
 		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(
 			documentationSourceDirectory,
-			new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configurationPath.FullName });
-		public DocumentationWriteFileSystem WriteFileSystem { get; } = new(fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: fileSystem);
+			new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configurationPath.FullName }
+		);
+		public DocumentationWriteFileSystem WriteFileSystem { get; } = new(
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: fileSystem
+		);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

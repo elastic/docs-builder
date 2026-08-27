@@ -24,7 +24,8 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 	private readonly IGitHubPrService _prService = A.Fake<IGitHubPrService>();
 
 	// language=yaml
-	private const string PoolEntry = """
+	private const string PoolEntry =
+		"""
 		title: Curated checked-in title
 		type: feature
 		products:
@@ -43,44 +44,55 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		""";
 
 	private GitHubReleaseChangelogService Service(StubHandler handler) =>
-		new(LoggerFactory, ConfigurationContext, FileSystem, _releaseService, _prService,
-			entryFetcher: new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask));
+		new(
+			LoggerFactory,
+			ConfigurationContext,
+			FileSystem,
+			_releaseService,
+			_prService,
+			entryFetcher: new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask)
+		);
 
 	/// <summary>Pool with a single entry named after PR 12345 (the CI naming scheme).</summary>
-	private static StubHandler PoolWithEntry() => new(req =>
-	{
-		var path = req.RequestUri!.AbsolutePath;
-		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-			return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345.yaml" } ] }""");
-		if (path.EndsWith("12345.yaml", StringComparison.Ordinal))
-			return Yaml(PoolEntry);
-		return new HttpResponseMessage(HttpStatusCode.NotFound);
-	});
+	private static StubHandler PoolWithEntry() =>
+		new(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345.yaml" } ] }"""
+				);
+			if (path.EndsWith("12345.yaml", StringComparison.Ordinal))
+				return Yaml(PoolEntry);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
 
 	private static StubHandler EmptyPool() => new(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 
 	/// <summary>Pool with a single entry named after PR 12345 whose YAML fails to parse.</summary>
-	private static StubHandler PoolWithUnparseableEntry() => new(req =>
-	{
-		var path = req.RequestUri!.AbsolutePath;
-		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-			return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345.yaml" } ] }""");
-		if (path.EndsWith("12345.yaml", StringComparison.Ordinal))
-			return Yaml("title: [unterminated");
-		return new HttpResponseMessage(HttpStatusCode.NotFound);
-	});
+	private static StubHandler PoolWithUnparseableEntry() =>
+		new(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345.yaml" } ] }"""
+				);
+			if (path.EndsWith("12345.yaml", StringComparison.Ordinal))
+				return Yaml("title: [unterminated");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
 
 	private void ArrangeRelease() =>
-		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = ReleaseBody });
+		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(new GitHubReleaseInfo
+		{
+			TagName = "v9.2.0",
+			Name = "9.2.0",
+			Body = ReleaseBody
+		});
 
-	private CreateChangelogsFromReleaseArguments Input(string outputDir, bool createBundle = false) => new()
-	{
-		Repository = "elastic/elasticsearch",
-		Version = "v9.2.0",
-		Output = outputDir,
-		CreateBundle = createBundle
-	};
+	private CreateChangelogsFromReleaseArguments Input(string outputDir, bool createBundle = false) =>
+		new() { Repository = "elastic/elasticsearch", Version = "v9.2.0", Output = outputDir, CreateBundle = createBundle };
 
 	private string OutputDir()
 	{
@@ -95,7 +107,11 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		ArrangeRelease();
 		var outputDir = OutputDir();
 
-		var result = await Service(PoolWithEntry()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(PoolWithEntry()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var entryPath = FileSystem.Path.Join(outputDir, "12345.yaml");
@@ -103,8 +119,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		var content = await FileSystem.File.ReadAllTextAsync(entryPath, TestContext.Current.CancellationToken);
 		content.Should().Contain("Curated checked-in title", "checked-in entries win over synthesis");
 
-		A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
@@ -114,26 +129,38 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		// successful write: ProcessPrReference should still fall through to PR-body extraction /
 		// title fallback, and the PR must still count as an error worth surfacing.
 		ArrangeRelease();
-		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "Just a description of the change, no release-note block.",
-				Labels = [],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "Just a description of the change, no release-note block.",
+			Labels = [],
+			LinkedIssues = []
+		});
 		var outputDir = OutputDir();
 
-		var result = await Service(PoolWithUnparseableEntry()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(PoolWithUnparseableEntry()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
-		FileSystem.File.Exists(FileSystem.Path.Join(outputDir, "12345.yaml")).Should().BeFalse("the malformed pool file is never written verbatim");
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(outputDir, "12345.yaml"))
+			.Should()
+			.BeFalse("the malformed pool file is never written verbatim");
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().ContainSingle("a synthesized entry must exist for the PR despite the unusable pool file");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		content.Should().Contain("Fix query parsing edge case");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be parsed", StringComparison.Ordinal),
-			"the parse failure on the checked-in entry must still be surfaced");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains("could not be parsed", StringComparison.Ordinal),
+				"the parse failure on the checked-in entry must still be surfaced"
+			);
 	}
 
 	[Fact]
@@ -153,19 +180,49 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 
 			**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
 			""";
-		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = sharedBody });
+		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(new GitHubReleaseInfo
+		{
+			TagName = "v9.2.0",
+			Name = "9.2.0",
+			Body = sharedBody
+		});
 
-		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>.That.Matches(u => u.EndsWith("12345", StringComparison.Ordinal)), A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo { Title = "Fix query parsing edge case", Body = "No release note here.", Labels = [], LinkedIssues = [] });
-		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>.That.Matches(u => u.EndsWith("12346", StringComparison.Ordinal)), A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo { Title = "Improve indexing throughput", Body = "No release note here either.", Labels = [], LinkedIssues = [] });
+		_ = A.CallTo(
+			() => _prService.FetchPrInfoAsync(
+				A<string>.That.Matches(u => u.EndsWith("12345", StringComparison.Ordinal)),
+				A<string?>._,
+				A<string?>._,
+				A<Cancel>._
+			)
+		).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "No release note here.",
+			Labels = [],
+			LinkedIssues = []
+		});
+		_ = A.CallTo(
+			() => _prService.FetchPrInfoAsync(
+				A<string>.That.Matches(u => u.EndsWith("12346", StringComparison.Ordinal)),
+				A<string?>._,
+				A<string?>._,
+				A<Cancel>._
+			)
+		).Returns(new GitHubPrInfo
+		{
+			Title = "Improve indexing throughput",
+			Body = "No release note here either.",
+			Labels = [],
+			LinkedIssues = []
+		});
 
 		var handler = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345-12346.yaml" } ] }""");
+				return Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "12345-12346.yaml" } ] }"""
+				);
 			if (path.EndsWith("12345-12346.yaml", StringComparison.Ordinal))
 				return Yaml("title: [unterminated");
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
@@ -186,17 +243,20 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 	public async Task PrBodyReleaseNote_BecomesEntryDescription()
 	{
 		ArrangeRelease();
-		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "Context.\n\n## Release Note\nQueries with trailing wildcards no longer fail.\n\nInternal notes.",
-				Labels = [],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "Context.\n\n## Release Note\nQueries with trailing wildcards no longer fail.\n\nInternal notes.",
+			Labels = [],
+			LinkedIssues = []
+		});
 		var outputDir = OutputDir();
 
-		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -209,17 +269,20 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 	public async Task LinkedIssues_AreCarriedOntoTheEntry()
 	{
 		ArrangeRelease();
-		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "Fixes #999",
-				Labels = [],
-				LinkedIssues = ["https://github.com/elastic/elasticsearch/issues/999"]
-			});
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "Fixes #999",
+			Labels = [],
+			LinkedIssues = ["https://github.com/elastic/elasticsearch/issues/999"]
+		});
 		var outputDir = OutputDir();
 
-		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -231,17 +294,20 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 	public async Task NoReleaseNoteInBody_FallsBackToTitleOnly()
 	{
 		ArrangeRelease();
-		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "Just a description of the change, no release-note block.",
-				Labels = [],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "Just a description of the change, no release-note block.",
+			Labels = [],
+			LinkedIssues = []
+		});
 		var outputDir = OutputDir();
 
-		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -258,7 +324,11 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		ArrangeRelease();
 		var outputDir = OutputDir();
 
-		var result = await Service(PoolWithEntry()).CreateChangelogsFromRelease(Collector, Input(outputDir, createBundle: true), TestContext.Current.CancellationToken);
+		var result = await Service(PoolWithEntry()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir, createBundle: true),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var bundlesDir = FileSystem.Path.Join(outputDir, "bundles");
@@ -277,8 +347,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
 	{
-		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			responder(request);
+		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => responder(request);
 
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
 			Task.FromResult(Send(request, cancellationToken));

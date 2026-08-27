@@ -19,7 +19,9 @@ public class BundleLoaderFromContentTests
 	{
 		var warnings = new List<string>();
 		// language=yaml
-		var bundle = Bundle("9.3.0.yaml", """
+		var bundle = Bundle(
+			"9.3.0.yaml",
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
@@ -31,7 +33,8 @@ public class BundleLoaderFromContentTests
 			      checksum: c0ffee
 			    type: enhancement
 			    title: Sample enhancement
-			""");
+			"""
+		);
 
 		var bundles = _loader.LoadBundlesFromContent([bundle], warnings.Add);
 
@@ -49,7 +52,9 @@ public class BundleLoaderFromContentTests
 	{
 		var warnings = new List<string>();
 		// language=yaml
-		var bundle = Bundle("9.3.0.yaml", """
+		var bundle = Bundle(
+			"9.3.0.yaml",
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
@@ -57,7 +62,8 @@ public class BundleLoaderFromContentTests
 			  - file:
 			      name: orphan.yaml
 			      checksum: deadbeef
-			""");
+			"""
+		);
 
 		var bundles = _loader.LoadBundlesFromContent([bundle], warnings.Add);
 
@@ -78,8 +84,7 @@ public class BundleLoaderFromContentTests
 		var bundles = _loader.LoadBundlesFromContent([bundle], warnings.Add);
 
 		bundles.Should().BeEmpty();
-		warnings.Should().ContainSingle()
-			.Which.Should().Contain("broken.yaml");
+		warnings.Should().ContainSingle().Which.Should().Contain("broken.yaml");
 	}
 
 	[Fact]
@@ -87,28 +92,33 @@ public class BundleLoaderFromContentTests
 	{
 		var warnings = new List<string>();
 		// language=yaml
-		var parent = Bundle("9.3.0.yaml", """
+		var parent = Bundle(
+			"9.3.0.yaml",
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
 			entries:
 			  - type: enhancement
 			    title: Base entry
-			""");
+			"""
+		);
 		// language=yaml
-		var amend = Bundle("9.3.0.amend-1.yaml", """
+		var amend = Bundle(
+			"9.3.0.amend-1.yaml",
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
 			entries:
 			  - type: bug-fix
 			    title: Amended fix
-			""");
+			"""
+		);
 
 		var bundles = _loader.LoadBundlesFromContent([parent, amend], warnings.Add);
 
 		bundles.Should().ContainSingle("the amend file merges into its parent");
-		bundles[0].Entries.Select(e => e.Title)
-			.Should().BeEquivalentTo("Base entry", "Amended fix");
+		bundles[0].Entries.Select(e => e.Title).Should().BeEquivalentTo("Base entry", "Amended fix");
 	}
 }

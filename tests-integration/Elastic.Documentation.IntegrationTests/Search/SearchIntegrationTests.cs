@@ -22,23 +22,31 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 	/// Format: (query, expectedFirstResultUrl)
 	/// Note: These URLs reflect the actual search results from the indexed documentation.
 	/// </summary>
-	public static TheoryData<string, string> SearchQueryTestCases => new()
-	{
-		//TODO these results reflect todays result, we still have some work to do to improve the relevance of the search results
+	public static TheoryData<string, string> SearchQueryTestCases =>
+		new()
+		{
+			//TODO these results reflect todays result, we still have some work to do to improve the relevance of the search results
 
-		// Elasticsearch specific queries
-		{ "elasticsearch getting started", "/docs/reference/elasticsearch/clients/java/getting-started" },
-		{ "apm", "/docs/reference/apm/observability/apm" },
-		{ "kibana dashboard", "/docs/reference/beats/auditbeat/configuration-dashboards" },
-
-		// .NET specific queries (testing dotnet -> net replacement)
-		{ "dotnet client", "/docs/reference/elasticsearch/clients/dotnet/using-net-client" },
-		{ ".net apm agent", "/docs/reference/apm/agents/dotnet" },
-
-		// General queries
-		{ "machine learning", "/docs/reference/machine-learning" },
-		{ "ingest pipeline", "/docs/reference/beats/metricbeat/configuring-ingest-node" },
-	};
+			// Elasticsearch specific queries
+			{
+				"elasticsearch getting started",
+				"/docs/reference/elasticsearch/clients/java/getting-started"
+			},
+			{ "apm", "/docs/reference/apm/observability/apm" },
+			{ "kibana dashboard", "/docs/reference/beats/auditbeat/configuration-dashboards" },
+			// .NET specific queries (testing dotnet -> net replacement)
+			{
+				"dotnet client",
+				"/docs/reference/elasticsearch/clients/dotnet/using-net-client"
+			},
+			{ ".net apm agent", "/docs/reference/apm/agents/dotnet" },
+			// General queries
+			{
+				"machine learning",
+				"/docs/reference/machine-learning"
+			},
+			{ "ingest pipeline", "/docs/reference/beats/metricbeat/configuring-ingest-node" },
+		};
 
 	[Theory]
 	[MemberData(nameof(SearchQueryTestCases))]
@@ -50,12 +58,17 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 		searchFixture.HttpClient.Should().NotBeNull("HTTP client should be initialized");
 
 		// Act
-		var response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1", TestContext.Current.CancellationToken);
+		var response = await searchFixture.HttpClient.GetAsync(
+			$"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1",
+			TestContext.Current.CancellationToken
+		);
 
 		// Assert - Response should be successful
 		response.EnsureSuccessStatusCode();
 
-		var searchResponse = await response.Content.ReadFromJsonAsync<FullSearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var searchResponse = await response.Content.ReadFromJsonAsync<FullSearchResponse>(
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 		searchResponse.Should().NotBeNull("Search response should be deserialized");
 
 		// Log results for debugging
@@ -77,8 +90,10 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 
 		// Assert - First result should match expected URL
 		var actualFirstResultUrl = searchResponse.Results[0].Url;
-		actualFirstResultUrl.Should().Be(expectedFirstResultUrl,
-			$"First result for query '{query}' should be the expected documentation page");
+		actualFirstResultUrl.Should().Be(
+			expectedFirstResultUrl,
+			$"First result for query '{query}' should be the expected documentation page"
+		);
 	}
 
 	[Fact]
@@ -91,14 +106,24 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 		const string query = "elasticsearch";
 
 		// Act - Get first page
-		var page1Response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1", TestContext.Current.CancellationToken);
+		var page1Response = await searchFixture.HttpClient.GetAsync(
+			$"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1",
+			TestContext.Current.CancellationToken
+		);
 		page1Response.EnsureSuccessStatusCode();
-		var page1Data = await page1Response.Content.ReadFromJsonAsync<FullSearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var page1Data = await page1Response.Content.ReadFromJsonAsync<FullSearchResponse>(
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Act - Get second page
-		var page2Response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=2", TestContext.Current.CancellationToken);
+		var page2Response = await searchFixture.HttpClient.GetAsync(
+			$"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=2",
+			TestContext.Current.CancellationToken
+		);
 		page2Response.EnsureSuccessStatusCode();
-		var page2Data = await page2Response.Content.ReadFromJsonAsync<FullSearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var page2Data = await page2Response.Content.ReadFromJsonAsync<FullSearchResponse>(
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		page1Data.Should().NotBeNull();

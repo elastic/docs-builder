@@ -30,9 +30,7 @@ public static class SectionTopNavBuilder
 
 		// Sections with children live in the tree as SectionNavigation nodes and
 		// are looked up by title.
-		var sectionsByTitle = topLevel
-			.OfType<SectionNavigation>()
-			.ToDictionary(s => s.Title, StringComparer.OrdinalIgnoreCase);
+		var sectionsByTitle = topLevel.OfType<SectionNavigation>().ToDictionary(s => s.Title, StringComparer.OrdinalIgnoreCase);
 
 		var items = new List<TopNavRenderItem>();
 
@@ -48,7 +46,8 @@ public static class SectionTopNavBuilder
 				{
 					// Resolve each link URL against the site prefix so hrefs in the template are site-absolute.
 					var sitePrefix = navigation.Url.TrimEnd('/');
-					var links = section.DropdownLinks
+					var links = section
+						.DropdownLinks
 						.Select(l => new TopNavLinkItem(l.Title, sitePrefix + "/" + l.Url.TrimStart('/'), IsExternal: false))
 						.ToArray();
 					items.Add(new TopNavDropdownItem(section.Title, [new TopNavGroup(null, links)]));
@@ -57,14 +56,14 @@ public static class SectionTopNavBuilder
 				{
 					// All pages within the section have NavigationRoot = sectionNav,
 					// so a single SectionId match is sufficient for active-tab detection.
-					var tabUrl = sectionNav.NavigationItems
+					var tabUrl = sectionNav
+						.NavigationItems
 						.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
 						.FirstOrDefault()?.Index.Url;
 
 					if (tabUrl is not null)
 					{
-						items.Add(new TopNavLinkItem(section.Title, tabUrl, IsExternal: false,
-							SectionId: sectionNav.Id));
+						items.Add(new TopNavLinkItem(section.Title, tabUrl, IsExternal: false, SectionId: sectionNav.Id));
 					}
 				}
 			}

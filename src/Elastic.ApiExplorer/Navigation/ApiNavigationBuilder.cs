@@ -27,7 +27,11 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 
 	private readonly ILogger _logger = logger;
 
-	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null)
+	public LandingNavigationItem CreateNavigation(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		ResolvedApiConfiguration? apiConfig = null
+	)
 	{
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix);
 		var rootNavigation = new LandingNavigationItem(url);
@@ -36,7 +40,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		var xTagGroups = OpenApiExtensionReader.ParseXTagGroups(openApiDocument);
 		var orphanTagsLogged = new HashSet<string>(StringComparer.Ordinal);
 
-		var ops = openApiDocument.Paths
+		var ops = openApiDocument
+			.Paths
 			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
 			.Select(pair =>
 			{
@@ -47,23 +52,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 
 				// Fall back to a deterministic route:method key; Guid.NewGuid() made grouping keys
 				// (and thus navigation titles) change on every build.
-				var apiString = ns is null
-					? api ?? op.Value.Summary ?? $"{pair.Path.Key}:{op.Key}" : $"{ns}.{api}";
-				return new
-				{
-					Classification = tagClassification,
-					Api = apiString,
-					Tag = tag,
-					pair.Path,
-					pair.Operation
-				};
+				var apiString = ns is null ? api ?? op.Value.Summary ?? $"{pair.Path.Key}:{op.Key}" : $"{ns}.{api}";
+				return new { Classification = tagClassification, Api = apiString, Tag = tag, pair.Path, pair.Operation };
 			})
 			.ToArray();
 
-		var distinctTagNames = ops
-			.Select(o => o.Tag ?? "unknown")
-			.Distinct()
-			.ToList();
+		var distinctTagNames = ops.Select(o => o.Tag ?? "unknown").Distinct().ToList();
 		var tagNameToUrlSegment = BuildTagMonikerMap(distinctTagNames);
 
 		// intermediate grouping of models to create the navigation tree
@@ -100,16 +94,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				if (!tagMetadataByName.TryGetValue(tagName, out var tagMeta))
 					tagMeta = new OpenApiTagMetadata(tagName, string.Empty, null);
 				if (!tagNameToUrlSegment.TryGetValue(tagName, out var urlSegment))
-					throw new InvalidOperationException(
-						$"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
+					throw new InvalidOperationException($"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
 
-				var tag = new ApiTag(
-					tagName,
-					tagMeta.DisplayName,
-					tagMeta.Description,
-					tagMeta.ExternalDocs,
-					urlSegment,
-					apis);
+				var tag = new ApiTag(tagName, tagMeta.DisplayName, tagMeta.Description, tagMeta.ExternalDocs, urlSegment, apis);
 				tags.Add(tag);
 			}
 
@@ -128,7 +115,13 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
 				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
-				CreateTagNavigationItems(apiUrlSuffix, classification, classificationNavigationItem, classificationNavigationItem, tagNavigationItems);
+				CreateTagNavigationItems(
+					apiUrlSuffix,
+					classification,
+					classificationNavigationItem,
+					classificationNavigationItem,
+					tagNavigationItems
+				);
 				topLevelNavigationItems.Add(classificationNavigationItem);
 				// if there is only a single tag item will be added directly to the classificationNavigationItem, otherwise they will be added to the tagNavigationItems
 				if (classificationNavigationItem.NavigationItems.Count == 0)
@@ -172,7 +165,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		IFileInfo markdownFile,
 		LandingNavigationItem rootNavigation,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		HashSet<string> markdownSlugs)
+		HashSet<string> markdownSlugs
+	)
 	{
 		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(markdownFile);
 
@@ -180,8 +174,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		if (!markdownSlugs.Add(slug))
 		{
 			throw new InvalidOperationException(
-				$"Duplicate markdown slug '{slug}' found in API product '{apiUrlSuffix}'. " +
-				$"File: {markdownFile.FullName}");
+				$"Duplicate markdown slug '{slug}' found in API product '{apiUrlSuffix}'. " + $"File: {markdownFile.FullName}"
+			);
 		}
 
 		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName);
@@ -190,10 +184,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
 
 		// Create simple navigation item - will be handled by regular documentation system
-		var navItem = new SimpleMarkdownNavigationItem(url, title, markdownFile, rootNavigation)
-		{
-			Parent = parent
-		};
+		var navItem = new SimpleMarkdownNavigationItem(url, title, markdownFile, rootNavigation) { Parent = parent };
 
 		return navItem;
 	}
@@ -232,10 +223,14 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				var operationNavigationItems = new List<OperationNavigationItem>();
 				foreach (var operation in endpoint.Operations)
 				{
-					var operationNavigationItem = new OperationNavigationItem(context.UrlPathPrefix, apiUrlSuffix, operation, rootNavigation, endpointNavigationItem)
-					{
-						Hidden = true
-					};
+					var operationNavigationItem = new OperationNavigationItem(
+						context.UrlPathPrefix,
+						apiUrlSuffix,
+						operation,
+						rootNavigation,
+						endpointNavigationItem
+					)
+					{ Hidden = true };
 					operationNavigationItems.Add(operationNavigationItem);
 				}
 				endpointNavigationItem.NavigationItems = operationNavigationItems;
@@ -244,9 +239,14 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			else
 			{
 				var operation = endpoint.Operations.First();
-				var operationNavigationItem = new OperationNavigationItem(context.UrlPathPrefix, apiUrlSuffix, operation, rootNavigation, parentNavigationItem);
+				var operationNavigationItem = new OperationNavigationItem(
+					context.UrlPathPrefix,
+					apiUrlSuffix,
+					operation,
+					rootNavigation,
+					parentNavigationItem
+				);
 				endpointNavigationItems.Add(operationNavigationItem);
-
 			}
 		}
 	}
@@ -267,8 +267,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		var categoryNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
 		// Query DSL - only show QueryContainer (individual queries are shown as properties within it)
-		var queryContainerSchema = schemas
-			.FirstOrDefault(s => s.Key == "_types.query_dsl.QueryContainer");
+		var queryContainerSchema = schemas.FirstOrDefault(s => s.Key == "_types.query_dsl.QueryContainer");
 
 		if (queryContainerSchema.Value is not null)
 		{
@@ -284,11 +283,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		}
 
 		// Aggregations - only show AggregationContainer and Aggregate
-		var aggContainerSchema = schemas
-			.FirstOrDefault(s => s.Key == "_types.aggregations.AggregationContainer");
+		var aggContainerSchema = schemas.FirstOrDefault(s => s.Key == "_types.aggregations.AggregationContainer");
 
-		var aggregateSchema = schemas
-			.FirstOrDefault(s => s.Key == "_types.aggregations.Aggregate");
+		var aggregateSchema = schemas.FirstOrDefault(s => s.Key == "_types.aggregations.Aggregate");
 
 		if (aggContainerSchema.Value is not null || aggregateSchema.Value is not null)
 		{
@@ -299,13 +296,17 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			if (aggContainerSchema.Value is not null)
 			{
 				var apiSchema = new ApiSchema(aggContainerSchema.Key, "AggregationContainer", "aggregations", aggContainerSchema.Value);
-				aggNavigationItems.Add(new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav));
+				aggNavigationItems.Add(
+					new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav)
+				);
 			}
 
 			if (aggregateSchema.Value is not null)
 			{
 				var apiSchema = new ApiSchema(aggregateSchema.Key, "Aggregate", "aggregations", aggregateSchema.Value);
-				aggNavigationItems.Add(new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav));
+				aggNavigationItems.Add(
+					new SchemaNavigationItem(context.UrlPathPrefix, apiUrlSuffix, apiSchema, rootNavigation, aggCategoryNav)
+				);
 			}
 
 			aggCategoryNav.NavigationItems = aggNavigationItems;
@@ -332,7 +333,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			_logger.LogWarning(
 				"OpenAPI tag '{TagName}' is not listed in any x-tagGroups entry; navigation will group it under '{UnknownGroup}'.",
 				tagName,
-				UnknownTagGroupName);
+				UnknownTagGroupName
+			);
 		}
 
 		return UnknownTagGroupName;
@@ -371,7 +373,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			{
 				throw new InvalidOperationException(
 					$"OpenAPI tag URL segment conflict: tags '{existing}' and '{name}' both normalize to the same path segment '{segment}'. " +
-					"Rename one of the tag names in the spec.");
+						"Rename one of the tag names in the spec."
+				);
 			}
 
 			segmentToTagName[segment] = name;

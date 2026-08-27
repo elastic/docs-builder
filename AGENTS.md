@@ -28,7 +28,7 @@ dotnet run --project src/tooling/docs-builder   # run CLI locally
 ./build.sh integrate                            # integration tests (slow — needs cloned repos)
 ./build.sh lint                                 # C# format check (read-only)
 ./build.sh clean                                # remove .artifacts/
-dotnet format                                   # auto-fix C# formatting
+dotnet curb format .                            # auto-fix C# formatting
 dotnet test tests/Elastic.Markdown.Tests/       # single test project
 ```
 
@@ -105,7 +105,16 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 
 ## Code Style
 
-Mechanical formatting is fully enforced by `.editorconfig` and the Husky.Net pre-commit/pre-push hooks — run `dotnet format` or `/lint` to fix before committing. Never use `--no-verify`.
+Mechanical formatting is fully enforced by `.editorconfig` and [curb](https://curb.nullean.net) via the MSBuild integration (auto-rewrites on `dotnet build` in Debug mode) and the Husky.Net pre-commit hook (`curb check`). To fix manually: `dotnet curb format .`. Never use `--no-verify`.
+
+**After a build that produces only errors curb natively handles** (IDE0005, IDE0007, IDE0034, IDE0040, IDE0044, IDE0071, IDE0090, IDE0240, IDE0250, IDE0251), run:
+```bash
+curb cleanup
+```
+If the build also has style errors/warnings outside that set, add `--forward` to hand remaining diagnostics to `dotnet format style`:
+```bash
+curb cleanup --forward
+```
 
 Beyond what `.editorconfig` can check:
 

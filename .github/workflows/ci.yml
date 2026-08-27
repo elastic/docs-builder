@@ -126,12 +126,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Bootstrap Action Workspace
-        id: bootstrap
-        uses: ./.github/actions/bootstrap
-
       - name: Lint
-        run: dotnet run --project build -c release -- lint
+        uses: nullean/curb@c399bcd201b5ca466cfbcf5776825a629abf4f4b # 0.7.1
+        with:
+          command: check
+          path: .
 
   build:
     runs-on: ${{ matrix.os }}

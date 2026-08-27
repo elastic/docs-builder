@@ -33,5 +33,11 @@ public interface IGitHubPrService
 	Task<string?> FetchCommitAuthorAsync(string owner, string repo, string sha, CancellationToken ctx = default);
 
 	/// <summary>Returns the author login of the last commit that touched a file (for manual-edit detection in CI).</summary>
-	Task<string?> FetchLastFileCommitAuthorAsync(string owner, string repo, string filePath, string branch, CancellationToken ctx = default);
+	Task<string?> FetchLastFileCommitAuthorAsync(
+		string owner,
+		string repo,
+		string filePath,
+		string branch,
+		CancellationToken ctx = default
+	);
 }

@@ -20,7 +20,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 {
 	private readonly IGitHubPrService _mockGitHub = A.Fake<IGitHubPrService>();
 
-	private const string ConfigWithProductLabels = """
+	private const string ConfigWithProductLabels =
+		"""
 		pivot:
 		  types:
 		    feature: ">feature"
@@ -52,7 +53,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		string? type = null,
 		string? owner = null,
 		string? repo = null,
-		string? products = null)
+		string? products = null
+	)
 	{
 		var env = A.Fake<IEnvironmentVariables>();
 		A.CallTo(() => env.IsRunningOnCI).Returns(true);
@@ -95,8 +97,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		var result = await service.CreateChangelog(Collector, input, CancellationToken.None);
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync(A<string>._, A<string>._, A<string>._, A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync(A<string>._, A<string>._, A<string>._, A<CancellationToken>._)).MustNotHaveHappened();
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -112,12 +113,11 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		await WriteConfig(ConfigWithProductLabels);
 		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Cache tfconsole lookups and batch terraform console calls",
-				Labels = [">enhancement", "@Product:ECH", "@Product:ESS", "@Public"]
-			});
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Cache tfconsole lookups and batch terraform console calls",
+			Labels = [">enhancement", "@Product:ECH", "@Product:ESS", "@Public"]
+		});
 
 		var env = FakeCIEnv(
 			prNumber: "153344",
@@ -138,8 +138,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		var result = await service.CreateChangelog(Collector, input, CancellationToken.None);
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -155,12 +154,11 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		await WriteConfig(ConfigWithProductLabels);
 		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Cache tfconsole lookups and batch terraform console calls",
-				Labels = [">enhancement", "@Public"]
-			});
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Cache tfconsole lookups and batch terraform console calls",
+			Labels = [">enhancement", "@Public"]
+		});
 
 		var env = FakeCIEnv(
 			prNumber: "153344",
@@ -181,8 +179,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		var result = await service.CreateChangelog(Collector, input, CancellationToken.None);
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().Be(1);
@@ -211,13 +208,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		);
 
 		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
-		var input = new CreateChangelogArguments
-		{
-			Products = [],
-			Config = configPath,
-			Output = output,
-			Concise = true
-		};
+		var input = new CreateChangelogArguments { Products = [], Config = configPath, Output = output, Concise = true };
 
 		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 

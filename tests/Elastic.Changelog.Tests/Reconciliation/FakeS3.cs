@@ -24,8 +24,7 @@ namespace Elastic.Changelog.Tests.Reconciliation;
 internal sealed class FakeS3
 {
 	private readonly Lock _lock = new();
-	private readonly Dictionary<string, Dictionary<string, (string Content, string ETag)>> _buckets =
-		[with(StringComparer.Ordinal)];
+	private readonly Dictionary<string, Dictionary<string, (string Content, string ETag)>> _buckets = [with(StringComparer.Ordinal)];
 
 	public IAmazonS3 Client { get; } = A.Fake<IAmazonS3>();
 
@@ -65,26 +64,30 @@ internal sealed class FakeS3
 		foreach (var bucket in bucketNames)
 			_buckets[bucket] = [with(StringComparer.Ordinal)];
 
-		_ = A.CallTo(() => Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<CancellationToken>._))
-			.ReturnsLazily((ListObjectsV2Request r, CancellationToken _) => List(r));
+		_ = A.CallTo(() => Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<CancellationToken>._)).ReturnsLazily(
+			(ListObjectsV2Request r, CancellationToken _) => List(r)
+		);
 
-		_ = A.CallTo(() => Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
-			.ReturnsLazily((GetObjectRequest r, CancellationToken _) => Get(r));
+		_ = A.CallTo(() => Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(GetObjectRequest r, CancellationToken _) => Get(r)
+		);
 
-		_ = A.CallTo(() => Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._))
-			.ReturnsLazily((GetObjectMetadataRequest r, CancellationToken _) => Head(r));
+		_ = A.CallTo(() => Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(GetObjectMetadataRequest r, CancellationToken _) => Head(r)
+		);
 
-		_ = A.CallTo(() => Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
-			.ReturnsLazily((PutObjectRequest r, CancellationToken _) => Put(r));
+		_ = A.CallTo(() => Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(PutObjectRequest r, CancellationToken _) => Put(r)
+		);
 
-		_ = A.CallTo(() => Client.DeleteObjectAsync(A<DeleteObjectRequest>._, A<CancellationToken>._))
-			.ReturnsLazily((DeleteObjectRequest r, CancellationToken _) => Delete(r));
+		_ = A.CallTo(() => Client.DeleteObjectAsync(A<DeleteObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(DeleteObjectRequest r, CancellationToken _) => Delete(r)
+		);
 	}
 
 	// MD5 is what real S3 uses for single-part ETags.
 	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms")]
-	public static string ETagOf(string content) =>
-		Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(content)));
+	public static string ETagOf(string content) => Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(content)));
 
 	/// <summary>Seeds or replaces an object; returns its (unquoted) ETag.</summary>
 	public string Seed(string bucket, string key, string content)
@@ -123,7 +126,10 @@ internal sealed class FakeS3
 		var objects = new List<S3Object>();
 		var commonPrefixes = new SortedSet<string>(StringComparer.Ordinal);
 
-		foreach (var (key, value) in store.Where(kv => kv.Key.StartsWith(prefix, StringComparison.Ordinal)).OrderBy(kv => kv.Key, StringComparer.Ordinal))
+		foreach (var (key, value) in store.Where(kv => kv.Key.StartsWith(prefix, StringComparison.Ordinal)).OrderBy(
+			kv => kv.Key,
+			StringComparer.Ordinal
+		))
 		{
 			var rest = key[prefix.Length..];
 			var slash = rest.IndexOf('/', StringComparison.Ordinal);
@@ -151,9 +157,7 @@ internal sealed class FakeS3
 			S3Objects = page,
 			CommonPrefixes = [.. commonPrefixes],
 			IsTruncated = truncated,
-			NextContinuationToken = truncated
-				? (start + page.Count).ToString(System.Globalization.CultureInfo.InvariantCulture)
-				: null
+			NextContinuationToken = truncated ? (start + page.Count).ToString(System.Globalization.CultureInfo.InvariantCulture) : null
 		};
 	}
 
@@ -189,10 +193,7 @@ internal sealed class FakeS3
 				throw NotFound();
 		}
 
-		var response = new GetObjectMetadataResponse
-		{
-			ETag = $"\"{obj.ETag}\""
-		};
+		var response = new GetObjectMetadataResponse { ETag = $"\"{obj.ETag}\"" };
 		response.Headers.ContentType = "application/yaml";
 		return response;
 	}
@@ -246,9 +247,7 @@ internal sealed class FakeS3
 		return new DeleteObjectResponse();
 	}
 
-	private static AmazonS3Exception NotFound() =>
-		new("Not Found") { StatusCode = HttpStatusCode.NotFound };
+	private static AmazonS3Exception NotFound() => new("Not Found") { StatusCode = HttpStatusCode.NotFound };
 
-	private static AmazonS3Exception PreconditionFailed() =>
-		new("Precondition Failed") { StatusCode = HttpStatusCode.PreconditionFailed };
+	private static AmazonS3Exception PreconditionFailed() => new("Precondition Failed") { StatusCode = HttpStatusCode.PreconditionFailed };
 }

@@ -19,7 +19,8 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	public TestCrossLinkResolver()
 	{
 		// language=json
-		var json = """
+		var json =
+			"""
 		           {
 		              "content_source": "current",
 		           	  "origin": {
@@ -50,14 +51,17 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		linkReferences.Add("kibana", reference);
 		declaredRepositories.AddRange(["docs-content", "kibana"]);
 
-		var indexEntries = linkReferences.ToDictionary(e => e.Key, e => new LinkRegistryEntry
-		{
-			Repository = e.Key,
-			Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
-			Branch = "main",
-			ETag = Guid.NewGuid().ToString(),
-			GitReference = Guid.NewGuid().ToString()
-		});
+		var indexEntries = linkReferences.ToDictionary(
+			e => e.Key,
+			e => new LinkRegistryEntry
+			{
+				Repository = e.Key,
+				Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
+				Branch = "main",
+				ETag = Guid.NewGuid().ToString(),
+				GitReference = Guid.NewGuid().ToString()
+			}
+		);
 		_crossLinks = new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,

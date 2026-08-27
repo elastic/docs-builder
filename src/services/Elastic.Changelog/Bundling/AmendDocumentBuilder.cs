@@ -19,11 +19,6 @@ public static class AmendDocumentBuilder
 	public static Bundle Build(
 		IReadOnlyList<BundledProduct> parentProducts,
 		IReadOnlyList<BundledEntry> entriesToAdd,
-		IReadOnlyList<BundledEntry> exclusions) =>
-		new()
-		{
-			Products = parentProducts,
-			ExcludeEntries = exclusions,
-			Entries = entriesToAdd
-		};
+		IReadOnlyList<BundledEntry> exclusions
+	) => new() { Products = parentProducts, ExcludeEntries = exclusions, Entries = entriesToAdd };
 }

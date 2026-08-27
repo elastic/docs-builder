@@ -18,7 +18,6 @@ public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper ou
 		_ = root.Should().NotBeNullOrEmpty();
 	}
 
-
 	/// <inheritdoc />
 	public ValueTask DisposeAsync()
 	{

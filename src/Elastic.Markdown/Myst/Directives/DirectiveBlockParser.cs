@@ -79,8 +79,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "csv-table", 33 }
 	}.ToFrozenDictionary();
 
-	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup =
-		UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
+	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup = UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
 
 	protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
 	{
@@ -278,6 +277,5 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		directiveBlock.AddProperty(name, data);
 
 		return BlockState.Continue;
-
 	}
 }

@@ -25,7 +25,6 @@ public static class SharedAttributes
 		["es-serverless"] = "Elasticsearch Serverless",
 		["obs-serverless"] = "Elastic Observability Serverless",
 		["sec-serverless"] = "Elastic Security Serverless",
-
 		// Core products
 		["es"] = "Elasticsearch",
 		["kib"] = "Kibana",
@@ -35,7 +34,6 @@ public static class SharedAttributes
 		["xpack"] = "X-Pack",
 		["es-sql"] = "Elasticsearch SQL",
 		["esql"] = "ES|QL",
-
 		// Beats
 		["auditbeat"] = "Auditbeat",
 		["filebeat"] = "Filebeat",
@@ -45,7 +43,6 @@ public static class SharedAttributes
 		["winlogbeat"] = "Winlogbeat",
 		["functionbeat"] = "Functionbeat",
 		["journalbeat"] = "Journalbeat",
-
 		// Agents and ingest
 		["agent"] = "Elastic Agent",
 		["agents"] = "Elastic Agents",
@@ -53,27 +50,22 @@ public static class SharedAttributes
 		["fleet-server"] = "Fleet Server",
 		["integrations-server"] = "Integrations Server",
 		["integrations"] = "Integrations",
-
 		// Enterprise Search
 		["ents"] = "Enterprise Search",
 		["crawler"] = "Enterprise Search web crawler",
-
 		// Observability
 		["observability"] = "Observability",
-
 		// Security
 		["elastic-sec"] = "Elastic Security",
 		["elastic-defend"] = "Elastic Defend",
 		["elastic-endpoint"] = "Elastic Endpoint",
 		["endpoint-sec"] = "Endpoint Security",
-
 		// ML
 		["ml"] = "machine learning",
 		["ml-cap"] = "Machine learning",
 		["ml-init"] = "ML",
 		["nlp"] = "natural language processing",
 		["nlp-cap"] = "Natural language processing",
-
 		// Features
 		["security"] = "X-Pack security",
 		["security-features"] = "security features",
@@ -86,7 +78,6 @@ public static class SharedAttributes
 		["monitoring"] = "X-Pack monitoring",
 		["reporting"] = "X-Pack reporting",
 		["graph"] = "X-Pack graph",
-
 		// Abbreviations
 		["ccr"] = "cross-cluster replication",
 		["ccr-cap"] = "Cross-cluster replication",
@@ -114,13 +105,11 @@ public static class SharedAttributes
 		["infer-cap"] = "Inference",
 		["search-snaps"] = "searchable snapshots",
 		["search-snaps-cap"] = "Searchable snapshots",
-
 		// Data views
 		["data-source"] = "data view",
 		["data-sources"] = "data views",
 		["data-source-cap"] = "Data view",
 		["data-sources-cap"] = "Data views",
-
 		// Kibana apps
 		["apm-app"] = "APM app",
 		["uptime-app"] = "Uptime app",
@@ -135,7 +124,6 @@ public static class SharedAttributes
 		["stack-monitor-app"] = "Stack Monitoring",
 		["maps-app"] = "Maps",
 		["data-views-app"] = "Data Views",
-
 		// APM agents
 		["apm-agent"] = "APM agent",
 		["apm-go-agent"] = "Elastic APM Go agent",
@@ -146,7 +134,6 @@ public static class SharedAttributes
 		["apm-py-agent"] = "Elastic APM Python agent",
 		["apm-ruby-agent"] = "Elastic APM Ruby agent",
 		["apm-rum-agent"] = "Elastic APM Real User Monitoring (RUM) JavaScript agent",
-
 		// Misc
 		["k8s"] = "Kubernetes",
 		["aws"] = "AWS",
@@ -155,7 +142,6 @@ public static class SharedAttributes
 		["data-viz"] = "Data Visualizer",
 		["feat-imp"] = "feature importance",
 		["feat-imp-cap"] = "Feature importance",
-
 		// Connectors
 		["sn"] = "ServiceNow",
 		["sn-itsm"] = "ServiceNow ITSM",

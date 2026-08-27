@@ -58,13 +58,9 @@ public abstract class CodexViewModel(CodexRenderContext context)
 		var staticPath = $"_static/{path.TrimStart('/')}";
 		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
 
-		var fullPath = string.IsNullOrEmpty(StaticPathPrefix)
-			? $"/{staticPath}"
-			: $"{StaticPathPrefix}/{staticPath}";
+		var fullPath = string.IsNullOrEmpty(StaticPathPrefix) ? $"/{staticPath}" : $"{StaticPathPrefix}/{staticPath}";
 
-		return string.IsNullOrEmpty(contentHash)
-			? fullPath
-			: $"{fullPath}?v={contentHash}";
+		return string.IsNullOrEmpty(contentHash) ? fullPath : $"{fullPath}?v={contentHash}";
 	}
 
 	/// <summary>

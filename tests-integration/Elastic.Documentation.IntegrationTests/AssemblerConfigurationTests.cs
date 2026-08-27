@@ -26,7 +26,11 @@ public class PublicOnlyAssemblerConfigurationTests
 			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
-		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(FileSystem), skipPrivateRepositories: true);
+		var configurationFileProvider = new ConfigurationFileProvider(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(FileSystem),
+			skipPrivateRepositories: true
+		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
@@ -41,10 +45,8 @@ public class PublicOnlyAssemblerConfigurationTests
 		config.PrivateRepositories.Should().NotBeEmpty().And.ContainKey("cloud");
 		var cloud = config.PrivateRepositories["cloud"];
 		cloud.Should().NotBeNull();
-		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("master");
+		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("master");
 	}
-
 }
 
 public class AssemblerConfigurationTests : IAsyncLifetime
@@ -85,8 +87,7 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 	public void ReadsContentSource()
 	{
 		var environments = Context.Configuration.Environments;
-		environments.Should().NotBeEmpty()
-			.And.ContainKey("prod");
+		environments.Should().NotBeEmpty().And.ContainKey("prod");
 
 		var prod = environments["prod"];
 		prod.ContentSource.Should().Be(ContentSource.Current);
@@ -96,19 +97,16 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 	}
 
 	[Fact]
-	public void StagingEnvironment_EnablesAssemblerApiExplorerFlag() =>
-		AssertEnvironmentEnablesAssemblerApiExplorer("staging");
+	public void StagingEnvironment_EnablesAssemblerApiExplorerFlag() => AssertEnvironmentEnablesAssemblerApiExplorer("staging");
 
 	[Fact]
-	public void PreviewEnvironment_EnablesAssemblerApiExplorerFlag() =>
-		AssertEnvironmentEnablesAssemblerApiExplorer("preview");
+	public void PreviewEnvironment_EnablesAssemblerApiExplorerFlag() => AssertEnvironmentEnablesAssemblerApiExplorer("preview");
 
 	private void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{
 		var environment = Context.Configuration.Environments[environmentName];
 
-		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER")
-			.WhoseValue.Should().BeTrue();
+		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
 	}
 
 	[Fact]
@@ -123,8 +121,7 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 	public void ReadsVersions()
 	{
 		var config = Context.Configuration;
-		config.SharedConfigurations.Should().NotBeEmpty()
-			.And.ContainKey("stack");
+		config.SharedConfigurations.Should().NotBeEmpty().And.ContainKey("stack");
 
 		config.SharedConfigurations["stack"].GitReferenceEdge.Should().NotBeNullOrEmpty();
 
@@ -134,20 +131,15 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 
 		// test defaults
 		var apmServer = config.ReferenceRepositories["apm-server"];
-		apmServer.GitReferenceNext.Should().NotBeNullOrEmpty()
-			.And.Be("main");
-		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("main");
-		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty()
-			.And.Be("main");
+		apmServer.GitReferenceNext.Should().NotBeNullOrEmpty().And.Be("main");
+		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("main");
+		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty().And.Be("main");
 
 		var beats = config.ReferenceRepositories["beats"];
-		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.NotBe("main");
+		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.NotBe("main");
 
 		var curator = config.ReferenceRepositories["curator"];
-		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("master");
+		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("master");
 	}
 
 	/// <inheritdoc />

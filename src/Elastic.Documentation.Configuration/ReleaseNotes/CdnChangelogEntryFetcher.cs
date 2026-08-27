@@ -51,12 +51,11 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// leaking a socket handle per fetch, and <see cref="SocketsHttpHandler.PooledConnectionLifetime"/>
 	/// bounds DNS staleness. It is intentionally never disposed — it lives for the lifetime of the process.
 	/// </summary>
-	private static readonly HttpClient SharedHttpClient = new(
-		new SocketsHttpHandler
-		{
-			AutomaticDecompression = DecompressionMethods.All,
-			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-		})
+	private static readonly HttpClient SharedHttpClient = new(new SocketsHttpHandler
+	{
+		AutomaticDecompression = DecompressionMethods.All,
+		PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+	})
 	{ Timeout = FetchTimeout };
 
 	private readonly ILogger _logger;
@@ -75,7 +74,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		ILoggerFactory logFactory,
 		HttpMessageHandler? handler = null,
 		int maxAttempts = DefaultMaxAttempts,
-		Func<TimeSpan, Cancel, Task>? sleep = null)
+		Func<TimeSpan, Cancel, Task>? sleep = null
+	)
 	{
 		_logger = logFactory.CreateLogger<CdnChangelogEntryFetcher>();
 		_maxAttempts = maxAttempts < 1 ? DefaultMaxAttempts : maxAttempts;
@@ -104,7 +104,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		string branch,
 		Action<string> emitError,
 		Action<string> emitWarning,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var poolLabel = $"{org}/{repo}/{branch}";
 
@@ -114,7 +115,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
 		{
 			emitError(
-				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'.");
+				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'."
+			);
 			return [];
 		}
 
@@ -141,7 +143,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		if (registry.SchemaVersion > SupportedSchemaVersion)
 		{
 			emitError(
-				$"Changelog entry registry for '{poolLabel}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
+				$"Changelog entry registry for '{poolLabel}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder."
+			);
 			return [];
 		}
 
@@ -170,7 +173,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			// a genuine propagation/scrub failure — fail rather than ship a bundle missing this entry.
 			emitError(
 				$"Changelog entry '{fileName}' for '{poolLabel}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
-				"The scrubbed copy may not have propagated to the CDN yet; retry shortly, and if it persists check the changelog scrubber pipeline.");
+					"The scrubbed copy may not have propagated to the CDN yet; retry shortly, and if it persists check the changelog scrubber pipeline."
+			);
 			return [];
 		}
 
@@ -191,14 +195,16 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		string branch,
 		IReadOnlyList<string> fileNames,
 		Action<string> emitError,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var poolLabel = $"{org}/{repo}/{branch}";
 
 		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
 		{
 			emitError(
-				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'.");
+				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'."
+			);
 			return null;
 		}
 
@@ -228,7 +234,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			// Explicit path-list request: a miss is a pipeline error (wrong name, not uploaded, or renamed).
 			emitError(
 				$"Changelog entry '{fileName}' for '{poolLabel}' could not be fetched from {entryUri}: {lastError}. " +
-				"Ensure the entry was uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead.");
+					"Ensure the entry was uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead."
+			);
 			hasError = true;
 		}
 
@@ -240,7 +247,12 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// caller knows the entry should exist; 5xx and transport errors use the normal retry budget.
 	/// Permanent client errors (4xx other than 404) also fail immediately without retry.
 	/// </summary>
-	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchNamedEntryAsync(Uri uri, string fileName, string poolLabel, Cancel ctx)
+	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchNamedEntryAsync(
+		Uri uri,
+		string fileName,
+		string poolLabel,
+		Cancel ctx
+	)
 	{
 		string? lastError = null;
 
@@ -253,7 +265,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 				if (notFound)
 					return (false, string.Empty, "404 Not Found — entry does not exist in the pool");
 				if (attempt > 1)
-					_logger.LogInformation("Fetched changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}", fileName, poolLabel, attempt, _maxAttempts);
+					_logger.LogInformation(
+						"Fetched changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}",
+						fileName,
+						poolLabel,
+						attempt,
+						_maxAttempts
+					);
 				return (true, content, null);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
@@ -269,7 +287,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 				var delay = RetryDelay(attempt);
 				_logger.LogDebug(
 					"Changelog entry '{File}' for {Pool} not yet available (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
-					fileName, poolLabel, attempt, _maxAttempts, ex.Message, delay);
+					fileName,
+					poolLabel,
+					attempt,
+					_maxAttempts,
+					ex.Message,
+					delay
+				);
 				await _sleep(delay, ctx).ConfigureAwait(false);
 			}
 		}
@@ -297,8 +321,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// (5xx, timeouts, transport errors) are retried with the same budget as other fetches.
 	/// Unlike <see cref="TryFetchNamedEntryAsync"/>, a 404 here is authoritative-null, not an error.
 	/// </summary>
-	public async Task<CdnChangelogEntry?> FetchPrEntryAsync(
-		Uri baseUri, string org, string repo, string branch, int prNumber, Cancel ctx)
+	public async Task<CdnChangelogEntry?> FetchPrEntryAsync(Uri baseUri, string org, string repo, string branch, int prNumber, Cancel ctx)
 	{
 		var fileName = $"{prNumber}.yaml";
 		var poolSegments = ChangelogKeys.PoolSegments(org, repo, branch);
@@ -310,7 +333,12 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		return fetched ? new CdnChangelogEntry(fileName, content) : null;
 	}
 
-	private async Task<(bool Fetched, string Content, string? LastError)> TryProbeEntryAsync(Uri uri, string fileName, string poolLabel, Cancel ctx)
+	private async Task<(bool Fetched, string Content, string? LastError)> TryProbeEntryAsync(
+		Uri uri,
+		string fileName,
+		string poolLabel,
+		Cancel ctx
+	)
 	{
 		string? lastError = null;
 		for (var attempt = 1; attempt <= _maxAttempts; attempt++)
@@ -322,7 +350,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 				if (notFound)
 					return (false, string.Empty, null); // 404 = probe miss, not an error
 				if (attempt > 1)
-					_logger.LogInformation("Probed changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}", fileName, poolLabel, attempt, _maxAttempts);
+					_logger.LogInformation(
+						"Probed changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}",
+						fileName,
+						poolLabel,
+						attempt,
+						_maxAttempts
+					);
 				return (true, content, null);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
@@ -333,8 +367,15 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 				if (attempt >= _maxAttempts)
 					break;
 				var delay = RetryDelay(attempt);
-				_logger.LogDebug("Probe for changelog entry '{File}' for {Pool} failed (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
-					fileName, poolLabel, attempt, _maxAttempts, ex.Message, delay);
+				_logger.LogDebug(
+					"Probe for changelog entry '{File}' for {Pool} failed (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
+					fileName,
+					poolLabel,
+					attempt,
+					_maxAttempts,
+					ex.Message,
+					delay
+				);
 				await _sleep(delay, ctx).ConfigureAwait(false);
 			}
 		}
@@ -346,7 +387,12 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// up to <see cref="_maxAttempts"/> times with exponential backoff. Retry requests are cache-busted
 	/// so a CloudFront-cached 404 cannot pin the result for the whole window.
 	/// </summary>
-	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchEntryAsync(Uri uri, string fileName, string poolLabel, Cancel ctx)
+	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchEntryAsync(
+		Uri uri,
+		string fileName,
+		string poolLabel,
+		Cancel ctx
+	)
 	{
 		string? lastError = null;
 
@@ -357,7 +403,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			{
 				var content = await FetchTextAsync(uri, attempt, ctx).ConfigureAwait(false);
 				if (attempt > 1)
-					_logger.LogInformation("Fetched changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}", fileName, poolLabel, attempt, _maxAttempts);
+					_logger.LogInformation(
+						"Fetched changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}",
+						fileName,
+						poolLabel,
+						attempt,
+						_maxAttempts
+					);
 				return (true, content, null);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
@@ -369,7 +421,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 				var delay = RetryDelay(attempt);
 				_logger.LogDebug(
 					"Changelog entry '{File}' for {Pool} not yet available (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
-					fileName, poolLabel, attempt, _maxAttempts, ex.Message, delay);
+					fileName,
+					poolLabel,
+					attempt,
+					_maxAttempts,
+					ex.Message,
+					delay
+				);
 				await _sleep(delay, ctx).ConfigureAwait(false);
 			}
 		}
@@ -384,7 +442,9 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
 		_ = response.EnsureSuccessStatusCode();
 		await using var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
-		return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx).ConfigureAwait(false);
+		return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx).ConfigureAwait(
+			false
+		);
 	}
 
 	private async Task<string> FetchTextAsync(Uri uri, int attempt, Cancel ctx)
@@ -446,7 +506,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		string repo,
 		string version,
 		Action<string> emitError,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo))
 		{
@@ -461,7 +522,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			var (notFound, content) = await FetchTextOrNotFoundAsync(indexUri, 1, ctx).ConfigureAwait(false);
 			if (notFound)
 			{
-				_logger.LogDebug("Notes index for {Org}/{Repo}@{Version} not found at {Uri}; no notes to bundle", org, repo, version, indexUri);
+				_logger.LogDebug(
+					"Notes index for {Org}/{Repo}@{Version} not found at {Uri}; no notes to bundle",
+					org,
+					repo,
+					version,
+					indexUri
+				);
 				return [];
 			}
 			index = JsonSerializer.Deserialize(content, NotesIndexJsonContext.Default.NotesIndex);
@@ -486,7 +553,9 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			var slash = poolRelativePath.IndexOf('/', StringComparison.Ordinal);
 			if (slash <= 0 || slash == poolRelativePath.Length - 1)
 			{
-				emitError($"Notes index for {repoLabel}@{version} lists an invalid pool-relative path '{poolRelativePath}'; expected {{branch}}/{{file}}.");
+				emitError(
+					$"Notes index for {repoLabel}@{version} lists an invalid pool-relative path '{poolRelativePath}'; expected {{branch}}/{{file}}."
+				);
 				return [];
 			}
 			var branch = poolRelativePath[..slash];
@@ -512,7 +581,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			// The notes index asserts this note exists — a miss is a real pipeline error.
 			emitError(
 				$"Note '{poolRelativePath}' for {repoLabel}@{version} is listed in the notes index but could not be fetched from {noteUri}: {lastError}. " +
-				"Ensure the note was uploaded and scrubbed; if it persists check the changelog scrubber pipeline.");
+					"Ensure the note was uploaded and scrubbed; if it persists check the changelog scrubber pipeline."
+			);
 			return [];
 		}
 
