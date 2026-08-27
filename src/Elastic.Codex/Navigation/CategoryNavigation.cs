@@ -56,7 +56,8 @@ public class CategoryNavigation(
 	public ILeafNavigationItem<IDocumentationFile> Index { get; } = new CategoryIndexLeaf(
 		new CategoryIndexPage(displayTitle),
 		pathPrefix.TrimEnd('/'),
-		navigationRoot);
+		navigationRoot
+	);
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];

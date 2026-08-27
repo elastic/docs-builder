@@ -9,12 +9,7 @@ using Elastic.Documentation.Extensions;
 namespace Elastic.Documentation.Navigation.Isolated.Node;
 
 [DebuggerDisplay("{Url}")]
-public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INavigationItem>
-	, INavigationHomeAccessor
-	, INavigationHomeProvider
-	, IAssignableIslandNavigation
-	, IAssignableNavigationTitle
-	where TModel : class, IDocumentationFile
+public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider, IAssignableIslandNavigation, IAssignableNavigationTitle where TModel : class, IDocumentationFile
 {
 	public TableOfContentsNavigation(
 		IDirectoryInfo tableOfContentsDirectory,
@@ -107,7 +102,8 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
 
-	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{ParentPath}/index.md", out navigationItems);

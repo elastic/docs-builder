@@ -44,8 +44,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// that match changelogs already in the input directory.
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: PLACEHOLDER
 			  use_local_changelogs: true
@@ -55,7 +54,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			      source: github_release
 			      repo: elasticsearch
 			      output_products: "elasticsearch {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", _changelogDir);
+			""".Replace(
+			"PLACEHOLDER",
+			_changelogDir
+		);
 
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -98,8 +100,9 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			* Second feature by @user2 in https://github.com/elastic/elasticsearch/pull/200
 			""";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -133,8 +136,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// use the clean version "9.2.0" and inferred lifecycle "ga".
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: PLACEHOLDER
 			  use_local_changelogs: true
@@ -144,7 +146,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			      source: github_release
 			      repo: elasticsearch
 			      output_products: "elasticsearch {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", _changelogDir);
+			""".Replace(
+			"PLACEHOLDER",
+			_changelogDir
+		);
 
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -167,8 +172,9 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var releaseBody = "* Some feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
 
 		// Return a tag with a "v" prefix to verify that ExtractBaseVersion strips it
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -207,8 +213,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// run names the file from ExtractBaseVersion(release.TagName), not the raw CLI argument.
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: PLACEHOLDER
 			  use_local_changelogs: true
@@ -218,7 +223,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			      source: github_release
 			      repo: elasticsearch
 			      output_products: "elasticsearch {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", _changelogDir);
+			""".Replace(
+			"PLACEHOLDER",
+			_changelogDir
+		);
 
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -238,8 +246,9 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
 		var releaseBody = "* Some feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -263,8 +272,14 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle();
-		FileSystem.Path.GetFullPath(outputFiles[0]).Should().Be(FileSystem.Path.GetFullPath(plan!.OutputPath!),
-			"plan's output_path must point at the exact file the real bundle run writes");
+		FileSystem
+			.Path
+			.GetFullPath(outputFiles[0])
+			.Should()
+			.Be(
+				FileSystem.Path.GetFullPath(plan!.OutputPath!),
+				"plan's output_path must point at the exact file the real bundle run writes"
+			);
 	}
 
 	[Fact]
@@ -273,8 +288,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Arrange — release notes contain no PR references; expect a warning and no bundle.
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: PLACEHOLDER
 			  use_local_changelogs: true
@@ -283,31 +297,30 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      repo: elasticsearch
-			""".Replace("PLACEHOLDER", _changelogDir);
+			""".Replace(
+			"PLACEHOLDER",
+			_changelogDir
+		);
 
 		var configPath = await CreateConfigAsync(configContent);
 
 		var releaseBody = "No pull requests in this release.";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-gh-release",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-gh-release", ProfileArgument = "9.2.0", Config = configPath };
 
 		// Act
 		var result = await _service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("Should fail when no PR references found in the release");
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("no PR references found"),
-			"Should emit a warning about missing PR references"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("no PR references found"), "Should emit a warning about missing PR references");
 	}
 
 	[Fact]
@@ -328,15 +341,11 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var configPath = await CreateConfigAsync(configContent);
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
-			.Returns((GitHubReleaseInfo?)null);
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
+		).Returns((GitHubReleaseInfo?)null);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-gh-release",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-gh-release", ProfileArgument = "9.2.0", Config = configPath };
 
 		// Act
 		var result = await _service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -352,8 +361,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Arrange — passing "latest" as the version should forward "latest" to FetchReleaseAsync.
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: PLACEHOLDER
 			  use_local_changelogs: true
@@ -363,7 +371,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			      source: github_release
 			      repo: elasticsearch
 			      output_products: "elasticsearch {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", _changelogDir);
+			""".Replace(
+			"PLACEHOLDER",
+			_changelogDir
+		);
 
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -385,8 +396,9 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var releaseBody = "* Latest feature by @user in https://github.com/elastic/elasticsearch/pull/999\n";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -406,8 +418,9 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken)
+		).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
@@ -426,12 +439,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-gh-release",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-gh-release", ProfileArgument = "9.2.0", Config = configPath };
 
 		// Act
 		var result = await _service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -439,10 +447,13 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when no repo is configured");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("requires a GitHub repository name"),
-			"Should emit an error about missing repo"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("requires a GitHub repository name"),
+				"Should emit an error about missing repo"
+			);
 	}
 
 	[Fact]
@@ -464,12 +475,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-gh-release",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-gh-release", ProfileArgument = "9.2.0", Config = configPath };
 
 		// Act
 		var result = await _service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -477,10 +483,13 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when source and products are both configured");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("cannot be combined with a 'products' filter"),
-			"Should emit an error about the mutual exclusivity"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("cannot be combined with a 'products' filter"),
+				"Should emit an error about the mutual exclusivity"
+			);
 	}
 
 	[Fact]
@@ -515,10 +524,13 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when profileReport is provided alongside source: github_release");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("does not accept a third positional argument"),
-			"Should emit an error about the mutual exclusivity with hint to hardcode lifecycle"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("does not accept a third positional argument"),
+				"Should emit an error about the mutual exclusivity with hint to hardcode lifecycle"
+			);
 	}
 
 	[Fact]
@@ -528,8 +540,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// even though ExtractBaseVersion strips the suffix to produce version "9.2.0".
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: PLACEHOLDER
 			  use_local_changelogs: true
@@ -539,7 +550,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			      source: github_release
 			      repo: elasticsearch
 			      output_products: "elasticsearch {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", _changelogDir);
+			""".Replace(
+			"PLACEHOLDER",
+			_changelogDir
+		);
 
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -561,8 +575,9 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var releaseBody = "* Beta feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0-beta.1", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0-beta.1", Name = "9.2.0 beta 1", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0-beta.1", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0-beta.1", Name = "9.2.0 beta 1", Body = releaseBody });
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -597,8 +612,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Arrange — release tag is "v1.34.1-preview.1"; {lifecycle} should be "preview".
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: PLACEHOLDER
 			  use_local_changelogs: true
@@ -608,7 +622,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			      source: github_release
 			      repo: apm-agent-dotnet
 			      output_products: "apm-agent-dotnet {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", _changelogDir);
+			""".Replace(
+			"PLACEHOLDER",
+			_changelogDir
+		);
 
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -630,8 +647,14 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var releaseBody = "* Preview feature by @user in https://github.com/elastic/apm-agent-dotnet/pull/42\n";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "apm-agent-dotnet", "v1.34.1-preview.1", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v1.34.1-preview.1", Name = "1.34.1 preview 1", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync(
+				"elastic",
+				"apm-agent-dotnet",
+				"v1.34.1-preview.1",
+				TestContext.Current.CancellationToken
+			)
+		).Returns(new GitHubReleaseInfo { TagName = "v1.34.1-preview.1", Name = "1.34.1 preview 1", Body = releaseBody });
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -665,8 +688,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Arrange — no repo at profile level; bundle.repo should be used as the fallback.
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  directory: PLACEHOLDER
 			  use_local_changelogs: true
@@ -676,7 +698,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			    es-gh-release:
 			      source: github_release
 			      output_products: "elasticsearch {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", _changelogDir);
+			""".Replace(
+			"PLACEHOLDER",
+			_changelogDir
+		);
 
 		var configPath = await CreateConfigAsync(configContent);
 
@@ -699,8 +724,9 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var releaseBody = "* Some feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
 
 		// Expect the call to use bundle-level repo "elasticsearch" and owner "elastic"
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -720,7 +746,8 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
+		).MustHaveHappenedOnceExactly();
 	}
 }

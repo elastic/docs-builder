@@ -37,12 +37,7 @@ public class ChangelogArtifactMetadataTests
 				Match = MatchMode.Any,
 				ByProduct = new Dictionary<string, CreateRules>
 				{
-					["elasticsearch"] = new()
-					{
-						Labels = ["es:skip"],
-						Mode = FieldMode.Exclude,
-						Match = MatchMode.All
-					}
+					["elasticsearch"] = new() { Labels = ["es:skip"], Mode = FieldMode.Exclude, Match = MatchMode.All }
 				}
 			}
 		};
@@ -144,12 +139,7 @@ public class ChangelogArtifactMetadataTests
 			IsFork = false,
 			CanCommit = true,
 			MaintainerCanModify = false,
-			CreateRules = new CreateRules
-			{
-				Labels = ["skip"],
-				Mode = FieldMode.Include,
-				Match = MatchMode.All
-			}
+			CreateRules = new CreateRules { Labels = ["skip"], Mode = FieldMode.Include, Match = MatchMode.All }
 		};
 
 		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);

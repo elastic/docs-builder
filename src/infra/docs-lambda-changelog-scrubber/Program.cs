@@ -40,16 +40,13 @@ IReadOnlyList<string> BuildAllowlist()
 // run the state-driven reconcile, translate the failed message ids back out, emit metrics.
 async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 {
-	var region = Amazon.RegionEndpoint.GetBySystemName(
-		Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1");
+	var region = Amazon.RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1");
 	var credentials = new Amazon.Runtime.EnvironmentVariablesAWSCredentials();
 
-	using var s3Client = new AmazonS3Client(credentials, new AmazonS3Config
-	{
-		RegionEndpoint = region,
-		Timeout = TimeSpan.FromSeconds(10),
-		MaxErrorRetry = 2
-	});
+	using var s3Client = new AmazonS3Client(
+		credentials,
+		new AmazonS3Config { RegionEndpoint = region, Timeout = TimeSpan.FromSeconds(10), MaxErrorRetry = 2 }
+	);
 
 	using var logFactory = new LambdaLoggerFactory(context.Logger);
 	var metrics = new ReconcileMetrics();
@@ -58,15 +55,24 @@ async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 	var shallowReconciler = new ShallowRegistryReconciler(logFactory, s3Client, publicBucketName, metrics: metrics);
 	var notesReconciler = new NotesIndexReconciler(logFactory, s3Client, publicBucketName, metrics: metrics);
 	var noteAmendReconciler = new NoteAmendReconciler(logFactory, s3Client, publicBucketName, notesReconciler, metrics: metrics);
-	var processor = new ScrubberProcessor(logFactory, s3Client, publicBucketName, scrubber, reconciler, shallowReconciler, notesReconciler, noteAmendReconciler, metrics);
+	var processor = new ScrubberProcessor(
+		logFactory,
+		s3Client,
+		publicBucketName,
+		scrubber,
+		reconciler,
+		shallowReconciler,
+		notesReconciler,
+		noteAmendReconciler,
+		metrics
+	);
 
 	var messages = ev.Records.Select(r => new ScrubberQueueMessage(r.MessageId, r.Body)).ToList();
 	var failedIds = await processor.ProcessAsync(messages, CancellationToken.None);
 
 	EmfMetricsEmitter.Emit(metrics);
 
-	var response = new SQSBatchResponse(
-		[.. failedIds.Select(id => new SQSBatchResponse.BatchItemFailure { ItemIdentifier = id })]);
+	var response = new SQSBatchResponse([.. failedIds.Select(id => new SQSBatchResponse.BatchItemFailure { ItemIdentifier = id })]);
 	if (failedIds.Count > 0)
 		context.Logger.LogInformation("Failed {FailedCount} of {TotalCount} messages", failedIds.Count, ev.Records.Count);
 	return response;

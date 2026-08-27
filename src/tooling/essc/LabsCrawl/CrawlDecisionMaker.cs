@@ -8,9 +8,7 @@ namespace Elastic.SiteSearch.Cli.LabsCrawl;
 
 public class CrawlDecisionMaker(ILogger<CrawlDecisionMaker> logger)
 {
-	public IEnumerable<CrawlDecision> MakeDecisions(
-		IEnumerable<SitemapEntry> sitemapUrls,
-		IReadOnlyDictionary<string, CachedDocInfo> cache)
+	public IEnumerable<CrawlDecision> MakeDecisions(IEnumerable<SitemapEntry> sitemapUrls, IReadOnlyDictionary<string, CachedDocInfo> cache)
 	{
 		foreach (var entry in sitemapUrls)
 		{
@@ -32,9 +30,7 @@ public class CrawlDecisionMaker(ILogger<CrawlDecisionMaker> logger)
 		}
 	}
 
-	public IEnumerable<string> FindStaleUrls(
-		IReadOnlyDictionary<string, CachedDocInfo> cache,
-		IReadOnlySet<string> sitemapUrls)
+	public IEnumerable<string> FindStaleUrls(IReadOnlyDictionary<string, CachedDocInfo> cache, IReadOnlySet<string> sitemapUrls)
 	{
 		foreach (var url in cache.Keys.Where(url => !sitemapUrls.Contains(url)))
 		{

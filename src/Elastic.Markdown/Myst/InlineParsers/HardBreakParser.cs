@@ -24,8 +24,7 @@ public static class HardBreakBuilderExtensions
 
 public class HardBreakBuilderExtension : IMarkdownExtension
 {
-	public void Setup(MarkdownPipelineBuilder pipeline) =>
-		pipeline.InlineParsers.InsertBefore<EmphasisInlineParser>(new HardBreakParser());
+	public void Setup(MarkdownPipelineBuilder pipeline) => pipeline.InlineParsers.InsertBefore<EmphasisInlineParser>(new HardBreakParser());
 
 	public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) =>
 		renderer.ObjectRenderers.InsertAfter<EmphasisInlineRenderer>(new HardBreakRenderer());
@@ -60,6 +59,5 @@ public class HardBreak : LeafInline;
 
 public class HardBreakRenderer : HtmlObjectRenderer<HardBreak>
 {
-	protected override void Write(HtmlRenderer renderer, HardBreak obj) =>
-		renderer.Write("<br>");
+	protected override void Write(HtmlRenderer renderer, HardBreak obj) => renderer.Write("<br>");
 }

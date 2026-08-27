@@ -20,18 +20,11 @@ public class ApiVersionSwitcherTests
 	[Fact]
 	public void Build_MultipleVersions_OrdersLatestFirstAndMarksCurrent()
 	{
-		var items = ApiVersionSwitcher.Build(
-			"",
-			"elasticsearch",
-			["main", "9", "8"],
-			"8");
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "8");
 
 		items.Should().HaveCount(3);
 		items.Select(i => i.Label).Should().Equal("Latest", "9.x", "8.x");
-		items.Select(i => i.Url).Should().Equal(
-			"/api/doc/elasticsearch/",
-			"/api/doc/elasticsearch/v9/",
-			"/api/doc/elasticsearch/v8/");
+		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch/", "/api/doc/elasticsearch/v9/", "/api/doc/elasticsearch/v8/");
 		items.Single(i => i.Selected).Label.Should().Be("8.x");
 	}
 }

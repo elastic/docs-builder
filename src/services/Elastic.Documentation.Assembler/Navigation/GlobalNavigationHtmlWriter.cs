@@ -12,7 +12,11 @@ using RazorSlices;
 namespace Elastic.Documentation.Assembler.Navigation;
 
 #pragma warning disable CS9113 // collector kept for binary-compatibility; no longer used internally
-public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigation globalNavigation, IDiagnosticsCollector collector) : INavigationHtmlWriter
+public class GlobalNavigationHtmlWriter(
+	ILoggerFactory logFactory,
+	SiteNavigation globalNavigation,
+	IDiagnosticsCollector collector
+) : INavigationHtmlWriter
 #pragma warning restore CS9113
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GlobalNavigationHtmlWriter>();
@@ -52,5 +56,6 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			isUsingNavigationDropdown: globalNavigation.TopNav is null,
 			isPrimaryNavEnabled: true,
 			isGlobalAssemblyBuild: true,
-			navigationPreviewEnabled: globalNavigation.TopNav is not null);
+			navigationPreviewEnabled: globalNavigation.TopNav is not null
+		);
 }

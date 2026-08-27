@@ -59,13 +59,25 @@ internal sealed class AssembleOneShotCommand(
 			AssumeCloned = assumeCloned
 		};
 		var cloneService = new AssemblerCloneService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(cloneService, cloneOptions, buildOptions.Strict ?? false,
+		serviceInvoker.AddCommand(
+			cloneService,
+			cloneOptions,
+			buildOptions.Strict ?? false,
 			static async (s, col, opts, ctx) => await s.CloneAll(col, opts, ctx)
 		);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
-		serviceInvoker.AddCommand(buildService, (buildOptions, fs), buildOptions.Strict ?? false,
+		var buildService = new AssemblerBuildService(
+			logFactory,
+			assemblyConfiguration,
+			configurationContext,
+			githubActionsService,
+			environmentVariables
+		);
+		serviceInvoker.AddCommand(
+			buildService,
+			(buildOptions, fs),
+			buildOptions.Strict ?? false,
 			static async (s, col, state, ctx) => await s.BuildAll(col, state.buildOptions, state.fs, ctx)
 		);
 		var result = await serviceInvoker.InvokeAsync(ct);
@@ -123,13 +135,13 @@ internal sealed class AssemblerCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var options = new AssemblerCloneOptions
 		{
-			Strict = strict, Environment = environment,
-			FetchLatest = fetchLatest, AssumeCloned = assumeCloned
+			Strict = strict,
+			Environment = environment,
+			FetchLatest = fetchLatest,
+			AssumeCloned = assumeCloned
 		};
 		var service = new AssemblerCloneService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(service, options, strict ?? false,
-			static async (s, col, opts, ctx) => await s.CloneAll(col, opts, ctx)
-		);
+		serviceInvoker.AddCommand(service, options, strict ?? false, static async (s, col, opts, ctx) => await s.CloneAll(col, opts, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
@@ -140,15 +152,21 @@ internal sealed class AssemblerCommands(
 	/// </remarks>
 	[CommandIntent(Intent.Idempotent)]
 	[NoOptionsInjection]
-	public async Task<int> Build(
-		[AsParameters] AssemblerBuildOptions options,
-		CancellationToken ct = default
-	)
+	public async Task<int> Build([AsParameters] AssemblerBuildOptions options, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
-		serviceInvoker.AddCommand(service, (options, fs), options.Strict ?? false,
+		var service = new AssemblerBuildService(
+			logFactory,
+			assemblyConfiguration,
+			configurationContext,
+			githubActionsService,
+			environmentVariables
+		);
+		serviceInvoker.AddCommand(
+			service,
+			(options, fs),
+			options.Strict ?? false,
 			static async (s, col, state, ctx) => await s.BuildAll(col, state.options, state.fs, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
@@ -158,9 +176,12 @@ internal sealed class AssemblerCommands(
 	/// <remarks>Run after <c>assembler build</c>. Does not watch for file changes.</remarks>
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="path">Path to the built site. Defaults to <c>.artifacts/docs/</c>.</param>
-
 	[NoOptionsInjection]
-	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
+	public async Task Serve(
+		int port = 4000,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null,
+		CancellationToken ct = default
+	)
 	{
 		var host = new StaticWebHost(port, path?.FullName);
 		await host.RunAsync(ct);

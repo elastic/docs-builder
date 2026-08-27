@@ -12,10 +12,7 @@ namespace Elastic.ApiExplorer.Tests.Supplemental;
 public class ApiSupplementalDocTests
 {
 	[Fact]
-	public void Parse_Null_ReturnsNull()
-	{
-		ApiSupplementalDoc.Parse(null).Should().BeNull();
-	}
+	public void Parse_Null_ReturnsNull() => ApiSupplementalDoc.Parse(null).Should().BeNull();
 
 	[Fact]
 	public void Parse_FrontMatterOnly_PreservesFrontMatterWithNullDescription()
@@ -41,7 +38,8 @@ public class ApiSupplementalDocTests
 	[Fact]
 	public void Parse_NoHeadings_EntireBodyIsDescription()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			The search API returns hits that match the query.
 
 			It supports aggregations.
@@ -69,7 +67,8 @@ public class ApiSupplementalDocTests
 	[Fact]
 	public void Parse_NoHeadingsWithFrontMatter_StripsFrontMatterFromDescription()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			---
 			description: Metadata description.
 			---
@@ -88,7 +87,8 @@ public class ApiSupplementalDocTests
 	[Fact]
 	public void Parse_DescriptionHeading_IsolatesDescriptionFromOtherSections()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			## Description
 
 			The search API returns hits that match the query.
@@ -102,14 +102,20 @@ public class ApiSupplementalDocTests
 
 		doc.Should().NotBeNull();
 		doc.Description.Should().Be("The search API returns hits that match the query.");
-		doc.PostSections.Should().ContainSingle()
-			.Which.Should().Be(new ApiSupplementalSection("Usage examples", "Use `search_after` for deep pagination."));
+		doc
+			.PostSections
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Be(new ApiSupplementalSection("Usage examples", "Use `search_after` for deep pagination."));
 	}
 
 	[Fact]
 	public void Parse_ParametersHeading_MapsDefinitionList()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			## Parameters
 
 			: `allow_no_indices`
@@ -131,7 +137,8 @@ public class ApiSupplementalDocTests
 	[Fact]
 	public void Parse_QueryAndPathParameterHeadings_ShareOneMap()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			## Query parameters
 
 			: `q`
@@ -154,7 +161,8 @@ public class ApiSupplementalDocTests
 	[Fact]
 	public void Parse_RequestBodyHeading_MapsDefinitionList()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			## Request body
 
 			: `query`
@@ -176,7 +184,8 @@ public class ApiSupplementalDocTests
 	[Fact]
 	public void Parse_BacktickAndBareName_ProduceSameKey()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			## Parameters
 
 			: `allow_no_indices`
@@ -189,15 +198,15 @@ public class ApiSupplementalDocTests
 		var doc = ApiSupplementalDoc.Parse(raw);
 
 		doc.Should().NotBeNull();
-		doc.ParameterOverrides.Should().ContainSingle()
-			.Which.Key.Should().Be("allow_no_indices");
+		doc.ParameterOverrides.Should().ContainSingle().Which.Key.Should().Be("allow_no_indices");
 		doc.ParameterOverrides["allow_no_indices"].Should().Be("Bare form.");
 	}
 
 	[Fact]
 	public void Parse_UnrecognizedHeadings_CollectInDocumentOrder()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			## Description
 
 			Operation description.
@@ -215,15 +224,20 @@ public class ApiSupplementalDocTests
 
 		doc.Should().NotBeNull();
 		doc.Description.Should().Be("Operation description.");
-		doc.PostSections.Should().Equal(
-			new ApiSupplementalSection("Best practices", "Avoid deep pagination."),
-			new ApiSupplementalSection("Common patterns", "Use filters with aggregations."));
+		doc
+			.PostSections
+			.Should()
+			.Equal(
+				new ApiSupplementalSection("Best practices", "Avoid deep pagination."),
+				new ApiSupplementalSection("Common patterns", "Use filters with aggregations.")
+			);
 	}
 
 	[Fact]
 	public void Parse_TagStyleFile_LeavesOverrideMapsEmpty()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			## Description
 
 			Machine learning anomaly detection APIs.
@@ -239,14 +253,20 @@ public class ApiSupplementalDocTests
 		doc.Description.Should().Be("Machine learning anomaly detection APIs.");
 		doc.ParameterOverrides.Should().BeEmpty();
 		doc.RequestBodyOverrides.Should().BeEmpty();
-		doc.PostSections.Should().ContainSingle()
-			.Which.Should().Be(new ApiSupplementalSection("Getting started", "Create a job, then open it."));
+		doc
+			.PostSections
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Be(new ApiSupplementalSection("Getting started", "Create a job, then open it."));
 	}
 
 	[Fact]
 	public void Parse_NestedH3_DoesNotStartNewSection()
 	{
-		const string raw = """
+		const string raw =
+			"""
 			## Usage examples
 
 			Intro.
@@ -269,12 +289,14 @@ public class ApiSupplementalDocTests
 	public void DescriptionOr_PrefersSupplementalThenSpec()
 	{
 		var withDescription = ApiSupplementalDoc.Parse("Override text");
-		var parametersOnly = ApiSupplementalDoc.Parse("""
+		var parametersOnly = ApiSupplementalDoc.Parse(
+			"""
 			## Parameters
 
 			: `q`
 			  Query override.
-			""");
+			"""
+		);
 
 		withDescription!.DescriptionOr("spec").Should().Be("Override text");
 		withDescription.DescriptionOr(null).Should().Be("Override text");

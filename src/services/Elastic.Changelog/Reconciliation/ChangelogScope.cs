@@ -57,16 +57,13 @@ public sealed record ChangelogScope
 	};
 
 	/// <summary>The S3 key of this scope's <c>registry.json</c> manifest (bundle and changelog scopes only).</summary>
-	public string RegistryKey => Kind == ChangelogScopeKind.Bundle
-		? ChangelogKeys.BundleRegistryKey(Group)
-		: ChangelogKeys.ChangelogRegistryKey(Group);
+	public string RegistryKey =>
+		Kind == ChangelogScopeKind.Bundle ? ChangelogKeys.BundleRegistryKey(Group) : ChangelogKeys.ChangelogRegistryKey(Group);
 
 	/// <summary>Creates a bundle scope for <paramref name="product"/>; false when the segment is invalid.</summary>
 	public static bool TryCreateBundle(string? product, [NotNullWhen(true)] out ChangelogScope? scope)
 	{
-		scope = ChangelogKeys.IsValidProduct(product)
-			? new ChangelogScope(ChangelogScopeKind.Bundle, product)
-			: null;
+		scope = ChangelogKeys.IsValidProduct(product) ? new ChangelogScope(ChangelogScopeKind.Bundle, product) : null;
 		return scope is not null;
 	}
 

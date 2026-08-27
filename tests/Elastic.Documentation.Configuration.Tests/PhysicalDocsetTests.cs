@@ -13,7 +13,8 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void CliReferenceRefReadsTitleOverrides()
 	{
-		const string yaml = """
+		const string yaml =
+			"""
 			project: test
 			toc:
 			  - cli: cli/schema.json
@@ -101,7 +102,10 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var documentationFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "documentation");
+		var documentationFolder = docSet
+			.TableOfContents
+			.OfType<FolderRef>()
+			.First(f => f.PathRelativeToDocumentationSet == "documentation");
 		documentationFolder.Children.Should().NotBeEmpty();
 
 		var nestedFolders = documentationFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
@@ -123,7 +127,9 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var fileWithChildren = docSet.TableOfContents.OfType<FileRef>()
+		var fileWithChildren = docSet
+			.TableOfContents
+			.OfType<FileRef>()
 			.FirstOrDefault(f => f.PathRelativeToDocumentationSet == "cross-links.md" && f.Children.Count > 0);
 
 		fileWithChildren.Should().NotBeNull();

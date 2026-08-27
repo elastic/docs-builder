@@ -20,8 +20,7 @@ public class ButtonGroupBlock(DirectiveBlockParser parser, ParserContext context
 	/// </summary>
 	public string Align { get; private set; } = "left";
 
-	public override void FinalizeAndValidate(ParserContext context) =>
-		Align = Prop("align") ?? "left";
+	public override void FinalizeAndValidate(ParserContext context) => Align = Prop("align") ?? "left";
 }
 
 /// <summary>
@@ -101,7 +100,9 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 		// Check if content matches the link pattern
 		if (!LinkPattern().IsMatch(content))
 		{
-			this.EmitError("Button directive must contain only a single Markdown link. Use: :::{button}\n[text](url)\n:::\nOr: :::{button}\n[text][ref]\n:::");
+			this.EmitError(
+				"Button directive must contain only a single Markdown link. Use: :::{button}\n[text](url)\n:::\nOr: :::{button}\n[text][ref]\n:::"
+			);
 		}
 	}
 

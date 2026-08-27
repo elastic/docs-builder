@@ -13,7 +13,8 @@ public class NavigationCurrentMarkerTests
 	[Fact]
 	public void Apply_MatchingSidebarLink_AddsCurrent()
 	{
-		const string html = """
+		const string html =
+			"""
 		                    <a href="/getting-started/installation" class="sidebar-link nav-link nav-v2-link">
 		                    	<span>Installation</span>
 		                    </a>
@@ -37,7 +38,8 @@ public class NavigationCurrentMarkerTests
 	[Fact]
 	public void Apply_PrefixUrl_DoesNotMatch()
 	{
-		const string html = """
+		const string html =
+			"""
 		                    <a href="/getting-started" class="sidebar-link nav-folder-link nav-v2-link">Started</a>
 		                    <a href="/getting-started/installation" class="sidebar-link nav-link nav-v2-link">Install</a>
 		                    """;

@@ -30,23 +30,20 @@ public class OpenApiOperationIdSearchTitleTests
 		}
 	};
 
-	private static OpenApiDocument CreateBulkSpec() => new()
-	{
-		Paths = new OpenApiPaths
+	private static OpenApiDocument CreateBulkSpec() =>
+		new()
 		{
-			["/_bulk"] = new OpenApiPathItem
+			Paths = new OpenApiPaths
 			{
-				Operations = new Dictionary<HttpMethod, OpenApiOperation>
+				["/_bulk"] = new OpenApiPathItem
 				{
-					[HttpMethod.Put] = new OpenApiOperation
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
 					{
-						OperationId = "_bulk",
-						Summary = "Bulk index or delete documents"
+						[HttpMethod.Put] = new OpenApiOperation { OperationId = "_bulk", Summary = "Bulk index or delete documents" }
 					}
 				}
 			}
-		}
-	};
+		};
 
 	[Fact]
 	public void BulkOperation_SearchTitleContainsTheRawOperationIdWithUnderscore()
@@ -63,30 +60,30 @@ public class OpenApiOperationIdSearchTitleTests
 		doc.SearchTitle.Should().Contain("_bulk");
 	}
 
-	private static OpenApiDocument CreateSpecWithSummaryWhitespace(string summary) => new()
-	{
-		Paths = new OpenApiPaths
+	private static OpenApiDocument CreateSpecWithSummaryWhitespace(string summary) =>
+		new()
 		{
-			["/_bulk"] = new OpenApiPathItem
+			Paths = new OpenApiPaths
 			{
-				Operations = new Dictionary<HttpMethod, OpenApiOperation>
+				["/_bulk"] = new OpenApiPathItem
 				{
-					[HttpMethod.Put] = new OpenApiOperation
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
 					{
-						OperationId = "_bulk",
-						Summary = summary
+						[HttpMethod.Put] = new OpenApiOperation { OperationId = "_bulk", Summary = summary }
 					}
 				}
 			}
-		}
-	};
+		};
 
 	[Fact]
 	public void Operation_SummaryWithTrailingNewline_DoesNotLeakIntoTitleOrSearchTitle()
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(
+			CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"),
+			"elasticsearch"
+		).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];

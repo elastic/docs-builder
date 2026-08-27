@@ -16,8 +16,11 @@ internal enum KvsOperation
 	Deletes
 }
 
-public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, ILoggerFactory logFactory, IDirectoryInfo workingDirectory)
-	: ExternalCommandExecutor(collector, workingDirectory)
+public class AwsCloudFrontKeyValueStoreProxy(
+	IDiagnosticsCollector collector,
+	ILoggerFactory logFactory,
+	IDirectoryInfo workingDirectory
+) : ExternalCommandExecutor(collector, workingDirectory)
 {
 	/// <inheritdoc />
 	protected override ILogger Logger { get; } = logFactory.CreateLogger<AwsCloudFrontKeyValueStoreProxy>();
@@ -41,9 +44,7 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 
 		if (noDelete)
 		{
-			toPut = sourcedRedirects
-				.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value })
-				.ToArray();
+			toPut = sourcedRedirects.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value }).ToArray();
 			toDelete = [];
 		}
 		else
@@ -54,16 +55,23 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 
 			if (RedirectKvsDiff.WouldWipeAllExisting(sourcedRedirects, existingRedirects))
 			{
-				Collector.EmitError("", $"Refusing to update redirects: sourced redirects are empty but the KVS contains {existingRedirects.Count} entries. " +
-					"This would wipe every redirect. Verify the assembler produced a non-empty redirects.json before retrying.");
+				Collector.EmitError(
+					"",
+					$"Refusing to update redirects: sourced redirects are empty but the KVS contains {existingRedirects.Count} entries. " +
+						"This would wipe every redirect. Verify the assembler produced a non-empty redirects.json before retrying."
+				);
 				return;
 			}
 
 			(toPut, toDelete) = RedirectKvsDiff.ComputeBatchUpdates(sourcedRedirects, existingRedirects);
 		}
 
-		Logger.LogInformation("Computed redirect KVS diff: {ToPut} to put, {ToDelete} to delete (noDelete={NoDelete})",
-			toPut.Length, toDelete.Length, noDelete);
+		Logger.LogInformation(
+			"Computed redirect KVS diff: {ToPut} to put, {ToDelete} to delete (noDelete={NoDelete})",
+			toPut.Length,
+			toDelete.Length,
+			noDelete
+		);
 
 		if (toDelete.Length > 0)
 			eTag = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
@@ -84,7 +92,10 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 				return string.Empty;
 			}
 
-			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
+			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(
+				concatJson,
+				AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse
+			);
 			if (describeResponse?.KeyValueStore is { ARN.Length: > 0 })
 				return describeResponse.KeyValueStore.ARN;
 
@@ -110,7 +121,10 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 				Collector.EmitError("", "The output from cloudfront-keyvaluestore:describe-key-value-store was empty");
 				return string.Empty;
 			}
-			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse);
+			var describeResponse = JsonSerializer.Deserialize<DescribeKeyValueStoreResponse>(
+				concatJson,
+				AwsCloudFrontKeyValueStoreJsonContext.Default.DescribeKeyValueStoreResponse
+			);
 			if (describeResponse?.ETag is not null)
 				return describeResponse.ETag;
 
@@ -141,7 +155,10 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 					Collector.EmitError("", "The output from cloudfront-keyvaluestore:list-keys was empty");
 					throw new JsonException("Empty output from cloudfront-keyvaluestore:list-keys");
 				}
-				var response = JsonSerializer.Deserialize<ListKeysResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.ListKeysResponse);
+				var response = JsonSerializer.Deserialize<ListKeysResponse>(
+					concatJson,
+					AwsCloudFrontKeyValueStoreJsonContext.Default.ListKeysResponse
+				);
 
 				if (response?.Items != null)
 				{
@@ -150,7 +167,8 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 				}
 
 				nextToken = response?.NextToken;
-			} while (!string.IsNullOrEmpty(nextToken));
+			}
+			while (!string.IsNullOrEmpty(nextToken));
 		}
 		catch (Exception e)
 		{
@@ -160,29 +178,45 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		return true;
 	}
 
-
-	private string ProcessBatchUpdates(
-		string kvsArn,
-		string eTag,
-		IReadOnlyCollection<object> items,
-		KvsOperation operation)
+	private string ProcessBatchUpdates(string kvsArn, string eTag, IReadOnlyCollection<object> items, KvsOperation operation)
 	{
 		const int batchSize = 50;
-		Logger.LogInformation("Processing {Count} items in batches of {BatchSize} for {Operation} update operation.", items.Count, batchSize, operation);
+		Logger.LogInformation(
+			"Processing {Count} items in batches of {BatchSize} for {Operation} update operation.",
+			items.Count,
+			batchSize,
+			operation
+		);
 		try
 		{
 			foreach (var batch in items.Chunk(batchSize))
 			{
 				var payload = operation switch
 				{
-					KvsOperation.Puts => JsonSerializer.Serialize(batch.Cast<PutKeyRequestListItem>().ToList(),
-						AwsCloudFrontKeyValueStoreJsonContext.Default.ListPutKeyRequestListItem),
-					KvsOperation.Deletes => JsonSerializer.Serialize(batch.Cast<DeleteKeyRequestListItem>().ToList(),
-						AwsCloudFrontKeyValueStoreJsonContext.Default.ListDeleteKeyRequestListItem),
+					KvsOperation.Puts =>
+						JsonSerializer.Serialize(
+							batch.Cast<PutKeyRequestListItem>().ToList(),
+							AwsCloudFrontKeyValueStoreJsonContext.Default.ListPutKeyRequestListItem
+						),
+					KvsOperation.Deletes =>
+						JsonSerializer.Serialize(
+							batch.Cast<DeleteKeyRequestListItem>().ToList(),
+							AwsCloudFrontKeyValueStoreJsonContext.Default.ListDeleteKeyRequestListItem
+						),
 					_ => string.Empty
 				};
-				var responseJson = CaptureMultiple(1, "aws", "cloudfront-keyvaluestore", "update-keys", "--kvs-arn", kvsArn, "--if-match", eTag,
-					$"--{operation.ToString().ToLowerInvariant()}", payload);
+				var responseJson = CaptureMultiple(
+					1,
+					"aws",
+					"cloudfront-keyvaluestore",
+					"update-keys",
+					"--kvs-arn",
+					kvsArn,
+					"--if-match",
+					eTag,
+					$"--{operation.ToString().ToLowerInvariant()}",
+					payload
+				);
 
 				var concatJson = string.Concat(responseJson);
 				if (string.IsNullOrWhiteSpace(concatJson))
@@ -191,7 +225,10 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 					throw new JsonException("Empty output from cloudfront-keyvaluestore:update-keys");
 				}
 
-				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(concatJson, AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse);
+				var updateResponse = JsonSerializer.Deserialize<UpdateKeysResponse>(
+					concatJson,
+					AwsCloudFrontKeyValueStoreJsonContext.Default.UpdateKeysResponse
+				);
 
 				if (string.IsNullOrEmpty(updateResponse?.ETag))
 					throw new Exception("Failed to get new ETag after update operation.");

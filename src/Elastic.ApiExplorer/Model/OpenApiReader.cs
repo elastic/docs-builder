@@ -50,11 +50,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 
 		await using var jsonStream = await ParseSpecToJsonStreamAsync(stream).ConfigureAwait(false);
 
-		var settings = new OpenApiReaderSettings
-		{
-			LeaveStreamOpen = false,
-			RuleSet = ValidationRuleSet.GetEmptyRuleSet()
-		};
+		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
 		var openApiDocument = await OpenApiDocument.LoadAsync(jsonStream, JsonFormat, settings: settings);
 		return openApiDocument.Document;
 	}
@@ -65,8 +61,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		var yaml = new YamlStream();
 		yaml.Load(reader);
 
-		var root = yaml.Documents[0].RootNode
-			?? throw new InvalidOperationException("OpenAPI spec document is empty.");
+		var root = yaml.Documents[0].RootNode ?? throw new InvalidOperationException("OpenAPI spec document is empty.");
 
 		var jsonStream = new MemoryStream();
 		await using (var jsonWriter = new Utf8JsonWriter(jsonStream))
