@@ -278,7 +278,18 @@ To apply additional filtering by the changelog type, areas, or products, add [bu
 ## Amend bundles [changelog-bundle-amend]
 
 When you need to add changelogs to an existing bundle, you can use the `docs-builder changelog bundle-amend` command, which creates _amend bundles_.
-The parent bundle path must be a local file (the amend sidecar is written next to it). `--add` and `--remove` accept the same CDN paths as `changelog bundle --files` when the authoring repo resolves; only the file name is used to GET from the resolved authoring pool. For example:
+The parent may be a local bundle file (the sidecar is written next to it) or a published CDN locator such as `/bundle/kibana/9.3.0.yaml`. `--add` and `--remove` accept the same CDN paths as `changelog bundle --files` when the authoring repo resolves; only the file name is used to GET from the resolved authoring pool. For example:
+
+```sh
+docs-builder changelog bundle-amend \
+  /bundle/kibana/9.3.0.yaml \
+  --add /changelog/elastic/kibana/main/138723.yaml \
+  --output ./docs/releases
+```
+
+That writes `9.3.0.amend-1.yaml` under `./docs/releases`. Upload the sidecar with [](/cli/changelog/upload.md) (`--artifact-type bundle`); the command does not upload it for you.
+
+To read local changelog files from disk instead of the CDN, pass `--force-local`. A local parent file still works as before:
 
 ```sh
 docs-builder changelog bundle-amend \
@@ -286,9 +297,7 @@ docs-builder changelog bundle-amend \
   --add /changelog/elastic/kibana/main/138723.yaml
 ```
 
-To read local changelog files from disk instead of the CDN, pass `--force-local`.
-
-Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}` plus the same `.yaml` or `.yml` extension as the parent, where `{N}` is a sequence number.
 
 To remove entries from an existing bundle without editing the parent file, use `--remove` on the same command:
 

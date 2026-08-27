@@ -173,6 +173,79 @@ public static class ChangelogKeys
 	}
 
 	/// <summary>
+	/// Parses a CDN bundle locator into product and file name. Accepts
+	/// <c>/bundle/{product}/{file}</c> (leading slash optional) or an absolute http(s) URL whose path
+	/// contains that layout as a path segment (<c>bundle/</c> at the start of the path or after a
+	/// slash). Returns false for changelog-pool paths. Amend sidecars still parse as
+	/// locators; callers that need a parent should reject them with <c>BundleAmendMerger.IsAmendFile</c>.
+	/// </summary>
+	public static bool TryParseBundleLocator(
+		string? input,
+		[NotNullWhen(true)] out string? product,
+		[NotNullWhen(true)] out string? fileName)
+	{
+		product = null;
+		fileName = null;
+		if (string.IsNullOrWhiteSpace(input))
+			return false;
+
+		var trimmed = input.Trim();
+		string key;
+		if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
+		{
+			var path = uri.AbsolutePath.TrimStart('/');
+			if (!TryGetBundlePrefixIndex(path, out var prefixAt))
+				return false;
+			key = path[prefixAt..];
+		}
+		else
+		{
+			key = trimmed.TrimStart('/');
+			if (!key.StartsWith(BundlePrefix, StringComparison.Ordinal))
+				return false;
+		}
+
+		product = ExtractBundleGroup(key);
+		if (product is null)
+			return false;
+
+		var fileStart = BundlePrefix.Length + product.Length + 1;
+		if (key.Length <= fileStart)
+			return false;
+
+		fileName = key[fileStart..];
+		if (!IsSafeFileName(fileName))
+		{
+			product = null;
+			fileName = null;
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Index of a path-segment <c>bundle/</c> in an already slash-trimmed URL path, or false when
+	/// the substring only appears inside another segment (for example <c>notbundle/</c>).
+	/// </summary>
+	private static bool TryGetBundlePrefixIndex(string path, out int prefixAt)
+	{
+		prefixAt = -1;
+		if (path.StartsWith(BundlePrefix, StringComparison.Ordinal))
+		{
+			prefixAt = 0;
+			return true;
+		}
+
+		var nested = path.IndexOf("/" + BundlePrefix, StringComparison.Ordinal);
+		if (nested < 0)
+			return false;
+
+		prefixAt = nested + 1;
+		return true;
+	}
+
+	/// <summary>
 	/// Extracts the product group from a <c>bundle/{product}/{file}</c> key, or null when
 	/// <paramref name="s3Key"/> is not a bundle key with a valid product segment ahead of the file name.
 	/// The segment is validated on extraction so an out-of-class group can never be re-composed into a
