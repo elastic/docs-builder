@@ -414,13 +414,12 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(
-			() =>
-				_s3Client.PutObjectAsync(
-					A<PutObjectRequest>.That.Matches(
-						r => r.Key == "changelog/elastic/elasticsearch/main/entry.yaml" && r.BucketName == "test-bucket"
-					),
-					A<CancellationToken>._
-				)
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(
+					r => r.Key == "changelog/elastic/elasticsearch/main/entry.yaml" && r.BucketName == "test-bucket"
+				),
+				A<CancellationToken>._
+			)
 		).MustHaveHappenedOnceExactly();
 	}
 
@@ -603,13 +602,12 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(
-			() =>
-				_s3Client.PutObjectAsync(
-					A<PutObjectRequest>.That.Matches(
-						r => r.Key == "bundle/elasticsearch/elasticsearch-9.2.0.yaml" && r.BucketName == "test-bucket"
-					),
-					A<CancellationToken>._
-				)
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(
+					r => r.Key == "bundle/elasticsearch/elasticsearch-9.2.0.yaml" && r.BucketName == "test-bucket"
+				),
+				A<CancellationToken>._
+			)
 		).MustHaveHappenedOnceExactly();
 	}
 
@@ -852,21 +850,19 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(
-			() =>
-				_s3Client.PutObjectAsync(
-					A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/9.3.0.yaml"),
-					A<CancellationToken>._
-				)
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/9.3.0.yaml"),
+				A<CancellationToken>._
+			)
 		).MustHaveHappenedOnceExactly();
 
 		// The scrubber Lambda is the sole registry producer (docs-eng-team#688 Phase 3):
 		// uploads write YAML objects only, never a registry.json.
 		A.CallTo(
-			() =>
-				_s3Client.PutObjectAsync(
-					A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
-					A<CancellationToken>._
-				)
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
+				A<CancellationToken>._
+			)
 		).MustNotHaveHappened();
 	}
 
@@ -912,21 +908,19 @@ public class ChangelogUploadServiceTests
 		result.Should().BeTrue();
 
 		A.CallTo(
-			() =>
-				_s3Client.PutObjectAsync(
-					A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/entry.yaml"),
-					A<CancellationToken>._
-				)
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/entry.yaml"),
+				A<CancellationToken>._
+			)
 		).MustHaveHappenedOnceExactly();
 
 		// The scrubber Lambda is the sole registry producer (docs-eng-team#688 Phase 3):
 		// uploads write YAML objects only, never a registry.json.
 		A.CallTo(
-			() =>
-				_s3Client.PutObjectAsync(
-					A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
-					A<CancellationToken>._
-				)
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("registry.json", StringComparison.Ordinal)),
+				A<CancellationToken>._
+			)
 		).MustNotHaveHappened();
 	}
 

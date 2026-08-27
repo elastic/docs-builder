@@ -67,7 +67,8 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 
 		// Assert
 		result.Should().BeTrue();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("No PR references found") && d.Severity == Documentation.Diagnostics.Severity.Warning);
 	}

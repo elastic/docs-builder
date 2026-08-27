@@ -235,13 +235,12 @@ public class DynamoDbDistributedCacheTests
 
 		// Assert
 		A.CallTo(
-			() =>
-				fakeDynamoDb.PutItemAsync(
-					A<PutItemRequest>.That.Matches(
-						r => r.TableName == "test-table" && r.Item["CacheKey"].S == key.Value && r.Item["Value"].S == "value"
-					),
-					A<Cancel>._
-				)
+			() => fakeDynamoDb.PutItemAsync(
+				A<PutItemRequest>.That.Matches(
+					r => r.TableName == "test-table" && r.Item["CacheKey"].S == key.Value && r.Item["Value"].S == "value"
+				),
+				A<Cancel>._
+			)
 		).MustHaveHappenedOnceExactly();
 	}
 
@@ -294,7 +293,8 @@ public class GcpIdTokenProviderCachingIntegrationTests
 		result.Should().Be("fake-cached-token", "should return cached token without calling Google OAuth");
 		// Verify that ExchangeJwtForIdToken was not called (PostAsync -> SendAsync)
 		// Using method name matching since SendAsync is protected
-		A.CallTo(fakeHandler)
+		A
+			.CallTo(fakeHandler)
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Where(call => call.Method.Name == "SendAsync")
 			.MustNotHaveHappened();

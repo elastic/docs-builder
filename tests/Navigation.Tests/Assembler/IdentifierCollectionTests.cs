@@ -55,7 +55,8 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		);
 
 		// Should collect identifiers from nested TOCs
-		platformNav.TableOfContentNodes
+		platformNav
+			.TableOfContentNodes
 			.Keys
 			.Should()
 			.Contain([new Uri("platform://"), new Uri("platform://deployment-guide"), new Uri("platform://cloud-guide")]);

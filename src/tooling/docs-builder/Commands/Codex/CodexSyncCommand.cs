@@ -55,16 +55,15 @@ internal sealed class CodexSyncCommand(IDiagnosticsCollector collector, ILoggerF
 		serviceInvoker.AddCommand(
 			service,
 			(context, s3BucketName, @out, deleteThreshold, excludePatterns),
-			static async (s, collector, state, ctx) =>
-				await s.Plan(
-					collector,
-					state.context,
-					state.s3BucketName,
-					state.@out?.FullName ?? "",
-					state.deleteThreshold,
-					state.excludePatterns,
-					ctx
-				)
+			static async (s, collector, state, ctx) => await s.Plan(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.@out?.FullName ?? "",
+				state.deleteThreshold,
+				state.excludePatterns,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -91,8 +90,13 @@ internal sealed class CodexSyncCommand(IDiagnosticsCollector collector, ILoggerF
 		serviceInvoker.AddCommand(
 			service,
 			(context, s3BucketName, planFile),
-			static async (s, collector, state, ctx) =>
-				await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
+			static async (s, collector, state, ctx) => await s.Apply(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.planFile.FullName,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

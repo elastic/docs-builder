@@ -205,12 +205,14 @@ public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<Changel
 
 	[Fact]
 	public void EmitsWarningPointingToHighlightsOption() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains("Invalid :type: value 'highlight'", StringComparison.Ordinal) &&
-						d.Message.Contains(":highlights:", StringComparison.Ordinal)
+				d => d.Message.Contains("Invalid :type: value 'highlight'", StringComparison.Ordinal) && d.Message.Contains(
+					":highlights:",
+					StringComparison.Ordinal
+				)
 			);
 
 	[Fact]

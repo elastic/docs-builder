@@ -169,7 +169,8 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 			HtmlUrl = releaseData.HtmlUrl ?? string.Empty,
 			PublishedAt = releaseData.PublishedAt,
 			Assets = releaseData.Assets is { Count: > 0 }
-				? releaseData.Assets
+				? releaseData
+					.Assets
 					.Where(a => a is { Name: not null, BrowserDownloadUrl: not null })
 					.Select(a => new GitHubReleaseAsset { Name = a.Name!, BrowserDownloadUrl = a.BrowserDownloadUrl! })
 					.ToArray()

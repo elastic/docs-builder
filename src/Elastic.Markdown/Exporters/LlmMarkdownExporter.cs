@@ -108,14 +108,10 @@ public class LlmMarkdownExporter(bool branded = false, DocumentationWriteFileSys
 	}
 
 	public static string ConvertToLlmMarkdown(MarkdownDocument document, IDocumentationConfigurationContext context) =>
-		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
-			context,
-			document,
-			static (renderer, obj) =>
-			{
-				_ = renderer.Render(obj);
-			}
-		);
+		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context, document, static (renderer, obj) =>
+		{
+			_ = renderer.Render(obj);
+		});
 
 	private static bool IsRootIndexFile(MarkdownExportFileContext fileContext)
 	{

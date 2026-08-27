@@ -125,12 +125,14 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		fileSystem.Directory.Exists(apiRoot).Should().BeTrue();
 
 		var elasticsearchLanding = fileSystem.Path.Join(apiRoot, "doc", "elasticsearch", "index.html");
-		fileSystem.File
+		fileSystem
+			.File
 			.Exists(elasticsearchLanding)
 			.Should()
 			.BeTrue("staging assembler builds should emit the unversioned elasticsearch API landing page");
 
-		var versionedLanding = fileSystem.Directory
+		var versionedLanding = fileSystem
+			.Directory
 			.EnumerateDirectories(fileSystem.Path.Join(apiRoot, "doc", "elasticsearch"))
 			.FirstOrDefault(path => fileSystem.Path.GetFileName(path).StartsWith('v'));
 		versionedLanding.Should().NotBeNull("versioned products should emit at least one /vN/ tree under /docs/api/doc/elasticsearch/");

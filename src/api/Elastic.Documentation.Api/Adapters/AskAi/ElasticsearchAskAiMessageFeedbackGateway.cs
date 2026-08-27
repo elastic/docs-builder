@@ -71,8 +71,11 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 
 		_logger.LogDebug("Indexing feedback with ID {FeedbackId} to index {IndexName}", feedbackId, _indexName);
 
-		var response =
-			await _client.IndexAsync<MessageFeedbackDocument>(document, idx => idx.Index(_indexName).Id(feedbackId.ToString()), ctx);
+		var response = await _client.IndexAsync<MessageFeedbackDocument>(
+			document,
+			idx => idx.Index(_indexName).Id(feedbackId.ToString()),
+			ctx
+		);
 
 		// MessageId and ConversationId are Guid types, so no sanitization needed
 		if (!response.IsValidResponse)

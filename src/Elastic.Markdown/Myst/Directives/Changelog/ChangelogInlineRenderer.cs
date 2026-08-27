@@ -688,21 +688,17 @@ public static class ChangelogInlineRenderer
 		RenderDetailedEntryLinks(sb, entry, repo, owner, hideLinks);
 
 		// Impact section
-		_ =
-			sb.AppendLine(
-				!string.IsNullOrWhiteSpace(entry.Impact)
-					? "**Impact**<br>" + entry.Impact
-					: "% **Impact**<br>_Add a description of the impact_"
-			);
+		_ = sb.AppendLine(
+			!string.IsNullOrWhiteSpace(entry.Impact) ? "**Impact**<br>" + entry.Impact : "% **Impact**<br>_Add a description of the impact_"
+		);
 		_ = sb.AppendLine();
 
 		// Action section
-		_ =
-			sb.AppendLine(
-				!string.IsNullOrWhiteSpace(entry.Action)
-					? "**Action**<br>" + entry.Action
-					: "% **Action**<br>_Add a description of what action to take_"
-			);
+		_ = sb.AppendLine(
+			!string.IsNullOrWhiteSpace(entry.Action)
+				? "**Action**<br>" + entry.Action
+				: "% **Action**<br>_Add a description of what action to take_"
+		);
 
 		_ = sb.AppendLine("::::");
 	}

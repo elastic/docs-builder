@@ -48,10 +48,9 @@ public class ProductApplicabilityToStringTests
 		var productApplicability = new ProductApplicability
 		{
 			ApmAgentDotnet = AppliesCollection.GenerallyAvailable,
-			Ecctl =
-				new AppliesCollection([
-					new Applicability { Lifecycle = ProductLifecycle.Beta, Version = VersionSpec.TryParse("1.0.0", out var v) ? v : null }
-				])
+			Ecctl = new AppliesCollection([
+				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = VersionSpec.TryParse("1.0.0", out var v) ? v : null }
+			])
 		};
 
 		var result = productApplicability.ToString();
@@ -90,7 +89,8 @@ public class ProductApplicabilityToStringTests
 
 		// Get the properties in reflection order
 		var productType = typeof(ProductApplicability);
-		var properties = productType.GetProperties()
+		var properties = productType
+			.GetProperties()
 			.Where(p => p.GetCustomAttribute<JsonPropertyNameAttribute>() != null)
 			.Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name)
 			.ToList();

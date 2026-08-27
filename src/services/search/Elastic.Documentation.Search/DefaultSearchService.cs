@@ -113,60 +113,49 @@ public partial class DefaultSearchService<TDocument>(
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
-		var response =
-			await client.SearchAsync<TDocument>(
-				s =>
-				{
-					_ =
-						s.Indices(indexAlias)
-							.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
-							.Size(request.PageSize)
-							.Query(lexicalQuery)
-							.Aggregations(agg => agg.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType))))
-							.Source(sf => sf.Filter(f => f.Includes(AutocompleteSourceIncludes)))
-							.Highlight(
-								h =>
-									h.Fields(
-										f =>
-											f.Add(
-												QueryFieldNames.Title,
-												hf =>
-													hf.FragmentSize(150)
-														.NumberOfFragments(3)
-														.NoMatchSize(150)
-														.HighlightQuery(
-															q =>
-																q.Match(
-																	m =>
-																		m.Field(QueryFieldNames.Title)
-																			.Query(request.Query)
-																			.Analyzer("highlight_analyzer")
-																)
-														)
-														.PreTags(PreTag)
-														.PostTags(PostTag)
-											).Add(
-												QueryFieldNames.Body,
-												hf =>
-													hf.FragmentSize(150)
-														.NumberOfFragments(3)
-														.NoMatchSize(150)
-														.PreTags(PreTag)
-														.PostTags(PostTag)
-											)
+		var response = await client.SearchAsync<TDocument>(
+			s =>
+			{
+				_ = s
+					.Indices(indexAlias)
+					.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
+					.Size(request.PageSize)
+					.Query(lexicalQuery)
+					.Aggregations(agg => agg.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType))))
+					.Source(sf => sf.Filter(f => f.Includes(AutocompleteSourceIncludes)))
+					.Highlight(
+						h => h.Fields(
+							f => f.Add(
+								QueryFieldNames.Title,
+								hf => hf
+									.FragmentSize(150)
+									.NumberOfFragments(3)
+									.NoMatchSize(150)
+									.HighlightQuery(
+										q => q.Match(
+											m => m.Field(QueryFieldNames.Title).Query(request.Query).Analyzer("highlight_analyzer")
+										)
 									)
-							);
+									.PreTags(PreTag)
+									.PostTags(PostTag)
+							).Add(
+								QueryFieldNames.Body,
+								hf => hf.FragmentSize(150).NumberOfFragments(3).NoMatchSize(150).PreTags(PreTag).PostTags(PostTag)
+							)
+						)
+					);
 
-					if (postFilter is not null)
-						_ = s.PostFilter(postFilter);
-				},
-				ct
-			);
+				if (postFilter is not null)
+					_ = s.PostFilter(postFilter);
+			},
+			ct
+		);
 
 		if (!response.IsValidResponse)
 			LogInvalidResponse(response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 
-		var results = response.Hits
+		var results = response
+			.Hits
 			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional))
 			.ToList();
 
@@ -205,78 +194,65 @@ public partial class DefaultSearchService<TDocument>(
 
 		var filteredQuery = ApplyFilters(baseQuery, request);
 
-		var response2 =
-			await client.SearchAsync<TDocument>(
-				s =>
+		var response2 = await client.SearchAsync<TDocument>(
+			s =>
+			{
+				_ = s
+					.Indices(indexAlias)
+					.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
+					.Size(request.PageSize)
+					.Query(filteredQuery)
+					.Aggregations(
+						agg => agg
+							.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType)))
+							.Add("navigation_section", a => a.Terms(t => t.Field(QueryFieldNames.Section)))
+							.Add("product", a => a.Terms(t => t.Field(QueryFieldNames.RelatedProductsId).Size(100)))
+					)
+					.Source(sf => sf.Filter(f => f.Includes(SearchSourceIncludes)));
+
+				if (request.IncludeHighlighting)
 				{
-					_ =
-						s.Indices(indexAlias)
-							.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
-							.Size(request.PageSize)
-							.Query(filteredQuery)
-							.Aggregations(
-								agg =>
-									agg.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType)))
-										.Add("navigation_section", a => a.Terms(t => t.Field(QueryFieldNames.Section)))
-										.Add("product", a => a.Terms(t => t.Field(QueryFieldNames.RelatedProductsId).Size(100)))
-							)
-							.Source(sf => sf.Filter(f => f.Includes(SearchSourceIncludes)));
-
-					if (request.IncludeHighlighting)
-					{
-						_ =
-							s.Highlight(
-								h =>
-									h.Fields(
-										f =>
-											f.Add(
-												QueryFieldNames.Title,
-												hf =>
-													hf.FragmentSize(150)
-														.NumberOfFragments(3)
-														.NoMatchSize(150)
-														.HighlightQuery(
-															q =>
-																q.Match(
-																	m =>
-																		m.Field(QueryFieldNames.Title)
-																			.Query(request.Query)
-																			.Analyzer("highlight_analyzer")
-																)
-														)
-														.PreTags(PreTag)
-														.PostTags(PostTag)
-											).Add(
-												QueryFieldNames.Body,
-												hf =>
-													hf.FragmentSize(150)
-														.NumberOfFragments(3)
-														.NoMatchSize(150)
-														.PreTags(PreTag)
-														.PostTags(PostTag)
-											)
+					_ = s.Highlight(
+						h => h.Fields(
+							f => f.Add(
+								QueryFieldNames.Title,
+								hf => hf
+									.FragmentSize(150)
+									.NumberOfFragments(3)
+									.NoMatchSize(150)
+									.HighlightQuery(
+										q => q.Match(
+											m => m.Field(QueryFieldNames.Title).Query(request.Query).Analyzer("highlight_analyzer")
+										)
 									)
-							);
-					}
+									.PreTags(PreTag)
+									.PostTags(PostTag)
+							).Add(
+								QueryFieldNames.Body,
+								hf => hf.FragmentSize(150).NumberOfFragments(3).NoMatchSize(150).PreTags(PreTag).PostTags(PostTag)
+							)
+						)
+					);
+				}
 
-					ApplySorting(s, request.SortBy);
-				},
-				ct
-			);
+				ApplySorting(s, request.SortBy);
+			},
+			ct
+		);
 
 		if (!response2.IsValidResponse)
 			LogInvalidResponse(response2.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 
 		var highlightOptions = request.IncludeHighlighting ? FullPageHighlightOptions : null;
-		var results2 = response2.Hits
+		var results2 = response2
+			.Hits
 			.Select(
-				hit =>
-					SearchResultProcessor.ProcessHit(
-						hit,
-						request.IncludeHighlighting ? request.Query : string.Empty,
-						searchConfig.SynonymBiDirectional,
-						highlightOptions
-					)
+				hit => SearchResultProcessor.ProcessHit(
+					hit,
+					request.IncludeHighlighting ? request.Query : string.Empty,
+					searchConfig.SynonymBiDirectional,
+					highlightOptions
+				)
 			)
 			.ToList();
 
@@ -284,18 +260,14 @@ public partial class DefaultSearchService<TDocument>(
 		{
 			Type = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "type"),
 			NavigationSection = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "navigation_section"),
-			Product =
-				SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "product").ToDictionary(
-					kvp => kvp.Key,
-					kvp =>
-						new Contract.ProductAggregationBucket
-						{
-							Count = kvp.Value,
-							DisplayName = productNameLookup is not null && productNameLookup.TryGetProductName(kvp.Key, out var name)
-								? name
-								: null
-						}
-				)
+			Product = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "product").ToDictionary(
+				kvp => kvp.Key,
+				kvp => new Contract.ProductAggregationBucket
+				{
+					Count = kvp.Value,
+					DisplayName = productNameLookup is not null && productNameLookup.TryGetProductName(kvp.Key, out var name) ? name : null
+				}
+			)
 		};
 
 		LogSearchResults(request.PageSize, request.PageNumber, request.Query, isSemantic, results2.Select(r => r.Document.Path).ToArray());

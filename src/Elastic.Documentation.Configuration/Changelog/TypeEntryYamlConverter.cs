@@ -86,7 +86,8 @@ public class TypeEntryYamlConverter : IYamlTypeConverter
 					subtypes[key.Value] = null;
 				else
 				{
-					var items = valueScalar.Value
+					var items = valueScalar
+						.Value
 						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 						.ToList();
 					subtypes[key.Value] = new YamlLenientList(items.Count > 0 ? items : null);

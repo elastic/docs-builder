@@ -59,14 +59,14 @@ public class DocumentationWebHost
 		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
-		_ =
-			builder.Logging
-				.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
-				.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
-				.AddFilter("Microsoft.AspNetCore.Routing.EndpointMiddleware", LogLevel.Warning)
-				.AddFilter("Microsoft.AspNetCore.Http.Result.ContentResult", LogLevel.Warning)
-				.AddFilter("Microsoft.AspNetCore.Http.Result.FileContentResult", LogLevel.Warning)
-				.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
+		_ = builder
+			.Logging
+			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
+			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
+			.AddFilter("Microsoft.AspNetCore.Routing.EndpointMiddleware", LogLevel.Warning)
+			.AddFilter("Microsoft.AspNetCore.Http.Result.ContentResult", LogLevel.Warning)
+			.AddFilter("Microsoft.AspNetCore.Http.Result.FileContentResult", LogLevel.Warning)
+			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 
 		var collector = new LiveModeDiagnosticsCollector(logFactory);
 
@@ -81,29 +81,33 @@ public class DocumentationWebHost
 
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
-		GeneratorState =
-			new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context, isWatchBuild);
-		_ =
-			builder.Services
-				.AddAotLiveReload(s =>
-				{
-					s.FolderToMonitor = Context.DocumentationSourceDirectory.FullName;
-					s.ClientFileExtensions = ".md,.yml";
-				})
-				// Keep graceful-shutdown window short: SSE clients are signalled via ApplicationStopping
-				// (see RunAsync below) so there's no need to wait the default 30 s for them to drain.
-				.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(3))
-				.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
-				.AddSingleton(_ => InMemoryBuildState)
-				.AddHostedService<ReloadGeneratorService>(
-					sp =>
-						new ReloadGeneratorService(
-							GeneratorState,
-							InMemoryBuildState,
-							noHud,
-							logFactory.CreateLogger<ReloadGeneratorService>()
-						)
-				);
+		GeneratorState = new ReloadableGeneratorState(
+			logFactory,
+			Context.DocumentationSourceDirectory,
+			Context.OutputDirectory,
+			Context,
+			isWatchBuild
+		);
+		_ = builder
+			.Services
+			.AddAotLiveReload(s =>
+			{
+				s.FolderToMonitor = Context.DocumentationSourceDirectory.FullName;
+				s.ClientFileExtensions = ".md,.yml";
+			})
+			// Keep graceful-shutdown window short: SSE clients are signalled via ApplicationStopping
+			// (see RunAsync below) so there's no need to wait the default 30 s for them to drain.
+			.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(3))
+			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
+			.AddSingleton(_ => InMemoryBuildState)
+			.AddHostedService<ReloadGeneratorService>(
+				sp => new ReloadGeneratorService(
+					GeneratorState,
+					InMemoryBuildState,
+					noHud,
+					logFactory.CreateLogger<ReloadGeneratorService>()
+				)
+			);
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
@@ -139,50 +143,44 @@ public class DocumentationWebHost
 
 	private void SetUpRoutes()
 	{
-		_ =
-			_webApplication.UseLiveReloadWithManualScriptInjection(_webApplication.Lifetime)
-				.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
-				.Use(async (context, next) =>
+		_ = _webApplication
+			.UseLiveReloadWithManualScriptInjection(_webApplication.Lifetime)
+			.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
+			.Use(async (context, next) =>
+			{
+				try
 				{
-					try
-					{
-						await next(context);
-					}
-					catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
-					{
-						// Client disconnected or navigated away — normal, no need to log or rethrow.
-					}
-					catch (Exception ex)
-					{
-						Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
-						Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
-						if (ex.InnerException != null)
-							Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+					await next(context);
+				}
+				catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+				{
+					// Client disconnected or navigated away — normal, no need to log or rethrow.
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
+					Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
+					if (ex.InnerException != null)
+						Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
 
-						throw; // Re-throw to let ASP.NET Core handle it
-					}
-				})
-				.UseStaticFiles(new StaticFileOptions
-				{
-					FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
-					RequestPath = "/_static"
-				});
+					throw; // Re-throw to let ASP.NET Core handle it
+				}
+			})
+			.UseStaticFiles(new StaticFileOptions { FileProvider = new EmbeddedOrPhysicalFileProvider(Context), RequestPath = "/_static" });
 
 		_ = _webApplication.UseRouting();
 
-		_ =
-			_webApplication.MapGet(
-				"/",
-				(ReloadableGeneratorState holder, Cancel ctx) => ServeDocumentationFile(holder, "index", _writeFileSystem, ctx)
-			);
+		_ = _webApplication.MapGet(
+			"/",
+			(ReloadableGeneratorState holder, Cancel ctx) => ServeDocumentationFile(holder, "index", _writeFileSystem, ctx)
+		);
 
 		_ = _webApplication.MapGet("/api/", (ReloadableGeneratorState holder, Cancel ctx) => ServeApiFile(holder, "", ctx));
 
-		_ =
-			_webApplication.MapGet(
-				"/api/{**slug}",
-				(string slug, ReloadableGeneratorState holder, Cancel ctx) => ServeApiFile(holder, slug, ctx)
-			);
+		_ = _webApplication.MapGet(
+			"/api/{**slug}",
+			(string slug, ReloadableGeneratorState holder, Cancel ctx) => ServeApiFile(holder, slug, ctx)
+		);
 
 #if DEBUG
 		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
@@ -190,60 +188,53 @@ public class DocumentationWebHost
 #endif
 
 		// SSE endpoint for diagnostics streaming
-		_ =
-			_webApplication.MapGet(
-				"/_api/diagnostics/stream",
-				async (InMemoryBuildState buildState, HttpContext context, Cancel ct) =>
+		_ = _webApplication.MapGet("/_api/diagnostics/stream", async (InMemoryBuildState buildState, HttpContext context, Cancel ct) =>
+		{
+			context.Response.Headers.Append("Content-Type", "text/event-stream");
+			context.Response.Headers.Append("Cache-Control", "no-cache");
+			context.Response.Headers.Append("Connection", "keep-alive");
+
+			// Subscribe this client to receive broadcast events
+			var clientReader = buildState.Subscribe();
+
+			try
+			{
+				// Send initial state
+				var initialState = buildState.GetCurrentState();
+				await WriteSSEEvent(context.Response, "state", initialState, ct);
+
+				// Stream events as they occur (broadcast to all clients)
+				await foreach (var buildEvent in clientReader.ReadAllAsync(ct))
 				{
-					context.Response.Headers.Append("Content-Type", "text/event-stream");
-					context.Response.Headers.Append("Cache-Control", "no-cache");
-					context.Response.Headers.Append("Connection", "keep-alive");
-
-					// Subscribe this client to receive broadcast events
-					var clientReader = buildState.Subscribe();
-
-					try
-					{
-						// Send initial state
-						var initialState = buildState.GetCurrentState();
-						await WriteSSEEvent(context.Response, "state", initialState, ct);
-
-						// Stream events as they occur (broadcast to all clients)
-						await foreach (var buildEvent in clientReader.ReadAllAsync(ct))
-						{
-							await WriteSSEEvent(context.Response, buildEvent.Type, buildEvent, ct);
-						}
-					}
-					catch (OperationCanceledException)
-					{
-						// Client disconnected - this is expected, no need to log
-					}
-					finally
-					{
-						// Unsubscribe when client disconnects
-						buildState.Unsubscribe(clientReader);
-					}
+					await WriteSSEEvent(context.Response, buildEvent.Type, buildEvent, ct);
 				}
-			);
+			}
+			catch (OperationCanceledException)
+			{
+				// Client disconnected - this is expected, no need to log
+			}
+			finally
+			{
+				// Unsubscribe when client disconnects
+				buildState.Unsubscribe(clientReader);
+			}
+		});
 
 		// Current state endpoint (non-streaming)
-		_ =
-			_webApplication.MapGet(
-				"/_api/diagnostics/state",
-				(InMemoryBuildState buildState) => Results.Json(buildState.GetCurrentState(), DiagnosticsJsonContext.Default.BuildEvent)
-			);
+		_ = _webApplication.MapGet(
+			"/_api/diagnostics/state",
+			(InMemoryBuildState buildState) => Results.Json(buildState.GetCurrentState(), DiagnosticsJsonContext.Default.BuildEvent)
+		);
 
-		_ =
-			_webApplication.MapGet(
-				"/_static/pagefind/{**path}",
-				(string path, InMemoryBuildState buildState, ReloadableGeneratorState holder) => ServePagefindFile(path, buildState, holder)
-			);
+		_ = _webApplication.MapGet(
+			"/_static/pagefind/{**path}",
+			(string path, InMemoryBuildState buildState, ReloadableGeneratorState holder) => ServePagefindFile(path, buildState, holder)
+		);
 
-		_ =
-			_webApplication.MapGet(
-				"{**slug}",
-				(string slug, ReloadableGeneratorState holder, Cancel ctx) => ServeDocumentationFile(holder, slug, _writeFileSystem, ctx)
-			);
+		_ = _webApplication.MapGet(
+			"{**slug}",
+			(string slug, ReloadableGeneratorState holder, Cancel ctx) => ServeDocumentationFile(holder, slug, _writeFileSystem, ctx)
+		);
 	}
 
 	private static IResult ServePagefindFile(string path, InMemoryBuildState buildState, ReloadableGeneratorState holder)

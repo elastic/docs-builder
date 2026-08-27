@@ -33,7 +33,8 @@ internal sealed class DumpSamplesCommand(ContentStackClient client)
 
 		var results = new List<(string ContentType, int ItemCount, string? FilePath)>();
 
-		await AnsiConsole.Progress()
+		await AnsiConsole
+			.Progress()
 			.AutoRefresh(true)
 			.AutoClear(false)
 			.HideCompleted(false)

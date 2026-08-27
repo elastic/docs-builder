@@ -37,9 +37,10 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 		Uri.TryCreate(url, UriKind.Absolute, out var uri)
 			&& uri.Scheme == Uri.UriSchemeHttps
 			&& AllowedHosts.Any(
-				domain =>
-					uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
-						uri.Host.EndsWith($".{domain}", StringComparison.OrdinalIgnoreCase)
+				domain => uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) || uri.Host.EndsWith(
+					$".{domain}",
+					StringComparison.OrdinalIgnoreCase
+				)
 			);
 
 	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]

@@ -84,13 +84,12 @@ public class EuidEnrichmentTests : IAsyncLifetime
 		// Act - Make request to /ask-ai/stream with euid cookie
 		using var request = new HttpRequestMessage(HttpMethod.Post, "/docs/_api/v1/ask-ai/stream");
 		request.Headers.Add("Cookie", $"euid={expectedEuid}");
-		request.Content =
-			new StringContent(
-				/*lang=json,strict*/
-				"""{"message":"test question","conversationId":null}""",
-				Encoding.UTF8,
-				"application/json"
-			);
+		request.Content = new StringContent(
+			/*lang=json,strict*/
+			"""{"message":"test question","conversationId":null}""",
+			Encoding.UTF8,
+			"application/json"
+		);
 
 		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 

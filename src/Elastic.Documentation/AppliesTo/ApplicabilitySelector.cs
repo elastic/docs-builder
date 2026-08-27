@@ -25,7 +25,8 @@ public static class ApplicabilitySelector
 
 		if (availableApplicabilities.Length > 0)
 		{
-			return availableApplicabilities.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance)
+			return availableApplicabilities
+				.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance)
 				.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 				.First();
 		}
@@ -36,7 +37,8 @@ public static class ApplicabilitySelector
 
 		if (futureApplicabilities.Length > 0)
 		{
-			return futureApplicabilities.OrderBy(a => a.Version!.Min.CompareTo(currentVersion))
+			return futureApplicabilities
+				.OrderBy(a => a.Version!.Min.CompareTo(currentVersion))
 				.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 				.First();
 		}

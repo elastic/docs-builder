@@ -119,7 +119,8 @@ public class DocumentationSetFileTests
 
 		result.TableOfContents.Should().HaveCount(2);
 		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.PathRelativeToDocumentationSet.Should().Be("index.md");
-		result.TableOfContents
+		result
+			.TableOfContents
 			.ElementAt(1)
 			.Should()
 			.BeOfType<FileRef>()
@@ -191,7 +192,8 @@ public class DocumentationSetFileTests
 
 		result.TableOfContents.Should().HaveCount(2);
 		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>();
-		result.TableOfContents
+		result
+			.TableOfContents
 			.ElementAt(1)
 			.Should()
 			.BeOfType<IsolatedTableOfContentsRef>()
@@ -663,7 +665,8 @@ public class DocumentationSetFileTests
 		developmentToc.PathRelativeToDocumentationSet.Should().Be("development");
 		developmentToc.Children.Should().HaveCount(3, "should have index, contributing file, and internals folder");
 
-		developmentToc.Children
+		developmentToc
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<IndexFileRef>()
@@ -672,7 +675,8 @@ public class DocumentationSetFileTests
 			.Should()
 			.Be("development/index.md", "TOC path should be prepended");
 
-		developmentToc.Children
+		developmentToc
+			.Children
 			.ElementAt(1)
 			.Should()
 			.BeOfType<FileRef>()
@@ -684,7 +688,8 @@ public class DocumentationSetFileTests
 		var internalsFolder = developmentToc.Children.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
 		internalsFolder.PathRelativeToDocumentationSet.Should().Be("development/internals");
 		internalsFolder.Children.Should().HaveCount(1);
-		internalsFolder.Children
+		internalsFolder
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()
@@ -698,7 +703,8 @@ public class DocumentationSetFileTests
 		guidesFolder.PathRelativeToDocumentationSet.Should().Be("guides");
 		guidesFolder.Children.Should().HaveCount(2, "should have getting-started file and advanced TOC");
 
-		guidesFolder.Children
+		guidesFolder
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()
@@ -712,7 +718,8 @@ public class DocumentationSetFileTests
 		advancedToc.PathRelativeToDocumentationSet.Should().Be("guides/advanced");
 		advancedToc.Children.Should().HaveCount(2);
 
-		advancedToc.Children
+		advancedToc
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<IndexFileRef>()
@@ -721,7 +728,8 @@ public class DocumentationSetFileTests
 			.Should()
 			.Be("guides/advanced/index.md");
 
-		advancedToc.Children
+		advancedToc
+			.Children
 			.ElementAt(1)
 			.Should()
 			.BeOfType<FileRef>()
@@ -777,7 +785,8 @@ public class DocumentationSetFileTests
 		apiFolder.PathRelativeToDocumentationSet.Should().Be("api");
 		apiFolder.Children.Should().HaveCount(2);
 
-		apiFolder.Children
+		apiFolder
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<IndexFileRef>()
@@ -786,7 +795,8 @@ public class DocumentationSetFileTests
 			.Should()
 			.Be("api/index.md", "folder path 'api' should be prepended");
 
-		apiFolder.Children
+		apiFolder
+			.Children
 			.ElementAt(1)
 			.Should()
 			.BeOfType<FileRef>()
@@ -1066,7 +1076,8 @@ public class DocumentationSetFileTests
 		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		// Items in docset.yml: PathRelativeToContainer should equal PathRelativeToDocumentationSet
-		result.TableOfContents
+		result
+			.TableOfContents
 			.ElementAt(0)
 			.Should()
 			.BeOfType<IndexFileRef>()
@@ -1077,7 +1088,8 @@ public class DocumentationSetFileTests
 
 		var guidesFolder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
 		guidesFolder.PathRelativeToContainer.Should().Be("guides", "folder in root docset.yml");
-		guidesFolder.Children
+		guidesFolder
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()
@@ -1091,7 +1103,8 @@ public class DocumentationSetFileTests
 		developmentToc.PathRelativeToContainer.Should().Be("development", "toc ref in root docset.yml");
 
 		// Items in development/toc.yml: PathRelativeToContainer should be relative to development/
-		developmentToc.Children
+		developmentToc
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()
@@ -1102,7 +1115,8 @@ public class DocumentationSetFileTests
 
 		var advancedFolder = developmentToc.Children.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
 		advancedFolder.PathRelativeToContainer.Should().Be("advanced", "folder in development/toc.yml");
-		advancedFolder.Children
+		advancedFolder
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()
@@ -1116,7 +1130,8 @@ public class DocumentationSetFileTests
 		internalsToc.PathRelativeToContainer.Should().Be("internals", "toc ref in development/toc.yml");
 
 		// Items in development/internals/toc.yml: PathRelativeToContainer should be relative to development/internals/
-		internalsToc.Children
+		internalsToc
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()
@@ -1127,7 +1142,8 @@ public class DocumentationSetFileTests
 
 		// Verify PathRelativeToDocumentationSet is still correct (full paths from docset root)
 		guidesFolder.PathRelativeToDocumentationSet.Should().Be("guides");
-		guidesFolder.Children
+		guidesFolder
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()
@@ -1136,7 +1152,8 @@ public class DocumentationSetFileTests
 			.Should()
 			.Be("guides/getting-started.md");
 
-		developmentToc.Children
+		developmentToc
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()
@@ -1145,7 +1162,8 @@ public class DocumentationSetFileTests
 			.Should()
 			.Be("development/overview.md");
 
-		internalsToc.Children
+		internalsToc
+			.Children
 			.ElementAt(0)
 			.Should()
 			.BeOfType<FileRef>()

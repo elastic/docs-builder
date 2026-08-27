@@ -173,7 +173,8 @@ public class FileFilterLoader(IFileSystem fileSystem)
 	private async Task<string[]?> ReadListLinesAsync(IDiagnosticsCollector collector, string listFilePath, Cancel ctx)
 	{
 		var content = await fileSystem.File.ReadAllTextAsync(listFilePath, ctx);
-		var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		var lines = content
+			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
 			.ToArray();
 

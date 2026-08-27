@@ -18,8 +18,8 @@ public record SearchConfiguration
 		init
 		{
 			_synonyms = value;
-			SynonymBiDirectional =
-				value.SelectMany(a =>
+			SynonymBiDirectional = value
+				.SelectMany(a =>
 				{
 					var targets = new List<string[]>();
 					foreach (var s in a)
@@ -42,9 +42,9 @@ public record SearchConfiguration
 
 					return targets;
 				})
-					.Where(a => a.Length > 1)
-					.DistinctBy(a => a[0])
-					.ToDictionary(a => a[0], a => a.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
+				.Where(a => a.Length > 1)
+				.DistinctBy(a => a[0])
+				.ToDictionary(a => a[0], a => a.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
 		}
 	}
 
@@ -124,7 +124,8 @@ public static class SearchConfigurationExtensions
 			return new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 
 		var searchDto = ConfigurationFileProvider.Deserializer.Deserialize<SearchConfigDto>(searchFile.OpenText());
-		var synonyms = searchDto.Synonyms
+		var synonyms = searchDto
+			.Synonyms
 			.Where(s => s.Count > 1)
 			.Select(s => s.ToArray())
 			.GroupBy(s => s[0], StringComparer.OrdinalIgnoreCase)

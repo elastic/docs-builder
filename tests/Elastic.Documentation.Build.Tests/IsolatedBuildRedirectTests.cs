@@ -28,7 +28,8 @@ public class IsolatedBuildRedirectTests
 	public void ToAbsoluteUrl_FromAndToEquivalent_SelfRedirectDetected(string path, string to)
 	{
 		var prefix = "/en/docs-builder";
-		IsolatedBuildService.ToAbsoluteUrl(path, prefix)
+		IsolatedBuildService
+			.ToAbsoluteUrl(path, prefix)
 			.TrimEnd('/')
 			.Should()
 			.Be(IsolatedBuildService.ToAbsoluteUrl(to, prefix).TrimEnd('/'));

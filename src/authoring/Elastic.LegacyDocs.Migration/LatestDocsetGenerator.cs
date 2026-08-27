@@ -21,7 +21,8 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 
 	public async Task GenerateAsync(LegacyConf conf, LatestGeneratorOptions options, CancellationToken ct = default)
 	{
-		var books = conf.Contents
+		var books = conf
+			.Contents
 			.SelectMany(c => c.Sections)
 			.Where(b => options.BookFilter is null || b.Prefix == options.BookFilter)
 			.ToList();

@@ -56,7 +56,8 @@ public class ApiSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 		Assert.NotNull(body);
 		Assert.SkipUnless(body.TotalResults > 0 && body.Results.Count > 0, "search index has no data, skipping result assertions");
 		_ = body.Results.Should().NotBeEmpty("search for 'elasticsearch' should return results when the index is populated");
-		body.Results
+		body
+			.Results
 			.Should()
 			.AllSatisfy(r =>
 			{

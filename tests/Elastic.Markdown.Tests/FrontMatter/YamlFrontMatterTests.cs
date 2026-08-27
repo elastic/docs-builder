@@ -120,7 +120,8 @@ public class ProductsSuggestionWhenMispelled(ITestOutputHelper output) : Directi
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("Invalid products frontmatter value: \"aapm\". Did you mean \"apm\"?"));
 	}
@@ -142,7 +143,8 @@ public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : Direct
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("Invalid products frontmatter value: \"apmagent\". Did you mean \"apm-agent\"?"));
 	}
@@ -164,7 +166,8 @@ public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : Direc
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Apm\". Did you mean \"apm\"?"));
 	}
@@ -186,7 +189,8 @@ public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTe
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("Invalid products frontmatter value: \"Product 'id' field is required."));
 	}
@@ -224,13 +228,13 @@ public class MappedPagesInvalidUrl(ITestOutputHelper output) : DirectiveTest(
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains(
-						"Invalid mapped_pages URL: \"https://www.elastic.co/docs/get-started/deployment-options\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
-					)
+				d => d.Message.Contains(
+					"Invalid mapped_pages URL: \"https://www.elastic.co/docs/get-started/deployment-options\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
+				)
 			);
 	}
 }
@@ -253,13 +257,13 @@ public class MappedPagesMixedUrls(ITestOutputHelper output) : DirectiveTest(
 	public void HasErrorsForInvalidUrl()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains(
-						"Invalid mapped_pages URL: \"https://www.elastic.co/docs/invalid-url\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-					)
+				d => d.Message.Contains(
+					"Invalid mapped_pages URL: \"https://www.elastic.co/docs/invalid-url\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
+				)
 			);
 	}
 }
@@ -300,13 +304,13 @@ public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(
 	public void HasErrorsForExternalUrl()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains(
-						"Invalid mapped_pages URL: \"https://github.com/elastic/docs-builder\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-					)
+				d => d.Message.Contains(
+					"Invalid mapped_pages URL: \"https://github.com/elastic/docs-builder\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
+				)
 			);
 	}
 }
@@ -327,13 +331,13 @@ public class MappedPagesMalformedUri(ITestOutputHelper output) : DirectiveTest(
 	public void HasErrorsForMalformedUri()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains(
-						"Invalid mapped_pages URL: \"https://www.elastic.co/guide/[invalid-characters]\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-					)
+				d => d.Message.Contains(
+					"Invalid mapped_pages URL: \"https://www.elastic.co/guide/[invalid-characters]\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
+				)
 			);
 	}
 }
@@ -354,13 +358,13 @@ public class MappedPagesInvalidScheme(ITestOutputHelper output) : DirectiveTest(
 	public void HasErrorsForInvalidScheme()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains(
-						"Invalid mapped_pages URL: \"https://www.elastic.co/guide/invalid uri with spaces\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-					)
+				d => d.Message.Contains(
+					"Invalid mapped_pages URL: \"https://www.elastic.co/guide/invalid uri with spaces\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
+				)
 			);
 	}
 }
@@ -381,13 +385,13 @@ public class MappedPagesNotAbsoluteUri(ITestOutputHelper output) : DirectiveTest
 	public void HasErrorsForNotAbsoluteUri()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains(
-						"Invalid mapped_pages URL: \"not-a-uri-at-all\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
-					)
+				d => d.Message.Contains(
+					"Invalid mapped_pages URL: \"not-a-uri-at-all\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
+				)
 			);
 	}
 }

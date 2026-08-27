@@ -140,9 +140,8 @@ public class DiagnosticsCollectorDisposeTests
 
 		drain.IsCompleted.Should().BeTrue("the 2s virtual deadline must trip long before 50s of virtual time");
 		Func<Task> act = () => drain;
-		_ =
-			(await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
-				"*timed out waiting for the background reader to start*"
-			);
+		_ = (await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
+			"*timed out waiting for the background reader to start*"
+		);
 	}
 }

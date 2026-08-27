@@ -135,7 +135,8 @@ public class DocsSyncTests
 		else if (plan.TotalSyncRequests <= 1000)
 			validationResult.DeleteThreshold.Should().Be(Math.Max(deleteThreshold, 0.5f));
 
-		validationResult.Valid
+		validationResult
+			.Valid
 			.Should()
 			.Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
 	}
@@ -175,7 +176,8 @@ public class DocsSyncTests
 		else if (plan.TotalSyncRequests <= 1000)
 			validationResult.DeleteThreshold.Should().Be(Math.Max(deleteThreshold, 0.5f));
 
-		validationResult.Valid
+		validationResult
+			.Valid
 			.Should()
 			.Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
 	}
@@ -289,7 +291,8 @@ public class DocsSyncTests
 
 		// Configure OpenTelemetry to capture telemetry
 		var exportedActivities = new List<Activity>();
-		using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+		using var tracerProvider = Sdk
+			.CreateTracerProviderBuilder()
 			.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName)
 			.AddInMemoryExporter(exportedActivities)
 			.Build();

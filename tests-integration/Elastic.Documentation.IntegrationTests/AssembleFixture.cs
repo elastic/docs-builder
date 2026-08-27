@@ -53,16 +53,12 @@ public class DocumentationFixture : IAsyncLifetime
 			? ["--skip-private-repositories", "--assume-cloned"]
 			: ["--skip-private-repositories", "--assume-cloned", "--assume-build"];
 
-		var builder =
-			await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(
-				args,
-				(options, _) =>
-				{
-					options.DisableDashboard = true;
-					options.AllowUnsecuredTransport = true;
-					options.EnableResourceLogging = true;
-				}
-			);
+		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(args, (options, _) =>
+		{
+			options.DisableDashboard = true;
+			options.AllowUnsecuredTransport = true;
+			options.EnableResourceLogging = true;
+		});
 		_ = builder.WithEmptyParameters();
 		_ = builder.Services.AddElasticDocumentationLogging(LogLevel.Information);
 		_ = builder.Services.AddLogging(c => c.AddXUnit());
@@ -72,44 +68,44 @@ public class DocumentationFixture : IAsyncLifetime
 		InMemoryLogger = DistributedApplication.Services.GetService<InMemoryLogger>()!;
 		_ = DistributedApplication.StartAsync().WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
-		_ =
-			await DistributedApplication.ResourceNotifications
-				.WaitForResourceAsync(
-					AssemblerClone,
-					KnownResourceStates.TerminalStates,
-					cancellationToken: TestContext.Current.CancellationToken
-				)
-				.WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
+		_ = await DistributedApplication
+			.ResourceNotifications
+			.WaitForResourceAsync(
+				AssemblerClone,
+				KnownResourceStates.TerminalStates,
+				cancellationToken: TestContext.Current.CancellationToken
+			)
+			.WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
 		await ValidateExitCode(AssemblerClone);
 
-		_ =
-			await DistributedApplication.ResourceNotifications
-				.WaitForResourceAsync(
-					AssemblerBuild,
-					KnownResourceStates.TerminalStates,
-					cancellationToken: TestContext.Current.CancellationToken
-				)
-				.WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
+		_ = await DistributedApplication
+			.ResourceNotifications
+			.WaitForResourceAsync(
+				AssemblerBuild,
+				KnownResourceStates.TerminalStates,
+				cancellationToken: TestContext.Current.CancellationToken
+			)
+			.WaitAsync(TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
 		await ValidateExitCode(AssemblerBuild);
 
 		try
 		{
-			_ =
-				await DistributedApplication.ResourceNotifications
-					.WaitForResourceHealthyAsync(AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
-					.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
+			_ = await DistributedApplication
+				.ResourceNotifications
+				.WaitForResourceHealthyAsync(AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
+				.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
 
-			_ =
-				await DistributedApplication.ResourceNotifications
-					.WaitForResourceHealthyAsync(ResourceNames.Api, cancellationToken: TestContext.Current.CancellationToken)
-					.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
+			_ = await DistributedApplication
+				.ResourceNotifications
+				.WaitForResourceHealthyAsync(ResourceNames.Api, cancellationToken: TestContext.Current.CancellationToken)
+				.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
 
-			_ =
-				await DistributedApplication.ResourceNotifications
-					.WaitForResourceHealthyAsync(RemoteMcp, cancellationToken: TestContext.Current.CancellationToken)
-					.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
+			_ = await DistributedApplication
+				.ResourceNotifications
+				.WaitForResourceHealthyAsync(RemoteMcp, cancellationToken: TestContext.Current.CancellationToken)
+				.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
 		}
 		catch (Exception e)
 		{

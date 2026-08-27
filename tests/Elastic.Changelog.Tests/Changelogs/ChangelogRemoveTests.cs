@@ -224,7 +224,8 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("Multiple filter options cannot be specified together"));
 	}
@@ -243,7 +244,8 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("No changelog entries matched"));
 	}
@@ -408,7 +410,8 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(
 				d => d.Severity == Severity.Error && d.Message.Contains("nonexistent-profile") && d.Message.Contains("not found")
@@ -444,7 +447,8 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(
 				d => d.Severity == Severity.Error && d.Message.Contains("es-release") && d.Message.Contains("requires a version number")
@@ -472,7 +476,8 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse("Should fail when no config file is found");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(
 				d => d.Severity == Severity.Error && (d.Message.Contains("changelog.yml") || d.Message.Contains("changelog init")),
@@ -511,11 +516,13 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(
-				d =>
-					d.Severity == Severity.Error && d.Message.Contains("no-products-profile") && d.Message.Contains("no 'products' pattern")
+				d => d.Severity == Severity.Error && d.Message.Contains("no-products-profile") && d.Message.Contains(
+					"no 'products' pattern"
+				)
 			);
 	}
 
@@ -562,7 +569,8 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		// Dry-run: files still exist but the matched one should have been identified
-		FileSystem.File
+		FileSystem
+			.File
 			.Exists(FileSystem.Path.Join(_changelogDir, "1001-es-feature.yaml"))
 			.Should()
 			.BeTrue("dry-run should not delete files");

@@ -119,20 +119,20 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 
 		_logger.LogInformation("Cloning {Count} documentation sets to {Directory}", repoEntries.Count, checkoutDir.FullName);
 
-		await Parallel.ForEachAsync(
-			repoEntries,
-			new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = ctx },
-			async (entry, c) =>
+		await Parallel.ForEachAsync(repoEntries, new ParallelOptions
+		{
+			MaxDegreeOfParallelism = Environment.ProcessorCount,
+			CancellationToken = ctx
+		}, async (entry, c) =>
+		{
+			var checkout = CloneRepository(context, entry, fetchLatest, assumeCloned);
+			if (checkout != null)
 			{
-				var checkout = CloneRepository(context, entry, fetchLatest, assumeCloned);
-				if (checkout != null)
-				{
-					lock (checkouts)
-						checkouts.Add(checkout);
-				}
-				await Task.CompletedTask;
+				lock (checkouts)
+					checkouts.Add(checkout);
 			}
-		);
+			await Task.CompletedTask;
+		});
 
 		if (Path.IsPathRooted(LinkRegistrySnapshotFileName))
 			throw new InvalidOperationException($"Snapshot file name '{LinkRegistrySnapshotFileName}' must be a relative path.");

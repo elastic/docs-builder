@@ -27,28 +27,27 @@ public partial class FullSearchService(
 		SearchResponse<DocumentationDocument> resp;
 		try
 		{
-			resp =
-				await inner.SearchAsync(
-					new SearchRequest
+			resp = await inner.SearchAsync(
+				new SearchRequest
+				{
+					Query = request.Query,
+					PageNumber = request.PageNumber,
+					PageSize = request.PageSize,
+					TypeFilter = request.TypeFilter ?? [],
+					SectionFilter = request.SectionFilter ?? [],
+					ProductFilter = request.ProductFilter ?? [],
+					DeploymentFilter = request.DeploymentFilter ?? [],
+					VersionFilter = request.VersionFilter,
+					SortBy = request.SortBy.ToLowerInvariant() switch
 					{
-						Query = request.Query,
-						PageNumber = request.PageNumber,
-						PageSize = request.PageSize,
-						TypeFilter = request.TypeFilter ?? [],
-						SectionFilter = request.SectionFilter ?? [],
-						ProductFilter = request.ProductFilter ?? [],
-						DeploymentFilter = request.DeploymentFilter ?? [],
-						VersionFilter = request.VersionFilter,
-						SortBy = request.SortBy.ToLowerInvariant() switch
-						{
-							"recent" => SortMode.Recent,
-							"alpha" => SortMode.Alpha,
-							_ => SortMode.Relevance
-						},
-						IncludeHighlighting = request.IncludeHighlighting
+						"recent" => SortMode.Recent,
+						"alpha" => SortMode.Alpha,
+						_ => SortMode.Relevance
 					},
-					ctx
-				);
+					IncludeHighlighting = request.IncludeHighlighting
+				},
+				ctx
+			);
 		}
 		catch (TransportException ex) when (IsTransient(ex))
 		{
@@ -126,11 +125,10 @@ public partial class FullSearchService(
 			Type = agg.Type,
 			NavigationSection = agg.NavigationSection,
 			DeploymentType = agg.DeploymentType,
-			Product =
-				agg.Product.ToDictionary(
-					kvp => kvp.Key,
-					kvp => new ProductAggregationBucket { Count = kvp.Value.Count, DisplayName = kvp.Value.DisplayName ?? kvp.Key }
-				)
+			Product = agg.Product.ToDictionary(
+				kvp => kvp.Key,
+				kvp => new ProductAggregationBucket { Count = kvp.Value.Count, DisplayName = kvp.Value.DisplayName ?? kvp.Key }
+			)
 		};
 
 	public void Dispose() => GC.SuppressFinalize(this);

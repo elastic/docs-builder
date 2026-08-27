@@ -27,7 +27,8 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 		TableOfContentsPrefixes =
 		[
-			.. assembleSources.NavigationTocMappings
+			.. assembleSources
+				.NavigationTocMappings
 				.Values
 				.Select(p =>
 				{
@@ -39,7 +40,8 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 
 		PhantomPrefixes =
 		[
-			.. navigation.Phantoms
+			.. navigation
+				.Phantoms
 				.Select(p =>
 				{
 					var source = p.Source.ToString();

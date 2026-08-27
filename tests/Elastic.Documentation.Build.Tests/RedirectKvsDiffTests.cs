@@ -118,13 +118,16 @@ public class RedirectKvsDiffTests
 
 		var (toPut, toDelete) = RedirectKvsDiff.ComputeBatchUpdates(sourcedRedirects, existingRedirects);
 
-		toDelete.Select(d => d.Key)
+		toDelete
+			.Select(d => d.Key)
 			.Should()
 			.Contain(stalePath, because: "the stale Azure ISV redirect must be removed from the KVS once it is dropped from redirects.yml");
-		toDelete.Select(d => d.Key)
+		toDelete
+			.Select(d => d.Key)
 			.Should()
 			.Contain("/docs/historical-entry-still-valid", because: "any KVS key absent from the sourced redirects is stale by definition");
-		toDelete.Select(d => d.Key)
+		toDelete
+			.Select(d => d.Key)
 			.Should()
 			.NotContain("/docs/another/page", because: "brand-new sourced entries belong in the PUT batch, not the DELETE batch");
 

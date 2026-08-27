@@ -30,7 +30,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		ProductsConfiguration? productsConfiguration = null,
 		GitCheckoutInformation? git = null
 	) =>
-		new BuildContext(
+		new(
 			collector,
 			DocumentationFileSystem.Resolve(
 				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
@@ -51,10 +51,12 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var products = new ProductsConfiguration
 		{
 			Products = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
-			PublicReferenceProducts =
-				new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
-			ProductDisplayNames =
-				new Dictionary<string, string> { [product.Id] = product.DisplayName }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
+			PublicReferenceProducts = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(
+				StringComparer.OrdinalIgnoreCase
+			),
+			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName }.ToFrozenDictionary(
+				StringComparer.OrdinalIgnoreCase
+			)
 		};
 		var context = CreateContext(collector, versionless, products);
 		var localFile = new FileSystem().FileInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json"));
@@ -98,10 +100,9 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var context = CreateContext(collector, stack, git: git);
 
 		var handler = new StubHandler(
-			request =>
-				request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
-					? IndexResponse(/*lang=json,strict*/
-						"""
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(/*lang=json,strict*/
+					"""
 				{
 					"elastic/elasticsearch": {
 						"elasticsearch-openapi.json": {
@@ -110,8 +111,8 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 					}
 				}
 				"""
-					)
-					: SpecResponse()
+				)
+				: SpecResponse()
 		);
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
 		var expectedDocument = SpecDocument();
@@ -185,13 +186,12 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 	private static HttpResponseMessage SpecResponse() =>
 		new(HttpStatusCode.OK)
 		{
-			Content =
-				new StringContent(
-					/*lang=json,strict*/
-					"""{"openapi":"3.1.0","info":{"title":"Elasticsearch API","version":"9.4"},"paths":{}}""",
-					System.Text.Encoding.UTF8,
-					"application/json"
-				)
+			Content = new StringContent(
+				/*lang=json,strict*/
+				"""{"openapi":"3.1.0","info":{"title":"Elasticsearch API","version":"9.4"},"paths":{}}""",
+				System.Text.Encoding.UTF8,
+				"application/json"
+			)
 		};
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

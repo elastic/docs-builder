@@ -17,7 +17,8 @@ using Elastic.Documentation.Links;
 const string bucketName = "elastic-docs-link-index";
 const string indexFile = "link-index.json";
 
-await LambdaBootstrapBuilder.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
+await LambdaBootstrapBuilder
+	.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
 	.Build()
 	.RunAsync();
 
@@ -110,13 +111,10 @@ static async Task<IReadOnlyCollection<(S3EventNotification.S3EventNotificationRe
 {
 	var s3Event = S3EventNotification.ParseJson(message.Body);
 	var recordLinkReferenceTuples = new ConcurrentBag<(S3EventNotification.S3EventNotificationRecord, RepositoryLinks)>();
-	await Parallel.ForEachAsync(
-		s3Event.Records,
-		async (record, ctx) =>
-		{
-			var linkReference = await linkIndexReaderWriter.GetRepositoryLinks(record.S3.Object.Key, ctx);
-			recordLinkReferenceTuples.Add((record, linkReference));
-		}
-	);
+	await Parallel.ForEachAsync(s3Event.Records, async (record, ctx) =>
+	{
+		var linkReference = await linkIndexReaderWriter.GetRepositoryLinks(record.S3.Object.Key, ctx);
+		recordLinkReferenceTuples.Add((record, linkReference));
+	});
 	return recordLinkReferenceTuples;
 }

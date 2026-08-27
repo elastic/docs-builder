@@ -304,7 +304,8 @@ public class BundleAmendTests : ChangelogTestBase
 
 		// The amend must be self-contained: complete parent products, including target, repo, and owner.
 		amend.Products.Should().ContainSingle();
-		amend.Products[0]
+		amend
+			.Products[0]
 			.Should()
 			.BeEquivalentTo(new BundledProduct
 			{
@@ -361,7 +362,8 @@ public class BundleAmendTests : ChangelogTestBase
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
 		result.Should().BeFalse();
-		amendCollector.Diagnostics
+		amendCollector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("Failed to deserialize amend file"));
 

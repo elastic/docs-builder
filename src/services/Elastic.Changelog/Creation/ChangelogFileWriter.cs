@@ -120,7 +120,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 	{
 		if (input.Prs is { Length: > 0 })
 		{
-			var numbers = input.Prs
+			var numbers = input
+				.Prs
 				.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
 				.Where(n => n.HasValue)
 				.Select(n => n!.Value)
@@ -248,9 +249,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 
 			// Find the first non-empty, non-comment line (start of actual YAML data)
 			var insertIndex = lines.FindIndex(
-				line =>
-					!string.IsNullOrWhiteSpace(line) && !line.TrimStart().StartsWith('#') &&
-						!line.TrimStart().StartsWith("---", StringComparison.Ordinal)
+				line => !string.IsNullOrWhiteSpace(line) && !line.TrimStart().StartsWith('#') &&
+					!line.TrimStart().StartsWith("---", StringComparison.Ordinal)
 			);
 
 			lines.InsertRange(insertIndex >= 0 ? insertIndex : lines.Count, commentedFields);

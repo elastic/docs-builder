@@ -160,7 +160,8 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 		// yet, so degrade to the committed default. A committed/static registry (no env fallback) that fails to read is
 		// an authoring error and stays a hard error so typos and broken paths don't silently drop every embed.
 		var fallback = Build.Configuration.StorybookRegistryFallback;
-		var hasEnvironmentFallback = !string.IsNullOrWhiteSpace(fallback) && !string.Equals(fallback, rawRegistry, StringComparison.Ordinal);
+		var hasEnvironmentFallback = !string.IsNullOrWhiteSpace(fallback)
+			&& !string.Equals(fallback, rawRegistry, StringComparison.Ordinal);
 		if (!hasEnvironmentFallback)
 		{
 			this.EmitError($"storybook registry could not be read: {rawRegistry}", error);
@@ -255,13 +256,15 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (registry.Stories.TryGetValue(namespacedId, out var namespacedMatch))
 			return namespacedMatch;
 
-		var matches = registry.Stories
+		var matches = registry
+			.Stories
 			.Where(story => MatchesReferenceScope(story.Key, story.Value, reference))
 			.Select(story => story.Value)
 			.Where(
-				story =>
-					story.DocsId?.Equals(reference.DocsId, StringComparison.OrdinalIgnoreCase) == true ||
-						story.StorybookId?.Equals(reference.DocsId, StringComparison.OrdinalIgnoreCase) == true
+				story => story.DocsId?.Equals(reference.DocsId, StringComparison.OrdinalIgnoreCase) == true || story.StorybookId?.Equals(
+					reference.DocsId,
+					StringComparison.OrdinalIgnoreCase
+				) == true
 			)
 			.ToArray();
 

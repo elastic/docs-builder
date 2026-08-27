@@ -379,7 +379,8 @@ public class StreamTransformerCommonBehaviorTests
 		);
 
 		var conversationStart = events.OfType<AskAiEvent.ConversationStart>().First();
-		conversationStart.ConversationId
+		conversationStart
+			.ConversationId
 			.Should()
 			.NotBeNullOrEmpty($"{transformerName} should have a non-empty conversation ID in ConversationStart event");
 	}

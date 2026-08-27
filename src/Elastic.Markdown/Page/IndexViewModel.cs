@@ -124,19 +124,18 @@ public class VersionDropDownItemViewModel
 					Name = versionGroup.Key,
 					Href = null,
 					IsDisabled = false,
-					Children =
-						versionGroup.Value
-							.Select(
-								v =>
-									new VersionDropDownItemViewModel
-									{
-										Name = v,
-										Href = legacyPageMappings.First(x => x.Version == v).ToString(),
-										IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
-										Children = null
-									}
-							)
-							.ToArray()
+					Children = versionGroup
+						.Value
+						.Select(
+							v => new VersionDropDownItemViewModel
+							{
+								Name = v,
+								Href = legacyPageMappings.First(x => x.Version == v).ToString(),
+								IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
+								Children = null
+							}
+						)
+						.ToArray()
 				});
 			}
 			else
@@ -160,21 +159,18 @@ public class VersionDropDownItemViewModel
 	// But in the actual dropdown, we want to group them by major version
 	// E.g., 8.0 – 8.18 should be grouped under 8.x
 	private static Dictionary<string, List<string>> GroupByMajorVersion(LegacyPageMapping[] legacyPageMappings) =>
-		legacyPageMappings.Aggregate<LegacyPageMapping, Dictionary<string, List<string>>>(
-			[],
-			(acc, curr) =>
-			{
-				var major = curr.Version.Split('.')[0];
-				if (!int.TryParse(major, out _))
-					return acc;
-				var key = $"{major}.x";
-				if (!acc.TryGetValue(key, out var value))
-					acc[key] = [curr.Version];
-				else
-					value.Add(curr.Version);
+		legacyPageMappings.Aggregate<LegacyPageMapping, Dictionary<string, List<string>>>([], (acc, curr) =>
+		{
+			var major = curr.Version.Split('.')[0];
+			if (!int.TryParse(major, out _))
 				return acc;
-			}
-		);
+			var key = $"{major}.x";
+			if (!acc.TryGetValue(key, out var value))
+				acc[key] = [curr.Version];
+			else
+				value.Add(curr.Version);
+			return acc;
+		});
 }
 
 [JsonSerializable(typeof(VersionDropDownItemViewModel[]))]

@@ -78,7 +78,8 @@ public static partial class ChangelogTextUtilities
 	/// </summary>
 	public static string SanitizeFilename(string input)
 	{
-		var sanitized = input.ToLowerInvariant()
+		var sanitized = input
+			.ToLowerInvariant()
 			.Replace(" ", "-")
 			.Replace("/", "-")
 			.Replace("\\", "-")
@@ -544,7 +545,8 @@ public static partial class ChangelogTextUtilities
 			return "untitled";
 
 		// Split on whitespace and take first N words
-		var words = title.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+		var words = title
+			.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
 			.Take(maxWords)
 			.Select(word => NonAlphanumericRegex().Replace(word.ToLowerInvariant(), string.Empty))
 			.Where(word => !string.IsNullOrEmpty(word))

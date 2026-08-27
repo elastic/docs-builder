@@ -32,15 +32,13 @@ public static class LlmRenderingHelpers
 {
 	public static void RenderBlockWithIndentation(LlmMarkdownRenderer renderer, MarkdownObject block, string indentation = "  ")
 	{
-		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
-			renderer.BuildContext,
-			renderer.LinkUrlRewriter,
-			block,
-			static (tmpRenderer, obj) =>
-			{
-				_ = tmpRenderer.Render(obj);
-			}
-		);
+		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, block, static (
+			tmpRenderer,
+			obj
+		) =>
+		{
+			_ = tmpRenderer.Render(obj);
+		});
 
 		if (string.IsNullOrEmpty(content))
 			return;
@@ -366,15 +364,13 @@ public class LlmListRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, ListB
 		}
 
 		// Render other blocks in separate context and re-indent each line
-		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
-			renderer.BuildContext,
-			renderer.LinkUrlRewriter,
-			block,
-			static (tmpRenderer, obj) =>
-			{
-				_ = tmpRenderer.Render(obj);
-			}
-		);
+		var blockOutput = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, block, static (
+			tmpRenderer,
+			obj
+		) =>
+		{
+			_ = tmpRenderer.Render(obj);
+		});
 
 		var continuationIndent = GetContinuationIndent(baseIndent, isOrdered);
 		var lines = blockOutput.Split('\n');
@@ -461,7 +457,8 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 			return;
 
 		// Convert Table to list of string arrays for shared rendering
-		var rows = table.Cast<TableRow>()
+		var rows = table
+			.Cast<TableRow>()
 			.Select(row => row.Cast<TableCell>().Select(cell => RenderTableCellContent(renderer, cell)).ToArray() as IReadOnlyList<string>)
 			.ToList();
 
@@ -472,17 +469,15 @@ public class LlmTableRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, Tabl
 	/// Renders the inline content of a table cell to plain text
 	/// </summary>
 	private static string RenderTableCellContent(LlmMarkdownRenderer renderer, TableCell cell) =>
-		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
-			renderer.BuildContext,
-			renderer.LinkUrlRewriter,
-			cell,
-			static (tmpRenderer, c) =>
-			{
-				// Render the cell's child blocks (e.g., ParagraphBlock) which properly
-				// handles the inline hierarchy without duplicating nested inline content
-				tmpRenderer.WriteChildren(c);
-			}
-		).Trim();
+		DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, cell, static (
+			tmpRenderer,
+			c
+		) =>
+		{
+			// Render the cell's child blocks (e.g., ParagraphBlock) which properly
+			// handles the inline hierarchy without duplicating nested inline content
+			tmpRenderer.WriteChildren(c);
+		}).Trim();
 }
 
 public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, DirectiveBlock>
@@ -809,15 +804,18 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			try
 			{
 				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser.ParseSnippetAsync(
-					block.Build,
-					block.Context,
-					snippet,
-					parentPath,
-					block.Context.YamlFrontMatter,
-					Cancel.None,
-					block.Line
-				).GetAwaiter().GetResult();
+				var document = MarkdownParser
+					.ParseSnippetAsync(
+						block.Build,
+						block.Context,
+						snippet,
+						parentPath,
+						block.Context.YamlFrontMatter,
+						Cancel.None,
+						block.Line
+					)
+					.GetAwaiter()
+					.GetResult();
 				_ = renderer.Render(document);
 			}
 			catch (Exception ex)
@@ -834,7 +832,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		if (!block.Found || block.IncludePath is null)
 		{
 			var path = block.IncludePath ?? "(no path specified)";
-			renderer.BuildContext
+			renderer
+				.BuildContext
 				.Collector
 				.EmitError(
 					block.IncludePath ?? string.Empty,
@@ -848,7 +847,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		// Check if file exists before attempting to read
 		if (!file.Exists)
 		{
-			renderer.BuildContext
+			renderer
+				.BuildContext
 				.Collector
 				.EmitError(
 					block.IncludePath,
@@ -862,15 +862,15 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
-			settings =
-				SettingsBlock.PrepareSettingsForRendering(
-					YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
-					block.Context
-				);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch (FileNotFoundException e)
 		{
-			renderer.BuildContext
+			renderer
+				.BuildContext
 				.Collector
 				.EmitError(
 					block.IncludePath,
@@ -881,7 +881,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		}
 		catch (DirectoryNotFoundException e)
 		{
-			renderer.BuildContext
+			renderer
+				.BuildContext
 				.Collector
 				.EmitError(
 					block.IncludePath,
@@ -892,7 +893,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		}
 		catch (YamlException e)
 		{
-			renderer.BuildContext
+			renderer
+				.BuildContext
 				.Collector
 				.EmitError(
 					block.IncludePath,
@@ -903,7 +905,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		}
 		catch (Exception e)
 		{
-			renderer.BuildContext
+			renderer
+				.BuildContext
 				.Collector
 				.EmitError(
 					block.IncludePath,
@@ -1093,7 +1096,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		}
 
 		// Read CSV data using CsvReader
-		var csvRows = CsvReader.ReadCsvFile(block.CsvFilePath, block.Separator, block.Build.ReadFileSystem)
+		var csvRows = CsvReader
+			.ReadCsvFile(block.CsvFilePath, block.Separator, block.Build.ReadFileSystem)
 			.Take(block.MaxRows)
 			.Select(row => row as IReadOnlyList<string>)
 			.ToList();
@@ -1150,23 +1154,21 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	private static void WriteChildrenWithIndentation(LlmMarkdownRenderer renderer, Block container, string indent)
 	{
 		// Capture output and manually add indentation
-		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
-			renderer.BuildContext,
-			renderer.LinkUrlRewriter,
-			container,
-			static (tmpRenderer, obj) =>
+		var content = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, container, static (
+			tmpRenderer,
+			obj
+		) =>
+		{
+			switch (obj)
 			{
-				switch (obj)
-				{
-					case ContainerBlock containerBlock:
-						tmpRenderer.WriteChildren(containerBlock);
-						break;
-					case LeafBlock leafBlock:
-						tmpRenderer.WriteLeafInline(leafBlock);
-						break;
-				}
+				case ContainerBlock containerBlock:
+					tmpRenderer.WriteChildren(containerBlock);
+					break;
+				case LeafBlock leafBlock:
+					tmpRenderer.WriteLeafInline(leafBlock);
+					break;
 			}
-		);
+		});
 
 		if (string.IsNullOrEmpty(content))
 			return;
@@ -1208,15 +1210,13 @@ public class LlmDefinitionItemRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 
 	private static string GetPlainTextFromLeafBlock(LlmMarkdownRenderer renderer, LeafBlock leafBlock)
 	{
-		var markdownText = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
-			renderer.BuildContext,
-			renderer.LinkUrlRewriter,
-			leafBlock,
-			static (tmpRenderer, obj) =>
-			{
-				tmpRenderer.WriteLeafInline(obj);
-			}
-		);
+		var markdownText = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(renderer.BuildContext, renderer.LinkUrlRewriter, leafBlock, static (
+			tmpRenderer,
+			obj
+		) =>
+		{
+			tmpRenderer.WriteLeafInline(obj);
+		});
 		return markdownText.StripMarkdown();
 	}
 }

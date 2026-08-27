@@ -66,13 +66,13 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Error &&
-						d.Message.Contains("Entry '1755268130-feature.yaml' in bundle has no inline content: title and type are required") &&
-						d.Message.Contains("Re-create the bundle with 'changelog bundle'")
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"Entry '1755268130-feature.yaml' in bundle has no inline content: title and type are required"
+				) && d.Message.Contains("Re-create the bundle with 'changelog bundle'")
 			);
 	}
 
@@ -102,7 +102,8 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("No changelog entries to render") || d.Message.Contains("Failed to deserialize"));
 	}
@@ -139,12 +140,13 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Error &&
-						d.Message.Contains("Entry 'Feature without products' in bundle is missing required field: products")
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"Entry 'Feature without products' in bundle is missing required field: products"
+				)
 			);
 	}
 
@@ -236,12 +238,13 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Error && d.Message.Contains("Unknown type feature") &&
-						d.Message.Contains("has no inline content: title and type are required")
+				d => d.Severity == Severity.Error && d.Message.Contains("Unknown type feature") && d.Message.Contains(
+					"has no inline content: title and type are required"
+				)
 			);
 	}
 }

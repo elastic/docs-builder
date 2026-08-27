@@ -53,7 +53,8 @@ public class ExternalCommandExecutorRetryTests
 		succeeded.Should().BeFalse();
 		executor.CallCount.Should().Be(5);
 		executor.Diagnostics.Errors.Should().Be(1);
-		executor.RecordedDelays
+		executor
+			.RecordedDelays
 			.Should()
 			.Equal(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8));
 	}

@@ -112,8 +112,12 @@ public class ChangelogBundleAmendService(
 			}
 
 			var writeDirectory = ResolveWriteDirectory(parent, input, changelogConfig, collector, out var requestedAmendFileName);
-			var (amendsOk, existingAmendBundles, nextAmendNumber) =
-				await LoadExistingAmendBundlesAsync(parent, writeDirectory, collector, ctx);
+			var (amendsOk, existingAmendBundles, nextAmendNumber) = await LoadExistingAmendBundlesAsync(
+				parent,
+				writeDirectory,
+				collector,
+				ctx
+			);
 			if (!amendsOk)
 				return false;
 
@@ -127,49 +131,46 @@ public class ChangelogBundleAmendService(
 			IReadOnlyDictionary<string, string>? cdnContents = null;
 			if (useCdn)
 			{
-				var fetched =
-					await FetchCdnContentsAsync(
-						collector,
-						new CdnAmendSourceRequest(
-							parentBundle,
-							changelogConfig,
-							authoringRepo!,
-							input.AddFiles,
-							input.RemoveFiles,
-							input.Force
-						),
-						ctx
-					);
+				var fetched = await FetchCdnContentsAsync(
+					collector,
+					new CdnAmendSourceRequest(
+						parentBundle,
+						changelogConfig,
+						authoringRepo!,
+						input.AddFiles,
+						input.RemoveFiles,
+						input.Force
+					),
+					ctx
+				);
 				if (fetched is null)
 					return false;
 				cdnContents = fetched;
 			}
 
-			var addSources =
-				await SourceInputFilesAsync(
-					collector,
-					input.AddFiles,
-					"--add",
-					useCdn,
-					cdnContents,
-					requireContent: true,
-					force: false,
-					ctx
-				);
+			var addSources = await SourceInputFilesAsync(
+				collector,
+				input.AddFiles,
+				"--add",
+				useCdn,
+				cdnContents,
+				requireContent: true,
+				force: false,
+				ctx
+			);
 			if (addSources is null)
 				return false;
 
-			var removeSources =
-				await SourceInputFilesAsync(
-					collector,
-					input.RemoveFiles,
-					"--remove",
-					useCdn,
-					cdnContents,
-					requireContent: false,
-					force: input.Force,
-					ctx
-				);
+			var removeSources = await SourceInputFilesAsync(
+				collector,
+				input.RemoveFiles,
+				"--remove",
+				useCdn,
+				cdnContents,
+				requireContent: false,
+				force: input.Force,
+				ctx
+			);
 			if (removeSources is null)
 				return false;
 
@@ -354,10 +355,10 @@ public class ChangelogBundleAmendService(
 	{
 		var parentOwner = request.ParentBundle.Products.Count > 0 ? request.ParentBundle.Products[0].Owner : null;
 		var owner = ChangelogRepoOwnerResolver.ResolveOwner(
-				request.ChangelogConfig?.Bundle?.Owner,
-				request.ChangelogConfig?.Bundle?.Repo,
-				parentOwner
-			)
+			request.ChangelogConfig?.Bundle?.Owner,
+			request.ChangelogConfig?.Bundle?.Repo,
+			parentOwner
+		)
 			?? ChangelogEntrySourcing.DefaultOwner;
 		var configuredBranch = request.ChangelogConfig?.Bundle?.Branch;
 		var branch = string.IsNullOrWhiteSpace(configuredBranch) ? ChangelogEntrySourcing.DefaultBranch : configuredBranch;
@@ -404,16 +405,15 @@ public class ChangelogBundleAmendService(
 				continue;
 
 			var captured = new List<string>();
-			var result =
-				await _entryFetcher.FetchNamedAsync(
-					pool.BaseUri,
-					pool.Owner,
-					pool.Repo,
-					pool.Branch,
-					[name],
-					captured.Add,
-					ctx
-				).ConfigureAwait(false);
+			var result = await _entryFetcher.FetchNamedAsync(
+				pool.BaseUri,
+				pool.Owner,
+				pool.Repo,
+				pool.Branch,
+				[name],
+				captured.Add,
+				ctx
+			).ConfigureAwait(false);
 			if (result is not null)
 			{
 				foreach (var entry in result)
@@ -440,25 +440,25 @@ public class ChangelogBundleAmendService(
 	)
 	{
 		var fatal = false;
-		var result =
-			await _entryFetcher.FetchNamedAsync(
-				pool.BaseUri,
-				pool.Owner,
-				pool.Repo,
-				pool.Branch,
-				names,
-				msg =>
-				{
-					fatal = true;
-					collector.EmitError(string.Empty, msg);
-				},
-				ctx
-			).ConfigureAwait(false);
+		var result = await _entryFetcher.FetchNamedAsync(
+			pool.BaseUri,
+			pool.Owner,
+			pool.Repo,
+			pool.Branch,
+			names,
+			msg =>
+			{
+				fatal = true;
+				collector.EmitError(string.Empty, msg);
+			},
+			ctx
+		).ConfigureAwait(false);
 		return fatal || result is null ? null : result;
 	}
 
 	private List<string> DistinctFileNames(IReadOnlyList<string> paths) =>
-		paths.Select(p => _fileSystem.Path.GetFileName(p))
+		paths
+			.Select(p => _fileSystem.Path.GetFileName(p))
 			.Where(n => !string.IsNullOrWhiteSpace(n))
 			.Distinct(StringComparer.Ordinal)
 			.ToList();
@@ -624,18 +624,17 @@ public class ChangelogBundleAmendService(
 		}
 
 		var fatal = false;
-		var fetched =
-			await _bundleFetcher.FetchNamedBundleAsync(
-				baseUri,
-				product,
-				fileName,
-				msg =>
-				{
-					fatal = true;
-					collector.EmitError(bundlePath, msg);
-				},
-				ctx
-			).ConfigureAwait(false);
+		var fetched = await _bundleFetcher.FetchNamedBundleAsync(
+			baseUri,
+			product,
+			fileName,
+			msg =>
+			{
+				fatal = true;
+				collector.EmitError(bundlePath, msg);
+			},
+			ctx
+		).ConfigureAwait(false);
 
 		if (fatal || fetched is null)
 			return null;
@@ -756,7 +755,8 @@ public class ChangelogBundleAmendService(
 	private static bool HasYamlExtension(string path)
 	{
 		var extension = Path.GetExtension(path);
-		return extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase) || extension.Equals(".yml", StringComparison.OrdinalIgnoreCase);
+		return extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase)
+			|| extension.Equals(".yml", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private sealed record ResolvedParent
@@ -920,7 +920,8 @@ public class ChangelogBundleAmendService(
 		if (!fileSystem.Directory.Exists(directory))
 			return [];
 
-		var amendFiles = fileSystem.Directory
+		var amendFiles = fileSystem
+			.Directory
 			.GetFiles(directory, $"{baseName}.amend-*.y*ml")
 			.Where(file => string.Equals(fileSystem.Path.GetExtension(file), extension, StringComparison.OrdinalIgnoreCase))
 			.OrderBy(BundleAmendMerger.GetAmendFileNumber)

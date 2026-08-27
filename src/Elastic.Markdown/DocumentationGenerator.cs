@@ -80,27 +80,25 @@ public partial class DocumentationGenerator
 		ApiMarkdownExcludePaths = BuildApiMarkdownExcludePaths();
 
 		// Use the provided inferrer or create a default one
-		_documentInferrer =
-			documentInferrer
-				?? new DocumentInferrerService(
-					DocumentationSet.Context.ProductsConfiguration,
-					DocumentationSet.Context.VersionsConfiguration,
-					DocumentationSet.Context.LegacyUrlMappings,
-					DocumentationSet.Configuration,
-					DocumentationSet.Context.Git
-				);
-
-		HtmlWriter =
-			new HtmlWriter(
-				DocumentationSet,
-				_writeFileSystem,
-				new DescriptionGenerator(),
-				pageViewFactory,
-				positionalNavigation,
-				navigationHtmlWriter,
-				legacyUrlMapper,
-				_documentInferrer
+		_documentInferrer = documentInferrer
+			?? new DocumentInferrerService(
+				DocumentationSet.Context.ProductsConfiguration,
+				DocumentationSet.Context.VersionsConfiguration,
+				DocumentationSet.Context.LegacyUrlMappings,
+				DocumentationSet.Configuration,
+				DocumentationSet.Context.Git
 			);
+
+		HtmlWriter = new HtmlWriter(
+			DocumentationSet,
+			_writeFileSystem,
+			new DescriptionGenerator(),
+			pageViewFactory,
+			positionalNavigation,
+			navigationHtmlWriter,
+			legacyUrlMapper,
+			_documentInferrer
+		);
 		_documentationFileExporter = docSet.Context.AvailableExporters.Contains(Exporter.Html)
 			? docSet.EnabledExtensions.FirstOrDefault(e => e.FileExporter != null)?.FileExporter
 				?? new DocumentationFileExporter(docSet.Context.ReadFileSystem, _writeFileSystem)
@@ -199,37 +197,33 @@ public partial class DocumentationGenerator
 		var processedFileCount = 0;
 		var exceptionCount = 0;
 		var totalFileCount = DocumentationSet.Files.Count;
-		await Parallel.ForEachAsync(
-			DocumentationSet.Files,
-			ctx,
-			async (file, token) =>
+		await Parallel.ForEachAsync(DocumentationSet.Files, ctx, async (file, token) =>
+		{
+			var processedFiles = Interlocked.Increment(ref processedFileCount);
+			var (fp, doc) = file;
+			try
 			{
-				var processedFiles = Interlocked.Increment(ref processedFileCount);
-				var (fp, doc) = file;
-				try
-				{
-					await ProcessFile(offendingFiles, doc, outputSeenChanges, mode, token);
-				}
-				catch (Exception e)
-				{
-					var currentCount = Interlocked.Increment(ref exceptionCount);
-					// this is not the main error logging mechanism
-					// if we hit this from too many files fail hard
-					if (currentCount <= 25)
-						Context.Collector.EmitError(fp.RelativePath, "Uncaught exception while processing file", e);
-					else
-						throw;
-				}
-
-				if (processedFiles % 100 == 0)
-					_logger.LogInformation(
-						" {Name} -> Processed {ProcessedFiles}/{TotalFileCount} files",
-						Context.Git.RepositoryName,
-						processedFiles,
-						totalFileCount
-					);
+				await ProcessFile(offendingFiles, doc, outputSeenChanges, mode, token);
 			}
-		);
+			catch (Exception e)
+			{
+				var currentCount = Interlocked.Increment(ref exceptionCount);
+				// this is not the main error logging mechanism
+				// if we hit this from too many files fail hard
+				if (currentCount <= 25)
+					Context.Collector.EmitError(fp.RelativePath, "Uncaught exception while processing file", e);
+				else
+					throw;
+			}
+
+			if (processedFiles % 100 == 0)
+				_logger.LogInformation(
+					" {Name} -> Processed {ProcessedFiles}/{TotalFileCount} files",
+					Context.Git.RepositoryName,
+					processedFiles,
+					totalFileCount
+				);
+		});
 		_logger.LogInformation(
 			" {Name} -> Processed {ProcessedFileCount}/{TotalFileCount} files",
 			Context.Git.RepositoryName,
@@ -287,7 +281,8 @@ public partial class DocumentationGenerator
 	{
 		var definedKeys = new HashSet<string>(Context.Configuration.Substitutions.Keys.ToArray());
 		var inUse = new HashSet<string>(Context.Collector.InUseSubstitutionKeys.Keys);
-		var keysNotInUse = definedKeys.Except(inUse)
+		var keysNotInUse = definedKeys
+			.Except(inUse)
 			// versions keys are injected
 			.Where(key => !key.StartsWith("version."))
 			// product keys are injected
@@ -428,25 +423,26 @@ public partial class DocumentationGenerator
 			{
 				foreach (var exporter in _markdownExporters)
 				{
-					var document =
-						context.MarkdownDocument ??= await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
+					var document = context.MarkdownDocument ??= await markdown.ParseFullAsync(
+						DocumentationSet.TryFindDocumentByRelativePath,
+						ctx
+					);
 					var navigationItem = PositionalNavigation.GetNavigationFor(markdown);
-					_ =
-						await exporter.ExportAsync(
-							new MarkdownExportFileContext
-							{
-								BuildContext = Context,
-								Resolvers = DocumentationSet.MarkdownParser.Resolvers,
-								Document = document,
-								SourceFile = markdown,
-								DefaultOutputFile = outputFile,
-								DocumentationSet = DocumentationSet,
-								PositionaNavigation = PositionalNavigation,
-								NavigationItem = navigationItem,
-								InferenceService = _documentInferrer
-							},
-							ctx
-						);
+					_ = await exporter.ExportAsync(
+						new MarkdownExportFileContext
+						{
+							BuildContext = Context,
+							Resolvers = DocumentationSet.MarkdownParser.Resolvers,
+							Document = document,
+							SourceFile = markdown,
+							DefaultOutputFile = outputFile,
+							DocumentationSet = DocumentationSet,
+							PositionaNavigation = PositionalNavigation,
+							NavigationItem = navigationItem,
+							InferenceService = _documentInferrer
+						},
+						ctx
+					);
 				}
 			}
 		}

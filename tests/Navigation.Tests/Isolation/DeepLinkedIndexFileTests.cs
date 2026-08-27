@@ -145,7 +145,8 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 
 		// All three entries survive as their own subfolders; none is consumed as the parent's index.
 		var childFolders = reference.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().ToList();
-		childFolders.Select(f => f.Url)
+		childFolders
+			.Select(f => f.Url)
 			.Should()
 			.BeEquivalentTo(["/reference/1password", "/reference/abnormal_security", "/reference/activemq"]);
 		childFolders.Should().AllSatisfy(f => f.NavigationItems.Should().BeEmpty());

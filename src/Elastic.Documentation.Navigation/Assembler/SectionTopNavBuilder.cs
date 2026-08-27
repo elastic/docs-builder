@@ -29,7 +29,8 @@ public static class SectionTopNavBuilder
 		// Index plain toc: items by Identifier for fast lookup.
 		// Sections with children now live in the tree as SectionNavigation nodes and
 		// are looked up by title instead.
-		var byIdentifier = topLevel.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+		var byIdentifier = topLevel
+			.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
 			.Where(item => item is not SectionNavigation)
 			.ToDictionary(item => item.Identifier);
 
@@ -49,7 +50,8 @@ public static class SectionTopNavBuilder
 				{
 					// All pages within the section have NavigationRoot = sectionNav,
 					// so a single SectionId match is sufficient for active-tab detection.
-					var tabUrl = sectionNav.NavigationItems
+					var tabUrl = sectionNav
+						.NavigationItems
 						.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
 						.FirstOrDefault()?.Index.Url;
 

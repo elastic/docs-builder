@@ -102,7 +102,8 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var documentationFolder = docSet.TableOfContents
+		var documentationFolder = docSet
+			.TableOfContents
 			.OfType<FolderRef>()
 			.First(f => f.PathRelativeToDocumentationSet == "documentation");
 		documentationFolder.Children.Should().NotBeEmpty();
@@ -126,7 +127,8 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var fileWithChildren = docSet.TableOfContents
+		var fileWithChildren = docSet
+			.TableOfContents
 			.OfType<FileRef>()
 			.FirstOrDefault(f => f.PathRelativeToDocumentationSet == "cross-links.md" && f.Children.Count > 0);
 

@@ -44,10 +44,10 @@ public class GlobalNavigationService(
 
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformationFactory.Create(
-				root,
-				fileSystem,
-				logFactory.CreateLogger(nameof(GitCheckoutInformation))
-			).RepositoryName
+			root,
+			fileSystem,
+			logFactory.CreateLogger(nameof(GitCheckoutInformation))
+		).RepositoryName
 			?? throw new Exception("Unable to determine repository name");
 
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);

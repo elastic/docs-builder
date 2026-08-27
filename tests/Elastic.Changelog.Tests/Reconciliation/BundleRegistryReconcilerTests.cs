@@ -21,15 +21,14 @@ public class BundleRegistryReconcilerTests
 	private readonly ReconcileMetrics _metrics = new();
 
 	public BundleRegistryReconcilerTests() =>
-		_reconciler =
-			new BundleRegistryReconciler(
-				NullLoggerFactory.Instance,
-				_s3.Client,
-				PublicBucket,
-				new FakeTimeProvider(FixedNow),
-				retryBaseDelay: TimeSpan.Zero,
-				_metrics
-			);
+		_reconciler = new BundleRegistryReconciler(
+			NullLoggerFactory.Instance,
+			_s3.Client,
+			PublicBucket,
+			new FakeTimeProvider(FixedNow),
+			retryBaseDelay: TimeSpan.Zero,
+			_metrics
+		);
 
 	private static ChangelogScope BundleScope(string product = "elasticsearch")
 	{
@@ -120,7 +119,8 @@ public class BundleRegistryReconcilerTests
 		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
 
 		// 1 and 2 were ETag-reused: only the manifest itself plus 3 and 4 were read.
-		_s3.GetsFor(PublicBucket)
+		_s3
+			.GetsFor(PublicBucket)
 			.Should()
 			.BeEquivalentTo([scope.RegistryKey, scope.Prefix + "es-9.3.0.yaml", scope.Prefix + "es-9.4.0.yaml"]);
 	}
@@ -419,13 +419,12 @@ public class BundleRegistryReconcilerTests
 		// Every attempt loses: a concurrent writer lands between every read and write.
 		var counter = 0;
 		_s3.BeforePut =
-			_ =>
-				SeedManifest(
-					scope,
-					producer: null,
-					Registry.CurrentSchemaVersion,
-					new RegistryBundle { File = $"concurrent-{counter++}.yaml", Target = null, ETag = "cc" }
-				);
+			_ => SeedManifest(
+				scope,
+				producer: null,
+				Registry.CurrentSchemaVersion,
+				new RegistryBundle { File = $"concurrent-{counter++}.yaml", Target = null, ETag = "cc" }
+			);
 
 		var act = async () => await _reconciler.ReconcileGroupAsync(scope, Ctx);
 

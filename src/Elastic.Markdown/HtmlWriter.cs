@@ -192,10 +192,9 @@ public class HtmlWriter(
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",
-			AllowIndexing =
-				DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true &&
-					(markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) ||
-						markdown is DetectionRuleFile || !current.ExcludeFromIndexing),
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true &&
+				(markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is
+					DetectionRuleFile || !current.ExcludeFromIndexing),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Optimizely = DocumentationSet.Context.Optimizely,
@@ -231,13 +230,12 @@ public class HtmlWriter(
 		// Add parents
 		breadcrumbItems.AddRange(
 			crumbs.Select(
-				parent =>
-					new BreadcrumbListItem
-					{
-						Position = position++,
-						Name = parent.NavigationTitle,
-						Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
-					}
+				parent => new BreadcrumbListItem
+				{
+					Position = position++,
+					Name = parent.NavigationTitle,
+					Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
+				}
 			)
 		);
 		// Add current page

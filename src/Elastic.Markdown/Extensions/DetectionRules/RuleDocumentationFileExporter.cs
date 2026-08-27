@@ -23,13 +23,12 @@ public class RuleDocumentationFileExporter(IFileSystem readFileSystem, IFileSyst
 		switch (context.File)
 		{
 			case DetectionRuleFile df:
-				context.MarkdownDocument =
-					await htmlWriter.WriteAsync(
-						DetectionRuleFile.OutputPath(outputFile, context.BuildContext),
-						df,
-						conversionCollector,
-						ctx
-					);
+				context.MarkdownDocument = await htmlWriter.WriteAsync(
+					DetectionRuleFile.OutputPath(outputFile, context.BuildContext),
+					df,
+					conversionCollector,
+					ctx
+				);
 				break;
 			case MarkdownFile markdown:
 				context.MarkdownDocument = await htmlWriter.WriteAsync(outputFile, markdown, conversionCollector, ctx);

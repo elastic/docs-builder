@@ -165,8 +165,10 @@ public static class DeploymentFilter
 	/// <summary>Returns <c>true</c> when at least one setting (recursively) in <paramref name="settings"/> is visible.</summary>
 	public static bool AnyVisible(Setting[] settings, string deploymentFilter, ApplicableTo? inheritedAppliesTo) =>
 		settings.Any(
-			s =>
-				s.IsVisibleForDeployment(deploymentFilter, inheritedAppliesTo) ||
-					AnyVisible(s.Settings, deploymentFilter, s.ResolveAppliesTo(inheritedAppliesTo))
+			s => s.IsVisibleForDeployment(deploymentFilter, inheritedAppliesTo) || AnyVisible(
+				s.Settings,
+				deploymentFilter,
+				s.ResolveAppliesTo(inheritedAppliesTo)
+			)
 		);
 }

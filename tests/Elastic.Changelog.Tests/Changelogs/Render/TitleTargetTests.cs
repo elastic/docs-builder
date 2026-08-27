@@ -56,12 +56,13 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Warning && d.Message.Contains("No --title option provided") &&
-						d.Message.Contains("default to 'unknown'")
+				d => d.Severity == Severity.Warning && d.Message.Contains("No --title option provided") && d.Message.Contains(
+					"default to 'unknown'"
+				)
 			);
 	}
 

@@ -35,7 +35,8 @@ public class ProductVersionInferrerService(
 	)
 	{
 		if (legacyPages is { Count: > 0 })
-			return legacyPages.ElementAt(0)
+			return legacyPages
+				.ElementAt(0)
 				.Product
 				.VersioningSystem!; // If the page has legacy mappings, use the versioning system of the first mapping's product
 
@@ -51,7 +52,8 @@ public class ProductVersionInferrerService(
 		var versioning = ProductsConfiguration.Products.TryGetValue(repositoryName, out var belonging)
 			? belonging.VersioningSystem! //If the page's docset has a name with a direct product match, use the versioning system of the product
 
-			: ProductsConfiguration.Products
+			: ProductsConfiguration
+				.Products
 				.Values
 				.SingleOrDefault(p => p.Repository is not null && p.Repository.Equals(repositoryName, StringComparison.OrdinalIgnoreCase)) is { } repositoryMatch
 				? repositoryMatch.VersioningSystem! // Verify if the page belongs to a repository linked to a product, and if so, use the versioning system of the product

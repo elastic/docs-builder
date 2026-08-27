@@ -29,8 +29,9 @@ public class ChangelogBackfillServiceTests
 		_mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		_fileSystem = CheckoutsFileSystem.FromWorkingDirectory(_mockFileSystem).Write;
 		_collector = new TestDiagnosticsCollector(output);
-		_httpHandler =
-			new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(ReleaseNotesFixture.Markdown) });
+		_httpHandler = new StubHandler(
+			_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(ReleaseNotesFixture.Markdown) }
+		);
 	}
 
 	private ChangelogBackfillService CreateService() => new(NullLoggerFactory.Instance, _fileSystem, _httpHandler);
@@ -54,12 +55,13 @@ public class ChangelogBackfillServiceTests
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
-		_httpHandler.RequestedUrls
+		_httpHandler
+			.RequestedUrls
 			.Should()
 			.ContainSingle(
-				u =>
-					u.Contains("elastic-otel-java") && u.Contains("9a61ce4faaf08e272c433a083bcc6f0e96d80e0a") &&
-						u.Contains("docs/release-notes/index.md")
+				u => u.Contains("elastic-otel-java") && u.Contains("9a61ce4faaf08e272c433a083bcc6f0e96d80e0a") && u.Contains(
+					"docs/release-notes/index.md"
+				)
 			);
 	}
 
@@ -215,11 +217,13 @@ public class ChangelogBackfillServiceTests
 
 		// 1.4.1 has a fix entry with no PR reference.
 		var changelogDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
-		var noteFiles = _mockFileSystem.AllFiles
+		var noteFiles = _mockFileSystem
+			.AllFiles
 			.Where(
-				f =>
-					f.StartsWith(changelogDir, StringComparison.Ordinal) &&
-						Path.GetFileName(f).StartsWith("note-", StringComparison.Ordinal)
+				f => f.StartsWith(changelogDir, StringComparison.Ordinal) && Path.GetFileName(f).StartsWith(
+					"note-",
+					StringComparison.Ordinal
+				)
 			)
 			.ToList();
 		noteFiles.Should().NotBeEmpty("at least one PR-less entry should produce a note-*.yaml file");
@@ -269,13 +273,13 @@ public class ChangelogBackfillServiceTests
 
 		// All PR files should be unique names (no overwritten paths).
 		var changelogDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "backfill-test", "edot-java", "changelog");
-		var prFiles = _mockFileSystem.AllFiles
+		var prFiles = _mockFileSystem
+			.AllFiles
 			.Where(f => f.StartsWith(changelogDir, StringComparison.Ordinal))
 			.Where(f => !f.Contains("bundles", StringComparison.Ordinal))
 			.Where(
-				f =>
-					Path.GetFileName(f) is var n && !n.StartsWith("note-", StringComparison.Ordinal) &&
-						!n.StartsWith("notes-", StringComparison.Ordinal)
+				f => Path.GetFileName(f) is var n && !n.StartsWith("note-", StringComparison.Ordinal) &&
+					!n.StartsWith("notes-", StringComparison.Ordinal)
 			)
 			.Select(Path.GetFileName)
 			.ToList();

@@ -20,9 +20,10 @@ namespace Elastic.Documentation.Configuration;
 
 public record BuildContext : IDocumentationSetContext, IDocumentationConfigurationContext
 {
-	public static string Version { get; } = Assembly.GetExecutingAssembly()
-			.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
-			.FirstOrDefault()?.InformationalVersion
+	public static string Version { get; } = Assembly
+		.GetExecutingAssembly()
+		.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+		.FirstOrDefault()?.InformationalVersion
 		?? "0.0.0";
 
 	/// <summary>The resolved documentation filesystem. All other path/scope properties are computed from this.</summary>

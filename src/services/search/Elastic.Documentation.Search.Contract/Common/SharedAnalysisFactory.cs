@@ -18,10 +18,11 @@ namespace Elastic.Documentation.Search.Contract.Mapping;
 public static class SharedAnalysisFactory
 {
 	public static AnalysisBuilder BuildBaseAnalysis(AnalysisBuilder analysis) =>
-		analysis.Normalizer(
-			"keyword_normalizer",
-			n => n.Custom().CharFilter("strip_non_word_chars").Filters("lowercase", "asciifolding", "trim")
-		)
+		analysis
+			.Normalizer(
+				"keyword_normalizer",
+				n => n.Custom().CharFilter("strip_non_word_chars").Filters("lowercase", "asciifolding", "trim")
+			)
 			.Analyzer("starts_with_analyzer", a => a.Custom().Tokenizer("starts_with_tokenizer").Filter("lowercase"))
 			.Analyzer("starts_with_analyzer_search", a => a.Custom().Tokenizer("keyword").Filter("lowercase"))
 			.Analyzer("highlight_analyzer", a => a.Custom().Tokenizer("group_tokenizer").Filters("lowercase", "english_stop"))
@@ -52,19 +53,19 @@ public static class SharedAnalysisFactory
 		BuildBaseAnalysis(analysis)
 			.Analyzer(
 				"synonyms_fixed_analyzer",
-				a =>
-					a.Custom()
-						.CharFilter("symbol_rewrite_char_filter")
-						.Tokenizer("group_tokenizer")
-						.Filters("lowercase", "morphology_override_filter", "synonyms_fixed_filter", "kstem")
+				a => a
+					.Custom()
+					.CharFilter("symbol_rewrite_char_filter")
+					.Tokenizer("group_tokenizer")
+					.Filters("lowercase", "morphology_override_filter", "synonyms_fixed_filter", "kstem")
 			)
 			.Analyzer(
 				"synonyms_analyzer",
-				a =>
-					a.Custom()
-						.CharFilter("symbol_rewrite_char_filter")
-						.Tokenizer("group_tokenizer")
-						.Filters("lowercase", "morphology_override_filter", "synonyms_filter", "kstem")
+				a => a
+					.Custom()
+					.CharFilter("symbol_rewrite_char_filter")
+					.Tokenizer("group_tokenizer")
+					.Filters("lowercase", "morphology_override_filter", "synonyms_filter", "kstem")
 			)
 			// Rewrite "c#" / standalone ".net" -> "dotnet" BEFORE tokenization: group_tokenizer never
 			// splits on "#" or ".", so the tokenizer would otherwise see one opaque "c#"/".net" token
@@ -78,12 +79,11 @@ public static class SharedAnalysisFactory
 			// first so both forms collapse to the same token before kstem (and synonym expansion) sees them.
 			.TokenFilter(
 				"morphology_override_filter",
-				tf =>
-					tf.StemmerOverride().Rules(
-						"config, configuration => config",
-						"install, installation => install",
-						"auth, authentication => auth"
-					)
+				tf => tf.StemmerOverride().Rules(
+					"config, configuration => config",
+					"install, installation => install",
+					"auth, authentication => auth"
+				)
 			)
 			.TokenFilter("synonyms_fixed_filter", tf => tf.SynonymGraph().Synonyms(indexTimeSynonyms))
 			.TokenFilter("synonyms_filter", tf => tf.SynonymGraph().SynonymsSet(synonymSetName).Updateable(true));

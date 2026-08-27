@@ -19,7 +19,8 @@ public class ProductLifecycleInfoTests
 
 	[Fact]
 	public void Experimental_IsLessMatureThanPreview() =>
-		ProductLifecycleInfo.GetOrder(ProductLifecycle.Experimental)
+		ProductLifecycleInfo
+			.GetOrder(ProductLifecycle.Experimental)
 			.Should()
 			.BeGreaterThan(ProductLifecycleInfo.GetOrder(ProductLifecycle.TechnicalPreview));
 }

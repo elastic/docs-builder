@@ -129,8 +129,11 @@ public class ChangelogContentScrubberTests
 			+ "    target: 9.2.0\n";
 		var scrubber = Scrubber(["elastic/elasticsearch"]);
 
-		var result =
-			await scrubber.ScrubAsync("changelog/elastic/elasticsearch/main/note-slow-rollover.yaml", yaml, CancellationToken.None);
+		var result = await scrubber.ScrubAsync(
+			"changelog/elastic/elasticsearch/main/note-slow-rollover.yaml",
+			yaml,
+			CancellationToken.None
+		);
 
 		result.CanonicalKey.Should().BeNull("note-* files are already canonical and need no rename");
 		result.Markers.Should().BeEmpty();

@@ -56,9 +56,10 @@ public static class Interpolation
 		if (properties.Length == 0 || properties.Sum(p => p.Count) == 0)
 			return false;
 
-		var lookups = properties.Select(
-			p => p as Dictionary<string, string> ?? new Dictionary<string, string>(p, StringComparer.OrdinalIgnoreCase)
-		).Select(d => d.GetAlternateLookup<ReadOnlySpan<char>>()).ToArray();
+		var lookups = properties
+			.Select(p => p as Dictionary<string, string> ?? new Dictionary<string, string>(p, StringComparer.OrdinalIgnoreCase))
+			.Select(d => d.GetAlternateLookup<ReadOnlySpan<char>>())
+			.ToArray();
 
 		var matchSubs = InterpolationRegex.MatchSubstitutions().EnumerateMatches(span);
 

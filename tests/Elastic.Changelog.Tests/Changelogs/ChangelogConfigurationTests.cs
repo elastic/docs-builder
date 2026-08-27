@@ -281,12 +281,13 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().BeNull();
 			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics
+			Collector
+				.Diagnostics
 				.Should()
 				.Contain(
-					d =>
-						d.Severity == Severity.Error && d.Message.Contains("Type 'invalid-type' in pivot.types") &&
-							d.Message.Contains("is not a valid type")
+					d => d.Severity == Severity.Error && d.Message.Contains("Type 'invalid-type' in pivot.types") && d.Message.Contains(
+						"is not a valid type"
+					)
 				);
 		}
 		finally
@@ -325,7 +326,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().BeNull();
 			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics
+			Collector
+				.Diagnostics
 				.Should()
 				.Contain(d => d.Severity == Severity.Error && d.Message.Contains("Required type 'breaking-change' is missing"));
 		}
@@ -370,12 +372,13 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().BeNull();
 			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics
+			Collector
+				.Diagnostics
 				.Should()
 				.Contain(
-					d =>
-						d.Severity == Severity.Error && d.Message.Contains("Type 'feature' has subtypes defined") &&
-							d.Message.Contains("subtypes are only allowed for 'breaking-change' type")
+					d => d.Severity == Severity.Error && d.Message.Contains("Type 'feature' has subtypes defined") && d.Message.Contains(
+						"subtypes are only allowed for 'breaking-change' type"
+					)
 				);
 		}
 		finally
@@ -463,12 +466,13 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().BeNull();
 			Collector.Errors.Should().BeGreaterThan(0);
-			Collector.Diagnostics
+			Collector
+				.Diagnostics
 				.Should()
 				.Contain(
-					d =>
-						d.Severity == Severity.Error && d.Message.Contains("Subtype 'invalid-subtype'") &&
-							d.Message.Contains("is not a valid subtype")
+					d => d.Severity == Severity.Error && d.Message.Contains("Subtype 'invalid-subtype'") && d.Message.Contains(
+						"is not a valid subtype"
+					)
 				);
 		}
 		finally
@@ -481,9 +485,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_RulesCreateExclude_AsString_ParsesCorrectly()
 	{
 		// Arrange - rules.create.exclude as comma-separated string
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -493,7 +496,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  create:
 			    exclude: ">non-issue, >test, >skip"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -508,9 +511,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_RulesCreateExclude_AsList_ParsesCorrectly()
 	{
 		// Arrange - rules.create.exclude as YAML list
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -523,7 +525,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - ">test"
 			      - ">skip"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -538,9 +540,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_IgnoredAndWarningEmitted()
 	{
 		// Arrange - rules.publish is deprecated and no longer used; verify warning is emitted and Publish is null
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -550,19 +551,20 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  publish:
 			    exclude_types: "deprecation, known-issue"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
 		config.Rules.Should().NotBeNull();
 		config.Rules.Publish.Should().BeNull(); // rules.publish is retired
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains("rules.publish is deprecated") &&
-						d.Message.Contains("no longer used by the changelog render command")
+				d => d.Message.Contains("rules.publish is deprecated") && d.Message.Contains(
+					"no longer used by the changelog render command"
+				)
 			);
 	}
 
@@ -570,9 +572,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_IgnoredAndWarningEmitted()
 	{
 		// Arrange - rules.publish as YAML list is deprecated
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -584,7 +585,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - deprecation
 			      - known-issue
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -598,9 +599,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_IgnoredAndWarningEmitted()
 	{
 		// Arrange - rules.publish with areas is deprecated
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -610,7 +610,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			  publish:
 			    exclude_areas: "Internal, Experimental"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -624,9 +624,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_IgnoredAndWarningEmitted()
 	{
 		// Arrange - rules.publish as YAML list is deprecated
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -638,7 +637,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - Internal
 			      - Experimental
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -652,9 +651,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_PivotHighlight_AsString_ParsesCorrectly()
 	{
 		// Arrange - pivot.highlight as comma-separated string
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -662,7 +660,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    breaking-change:
 			  highlight: ">highlight, >release-highlight"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -674,9 +672,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_PivotHighlight_AsList_ParsesCorrectly()
 	{
 		// Arrange - pivot.highlight as YAML list
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -686,7 +683,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    - ">highlight"
 			    - ">release-highlight"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -698,9 +695,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_PivotAreas_AsListValues_ComputesMapping()
 	{
 		// Arrange - pivot.areas with list values instead of comma-separated strings
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -712,7 +708,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			      - ":Search/Ranking"
 			    Security: ":Security/Security"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -735,9 +731,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_TypeLabels_AsList_ComputesMapping()
 	{
 		// Arrange - pivot.types labels as YAML list instead of comma-separated string
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -750,7 +745,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			        - ">breaking"
 			        - ">bc"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -772,9 +767,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_SubtypeLabels_AsList_ParsesCorrectly()
 	{
 		// Arrange - breaking-change subtype labels as YAML list
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -787,7 +781,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			          - ">api-change"
 			        behavioral: ">behavioral-breaking"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -807,9 +801,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_ProductCreateExclude_AsList_ParsesCorrectly()
 	{
 		// Arrange - product-specific rules.create.products.*.exclude as YAML list
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -823,7 +816,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			          - ">test"
 			          - ">skip"
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -840,9 +833,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_MixedStringAndListForms_ParsesCorrectly()
 	{
 		// Arrange - mix of string and list forms in the same config
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			pivot:
 			  types:
 			    feature:
@@ -870,7 +862,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			    exclude_areas:
 			      - Internal
 			"""
-			);
+		);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1450,7 +1442,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		config.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("filename: 'random-value' is not valid"));
 	}
@@ -1476,7 +1469,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		// Assert
 		config.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
 	}
@@ -1605,15 +1599,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_WithOtherExtractSettings_LoadsCorrectly()
 	{
 		// Arrange
-		var config =
-			await LoadConfig(
-				"""
+		var config = await LoadConfig(
+			"""
 			extract:
 			  release_notes: false
 			  issues: true
 			  strip_title_prefix: true
 			"""
-			);
+		);
 
 		// Act & Assert
 		config.Should().NotBeNull();
@@ -1845,7 +1838,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().Be(0);
 		config.Bundle.Should().NotBeNull();
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("bundle.resolve is deprecated and ignored"));
 	}

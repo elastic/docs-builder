@@ -87,16 +87,15 @@ public class DocumentationSet : INavigationTraversable
 		EnabledExtensions = InstantiateExtensions();
 
 		var fileFactory = new MarkdownFileFactory(context, MarkdownParser, EnabledExtensions);
-		Navigation =
-			new DocumentationSetNavigation<MarkdownFile>(
-				context.ConfigurationYaml,
-				context,
-				fileFactory,
-				null,
-				null,
-				context.UrlPathPrefix,
-				CrossLinkResolver
-			);
+		Navigation = new DocumentationSetNavigation<MarkdownFile>(
+			context.ConfigurationYaml,
+			context,
+			fileFactory,
+			null,
+			null,
+			context.UrlPathPrefix,
+			CrossLinkResolver
+		);
 		VisitNavigation(Navigation);
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
@@ -205,9 +204,10 @@ public class DocumentationSet : INavigationTraversable
 			if (valueAnchors is null or { Count: 0 })
 				return;
 
-			markdownFile.AnchorRemapping =
-				markdownFile.AnchorRemapping?.Concat(valueAnchors).DistinctBy(kv => kv.Key).ToDictionary(kv => kv.Key, kv => kv.Value)
-					?? valueAnchors;
+			markdownFile.AnchorRemapping = markdownFile.AnchorRemapping?.Concat(valueAnchors)
+				.DistinctBy(kv => kv.Key)
+				.ToDictionary(kv => kv.Key, kv => kv.Value)
+				?? valueAnchors;
 		}
 	}
 
@@ -266,27 +266,26 @@ public class DocumentationSet : INavigationTraversable
 		var leafs = NavigationIndexedByOrder.Values.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
 		var nodes = NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToArray();
 
-		var markdownInNavigation = leafs.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
+		var markdownInNavigation = leafs
+			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
 			.Concat(nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)))
 			.ToList();
 
-		var links = markdownInNavigation.Select(tuple =>
-		{
-			var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-				? tuple.Markdown.LinkReferenceRelativePath.Replace('\\', '/')
-				: tuple.Markdown.LinkReferenceRelativePath;
-			return (Path: path, tuple.Markdown, tuple.Navigation);
-		})
+		var links = markdownInNavigation
+			.Select(tuple =>
+			{
+				var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+					? tuple.Markdown.LinkReferenceRelativePath.Replace('\\', '/')
+					: tuple.Markdown.LinkReferenceRelativePath;
+				return (Path: path, tuple.Markdown, tuple.Navigation);
+			})
 			.DistinctBy(tuple => tuple.Path)
 			.OrderBy(tuple => tuple.Path)
-			.ToDictionary(
-				tuple => tuple.Path,
-				tuple =>
-				{
-					var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
-					return new LinkMetadata { Anchors = anchors, Hidden = tuple.Navigation.ExcludeFromIndexing };
-				}
-			);
+			.ToDictionary(tuple => tuple.Path, tuple =>
+			{
+				var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
+				return new LinkMetadata { Anchors = anchors, Hidden = tuple.Navigation.ExcludeFromIndexing };
+			});
 
 		return new RepositoryLinks
 		{

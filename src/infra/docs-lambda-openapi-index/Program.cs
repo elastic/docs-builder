@@ -23,7 +23,8 @@ var distributionId = Environment.GetEnvironmentVariable("CLOUDFRONT_DISTRIBUTION
 var publisher = new VersionIndexPublisher(new AmazonS3Client(), bucketName);
 var invalidator = new CloudFrontCacheInvalidator(new AmazonCloudFrontClient(), distributionId);
 
-await LambdaBootstrapBuilder.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
+await LambdaBootstrapBuilder
+	.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
 	.Build()
 	.RunAsync();
 

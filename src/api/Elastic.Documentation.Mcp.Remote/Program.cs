@@ -19,7 +19,8 @@ try
 	var env = SystemEnvironmentVariables.Instance;
 	var profile = McpServerProfile.Resolve(env.McpServerProfile);
 
-	var builder = WebApplication.CreateSlimBuilder(args)
+	var builder = WebApplication
+		.CreateSlimBuilder(args)
 		.AddDocumentationServiceDefaults()
 		.HealthCheckBuilderExtensions()
 		.AddDocumentationOpenTelemetry(new OtelRegistration(profile.ServiceName)
@@ -37,11 +38,10 @@ try
 		&& string.IsNullOrEmpty(builder.Configuration["URLS"])
 	)
 	{
-		_ =
-			builder.WebHost.ConfigureKestrel(serverOptions =>
-			{
-				serverOptions.ListenAnyIP(8080);
-			});
+		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+		{
+			serverOptions.ListenAnyIP(8080);
+		});
 	}
 
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
@@ -51,11 +51,10 @@ try
 
 	// CreateSlimBuilder disables reflection-based JSON serialization.
 	// McpJsonUtilities registers System.String so the SDK's error responses can serialize.
-	_ =
-		builder.Services.ConfigureHttpJsonOptions(options =>
-		{
-			options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver!);
-		});
+	_ = builder.Services.ConfigureHttpJsonOptions(options =>
+	{
+		options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver!);
+	});
 
 	// Stateless Streamable HTTP transport: each request is an independent POST / — no session
 	// affinity, no Mcp-Session-Id header, no server-initiated push (sampling/elicitation/roots).
@@ -63,7 +62,8 @@ try
 	// In SDK 1.4+, stateless and SSE are mutually exclusive; EnableLegacySse (default false)
 	// cannot be combined with Stateless = true. SSE-only clients should use the mcp-remote bridge:
 	// npx -y mcp-remote https://<host>/docs/_mcp
-	var mcpBuilder = builder.Services
+	var mcpBuilder = builder
+		.Services
 		.AddMcpServer(options => options.ServerInstructions = profile.ComposeServerInstructions())
 		.WithHttpTransport(o => o.Stateless = true);
 

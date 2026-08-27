@@ -55,11 +55,11 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		var files = ScanDocumentationFiles(context, context.DocumentationSourceDirectory);
 		var additionalSources = enabledExtensions.SelectMany(extension => extension.ScanDocumentationFiles(DefaultFileHandling)).ToArray();
 
-		Files =
-			files.Concat(additionalSources)
-				.Where(t => t.Item2 is not ExcludedFile)
-				.ToDictionary(kv => new FilePath(kv.Item1, context.DocumentationSourceDirectory), kv => kv.Item2)
-				.ToFrozenDictionary();
+		Files = files
+			.Concat(additionalSources)
+			.Where(t => t.Item2 is not ExcludedFile)
+			.ToDictionary(kv => new FilePath(kv.Item1, context.DocumentationSourceDirectory), kv => kv.Item2)
+			.ToFrozenDictionary();
 	}
 
 	public FrozenDictionary<FilePath, DocumentationFile> Files { get; }
@@ -87,7 +87,8 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		var dirAttrCache = new Dictionary<string, FileAttributes>(StringComparer.Ordinal);
 
 		return [
-			.. build.ReadFileSystem
+			.. build
+				.ReadFileSystem
 				.Directory
 				.EnumerateFiles(sourceDirectory.FullName, "*.*", SearchOption.AllDirectories)
 				// Compute relative path once from the raw string before IFileInfo allocation.

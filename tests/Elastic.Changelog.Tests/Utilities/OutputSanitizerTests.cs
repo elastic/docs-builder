@@ -99,7 +99,8 @@ public class OutputSanitizerTests
 	public void HugeBody_TruncatedToDescriptionCap()
 	{
 		var input = new string('x', OutputSanitizer.DescriptionMaxLength * 2);
-		OutputSanitizer.SanitizeForOutput(input, OutputSanitizer.DescriptionMaxLength)
+		OutputSanitizer
+			.SanitizeForOutput(input, OutputSanitizer.DescriptionMaxLength)
 			.Should()
 			.HaveLength(OutputSanitizer.DescriptionMaxLength);
 	}

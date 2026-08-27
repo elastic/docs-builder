@@ -89,19 +89,16 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			// Configure OpenTelemetry with in-memory exporters for all tests
 			// Each factory instance has its own ExportedActivities and ExportedLogRecords lists
 			var otelBuilder = services.AddOpenTelemetry();
-			_ =
-				otelBuilder.WithTracing(tracing =>
-				{
-					_ =
-						tracing.AddDocsApiTracing() // Reuses production configuration
-						.AddInMemoryExporter(ExportedActivities);
-				});
+			_ = otelBuilder.WithTracing(tracing =>
+			{
+				_ = tracing.AddDocsApiTracing() // Reuses production configuration
+				.AddInMemoryExporter(ExportedActivities);
+			});
 			services.AddElasticDocumentationLogging(LogLevel.Information);
-			_ =
-				otelBuilder.WithLogging(logging =>
-				{
-					_ = logging.AddInMemoryExporter(ExportedLogRecords);
-				});
+			_ = otelBuilder.WithLogging(logging =>
+			{
+				_ = logging.AddInMemoryExporter(ExportedLogRecords);
+			});
 
 			// Mock IParameterProvider to avoid AWS dependencies in all tests
 			var mockParameterProvider = A.Fake<IParameterProvider>();

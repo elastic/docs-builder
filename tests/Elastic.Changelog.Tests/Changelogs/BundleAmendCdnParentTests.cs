@@ -40,17 +40,16 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments
-				{
-					BundlePath = "/bundle/elasticsearch/9.3.0.yaml",
-					AddFiles = ["/changelog/elastic/elasticsearch/main/late.yaml"],
-					Output = outputDir
-				},
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments
+			{
+				BundlePath = "/bundle/elasticsearch/9.3.0.yaml",
+				AddFiles = ["/changelog/elastic/elasticsearch/main/late.yaml"],
+				Output = outputDir
+			},
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/registry.json");
@@ -74,12 +73,11 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		);
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.amend-1.yaml");
@@ -99,12 +97,11 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		FileSystem.File.Exists(FileSystem.Path.Join(outputDir, "9.3.0.amend-2.yaml")).Should().BeTrue();
@@ -121,12 +118,11 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [localFile], ForceLocal = true, Output = outputDir },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [localFile], ForceLocal = true, Output = outputDir },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().BeEmpty("a local parent with --force-local must not reach the CDN");
@@ -142,17 +138,16 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments
-				{
-					BundlePath = FileSystem.Path.Join(outputDir, "missing.yaml"),
-					AddFiles = ["late.yaml"],
-					Output = outputDir
-				},
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments
+			{
+				BundlePath = FileSystem.Path.Join(outputDir, "missing.yaml"),
+				AddFiles = ["late.yaml"],
+				Output = outputDir
+			},
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not exist"));
@@ -166,17 +161,11 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments
-				{
-					BundlePath = "/bundle/elasticsearch/missing.yaml",
-					AddFiles = ["late.yaml"],
-					Output = outputDir
-				},
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/missing.yaml", AddFiles = ["late.yaml"], Output = outputDir },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not listed"));
@@ -190,17 +179,16 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments
-				{
-					BundlePath = "/bundle/elasticsearch/9.3.0.amend-1.yaml",
-					AddFiles = ["late.yaml"],
-					Output = outputDir
-				},
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments
+			{
+				BundlePath = "/bundle/elasticsearch/9.3.0.amend-1.yaml",
+				AddFiles = ["late.yaml"],
+				Output = outputDir
+			},
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("amend sidecar"));
@@ -239,12 +227,11 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		);
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yml", AddFiles = ["late.yaml"], Output = outputDir },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = "/bundle/elasticsearch/9.3.0.yml", AddFiles = ["late.yaml"], Output = outputDir },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var amendPath = FileSystem.Path.Join(outputDir, "9.3.0.amend-1.yml");
@@ -267,15 +254,15 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = "bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = "bundle/elasticsearch/9.3.0.yaml", AddFiles = ["late.yaml"], Output = outputDir },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		handler.RequestedPaths
+		handler
+			.RequestedPaths
 			.Should()
 			.Contain(
 				"/bundle/elasticsearch/registry.json",
@@ -299,12 +286,11 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = symlinkPath, AddFiles = ["late.yaml"], ForceLocal = true },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = symlinkPath, AddFiles = ["late.yaml"], ForceLocal = true },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("symlink"));
@@ -318,17 +304,16 @@ public class BundleAmendCdnParentTests(ITestOutputHelper output) : ChangelogTest
 		var handler = CombinedHandler(parentYaml: ParentBundleYaml("existing.yaml", ExistingEntry), lateYaml: LateEntry);
 		var service = Service(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments
-				{
-					BundlePath = "/changelog/elastic/elasticsearch/main/9.3.0.yaml",
-					AddFiles = ["late.yaml"],
-					Output = outputDir
-				},
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments
+			{
+				BundlePath = "/changelog/elastic/elasticsearch/main/9.3.0.yaml",
+				AddFiles = ["late.yaml"],
+				Output = outputDir
+			},
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("/bundle/{product}/{file}.yaml"));

@@ -159,16 +159,14 @@ internal sealed class ContentStackCommands(
 				enableAiEnrichment: true
 			);
 
-			await AnsiConsole.Status()
+			await AnsiConsole
+				.Status()
 				.AutoRefresh(true)
 				.Spinner(Spinner.Known.Dots)
-				.StartAsync(
-					"[aqua]Bootstrapping Elasticsearch indices...[/]",
-					async _ =>
-					{
-						await exporter.StartAsync(effectiveToken);
-					}
-				);
+				.StartAsync("[aqua]Bootstrapping Elasticsearch indices...[/]", async _ =>
+				{
+					await exporter.StartAsync(effectiveToken);
+				});
 
 			AnsiConsole.MarkupLine($"[green]✓[/] Elasticsearch indices ready [dim]({exporter.Strategy})[/]");
 			AnsiConsole.WriteLine();
@@ -179,13 +177,12 @@ internal sealed class ContentStackCommands(
 				return;
 			}
 
-			var aiResult =
-				await AiEnrichmentConsole.RunInteractiveAsync(
-					exporter.AiEnrichmentEnabled,
-					(max, token) => exporter.RunAiEnrichmentAsync(max, token),
-					maxAiDocs,
-					effectiveToken
-				);
+			var aiResult = await AiEnrichmentConsole.RunInteractiveAsync(
+				exporter.AiEnrichmentEnabled,
+				(max, token) => exporter.RunAiEnrichmentAsync(max, token),
+				maxAiDocs,
+				effectiveToken
+			);
 			AiEnrichmentConsole.DisplaySummary(aiResult, maxAiTime, maxAiDocs);
 		}
 		catch (OperationCanceledException) when (deadline.TimedOut)

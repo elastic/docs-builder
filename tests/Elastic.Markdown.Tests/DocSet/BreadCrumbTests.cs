@@ -19,13 +19,15 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		var allKeys = crossLinks.Keys.ToList();
 
 		var lookup = Path.Join("nested", "index.md");
-		var doc = Generator.DocumentationSet
+		var doc = Generator
+			.DocumentationSet
 			.MarkdownFiles
 			.FirstOrDefault(f => f.SourceFile.FullName.EndsWith(lookup, StringComparison.OrdinalIgnoreCase));
 
 		doc.Should().NotBeNull();
 
-		var deeplyNestedDoc = Generator.DocumentationSet
+		var deeplyNestedDoc = Generator
+			.DocumentationSet
 			.MarkdownFiles
 			.FirstOrDefault(f => f.RelativePath.OptionalWindowsReplace().EndsWith("deeply-nested/foo.md", StringComparison.Ordinal));
 		deeplyNestedDoc.Should().NotBeNull();

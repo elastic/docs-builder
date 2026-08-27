@@ -141,22 +141,22 @@ public static class SearchQueryBuilder
 		var tokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
 		var query = (Query)new ConstantScoreQuery
+		{
+			Filter = new MultiMatchQuery
 			{
-				Filter = new MultiMatchQuery
+				Query = searchQuery,
+				Operator = Operator.And,
+				Type = TextQueryType.BoolPrefix,
+				Analyzer = "synonyms_analyzer",
+				Fields = new[]
 				{
-					Query = searchQuery,
-					Operator = Operator.And,
-					Type = TextQueryType.BoolPrefix,
-					Analyzer = "synonyms_analyzer",
-					Fields = new[]
-					{
-						QueryFieldNames.SearchTitleCompletion,
-						QueryFieldNames.SearchTitleCompletion2Gram,
-						QueryFieldNames.SearchTitleCompletion3Gram
-					}
-				},
-				Boost = 3.0f
-			}
+					QueryFieldNames.SearchTitleCompletion,
+					QueryFieldNames.SearchTitleCompletion2Gram,
+					QueryFieldNames.SearchTitleCompletion3Gram
+				}
+			},
+			Boost = 3.0f
+		}
 			|| new MultiMatchQuery
 			{
 				Query = searchQuery,

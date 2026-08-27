@@ -48,14 +48,13 @@ public static class SitemapBuilder
 			ns + "urlset",
 			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
 			filtered.OrderBy(e => e.Key, StringComparer.Ordinal).Select(
-				e =>
-					new XElement(
-						ns + "url",
-						[
-							new XElement(ns + "loc", new Uri(BaseUri, e.Key)),
-							new XElement(ns + "lastmod", e.Value.ToString("o", CultureInfo.InvariantCulture))
-						]
-					)
+				e => new XElement(
+					ns + "url",
+					[
+						new XElement(ns + "loc", new Uri(BaseUri, e.Key)),
+						new XElement(ns + "lastmod", e.Value.ToString("o", CultureInfo.InvariantCulture))
+					]
+				)
 			)
 		);
 

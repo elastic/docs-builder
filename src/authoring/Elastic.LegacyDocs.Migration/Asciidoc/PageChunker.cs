@@ -64,8 +64,14 @@ public static partial class PageChunker
 		var rootChildren = bookRoot is not null ? bookRoot.Children : document.Children;
 
 		// Single traversal: build the page tree, anchor maps, and inline content together.
-		var (rootPageNodes, indexInlineContent) =
-			Traverse(rootChildren, effectiveChunkLevel, slugMap, titleMap, allocatedSlugs, onDiagnostic);
+		var (rootPageNodes, indexInlineContent) = Traverse(
+			rootChildren,
+			effectiveChunkLevel,
+			slugMap,
+			titleMap,
+			allocatedSlugs,
+			onDiagnostic
+		);
 
 		// Map any inline content at the doc root to the index slug.
 		CollectChildAnchors(indexInlineContent, "index", slugMap, titleMap);
@@ -121,8 +127,14 @@ public static partial class PageChunker
 				case OpenBlockNode open:
 					{
 						// Transparent container: hoist inner pages up; rewrap remaining inline nodes.
-						var (innerPages, innerInline) =
-							Traverse(open.Children, effectiveChunkLevel, slugMap, titleMap, allocatedSlugs, onDiagnostic);
+						var (innerPages, innerInline) = Traverse(
+							open.Children,
+							effectiveChunkLevel,
+							slugMap,
+							titleMap,
+							allocatedSlugs,
+							onDiagnostic
+						);
 						pages.AddRange(innerPages);
 						if (innerInline.Count > 0)
 							inline.Add(open with { Children = innerInline });
@@ -139,8 +151,14 @@ public static partial class PageChunker
 							titleMap[section.Id] = ExtractDisplayTitle(section);
 						}
 
-						var (subPages, subInline) =
-							Traverse(section.Children, effectiveChunkLevel, slugMap, titleMap, allocatedSlugs, onDiagnostic);
+						var (subPages, subInline) = Traverse(
+							section.Children,
+							effectiveChunkLevel,
+							slugMap,
+							titleMap,
+							allocatedSlugs,
+							onDiagnostic
+						);
 
 						// Map all inline sub-content's anchors to this page's slug.
 						CollectChildAnchors(subInline, slug, slugMap, titleMap);
@@ -154,8 +172,14 @@ public static partial class PageChunker
 
 				case SectionNode section:
 					{
-						var (innerPages, innerInline) =
-							Traverse(section.Children, effectiveChunkLevel, slugMap, titleMap, allocatedSlugs, onDiagnostic);
+						var (innerPages, innerInline) = Traverse(
+							section.Children,
+							effectiveChunkLevel,
+							slugMap,
+							titleMap,
+							allocatedSlugs,
+							onDiagnostic
+						);
 						pages.AddRange(innerPages);
 						if (section.Level == 0 && !section.IsIncludeRoot)
 						{

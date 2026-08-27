@@ -52,7 +52,8 @@ public class LocalChangeTrackingService(ILoggerFactory logFactory, IConfiguratio
 		IRepositoryTracker tracker = runningOnCi
 			? new IntegrationGitRepositoryTracker(relativePath)
 			: new LocalGitRepositoryTracker(logFactory, collector, root, relativePath);
-		var changed = tracker.GetChangedFiles()
+		var changed = tracker
+			.GetChangedFiles()
 			.Where(c =>
 			{
 				var fi = fs.FileInfo.New(c.FilePath);

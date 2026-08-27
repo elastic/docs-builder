@@ -131,9 +131,10 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		foreach (var (markerFile, link) in markers)
 		{
 			var parent = entries.FirstOrDefault(
-				e =>
-					e.FileName.Equals($"{link}.yaml", StringComparison.OrdinalIgnoreCase) ||
-						e.FileName.Equals($"{link}.yml", StringComparison.OrdinalIgnoreCase)
+				e => e.FileName.Equals($"{link}.yaml", StringComparison.OrdinalIgnoreCase) || e.FileName.Equals(
+					$"{link}.yml",
+					StringComparison.OrdinalIgnoreCase
+				)
 			);
 
 			if (parent == null)

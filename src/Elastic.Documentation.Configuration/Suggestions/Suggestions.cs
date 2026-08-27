@@ -7,7 +7,8 @@ namespace Elastic.Documentation.Configuration.Suggestions;
 public class Suggestion(IReadOnlySet<string> candidates, string input)
 {
 	private IReadOnlyCollection<string> GetSuggestions() =>
-		candidates.Select(source => (source, Distance: LevenshteinDistance(input, source)))
+		candidates
+			.Select(source => (source, Distance: LevenshteinDistance(input, source)))
 			.OrderBy(suggestion => suggestion.Distance)
 			.Where(suggestion => suggestion.Distance <= 2)
 			.Select(suggestion => suggestion.source)

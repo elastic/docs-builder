@@ -150,13 +150,12 @@ internal sealed class LabsCommands(
 		else
 		{
 			AnsiConsole.MarkupLine("[aqua]Fetching labs sitemaps...[/]");
-			discovery =
-				await LabsSiteCrawlPlanner.DiscoverUrlsAsync(
-					sitemapParser,
-					LabsSiteCrawlPlanner.LabsSitemapUrls,
-					new Progress<(int completed, string currentSitemap)>(_ => { }),
-					ct
-				);
+			discovery = await LabsSiteCrawlPlanner.DiscoverUrlsAsync(
+				sitemapParser,
+				LabsSiteCrawlPlanner.LabsSitemapUrls,
+				new Progress<(int completed, string currentSitemap)>(_ => { }),
+				ct
+			);
 		}
 
 		var allUrls = discovery.Urls;
@@ -208,7 +207,8 @@ internal sealed class LabsCommands(
 
 			if (IsInteractive())
 			{
-				await AnsiConsole.Status()
+				await AnsiConsole
+					.Status()
 					.AutoRefresh(true)
 					.Spinner(Spinner.Known.Dots)
 					.StartAsync("[aqua]Bootstrapping indices...[/]", async _ => await exporter.StartAsync(ct));
@@ -271,7 +271,8 @@ internal sealed class LabsCommands(
 
 			if (IsInteractive() && total > 0)
 			{
-				await AnsiConsole.Progress()
+				await AnsiConsole
+					.Progress()
 					.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 					.StartAsync(async pc =>
 					{
@@ -309,17 +310,15 @@ internal sealed class LabsCommands(
 
 			if (IsInteractive())
 			{
-				await AnsiConsole.Status()
+				await AnsiConsole
+					.Status()
 					.AutoRefresh(true)
 					.Spinner(Spinner.Known.Dots)
-					.StartAsync(
-						"[aqua]Finalizing…[/]",
-						async ctx =>
-						{
-							exporter.OnSyncProgress = info => ctx.Status(SyncProgressConsole.FormatStatusMarkup(info));
-							await exporter.FinalizeAsync(ct);
-						}
-					);
+					.StartAsync("[aqua]Finalizing…[/]", async ctx =>
+					{
+						exporter.OnSyncProgress = info => ctx.Status(SyncProgressConsole.FormatStatusMarkup(info));
+						await exporter.FinalizeAsync(ct);
+					});
 			}
 			else
 			{
@@ -395,16 +394,14 @@ internal sealed class LabsCommands(
 				enableAiEnrichment: true
 			);
 
-			await AnsiConsole.Status()
+			await AnsiConsole
+				.Status()
 				.AutoRefresh(true)
 				.Spinner(Spinner.Known.Dots)
-				.StartAsync(
-					"[aqua]Bootstrapping Elasticsearch indices...[/]",
-					async _ =>
-					{
-						await exporter.StartAsync(effectiveToken);
-					}
-				);
+				.StartAsync("[aqua]Bootstrapping Elasticsearch indices...[/]", async _ =>
+				{
+					await exporter.StartAsync(effectiveToken);
+				});
 
 			AnsiConsole.MarkupLine($"[green]✓[/] Elasticsearch indices ready [dim]({exporter.Strategy})[/]");
 			WriteBootstrapSummary(exporter);
@@ -416,13 +413,12 @@ internal sealed class LabsCommands(
 				return;
 			}
 
-			var aiResult =
-				await AiEnrichmentConsole.RunInteractiveAsync(
-					exporter.AiEnrichmentEnabled,
-					(max, token) => exporter.RunAiEnrichmentAsync(max, token),
-					maxAiDocs,
-					effectiveToken
-				);
+			var aiResult = await AiEnrichmentConsole.RunInteractiveAsync(
+				exporter.AiEnrichmentEnabled,
+				(max, token) => exporter.RunAiEnrichmentAsync(max, token),
+				maxAiDocs,
+				effectiveToken
+			);
 			AiEnrichmentConsole.DisplaySummary(aiResult, maxAiTime, maxAiDocs);
 		}
 		catch (OperationCanceledException) when (deadline.TimedOut)
@@ -491,24 +487,24 @@ internal sealed class LabsCommands(
 	private async Task<LabsSiteCrawlPlanner.LabsSitemapDiscoveryResult> DiscoverLabsSitemapsWithProgressAsync(CancellationToken ct)
 	{
 		LabsSiteCrawlPlanner.LabsSitemapDiscoveryResult? result = null;
-		await AnsiConsole.Progress()
+		await AnsiConsole
+			.Progress()
 			.AutoRefresh(true)
 			.AutoClear(false)
 			.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 			.StartAsync(async pc =>
 			{
 				var task = pc.AddTask("[aqua]Labs sitemaps[/]", maxValue: LabsSiteCrawlPlanner.LabsSitemapUrls.Length);
-				result =
-					await LabsSiteCrawlPlanner.DiscoverUrlsAsync(
-						sitemapParser,
-						LabsSiteCrawlPlanner.LabsSitemapUrls,
-						new Progress<(int completed, string currentSitemap)>(v =>
-						{
-							task.Description = $"[aqua]{Markup.Escape(v.currentSitemap)}[/]";
-							task.Value = v.completed;
-						}),
-						ct
-					);
+				result = await LabsSiteCrawlPlanner.DiscoverUrlsAsync(
+					sitemapParser,
+					LabsSiteCrawlPlanner.LabsSitemapUrls,
+					new Progress<(int completed, string currentSitemap)>(v =>
+					{
+						task.Description = $"[aqua]{Markup.Escape(v.currentSitemap)}[/]";
+						task.Value = v.completed;
+					}),
+					ct
+				);
 			});
 		return result ?? throw new InvalidOperationException("Labs sitemap discovery did not return a result.");
 	}

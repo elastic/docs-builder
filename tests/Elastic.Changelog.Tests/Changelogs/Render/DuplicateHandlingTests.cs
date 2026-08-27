@@ -111,12 +111,12 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Warning && d.Message.Contains("appears multiple times in the same bundle") &&
-						d.File == bundleFile
+				d => d.Severity == Severity.Warning && d.Message.Contains("appears multiple times in the same bundle") && d.File ==
+					bundleFile
 			);
 	}
 

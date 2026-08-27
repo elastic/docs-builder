@@ -71,7 +71,8 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			TestContext.Current.CancellationToken
 		);
 
-		fileSystem.Directory
+		fileSystem
+			.Directory
 			.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
 			.Should()
 			.BeFalse("OpenAPI generation must not run when the feature flag is disabled");
@@ -105,7 +106,8 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			TestContext.Current.CancellationToken
 		);
 
-		fileSystem.Directory
+		fileSystem
+			.Directory
 			.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
 			.Should()
 			.BeFalse("OpenAPI generation must not run without API declarations");

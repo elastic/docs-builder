@@ -90,7 +90,8 @@ public class ReleaseNotesSerializationTests
 		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
 		var roundTrip = ReleaseNotesSerialization.DeserializeEntry(yaml);
 
-		roundTrip.Title
+		roundTrip
+			.Title
 			.Should()
 			.Be(adversarialTitle, "adversarial titles must round-trip exactly without leaking into surrounding YAML structure");
 		roundTrip.Type.Should().Be(ChangelogEntryType.Feature, "adversarial title must not change unrelated fields");

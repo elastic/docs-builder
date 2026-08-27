@@ -246,8 +246,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
 			{
 				context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
-				pathPrefix +=
-					$"bad-mapping-{tocRef.Source.Scheme}-{tocRef.Source.Host}-{tocRef.Source.AbsolutePath}".TrimEnd('/').TrimEnd('-');
+				pathPrefix += $"bad-mapping-{tocRef.Source.Scheme}-{tocRef.Source.Host}-{tocRef.Source.AbsolutePath}".TrimEnd('/').TrimEnd(
+					'-'
+				);
 				pathPrefix += "/";
 			}
 			else

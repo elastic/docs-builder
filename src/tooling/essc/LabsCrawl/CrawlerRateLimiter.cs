@@ -15,15 +15,14 @@ public sealed class CrawlerRateLimiter(CrawlerSettings settings) : IDisposable
 		if (_limiter is not null || !settings.RateLimitingEnabled)
 			return;
 
-		_limiter =
-			new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-			{
-				TokenLimit = settings.Rps,
-				ReplenishmentPeriod = TimeSpan.FromSeconds(1),
-				TokensPerPeriod = settings.Rps,
-				QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-				QueueLimit = 10000
-			});
+		_limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+		{
+			TokenLimit = settings.Rps,
+			ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+			TokensPerPeriod = settings.Rps,
+			QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+			QueueLimit = 10000
+		});
 	}
 
 	public async ValueTask<RateLimitLease?> AcquireAsync(CancellationToken ct = default)

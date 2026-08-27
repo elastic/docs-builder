@@ -377,15 +377,18 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			try
 			{
 				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser.ParseSnippetAsync(
-					block.Build,
-					block.Context,
-					snippet,
-					parentPath,
-					block.Context.YamlFrontMatter,
-					Cancel.None,
-					block.Line
-				).GetAwaiter().GetResult();
+				var document = MarkdownParser
+					.ParseSnippetAsync(
+						block.Build,
+						block.Context,
+						snippet,
+						parentPath,
+						block.Context.YamlFrontMatter,
+						Cancel.None,
+						block.Line
+					)
+					.GetAwaiter()
+					.GetResult();
 				_ = renderer.Render(document);
 			}
 			catch (Exception ex) when (ex is not OutOfMemoryException and not ThreadAbortException and not ThreadInterruptedException and not StackOverflowException)
@@ -409,11 +412,10 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
-			settings =
-				SettingsBlock.PrepareSettingsForRendering(
-					YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
-					block.Context
-				);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch
 		{

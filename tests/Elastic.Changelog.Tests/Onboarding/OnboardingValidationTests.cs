@@ -73,8 +73,11 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var handler = RepoWith("widget", AllScaffolding);
 		var service = Service(ContextWith(PrestageProduct("widget")), handler);
 
-		var result =
-			await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -93,11 +96,15 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		);
 		var service = Service(ContextWith(PrestageProduct("widget")), handler);
 
-		var result =
-			await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("widget") && d.Message.Contains("changelog-bundle-stage.yml"));
 	}
@@ -115,8 +122,11 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		);
 		var service = Service(ContextWith(PrestageProduct("widget")), handler);
 
-		var result =
-			await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -128,8 +138,11 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var handler = RepoWith("widget-src", AllScaffolding);
 		var service = Service(ContextWith(PrestageProduct("widget", repository: "widget-src")), handler);
 
-		var result =
-			await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		handler.RequestedPaths.Should().OnlyContain(p => p.StartsWith("/repos/elastic/widget-src/", StringComparison.Ordinal));
@@ -142,8 +155,11 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var handler = RepoWith("widget");
 		var service = Service(ContextWith(onRelease), handler);
 
-		var result =
-			await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		handler.RequestedPaths.Should().BeEmpty();
@@ -155,8 +171,11 @@ public class OnboardingValidationTests(ITestOutputHelper output) : ChangelogTest
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
 		var service = Service(ContextWith(PrestageProduct("widget")), handler);
 
-		var result =
-			await service.ValidateOnboardingAsync(Collector, new ValidateOnboardingArguments(), TestContext.Current.CancellationToken);
+		var result = await service.ValidateOnboardingAsync(
+			Collector,
+			new ValidateOnboardingArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("GITHUB_TOKEN"));

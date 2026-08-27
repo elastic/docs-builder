@@ -189,7 +189,8 @@ public class ChangelogUploadService(
 
 		var rootDir = _fileSystem.DirectoryInfo.New(changelogDir);
 
-		var yamlFiles = _fileSystem.Directory
+		var yamlFiles = _fileSystem
+			.Directory
 			.GetFiles(changelogDir, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(_fileSystem.Directory.GetFiles(changelogDir, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();
@@ -279,7 +280,8 @@ public class ChangelogUploadService(
 	{
 		var rootDir = _fileSystem.DirectoryInfo.New(bundleDir);
 
-		var yamlFiles = _fileSystem.Directory
+		var yamlFiles = _fileSystem
+			.Directory
 			.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(_fileSystem.Directory.GetFiles(bundleDir, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();

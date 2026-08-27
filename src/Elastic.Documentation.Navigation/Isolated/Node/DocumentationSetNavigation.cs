@@ -216,11 +216,12 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 
 		// Find an item named "index" or "index.md"
 		var indexItem = children.FirstOrDefault(
-			c =>
-				c is ILeafNavigationItem<IDocumentationFile> leaf &&
-					(leaf.Model.NavigationTitle.Equals("index", StringComparison.OrdinalIgnoreCase) ||
-						(leaf is FileNavigationLeaf<IDocumentationFile> fileLeaf &&
-							fileLeaf.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)))
+			c => c is ILeafNavigationItem<IDocumentationFile> leaf &&
+				(leaf.Model.NavigationTitle.Equals("index", StringComparison.OrdinalIgnoreCase) ||
+					(leaf is FileNavigationLeaf<IDocumentationFile> fileLeaf && fileLeaf
+						.FileInfo
+						.Name
+						.Equals("index.md", StringComparison.OrdinalIgnoreCase)))
 		);
 
 		// If found and it's not already first, move it to the front
@@ -387,7 +388,8 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		// tocRef.Path is now the FULL path (e.g., "guides/api" or "setup/advanced") after LoadAndResolve
 		var fullTocPath = tocRef.PathRelativeToDocumentationSet;
 
-		var tocDirectory = context.ReadFileSystem
+		var tocDirectory = context
+			.ReadFileSystem
 			.DirectoryInfo
 			.New(context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, fullTocPath));
 
@@ -453,7 +455,8 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		INavigationHomeAccessor homeAccessor
 	)
 	{
-		var schemaFileInfo = context.ReadFileSystem
+		var schemaFileInfo = context
+			.ReadFileSystem
 			.FileInfo
 			.New(context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, cliRef.SchemaPath));
 

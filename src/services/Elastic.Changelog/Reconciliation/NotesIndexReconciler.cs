@@ -88,16 +88,16 @@ public sealed class NotesIndexReconciler(
 		// independent of whether the new writes succeeded.
 		try
 		{
-			await Parallel.ForEachAsync(
-				byTarget,
-				new ParallelOptions { MaxDegreeOfParallelism = MaxParallelReads, CancellationToken = ctx },
-				async (kvp, ct) =>
-				{
-					var (target, paths) = kvp;
-					var indexKey = ChangelogKeys.NotesIndexKey(org, repo, target);
-					await WriteIndexAsync(indexKey, [.. paths.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)], ct);
-				}
-			);
+			await Parallel.ForEachAsync(byTarget, new ParallelOptions
+			{
+				MaxDegreeOfParallelism = MaxParallelReads,
+				CancellationToken = ctx
+			}, async (kvp, ct) =>
+			{
+				var (target, paths) = kvp;
+				var indexKey = ChangelogKeys.NotesIndexKey(org, repo, target);
+				await WriteIndexAsync(indexKey, [.. paths.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)], ct);
+			});
 		}
 		finally
 		{
@@ -216,7 +216,8 @@ public sealed class NotesIndexReconciler(
 				return [];
 
 			var valid = new List<string>();
-			foreach (var target in dto.Products
+			foreach (var target in dto
+				.Products
 				.Select(p => p.Target)
 				.Where(t => !string.IsNullOrWhiteSpace(t))
 				.Distinct(StringComparer.Ordinal))
@@ -256,17 +257,10 @@ public sealed class NotesIndexReconciler(
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				_ =
-					await s3Client.PutObjectAsync(
-						new PutObjectRequest
-						{
-							BucketName = publicBucketName,
-							Key = key,
-							ContentBody = json,
-							ContentType = "application/json"
-						},
-						ctx
-					);
+				_ = await s3Client.PutObjectAsync(
+					new PutObjectRequest { BucketName = publicBucketName, Key = key, ContentBody = json, ContentType = "application/json" },
+					ctx
+				);
 
 				_metrics.IncrementRegistryWrites();
 				_logger.LogInformation("Wrote notes index {Key} with {Count} path(s)", key, paths.Count);

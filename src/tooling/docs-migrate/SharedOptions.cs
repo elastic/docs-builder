@@ -78,7 +78,8 @@ internal static class SharedOptions
 	}
 
 	public static List<LegacyBook> FilterBooks(LegacyConf conf, string? bookFilter) =>
-		conf.Contents
+		conf
+			.Contents
 			.SelectMany(c => c.Sections)
 			.Where(b => bookFilter is null || b.Prefix.StartsWith(bookFilter, StringComparison.OrdinalIgnoreCase))
 			.ToList();
@@ -88,15 +89,17 @@ internal static class SharedOptions
 		var branches = book.Branches.ToList();
 
 		if (minVersion is not null)
-			branches =
-				branches.Where(b => TryParseMajorMinor(b.VersionLabel) is var p && p.HasValue && p.Value.Major >= minVersion).ToList();
+			branches = branches.Where(
+				b => TryParseMajorMinor(b.VersionLabel) is var p && p.HasValue && p.Value.Major >= minVersion
+			).ToList();
 
 		if (all)
 			return EnsureCurrent(book, SortDescending(branches));
 
 		var selected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-		var grouped = branches.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
+		var grouped = branches
+			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.Where(x => x.Parsed.HasValue)
 			.GroupBy(x => x.Parsed!.Value.Major)
 			.OrderByDescending(g => g.Key)
@@ -129,7 +132,8 @@ internal static class SharedOptions
 	}
 
 	private static List<BranchRef> SortDescending(IEnumerable<BranchRef> branches) =>
-		branches.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
+		branches
+			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.OrderByDescending(x => x.Parsed?.Major ?? 0)
 			.ThenByDescending(x => x.Parsed?.Minor ?? 0)
 			.Select(x => x.Branch)

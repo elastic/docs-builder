@@ -105,7 +105,8 @@ public class CommentBlockParser : BlockParser
 			// The optional closing sequence of #s must be preceded by a space and may be followed by spaces only.
 			var endState = 0;
 			var countClosingTags = 0;
-			for (var i = processor.Line.End; i >= processor.Line.Start - 1; i--) // Go up to Start - 1 in order to match the space after the first ###
+			for (var i = processor.Line.End; i
+				>= processor.Line.Start - 1; i--) // Go up to Start - 1 in order to match the space after the first ###
 
 			{
 				c = processor.Line.Text[i];

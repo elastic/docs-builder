@@ -57,7 +57,8 @@ internal sealed class ContentTypesCommand(ContentStackClient client)
 			AnsiConsole.WriteLine();
 		}
 
-		await AnsiConsole.Progress()
+		await AnsiConsole
+			.Progress()
 			.AutoRefresh(true)
 			.AutoClear(false)
 			.HideCompleted(false)
@@ -67,30 +68,28 @@ internal sealed class ContentTypesCommand(ContentStackClient client)
 				var task = ctx.AddTask("[aqua]Syncing content[/]", maxValue: 100);
 				task.IsIndeterminate = true;
 
-				_ =
-					await client.InitialSyncAsync(
-						resumePaginationToken: state.PaginationToken,
-						progress: new Progress<SyncProgress>(p =>
+				_ = await client.InitialSyncAsync(
+					resumePaginationToken: state.PaginationToken,
+					progress: new Progress<SyncProgress>(p =>
+					{
+						if (p.TotalCount > 0)
 						{
-							if (p.TotalCount > 0)
-							{
-								task.IsIndeterminate = false;
-								task.MaxValue = p.TotalCount;
-								task.Value = p.ItemsSoFar;
-							}
-							task.Description =
-								$"[aqua]Page {p.PagesCompleted}[/] — [white]{p.ItemsSoFar:N0}[/] items "
-									+ $"([white]{state.ContentTypes.Count}[/] types)";
-						}),
-						onPage: response =>
-						{
-							ProcessPage(state, response);
-							state.PaginationToken = response.PaginationToken;
-							store.Save(StateFile, state, StateJsonContext.Default.ContentTypesState);
-							return Task.CompletedTask;
-						},
-						ct: ct
-					);
+							task.IsIndeterminate = false;
+							task.MaxValue = p.TotalCount;
+							task.Value = p.ItemsSoFar;
+						}
+						task.Description = $"[aqua]Page {p.PagesCompleted}[/] — [white]{p.ItemsSoFar:N0}[/] items "
+							+ $"([white]{state.ContentTypes.Count}[/] types)";
+					}),
+					onPage: response =>
+					{
+						ProcessPage(state, response);
+						state.PaginationToken = response.PaginationToken;
+						store.Save(StateFile, state, StateJsonContext.Default.ContentTypesState);
+						return Task.CompletedTask;
+					},
+					ct: ct
+				);
 
 				state.Completed = true;
 				state.PaginationToken = null;
@@ -113,12 +112,12 @@ internal sealed class ContentTypesCommand(ContentStackClient client)
 	/// </summary>
 	private static void ExitIfUnregistered(ContentTypesState state)
 	{
-		var unregistered = state.ContentTypes
+		var unregistered = state
+			.ContentTypes
 			.Keys
 			.Where(
-				uid =>
-					!PageContentTypes.All.Contains(uid) && !PageContentTypes.Blocked.Contains(uid) &&
-						!PageContentTypes.KnownNonPages.Contains(uid)
+				uid => !PageContentTypes.All.Contains(uid) && !PageContentTypes.Blocked.Contains(uid) &&
+					!PageContentTypes.KnownNonPages.Contains(uid)
 			)
 			.OrderBy(uid => uid, StringComparer.Ordinal)
 			.ToList();
@@ -197,14 +196,13 @@ internal sealed class ContentTypesCommand(ContentStackClient client)
 				? string.Join("\n", info.SampleUrls.Select(u => $"[dim]{Markup.Escape(u)}[/]"))
 				: "[grey]—[/]";
 
-			_ =
-				table.AddRow(
-					new Markup(Markup.Escape(info.Uid)),
-					new Markup($"[white]{info.Total:N0}[/]"),
-					new Markup(hasUrlDisplay),
-					new Markup(statusDisplay),
-					new Markup(samples)
-				);
+			_ = table.AddRow(
+				new Markup(Markup.Escape(info.Uid)),
+				new Markup($"[white]{info.Total:N0}[/]"),
+				new Markup(hasUrlDisplay),
+				new Markup(statusDisplay),
+				new Markup(samples)
+			);
 		}
 
 		AnsiConsole.Write(table);

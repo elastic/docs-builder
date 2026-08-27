@@ -16,7 +16,8 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 	{
 		Configuration.Should().NotBeNull();
 
-		Configuration.Redirects
+		Configuration
+			.Redirects
 			.Should()
 			.NotBeNullOrEmpty()
 			.And

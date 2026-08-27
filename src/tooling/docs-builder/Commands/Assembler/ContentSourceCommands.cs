@@ -53,17 +53,13 @@ internal sealed class ContentSourceCommands(
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var service = new RepositoryBuildMatchingService(logFactory, configuration, configurationContext, githubActionsService, fs);
-		serviceInvoker.AddCommand(
-			service,
-			(repository, branchOrTag),
-			static async (s, collector, state, ctx) =>
-			{
-				// ShouldBuild emits GitHub Actions outputs to drive conditional CI steps;
-				// exit code is always 0 — the bool result is communicated via those outputs, not the process exit.
-				_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag, ctx);
-				return true;
-			}
-		);
+		serviceInvoker.AddCommand(service, (repository, branchOrTag), static async (s, collector, state, ctx) =>
+		{
+			// ShouldBuild emits GitHub Actions outputs to drive conditional CI steps;
+			// exit code is always 0 — the bool result is communicated via those outputs, not the process exit.
+			_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag, ctx);
+			return true;
+		});
 
 		return await serviceInvoker.InvokeAsync(ct);
 	}

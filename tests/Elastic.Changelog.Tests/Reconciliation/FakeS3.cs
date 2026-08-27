@@ -63,30 +63,25 @@ internal sealed class FakeS3
 		foreach (var bucket in bucketNames)
 			_buckets[bucket] = [with(StringComparer.Ordinal)];
 
-		_ =
-			A.CallTo(() => Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<CancellationToken>._)).ReturnsLazily(
-				(ListObjectsV2Request r, CancellationToken _) => List(r)
-			);
+		_ = A.CallTo(() => Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<CancellationToken>._)).ReturnsLazily(
+			(ListObjectsV2Request r, CancellationToken _) => List(r)
+		);
 
-		_ =
-			A.CallTo(() => Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
-				(GetObjectRequest r, CancellationToken _) => Get(r)
-			);
+		_ = A.CallTo(() => Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(GetObjectRequest r, CancellationToken _) => Get(r)
+		);
 
-		_ =
-			A.CallTo(() => Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)).ReturnsLazily(
-				(GetObjectMetadataRequest r, CancellationToken _) => Head(r)
-			);
+		_ = A.CallTo(() => Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(GetObjectMetadataRequest r, CancellationToken _) => Head(r)
+		);
 
-		_ =
-			A.CallTo(() => Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
-				(PutObjectRequest r, CancellationToken _) => Put(r)
-			);
+		_ = A.CallTo(() => Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(PutObjectRequest r, CancellationToken _) => Put(r)
+		);
 
-		_ =
-			A.CallTo(() => Client.DeleteObjectAsync(A<DeleteObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
-				(DeleteObjectRequest r, CancellationToken _) => Delete(r)
-			);
+		_ = A.CallTo(() => Client.DeleteObjectAsync(A<DeleteObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(DeleteObjectRequest r, CancellationToken _) => Delete(r)
+		);
 	}
 
 	// MD5 is what real S3 uses for single-part ETags.

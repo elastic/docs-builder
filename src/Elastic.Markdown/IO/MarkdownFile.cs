@@ -262,7 +262,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			}
 		}
 
-		var includes = includeContexts.Where(t => t.Block.Found)
+		var includes = includeContexts
+			.Where(t => t.Block.Found)
 			.Select(t =>
 			{
 				var relativePath = t.Block.IncludePathRelativeToSource;
@@ -299,7 +300,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}).ToArray();
 
 		// Collect headings from standard markdown (already have the list — no second traversal)
-		var headingTocs = headings.Where(block => block is { Level: >= 2 })
+		var headingTocs = headings
+			.Where(block => block is { Level: >= 2 })
 			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
 			.Where(h => h.Item1 is not null)
 			.Select(h =>
@@ -313,7 +315,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			});
 
 		// Collect headings from Stepper steps (filter from already-collected directives)
-		var stepperTocs = directives.OfType<StepBlock>()
+		var stepperTocs = directives
+			.OfType<StepBlock>()
 			.Where(step => !string.IsNullOrEmpty(step.Title))
 			.Where(step => !IsNestedInOtherDirective(step))
 			.Select(step =>
@@ -343,28 +346,30 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		);
 
 		// Collect settings group headings (h2) from {settings} directives
-		var settingsTocs = directives.OfType<SettingsBlock>()
+		var settingsTocs = directives
+			.OfType<SettingsBlock>()
 			.Where(settings => !IsNestedInOtherDirective(settings))
 			.SelectMany(settings => settings.GeneratedTableOfContent.Select(tocItem => new { TocItem = tocItem, settings.Line }));
 
-		var toc = headingTocs.Concat(stepperTocs)
+		var toc = headingTocs
+			.Concat(stepperTocs)
 			.Concat(changelogTocs)
 			.Concat(settingsTocs)
 			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)
 			.Select(
-				toc =>
-					subs.Count == 0
-						? toc
-						: toc.Heading.AsSpan().ReplaceSubstitutions(subs, collector, out var r) ? toc with { Heading = r } : toc
+				toc => subs.Count == 0
+					? toc
+					: toc.Heading.AsSpan().ReplaceSubstitutions(subs, collector, out var r) ? toc with { Heading = r } : toc
 			)
 			.ToList();
 
 		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
 		anchors =
 		[
-			.. directives.Select(b => b.CrossReferenceName)
+			.. directives
+				.Select(b => b.CrossReferenceName)
 				.Where(l => !string.IsNullOrWhiteSpace(l))
 				.Select(s => s.Slugify())
 				.Concat(directives.SelectMany(b => b.GeneratedAnchors))

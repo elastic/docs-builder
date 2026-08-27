@@ -47,11 +47,10 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		{
 			if (i > 0)
 				_ = sb.Append(',');
-			_ =
-				sb.Append(
-					CultureInfo.InvariantCulture,
-					$$""" "c{{i}}": { "oid": "{{commits[i].Sha}}", "associatedPullRequests": { "nodes": [{{string.Join(",", commits[i].PrNodes)}}] } }"""
-				);
+			_ = sb.Append(
+				CultureInfo.InvariantCulture,
+				$$""" "c{{i}}": { "oid": "{{commits[i].Sha}}", "associatedPullRequests": { "nodes": [{{string.Join(",", commits[i].PrNodes)}}] } }"""
+			);
 		}
 
 		return $$"""{ "data": { "repository": {{{sb}} } } }""";
@@ -106,12 +105,11 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		var (sha1, sha2, mergeSha) = (Sha(1), Sha(2), Sha(3));
 		var handler = Handler(
 			_ => CompareJson(3, [sha1, sha2, mergeSha]),
-			_ =>
-				GraphQlJson([
-					(sha1, [PrNode(20, mergeCommitSha: mergeSha)]),
-					(sha2, [PrNode(20, mergeCommitSha: mergeSha)]),
-					(mergeSha, [PrNode(20, mergeCommitSha: mergeSha)])
-				])
+			_ => GraphQlJson([
+				(sha1, [PrNode(20, mergeCommitSha: mergeSha)]),
+				(sha2, [PrNode(20, mergeCommitSha: mergeSha)]),
+				(mergeSha, [PrNode(20, mergeCommitSha: mergeSha)])
+			])
 		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
@@ -130,12 +128,11 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		var (sha1, sha2, sha3) = (Sha(1), Sha(2), Sha(3));
 		var handler = Handler(
 			_ => CompareJson(3, [sha1, sha2, sha3]),
-			_ =>
-				GraphQlJson([
-					(sha1, []),
-					(sha2, [PrNode(30, merged: false)]),
-					(sha3, [PrNode(31, mergeCommitSha: sha3, repoFullName: "someone/fork")])
-				])
+			_ => GraphQlJson([
+				(sha1, []),
+				(sha2, [PrNode(30, merged: false)]),
+				(sha3, [PrNode(31, mergeCommitSha: sha3, repoFullName: "someone/fork")])
+			])
 		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
@@ -183,24 +180,21 @@ public class GitHubCommitRangeServiceTests(ITestOutputHelper output) : Changelog
 		var comparePages = new List<int>();
 		var graphQlBatches = 0;
 
-		var handler = Handler(
-			req =>
-			{
-				var query = HttpUtility.ParseQueryString(req.RequestUri!.Query);
-				var page = int.Parse(query["page"]!, CultureInfo.InvariantCulture);
-				comparePages.Add(page);
-				var pageShas = shas.Skip((page - 1) * 100).Take(100);
-				return CompareJson(150, pageShas);
-			},
-			_ =>
-			{
-				// Batches are issued sequentially in commit order, 50 shas each; every commit
-				// resolves to its own squashed PR (number = index + 1).
-				var batchIndex = graphQlBatches++;
-				var batch = shas.Skip(batchIndex * 50).Take(50).ToList();
-				return GraphQlJson(batch.Select(sha => (sha, new[] { PrNode(shas.IndexOf(sha) + 1, mergeCommitSha: sha) })).ToList());
-			}
-		);
+		var handler = Handler(req =>
+		{
+			var query = HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			var page = int.Parse(query["page"]!, CultureInfo.InvariantCulture);
+			comparePages.Add(page);
+			var pageShas = shas.Skip((page - 1) * 100).Take(100);
+			return CompareJson(150, pageShas);
+		}, _ =>
+		{
+			// Batches are issued sequentially in commit order, 50 shas each; every commit
+			// resolves to its own squashed PR (number = index + 1).
+			var batchIndex = graphQlBatches++;
+			var batch = shas.Skip(batchIndex * 50).Take(50).ToList();
+			return GraphQlJson(batch.Select(sha => (sha, new[] { PrNode(shas.IndexOf(sha) + 1, mergeCommitSha: sha) })).ToList());
+		});
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current.CancellationToken);
 

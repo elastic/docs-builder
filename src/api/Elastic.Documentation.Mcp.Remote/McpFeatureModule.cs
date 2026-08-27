@@ -25,7 +25,8 @@ public sealed record McpFeatureModule(
 	string? Capability,
 	string[] WhenToUse,
 	string[] ToolGuidance,
-	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)][property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods
+		| DynamicallyAccessedMemberTypes.PublicConstructors)][property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods
 		| DynamicallyAccessedMemberTypes.PublicConstructors)] Type? ToolType,
 	Action<IServiceCollection> RegisterServices
 );
@@ -55,14 +56,9 @@ internal static class McpFeatureModules
 		RegisterServices: services => _ = services.AddScoped<IDocumentGateway, DocumentGateway>()
 	);
 
-	public static readonly McpFeatureModule Coherence = new(
-		Name: "Coherence",
-		Capability: "analyze",
-		WhenToUse: ["Asks about {docs} structure, coherence, or inconsistencies across pages."],
-		ToolGuidance: [
-			"Use {tool:check_{resource}_coherence} or {tool:find_{resource}_inconsistencies} when reviewing or auditing documentation quality."
-		],
-		ToolType: typeof(CoherenceTools),
-		RegisterServices: _ => { }
-	);
+	public static readonly McpFeatureModule Coherence = new(Name: "Coherence", Capability: "analyze", WhenToUse: [
+		"Asks about {docs} structure, coherence, or inconsistencies across pages."
+	], ToolGuidance: [
+		"Use {tool:check_{resource}_coherence} or {tool:find_{resource}_inconsistencies} when reviewing or auditing documentation quality."
+	], ToolType: typeof(CoherenceTools), RegisterServices: _ => { });
 }

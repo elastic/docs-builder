@@ -79,12 +79,13 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Warning && d.Message.Contains("Hidden feature") && d.Message.Contains("feature:hidden-api") &&
-						d.Message.Contains("will be commented out")
+				d => d.Severity == Severity.Warning && d.Message.Contains("Hidden feature") && d.Message.Contains(
+					"feature:hidden-api"
+				) && d.Message.Contains("will be commented out")
 			);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");

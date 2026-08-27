@@ -91,7 +91,8 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		// Find the documentation folder by URL
-		var documentationFolder = navigation.NavigationItems
+		var documentationFolder = navigation
+			.NavigationItems
 			.OfType<FolderNavigation<TestDocumentationFile>>()
 			.FirstOrDefault(f => f.Url == "/documentation");
 		documentationFolder.Should().NotBeNull();
@@ -130,7 +131,8 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
 
 		// development is a toc: reference
-		var developmentToc = navigation.NavigationItems
+		var developmentToc = navigation
+			.NavigationItems
 			.OfType<TableOfContentsNavigation<TestDocumentationFile>>()
 			.FirstOrDefault(t => t.Url == "/development");
 		developmentToc.Should().NotBeNull();

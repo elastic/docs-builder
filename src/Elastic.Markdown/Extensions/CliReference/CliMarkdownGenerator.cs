@@ -674,8 +674,9 @@ internal static partial class CliMarkdownGenerator
 			if (defIdx < 0)
 				return (EscapeSubstitutions(normalized), string.Empty, string.Empty);
 
-			return (EscapeSubstitutions(normalized[..defIdx].Trim()), string.Empty, normalized[(defIdx +
-				defaultSep.Length)..].Trim().TrimEnd('.'));
+			return (EscapeSubstitutions(normalized[..defIdx].Trim()), string.Empty, normalized[(defIdx + defaultSep.Length)..]
+				.Trim()
+				.TrimEnd('.'));
 		}
 
 		var description = normalized[..valuesIdx].Trim();
@@ -808,7 +809,8 @@ internal static partial class CliMarkdownGenerator
 			return [];
 
 		var heading = string.Join(" ", fullPath);
-		return shortcuts.Where(s => string.Join(" ", s.To).Equals(heading, StringComparison.OrdinalIgnoreCase))
+		return shortcuts
+			.Where(s => string.Join(" ", s.To).Equals(heading, StringComparison.OrdinalIgnoreCase))
 			.Select(s => s.From)
 			.ToList();
 	}

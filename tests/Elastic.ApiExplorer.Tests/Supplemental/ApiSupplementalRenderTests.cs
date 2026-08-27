@@ -41,13 +41,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_DescriptionHeading_ReplacesDescriptionAndKeepsGeneratedSections()
 	{
 		var nav = SearchOperation();
-		var html =
-			await RenderAsync(
-				nav.Model,
-				nav,
-				operations: Doc(
-					"search",
-					"""
+		var html = await RenderAsync(
+			nav.Model,
+			nav,
+			operations: Doc(
+				"search",
+				"""
 			## Description
 
 			SUPP_OP_DESCRIPTION
@@ -56,8 +55,8 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 
 			SUPP_OP_BEST_PRACTICES
 			"""
-				)
-			);
+			)
+		);
 
 		html.Should().Contain("SUPP_OP_DESCRIPTION");
 		html.Should().NotContain(SpecOperationDescription);
@@ -97,13 +96,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_PostSections_RenderAfterGeneratedContent()
 	{
 		var nav = SearchOperation();
-		var html =
-			await RenderAsync(
-				nav.Model,
-				nav,
-				operations: Doc(
-					"search",
-					"""
+		var html = await RenderAsync(
+			nav.Model,
+			nav,
+			operations: Doc(
+				"search",
+				"""
 			## Description
 
 			SUPP_OP_DESCRIPTION
@@ -116,17 +114,19 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 
 			SUPP_OP_COMMON_PATTERNS
 			"""
-				)
-			);
+			)
+		);
 
 		html.Should().Contain("id=\"best-practices\"");
 		html.Should().Contain("SUPP_OP_BEST_PRACTICES");
 		html.Should().Contain("id=\"common-patterns\"");
 		html.Should().Contain("SUPP_OP_COMMON_PATTERNS");
-		html.IndexOf("id=\"responses\"", StringComparison.Ordinal)
+		html
+			.IndexOf("id=\"responses\"", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal));
-		html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal)
+		html
+			.IndexOf("id=\"best-practices\"", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("id=\"common-patterns\"", StringComparison.Ordinal));
 	}
@@ -135,13 +135,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_PostSections_HonorExplicitIdsAndSkipReservedAnchors()
 	{
 		var nav = SearchOperation();
-		var html =
-			await RenderAsync(
-				nav.Model,
-				nav,
-				operations: Doc(
-					"search",
-					"""
+		var html = await RenderAsync(
+			nav.Model,
+			nav,
+			operations: Doc(
+				"search",
+				"""
 			## Description
 
 			SUPP_OP_DESCRIPTION
@@ -162,8 +161,8 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 
 			SUPP_OP_BEST_2
 			"""
-				)
-			);
+			)
+		);
 
 		html.Should().Contain("id=\"responses\"");
 		html.Should().Contain("id=\"responses-2\"");
@@ -198,13 +197,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_ParameterOverrides_ReplaceListedPathAndQueryOnly()
 	{
 		var nav = SearchOperation();
-		var html =
-			await RenderAsync(
-				nav.Model,
-				nav,
-				operations: Doc(
-					"search",
-					"""
+		var html = await RenderAsync(
+			nav.Model,
+			nav,
+			operations: Doc(
+				"search",
+				"""
 			## Path parameters
 
 			: `index`
@@ -218,8 +216,8 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			: `nope`
 			  UNKNOWN_PARAM_OVERRIDE
 			"""
-				)
-			);
+			)
+		);
 
 		html.Should().Contain("SUPP_INDEX");
 		html.Should().Contain("SUPP_Q");
@@ -233,17 +231,16 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Operation_RequestBodyOverride_ReplacesListedFieldOnly()
 	{
 		var nav = SearchOperation();
-		var html =
-			await RenderAsync(
-				nav.Model,
-				nav,
-				operations: Doc("search", """
+		var html = await RenderAsync(
+			nav.Model,
+			nav,
+			operations: Doc("search", """
 			## Request body
 
 			: `query`
 			  SUPP_QUERY_FIELD
 			""")
-			);
+		);
 
 		html.Should().Contain("SUPP_QUERY_FIELD");
 		html.Should().Contain(SpecFieldsDescription);
@@ -263,13 +260,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	public async Task Tag_DescriptionHeading_ReplacesDescriptionAndKeepsOverview()
 	{
 		var nav = SearchTag();
-		var html =
-			await RenderAsync(
-				nav.Index.Model,
-				nav,
-				tags: Doc(
-					"search",
-					"""
+		var html = await RenderAsync(
+			nav.Index.Model,
+			nav,
+			tags: Doc(
+				"search",
+				"""
 			## Description
 
 			SUPP_TAG_DESCRIPTION
@@ -278,18 +274,20 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 
 			SUPP_TAG_GETTING_STARTED
 			"""
-				)
-			);
+			)
+		);
 
 		html.Should().Contain("SUPP_TAG_DESCRIPTION");
 		html.Should().NotContain(SpecTagDescription);
 		html.Should().Contain("api-overview");
 		html.Should().Contain("id=\"getting-started\"");
 		html.Should().Contain("SUPP_TAG_GETTING_STARTED");
-		html.IndexOf("SUPP_TAG_DESCRIPTION", StringComparison.Ordinal)
+		html
+			.IndexOf("SUPP_TAG_DESCRIPTION", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("id=\"getting-started\"", StringComparison.Ordinal));
-		html.IndexOf("id=\"getting-started\"", StringComparison.Ordinal)
+		html
+			.IndexOf("id=\"getting-started\"", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("api-overview", StringComparison.Ordinal));
 	}

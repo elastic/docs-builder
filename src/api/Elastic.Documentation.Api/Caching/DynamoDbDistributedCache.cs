@@ -39,15 +39,14 @@ public sealed class DynamoDbDistributedCache(
 
 		try
 		{
-			var response =
-				await dynamoDb.GetItemAsync(
-					new GetItemRequest
-					{
-						TableName = tableName,
-						Key = new Dictionary<string, AttributeValue> { [AttributeCacheKey] = new() { S = hashedKey } }
-					},
-					ct
-				);
+			var response = await dynamoDb.GetItemAsync(
+				new GetItemRequest
+				{
+					TableName = tableName,
+					Key = new Dictionary<string, AttributeValue> { [AttributeCacheKey] = new() { S = hashedKey } }
+				},
+				ct
+			);
 
 			if (!response.IsItemSet)
 			{
@@ -111,20 +110,19 @@ public sealed class DynamoDbDistributedCache(
 			var expiresAt = DateTimeOffset.UtcNow.Add(ttl);
 			var ttlTimestamp = expiresAt.ToUnixTimeSeconds();
 
-			_ =
-				await dynamoDb.PutItemAsync(
-					new PutItemRequest
+			_ = await dynamoDb.PutItemAsync(
+				new PutItemRequest
+				{
+					TableName = tableName,
+					Item = new Dictionary<string, AttributeValue>
 					{
-						TableName = tableName,
-						Item = new Dictionary<string, AttributeValue>
-						{
-							[AttributeCacheKey] = new() { S = hashedKey },
-							[AttributeValue] = new() { S = value },
-							[AttributeTtl] = new() { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) }
-						}
-					},
-					ct
-				);
+						[AttributeCacheKey] = new() { S = hashedKey },
+						[AttributeValue] = new() { S = value },
+						[AttributeTtl] = new() { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) }
+					}
+				},
+				ct
+			);
 
 			logger.LogDebug("Cache set for key: {CacheKey}, TTL: {TTL}s", hashedKey, ttl.TotalSeconds);
 		}

@@ -163,7 +163,8 @@ public partial class ElasticsearchMarkdownExporter
 		// input, and content hashing. docs-builder no longer feeds raw LLM-flavored Markdown into `body`.
 		var body = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
 
-		var headings = fileContext.Document
+		var headings = fileContext
+			.Document
 			.Descendants<HeadingBlock>()
 			.Select(
 				h => h.GetData("header") as string ?? string.Empty
@@ -189,11 +190,11 @@ public partial class ElasticsearchMarkdownExporter
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Summary = summary,
 			Applies = appliesTo.ToAppliesTo(),
-			Parents =
-				navigation.GetParentsOfMarkdownFile(file)
-					.Select(i => new ParentDocument { Title = i.NavigationTitle, Path = i.Url })
-					.Reverse()
-					.ToArray(),
+			Parents = navigation
+				.GetParentsOfMarkdownFile(file)
+				.Select(i => new ParentDocument { Title = i.NavigationTitle, Path = i.Url })
+				.Reverse()
+				.ToArray(),
 			Headings = headings,
 			Hidden = fileContext.NavigationItem.ExcludeFromIndexing
 		};
@@ -209,7 +210,8 @@ public partial class ElasticsearchMarkdownExporter
 		);
 		doc.Product = inference.Product?.Id;
 		doc.RelatedProducts = inference.RelatedProducts.Count > 0
-			? inference.RelatedProducts
+			? inference
+				.RelatedProducts
 				.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
 				.ToArray()
 			: null;
@@ -257,7 +259,8 @@ public partial class ElasticsearchMarkdownExporter
 			// enrichment input, and content hashing.
 			doc.Body = PlainTextExporter.ConvertToPlainText(document, _context);
 
-			var headings = document.Descendants<HeadingBlock>()
+			var headings = document
+				.Descendants<HeadingBlock>()
 				.Select(
 					h => h.GetData("header") as string ?? string.Empty
 				) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.

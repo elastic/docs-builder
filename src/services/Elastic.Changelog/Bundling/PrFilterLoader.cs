@@ -18,17 +18,16 @@ public class PrFilterLoader(IFileSystem fileSystem)
 	/// </summary>
 	public async Task<PrFilterResult> LoadPrsAsync(IDiagnosticsCollector collector, string[]? prs, string? owner, string? repo, Cancel ctx)
 	{
-		var (isValid, matches) =
-			await FilterLoaderUtilities.LoadValuesAsync(
-				fileSystem,
-				collector,
-				prs,
-				owner,
-				repo,
-				exampleUrlSegment: "pull/123",
-				numericValidationMessage: "When --prs contains PR numbers (not URLs or owner/repo#number format), both --owner and --repo must be provided",
-				ctx
-			);
+		var (isValid, matches) = await FilterLoaderUtilities.LoadValuesAsync(
+			fileSystem,
+			collector,
+			prs,
+			owner,
+			repo,
+			exampleUrlSegment: "pull/123",
+			numericValidationMessage: "When --prs contains PR numbers (not URLs or owner/repo#number format), both --owner and --repo must be provided",
+			ctx
+		);
 		return new PrFilterResult { IsValid = isValid, PrsToMatch = matches };
 	}
 }

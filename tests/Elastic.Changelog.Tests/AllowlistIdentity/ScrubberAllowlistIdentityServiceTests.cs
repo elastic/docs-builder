@@ -48,11 +48,10 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 
 	private void AssetDownloadReturns(string? content) =>
 		A.CallTo(
-			() =>
-				_releaseService.DownloadAssetTextAsync(
-					A<GitHubReleaseAsset>.That.Matches(a => a.Name == ScrubberAllowlistIdentity.AssetName),
-					A<CancellationToken>._
-				)
+			() => _releaseService.DownloadAssetTextAsync(
+				A<GitHubReleaseAsset>.That.Matches(a => a.Name == ScrubberAllowlistIdentity.AssetName),
+				A<CancellationToken>._
+			)
 		).Returns(Task.FromResult(content));
 
 	[Fact]
@@ -63,12 +62,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 		).Returns(Task.FromResult<IReadOnlyList<GitHubReleaseInfo>>([Release("v2.0.0", withAsset: true)]));
 		AssetDownloadReturns(ValidAssetJson);
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments(),
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().NotBeNull();
 		resolved.ReleaseTag.Should().Be("v2.0.0");
@@ -89,12 +87,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 		]));
 		AssetDownloadReturns(ValidAssetJson);
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments(),
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().NotBeNull();
 		resolved.ReleaseTag.Should().Be("v2.0.0");
@@ -111,12 +108,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 		]));
 		AssetDownloadReturns(ValidAssetJson);
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments(),
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().NotBeNull();
 		resolved.ReleaseTag.Should().Be("v2.0.0");
@@ -129,12 +125,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 			() => _releaseService.FetchReleasesAsync("elastic", "docs-builder", A<int>._, A<CancellationToken>._)
 		).Returns(Task.FromResult<IReadOnlyList<GitHubReleaseInfo>>([Release("v2.1.0", withAsset: false)]));
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments(),
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().BeNull();
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot be resolved"));
@@ -147,12 +142,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 			Task.FromResult<GitHubReleaseInfo?>(Release("v1.0.0", withAsset: false))
 		);
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments { Tag = "v1.0.0" },
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments { Tag = "v1.0.0" },
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().BeNull();
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("predates"));
@@ -165,12 +159,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 			Task.FromResult<GitHubReleaseInfo?>(null)
 		);
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments { Tag = "v9.9.9" },
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments { Tag = "v9.9.9" },
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().BeNull();
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("was not found"));
@@ -186,12 +179,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 			"""{ "schema_version": 1, "artifact": "scrubber-allowlist-identity", "allowlist_sha256": "nope", "deployment_commit": "nope" }"""
 		);
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments(),
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments(),
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().BeNull();
 		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid allowlist identity"));
@@ -208,12 +200,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 		AssetDownloadReturns(ValidAssetJson.Replace(ValidSha, helloSha));
 		_fileSystem.AddFile("/repo/config/assembler.yml", new MockFileData("hello\n"));
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments { AssemblerPath = "/repo/config/assembler.yml" },
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments { AssemblerPath = "/repo/config/assembler.yml" },
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().NotBeNull();
 		resolved.LocalSha256.Should().Be(helloSha);
@@ -229,12 +220,11 @@ public class ScrubberAllowlistIdentityServiceTests(ITestOutputHelper output)
 		AssetDownloadReturns(ValidAssetJson);
 		_fileSystem.AddFile("/repo/config/assembler.yml", new MockFileData("different content\n"));
 
-		var resolved =
-			await CreateService().ResolveDeployedAsync(
-				_collector,
-				new ResolveScrubberAllowlistArguments { AssemblerPath = "/repo/config/assembler.yml" },
-				TestContext.Current.CancellationToken
-			);
+		var resolved = await CreateService().ResolveDeployedAsync(
+			_collector,
+			new ResolveScrubberAllowlistArguments { AssemblerPath = "/repo/config/assembler.yml" },
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Should().NotBeNull();
 		resolved.MatchesLocal.Should().BeFalse();

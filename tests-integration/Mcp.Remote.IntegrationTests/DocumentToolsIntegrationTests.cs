@@ -24,8 +24,10 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act - use a URL that is likely to exist
-		var resultJson =
-			await documentTools.GetDocumentByUrl("/docs/reference/elasticsearch", cancellationToken: TestContext.Current.CancellationToken);
+		var resultJson = await documentTools.GetDocumentByUrl(
+			"/docs/reference/elasticsearch",
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -58,11 +60,10 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act - use a URL that should not exist
-		var resultJson =
-			await documentTools.GetDocumentByUrl(
-				"/docs/this-document-definitely-does-not-exist-12345",
-				cancellationToken: TestContext.Current.CancellationToken
-			);
+		var resultJson = await documentTools.GetDocumentByUrl(
+			"/docs/this-document-definitely-does-not-exist-12345",
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -84,8 +85,10 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson =
-			await documentTools.GetDocumentByUrl("/docs/reference/elasticsearch", cancellationToken: TestContext.Current.CancellationToken);
+		var resultJson = await documentTools.GetDocumentByUrl(
+			"/docs/reference/elasticsearch",
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		if (resultJson.Contains("\"error\""))
 			Assert.Skip("Test document not found in index");
@@ -109,11 +112,10 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act - use a URL that is likely to exist
-		var resultJson =
-			await documentTools.AnalyzeDocumentStructure(
-				"/docs/reference/elasticsearch",
-				cancellationToken: TestContext.Current.CancellationToken
-			);
+		var resultJson = await documentTools.AnalyzeDocumentStructure(
+			"/docs/reference/elasticsearch",
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");

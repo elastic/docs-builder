@@ -82,39 +82,40 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
 
-		await Parallel.ForEachAsync(
-			Configuration.AvailableRepositories,
-			new ParallelOptions { CancellationToken = ctx, MaxDegreeOfParallelism = Environment.ProcessorCount },
-			async (repo, c) =>
-			{
-				await Task.Run(
-					() =>
+		await Parallel.ForEachAsync(Configuration.AvailableRepositories, new ParallelOptions
+		{
+			CancellationToken = ctx,
+			MaxDegreeOfParallelism = Environment.ProcessorCount
+		}, async (repo, c) =>
+		{
+			await Task.Run(
+				() =>
+				{
+					if (!linkRegistry.Repositories.TryGetValue(repo.Key, out var entry))
 					{
-						if (!linkRegistry.Repositories.TryGetValue(repo.Key, out var entry))
+						context.Collector.EmitError("", $"'{repo.Key}' does not exist in link index");
+						return;
+					}
+					var branch = repo.Value.GetBranch(PublishEnvironment.ContentSource);
+					var gitRef = branch;
+					if (!fetchLatest)
+					{
+						if (!entry.TryGetValue(branch, out var entryInfo))
 						{
-							context.Collector.EmitError("", $"'{repo.Key}' does not exist in link index");
+							context.Collector.EmitError("", $"'{repo.Key}' does not have a '{branch}' entry in link index");
 							return;
 						}
-						var branch = repo.Value.GetBranch(PublishEnvironment.ContentSource);
-						var gitRef = branch;
-						if (!fetchLatest)
-						{
-							if (!entry.TryGetValue(branch, out var entryInfo))
-							{
-								context.Collector.EmitError("", $"'{repo.Key}' does not have a '{branch}' entry in link index");
-								return;
-							}
-							gitRef = entryInfo.GitReference;
-						}
+						gitRef = entryInfo.GitReference;
+					}
 
-						var cloneInformation = RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest, assumeCloned: assumeCloned);
-						checkouts.Add(cloneInformation);
-					},
-					c
-				);
-			}
-		).ConfigureAwait(false);
-		await context.WriteFileSystem
+					var cloneInformation = RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest, assumeCloned: assumeCloned);
+					checkouts.Add(cloneInformation);
+				},
+				c
+			);
+		}).ConfigureAwait(false);
+		await context
+			.WriteFileSystem
 			.File
 			.WriteAllTextAsync(
 				Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
@@ -125,10 +126,12 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 	}
 
 	public async Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default) =>
-		await context.WriteFileSystem
+		await context
+			.WriteFileSystem
 			.File
 			.WriteAllTextAsync(
-				context.WriteFileSystem
+				context
+					.WriteFileSystem
 					.Path
 					.Join(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
 				LinkRegistry.Serialize(linkRegistrySnapshot),

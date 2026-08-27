@@ -125,11 +125,10 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 		var sb = new StringBuilder();
 		_ = sb.Append("<kbd class=\"kbd\"");
 		if (alternateKeyboardKeyViewModel.Primary.AriaLabel is not null)
-			_ =
-				sb.Append(
-					" aria-label=\"" + alternateKeyboardKeyViewModel.Primary.AriaLabel + " or " +
-						alternateKeyboardKeyViewModel.Alternate.AriaLabel + "\""
-				);
+			_ = sb.Append(
+				" aria-label=\"" + alternateKeyboardKeyViewModel.Primary.AriaLabel +
+					" or " + alternateKeyboardKeyViewModel.Alternate.AriaLabel + "\""
+			);
 		_ = sb.Append('>');
 
 		if (alternateKeyboardKeyViewModel.Primary.UnicodeIcon is not null)

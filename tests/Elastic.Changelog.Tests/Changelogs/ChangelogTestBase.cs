@@ -32,8 +32,10 @@ public abstract class ChangelogTestBase : IDisposable
 		Output = output;
 		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		FileSystem = ChangelogFileSystem.FromWorkingDirectory(mockFileSystem);
-		RunnerTempFileSystem =
-			new RunnerTempFileSystem(mockFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: mockFileSystem);
+		RunnerTempFileSystem = new RunnerTempFileSystem(
+			mockFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: mockFileSystem
+		);
 		// ConfigurationFileProvider writes to AppData/config-runtime, which is outside ChangelogFileSystem's
 		// git-root scope by design. Use a CheckoutsFileSystem (includes AppData) for the config provider only;
 		// it wraps the same mock so both filesystems share in-memory state.

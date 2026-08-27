@@ -295,7 +295,8 @@ Content for removed version
 			);
 
 			// Also verify multiple invocations in this run produce the same key
-			var keys = Enumerable.Range(0, 5)
+			var keys = Enumerable
+				.Range(0, 5)
 				.Select(_ => AppliesItemBlock.GenerateSyncKey(definition, Block!.Build.ProductsConfiguration))
 				.ToList();
 

@@ -25,12 +25,11 @@ public static class TestHelpers
 		ProductsConfiguration? productsConfiguration = null
 	)
 	{
-		configurationFileProvider ??=
-			new ConfigurationFileProvider(
-				NullLoggerFactory.Instance,
-				new ConfigurationFileSystem(fileSystem),
-				skipPrivateRepositories: true
-			);
+		configurationFileProvider ??= new ConfigurationFileProvider(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(fileSystem),
+			skipPrivateRepositories: true
+		);
 		versionsConfiguration ??= new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>

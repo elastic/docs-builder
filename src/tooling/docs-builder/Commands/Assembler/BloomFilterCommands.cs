@@ -32,15 +32,11 @@ internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnostic
 		var pagesProvider = new LocalPagesProvider(builtDocsDir.FullName);
 		var legacyPageService = new LegacyPageService(logFactory);
 
-		serviceInvoker.AddCommand(
-			legacyPageService,
-			pagesProvider,
-			static (s, _, pagesProvider, _) =>
-			{
-				var result = s.GenerateBloomFilterBinary(pagesProvider);
-				return Task.FromResult(result);
-			}
-		);
+		serviceInvoker.AddCommand(legacyPageService, pagesProvider, static (s, _, pagesProvider, _) =>
+		{
+			var result = s.GenerateBloomFilterBinary(pagesProvider);
+			return Task.FromResult(result);
+		});
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
@@ -52,15 +48,11 @@ internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnostic
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var legacyPageService = new LegacyPageService(logFactory);
-		serviceInvoker.AddCommand(
-			legacyPageService,
-			path,
-			static (s, _, path, _) =>
-			{
-				var result = s.PathExists(path, logResult: true);
-				return Task.FromResult(result);
-			}
-		);
+		serviceInvoker.AddCommand(legacyPageService, path, static (s, _, path, _) =>
+		{
+			var result = s.PathExists(path, logResult: true);
+			return Task.FromResult(result);
+		});
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 }

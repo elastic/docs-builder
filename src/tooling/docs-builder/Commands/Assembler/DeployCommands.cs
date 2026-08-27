@@ -56,8 +56,15 @@ internal sealed class DeployCommands(
 		serviceInvoker.AddCommand(
 			service,
 			(context, s3BucketName, @out, deleteThreshold),
-			static async (s, collector, state, ctx) =>
-				await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, [], ctx)
+			static async (s, collector, state, ctx) => await s.Plan(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.@out?.FullName ?? "",
+				state.deleteThreshold,
+				[],
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -86,8 +93,13 @@ internal sealed class DeployCommands(
 		serviceInvoker.AddCommand(
 			service,
 			(context, s3BucketName, planFile),
-			static async (s, collector, state, ctx) =>
-				await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
+			static async (s, collector, state, ctx) => await s.Apply(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.planFile.FullName,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -114,8 +126,13 @@ internal sealed class DeployCommands(
 		serviceInvoker.AddCommand(
 			service,
 			(environment, redirectsFile, noDelete),
-			static async (s, collector, state, ctx) =>
-				await s.UpdateRedirects(collector, state.environment, state.redirectsFile?.FullName, noDelete: state.noDelete, ctx: ctx)
+			static async (s, collector, state, ctx) => await s.UpdateRedirects(
+				collector,
+				state.environment,
+				state.redirectsFile?.FullName,
+				noDelete: state.noDelete,
+				ctx: ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

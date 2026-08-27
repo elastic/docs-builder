@@ -272,7 +272,8 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle();
-		FileSystem.Path
+		FileSystem
+			.Path
 			.GetFullPath(outputFiles[0])
 			.Should()
 			.Be(
@@ -316,7 +317,8 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse("Should fail when no PR references found in the release");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("no PR references found"), "Should emit a warning about missing PR references");
 	}
@@ -445,7 +447,8 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when no repo is configured");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("requires a GitHub repository name"),
@@ -480,7 +483,8 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when source and products are both configured");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("cannot be combined with a 'products' filter"),
@@ -520,7 +524,8 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when profileReport is provided alongside source: github_release");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("does not accept a third positional argument"),
@@ -643,13 +648,12 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var releaseBody = "* Preview feature by @user in https://github.com/elastic/apm-agent-dotnet/pull/42\n";
 
 		A.CallTo(
-			() =>
-				_mockReleaseService.FetchReleaseAsync(
-					"elastic",
-					"apm-agent-dotnet",
-					"v1.34.1-preview.1",
-					TestContext.Current.CancellationToken
-				)
+			() => _mockReleaseService.FetchReleaseAsync(
+				"elastic",
+				"apm-agent-dotnet",
+				"v1.34.1-preview.1",
+				TestContext.Current.CancellationToken
+			)
 		).Returns(new GitHubReleaseInfo { TagName = "v1.34.1-preview.1", Name = "1.34.1 preview 1", Body = releaseBody });
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());

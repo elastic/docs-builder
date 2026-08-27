@@ -236,16 +236,22 @@ public sealed class CdnChangelogFetcher : IDisposable
 			return null;
 		}
 
-		var parent =
-			await DownloadOrCacheBundleAsync(baseUri, product, parentEntry.File, parentEntry.ETag, emitError, ctx).ConfigureAwait(false);
+		var parent = await DownloadOrCacheBundleAsync(baseUri, product, parentEntry.File, parentEntry.ETag, emitError, ctx).ConfigureAwait(
+			false
+		);
 		if (parent is null)
 			return null;
 
-		var amendEntries = listed.Where(
-			b =>
-				b.File is not null && BundleAmendMerger.IsAmendFile(b.File) &&
-					string.Equals(BundleAmendMerger.GetParentBundlePath(b.File), parent.Value.FileName, StringComparison.OrdinalIgnoreCase)
-		).OrderBy(b => BundleAmendMerger.GetAmendFileNumber(b.File!)).ToList();
+		var amendEntries = listed
+			.Where(
+				b => b.File is not null && BundleAmendMerger.IsAmendFile(b.File) && string.Equals(
+					BundleAmendMerger.GetParentBundlePath(b.File),
+					parent.Value.FileName,
+					StringComparison.OrdinalIgnoreCase
+				)
+			)
+			.OrderBy(b => BundleAmendMerger.GetAmendFileNumber(b.File!))
+			.ToList();
 
 		var amends = new List<CdnChangelogEntry>(amendEntries.Count);
 		foreach (var amend in amendEntries)

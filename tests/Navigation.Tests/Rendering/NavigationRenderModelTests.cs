@@ -483,12 +483,14 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
-		var elasticsearch = navigation.NavigationItems
+		var elasticsearch = navigation
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
 			.Subject;
-		var clients = elasticsearch.NavigationItems
+		var clients = elasticsearch
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
@@ -510,7 +512,8 @@ public class NavigationRenderModelTests(ITestOutputHelper output) : Documentatio
 
 		// ← elasticsearch appears even though the dropdown also shows elasticsearch as active.
 		// The nav root (navigation, Parent=null) is suppressed because the dropdown covers it.
-		model.BackLinks
+		model
+			.BackLinks
 			.Should()
 			.ContainSingle(b => b.Url == elasticsearch.Url, "← elasticsearch stays even though the dropdown names it as the active section");
 		// Dropdown correctly identifies elasticsearch as the current top-level section

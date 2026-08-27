@@ -14,21 +14,21 @@ public static class OpenTelemetryExtensions
 	/// </summary>
 	public static TracerProviderBuilder AddDocsApiTracing(this TracerProviderBuilder builder)
 	{
-		_ =
-			builder.AddSource(TelemetryConstants.AskAiSourceName)
-				.AddSource(TelemetryConstants.StreamTransformerSourceName)
-				.AddSource(TelemetryConstants.CacheSourceName)
-				.AddSource(TelemetryConstants.AskAiFeedbackSourceName)
-				.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
+		_ = builder
+			.AddSource(TelemetryConstants.AskAiSourceName)
+			.AddSource(TelemetryConstants.StreamTransformerSourceName)
+			.AddSource(TelemetryConstants.CacheSourceName)
+			.AddSource(TelemetryConstants.AskAiFeedbackSourceName)
+			.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
+			{
+				// Don't trace root API endpoint (health check)
+				aspNetCoreOptions.Filter = (httpContext) =>
 				{
-					// Don't trace root API endpoint (health check)
-					aspNetCoreOptions.Filter = (httpContext) =>
-					{
-						var path = httpContext.Request.Path.Value ?? string.Empty;
-						// Exclude root API path: /docs/_api/v1
-						return path != "/docs/_api/v1";
-					};
-				});
+					var path = httpContext.Request.Path.Value ?? string.Empty;
+					// Exclude root API path: /docs/_api/v1
+					return path != "/docs/_api/v1";
+				};
+			});
 
 		return builder;
 	}

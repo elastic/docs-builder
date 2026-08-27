@@ -65,14 +65,16 @@ public class NotesIndexReconcilerTests
 		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
 
 		_s3.ListCalls.Should().BeGreaterThan(0, "reconciler should have listed the bucket");
-		_s3.Gets
+		_s3
+			.Gets
 			.Count
 			.Should()
 			.BeGreaterThan(
 				0,
 				$"reconciler should have fetched the note; ListCalls={_s3.ListCalls} SeedExists={_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/main/note-slow-rollover.yml")}"
 			);
-		_s3.Puts
+		_s3
+			.Puts
 			.Count
 			.Should()
 			.BeGreaterThan(0, $"reconciler should have written the index; ListCalls={_s3.ListCalls} Gets={_s3.Gets.Count}");

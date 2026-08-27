@@ -177,36 +177,29 @@ public static partial class LinkAllowlistSanitizer
 
 		var anyReplaced = false;
 
-		var result = GitHubUrlRegex().Replace(
-			input,
-			match =>
-			{
-				var owner = match.Groups["owner"].Value;
-				var repo = match.Groups["repo"].Value;
-				var fullName = $"{owner}/{repo}";
-				if (allow.Contains(fullName))
-					return match.Value;
+		var result = GitHubUrlRegex().Replace(input, match =>
+		{
+			var owner = match.Groups["owner"].Value;
+			var repo = match.Groups["repo"].Value;
+			var fullName = $"{owner}/{repo}";
+			if (allow.Contains(fullName))
+				return match.Value;
 
-				anyReplaced = true;
-				return string.Empty;
-			}
-		);
+			anyReplaced = true;
+			return string.Empty;
+		});
 
-		result =
-			ShortFormRefRegex().Replace(
-				result,
-				match =>
-				{
-					var owner = match.Groups["owner"].Value;
-					var repo = match.Groups["repo"].Value;
-					var fullName = $"{owner}/{repo}";
-					if (allow.Contains(fullName))
-						return match.Value;
+		result = ShortFormRefRegex().Replace(result, match =>
+		{
+			var owner = match.Groups["owner"].Value;
+			var repo = match.Groups["repo"].Value;
+			var fullName = $"{owner}/{repo}";
+			if (allow.Contains(fullName))
+				return match.Value;
 
-					anyReplaced = true;
-					return string.Empty;
-				}
-			);
+			anyReplaced = true;
+			return string.Empty;
+		});
 
 		if (anyReplaced)
 			changed = true;

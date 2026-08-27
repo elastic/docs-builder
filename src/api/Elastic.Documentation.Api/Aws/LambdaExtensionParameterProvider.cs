@@ -25,12 +25,11 @@ public class LambdaExtensionParameterProvider(
 			var prefix = $"/elastic-docs-v3/{appEnvironment.Current.ToStringFast(true)}/";
 			var prefixedName = prefix + name.TrimStart('/');
 			logger.LogInformation("Retrieving parameter '{Name}' from Lambda Extension (SSM Parameter Store).", prefixedName);
-			var response =
-				await _httpClient.GetFromJsonAsync<ParameterResponse>(
-					$"/systemsmanager/parameters/get?name={Uri.EscapeDataString(prefixedName)}&withDecryption={withDecryption.ToString().ToLowerInvariant()}",
-					AwsJsonContext.Default.ParameterResponse,
-					ctx
-				);
+			var response = await _httpClient.GetFromJsonAsync<ParameterResponse>(
+				$"/systemsmanager/parameters/get?name={Uri.EscapeDataString(prefixedName)}&withDecryption={withDecryption.ToString().ToLowerInvariant()}",
+				AwsJsonContext.Default.ParameterResponse,
+				ctx
+			);
 			return response?.Parameter?.Value ?? throw new InvalidOperationException($"Parameter value for '{name}' is null.");
 		}
 		catch (HttpRequestException httpEx)

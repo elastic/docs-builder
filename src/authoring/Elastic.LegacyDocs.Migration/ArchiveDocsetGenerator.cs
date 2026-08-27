@@ -20,7 +20,8 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 {
 	public async Task GenerateAsync(LegacyConf conf, ArchiveGeneratorOptions options, CancellationToken ct = default)
 	{
-		var books = conf.Contents
+		var books = conf
+			.Contents
 			.SelectMany(c => c.Sections)
 			.Where(b => options.BookFilter is null || b.Prefix == options.BookFilter)
 			.ToList();
@@ -146,7 +147,8 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		if (!string.IsNullOrEmpty(book.Current))
 			_ = selected.Add(book.Current);
 
-		var grouped = branches.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
+		var grouped = branches
+			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.Where(x => x.Parsed.HasValue)
 			.GroupBy(x => x.Parsed!.Value.Major);
 
@@ -174,7 +176,8 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 	}
 
 	private static List<BranchRef> SortBranchesDescending(IEnumerable<BranchRef> branches) =>
-		branches.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
+		branches
+			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.OrderByDescending(x => x.Parsed?.Major ?? 0)
 			.ThenByDescending(x => x.Parsed?.Minor ?? 0)
 			.Select(x => x.Branch)

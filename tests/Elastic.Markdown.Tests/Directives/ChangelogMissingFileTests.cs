@@ -63,12 +63,13 @@ public class ChangelogEntryWithoutInlineContentTests : DirectiveTest<ChangelogBl
 
 	[Fact]
 	public void EmitsErrorNamingBundleAndEntry() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(
-				d =>
-					d.Severity == Severity.Error && d.Message.Contains("9.3.0.yaml") && d.Message.Contains("1234-referenced-entry.yaml") &&
-						d.Message.Contains("no inline content")
+				d => d.Severity == Severity.Error && d.Message.Contains("9.3.0.yaml") && d.Message.Contains(
+					"1234-referenced-entry.yaml"
+				) && d.Message.Contains("no inline content")
 			);
 
 	[Fact]

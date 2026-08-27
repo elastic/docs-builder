@@ -33,8 +33,10 @@ public class ChangelogArtifactEvaluationService(
 		try
 		{
 			var artifactMetadataJson = await _fileSystem.File.ReadAllTextAsync(input.MetadataPath, ctx);
-			metadata =
-				JsonSerializer.Deserialize(artifactMetadataJson, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+			metadata = JsonSerializer.Deserialize(
+				artifactMetadataJson,
+				ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata
+			);
 		}
 		catch (FileNotFoundException)
 		{
@@ -62,8 +64,12 @@ public class ChangelogArtifactEvaluationService(
 			return false;
 		}
 
-		var prInfo =
-			await gitHubPrService.FetchPrInfoAsync(metadata.PrNumber.ToString(CultureInfo.InvariantCulture), input.Owner, input.Repo, ctx);
+		var prInfo = await gitHubPrService.FetchPrInfoAsync(
+			metadata.PrNumber.ToString(CultureInfo.InvariantCulture),
+			input.Owner,
+			input.Repo,
+			ctx
+		);
 		if (prInfo is null)
 		{
 			collector.EmitError(input.MetadataPath, $"Failed to fetch PR #{metadata.PrNumber} from GitHub");

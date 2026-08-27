@@ -61,7 +61,8 @@ public class SitemapParser(ILogger<SitemapParser> logger, HttpClient httpClient)
 		CancellationToken ctx
 	)
 	{
-		var sitemapUrls = root.Elements(SitemapNs + "sitemap")
+		var sitemapUrls = root
+			.Elements(SitemapNs + "sitemap")
 			.Select(s => s.Element(SitemapNs + "loc")?.Value)
 			.Where(loc => !string.IsNullOrWhiteSpace(loc))
 			.Select(loc => new Uri(loc!))

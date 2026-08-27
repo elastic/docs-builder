@@ -75,11 +75,10 @@ public class IndexMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRe
 			if (features.Count > 0 || enhancements.Count > 0)
 			{
 				var combined = features.Concat(enhancements).ToList();
-				_ =
-					sb.AppendLine(
-						InvariantCulture,
-						$"### Features and enhancements [{context.Repo}-{context.TitleSlug}-features-enhancements]"
-					);
+				_ = sb.AppendLine(
+					InvariantCulture,
+					$"### Features and enhancements [{context.Repo}-{context.TitleSlug}-features-enhancements]"
+				);
 				RenderEntriesByArea(sb, combined, context);
 			}
 

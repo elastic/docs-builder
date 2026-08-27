@@ -235,7 +235,8 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		var groupLink = codexNav.NavigationItems.OfType<GroupLinkLeaf>().Should().ContainSingle().Subject;
 		groupLink.Url.Should().Be("/docs/g/tools");
 
-		var ungroupedNav = codexNav.NavigationItems
+		var ungroupedNav = codexNav
+			.NavigationItems
 			.OfType<IRootNavigationItem<IDocumentationFile, INavigationItem>>()
 			.Should()
 			.ContainSingle()

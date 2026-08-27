@@ -75,12 +75,11 @@ public static class LiveReloadMiddlewareExtensions
 			var webSocketOptions = new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(300) };
 			_ = builder.UseWebSockets(webSocketOptions);
 
-			_ =
-				builder.Use((context, next) =>
-				{
-					var middleWare = new NoInjectLiveReloadMiddleware(next, webApplicationLifetime);
-					return middleWare.InvokeAsync(context);
-				});
+			_ = builder.Use((context, next) =>
+			{
+				var middleWare = new NoInjectLiveReloadMiddleware(next, webApplicationLifetime);
+				return middleWare.InvokeAsync(context);
+			});
 
 			// always refresh when the server restarts...
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();

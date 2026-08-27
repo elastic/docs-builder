@@ -49,7 +49,8 @@ internal static class BundleDescriptionSubstitution
 				throw new InvalidOperationException($"Cannot resolve placeholders: {string.Join(", ", missingValues)}");
 		}
 
-		return description.Replace("{version}", version ?? string.Empty)
+		return description
+			.Replace("{version}", version ?? string.Empty)
 			.Replace("{lifecycle}", lifecycle ?? string.Empty)
 			.Replace("{owner}", owner ?? string.Empty)
 			.Replace("{repo}", repo ?? string.Empty);

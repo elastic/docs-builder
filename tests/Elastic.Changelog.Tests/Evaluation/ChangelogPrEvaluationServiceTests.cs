@@ -179,14 +179,13 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		);
 
 		A.CallTo(
-			() =>
-				_mockGitHub.FetchLastFileCommitAuthorAsync(
-					"elastic",
-					"test-repo",
-					"docs/changelog/42.yaml",
-					"feature/test",
-					A<CancellationToken>._
-				)
+			() => _mockGitHub.FetchLastFileCommitAuthorAsync(
+				"elastic",
+				"test-repo",
+				"docs/changelog/42.yaml",
+				"feature/test",
+				A<CancellationToken>._
+			)
 		).Returns("human-user");
 
 		var service = CreateService();
@@ -209,14 +208,13 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		);
 
 		A.CallTo(
-			() =>
-				_mockGitHub.FetchLastFileCommitAuthorAsync(
-					"elastic",
-					"test-repo",
-					"docs/changelog/1735689600-fix-something.yaml",
-					"feature/test",
-					A<CancellationToken>._
-				)
+			() => _mockGitHub.FetchLastFileCommitAuthorAsync(
+				"elastic",
+				"test-repo",
+				"docs/changelog/1735689600-fix-something.yaml",
+				"feature/test",
+				A<CancellationToken>._
+			)
 		).Returns("human-user");
 
 		var service = CreateService();
@@ -792,7 +790,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-title");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("no title", StringComparison.OrdinalIgnoreCase));
 	}
@@ -808,7 +807,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-label");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("label", StringComparison.OrdinalIgnoreCase));
 	}
@@ -827,7 +827,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		result.Should().BeFalse();
 		VerifyOutputSet("status", "no-label");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("label", StringComparison.OrdinalIgnoreCase));
 	}

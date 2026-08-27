@@ -28,7 +28,8 @@ internal static class AiEnrichmentConsole
 		var sw = System.Diagnostics.Stopwatch.StartNew();
 		AiEnrichmentProgress? last = null;
 
-		await AnsiConsole.Progress()
+		await AnsiConsole
+			.Progress()
 			.AutoRefresh(true)
 			.AutoClear(false)
 			.HideCompleted(false)
@@ -53,9 +54,8 @@ internal static class AiEnrichmentConsole
 							task.IsIndeterminate = false;
 							task.MaxValue = effectiveMax;
 							task.Value = 0;
-							task.Description =
-								$"[purple]Found {p.TotalCandidates:N0} candidates[/]"
-									+ (maxAiDocs > 0 ? $" [dim](limit: {maxAiDocs:N0})[/]" : "");
+							task.Description = $"[purple]Found {p.TotalCandidates:N0} candidates[/]"
+								+ (maxAiDocs > 0 ? $" [dim](limit: {maxAiDocs:N0})[/]" : "");
 							break;
 						case AiEnrichmentPhase.Enriching:
 							task.Value = p.Enriched + p.Failed;

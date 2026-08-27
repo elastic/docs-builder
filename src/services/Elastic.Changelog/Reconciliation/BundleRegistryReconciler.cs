@@ -239,33 +239,33 @@ public sealed class BundleRegistryReconciler(
 		var built = new RegistryBundle?[listing.Count];
 		var reused = 0;
 
-		await Parallel.ForEachAsync(
-			Enumerable.Range(0, listing.Count),
-			new ParallelOptions { MaxDegreeOfParallelism = MaxParallelReads, CancellationToken = ctx },
-			async (i, ct) =>
+		await Parallel.ForEachAsync(Enumerable.Range(0, listing.Count), new ParallelOptions
+		{
+			MaxDegreeOfParallelism = MaxParallelReads,
+			CancellationToken = ctx
+		}, async (i, ct) =>
+		{
+			var obj = listing[i];
+			var file = obj.Key[scope.Prefix.Length..];
+			var etag = NormalizeETag(obj.ETag);
+
+			// Amends are never ETag-skipped: their target depends on the parent bundle too,
+			// and a parent appearing or changing does not touch the amend's own ETag.
+			if (
+				!BundleAmendMerger.IsAmendFile(file)
+				&& byFile.TryGetValue(file, out var previous)
+				&& string.Equals(previous.ETag, etag, StringComparison.Ordinal)
+			)
 			{
-				var obj = listing[i];
-				var file = obj.Key[scope.Prefix.Length..];
-				var etag = NormalizeETag(obj.ETag);
-
-				// Amends are never ETag-skipped: their target depends on the parent bundle too,
-				// and a parent appearing or changing does not touch the amend's own ETag.
-				if (
-					!BundleAmendMerger.IsAmendFile(file)
-					&& byFile.TryGetValue(file, out var previous)
-					&& string.Equals(previous.ETag, etag, StringComparison.Ordinal)
-				)
-				{
-					built[i] = previous;
-					_ = Interlocked.Increment(ref reused);
-					return;
-				}
-
-				var target = await ComputeTarget(scope, file, ct);
-				_metrics.IncrementEntriesRecomputed();
-				built[i] = new RegistryBundle { File = file, Target = target, ETag = etag };
+				built[i] = previous;
+				_ = Interlocked.Increment(ref reused);
+				return;
 			}
-		);
+
+			var target = await ComputeTarget(scope, file, ct);
+			_metrics.IncrementEntriesRecomputed();
+			built[i] = new RegistryBundle { File = file, Target = target, ETag = etag };
+		});
 
 		// A null slot means the object vanished between the listing and the read; the delete's own
 		// event (or the next reconcile) covers it.
@@ -310,8 +310,10 @@ public sealed class BundleRegistryReconciler(
 	{
 		try
 		{
-			using var response =
-				await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = publicBucketName, Key = scope.Prefix + file }, ctx);
+			using var response = await s3Client.GetObjectAsync(
+				new GetObjectRequest { BucketName = publicBucketName, Key = scope.Prefix + file },
+				ctx
+			);
 
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
@@ -339,11 +341,10 @@ public sealed class BundleRegistryReconciler(
 	{
 		try
 		{
-			_ =
-				await s3Client.DeleteObjectAsync(
-					new DeleteObjectRequest { BucketName = publicBucketName, Key = scope.RegistryKey, IfMatch = etag },
-					ctx
-				);
+			_ = await s3Client.DeleteObjectAsync(
+				new DeleteObjectRequest { BucketName = publicBucketName, Key = scope.RegistryKey, IfMatch = etag },
+				ctx
+			);
 			_metrics.IncrementRegistryDeletes();
 			_logger.LogInformation("Deleted public manifest {Key}: the group is empty", scope.RegistryKey);
 			return true;

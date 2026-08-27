@@ -60,29 +60,28 @@ public class DiagnosticsCollector(
 	{
 		if (_started is not null)
 			return _started;
-		_started =
-			Task.Run(
-				async () =>
+		_started = Task.Run(
+			async () =>
+			{
+				_ = await Channel.WaitToWrite(cancellationToken);
+				_readerStarted = true;
+				while (!Channel.CancellationToken.IsCancellationRequested)
 				{
-					_ = await Channel.WaitToWrite(cancellationToken);
-					_readerStarted = true;
-					while (!Channel.CancellationToken.IsCancellationRequested)
+					try
 					{
-						try
-						{
-							while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
-								Drain();
-						}
-						catch
-						{
-							//ignore
-						}
+						while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
+							Drain();
 					}
+					catch
+					{
+						//ignore
+					}
+				}
 
-					Drain();
-				},
-				cancellationToken
-			);
+				Drain();
+			},
+			cancellationToken
+		);
 		return _started;
 	}
 
@@ -155,10 +154,9 @@ public class DiagnosticsCollector(
 
 	public void EmitError(string file, string message, Exception? e = null)
 	{
-		message =
-			message
-				+ (e != null ? Environment.NewLine + e : string.Empty)
-				+ (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
+		message = message
+			+ (e != null ? Environment.NewLine + e : string.Empty)
+			+ (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
 		Emit(Severity.Error, file, message);
 	}
 

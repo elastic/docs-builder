@@ -226,7 +226,8 @@ public class MappingStructureTests
 		var urlFields = doc.RootElement.GetProperty("properties").GetProperty("path").GetProperty("fields");
 
 		urlFields.TryGetProperty("match", out _).Should().BeTrue("path.match is configured in AddCommonTitleMappings");
-		urlFields.TryGetProperty("prefix", out _)
+		urlFields
+			.TryGetProperty("prefix", out _)
 			.Should()
 			.BeTrue("path.prefix (hierarchy_analyzer) is configured in AddCommonTitleMappings");
 		urlFields.GetProperty("prefix").GetProperty("analyzer").GetString().Should().Be("hierarchy_analyzer");
@@ -249,7 +250,8 @@ public class MappingStructureTests
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		var toc = doc.RootElement
+		var toc = doc
+			.RootElement
 			.GetProperty("properties")
 			.GetProperty("navigation")
 			.GetProperty("properties")

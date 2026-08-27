@@ -89,11 +89,10 @@ public class ContentDateEnrichment(
 		{
 			["bool"] = new JsonObject
 			{
-				["must_not"] =
-					new JsonArray(new JsonObject
-					{
-						["range"] = new JsonObject { ["content_last_updated"] = new JsonObject { ["gt"] = "1970-01-01T00:00:00Z" } }
-					})
+				["must_not"] = new JsonArray(new JsonObject
+				{
+					["range"] = new JsonObject { ["content_last_updated"] = new JsonObject { ["gt"] = "1970-01-01T00:00:00Z" } }
+				})
 			}
 		}
 	}.ToJsonString();
@@ -111,12 +110,11 @@ public class ContentDateEnrichment(
 
 	private async Task<string?> ResolveBackingIndexAsync(Cancel ct)
 	{
-		var response =
-			await operations.WithRetryAsync(
-				() => transport.GetAsync<StringResponse>($"/_alias/{_lookupAlias}", ct),
-				$"GET /_alias/{_lookupAlias}",
-				ct
-			);
+		var response = await operations.WithRetryAsync(
+			() => transport.GetAsync<StringResponse>($"/_alias/{_lookupAlias}", ct),
+			$"GET /_alias/{_lookupAlias}",
+			ct
+		);
 
 		if (response.ApiCallDetails.HttpStatusCode == 404)
 			return null;
@@ -169,12 +167,11 @@ public class ContentDateEnrichment(
 			}
 		};
 
-		var response =
-			await operations.WithRetryAsync(
-				() => transport.PutAsync<StringResponse>(indexName, PostData.String(mapping.ToJsonString()), ct),
-				$"PUT {indexName}",
-				ct
-			);
+		var response = await operations.WithRetryAsync(
+			() => transport.PutAsync<StringResponse>(indexName, PostData.String(mapping.ToJsonString()), ct),
+			$"PUT {indexName}",
+			ct
+		);
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
 				$"Failed to create content date lookup index {indexName}: {response.ApiCallDetails.DebugInformation}"
@@ -193,12 +190,11 @@ public class ContentDateEnrichment(
 
 		var body = new JsonObject { ["actions"] = actions };
 
-		var response =
-			await operations.WithRetryAsync(
-				() => transport.PostAsync<StringResponse>("/_aliases", PostData.String(body.ToJsonString()), ct),
-				"POST /_aliases",
-				ct
-			);
+		var response = await operations.WithRetryAsync(
+			() => transport.PostAsync<StringResponse>("/_aliases", PostData.String(body.ToJsonString()), ct),
+			"POST /_aliases",
+			ct
+		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
@@ -210,12 +206,11 @@ public class ContentDateEnrichment(
 
 	private async Task DeleteIndexAsync(string indexName, Cancel ct)
 	{
-		var response =
-			await operations.WithRetryAsync(
-				() => transport.DeleteAsync<StringResponse>(indexName, new DefaultRequestParameters(), PostData.Empty, ct),
-				$"DELETE {indexName}",
-				ct
-			);
+		var response = await operations.WithRetryAsync(
+			() => transport.DeleteAsync<StringResponse>(indexName, new DefaultRequestParameters(), PostData.Empty, ct),
+			$"DELETE {indexName}",
+			ct
+		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			logger.LogWarning("Failed to delete old lookup index {Index}: {Info}", indexName, response.ApiCallDetails.DebugInformation);
@@ -225,17 +220,15 @@ public class ContentDateEnrichment(
 
 	private async Task PutEnrichPolicyAsync(Cancel ct)
 	{
-		var response =
-			await operations.WithRetryAsync(
-				() =>
-					transport.PutAsync<StringResponse>(
-						$"/_enrich/policy/{PolicyName}",
-						PostData.String(BuildPolicyBody().ToJsonString()),
-						ct
-					),
-				$"PUT _enrich/policy/{PolicyName}",
+		var response = await operations.WithRetryAsync(
+			() => transport.PutAsync<StringResponse>(
+				$"/_enrich/policy/{PolicyName}",
+				PostData.String(BuildPolicyBody().ToJsonString()),
 				ct
-			);
+			),
+			$"PUT _enrich/policy/{PolicyName}",
+			ct
+		);
 
 		if (response.ApiCallDetails.HasSuccessfulStatusCode)
 		{
@@ -274,8 +267,11 @@ public class ContentDateEnrichment(
 
 	private async Task CleanupOldPoliciesAsync(Cancel ct)
 	{
-		var response =
-			await operations.WithRetryAsync(() => transport.GetAsync<StringResponse>("/_enrich/policy", ct), "GET /_enrich/policy", ct);
+		var response = await operations.WithRetryAsync(
+			() => transport.GetAsync<StringResponse>("/_enrich/policy", ct),
+			"GET /_enrich/policy",
+			ct
+		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 		{
@@ -292,13 +288,11 @@ public class ContentDateEnrichment(
 			if (name == null || name == PolicyName || !name.StartsWith(PolicyBaseName, StringComparison.Ordinal))
 				continue;
 
-			var deleteResponse =
-				await operations.WithRetryAsync(
-					() =>
-						transport.DeleteAsync<StringResponse>($"/_enrich/policy/{name}", new DefaultRequestParameters(), PostData.Empty, ct),
-					$"DELETE _enrich/policy/{name}",
-					ct
-				);
+			var deleteResponse = await operations.WithRetryAsync(
+				() => transport.DeleteAsync<StringResponse>($"/_enrich/policy/{name}", new DefaultRequestParameters(), PostData.Empty, ct),
+				$"DELETE _enrich/policy/{name}",
+				ct
+			);
 
 			if (deleteResponse.ApiCallDetails.HasSuccessfulStatusCode)
 				logger.LogInformation("Deleted old enrich policy {Policy}", name);
@@ -313,12 +307,11 @@ public class ContentDateEnrichment(
 
 	private async Task ExecutePolicyAsync(Cancel ct)
 	{
-		var response =
-			await operations.WithRetryAsync(
-				() => transport.PostAsync<StringResponse>($"/_enrich/policy/{PolicyName}/_execute", PostData.Empty, ct),
-				$"POST _enrich/policy/{PolicyName}/_execute",
-				ct
-			);
+		var response = await operations.WithRetryAsync(
+			() => transport.PostAsync<StringResponse>($"/_enrich/policy/{PolicyName}/_execute", PostData.Empty, ct),
+			$"POST _enrich/policy/{PolicyName}/_execute",
+			ct
+		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
@@ -333,47 +326,42 @@ public class ContentDateEnrichment(
 		var pipeline = new JsonObject
 		{
 			["description"] = "Resolves content_last_updated via enrich policy lookup on content_hash",
-			["processors"] =
-				new JsonArray(
-					new JsonObject
+			["processors"] = new JsonArray(
+				new JsonObject { ["set"] = new JsonObject { ["field"] = "content_last_updated", ["value"] = "{{{_ingest.timestamp}}}" } },
+				new JsonObject
+				{
+					["enrich"] = new JsonObject
 					{
-						["set"] = new JsonObject { ["field"] = "content_last_updated", ["value"] = "{{{_ingest.timestamp}}}" }
-					},
-					new JsonObject
+						["policy_name"] = PolicyName,
+						["field"] = "url",
+						["target_field"] = "_content_date_lookup",
+						["max_matches"] = 1,
+						["ignore_missing"] = true
+					}
+				},
+				new JsonObject
+				{
+					["script"] = new JsonObject
 					{
-						["enrich"] = new JsonObject
-						{
-							["policy_name"] = PolicyName,
-							["field"] = "url",
-							["target_field"] = "_content_date_lookup",
-							["max_matches"] = 1,
-							["ignore_missing"] = true
-						}
-					},
-					new JsonObject
-					{
-						["script"] = new JsonObject
-						{
-							["lang"] = "painless",
-							["source"] =
-								"""
+						["lang"] = "painless",
+						["source"] =
+							"""
 							def lookup = ctx._content_date_lookup;
 							if (lookup != null && lookup.content_hash != null && lookup.content_hash == ctx.content_hash) {
 								ctx.content_last_updated = lookup.content_last_updated;
 							}
 							ctx.remove('_content_date_lookup');
 							"""
-						}
 					}
-				)
+				}
+			)
 		};
 
-		var response =
-			await operations.WithRetryAsync(
-				() => transport.PutAsync<StringResponse>($"/_ingest/pipeline/{PipelineName}", PostData.String(pipeline.ToJsonString()), ct),
-				$"PUT _ingest/pipeline/{PipelineName}",
-				ct
-			);
+		var response = await operations.WithRetryAsync(
+			() => transport.PutAsync<StringResponse>($"/_ingest/pipeline/{PipelineName}", PostData.String(pipeline.ToJsonString()), ct),
+			$"PUT _ingest/pipeline/{PipelineName}",
+			ct
+		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException(
@@ -385,12 +373,11 @@ public class ContentDateEnrichment(
 
 	private async Task RefreshIndexAsync(string indexName, Cancel ct)
 	{
-		var response =
-			await operations.WithRetryAsync(
-				() => transport.PostAsync<StringResponse>($"/{indexName}/_refresh", PostData.Empty, ct),
-				$"POST {indexName}/_refresh",
-				ct
-			);
+		var response = await operations.WithRetryAsync(
+			() => transport.PostAsync<StringResponse>($"/{indexName}/_refresh", PostData.Empty, ct),
+			$"POST {indexName}/_refresh",
+			ct
+		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException($"Failed to refresh index {indexName}: {response.ApiCallDetails.DebugInformation}");

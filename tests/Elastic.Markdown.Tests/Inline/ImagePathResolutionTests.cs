@@ -25,8 +25,11 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 	public async Task UpdateRelativeUrlUsesNavigationPathWhenAssemblerBuildEnabled()
 	{
 		const string relativeAssetPath = "images/pic.png";
-		var nonAssemblerResult =
-			await ResolveUrlForBuildMode(relativeAssetPath, buildType: BuildType.Isolated, pathPrefix: "this-is-not-relevant");
+		var nonAssemblerResult = await ResolveUrlForBuildMode(
+			relativeAssetPath,
+			buildType: BuildType.Isolated,
+			pathPrefix: "this-is-not-relevant"
+		);
 		var assemblerResult = await ResolveUrlForBuildMode(relativeAssetPath, buildType: BuildType.Assembler, pathPrefix: "platform");
 
 		nonAssemblerResult.Should().AllBe("/docs/setup/images/pic.png");
@@ -59,31 +62,28 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		const string guideRelativePath = "setup/guide.md";
 		var files = new Dictionary<string, MockFileData>
 		{
-			["docs/docset.yml"] =
-				new(
-					$"""
+			["docs/docset.yml"] = new(
+				$"""
 				project: test
 				toc:
 				  - file: index.md
 				  - file: {guideRelativePath}
 				"""
-				),
-			["docs/index.md"] =
-				new(
-					$"""
+			),
+			["docs/index.md"] = new(
+				$"""
 				 # Home
 
 				 ![Alt](setup/{relativeAssetPath})
 			"""
-				),
-			["docs/" + guideRelativePath] =
-				new(
-					$"""
+			),
+			["docs/" + guideRelativePath] = new(
+				$"""
 				 # Guide
 
 				 ![Alt]({relativeAssetPath})
 				 """
-				),
+			),
 			["docs/setup/" + relativeAssetPath] = new([])
 		};
 
@@ -122,7 +122,8 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 			// expected Url (and minimal metadata for the surrounding API contract).
 			_ = documentationSet.NavigationDocumentationFileLookup.Remove(markdownFile);
 			documentationSet.NavigationDocumentationFileLookup.Add(markdownFile, new NavigationItemStub(navigationUrl));
-			documentationSet.NavigationDocumentationFileLookup
+			documentationSet
+				.NavigationDocumentationFileLookup
 				.TryGetValue(markdownFile, out var navigation)
 				.Should()
 				.BeTrue("navigation lookup should contain current page");

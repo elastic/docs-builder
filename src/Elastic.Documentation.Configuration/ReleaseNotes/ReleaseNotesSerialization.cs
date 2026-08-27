@@ -27,9 +27,9 @@ public static partial class ReleaseNotesSerialization
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	public static partial Regex VersionToTargetRegex();
 
-	private static readonly IDeserializer YamlDeserializer = new StaticDeserializerBuilder(new YamlStaticContext()).WithNamingConvention(
-		UnderscoredNamingConvention.Instance
-	).Build();
+	private static readonly IDeserializer YamlDeserializer = new StaticDeserializerBuilder(new YamlStaticContext())
+		.WithNamingConvention(UnderscoredNamingConvention.Instance)
+		.Build();
 
 	private static readonly ISerializer YamlSerializer = new StaticSerializerBuilder(new YamlStaticContext())
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)

@@ -50,10 +50,10 @@ internal static class AspireHost
 
 		var buildAll = builder.AddProject<Projects.docs_builder>(AssemblerBuild);
 		string[] buildArgs = assumeBuild ? ["--assume-build"] : [];
-		buildAll =
-			buildAll.WithArgs(["assembler", "build", .. GlobalArguments, .. buildArgs])
-				.WaitForCompletion(cloneAll)
-				.WithParentRelationship(cloneAll);
+		buildAll = buildAll
+			.WithArgs(["assembler", "build", .. GlobalArguments, .. buildArgs])
+			.WaitForCompletion(cloneAll)
+			.WithParentRelationship(cloneAll);
 
 		IResourceBuilder<ElasticsearchResource>? elasticsearchLocal = null;
 		if (startElasticsearch)
@@ -68,7 +68,8 @@ internal static class AspireHost
 		var rawBuildType = Environment.GetEnvironmentVariable("DOCS_BUILD_TYPE");
 		var buildType = string.IsNullOrWhiteSpace(rawBuildType) ? "assembler" : rawBuildType;
 
-		var api = builder.AddProject<Projects.Elastic_Documentation_Api>(Api, launchProfileName: "http")
+		var api = builder
+			.AddProject<Projects.Elastic_Documentation_Api>(Api, launchProfileName: "http")
 			.WithArgs(GlobalArguments)
 			.WithEnvironment("ENVIRONMENT", serviceEnvironment)
 			.WithEnvironment("DOCS_BUILD_TYPE", buildType)
@@ -78,19 +79,21 @@ internal static class AspireHost
 
 		// ReSharper disable once RedundantAssignment
 		api = startElasticsearch
-			? api.WithReference(elasticsearchLocal!)
+			? api
+				.WithReference(elasticsearchLocal!)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal!.GetEndpoint("http"))
 				.WithEnvironment(
-					context =>
-						context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
+					context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
 				)
 				.WithParentRelationship(elasticsearchLocal!)
 				.WaitFor(elasticsearchLocal!)
-			: api.WithReference(elasticsearchRemote)
+			: api
+				.WithReference(elasticsearchRemote)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
 
-		var mcp = builder.AddProject<Projects.Elastic_Documentation_Mcp_Remote>(RemoteMcp)
+		var mcp = builder
+			.AddProject<Projects.Elastic_Documentation_Mcp_Remote>(RemoteMcp)
 			.WithArgs(GlobalArguments)
 			.WithEnvironment("ENVIRONMENT", serviceEnvironment)
 			.WithEnvironment("DOCS_BUILD_TYPE", buildType)
@@ -98,39 +101,43 @@ internal static class AspireHost
 
 		// ReSharper disable once RedundantAssignment
 		mcp = startElasticsearch
-			? mcp.WithReference(elasticsearchLocal!)
+			? mcp
+				.WithReference(elasticsearchLocal!)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal!.GetEndpoint("http"))
 				.WithEnvironment(
-					context =>
-						context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
+					context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
 				)
 				.WithParentRelationship(elasticsearchLocal!)
 				.WaitFor(elasticsearchLocal!)
-			: mcp.WithReference(elasticsearchRemote)
+			: mcp
+				.WithReference(elasticsearchRemote)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
 
-		var indexElasticsearch = builder.AddProject<Projects.docs_builder>(ElasticsearchIngest)
+		var indexElasticsearch = builder
+			.AddProject<Projects.docs_builder>(ElasticsearchIngest)
 			.WithArgs(["assembler", "index", .. GlobalArguments])
 			.WaitForCompletion(cloneAll)
 			.WithExplicitStart();
 
 		// ReSharper disable once RedundantAssignment
 		indexElasticsearch = startElasticsearch
-			? indexElasticsearch.WaitFor(elasticsearchLocal!)
+			? indexElasticsearch
+				.WaitFor(elasticsearchLocal!)
 				.WithReference(elasticsearchLocal!)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal!.GetEndpoint("http"))
 				.WithEnvironment(
-					context =>
-						context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
+					context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
 				)
 				.WithParentRelationship(elasticsearchLocal!)
-			: indexElasticsearch.WithReference(elasticsearchRemote)
+			: indexElasticsearch
+				.WithReference(elasticsearchRemote)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
 				.WithParentRelationship(elasticsearchRemote);
 
-		var serveStatic = builder.AddProject<Projects.docs_builder>(AssemblerServe)
+		var serveStatic = builder
+			.AddProject<Projects.docs_builder>(AssemblerServe)
 			.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
 			.WithEnvironment("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", llmServiceAccountPath)
 			.WithHttpEndpoint(port: 4000, isProxied: false)
@@ -140,13 +147,14 @@ internal static class AspireHost
 			.WithParentRelationship(cloneAll);
 
 		serveStatic = startElasticsearch
-			? serveStatic.WithReference(elasticsearchLocal!)
+			? serveStatic
+				.WithReference(elasticsearchLocal!)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal!.GetEndpoint("http"))
 				.WithEnvironment(
-					context =>
-						context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
+					context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
 				)
-			: serveStatic.WithReference(elasticsearchRemote)
+			: serveStatic
+				.WithReference(elasticsearchRemote)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
 				.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
 

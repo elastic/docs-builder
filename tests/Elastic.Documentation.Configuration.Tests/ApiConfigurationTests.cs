@@ -659,8 +659,10 @@ public class ConfigurationFileApiTests
 			}
 		};
 
-		var (config, collector) =
-			CreateConfiguration(docSetFile, extraMarkdownFiles: ["op-search.md", "tag-documents.md", "random-notes.md"]);
+		var (config, collector) = CreateConfiguration(
+			docSetFile,
+			extraMarkdownFiles: ["op-search.md", "tag-documents.md", "random-notes.md"]
+		);
 
 		collector.Errors.Should().Be(0);
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs");

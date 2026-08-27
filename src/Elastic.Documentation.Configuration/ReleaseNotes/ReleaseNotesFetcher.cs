@@ -67,15 +67,14 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 		var tasks = declared.Select(async product =>
 		{
 			// version: null — prefetch the full set; each directive applies its own :version: filter later.
-			var bundles =
-				await fetcher.FetchAsync(
-					baseUri,
-					product,
-					version: null,
-					msg => collector.EmitError(string.Empty, msg),
-					msg => collector.EmitWarning(string.Empty, msg),
-					ctx
-				).ConfigureAwait(false);
+			var bundles = await fetcher.FetchAsync(
+				baseUri,
+				product,
+				version: null,
+				msg => collector.EmitError(string.Empty, msg),
+				msg => collector.EmitWarning(string.Empty, msg),
+				ctx
+			).ConfigureAwait(false);
 			return (product, bundles);
 		});
 

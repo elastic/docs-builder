@@ -336,12 +336,11 @@ internal sealed partial class ChangelogCommands(
 		// Load changelog config and apply fallbacks for all modes.
 		// Precedence: CLI option > bundle section in changelog.yml > built-in default.
 		// This applies to --prs, --issues, --release-version, and --report alike.
-		var bundleConfig =
-			await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-				collector,
-				config?.FullName,
-				ctx
-			);
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
+			collector,
+			config?.FullName,
+			ctx
+		);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
@@ -615,12 +614,11 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var bundleConfig =
-			await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-				collector,
-				config?.FullName,
-				ctx
-			);
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
+			collector,
+			config?.FullName,
+			ctx
+		);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
@@ -857,12 +855,11 @@ internal sealed partial class ChangelogCommands(
 			if (!plan)
 			{
 				// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-				var bundleConfig =
-					await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-						collector,
-						config?.FullName,
-						ctx
-					);
+				var bundleConfig = await new ChangelogConfigurationLoader(
+					logFactory,
+					configurationContext,
+					_fileSystem
+				).LoadChangelogConfiguration(collector, config?.FullName, ctx);
 				var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 				var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 
@@ -897,8 +894,10 @@ internal sealed partial class ChangelogCommands(
 				}
 
 				// Build full PR URLs and inject them as the PR filter
-				prs =
-					parsedNotes.PrReferences.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}").ToArray();
+				prs = parsedNotes
+					.PrReferences
+					.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
+					.ToArray();
 			}
 		}
 
@@ -1261,12 +1260,11 @@ internal sealed partial class ChangelogCommands(
 			}
 
 			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-			var bundleConfig =
-				await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-					collector,
-					config?.FullName,
-					ctx
-				);
+			var bundleConfig = await new ChangelogConfigurationLoader(
+				logFactory,
+				configurationContext,
+				_fileSystem
+			).LoadChangelogConfiguration(collector, config?.FullName, ctx);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 
@@ -1552,12 +1550,11 @@ internal sealed partial class ChangelogCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		// --output CLI > bundle.directory config > ./changelogs (service default)
-		var bundleConfig =
-			await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-				collector,
-				config?.FullName,
-				ctx
-			);
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
+			collector,
+			config?.FullName,
+			ctx
+		);
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
@@ -1951,8 +1948,14 @@ internal sealed partial class ChangelogCommands(
 		// Resolve the authoring owner/repo/branch for entry keys: CLI flags > bundle.{owner,repo}
 		// (changelog.yml) > git. The repo is reduced to a single path segment (owner/repo -> repo) for the
 		// changelog/{org}/{repo}/{branch}/ key.
-		var (resolvedRepo, resolvedOwner, resolvedBranch) =
-			await ResolveUploadRepoOwnerBranch(repo, owner, branch, resolvedConfig, resolvedDirectory, ctx);
+		var (resolvedRepo, resolvedOwner, resolvedBranch) = await ResolveUploadRepoOwnerBranch(
+			repo,
+			owner,
+			branch,
+			resolvedConfig,
+			resolvedDirectory,
+			ctx
+		);
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, _fileSystem, configurationContext);
@@ -2097,12 +2100,11 @@ internal sealed partial class ChangelogCommands(
 		CancellationToken ctx
 	)
 	{
-		var bundleConfig =
-			await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
-				collector,
-				configPath,
-				ctx
-			);
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
+			collector,
+			configPath,
+			ctx
+		);
 
 		// Anchor the git fallbacks to the upload source (config file or changelog directory), not the
 		// process cwd, so an out-of-tree --config/--directory resolves the right origin and branch. Both

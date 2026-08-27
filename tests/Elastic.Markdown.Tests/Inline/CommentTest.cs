@@ -39,7 +39,8 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(
 	public void GeneratesAttributesInHtml()
 	{
 		// language=html
-		Html.Should()
+		Html
+			.Should()
 			.NotContainAny(
 				"<p><!--",
 				"<p>Multi line comment, first line",
@@ -80,7 +81,8 @@ public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineT
 	public void GeneratesAttributesInHtml()
 	{
 		// language=html
-		Html.ReplaceLineEndings()
+		Html
+			.ReplaceLineEndings()
 			.Should()
 			.NotContainAny(
 				"<p><!--",

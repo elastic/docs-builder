@@ -310,7 +310,8 @@ public static partial class ProfileFilterResolver
 	)
 	{
 		var content = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
-		var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		var lines = content
+			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Where(l => !string.IsNullOrWhiteSpace(l))
 			.ToArray();
 
@@ -415,9 +416,8 @@ public static partial class ProfileFilterResolver
 
 			if (parts.Length > 3)
 			{
-				errorMessage =
-					"Each product entry must have at most three space-separated fields (product, target, lifecycle). "
-						+ $"Too many values in segment: '{entry}'.";
+				errorMessage = "Each product entry must have at most three space-separated fields (product, target, lifecycle). "
+					+ $"Too many values in segment: '{entry}'.";
 				return false;
 			}
 

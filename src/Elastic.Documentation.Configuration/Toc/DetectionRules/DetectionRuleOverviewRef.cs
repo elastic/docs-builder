@@ -74,7 +74,8 @@ public record DetectionRuleOverviewRef : FileRef
 		IDirectoryInfo baseDirectory
 	)
 	{
-		IReadOnlyCollection<ITableOfContentsItem> children = directory.EnumerateFiles("*.*", SearchOption.AllDirectories)
+		IReadOnlyCollection<ITableOfContentsItem> children = directory
+			.EnumerateFiles("*.*", SearchOption.AllDirectories)
 			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
 			// skip symlinks
@@ -102,7 +103,8 @@ public record DetectionRuleOverviewRef : FileRef
 		IDirectoryInfo baseDirectory
 	)
 	{
-		IReadOnlyCollection<ITableOfContentsItem> children = directory.EnumerateFiles("*.*", SearchOption.AllDirectories)
+		IReadOnlyCollection<ITableOfContentsItem> children = directory
+			.EnumerateFiles("*.*", SearchOption.AllDirectories)
 			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
 			// skip symlinks

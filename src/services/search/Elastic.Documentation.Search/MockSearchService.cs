@@ -85,9 +85,10 @@ public class MockNavigationSearchService : INavigationSearchService
 	public async Task<NavigationSearchResponse> NavigationSearchAsync(NavigationSearchRequest request, CancellationToken ctx = default)
 	{
 		var filteredResults = Results.Where(
-			item =>
-				item.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
-					item.Description?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) == true
+			item => item.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase) || item.Description?.Contains(
+				request.Query,
+				StringComparison.OrdinalIgnoreCase
+			) == true
 		).ToList();
 
 		// Apply type filter if specified
@@ -95,11 +96,15 @@ public class MockNavigationSearchService : INavigationSearchService
 			filteredResults = filteredResults.Where(item => item.Type == request.TypeFilter).ToList();
 
 		// Calculate aggregations before filtering
-		var aggregations = Results.Where(
-			item =>
-				item.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
-					item.Description?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) == true
-		).GroupBy(item => item.Type).ToDictionary(g => g.Key, g => (long)g.Count());
+		var aggregations = Results
+			.Where(
+				item => item.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase) || item.Description?.Contains(
+					request.Query,
+					StringComparison.OrdinalIgnoreCase
+				) == true
+			)
+			.GroupBy(item => item.Type)
+			.ToDictionary(g => g.Key, g => (long)g.Count());
 
 		var pagedResults = filteredResults.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize).ToList();
 

@@ -166,17 +166,16 @@ public class DocumentationSetFile : TableOfContentsFile
 		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
-		docSet.TableOfContents =
-			ResolveTableOfContents(
-				collector,
-				docSet.TableOfContents,
-				sourceDirectory,
-				fileSystem,
-				parentPath: "",
-				containerPath: "",
-				context: docsetPath,
-				docSet.SuppressDiagnostics
-			);
+		docSet.TableOfContents = ResolveTableOfContents(
+			collector,
+			docSet.TableOfContents,
+			sourceDirectory,
+			fileSystem,
+			parentPath: "",
+			containerPath: "",
+			context: docsetPath,
+			docSet.SuppressDiagnostics
+		);
 		// Collect excluded paths so they can be skipped during file processing (not just navigation)
 		docSet.FolderExcludedFiles = CollectFolderExcludedFiles(docSet.TableOfContents);
 		return docSet;
@@ -432,10 +431,12 @@ public class DocumentationSetFile : TableOfContentsFile
 
 					// Normalize for comparison: remove hyphens, underscores, and lowercase
 					// This allows "getting-started" to match "GettingStarted" or "getting_started"
-					var normalizedFile = fileWithoutExtension.Replace("-", "", StringComparison.Ordinal)
+					var normalizedFile = fileWithoutExtension
+						.Replace("-", "", StringComparison.Ordinal)
 						.Replace("_", "", StringComparison.Ordinal)
 						.ToLowerInvariant();
-					var normalizedFolder = folderName.Replace("-", "", StringComparison.Ordinal)
+					var normalizedFolder = folderName
+						.Replace("-", "", StringComparison.Ordinal)
 						.Replace("_", "", StringComparison.Ordinal)
 						.ToLowerInvariant();
 
@@ -581,7 +582,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		);
 
 		var fileInfo = fileSystem.NewFileInfo(baseDirectory.FullName, fullPath);
-		var tocSourceFolders = detectionRuleRef.DetectionRuleFolders
+		var tocSourceFolders = detectionRuleRef
+			.DetectionRuleFolders
 			.Select(f => fileSystem.NewDirInfo(fileInfo.Directory!.FullName, f))
 			.ToList();
 		var tomlChildren = DetectionRuleOverviewRef.CreateTableOfContentItems(tocSourceFolders, context, baseDirectory);
@@ -609,8 +611,13 @@ public class DocumentationSetFile : TableOfContentsFile
 				context,
 				baseDirectory
 			);
-			deprecatedSiblingRef =
-				new FileRef(deprecatedFullPath, deprecatedPathRelativeToContainer, false, deprecatedTomlChildren, context);
+			deprecatedSiblingRef = new FileRef(
+				deprecatedFullPath,
+				deprecatedPathRelativeToContainer,
+				false,
+				deprecatedTomlChildren,
+				context
+			);
 		}
 
 		return new DetectionRuleOverviewRef(
@@ -797,7 +804,8 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Find all .md files in the directory (not recursive)
 		var excludeSet = exclude is { Count: > 0 } ? new HashSet<string>(exclude, StringComparer.OrdinalIgnoreCase) : null;
-		var mdFiles = fileSystem.Directory
+		var mdFiles = fileSystem
+			.Directory
 			.GetFiles(directoryPath, "*.md")
 			.Select(f => fileSystem.FileInfo.New(f))
 			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
@@ -936,7 +944,8 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Glob-match files. We enumerate all files in the folder tree and test against the pattern.
 		var pattern = Glob.Parse(globPattern);
-		var allFiles = listingDir.EnumerateFiles("*.*", SearchOption.AllDirectories)
+		var allFiles = listingDir
+			.EnumerateFiles("*.*", SearchOption.AllDirectories)
 			.Where(f => !f.Attributes.HasFlag(FileAttributes.Hidden) && !f.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => !f.Directory!.Attributes.HasFlag(FileAttributes.Hidden) && !f.Directory!.Attributes.HasFlag(FileAttributes.System))
 			.Where(f => f.LinkTarget == null)

@@ -268,31 +268,28 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		// Find all code block boundaries to avoid processing links inside subs=false blocks
 		var codeBlockRanges = GetCodeBlockRanges(markdown);
 
-		return LinkPattern().Replace(
-			markdown,
-			match =>
+		return LinkPattern().Replace(markdown, match =>
+		{
+			// Check if this link is inside a code block with subs=false
+			if (IsInsideSubsDisabledCodeBlock(match.Index, codeBlockRanges))
+				return match.Value; // Don't process links in subs=false code blocks
+
+			var linkText = match.Groups[1].Value;
+			var linkUrl = match.Groups[2].Value;
+
+			// Only preprocess external links to preserve internal link validation behavior
+			// Check if URL contains substitutions and looks like it might resolve to an external URL
+			if (linkUrl.Contains("{{") && (linkUrl.Contains("http") || linkText.Contains("{{")))
 			{
-				// Check if this link is inside a code block with subs=false
-				if (IsInsideSubsDisabledCodeBlock(match.Index, codeBlockRanges))
-					return match.Value; // Don't process links in subs=false code blocks
-
-				var linkText = match.Groups[1].Value;
-				var linkUrl = match.Groups[2].Value;
-
-				// Only preprocess external links to preserve internal link validation behavior
-				// Check if URL contains substitutions and looks like it might resolve to an external URL
-				if (linkUrl.Contains("{{") && (linkUrl.Contains("http") || linkText.Contains("{{")))
-				{
-					// Apply substitutions to both link text and URL
-					var processedText = linkText.ReplaceSubstitutions(context);
-					var processedUrl = linkUrl.ReplaceSubstitutions(context);
-					return $"[{processedText}]({processedUrl})";
-				}
-
-				// Return original match for internal links
-				return match.Value;
+				// Apply substitutions to both link text and URL
+				var processedText = linkText.ReplaceSubstitutions(context);
+				var processedUrl = linkUrl.ReplaceSubstitutions(context);
+				return $"[{processedText}]({processedUrl})";
 			}
-		);
+
+			// Return original match for internal links
+			return match.Value;
+		});
 	}
 
 	private static List<(int start, int end, bool subsDisabled)> GetCodeBlockRanges(string markdown)

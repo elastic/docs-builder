@@ -193,26 +193,25 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = ImageCarouselView.Create(new ImageCarouselViewModel
 		{
 			DirectiveBlock = block,
-			Images =
-				block.Images
-					.Select(
-						img =>
-							new ImageViewModel
-							{
-								DirectiveBlock = img,
-								Label = img.Label,
-								Align = img.Align ?? string.Empty,
-								Alt = img.Alt ?? string.Empty,
-								Title = img.Title,
-								Height = img.Height,
-								Width = img.Width,
-								Scale = img.Scale ?? string.Empty,
-								Screenshot = img.Screenshot,
-								Target = img.Target,
-								ImageUrl = img.ImageUrl
-							}
-					)
-					.ToList(),
+			Images = block
+				.Images
+				.Select(
+					img => new ImageViewModel
+					{
+						DirectiveBlock = img,
+						Label = img.Label,
+						Align = img.Align ?? string.Empty,
+						Alt = img.Alt ?? string.Empty,
+						Title = img.Title,
+						Height = img.Height,
+						Width = img.Width,
+						Scale = img.Scale ?? string.Empty,
+						Screenshot = img.Screenshot,
+						Target = img.Target,
+						ImageUrl = img.ImageUrl
+					}
+				)
+				.ToList(),
 			MaxHeight = block.MaxHeight
 		});
 		RenderRazorSlice(slice, renderer);
@@ -307,16 +306,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				Options =
 				[
 					.. step.Options.Select(
-						option =>
-							new GetStartedOptionViewModel
-							{
-								Label = option.Label,
-								DescriptionHtml = RenderInlineMarkdown(option.Description),
-								Code = option.Code,
-								Language = option.Language,
-								Url = option.Url,
-								UrlLabel = option.UrlLabel
-							}
+						option => new GetStartedOptionViewModel
+						{
+							Label = option.Label,
+							DescriptionHtml = RenderInlineMarkdown(option.Description),
+							Code = option.Code,
+							Language = option.Language,
+							Url = option.Url,
+							UrlLabel = option.UrlLabel
+						}
 					)
 				]
 			});
@@ -652,15 +650,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
 		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-		var document = MarkdownParser.ParseSnippetAsync(
-			block.Build,
-			block.Context,
-			snippet,
-			parentPath,
-			block.Context.YamlFrontMatter,
-			default,
-			block.Line
-		).GetAwaiter().GetResult();
+		var document = MarkdownParser
+			.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default, block.Line)
+			.GetAwaiter()
+			.GetResult();
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
@@ -677,11 +670,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings =
-				SettingsBlock.PrepareSettingsForRendering(
-					YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
-					block.Context
-				);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch (YamlException e)
 		{

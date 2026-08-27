@@ -44,10 +44,9 @@ public class DirectiveMarkdownExtension : IMarkdownExtension
 		{
 			inlineParser.EmphasisDescriptors.Add(new EmphasisDescriptor(':', 2, 2, true));
 			inlineParser.TryCreateEmphasisInlineList.Add(
-				(emphasisChar, delimiterCount) =>
-					delimiterCount != 2 || emphasisChar != ':'
-						? null
-						: (Markdig.Syntax.Inlines.EmphasisInline)new Role { DelimiterChar = ':', DelimiterCount = 2 }
+				(emphasisChar, delimiterCount) => delimiterCount != 2 || emphasisChar != ':'
+					? null
+					: (Markdig.Syntax.Inlines.EmphasisInline)new Role { DelimiterChar = ':', DelimiterCount = 2 }
 			);
 		}
 	}

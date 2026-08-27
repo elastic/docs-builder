@@ -343,7 +343,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		string.IsNullOrWhiteSpace(url)
 			? context.MarkdownSourcePath
 			: url.StartsWith('/')
-				? context.Build
+				? context
+					.Build
 					.ReadFileSystem
 					.FileInfo
 					.New(Path.Join(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
@@ -406,7 +407,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			var path = Path.GetFullPath(fi.FileSystem.Path.Join(fi.Directory!.FullName, newUrl));
 			var pathInfo = fi.FileSystem.FileInfo.New(path);
 			pathInfo = pathInfo.EnsureSubPathOf(context.Configuration.ScopeDirectory, newUrl);
-			var relativePath = fi.FileSystem
+			var relativePath = fi
+				.FileSystem
 				.Path
 				.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName)
 				.OptionalWindowsReplace();

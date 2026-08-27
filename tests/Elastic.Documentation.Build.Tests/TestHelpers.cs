@@ -89,10 +89,9 @@ public sealed class ScopedTempDirectory : IDisposable
 {
 	public ScopedTempDirectory(IFileSystem fileSystem, string prefix)
 	{
-		Directory =
-			fileSystem.DirectoryInfo.New(
-				fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-temp", $"{prefix}-{Guid.NewGuid():N}")
-			);
+		Directory = fileSystem.DirectoryInfo.New(
+			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-temp", $"{prefix}-{Guid.NewGuid():N}")
+		);
 		Directory.Create();
 	}
 

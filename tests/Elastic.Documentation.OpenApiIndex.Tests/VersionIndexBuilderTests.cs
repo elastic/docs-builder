@@ -120,12 +120,11 @@ public class VersionIndexBuilderTests
 	[Fact]
 	public void Build_MixOfValidAndInvalidKeys_IndexesValidAndReportsInvalidOnly()
 	{
-		var (index, invalidKeys) =
-			VersionIndexBuilder.Build([
-				"elastic/elasticsearch/8.16/openapi.json",
-				"not-a-valid-key",
-				"elastic/elasticsearch/master/openapi.json"
-			]);
+		var (index, invalidKeys) = VersionIndexBuilder.Build([
+			"elastic/elasticsearch/8.16/openapi.json",
+			"not-a-valid-key",
+			"elastic/elasticsearch/master/openapi.json"
+		]);
 
 		index["elastic/elasticsearch"]["openapi.json"]["8"].Version.Should().Be("8.16");
 		invalidKeys.Should().BeEquivalentTo(["not-a-valid-key", "elastic/elasticsearch/master/openapi.json"]);

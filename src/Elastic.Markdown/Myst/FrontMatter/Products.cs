@@ -54,8 +54,10 @@ public class ProductConverter(ProductsConfiguration products) : IYamlTypeConvert
 public class InvalidProductException(string invalidValue, ProductsConfiguration products) : Exception(
 	$"Invalid products frontmatter value: \"{invalidValue}\"." +
 		(!string.IsNullOrWhiteSpace(invalidValue)
-			? " " +
-				new Suggestion(products.PublicReferenceProducts.Select(p => p.Value.Id).ToHashSet(), invalidValue).GetSuggestionQuestion()
+			? " " + new Suggestion(
+				products.PublicReferenceProducts.Select(p => p.Value.Id).ToHashSet(),
+				invalidValue
+			).GetSuggestionQuestion()
 			: "") +
 		"\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products."
 );

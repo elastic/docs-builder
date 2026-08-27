@@ -148,22 +148,23 @@ public class AssemblerBuilder(
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 
 			{
-				_ =
-					linkResolver.TryResolve(
-						specificErrorMessage =>
-							context.Collector.EmitError(path, $"An error occurred while resolving cross-link {path}", specificErrorMessage),
-						new Uri(path),
-						out uri
-					);
+				_ = linkResolver.TryResolve(
+					specificErrorMessage => context.Collector.EmitError(
+						path,
+						$"An error occurred while resolving cross-link {path}",
+						specificErrorMessage
+					),
+					new Uri(path),
+					out uri
+				);
 			}
 			else // Relative links
 
 			{
-				uri =
-					linkResolver.UriResolver.Resolve(
-						new Uri($"{repository}://{path}"),
-						PublishEnvironmentUriResolver.MarkdownPathToUrlPath(path)
-					);
+				uri = linkResolver.UriResolver.Resolve(
+					new Uri($"{repository}://{path}"),
+					PublishEnvironmentUriResolver.MarkdownPathToUrlPath(path)
+				);
 			}
 
 			return uri?.AbsolutePath ?? string.Empty;

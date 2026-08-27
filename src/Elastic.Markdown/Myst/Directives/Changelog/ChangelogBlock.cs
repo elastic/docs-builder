@@ -377,7 +377,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return;
 		}
 
-		var bundles = Build.ReadFileSystem
+		var bundles = Build
+			.ReadFileSystem
 			.Directory
 			.EnumerateFiles(BundlesFolderPath, "*.yaml")
 			.Concat(Build.ReadFileSystem.Directory.EnumerateFiles(BundlesFolderPath, "*.yml"))
@@ -429,7 +430,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		// Auto-discover: try .yml and .yaml in each candidate location.
 		string[] relativePaths = ["changelog.yml", "changelog.yaml", "../changelog.yml", "../changelog.yaml"];
 
-		return relativePaths.Select(rel => Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(rel)))
+		return relativePaths
+			.Select(rel => Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(rel)))
 			.Select(abs => ValidateConfigCandidate(abs, emitDiagnostics: false))
 			.FirstOrDefault(p => p != null);
 	}
@@ -698,7 +700,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// This ensures the TOC and generated anchors match what the renderer actually outputs.
 	/// </summary>
 	private Dictionary<ChangelogEntryType, int> GetFilteredEntryCounts(LoadedBundle bundle) =>
-		ChangelogInlineRenderer.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
+		ChangelogInlineRenderer
+			.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => g.Count());
 

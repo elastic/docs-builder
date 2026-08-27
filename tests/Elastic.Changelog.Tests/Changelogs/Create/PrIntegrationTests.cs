@@ -19,13 +19,12 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var prInfo = new GitHubPrInfo { Title = "Implement new aggregation API", Labels = ["type:feature"] };
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -61,13 +60,12 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		Collector.Errors.Should().Be(0);
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).MustHaveHappenedOnceExactly();
 
 		// Note: ChangelogService uses real FileSystem, so we need to check the actual file system
@@ -91,13 +89,12 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var prInfo = new GitHubPrInfo { Title = "Fix memory leak in search", Labels = ["type:bug"] };
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/140034",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/140034",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml

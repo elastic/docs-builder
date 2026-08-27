@@ -185,7 +185,8 @@ public class MissingFileNoMdHintTests(ITestOutputHelper output) : AnchorLinkTest
 {
 	[Fact]
 	public void HasGenericNotFoundError() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.HaveCount(1)
 			.And

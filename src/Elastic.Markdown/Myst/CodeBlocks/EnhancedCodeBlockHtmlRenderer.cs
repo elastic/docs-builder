@@ -378,20 +378,22 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 				AllowedClasses = MermaidAllowedClasses,
 				// Strip mode: stray styling is dropped and the diagram still renders; fires once per diagram.
 				OnStripped =
-					violations =>
-						block.EmitHint(
-							$"Mermaid strict mode stripped {violations.Count} item(s): " +
-								string.Join(", ", violations.Select(v => $"{v.Kind} (line {v.Line})"))
-						),
+					violations => block.EmitHint(
+						$"Mermaid strict mode stripped {violations.Count} item(s): " + string.Join(
+							", ",
+							violations.Select(v => $"{v.Kind} (line {v.Line})")
+						)
+					),
 			},
 			// Logged as errors for now so SVG sanitizer removals cause build failures — downgrade to warnings
 			// once we're confident the sanitizer isn't stripping legitimate content.
 			OnSanitized =
-				violations =>
-					block.EmitError(
-						$"Mermaid SVG sanitizer removed {violations.Count} item(s): " +
-							string.Join(", ", violations.Select(v => $"{v.Kind} '{v.Name}'"))
-					),
+				violations => block.EmitError(
+					$"Mermaid SVG sanitizer removed {violations.Count} item(s): " + string.Join(
+						", ",
+						violations.Select(v => $"{v.Kind} '{v.Name}'")
+					)
+				),
 		};
 
 		string svg;

@@ -110,10 +110,9 @@ public class OpenApiGeneratorCatalogSplitTests
 		{
 			Products = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
 			PublicReferenceProducts = new[] { product }.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			ProductDisplayNames =
-				new Dictionary<string, string> { [product.Id] = product.DisplayName ?? product.Id }.ToFrozenDictionary(
-					StringComparer.OrdinalIgnoreCase
-				)
+			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName ?? product.Id }.ToFrozenDictionary(
+				StringComparer.OrdinalIgnoreCase
+			)
 		};
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, stack, products);
 
@@ -196,13 +195,12 @@ public class OpenApiGeneratorCatalogSplitTests
 	private static HttpResponseMessage SpecResponse() =>
 		new(HttpStatusCode.OK)
 		{
-			Content =
-				new StringContent(
-					/*lang=json,strict*/
-					"""{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""",
-					System.Text.Encoding.UTF8,
-					"application/json"
-				)
+			Content = new StringContent(
+				/*lang=json,strict*/
+				"""{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""",
+				System.Text.Encoding.UTF8,
+				"application/json"
+			)
 		};
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

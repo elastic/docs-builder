@@ -31,8 +31,7 @@ public class AwsS3LinkIndexReaderWriter(
 			Key = _registryKey,
 			ContentBody = json,
 			ContentType = "application/json",
-			IfMatch =
-				registry.ETag // Only update if the ETag matches. Meaning the object has not been changed in the meantime.
+			IfMatch = registry.ETag // Only update if the ETag matches. Meaning the object has not been changed in the meantime.
 		};
 		var putResponse = await _s3Client.PutObjectAsync(putObjectRequest, cancellationToken);
 		if (putResponse.HttpStatusCode != HttpStatusCode.OK)

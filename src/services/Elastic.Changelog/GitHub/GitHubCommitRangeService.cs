@@ -271,15 +271,16 @@ public sealed partial class GitHubCommitRangeService(
 		string repoFullName
 	)
 	{
-		var candidates = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>().Where(
-				pr => pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase)
-			).ToList()
+		var candidates = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>()
+			.Where(pr => pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase))
+			.ToList()
 			?? [];
 
 		if (candidates.Count == 0)
 			return null;
 
-		var mergeCommitMatches = candidates.Where(pr => string.Equals(pr.MergeCommit?.Oid, sha, StringComparison.OrdinalIgnoreCase))
+		var mergeCommitMatches = candidates
+			.Where(pr => string.Equals(pr.MergeCommit?.Oid, sha, StringComparison.OrdinalIgnoreCase))
 			.OrderBy(pr => pr.Number)
 			.ToList();
 
@@ -353,17 +354,17 @@ public sealed partial class GitHubCommitRangeService(
 		_ = sb.Append("query { repository(owner: \"").Append(owner).Append("\", name: \"").Append(repo).Append("\") {");
 		for (var i = 0; i < shas.Count; i++)
 		{
-			_ =
-				sb.Append(" c")
-					.Append(i)
-					.Append(": object(oid: \"")
-					.Append(shas[i])
-					.Append("\") { ... on Commit {")
-					.Append(" oid associatedPullRequests(first: ")
-					.Append(MaxAssociatedPullRequests)
-					.Append(") { nodes {")
-					.Append(" number url merged mergeCommit { oid } baseRepository { nameWithOwner }")
-					.Append(" } } } }");
+			_ = sb
+				.Append(" c")
+				.Append(i)
+				.Append(": object(oid: \"")
+				.Append(shas[i])
+				.Append("\") { ... on Commit {")
+				.Append(" oid associatedPullRequests(first: ")
+				.Append(MaxAssociatedPullRequests)
+				.Append(") { nodes {")
+				.Append(" number url merged mergeCommit { oid } baseRepository { nameWithOwner }")
+				.Append(" } } } }");
 		}
 
 		_ = sb.Append(" } }");

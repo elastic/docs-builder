@@ -174,12 +174,11 @@ public class ApplicableToViewModel
 		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition
 	) =>
 		collection.Select(
-			applicability =>
-				new RawApplicabilityItem(
-					Key: applicabilityDefinition.Key,
-					Applicability: applicability,
-					ApplicabilityDefinition: applicabilityDefinition
-				)
+			applicability => new RawApplicabilityItem(
+				Key: applicabilityDefinition.Key,
+				Applicability: applicability,
+				ApplicabilityDefinition: applicabilityDefinition
+			)
 		);
 
 	/// <summary>

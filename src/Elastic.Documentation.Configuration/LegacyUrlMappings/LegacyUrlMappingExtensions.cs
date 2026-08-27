@@ -21,13 +21,12 @@ public static class LegacyUrlMappingExtensions
 		);
 
 		var legacyUrlMappings = legacyUrlMappingsDto.Mappings.Select(
-			kvp =>
-				new LegacyUrlMapping
-				{
-					BaseUrl = kvp.Key,
-					Product = products.Products[kvp.Value.Product],
-					LegacyVersions = kvp.Value.LegacyVersions.ToImmutableList()
-				}
+			kvp => new LegacyUrlMapping
+			{
+				BaseUrl = kvp.Key,
+				Product = products.Products[kvp.Value.Product],
+				LegacyVersions = kvp.Value.LegacyVersions.ToImmutableList()
+			}
 		);
 
 		return new LegacyUrlMappingConfiguration { Mappings = legacyUrlMappings.ToImmutableList() };

@@ -416,14 +416,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, TypeEntry?>? types = null;
 		if (yamlPivot.Types != null)
 		{
-			types =
-				yamlPivot.Types.ToDictionary(
-					kvp => kvp.Key,
-					kvp =>
-						kvp.Value == null
-							? null
-							: new TypeEntry { Labels = kvp.Value.Labels, Subtypes = ConvertLenientDictToStringDict(kvp.Value.Subtypes) }
-				);
+			types = yamlPivot.Types.ToDictionary(
+				kvp => kvp.Key,
+				kvp => kvp.Value == null
+					? null
+					: new TypeEntry { Labels = kvp.Value.Labels, Subtypes = ConvertLenientDictToStringDict(kvp.Value.Subtypes) }
+			);
 		}
 
 		return new PivotConfiguration
@@ -590,28 +588,26 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, BundleProfile>? profiles = null;
 		if (yaml.Profiles is { Count: > 0 })
 		{
-			profiles =
-				yaml.Profiles.ToDictionary(
-					kvp => kvp.Key,
-					kvp =>
-						kvp.Value is null
-							? new BundleProfile()
-							: new BundleProfile
-							{
-								Products = kvp.Value.Products,
+			profiles = yaml.Profiles.ToDictionary(
+				kvp => kvp.Key,
+				kvp => kvp.Value is null
+					? new BundleProfile()
+					: new BundleProfile
+					{
+						Products = kvp.Value.Products,
 #pragma warning disable CS0618 // Output stays parseable for one release cycle so ValidateProfileOutputs can emit an actionable error
-								Output = kvp.Value.Output,
+						Output = kvp.Value.Output,
 #pragma warning restore CS0618
-								OutputProducts = kvp.Value.OutputProducts,
-								Description = kvp.Value.Description,
-								Repo = kvp.Value.Repo,
-								Owner = kvp.Value.Owner,
-								Branch = kvp.Value.Branch,
-								HideFeatures = kvp.Value.HideFeatures?.Values,
-								ReleaseDates = kvp.Value.ReleaseDates,
-								Source = kvp.Value.Source
-							}
-				);
+						OutputProducts = kvp.Value.OutputProducts,
+						Description = kvp.Value.Description,
+						Repo = kvp.Value.Repo,
+						Owner = kvp.Value.Owner,
+						Branch = kvp.Value.Branch,
+						HideFeatures = kvp.Value.HideFeatures?.Values,
+						ReleaseDates = kvp.Value.ReleaseDates,
+						Source = kvp.Value.Source
+					}
+			);
 		}
 
 		return new BundleConfiguration

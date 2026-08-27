@@ -422,9 +422,10 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		// Rule: Only one version declaration per lifecycle
 		var lifecycleGroups = items.GroupBy(a => a.Lifecycle).ToList();
-		var lifecyclesWithMultipleVersions = lifecycleGroups.Where(
-			group => group.Count(a => a.Version is not null && a.Version != AllVersionsSpec.Instance) > 1
-		).Select(g => g.Key).ToList();
+		var lifecyclesWithMultipleVersions = lifecycleGroups
+			.Where(group => group.Count(a => a.Version is not null && a.Version != AllVersionsSpec.Instance) > 1)
+			.Select(g => g.Key)
+			.ToList();
 
 		if (lifecyclesWithMultipleVersions.Count > 0)
 		{

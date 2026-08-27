@@ -157,17 +157,16 @@ internal sealed class SiteDocumentExporter : IDisposable
 		};
 
 		var validator = new SearchResourceValidator(transport, _logger);
-		_ =
-			_orchestrator.AddPreBootstrapTask(async (_, ct) =>
+		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
+		{
+			await validator.ValidateAsync(environment, ct);
+			if (_aiEnrichment is not null)
 			{
-				await validator.ValidateAsync(environment, ct);
-				if (_aiEnrichment is not null)
-				{
-					_logger.LogInformation("Initializing AI enrichment infrastructure...");
-					await _aiEnrichment.InitializeAsync(ct);
-					_logger.LogInformation("AI enrichment infrastructure ready");
-				}
-			});
+				_logger.LogInformation("Initializing AI enrichment infrastructure...");
+				await _aiEnrichment.InitializeAsync(ct);
+				_logger.LogInformation("AI enrichment infrastructure ready");
+			}
+		});
 	}
 
 	private Task OnPostCompleteAiAsync(OrchestratorContext<SiteDocument> context, ITransport _, CancellationToken ct) =>

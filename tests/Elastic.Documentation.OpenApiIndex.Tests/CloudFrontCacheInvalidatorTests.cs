@@ -17,7 +17,8 @@ public class CloudFrontCacheInvalidatorTests
 	private readonly List<CreateInvalidationRequest> _requests = [];
 
 	public CloudFrontCacheInvalidatorTests() =>
-		A.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._))
+		A
+			.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._))
 			.Invokes((CreateInvalidationRequest request, Cancel _) => _requests.Add(request))
 			.Returns(new CreateInvalidationResponse());
 

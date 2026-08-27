@@ -62,30 +62,20 @@ internal sealed class CodexCommands(ILoggerFactory logFactory, IDiagnosticsColle
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		CodexCloneResult? cloneResult = null;
 
-		serviceInvoker.AddCommand(
-			cloneService,
-			(codexContext, fetchLatest, assumeCloned),
-			strict,
-			async (s, col, state, c) =>
-			{
-				cloneResult = await s.CloneAll(state.codexContext, state.fetchLatest, state.assumeCloned, c);
-				return cloneResult.Checkouts.Count > 0;
-			}
-		);
+		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict, async (s, col, state, c) =>
+		{
+			cloneResult = await s.CloneAll(state.codexContext, state.fetchLatest, state.assumeCloned, c);
+			return cloneResult.Checkouts.Count > 0;
+		});
 
 		var buildService = new CodexBuildService(logFactory, configurationContext);
-		serviceInvoker.AddCommand(
-			buildService,
-			(codexContext, cloneResult, fs),
-			strict,
-			async (s, col, state, c) =>
-			{
-				if (state.cloneResult == null)
-					return false;
-				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
-				return result.DocumentationSets.Count > 0;
-			}
-		);
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict, async (s, col, state, c) =>
+		{
+			if (state.cloneResult == null)
+				return false;
+			var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
+			return result.DocumentationSets.Count > 0;
+		});
 
 		var result = await serviceInvoker.InvokeAsync(ct);
 
@@ -123,16 +113,11 @@ internal sealed class CodexCommands(ILoggerFactory logFactory, IDiagnosticsColle
 
 		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
-		serviceInvoker.AddCommand(
-			cloneService,
-			(codexContext, fetchLatest, assumeCloned),
-			strict,
-			async (s, col, state, c) =>
-			{
-				var result = await s.CloneAll(state.codexContext, state.fetchLatest, state.assumeCloned, c);
-				return result.Checkouts.Count > 0;
-			}
-		);
+		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict, async (s, col, state, c) =>
+		{
+			var result = await s.CloneAll(state.codexContext, state.fetchLatest, state.assumeCloned, c);
+			return result.Checkouts.Count > 0;
+		});
 
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -166,16 +151,11 @@ internal sealed class CodexCommands(ILoggerFactory logFactory, IDiagnosticsColle
 		}
 
 		var buildService = new CodexBuildService(logFactory, configurationContext);
-		serviceInvoker.AddCommand(
-			buildService,
-			(codexContext, cloneResult, fs),
-			strict,
-			async (s, col, state, c) =>
-			{
-				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
-				return result.DocumentationSets.Count > 0;
-			}
-		);
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict, async (s, col, state, c) =>
+		{
+			var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
+			return result.DocumentationSets.Count > 0;
+		});
 
 		return await serviceInvoker.InvokeAsync(ct);
 	}

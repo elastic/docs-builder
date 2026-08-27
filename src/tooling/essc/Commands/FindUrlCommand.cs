@@ -55,52 +55,48 @@ internal sealed class FindUrlCommand(ContentStackClient client)
 		var totalItems = 0;
 		var matchedItems = 0;
 
-		await AnsiConsole.Status()
+		await AnsiConsole
+			.Status()
 			.AutoRefresh(true)
 			.Spinner(Spinner.Known.Dots)
-			.StartAsync(
-				"[aqua]Scanning...[/]",
-				async statusCtx =>
+			.StartAsync("[aqua]Scanning...[/]", async statusCtx =>
+			{
+				foreach (var type in contentTypes)
 				{
-					foreach (var type in contentTypes)
-					{
-						var page = 0;
+					var page = 0;
 
-						_ =
-							await client.InitialSyncAsync(
-								contentTypeUid: type,
-								onPage: page2 =>
-								{
-									page++;
-									totalItems += page2.Items.Count;
+					_ = await client.InitialSyncAsync(
+						contentTypeUid: type,
+						onPage: page2 =>
+						{
+							page++;
+							totalItems += page2.Items.Count;
 
-									foreach (var item in page2.Items)
-									{
-										var doc = ContentStackMapper.ToSiteDocument(item);
-										if (doc is null)
-											continue;
-										if (!doc.Path.Contains(pathPrefix, StringComparison.OrdinalIgnoreCase))
-											continue;
+							foreach (var item in page2.Items)
+							{
+								var doc = ContentStackMapper.ToSiteDocument(item);
+								if (doc is null)
+									continue;
+								if (!doc.Path.Contains(pathPrefix, StringComparison.OrdinalIgnoreCase))
+									continue;
 
-										matchedItems++;
-										var uid = item.Data?.TryGetProperty("uid", out var uidEl) == true ? uidEl.GetString() ?? "?" : "?";
+								matchedItems++;
+								var uid = item.Data?.TryGetProperty("uid", out var uidEl) == true ? uidEl.GetString() ?? "?" : "?";
 
-										var list = sightings.TryGetValue(doc.Path, out var existing) ? existing : [];
-										list.Add(new Sighting(type, uid, item.Type, item.EventAt, page, item.Data));
-										sightings[doc.Path] = list;
-									}
+								var list = sightings.TryGetValue(doc.Path, out var existing) ? existing : [];
+								list.Add(new Sighting(type, uid, item.Type, item.EventAt, page, item.Data));
+								sightings[doc.Path] = list;
+							}
 
-									_ =
-										statusCtx.Status(
-											$"[aqua]Scanning:[/] {Markup.Escape(type)} [dim](page {page}, {totalItems:N0} items seen, {matchedItems:N0} matched)[/]"
-										);
-									return Task.CompletedTask;
-								},
-								ct: ct
+							_ = statusCtx.Status(
+								$"[aqua]Scanning:[/] {Markup.Escape(type)} [dim](page {page}, {totalItems:N0} items seen, {matchedItems:N0} matched)[/]"
 							);
-					}
+							return Task.CompletedTask;
+						},
+						ct: ct
+					);
 				}
-			);
+			});
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine($"[dim]{totalItems:N0} items scanned, {matchedItems:N0} matched the path fragment.[/]");

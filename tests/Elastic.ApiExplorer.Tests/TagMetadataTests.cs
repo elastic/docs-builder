@@ -655,7 +655,8 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		var expectedOverviewUrl = navigation.Index.Url;
-		var informationGroup = navigation.NavigationItems
+		var informationGroup = navigation
+			.NavigationItems
 			.OfType<ClassificationNavigationItem>()
 			.First(c => c.NavigationTitle == "Information");
 		informationGroup.Url.Should().Be(expectedOverviewUrl);
@@ -812,7 +813,8 @@ public class TagMetadataTests
 
 		var unknownTags = classifications[1].NavigationItems.OfType<TagNavigationItem>().ToList();
 		unknownTags.Should().HaveCount(2);
-		unknownTags.Select(t => t.Index.Model.Name)
+		unknownTags
+			.Select(t => t.Index.Model.Name)
 			.OrderBy(name => name, StringComparer.Ordinal)
 			.Should()
 			.Equal("not_in_any_group", "other_orphan");
@@ -919,7 +921,8 @@ public class TagMetadataTests
 		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
-		var operation = navigation.NavigationItems
+		var operation = navigation
+			.NavigationItems
 			.OfType<TagNavigationItem>()
 			.Single()
 			.NavigationItems

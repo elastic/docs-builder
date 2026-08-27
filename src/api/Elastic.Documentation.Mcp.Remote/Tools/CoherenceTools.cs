@@ -50,12 +50,14 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
 
-			var navigationSections = result.Results
+			var navigationSections = result
+				.Results
 				.Where(r => !string.IsNullOrEmpty(r.NavigationSection))
 				.GroupBy(r => r.NavigationSection)
 				.ToDictionary(g => g.Key!, g => g.Count());
 
-			var products = result.Results
+			var products = result
+				.Results
 				.Where(r => r.Product != null)
 				.GroupBy(r => r.Product!.DisplayName)
 				.ToDictionary(g => g.Key, g => g.Count());
@@ -73,21 +75,20 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 				DocsWithAiSummary = docsWithSummaries,
 				DocsWithRagSummary = docsWithRagSummaries,
 				CoverageScore = CalculateCoverageScore(result.TotalResults, navigationSections.Count, products.Count),
-				TopDocuments =
-					result.Results
-						.Take(5)
-						.Select(
-							r =>
-								new CoherenceDocDto
-								{
-									Url = r.Url,
-									Title = r.Title,
-									AiShortSummary = r.AiShortSummary,
-									NavigationSection = r.NavigationSection,
-									Product = r.Product?.DisplayName
-								}
-						)
-						.ToList()
+				TopDocuments = result
+					.Results
+					.Take(5)
+					.Select(
+						r => new CoherenceDocDto
+						{
+							Url = r.Url,
+							Title = r.Title,
+							AiShortSummary = r.AiShortSummary,
+							NavigationSection = r.NavigationSection,
+							Product = r.Product?.DisplayName
+						}
+					)
+					.ToList()
 			};
 
 			McpToolTelemetry.MarkSuccess(activity);
@@ -144,7 +145,8 @@ public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<Cohere
 			var result = await fullSearchGateway.SearchAsync(request, cancellationToken);
 
 			// Group by product to find potential inconsistencies
-			var byProduct = result.Results
+			var byProduct = result
+				.Results
 				.Where(r => r.Product != null)
 				.GroupBy(r => r.Product!.Id)
 				.ToDictionary(g => g.Key, g => g.ToList());

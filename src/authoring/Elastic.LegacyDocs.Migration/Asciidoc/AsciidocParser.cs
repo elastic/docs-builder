@@ -431,10 +431,13 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		// Fast path: nothing to do
 		if (
 			!lines.Any(
-				l =>
-					l.Contains("include-tagged::", StringComparison.Ordinal) || l.Contains("include::", StringComparison.Ordinal) ||
-						l.Contains("ifeval::", StringComparison.Ordinal) || l.Contains("ifdef::", StringComparison.Ordinal) ||
-						l.Contains("ifndef::", StringComparison.Ordinal) || l.Contains("endif::", StringComparison.Ordinal)
+				l => l.Contains("include-tagged::", StringComparison.Ordinal) || l.Contains(
+					"include::",
+					StringComparison.Ordinal
+				) || l.Contains("ifeval::", StringComparison.Ordinal) || l.Contains("ifdef::", StringComparison.Ordinal) || l.Contains(
+					"ifndef::",
+					StringComparison.Ordinal
+				) || l.Contains("endif::", StringComparison.Ordinal)
 			)
 		)
 			return lines;
@@ -1611,14 +1614,11 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		if (string.IsNullOrEmpty(text))
 			return text;
 
-		return InlineAttrRefRegex().Replace(
-			text,
-			match =>
-			{
-				var name = match.Groups[1].Value;
-				return _attributes.TryGetValue(name, out var value) ? value : match.Value;
-			}
-		);
+		return InlineAttrRefRegex().Replace(text, match =>
+		{
+			var name = match.Groups[1].Value;
+			return _attributes.TryGetValue(name, out var value) ? value : match.Value;
+		});
 	}
 
 	private static string? NullIfEmpty(string value) => string.IsNullOrEmpty(value) ? null : value;

@@ -859,12 +859,13 @@ This step should still be at the same level as First Step.
 
 	[Fact]
 	public void HintIsEmittedForAdjustedHeading() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(
-				d =>
-					d.Severity == Documentation.Diagnostics.Severity.Hint && d.Message.Contains("h3") && d.Message.Contains("h4") &&
-						d.Message.Contains("####")
+				d => d.Severity == Documentation.Diagnostics.Severity.Hint && d.Message.Contains("h3") && d.Message.Contains(
+					"h4"
+				) && d.Message.Contains("####")
 			);
 }
 

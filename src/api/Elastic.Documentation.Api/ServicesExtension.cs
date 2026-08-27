@@ -60,23 +60,18 @@ public static class ServicesExtension
 
 	private static void AddElasticDocsApiServices(this IServiceCollection services, AppEnv appEnv)
 	{
-		_ =
-			services.ConfigureHttpJsonOptions(options =>
-			{
-				options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
-			});
+		_ = services.ConfigureHttpJsonOptions(options =>
+		{
+			options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default);
+		});
 
 		// Configure HttpClient for streaming optimization
-		_ =
-			services.AddHttpClient(
-				"StreamingHttpClient",
-				client =>
-				{
-					// Disable response buffering for streaming
-					client.DefaultRequestHeaders.Connection.Add("keep-alive");
-					client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
-				}
-			);
+		_ = services.AddHttpClient("StreamingHttpClient", client =>
+		{
+			// Disable response buffering for streaming
+			client.DefaultRequestHeaders.Connection.Add("keep-alive");
+			client.Timeout = TimeSpan.FromMinutes(10); // Longer timeout for streaming
+		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddDistributedCache(services, appEnv);
@@ -112,19 +107,18 @@ public static class ServicesExtension
 						logger?.LogInformation("AmazonDynamoDB client registered");
 
 						// Register multi-layer cache (L1: in-memory + L2: DynamoDB)
-						_ =
-							services.AddSingleton<IDistributedCache>(sp =>
-							{
-								var dynamoDb = sp.GetRequiredService<IAmazonDynamoDB>();
-								var tableName = $"docs-api-cache-{appEnv.ToStringFast(true)}";
-								var dynamoLogger = sp.GetRequiredService<ILogger<DynamoDbDistributedCache>>();
-								var multiLogger = sp.GetRequiredService<ILogger<MultiLayerCache>>();
+						_ = services.AddSingleton<IDistributedCache>(sp =>
+						{
+							var dynamoDb = sp.GetRequiredService<IAmazonDynamoDB>();
+							var tableName = $"docs-api-cache-{appEnv.ToStringFast(true)}";
+							var dynamoLogger = sp.GetRequiredService<ILogger<DynamoDbDistributedCache>>();
+							var multiLogger = sp.GetRequiredService<ILogger<MultiLayerCache>>();
 
-								var dynamoCache = new DynamoDbDistributedCache(dynamoDb, tableName, dynamoLogger);
-								var multiLayerCache = new MultiLayerCache(dynamoCache, multiLogger);
-								logger?.LogInformation("Multi-layer cache registered with DynamoDB table: {TableName}", tableName);
-								return multiLayerCache;
-							});
+							var dynamoCache = new DynamoDbDistributedCache(dynamoDb, tableName, dynamoLogger);
+							var multiLayerCache = new MultiLayerCache(dynamoCache, multiLogger);
+							logger?.LogInformation("Multi-layer cache registered with DynamoDB table: {TableName}", tableName);
+							return multiLayerCache;
+						});
 					}
 					catch (Exception ex)
 					{

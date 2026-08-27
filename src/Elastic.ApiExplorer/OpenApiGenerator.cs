@@ -148,8 +148,13 @@ public class OpenApiGenerator(
 		if (apiConfig.LocalSpecFile is { } localFile && versionless)
 			return await ResolveLocalMainOnly(localFile).ConfigureAwait(false);
 
-		var versions =
-			await _versionIndexClient.ResolveVersionsAsync(context.Git, apiKey, apiConfig, context.Collector, ctx).ConfigureAwait(false);
+		var versions = await _versionIndexClient.ResolveVersionsAsync(
+			context.Git,
+			apiKey,
+			apiConfig,
+			context.Collector,
+			ctx
+		).ConfigureAwait(false);
 
 		var versionsToRender = versionless ? versions.Where(v => v.Moniker == "main").ToArray() : [.. versions];
 

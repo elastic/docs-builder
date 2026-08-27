@@ -156,13 +156,13 @@ public record ConfigurationFile
 			Registry = registry;
 
 			// Parse cross-link entries with optional registry prefix (e.g. public://elasticsearch)
-			CrossLinkEntries =
-				docSetFile.CrossLinks
-					.Where(raw => !string.IsNullOrWhiteSpace(raw))
-					.Select(raw => ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context))
-					.Where(entry => entry is not null)
-					.Select(entry => entry!)
-					.ToArray();
+			CrossLinkEntries = docSetFile
+				.CrossLinks
+				.Where(raw => !string.IsNullOrWhiteSpace(raw))
+				.Select(raw => ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context))
+				.Where(entry => entry is not null)
+				.Select(entry => entry!)
+				.ToArray();
 
 			CrossLinkRepositories = CrossLinkEntries.Select(e => e.Repository).ToArray();
 
@@ -197,11 +197,10 @@ public record ConfigurationFile
 				var interpolated = EnvironmentInterpolation.Interpolate(
 					docSetFile.Storybook.Registry?.Trim(),
 					context.Environment,
-					name =>
-						context.EmitWarning(
-							context.ConfigurationPath,
-							$"'storybook.registry' references environment variable '{name}' which is not allow-listed for interpolation and is left literal. Allowed: {string.Join(", ", EnvironmentInterpolation.AllowedVariables)}."
-						)
+					name => context.EmitWarning(
+						context.ConfigurationPath,
+						$"'storybook.registry' references environment variable '{name}' which is not allow-listed for interpolation and is left literal. Allowed: {string.Join(", ", EnvironmentInterpolation.AllowedVariables)}."
+					)
 				);
 				StorybookRegistry = interpolated.Value;
 				StorybookRegistryFallback = interpolated.Fallback;
@@ -211,7 +210,8 @@ public record ConfigurationFile
 			if (docSetFile.Products.Count > 0)
 			{
 				Products =
-					docSetFile.Products
+					docSetFile
+						.Products
 						.Select(link => productsConfig.Products.GetValueOrDefault(link.Id.Replace('_', '-')))
 						.Where(product => product is not null)
 						.ToHashSet()!;
@@ -371,7 +371,8 @@ public record ConfigurationFile
 			return null;
 		}
 
-		var resolved = context.ReadFileSystem
+		var resolved = context
+			.ReadFileSystem
 			.FileInfo
 			.New(Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, imagePath)));
 
@@ -508,9 +509,8 @@ public record ConfigurationFile
 				File = context.ConfigurationPath.FullName,
 				Line = entry.Line,
 				Column = entry.Column,
-				Message =
-					$"API '{productKey}' is missing required 'spec:'. Its basename is required to resolve " +
-						"the remote version index, even when the file is not present locally."
+				Message = $"API '{productKey}' is missing required 'spec:'. Its basename is required to resolve " +
+					"the remote version index, even when the file is not present locally."
 			});
 			return null;
 		}
@@ -587,7 +587,8 @@ public record ConfigurationFile
 			repository = candidate;
 		}
 
-		var apiContentDirectory = context.ReadFileSystem
+		var apiContentDirectory = context
+			.ReadFileSystem
 			.DirectoryInfo
 			.New(Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
 		var children = ResolveApiChildren(productKey, entry.Children, context, apiContentDirectory);

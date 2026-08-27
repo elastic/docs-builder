@@ -181,9 +181,8 @@ public static class Paths
 		if (configurationPath is not null)
 			return (configurationPath.Directory!, configurationPath);
 
-		configurationPath =
-			rootPath.EnumerateFiles("*docset.yml", SearchOption.AllDirectories).FirstOrDefault()
-				?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
+		configurationPath = rootPath.EnumerateFiles("*docset.yml", SearchOption.AllDirectories).FirstOrDefault()
+			?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 
 		var docsFolder = configurationPath.Directory ?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 

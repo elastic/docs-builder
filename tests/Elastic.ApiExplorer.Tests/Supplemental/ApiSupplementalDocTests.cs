@@ -102,7 +102,8 @@ public class ApiSupplementalDocTests
 
 		doc.Should().NotBeNull();
 		doc.Description.Should().Be("The search API returns hits that match the query.");
-		doc.PostSections
+		doc
+			.PostSections
 			.Should()
 			.ContainSingle()
 			.Which
@@ -223,7 +224,8 @@ public class ApiSupplementalDocTests
 
 		doc.Should().NotBeNull();
 		doc.Description.Should().Be("Operation description.");
-		doc.PostSections
+		doc
+			.PostSections
 			.Should()
 			.Equal(
 				new ApiSupplementalSection("Best practices", "Avoid deep pagination."),
@@ -251,7 +253,8 @@ public class ApiSupplementalDocTests
 		doc.Description.Should().Be("Machine learning anomaly detection APIs.");
 		doc.ParameterOverrides.Should().BeEmpty();
 		doc.RequestBodyOverrides.Should().BeEmpty();
-		doc.PostSections
+		doc
+			.PostSections
 			.Should()
 			.ContainSingle()
 			.Which

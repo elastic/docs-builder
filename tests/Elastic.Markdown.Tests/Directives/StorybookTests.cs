@@ -95,7 +95,8 @@ public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistr
 		Block.DocsId.Should().Be("ai-components-aibutton--default");
 		Block.StoryId.Should().Be("ai-components-aibutton--default");
 		Block.InlineEntry.Should().Be("http://127.0.0.1:6007/storybook-docs/shared_ux/registry.js");
-		Block.StoryUrl
+		Block
+			.StoryUrl
 			.Should()
 			.Be("http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=ai-components-aibutton--default&viewMode=story");
 		Block.Height.Should().Be(360);
@@ -165,7 +166,8 @@ storybook:
 
 	[Fact]
 	public void WarnsAndLeavesExpressionLiteral() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("not allow-listed for interpolation"));
 }
@@ -199,7 +201,8 @@ public class StorybookStructuredReferenceWrongStorybookTests(ITestOutputHelper o
 {
 	[Fact]
 	public void DoesNotFallbackToAnotherStorybook() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("does not contain id 'kibana:content_management:ai-components-aibutton--default'"));
 }
@@ -265,7 +268,8 @@ public class StorybookInvalidHeightTests(ITestOutputHelper output) : StorybookRe
 	public void WarnsAndFallsBackToDefaultHeight()
 	{
 		Block!.Height.Should().Be(400);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains(":height: must be a positive integer"));
 		Html.Should().Contain("height:400px");
@@ -305,7 +309,8 @@ public class StorybookPositionalArgumentWarningTests(ITestOutputHelper output) :
 {
 	[Fact]
 	public void EmitsWarning() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains("ignores positional arguments"));
 }

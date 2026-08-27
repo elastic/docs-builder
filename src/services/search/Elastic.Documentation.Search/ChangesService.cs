@@ -82,28 +82,20 @@ public partial class ChangesService(
 		await clientAccessor.Client.SearchAsync<DocumentationDocument>(
 			s =>
 			{
-				_ =
-					s.Size(fetchSize)
-						.TrackTotalHits(t => t.Enabled(false))
-						.Pit(p => p.Id(pitId).KeepAlive(SharedPointInTimeManager.PitKeepAlive))
-						.Query(q => q.Range(r => r.Date(dr => dr.Field(f => f.ContentLastUpdated).Gt(request.Since.ToString("O")))))
-						.Sort(
-							so => so.Field(f => f.ContentLastUpdated, sf => sf.Order(SortOrder.Asc)),
-							so => so.Field(f => f.Path, sf => sf.Order(SortOrder.Asc))
+				_ = s
+					.Size(fetchSize)
+					.TrackTotalHits(t => t.Enabled(false))
+					.Pit(p => p.Id(pitId).KeepAlive(SharedPointInTimeManager.PitKeepAlive))
+					.Query(q => q.Range(r => r.Date(dr => dr.Field(f => f.ContentLastUpdated).Gt(request.Since.ToString("O")))))
+					.Sort(
+						so => so.Field(f => f.ContentLastUpdated, sf => sf.Order(SortOrder.Asc)),
+						so => so.Field(f => f.Path, sf => sf.Order(SortOrder.Asc))
+					)
+					.Source(
+						sf => sf.Filter(
+							f => f.Includes(e => e.Path, e => e.Title, e => e.SearchTitle, e => e.ContentType, e => e.ContentLastUpdated)
 						)
-						.Source(
-							sf =>
-								sf.Filter(
-									f =>
-										f.Includes(
-											e => e.Path,
-											e => e.Title,
-											e => e.SearchTitle,
-											e => e.ContentType,
-											e => e.ContentLastUpdated
-										)
-								)
-						);
+					);
 
 				if (request.Cursor is { } cursor)
 				{
@@ -124,7 +116,8 @@ public partial class ChangesService(
 		var hits = response.Hits.ToList();
 		var hasMore = hits.Count > pageSize;
 
-		var pages = hits.Take(pageSize)
+		var pages = hits
+			.Take(pageSize)
 			.Where(h => h.Source is not null)
 			.Select(h =>
 			{

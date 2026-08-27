@@ -94,31 +94,28 @@ internal sealed class SyncCommand(ContentStackClient client, SourcingConfigurati
 		if (!noIndex)
 		{
 			var transport = ElasticsearchTransportFactory.Create(cfg);
-			exporter =
-				new SiteDocumentExporter(
-					loggerFactory,
-					cfg,
-					transport,
-					config.BuildType,
-					config.ElasticsearchEnvironment,
-					enableAiEnrichment: !noAi
-				);
+			exporter = new SiteDocumentExporter(
+				loggerFactory,
+				cfg,
+				transport,
+				config.BuildType,
+				config.ElasticsearchEnvironment,
+				enableAiEnrichment: !noAi
+			);
 
 			if (!noAi)
 				exporter.ConfigurePostSyncAiBatch(maxAiDocs, maxAiTime);
 
 			if (IsInteractive())
 			{
-				await AnsiConsole.Status()
+				await AnsiConsole
+					.Status()
 					.AutoRefresh(true)
 					.Spinner(Spinner.Known.Dots)
-					.StartAsync(
-						"[aqua]Bootstrapping Elasticsearch indices...[/]",
-						async _ =>
-						{
-							await exporter.StartAsync(ct);
-						}
-					);
+					.StartAsync("[aqua]Bootstrapping Elasticsearch indices...[/]", async _ =>
+					{
+						await exporter.StartAsync(ct);
+					});
 			}
 			else
 			{
@@ -149,7 +146,8 @@ internal sealed class SyncCommand(ContentStackClient client, SourcingConfigurati
 
 			if (IsInteractive())
 			{
-				await AnsiConsole.Progress()
+				await AnsiConsole
+					.Progress()
 					.AutoRefresh(true)
 					.AutoClear(false)
 					.HideCompleted(true)
@@ -166,7 +164,8 @@ internal sealed class SyncCommand(ContentStackClient client, SourcingConfigurati
 							maxValue: PageContentTypes.All.Length
 						);
 
-						var lanes = Enumerable.Range(0, LaneCount)
+						var lanes = Enumerable
+							.Range(0, LaneCount)
 							.Select(i =>
 							{
 								var laneTask = ctx.AddTask($"[dim]Lane {i + 1}: idle[/]", maxValue: 100);
@@ -199,26 +198,26 @@ internal sealed class SyncCommand(ContentStackClient client, SourcingConfigurati
 			}
 			else
 			{
-				var lanes = Enumerable.Range(0, LaneCount)
+				var lanes = Enumerable
+					.Range(0, LaneCount)
 					.Select(
-						i =>
-							RunLaneAsync(
-								i + 1,
-								null,
-								channel.Reader,
-								cursorMap,
-								runCounts,
-								indexedCounts,
-								skippedCounts,
-								duplicateCounts,
-								localeCounts,
-								pagePer,
-								exporter,
-								store,
-								writeSemaphore,
-								null,
-								ct
-							)
+						i => RunLaneAsync(
+							i + 1,
+							null,
+							channel.Reader,
+							cursorMap,
+							runCounts,
+							indexedCounts,
+							skippedCounts,
+							duplicateCounts,
+							localeCounts,
+							pagePer,
+							exporter,
+							store,
+							writeSemaphore,
+							null,
+							ct
+						)
 					)
 					.ToArray();
 				await Task.WhenAll(lanes);
@@ -229,17 +228,15 @@ internal sealed class SyncCommand(ContentStackClient client, SourcingConfigurati
 			{
 				if (IsInteractive())
 				{
-					await AnsiConsole.Status()
+					await AnsiConsole
+						.Status()
 						.AutoRefresh(true)
 						.Spinner(Spinner.Known.Dots)
-						.StartAsync(
-							"[aqua]Finalizing…[/]",
-							async ctx =>
-							{
-								exporter.OnSyncProgress = info => ctx.Status(SyncProgressConsole.FormatStatusMarkup(info));
-								await exporter.FinalizeAsync(ct);
-							}
-						);
+						.StartAsync("[aqua]Finalizing…[/]", async ctx =>
+						{
+							exporter.OnSyncProgress = info => ctx.Status(SyncProgressConsole.FormatStatusMarkup(info));
+							await exporter.FinalizeAsync(ct);
+						});
 				}
 				else
 				{
@@ -485,14 +482,13 @@ internal sealed class SyncCommand(ContentStackClient client, SourcingConfigurati
 			var indexedDisplay = noIndex ? "[dim]—[/]" : indexed > 0 ? $"[green]{indexed:N0}[/]" : "[dim]0[/]";
 			var skippedDisplay = skipped > 0 ? $"[yellow]{skipped:N0}[/]" : "[dim]0[/]";
 
-			_ =
-				table.AddRow(
-					new Markup(Markup.Escape(contentType)),
-					new Markup(fetchedDisplay),
-					new Markup(indexedDisplay),
-					new Markup(skippedDisplay),
-					new Markup(status)
-				);
+			_ = table.AddRow(
+				new Markup(Markup.Escape(contentType)),
+				new Markup(fetchedDisplay),
+				new Markup(indexedDisplay),
+				new Markup(skippedDisplay),
+				new Markup(status)
+			);
 		}
 
 		AnsiConsole.Write(table);

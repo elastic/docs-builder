@@ -419,17 +419,14 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		//update string slices to ignore call outs
 		if (codeBlock.CallOuts.Count > 0)
 		{
-			var callouts = codeBlock.CallOuts.Aggregate(
-				new Dictionary<int, CallOut>(),
-				(acc, curr) =>
-				{
-					if (acc.TryAdd(curr.Line, curr))
-						return acc;
-					if (acc[curr.Line].SliceStart > curr.SliceStart)
-						acc[curr.Line] = curr;
+			var callouts = codeBlock.CallOuts.Aggregate(new Dictionary<int, CallOut>(), (acc, curr) =>
+			{
+				if (acc.TryAdd(curr.Line, curr))
 					return acc;
-				}
-			);
+				if (acc[curr.Line].SliceStart > curr.SliceStart)
+					acc[curr.Line] = curr;
+				return acc;
+			});
 
 			// Console code blocks use ApiSegments for rendering, so we need to update headers directly
 			// Note: console language gets converted to "json" for syntax highlighting

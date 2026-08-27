@@ -44,7 +44,8 @@ not a {substitution}
 {
 	[Fact]
 	public void PreservesSingleBracket() =>
-		Html.Should()
+		Html
+			.Should()
 			.Contain("""Hello World!""")
 			.And
 			.Contain("""not a comment""")
@@ -96,7 +97,8 @@ The following should be subbed as well: {{global-var}}
 {
 	[Fact]
 	public void EmitsGlobalVariable() =>
-		Html.Should()
+		Html
+			.Should()
 			.Contain("Hello World!")
 			.And
 			.NotContain("{{hello-world}}")
@@ -128,7 +130,8 @@ The following should be subbed as well: {{hello-world}}
 
 	[Fact]
 	public void HasError() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.HaveCount(1)
 			.And
@@ -221,7 +224,8 @@ Increase minor with space: {{version | M.M+1}}
 	public void MutationOperatorsWorkWithAndWithoutSpaces()
 	{
 		// Both versions with and without spaces should render the same way
-		Html.Should()
+		Html
+			.Should()
 			.Contain("Version: 9.0")
 			.And
 			.Contain("Version with space: 9.0")
@@ -269,7 +273,8 @@ Product with spaces: {{product | uc}}
 	public void MultipleMutationOperatorsWorkWithAndWithoutSpaces()
 	{
 		// Both versions with and without spaces should render the same way
-		Html.Should()
+		Html
+			.Should()
 			.Contain("Version: 9.0")
 			.And
 			.Contain("Version with spaces: 9.0")
@@ -306,7 +311,8 @@ sub:
 	public void MutationOperatorsWorkInLinks()
 	{
 		// Check URL mutations
-		Html.Should()
+		Html
+			.Should()
 			.Contain("href=\"https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html\"")
 			.And
 			.NotContain("{{version|M.M}}")
@@ -347,7 +353,8 @@ wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{versio
 {
 	[Fact]
 	public void MutationOperatorsWorkInCodeBlocks() =>
-		Html.Should()
+		Html
+			.Should()
 			.Contain("# Install Elasticsearch 9.0")
 			.And
 			.Contain("elasticsearch-9.0-linux-x86_64.tar.gz")

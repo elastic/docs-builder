@@ -194,7 +194,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					],
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
-						? inference.RelatedProducts
+						? inference
+							.RelatedProducts
 							.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
 							.ToArray()
 						: null

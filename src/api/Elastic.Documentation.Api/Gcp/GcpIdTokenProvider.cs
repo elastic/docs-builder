@@ -61,7 +61,8 @@ public class GcpIdTokenProvider(IHttpClientFactory httpClientFactory, IDistribut
 		var messageBytes = Encoding.UTF8.GetBytes(message);
 
 		// Parse the private key (removing PEM headers/footers and decoding)
-		var privateKeyPem = serviceAccountJson.PrivateKey
+		var privateKeyPem = serviceAccountJson
+			.PrivateKey
 			.Replace("-----BEGIN PRIVATE KEY-----", "")
 			.Replace("-----END PRIVATE KEY-----", "")
 			.Replace("\n", "")

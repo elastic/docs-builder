@@ -350,19 +350,21 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().Be(2); // Two unmatched PRs
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Warning &&
-						d.Message.Contains("No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/200")
+				d => d.Severity == Severity.Warning && d.Message.Contains(
+					"No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/200"
+				)
 			);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Warning &&
-						d.Message.Contains("No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/300")
+				d => d.Severity == Severity.Warning && d.Message.Contains(
+					"No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/300"
+				)
 			);
 	}
 
@@ -525,7 +527,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("No YAML files found") || d.Message.Contains("No changelog entries matched"));
 	}
@@ -1389,12 +1392,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
 		// Verify warning message includes lifecycle values
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains("Product 'elasticsearch' has multiple targets in bundle") && d.Message.Contains("9.2.0") &&
-						d.Message.Contains("9.2.0 beta") && d.Message.Contains("9.2.0 ga")
+				d => d.Message.Contains("Product 'elasticsearch' has multiple targets in bundle") && d.Message.Contains(
+					"9.2.0"
+				) && d.Message.Contains("9.2.0 beta") && d.Message.Contains("9.2.0 ga")
 			);
 	}
 
@@ -2597,12 +2601,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelogWithComments, TestContext.Current.CancellationToken);
 
 		var output1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle1.yaml");
-		var result1 =
-			await Service.BundleChangelogs(
-				Collector,
-				new BundleChangelogsArguments { Directory = dir1, All = true, Output = output1 },
-				TestContext.Current.CancellationToken
-			);
+		var result1 = await Service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments { Directory = dir1, All = true, Output = output1 },
+			TestContext.Current.CancellationToken
+		);
 
 		// Bundle without comments
 		var dir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -2611,12 +2614,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file2, changelogWithoutComments, TestContext.Current.CancellationToken);
 
 		var output2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle2.yaml");
-		var result2 =
-			await Service.BundleChangelogs(
-				Collector,
-				new BundleChangelogsArguments { Directory = dir2, All = true, Output = output2 },
-				TestContext.Current.CancellationToken
-			);
+		var result2 = await Service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments { Directory = dir2, All = true, Output = output2 },
+			TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		result1.Should().BeTrue();
@@ -2883,12 +2885,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) &&
-						d.Message.Contains("elasticsearch 9.2.0 ga extra-token", StringComparison.Ordinal)
+				d => d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) && d.Message.Contains(
+					"elasticsearch 9.2.0 ga extra-token",
+					StringComparison.Ordinal
+				)
 			);
 	}
 
@@ -2938,13 +2942,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains("Profile 'es-release':", StringComparison.Ordinal) &&
-						d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) &&
-						d.Message.Contains("elasticsearch 9.2.0 ga extra bad", StringComparison.Ordinal)
+				d => d.Message.Contains("Profile 'es-release':", StringComparison.Ordinal) && d.Message.Contains(
+					"at most three space-separated fields",
+					StringComparison.Ordinal
+				) && d.Message.Contains("elasticsearch 9.2.0 ga extra bad", StringComparison.Ordinal)
 			);
 	}
 
@@ -3299,7 +3304,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse("Should fail when no config file is found");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(
 				d => d.Severity == Severity.Error && (d.Message.Contains("changelog.yml") || d.Message.Contains("changelog init")),
@@ -3624,7 +3630,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when file contains bare numbers");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
@@ -3683,7 +3690,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when file mixes PR and issue URLs");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("only pull request URLs or only issue URLs"),
@@ -3823,7 +3831,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when first arg looks like a report");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("version string"),
@@ -3867,7 +3876,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		result.Should().BeFalse("Should fail when profile has products pattern and a report is also provided");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("products"),
@@ -3989,7 +3999,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when prs file contains bare numbers");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
@@ -4034,7 +4045,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("Should fail when issues file contains short forms");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
@@ -4458,7 +4470,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert - elasticsearch entry is excluded by exclude_products rule even with InputProducts
 		result.Should().BeFalse("Bundle should fail because all entries are excluded by rules.bundle");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("[-bundle-exclude]") && d.Message.Contains("1755268130-elasticsearch-feature.yaml"));
 		Collector.Errors.Should().BeGreaterThan(0, "Should have error about no entries remaining");
@@ -5968,13 +5981,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("bundling should fail when placeholders are used without --output-products");
 		Collector.Errors.Should().Be(1, "should have exactly one validation error");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains(
-						"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
-					)
+				d => d.Message.Contains(
+					"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
+				)
 			);
 	}
 
@@ -6031,13 +6044,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeFalse("bundling should fail when description has placeholders without --output-products");
 		Collector.Errors.Should().Be(1, "should have exactly one validation error");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Message.Contains(
-						"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
-					)
+				d => d.Message.Contains(
+					"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
+				)
 			);
 	}
 

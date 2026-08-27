@@ -16,14 +16,14 @@ public static class ApiVersionSwitcher
 		if (monikers.Count <= 1)
 			return [];
 
-		return monikers.OrderByDescending(m => m == "main" ? int.MaxValue : ParseMajor(m))
+		return monikers
+			.OrderByDescending(m => m == "main" ? int.MaxValue : ParseMajor(m))
 			.Select(
-				m =>
-					new ApiVersionSwitcherItem(
-						Label: m == "main" ? "Latest" : $"{m}.x",
-						Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m))}/",
-						Selected: m == currentMoniker
-					)
+				m => new ApiVersionSwitcherItem(
+					Label: m == "main" ? "Latest" : $"{m}.x",
+					Url: $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m))}/",
+					Selected: m == currentMoniker
+				)
 			)
 			.ToArray();
 	}

@@ -23,7 +23,8 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <returns>A list of successfully loaded bundles.</returns>
 	public IReadOnlyList<LoadedBundle> LoadBundles(string bundlesFolderPath, Action<string> emitWarning)
 	{
-		var yamlFiles = fileSystem.Directory
+		var yamlFiles = fileSystem
+			.Directory
 			.EnumerateFiles(bundlesFolderPath, "*.yaml")
 			.Concat(fileSystem.Directory.EnumerateFiles(bundlesFolderPath, "*.yml"))
 			.ToList();
@@ -276,14 +277,21 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList };
 			var resolvedEntries = ResolveEntries(mergedBundleData, fileSystem.Path.GetFileName(parentPath), emitWarning);
 
-			mergedParents[parentPath] =
-				new LoadedBundle(parentBundle.Version, parentBundle.Repo, parentBundle.Owner, mergedBundleData, parentPath, resolvedEntries);
+			mergedParents[parentPath] = new LoadedBundle(
+				parentBundle.Version,
+				parentBundle.Repo,
+				parentBundle.Owner,
+				mergedBundleData,
+				parentPath,
+				resolvedEntries
+			);
 
 			foreach (var amend in group)
 				_ = mergedAmendPaths.Add(amend.FilePath);
 		}
 
-		return bundles.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
+		return bundles
+			.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
 			.Select(bundle => mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle) ? mergedBundle : bundle)
 			.ToList();
 	}

@@ -76,15 +76,14 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 	private static IGitHubCommitRangeService RangeService(params int[] prNumbers)
 	{
 		var service = A.Fake<IGitHubCommitRangeService>();
-		_ =
-			A.CallTo(
-				() => service.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)
-			).Returns(new CommitRangeResolution
-			{
-				TotalCommits = prNumbers.Length,
-				PullRequests = prNumbers.Select(RangePr).ToList(),
-				CommitsWithoutPullRequest = []
-			});
+		_ = A.CallTo(
+			() => service.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)
+		).Returns(new CommitRangeResolution
+		{
+			TotalCommits = prNumbers.Length,
+			PullRequests = prNumbers.Select(RangePr).ToList(),
+			CommitsWithoutPullRequest = []
+		});
 		return service;
 	}
 
@@ -133,20 +132,18 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		// synthesized from PR metadata (release-note text + label-derived type). PR 400: metadata
 		// unavailable — reported missing, bundle still ships.
 		var prService = A.Fake<IGitHubPrService>();
-		_ =
-			A.CallTo(
-				() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/300", A<string?>._, A<string?>._, A<Cancel>._)
-			).Returns(new GitHubPrInfo
-			{
-				Title = "Sharper autocomplete",
-				Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
-				Labels = [">feature"],
-				LinkedIssues = []
-			});
-		_ =
-			A.CallTo(
-				() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
-			).Returns((GitHubPrInfo?)null);
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/300", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns(new GitHubPrInfo
+		{
+			Title = "Sharper autocomplete",
+			Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+			Labels = [">feature"],
+			LinkedIssues = []
+		});
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/400", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns((GitHubPrInfo?)null);
 
 		var service = Service(PoolHandler(), RangeService(100, 200, 300, 400), prService);
 
@@ -187,7 +184,8 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		bundle.Should().Contain($"git_ref: {EndRef}");
 
 		// PR 400 is reported, not silently dropped.
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("pull/400") && d.Message.Contains("could not be fetched"));
 	}
@@ -247,7 +245,8 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("cannot be combined with other filter sources"));
 	}
@@ -300,14 +299,13 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var configPath = await WriteProfileConfig(outputDir);
 
 		var prService = A.Fake<IGitHubPrService>();
-		_ =
-			A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
-			{
-				Title = "Unlabeled change",
-				Body = "No release note block here.",
-				Labels = ["unmapped-label"],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Unlabeled change",
+			Body = "No release note block here.",
+			Labels = ["unmapped-label"],
+			LinkedIssues = []
+		});
 
 		var service = Service(PoolHandler(), RangeService(999), prService);
 

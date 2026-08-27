@@ -57,11 +57,10 @@ public abstract class DirectiveTest : IAsyncLifetime
  {content}
  """;
 
-		FileSystem =
-			new MockFileSystem(
-				new Dictionary<string, MockFileData> { { "docs/index.md", new MockFileData(documentContents) } },
-				new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
-			);
+		FileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData> { { "docs/index.md", new MockFileData(documentContents) } },
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
@@ -143,7 +142,8 @@ public abstract class DirectiveTest : IAsyncLifetime
 	protected IReadOnlyList<string> ReadMermaidSvgs()
 	{
 		var outputDir = Set.Context.OutputDirectory.FullName;
-		return FileSystem.AllFiles
+		return FileSystem
+			.AllFiles
 			.Where(
 				f => f.StartsWith(outputDir, StringComparison.OrdinalIgnoreCase) && f.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
 			)

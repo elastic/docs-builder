@@ -20,29 +20,26 @@ public static class ProductExtensions
 	{
 		var productsDto = ConfigurationFileProvider.Deserializer.Deserialize<ProductConfigDto>(reader);
 
-		var products = productsDto.Products.ToDictionary(
-			kvp => kvp.Key,
-			kvp =>
+		var products = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp =>
+		{
+			var features = ResolveFeatures(kvp.Key, kvp.Value.Features);
+			var versioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key);
+
+			versioningSystem ??= !features.PublicReference
+				? VersioningSystem.None
+				: throw new InvalidOperationException(
+					$"Product '{kvp.Key}' has invalid or missing versioning '{kvp.Value.Versioning ?? kvp.Key}' while 'public-reference' is enabled."
+				);
+
+			return new Product
 			{
-				var features = ResolveFeatures(kvp.Key, kvp.Value.Features);
-				var versioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key);
-
-				versioningSystem ??= !features.PublicReference
-					? VersioningSystem.None
-					: throw new InvalidOperationException(
-						$"Product '{kvp.Key}' has invalid or missing versioning '{kvp.Value.Versioning ?? kvp.Key}' while 'public-reference' is enabled."
-					);
-
-				return new Product
-				{
-					Id = kvp.Key,
-					DisplayName = kvp.Value.Display,
-					VersioningSystem = versioningSystem,
-					Repository = kvp.Value.Repository ?? kvp.Key,
-					Features = features
-				};
-			}
-		);
+				Id = kvp.Key,
+				DisplayName = kvp.Value.Display,
+				VersioningSystem = versioningSystem,
+				Repository = kvp.Value.Repository ?? kvp.Key,
+				Features = features
+			};
+		});
 
 		var publicReferenceProducts = products.Where(kvp => kvp.Value.Features.PublicReference).ToDictionary(
 			kvp => kvp.Key,

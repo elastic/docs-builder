@@ -62,7 +62,8 @@ public class ListingDocsBuilderExtension(BuildContext build, MarkdownParser mark
 
 	private void RegisterListingRef(ListingRef listingRef)
 	{
-		var rootDir = Build.ReadFileSystem
+		var rootDir = Build
+			.ReadFileSystem
 			.Path
 			.Join(Build.DocumentationSourceDirectory.FullName, listingRef.PathRelativeToDocumentationSet);
 
@@ -80,7 +81,8 @@ public class ListingDocsBuilderExtension(BuildContext build, MarkdownParser mark
 			if (groupIndex is null)
 			{
 				// Synthesize <rootDir>/<groupKey>/index.md
-				var groupIndexPath = Build.ReadFileSystem
+				var groupIndexPath = Build
+					.ReadFileSystem
 					.Path
 					.Join(
 						Build.DocumentationSourceDirectory.FullName,

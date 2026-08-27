@@ -163,7 +163,8 @@ public class SiteNavigationFileTests
 
 		var act = () => SiteNavigationFile.Deserialize(yaml);
 
-		act.Should()
+		act
+			.Should()
 			.Throw<YamlDotNet.Core.YamlException>()
 			.WithInnerException<InvalidOperationException>()
 			.WithMessage("Invalid TOC source: '://invalid' could not be parsed as a URI");

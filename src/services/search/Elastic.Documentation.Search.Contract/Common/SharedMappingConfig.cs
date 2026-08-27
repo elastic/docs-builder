@@ -26,12 +26,13 @@ public static class SharedMappingConfig
 	public const string ContentTagsAnalyzer = "content_tags_analyzer";
 
 	private static MappingsBuilder<T> AddCommonTitleMappings<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase =>
-		m.Title(
-			f =>
-				f.MultiField("keyword", mf => mf.Keyword().Normalizer(KeywordNormalizer))
+		m
+			.Title(
+				f => f
+					.MultiField("keyword", mf => mf.Keyword().Normalizer(KeywordNormalizer))
 					.MultiField("starts_with", mf => mf.Text().Analyzer(StartsWithAnalyzer).SearchAnalyzer(StartsWithAnalyzerSearch))
 					.MultiField("completion", mf => mf.SearchAsYouType())
-		)
+			)
 			.SearchTitle(f => f.MultiField("completion", mf => mf.SearchAsYouType()))
 			.Path(f => f.MultiField("match", mf => mf.Text()).MultiField("prefix", mf => mf.Text().Analyzer(HierarchyAnalyzer)));
 
@@ -42,11 +43,11 @@ public static class SharedMappingConfig
 	// text mapping with no multi-fields at all.
 	private static MappingsBuilder<T> AddParentsFields<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase =>
 		m
-		// parents is an object array — AddProperty places sub-fields under "properties".
-		.AddProperty(
-			"parents.path",
-			f => f.Keyword().MultiField("match", mf => mf.Text()).MultiField("prefix", mf => mf.Text().Analyzer(HierarchyAnalyzer))
-		)
+			// parents is an object array — AddProperty places sub-fields under "properties".
+			.AddProperty(
+				"parents.path",
+				f => f.Keyword().MultiField("match", mf => mf.Text()).MultiField("prefix", mf => mf.Text().Analyzer(HierarchyAnalyzer))
+			)
 			.AddProperty("parents.title", f => f.Text().SearchAnalyzer(SynonymsAnalyzer).MultiField("keyword", mf => mf.Keyword()))
 			// Alias for the pre-rename field name — remove once all indices are rebuilt under the
 			// new `parents.path` shape and no consumer queries the old name. "parents" is an
@@ -55,7 +56,8 @@ public static class SharedMappingConfig
 			.AddProperty("parents.url", f => f.Alias("parents.path"));
 
 	private static MappingsBuilder<T> AddNavigationFields<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase =>
-		m.Section(f => f.Normalizer(KeywordNormalizer).CopyTo("tags"))
+		m
+			.Section(f => f.Normalizer(KeywordNormalizer).CopyTo("tags"))
 			.AddProperty("navigation.depth", f => f.RankFeature().PositiveScoreImpact(false))
 			.AddProperty("navigation.table_of_contents", f => f.RankFeature().PositiveScoreImpact(false))
 			.AiAutocompleteQuestions(f => f.MultiField("completion", mf => mf.SearchAsYouType()));
@@ -72,8 +74,8 @@ public static class SharedMappingConfig
 	// Removing it avoids paying embedding-inference cost per document for a subfield nothing queries.
 	private static MappingsBuilder<T> AddSemanticFields<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase =>
 		m
-		// All parents are [Text] leaf fields — AddField places the semantic child under "fields"
-		.AddField("title.semantic_text", f => f.SemanticText())
+			// All parents are [Text] leaf fields — AddField places the semantic child under "fields"
+			.AddField("title.semantic_text", f => f.SemanticText())
 			.AddField("summary.semantic_text", f => f.SemanticText())
 			.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText())
 			.AddField("ai_questions.semantic_text", f => f.SemanticText())
@@ -85,7 +87,8 @@ public static class SharedMappingConfig
 	/// Remove once all indices are rebuilt under the new shape and no consumer queries the old names.
 	/// </summary>
 	private static MappingsBuilder<T> AddLegacyFieldAliases<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase =>
-		m.AddField("abstract", f => f.Alias("summary"))
+		m
+			.AddField("abstract", f => f.Alias("summary"))
 			.AddField("navigation_section", f => f.Alias("section"))
 			.AddField("content_tags", f => f.Alias("tags"))
 			.AddField("stripped_body", f => f.Alias("body"))
@@ -102,82 +105,67 @@ public static class SharedMappingConfig
 		bool semantic = false
 	) where T : SearchDocumentBase
 	{
-		m =
-			m.AddNavigationFields()
-				.AddContentTagsField()
-				.AddCommonTitleMappings()
-				.AddParentsFields()
-				.AddLegacyFieldAliases()
-				.SearchTitle(
-					f =>
-						f.Analyzer(SynonymsFixedAnalyzer)
-							.SearchAnalyzer(SynonymsAnalyzer)
-							.MultiField(
-								"completion",
-								mf =>
-									mf.SearchAsYouType()
-										.Analyzer(SynonymsFixedAnalyzer)
-										.SearchAnalyzer(SynonymsAnalyzer)
-										.IndexOptions("offsets")
-							)
-				)
-				.Title(
-					f =>
-						f.SearchAnalyzer(SynonymsAnalyzer)
-							.MultiField("keyword", mf => mf.Keyword().Normalizer(KeywordNormalizer))
-							.MultiField(
-								"starts_with",
-								mf => mf.Text().Analyzer(StartsWithAnalyzer).SearchAnalyzer(StartsWithAnalyzerSearch)
-							)
-							.MultiField("completion", mf => mf.SearchAsYouType().SearchAnalyzer(SynonymsAnalyzer))
-				)
-				.AiQuestions(f => f.MultiField("completion", mf => mf.SearchAsYouType()))
-				// search_as_you_type only — no semantic_text here; this field is used by downstream typeahead.
-				.AiSearchQuery(f => f.MultiField("completion", mf => mf.SearchAsYouType()))
-				.Summary(f => f.Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer))
-				.Headings(f => f.Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer))
-				.AiRagOptimizedSummary(f => f.Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer))
-				.AiQuestions(
-					f =>
-						f.Analyzer(SynonymsFixedAnalyzer)
-							.SearchAnalyzer(SynonymsAnalyzer)
-							.MultiField(
-								"completion",
-								mf =>
-									mf.SearchAsYouType()
-										.Analyzer(SynonymsFixedAnalyzer)
-										.SearchAnalyzer(SynonymsAnalyzer)
-										.IndexOptions("offsets")
-							)
-				)
-				.AiAutocompleteQuestions(
-					f =>
-						f.Analyzer(SynonymsFixedAnalyzer)
-							.SearchAnalyzer(SynonymsAnalyzer)
-							.MultiField(
-								"completion",
-								mf =>
-									mf.SearchAsYouType()
-										.Analyzer(SynonymsFixedAnalyzer)
-										.SearchAnalyzer(SynonymsAnalyzer)
-										.IndexOptions("offsets")
-							)
-							.MultiField("suggest", mf => mf.Completion())
-				)
-				.Body(
-					f =>
-						f.Analyzer(SynonymsFixedAnalyzer)
-							.SearchAnalyzer(SynonymsAnalyzer)
-							.TermVector("with_positions_offsets")
-							.MultiField("en", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.English))
-							.MultiField("de", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.German))
-							.MultiField("fr", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.French))
-							.MultiField("ja", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Cjk))
-							.MultiField("ko", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Cjk))
-							.MultiField("zh", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Cjk))
-							.MultiField("es", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Spanish))
-							.MultiField("pt", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Portuguese))
-				);
+		m = m
+			.AddNavigationFields()
+			.AddContentTagsField()
+			.AddCommonTitleMappings()
+			.AddParentsFields()
+			.AddLegacyFieldAliases()
+			.SearchTitle(
+				f => f
+					.Analyzer(SynonymsFixedAnalyzer)
+					.SearchAnalyzer(SynonymsAnalyzer)
+					.MultiField(
+						"completion",
+						mf => mf.SearchAsYouType().Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer).IndexOptions("offsets")
+					)
+			)
+			.Title(
+				f => f
+					.SearchAnalyzer(SynonymsAnalyzer)
+					.MultiField("keyword", mf => mf.Keyword().Normalizer(KeywordNormalizer))
+					.MultiField("starts_with", mf => mf.Text().Analyzer(StartsWithAnalyzer).SearchAnalyzer(StartsWithAnalyzerSearch))
+					.MultiField("completion", mf => mf.SearchAsYouType().SearchAnalyzer(SynonymsAnalyzer))
+			)
+			.AiQuestions(f => f.MultiField("completion", mf => mf.SearchAsYouType()))
+			// search_as_you_type only — no semantic_text here; this field is used by downstream typeahead.
+			.AiSearchQuery(f => f.MultiField("completion", mf => mf.SearchAsYouType()))
+			.Summary(f => f.Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer))
+			.Headings(f => f.Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer))
+			.AiRagOptimizedSummary(f => f.Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer))
+			.AiQuestions(
+				f => f
+					.Analyzer(SynonymsFixedAnalyzer)
+					.SearchAnalyzer(SynonymsAnalyzer)
+					.MultiField(
+						"completion",
+						mf => mf.SearchAsYouType().Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer).IndexOptions("offsets")
+					)
+			)
+			.AiAutocompleteQuestions(
+				f => f
+					.Analyzer(SynonymsFixedAnalyzer)
+					.SearchAnalyzer(SynonymsAnalyzer)
+					.MultiField(
+						"completion",
+						mf => mf.SearchAsYouType().Analyzer(SynonymsFixedAnalyzer).SearchAnalyzer(SynonymsAnalyzer).IndexOptions("offsets")
+					)
+					.MultiField("suggest", mf => mf.Completion())
+			)
+			.Body(
+				f => f
+					.Analyzer(SynonymsFixedAnalyzer)
+					.SearchAnalyzer(SynonymsAnalyzer)
+					.TermVector("with_positions_offsets")
+					.MultiField("en", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.English))
+					.MultiField("de", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.German))
+					.MultiField("fr", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.French))
+					.MultiField("ja", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Cjk))
+					.MultiField("ko", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Cjk))
+					.MultiField("zh", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Cjk))
+					.MultiField("es", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Spanish))
+					.MultiField("pt", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.Portuguese))
+			);
 
 		return semantic ? m.AddSemanticFields() : m;
 	}

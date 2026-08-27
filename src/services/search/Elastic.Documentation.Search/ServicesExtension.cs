@@ -37,23 +37,22 @@ public static class ServicesExtension
 		// Inner search service: docs-builder pairs the typed contract with the docs index alias.
 		// SearchQueryConfiguration is a lean projection of the richer docs-builder SearchConfiguration,
 		// carrying only the four values the query path reads.
-		_ =
-			services.AddScoped<ISearchService<DocumentationDocument>>(sp =>
+		_ = services.AddScoped<ISearchService<DocumentationDocument>>(sp =>
+		{
+			var acc = sp.GetRequiredService<ElasticsearchClientAccessor>();
+			var lookup = sp.GetRequiredService<IProductNameLookup>();
+			var innerLogger = sp.GetRequiredService<ILogger<DefaultSearchService<DocumentationDocument>>>();
+
+			var queryConfig = new SearchQueryConfiguration
 			{
-				var acc = sp.GetRequiredService<ElasticsearchClientAccessor>();
-				var lookup = sp.GetRequiredService<IProductNameLookup>();
-				var innerLogger = sp.GetRequiredService<ILogger<DefaultSearchService<DocumentationDocument>>>();
+				SynonymBiDirectional = acc.SynonymBiDirectional,
+				DiminishTerms = acc.DiminishTerms,
+				RulesetName = acc.RulesetName,
+				SemanticEnabled = true
+			};
 
-				var queryConfig = new SearchQueryConfiguration
-				{
-					SynonymBiDirectional = acc.SynonymBiDirectional,
-					DiminishTerms = acc.DiminishTerms,
-					RulesetName = acc.RulesetName,
-					SemanticEnabled = true
-				};
-
-				return new DefaultSearchService<DocumentationDocument>(acc.Client, acc.SearchIndex, queryConfig, innerLogger, lookup);
-			});
+			return new DefaultSearchService<DocumentationDocument>(acc.Client, acc.SearchIndex, queryConfig, innerLogger, lookup);
+		});
 
 		// Docs-specific adapters preserve the existing API/MCP wire format.
 		_ = services.AddScoped<INavigationSearchService, NavigationSearchService>();

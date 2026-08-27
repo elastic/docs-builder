@@ -50,18 +50,18 @@ public class BundleDataResolver
 			? bundle.Data.Products[0].Owner!
 			: "elastic";
 
-		return bundle.Data
+		return bundle
+			.Data
 			.Entries
 			.Select(
-				entry =>
-					new ResolvedEntry
-					{
-						Entry = ReleaseNotesSerialization.ConvertBundledEntry(entry),
-						Repo = repo,
-						Owner = owner,
-						BundleProductIds = bundleProductIds,
-						HideLinks = bundle.Input.HideLinks
-					}
+				entry => new ResolvedEntry
+				{
+					Entry = ReleaseNotesSerialization.ConvertBundledEntry(entry),
+					Repo = repo,
+					Owner = owner,
+					BundleProductIds = bundleProductIds,
+					HideLinks = bundle.Input.HideLinks
+				}
 			)
 			.ToList();
 	}

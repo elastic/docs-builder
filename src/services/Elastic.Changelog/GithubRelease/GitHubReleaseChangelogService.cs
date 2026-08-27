@@ -219,8 +219,17 @@ public class GitHubReleaseChangelogService(
 			// 9. Optionally create bundle file if changelogs were created
 			if (input.CreateBundle && createdFiles.Count > 0)
 			{
-				var bundlePath =
-					await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, release, ctx);
+				var bundlePath = await CreateBundleViaService(
+					collector,
+					outputDir,
+					createdFiles,
+					productInfo,
+					owner,
+					repo,
+					input,
+					release,
+					ctx
+				);
 				if (bundlePath != null)
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
 			}
@@ -275,20 +284,18 @@ public class GitHubReleaseChangelogService(
 
 		var poolOwner = config.Bundle?.Owner ?? owner;
 		var poolBranch = config.Bundle?.Branch ?? "main";
-		var entries =
-			await _entryFetcher.FetchAsync(
-				baseUri,
-				poolOwner,
-				repo,
-				poolBranch,
-				msg =>
-					collector.EmitWarning(
-						string.Empty,
-						$"Checked-in changelog entries are unavailable; entries will be synthesized from PR metadata. {msg}"
-					),
-				msg => collector.EmitWarning(string.Empty, msg),
-				ctx
-			);
+		var entries = await _entryFetcher.FetchAsync(
+			baseUri,
+			poolOwner,
+			repo,
+			poolBranch,
+			msg => collector.EmitWarning(
+				string.Empty,
+				$"Checked-in changelog entries are unavailable; entries will be synthesized from PR metadata. {msg}"
+			),
+			msg => collector.EmitWarning(string.Empty, msg),
+			ctx
+		);
 
 		return entries.Select(e => GitRangeEntryResolver.ParseCandidate(e.FileName, e.Content)).ToList();
 	}
@@ -427,7 +434,8 @@ public class GitHubReleaseChangelogService(
 		Cancel ctx
 	)
 	{
-		var matches = context.PoolCandidates
+		var matches = context
+			.PoolCandidates
 			.Where(c => GitRangeEntryResolver.MatchesPr(c, prRef.PrNumber, context.Owner, context.Repo))
 			.ToList();
 
@@ -497,7 +505,8 @@ public class GitHubReleaseChangelogService(
 
 		// Select exactly the files this run created. A PR-URL filter would miss checked-in pool
 		// entries whose prs references were scrubbed from the public copies.
-		var files = createdFileNames.Distinct(StringComparer.Ordinal)
+		var files = createdFileNames
+			.Distinct(StringComparer.Ordinal)
 			.Select(filename => _fileSystem.Path.Join(outputDir, filename))
 			.ToArray();
 

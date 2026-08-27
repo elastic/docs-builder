@@ -317,7 +317,8 @@ public class BundleFilesFilterTests : ChangelogTestBase
 
 		result.Should().BeFalse();
 		// --files uses FetchNamedAsync: a 404 means "entry does not exist in the pool"
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("pool"));
 	}
@@ -362,11 +363,10 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		// --files (via profile report) uses FetchNamedAsync: direct GET per file, no registry fetch
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/keep.yaml");
 		handler.RequestedPaths.Should().NotContain("/changelog/elastic/elasticsearch/main/registry.json");
-		var bundle =
-			await FileSystem.File.ReadAllTextAsync(
-				FileSystem.Path.Join(outputDir, "changelog-bundle.yaml"),
-				TestContext.Current.CancellationToken
-			);
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Path.Join(outputDir, "changelog-bundle.yaml"),
+			TestContext.Current.CancellationToken
+		);
 		bundle.Should().Contain("name: keep.yaml");
 		bundle.Should().NotContain("name: skip.yaml");
 	}

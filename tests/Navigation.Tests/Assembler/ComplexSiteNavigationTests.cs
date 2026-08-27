@@ -54,7 +54,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			documentationSets,
 			sitePrefix: null
 		);
-		var sections = siteNavigation.NavigationItems
+		var sections = siteNavigation
+			.NavigationItems
 			.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
 			.Where(section => section.Identifier.Scheme == "platform")
 			.ToArray();
@@ -277,7 +278,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Verify every single file leaf has the correct path prefix
 		foreach (var fileLeaf in fileLeaves)
 		{
-			fileLeaf.Url
+			fileLeaf
+				.Url
 				.Should()
 				.StartWith(
 					"/platform",
@@ -348,7 +350,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Verify each folder and all its contents have a correct path prefix
 		foreach (var folder in folders)
 		{
-			folder.Url
+			folder
+				.Url
 				.Should()
 				.StartWith("/platform/cloud", $"folder '{folder.NavigationTitle}' should have URL starting with /platform/cloud");
 
@@ -359,7 +362,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			var filesInFolder = CollectAllFileLeaves(folder.NavigationItems);
 			foreach (var file in filesInFolder)
 			{
-				file.Url
+				file
+					.Url
 					.Should()
 					.StartWith(
 						"/platform/cloud",
@@ -376,7 +380,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	{
 		foreach (var item in items)
 		{
-			item.Url
+			item
+				.Url
 				.Should()
 				.StartWith(
 					expectedPrefix,

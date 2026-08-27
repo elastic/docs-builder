@@ -134,7 +134,8 @@ public class ChangelogRenderingService(
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
 			// Extract descriptions from bundles for MVP support
-			var bundleDescriptions = validationResult.Bundles
+			var bundleDescriptions = validationResult
+				.Bundles
 				.Select(b => b.Data.Description)
 				.Where(d => !string.IsNullOrEmpty(d))
 				.Distinct()
@@ -156,7 +157,8 @@ public class ChangelogRenderingService(
 			}
 
 			// Extract release dates from bundles for MVP support
-			var bundleReleaseDates = validationResult.Bundles
+			var bundleReleaseDates = validationResult
+				.Bundles
 				.Select(b => b.Data.ReleaseDate)
 				.Where(d => d.HasValue)
 				.Select(d => d!.Value)
@@ -303,7 +305,8 @@ public class ChangelogRenderingService(
 		);
 		var availableTypesSet = new HashSet<string>(availableTypes, StringComparer.OrdinalIgnoreCase);
 
-		var entriesByType = entries.Where(e => e.Entry.Type != ChangelogEntryType.Invalid)
+		var entriesByType = entries
+			.Where(e => e.Entry.Type != ChangelogEntryType.Invalid)
 			.GroupBy(e => e.Entry.Type)
 			.ToDictionary(g => g.Key, g => g.Count());
 
@@ -331,7 +334,8 @@ public class ChangelogRenderingService(
 	)
 	{
 		// Group entries by type
-		var entriesByType = resolved.Entries
+		var entriesByType = resolved
+			.Entries
 			.Select(e => e.Entry)
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToArray().AsReadOnly())

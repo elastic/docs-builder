@@ -295,7 +295,8 @@ public class GitCheckoutResolutionTests
 
 		result.IsAvailable.Should().BeTrue();
 		result.Branch.Should().Be("main");
-		result.Ref
+		result
+			.Ref
 			.Should()
 			.Be(
 				"deadbeef1234567890deadbeef1234567890dead",

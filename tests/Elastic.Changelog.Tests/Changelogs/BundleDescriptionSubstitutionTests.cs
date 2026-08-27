@@ -71,8 +71,14 @@ public class BundleDescriptionSubstitutionTests
 	public void SubstitutePlaceholders_ValidateResolvable_ThrowsWhenVersionMissing()
 	{
 		var act =
-			() =>
-				BundleDescriptionSubstitution.SubstitutePlaceholders("Release {version}", null, null, null, null, validateResolvable: true);
+			() => BundleDescriptionSubstitution.SubstitutePlaceholders(
+				"Release {version}",
+				null,
+				null,
+				null,
+				null,
+				validateResolvable: true
+			);
 
 		act.Should().Throw<InvalidOperationException>().WithMessage("*version*");
 	}
@@ -81,15 +87,14 @@ public class BundleDescriptionSubstitutionTests
 	public void SubstitutePlaceholders_ValidateResolvable_ThrowsWhenMultipleMissing()
 	{
 		var act =
-			() =>
-				BundleDescriptionSubstitution.SubstitutePlaceholders(
-					"v{version} ({lifecycle}) from {owner}/{repo}",
-					null,
-					null,
-					null,
-					null,
-					validateResolvable: true
-				);
+			() => BundleDescriptionSubstitution.SubstitutePlaceholders(
+				"v{version} ({lifecycle}) from {owner}/{repo}",
+				null,
+				null,
+				null,
+				null,
+				validateResolvable: true
+			);
 
 		act.Should().Throw<InvalidOperationException>().WithMessage("*version*lifecycle*owner*repo*");
 	}

@@ -123,11 +123,10 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act - Perform the search via the adapter's autocomplete path
-		var searchResult =
-			await gateway.NavigationSearchAsync(
-				new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5 },
-				TestContext.Current.CancellationToken
-			);
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5 },
+			TestContext.Current.CancellationToken
+		);
 
 		// Log basic results
 		output.WriteLine($"Query: {query}");
@@ -138,8 +137,10 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 
 		if (results.Count == 0)
 		{
-			var countResponse =
-				await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), TestContext.Current.CancellationToken);
+			var countResponse = await clientAccessor.Client.CountAsync(
+				c => c.Indices(clientAccessor.SearchIndex),
+				TestContext.Current.CancellationToken
+			);
 			output.WriteLine(
 				$"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString(CultureInfo.InvariantCulture) : $"ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}")}"
 			);
@@ -155,8 +156,11 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 			output.WriteLine("\n❌ FIRST RESULT MISMATCH - Fetching detailed explanations...\n");
 
 			// Get explain for both the actual top result and the expected result
-			var (topResultExplain, expectedResultExplain) =
-				await gateway.ExplainTopResultAndExpectedAsync(query, expectedFirstResultUrl, TestContext.Current.CancellationToken);
+			var (topResultExplain, expectedResultExplain) = await gateway.ExplainTopResultAndExpectedAsync(
+				query,
+				expectedFirstResultUrl,
+				TestContext.Current.CancellationToken
+			);
 
 			// Output the actual top result explanation
 			output.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -253,8 +257,11 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		const string expectedUrl = "/docs/reference/elasticsearch/clients/java/getting-started";
 
 		// Act - Use the ExplainTopResultAndExpectedAsync method which gets top result and explains both
-		var (topResultExplain, expectedResultExplain) =
-			await gateway.ExplainTopResultAndExpectedAsync(query, expectedUrl, TestContext.Current.CancellationToken);
+		var (topResultExplain, expectedResultExplain) = await gateway.ExplainTopResultAndExpectedAsync(
+			query,
+			expectedUrl,
+			TestContext.Current.CancellationToken
+		);
 
 		// Assert - Top result should have explanation
 		output.WriteLine($"Query: {query}");

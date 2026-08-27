@@ -17,7 +17,8 @@ try
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
 
-	var builder = WebApplication.CreateSlimBuilder(args)
+	var builder = WebApplication
+		.CreateSlimBuilder(args)
 		.AddDocumentationServiceDefaults((s, p) =>
 		{
 			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
@@ -33,11 +34,10 @@ try
 		&& string.IsNullOrEmpty(builder.Configuration["URLS"])
 	)
 	{
-		_ =
-			builder.WebHost.ConfigureKestrel(serverOptions =>
-			{
-				serverOptions.ListenAnyIP(8080);
-			});
+		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+		{
+			serverOptions.ListenAnyIP(8080);
+		});
 	}
 
 	builder.Services.AddElasticDocsApiServices(environment);

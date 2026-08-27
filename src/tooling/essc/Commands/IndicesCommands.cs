@@ -263,12 +263,10 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		}
 		else
 		{
-			lexicalIndex =
-				await ResolveAliasIndexAsync(transport, lexicalAlias, ct)
-					?? throw new InvalidOperationException($"Lexical alias '{lexicalAlias}' not found.");
-			semanticIndex =
-				await ResolveAliasIndexAsync(transport, semanticAlias, ct)
-					?? throw new InvalidOperationException($"Semantic alias '{semanticAlias}' not found.");
+			lexicalIndex = await ResolveAliasIndexAsync(transport, lexicalAlias, ct)
+				?? throw new InvalidOperationException($"Lexical alias '{lexicalAlias}' not found.");
+			semanticIndex = await ResolveAliasIndexAsync(transport, semanticAlias, ct)
+				?? throw new InvalidOperationException($"Semantic alias '{semanticAlias}' not found.");
 		}
 
 		// Apply rename after the orchestrator has set up the canonical template and backing indices.
@@ -532,9 +530,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 	private static string ResolveTemplateName(string writeAlias) =>
 		(writeAlias.EndsWith("-latest", StringComparison.Ordinal)
-				? writeAlias[..^7] // strip "-latest"
+			? writeAlias[..^7] // strip "-latest"
 
-				: writeAlias)
+			: writeAlias)
 			+ "-template";
 
 	private static async Task<(string Combined, IReadOnlyList<(string Alias, string Template, string Hash)> PerSource)> FetchCombinedSourceHashAsync(
@@ -548,12 +546,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		foreach (var alias in sourceAliases)
 		{
 			var template = ResolveTemplateName(alias);
-			var resp =
-				await transport.RequestAsync<JsonResponse>(
-					Transport.HttpMethod.GET,
-					$"_index_template/{Uri.EscapeDataString(template)}?filter_path=index_templates.index_template._meta.hash",
-					cancellationToken: ct
-				);
+			var resp = await transport.RequestAsync<JsonResponse>(
+				Transport.HttpMethod.GET,
+				$"_index_template/{Uri.EscapeDataString(template)}?filter_path=index_templates.index_template._meta.hash",
+				cancellationToken: ct
+			);
 			var hash = resp.Get<string>("index_templates.0.index_template._meta.hash") ?? "missing";
 			perSource.Add((alias, template, hash));
 			parts.Add(alias + "=" + hash);
@@ -566,12 +563,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	private static async Task<string?> ReadStoredSourceHashAsync(DistributedTransport transport, string env, CancellationToken ct)
 	{
 		var name = UnifyStateTemplateName(env);
-		var resp =
-			await transport.RequestAsync<JsonResponse>(
-				Transport.HttpMethod.GET,
-				$"_component_template/{Uri.EscapeDataString(name)}",
-				cancellationToken: ct
-			);
+		var resp = await transport.RequestAsync<JsonResponse>(
+			Transport.HttpMethod.GET,
+			$"_component_template/{Uri.EscapeDataString(name)}",
+			cancellationToken: ct
+		);
 		if (!resp.ApiCallDetails.HasSuccessfulStatusCode)
 			return null;
 		return resp.Get<string>("component_templates.0.component_template._meta.source_hash");
@@ -604,7 +600,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 		if (IsInteractive())
 		{
-			await AnsiConsole.Progress()
+			await AnsiConsole
+				.Progress()
 				.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 				.StartAsync(async pc =>
 				{
@@ -718,13 +715,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	)
 	{
 		var body = /*lang=json,strict*/  "{\"size\":0,\"aggs\":{\"max_lu\":{\"max\":{\"field\":\"last_updated\"}}}}";
-		var resp =
-			await transport.RequestAsync<JsonResponse>(
-				Transport.HttpMethod.POST,
-				$"{semanticIndex}/_search",
-				PostData.String(body),
-				cancellationToken: ct
-			);
+		var resp = await transport.RequestAsync<JsonResponse>(
+			Transport.HttpMethod.POST,
+			$"{semanticIndex}/_search",
+			PostData.String(body),
+			cancellationToken: ct
+		);
 		return resp.Get<DateTimeOffset?>("aggregations.max_lu.value_as_string") ?? DateTimeOffset.MinValue;
 	}
 
@@ -736,14 +732,13 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		// Using text/plain avoids JSON array parsing (JsonResponse.Get<T> doesn't traverse arrays).
 		// This mirrors IncrementalSyncOrchestrator.ResolveExistingIndexAsync internally.
 		var rq = new RequestConfiguration { Accept = "text/plain" };
-		var resp =
-			await transport.RequestAsync<StringResponse>(
-				Transport.HttpMethod.GET,
-				$"_cat/aliases/{Uri.EscapeDataString(alias)}?h=index",
-				null,
-				rq,
-				ct
-			);
+		var resp = await transport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.GET,
+			$"_cat/aliases/{Uri.EscapeDataString(alias)}?h=index",
+			null,
+			rq,
+			ct
+		);
 		var index = resp.Body?.Trim('\n', '\r', ' ');
 		return string.IsNullOrEmpty(index) ? null : index;
 	}
@@ -766,12 +761,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			$"[dim]  Bootstrapping [white]{Markup.Escape(destIndex)}[/] from source mapping of [white]{Markup.Escape(sourceAlias)}[/]...[/]"
 		);
 
-		var mappingResp =
-			await fromTransport.RequestAsync<StringResponse>(
-				Transport.HttpMethod.GET,
-				$"{Uri.EscapeDataString(sourceAlias)}/_mapping",
-				cancellationToken: ct
-			);
+		var mappingResp = await fromTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.GET,
+			$"{Uri.EscapeDataString(sourceAlias)}/_mapping",
+			cancellationToken: ct
+		);
 		if (!mappingResp.ApiCallDetails.HasSuccessfulStatusCode || mappingResp.Body is null)
 		{
 			logger.LogError(
@@ -784,12 +778,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 		// Fetch only the analysis settings — tokenizers, analyzers, filters that the mapping references.
 		// filter_path trims the response to just the analysis sub-tree.
-		var settingsResp =
-			await fromTransport.RequestAsync<StringResponse>(
-				Transport.HttpMethod.GET,
-				$"{Uri.EscapeDataString(sourceAlias)}/_settings?filter_path=**.index.analysis",
-				cancellationToken: ct
-			);
+		var settingsResp = await fromTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.GET,
+			$"{Uri.EscapeDataString(sourceAlias)}/_settings?filter_path=**.index.analysis",
+			cancellationToken: ct
+		);
 
 		// Response shapes:
 		//   _mapping:  { "<backing>": { "mappings": { ... } } }
@@ -813,13 +806,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			? $"{{\"settings\":{{\"analysis\":{analysis.ToJsonString()}}},\"mappings\":{mappings.ToJsonString()}}}"
 			: $"{{\"mappings\":{mappings.ToJsonString()}}}";
 
-		var createResp =
-			await toTransport.RequestAsync<StringResponse>(
-				Transport.HttpMethod.PUT,
-				Uri.EscapeDataString(destIndex),
-				PostData.String(body),
-				cancellationToken: ct
-			);
+		var createResp = await toTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.PUT,
+			Uri.EscapeDataString(destIndex),
+			PostData.String(body),
+			cancellationToken: ct
+		);
 		if (!createResp.ApiCallDetails.HasSuccessfulStatusCode)
 			logger.LogError("Failed to create {Index} with source mapping: {Info}", destIndex, createResp.ApiCallDetails.DebugInformation);
 		else
@@ -858,12 +850,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			$"[dim]  Creating [white]{Markup.Escape(destIndex)}[/] from source mapping+settings of [white]{Markup.Escape(sourceIndex)}[/]...[/]"
 		);
 
-		var mappingResp =
-			await fromTransport.RequestAsync<StringResponse>(
-				Transport.HttpMethod.GET,
-				$"{Uri.EscapeDataString(sourceIndex)}/_mapping",
-				cancellationToken: ct
-			);
+		var mappingResp = await fromTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.GET,
+			$"{Uri.EscapeDataString(sourceIndex)}/_mapping",
+			cancellationToken: ct
+		);
 		if (!mappingResp.ApiCallDetails.HasSuccessfulStatusCode || mappingResp.Body is null)
 		{
 			logger.LogError(
@@ -874,12 +865,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			return;
 		}
 
-		var settingsResp =
-			await fromTransport.RequestAsync<StringResponse>(
-				Transport.HttpMethod.GET,
-				$"{Uri.EscapeDataString(sourceIndex)}/_settings",
-				cancellationToken: ct
-			);
+		var settingsResp = await fromTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.GET,
+			$"{Uri.EscapeDataString(sourceIndex)}/_settings",
+			cancellationToken: ct
+		);
 
 		// Response shapes:
 		//   _mapping:  { "<backing>": { "mappings": { ... } } }
@@ -908,13 +898,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			? $"{{\"settings\":{{\"index\":{settings.ToJsonString()}}},\"mappings\":{mappings.ToJsonString()}}}"
 			: $"{{\"mappings\":{mappings.ToJsonString()}}}";
 
-		var createResp =
-			await toTransport.RequestAsync<StringResponse>(
-				Transport.HttpMethod.PUT,
-				Uri.EscapeDataString(destIndex),
-				PostData.String(body),
-				cancellationToken: ct
-			);
+		var createResp = await toTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.PUT,
+			Uri.EscapeDataString(destIndex),
+			PostData.String(body),
+			cancellationToken: ct
+		);
 		if (!createResp.ApiCallDetails.HasSuccessfulStatusCode)
 			logger.LogError(
 				"Failed to create {Index} with source mapping+settings: {Info}",
@@ -973,12 +962,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	)
 	{
 		var pruned = new List<string>();
-		var resp =
-			await transport.RequestAsync<JsonResponse>(
-				Transport.HttpMethod.GET,
-				$"_cat/indices/{Uri.EscapeDataString(pattern)}?h=index&s=creation.date.string:desc&format=json",
-				cancellationToken: ct
-			);
+		var resp = await transport.RequestAsync<JsonResponse>(
+			Transport.HttpMethod.GET,
+			$"_cat/indices/{Uri.EscapeDataString(pattern)}?h=index&s=creation.date.string:desc&format=json",
+			cancellationToken: ct
+		);
 
 		if (!resp.ApiCallDetails.HasSuccessfulStatusCode)
 			return pruned;
@@ -1702,7 +1690,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	private static void RenderPlanTable(CleanupPlan plan)
 	{
 		var keepSet = plan.ToKeep.ToHashSet();
-		var all = plan.ToKeep
+		var all = plan
+			.ToKeep
 			.Concat(plan.ToDelete)
 			.OrderBy(b => b.Group.Source)
 			.ThenBy(b => b.Group.Variant)
@@ -1731,14 +1720,13 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			lastGroup = currentGroup;
 
 			var action = idx.IsActive ? "[green]KEEP-ACTIVE[/]" : keepSet.Contains(idx) ? "[grey]KEEP[/]" : "[red]DELETE[/]";
-			_ =
-				table.AddRow(
-					Markup.Escape(idx.Group.Source),
-					Markup.Escape(idx.Group.Variant),
-					Markup.Escape(idx.Group.Environment),
-					idx.Date.ToString("yyyy-MM-dd HH:mm:ss"),
-					action
-				);
+			_ = table.AddRow(
+				Markup.Escape(idx.Group.Source),
+				Markup.Escape(idx.Group.Variant),
+				Markup.Escape(idx.Group.Environment),
+				idx.Date.ToString("yyyy-MM-dd HH:mm:ss"),
+				action
+			);
 		}
 
 		AnsiConsole.Write(table);
@@ -1816,12 +1804,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		// Use StringResponse + plain string check to avoid Get<T> on object-typed nodes.
 		// _field_caps returns {"fields":{"<name>":{...}}} — checking for the key name as a JSON key
 		// is sufficient to confirm the field is mapped.
-		var resp =
-			await transport.RequestAsync<StringResponse>(
-				Transport.HttpMethod.GET,
-				$"{Uri.EscapeDataString(target)}/_field_caps?fields={csv}&filter_path=fields",
-				cancellationToken: ct
-			);
+		var resp = await transport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.GET,
+			$"{Uri.EscapeDataString(target)}/_field_caps?fields={csv}&filter_path=fields",
+			cancellationToken: ct
+		);
 
 		if (!resp.ApiCallDetails.HasSuccessfulStatusCode)
 		{
@@ -1867,13 +1854,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	private static async Task<long> CountAsync(DistributedTransport transport, string target, string? queryBody, CancellationToken ct)
 	{
 		var body = queryBody is null ? null : PostData.String("{\"query\":" + queryBody + "}");
-		var resp =
-			await transport.RequestAsync<JsonResponse>(
-				Transport.HttpMethod.POST,
-				$"{Uri.EscapeDataString(target)}/_count",
-				body,
-				cancellationToken: ct
-			);
+		var resp = await transport.RequestAsync<JsonResponse>(
+			Transport.HttpMethod.POST,
+			$"{Uri.EscapeDataString(target)}/_count",
+			body,
+			cancellationToken: ct
+		);
 		return resp.Get<long?>("count") ?? 0;
 	}
 

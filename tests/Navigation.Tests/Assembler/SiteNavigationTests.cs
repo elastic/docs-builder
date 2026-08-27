@@ -209,7 +209,8 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var observabilityItem = navigation.NavigationItems.First();
-		observabilityItem.Url
+		observabilityItem
+			.Url
 			.Should()
 			.Be(expectedObservabilityUrl, $"sitePrefix '{sitePrefix}' should result in URL '{expectedObservabilityUrl}'");
 	}
@@ -296,7 +297,8 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// But they MUST have different IDs because they resolve to different URLs
 		// Product A: /product-a/getting-started
 		// Product B: /product-b/getting-started
-		productAGettingStarted.Id
+		productAGettingStarted
+			.Id
 			.Should()
 			.NotBe(
 				productBGettingStarted.Id,

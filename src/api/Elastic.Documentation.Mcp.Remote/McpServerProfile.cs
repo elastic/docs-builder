@@ -90,12 +90,14 @@ public sealed record McpServerProfile(
 		var capabilities = DeriveCapabilities();
 		var introduction = Introduction.Replace("{capabilities}", capabilities, StringComparison.Ordinal);
 
-		var whenToUse = Modules.SelectMany(m => m.WhenToUse)
+		var whenToUse = Modules
+			.SelectMany(m => m.WhenToUse)
 			.Distinct()
 			.Select(line => line.Replace("{docs}", DocsDescription, StringComparison.Ordinal))
 			.Concat(ExtraTriggers)
 			.ToList();
-		var toolGuidance = Modules.SelectMany(m => m.ToolGuidance)
+		var toolGuidance = Modules
+			.SelectMany(m => m.ToolGuidance)
 			.Select(line => ReplaceToolPlaceholders(line, ResourceNoun, ScopePrefix))
 			.ToList();
 

@@ -115,7 +115,8 @@ Visit https://first.test.io, https://second.test.io, or https://third.test.io fo
 {
 	[Fact]
 	public void ExcludesTrailingCommas() =>
-		Html.Should()
+		Html
+			.Should()
 			.Contain("""<a href="https://first.test.io" target="_blank" rel="noopener noreferrer">https://first.test.io</a>,""")
 			.And
 			.Contain("""<a href="https://second.test.io" target="_blank" rel="noopener noreferrer">https://second.test.io</a>,""")
@@ -173,11 +174,13 @@ See https://www.elastic.co/docs/deploy-manage for deployment info.
 
 	[Fact]
 	public void EmitsHint() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(
-				d =>
-					d.Severity == Severity.Hint && d.Message.Contains("elastic.co/docs") && d.Message.Contains("crosslink or relative link")
+				d => d.Severity == Severity.Hint && d.Message.Contains("elastic.co/docs") && d.Message.Contains(
+					"crosslink or relative link"
+				)
 			);
 }
 
@@ -235,7 +238,8 @@ Visit [Docs](https://docs.test.io) or https://other.test.io for more.
 {
 	[Fact]
 	public void BothLinksWork() =>
-		Html.Should()
+		Html
+			.Should()
 			.Contain("""<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">Docs</a>""")
 			.And
 			.Contain("""<a href="https://other.test.io" target="_blank" rel="noopener noreferrer">https://other.test.io</a>""");
@@ -254,7 +258,8 @@ Upload to a service like [https://gist.github.com](https://gist.github.com).
 {
 	[Fact]
 	public void DoesNotCreateNestedAnchor() =>
-		Html.Should()
+		Html
+			.Should()
 			.Contain("""<a href="https://gist.github.com" target="_blank" rel="noopener noreferrer">https://gist.github.com</a>""")
 			.And
 			.NotMatchRegex(@"<a\b[^>]*><a\b");
@@ -308,7 +313,8 @@ First https://first.com then https://second.com and finally https://third.com ar
 {
 	[Fact]
 	public void AllLinksAreCreated() =>
-		Html.Should()
+		Html
+			.Should()
 			.Contain("""<a href="https://first.com""")
 			.And
 			.Contain("""<a href="https://second.com""")

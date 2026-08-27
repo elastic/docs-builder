@@ -323,13 +323,12 @@ public static partial class AsciidocLexer
 		var m = SectionRegex.Match(line);
 		if (m.Success)
 		{
-			token =
-				new Token(
-					TokenType.SectionTitle,
-					line,
-					lineNumber,
-					new TokenMetadata { Level = m.Groups[1].Value.Length - 1, Title = m.Groups[2].Value.Trim() }
-				);
+			token = new Token(
+				TokenType.SectionTitle,
+				line,
+				lineNumber,
+				new TokenMetadata { Level = m.Groups[1].Value.Length - 1, Title = m.Groups[2].Value.Trim() }
+			);
 			return true;
 		}
 
@@ -343,13 +342,12 @@ public static partial class AsciidocLexer
 		m = AttributeEntryRegex.Match(line);
 		if (m.Success)
 		{
-			token =
-				new Token(
-					TokenType.AttributeEntry,
-					line,
-					lineNumber,
-					new TokenMetadata { AttributeName = m.Groups[1].Value, AttributeValue = m.Groups[2].Value }
-				);
+			token = new Token(
+				TokenType.AttributeEntry,
+				line,
+				lineNumber,
+				new TokenMetadata { AttributeName = m.Groups[1].Value, AttributeValue = m.Groups[2].Value }
+			);
 			return true;
 		}
 
@@ -363,13 +361,12 @@ public static partial class AsciidocLexer
 		m = ConditionalStartRegex.Match(line);
 		if (m.Success)
 		{
-			token =
-				new Token(
-					TokenType.ConditionalStart,
-					line,
-					lineNumber,
-					new TokenMetadata { Condition = m.Groups[2].Value, Content = m.Groups[3].Value, BlockStyle = m.Groups[1].Value }
-				);
+			token = new Token(
+				TokenType.ConditionalStart,
+				line,
+				lineNumber,
+				new TokenMetadata { Condition = m.Groups[2].Value, Content = m.Groups[3].Value, BlockStyle = m.Groups[1].Value }
+			);
 			return true;
 		}
 
@@ -384,13 +381,12 @@ public static partial class AsciidocLexer
 		if (m.Success)
 		{
 			var attrs = ParseBlockAttributeContent(m.Groups[2].Value);
-			token =
-				new Token(
-					TokenType.IncludeDirective,
-					line,
-					lineNumber,
-					new TokenMetadata { Path = m.Groups[1].Value, NamedAttributes = attrs }
-				);
+			token = new Token(
+				TokenType.IncludeDirective,
+				line,
+				lineNumber,
+				new TokenMetadata { Path = m.Groups[1].Value, NamedAttributes = attrs }
+			);
 			return true;
 		}
 
@@ -398,31 +394,29 @@ public static partial class AsciidocLexer
 		if (m.Success)
 		{
 			var attrs = ParseInlineAttributes(m.Groups[2].Value);
-			token =
-				new Token(
-					TokenType.ImageBlock,
-					line,
-					lineNumber,
-					new TokenMetadata
-					{
-						Path = m.Groups[1].Value,
-						Title = attrs.GetValueOrDefault("alt") ?? attrs.GetValueOrDefault("0"),
-						NamedAttributes = attrs
-					}
-				);
+			token = new Token(
+				TokenType.ImageBlock,
+				line,
+				lineNumber,
+				new TokenMetadata
+				{
+					Path = m.Groups[1].Value,
+					Title = attrs.GetValueOrDefault("alt") ?? attrs.GetValueOrDefault("0"),
+					NamedAttributes = attrs
+				}
+			);
 			return true;
 		}
 
 		m = AdmonitionRegex.Match(line);
 		if (m.Success)
 		{
-			token =
-				new Token(
-					TokenType.AdmonitionParagraph,
-					line,
-					lineNumber,
-					new TokenMetadata { BlockStyle = m.Groups[1].Value, Content = m.Groups[2].Value }
-				);
+			token = new Token(
+				TokenType.AdmonitionParagraph,
+				line,
+				lineNumber,
+				new TokenMetadata { BlockStyle = m.Groups[1].Value, Content = m.Groups[2].Value }
+			);
 			return true;
 		}
 
@@ -448,26 +442,24 @@ public static partial class AsciidocLexer
 		m = UnorderedListRegex.Match(line);
 		if (m.Success)
 		{
-			token =
-				new Token(
-					TokenType.ListItemUnordered,
-					line,
-					lineNumber,
-					new TokenMetadata { Level = m.Groups[1].Value.Length, Content = m.Groups[2].Value }
-				);
+			token = new Token(
+				TokenType.ListItemUnordered,
+				line,
+				lineNumber,
+				new TokenMetadata { Level = m.Groups[1].Value.Length, Content = m.Groups[2].Value }
+			);
 			return true;
 		}
 
 		m = OrderedListRegex.Match(line);
 		if (m.Success)
 		{
-			token =
-				new Token(
-					TokenType.ListItemOrdered,
-					line,
-					lineNumber,
-					new TokenMetadata { Level = m.Groups[1].Value.Length, Content = m.Groups[2].Value }
-				);
+			token = new Token(
+				TokenType.ListItemOrdered,
+				line,
+				lineNumber,
+				new TokenMetadata { Level = m.Groups[1].Value.Length, Content = m.Groups[2].Value }
+			);
 			return true;
 		}
 
@@ -506,13 +498,12 @@ public static partial class AsciidocLexer
 					language = second;
 			}
 
-			token =
-				new Token(
-					TokenType.BlockAttribute,
-					line,
-					lineNumber,
-					new TokenMetadata { BlockStyle = style, Language = language, Content = content, NamedAttributes = parsed }
-				);
+			token = new Token(
+				TokenType.BlockAttribute,
+				line,
+				lineNumber,
+				new TokenMetadata { BlockStyle = style, Language = language, Content = content, NamedAttributes = parsed }
+			);
 			return true;
 		}
 
@@ -531,13 +522,12 @@ public static partial class AsciidocLexer
 			var desc = m.Groups[3].Value;
 			if (!term.Contains("://") && !term.StartsWith("http", StringComparison.OrdinalIgnoreCase))
 			{
-				token =
-					new Token(
-						TokenType.DescriptionListItem,
-						line,
-						lineNumber,
-						new TokenMetadata { Title = term, Content = desc, Level = separator.Length }
-					);
+				token = new Token(
+					TokenType.DescriptionListItem,
+					line,
+					lineNumber,
+					new TokenMetadata { Title = term, Content = desc, Level = separator.Length }
+				);
 				return true;
 			}
 		}

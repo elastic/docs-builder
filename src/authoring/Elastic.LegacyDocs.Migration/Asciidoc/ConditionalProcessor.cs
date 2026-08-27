@@ -135,14 +135,11 @@ public static partial class ConditionalProcessor
 	}
 
 	private static string SubstituteAttributes(string text, IReadOnlyDictionary<string, string> attributes) =>
-		AttrRefRegex().Replace(
-			text,
-			match =>
-			{
-				var name = match.Groups[1].Value;
-				return attributes.TryGetValue(name, out var value) ? value : match.Value;
-			}
-		);
+		AttrRefRegex().Replace(text, match =>
+		{
+			var name = match.Groups[1].Value;
+			return attributes.TryGetValue(name, out var value) ? value : match.Value;
+		});
 
 	private static string UnquoteValue(string value)
 	{

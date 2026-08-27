@@ -243,18 +243,18 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 			{
 				var versions = convertedBooks[b.Prefix];
 				var current = !string.IsNullOrEmpty(b.Current) && versions.Contains(b.Current) ? b.Current : versions[0];
-				_ =
-					sb.Append("- [")
-						.Append(b.Title)
-						.Append(" [")
-						.Append(current)
-						.Append("]](")
-						.Append(b.Prefix)
-						.Append('/')
-						.Append(current)
-						.Append("/index.md) — [other versions](")
-						.Append(b.Prefix)
-						.AppendLine("/index.md)");
+				_ = sb
+					.Append("- [")
+					.Append(b.Title)
+					.Append(" [")
+					.Append(current)
+					.Append("]](")
+					.Append(b.Prefix)
+					.Append('/')
+					.Append(current)
+					.Append("/index.md) — [other versions](")
+					.Append(b.Prefix)
+					.AppendLine("/index.md)");
 			}
 
 			_ = sb.AppendLine();

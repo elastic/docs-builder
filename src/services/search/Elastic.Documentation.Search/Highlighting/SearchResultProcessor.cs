@@ -24,7 +24,8 @@ public static class SearchResultProcessor
 		var options = highlightOptions ?? HighlightOptions.Default;
 		var doc = hit.Source!;
 		var highlights = hit.Highlight;
-		var searchTokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		var searchTokens = searchQuery
+			.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Where(token => token.Length >= options.MinTokenLength)
 			.Where(token => options.ExcludePattern is null || !options.ExcludePattern.IsMatch(token))
 			.ToArray();

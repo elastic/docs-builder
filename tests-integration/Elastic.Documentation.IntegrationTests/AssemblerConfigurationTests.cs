@@ -22,8 +22,9 @@ public class PublicOnlyAssemblerConfigurationTests
 	public PublicOnlyAssemblerConfigurationTests()
 	{
 		FileSystem = new FileSystem();
-		CheckoutDirectory =
-			FileSystem.DirectoryInfo.New(FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts"));
+		CheckoutDirectory = FileSystem.DirectoryInfo.New(
+			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+		);
 		Collector = new DiagnosticsCollector([]);
 		var configurationFileProvider = new ConfigurationFileProvider(
 			NullLoggerFactory.Instance,
@@ -61,8 +62,9 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		_fixture = fixture;
 		_output = output;
 		FileSystem = new FileSystem();
-		CheckoutDirectory =
-			FileSystem.DirectoryInfo.New(FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts"));
+		CheckoutDirectory = FileSystem.DirectoryInfo.New(
+			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+		);
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);

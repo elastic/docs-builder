@@ -21,25 +21,17 @@ public static class PlainTextExporter
 	/// <param name="context">The documentation configuration context</param>
 	/// <returns>Plain text representation of the document</returns>
 	public static string ConvertToPlainText(MarkdownDocument document, IDocumentationConfigurationContext context) =>
-		DocumentationObjectPoolProvider.UsePlainTextRenderer(
-			context,
-			document,
-			static (renderer, doc) =>
-			{
-				_ = renderer.Render(doc);
-			}
-		);
+		DocumentationObjectPoolProvider.UsePlainTextRenderer(context, document, static (renderer, doc) =>
+		{
+			_ = renderer.Render(doc);
+		});
 
 	/// <summary>
 	/// Converts a single markdown block to plain text suitable for search indexing.
 	/// </summary>
 	public static string ConvertBlockToPlainText(Block block, IDocumentationConfigurationContext context) =>
-		DocumentationObjectPoolProvider.UsePlainTextRenderer(
-			context,
-			block,
-			static (renderer, b) =>
-			{
-				_ = renderer.Render(b);
-			}
-		);
+		DocumentationObjectPoolProvider.UsePlainTextRenderer(context, block, static (renderer, b) =>
+		{
+			_ = renderer.Render(b);
+		});
 }

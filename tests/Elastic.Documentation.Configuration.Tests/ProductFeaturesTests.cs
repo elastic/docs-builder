@@ -152,9 +152,8 @@ public class ProductFeaturesTests
 	public void ReleaseNotesFeature_InvalidValue_Throws()
 	{
 		var act =
-			() =>
-				ParseProducts(
-					"""
+			() => ParseProducts(
+				"""
 			products:
 			  widget:
 			    display: 'Widget'
@@ -162,9 +161,10 @@ public class ProductFeaturesTests
 			    features:
 			      release-notes: sideways
 			"""
-				);
+			);
 
-		act.Should()
+		act
+			.Should()
 			.Throw<InvalidOperationException>()
 			.WithMessage("*'release-notes' value 'sideways'*Allowed values: true, false, prestage, on-release*");
 	}
@@ -173,9 +173,8 @@ public class ProductFeaturesTests
 	public void PublicReferenceFeature_InvalidValue_Throws()
 	{
 		var act =
-			() =>
-				ParseProducts(
-					"""
+			() => ParseProducts(
+				"""
 			products:
 			  widget:
 			    display: 'Widget'
@@ -183,7 +182,7 @@ public class ProductFeaturesTests
 			    features:
 			      public-reference: prestage
 			"""
-				);
+			);
 
 		act.Should().Throw<InvalidOperationException>().WithMessage("*'public-reference' value 'prestage'*Allowed values: true, false*");
 	}
@@ -193,9 +192,8 @@ public class ProductFeaturesTests
 	{
 		// A present-but-empty key must be rejected, not silently treated as the omitted-key default.
 		var act =
-			() =>
-				ParseProducts(
-					"""
+			() => ParseProducts(
+				"""
 			products:
 			  widget:
 			    display: 'Widget'
@@ -203,9 +201,10 @@ public class ProductFeaturesTests
 			    features:
 			      release-notes:
 			"""
-				);
+			);
 
-		act.Should()
+		act
+			.Should()
 			.Throw<InvalidOperationException>()
 			.WithMessage("*has an empty 'release-notes' value*Allowed values: true, false, prestage, on-release*");
 	}
@@ -214,9 +213,8 @@ public class ProductFeaturesTests
 	public void PublicReferenceFeature_PresentButEmpty_Throws()
 	{
 		var act =
-			() =>
-				ParseProducts(
-					"""
+			() => ParseProducts(
+				"""
 			products:
 			  widget:
 			    display: 'Widget'
@@ -224,7 +222,7 @@ public class ProductFeaturesTests
 			    features:
 			      public-reference:
 			"""
-				);
+			);
 
 		act.Should().Throw<InvalidOperationException>().WithMessage("*has an empty 'public-reference' value*Allowed values: true, false*");
 	}

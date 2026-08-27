@@ -98,10 +98,9 @@ public static partial class GitCheckoutInformationFactory
 		{
 			// Detached HEAD: raw SHA
 			gitRef = headText;
-			branch =
-				Environment.GetEnvironmentVariable("GITHUB_PR_REF_NAME")
-					?? Environment.GetEnvironmentVariable("GITHUB_REF_NAME")
-					?? "detached/head";
+			branch = Environment.GetEnvironmentVariable("GITHUB_PR_REF_NAME")
+				?? Environment.GetEnvironmentVariable("GITHUB_REF_NAME")
+				?? "detached/head";
 		}
 
 		var ini = new IniFile();

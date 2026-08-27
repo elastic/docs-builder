@@ -28,15 +28,14 @@ public class ElasticsearchFixture : IAsyncLifetime
 
 	public async ValueTask InitializeAsync()
 	{
-		_container =
-			new ContainerBuilder()
-				.WithImage("docker.elastic.co/elasticsearch/elasticsearch:8.18.0")
-				.WithEnvironment("discovery.type", "single-node")
-				.WithEnvironment("xpack.security.enabled", "false")
-				.WithEnvironment("xpack.security.http.ssl.enabled", "false")
-				.WithPortBinding(9200, true)
-				.WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(9200).ForPath("/_cluster/health")))
-				.Build();
+		_container = new ContainerBuilder()
+			.WithImage("docker.elastic.co/elasticsearch/elasticsearch:8.18.0")
+			.WithEnvironment("discovery.type", "single-node")
+			.WithEnvironment("xpack.security.enabled", "false")
+			.WithEnvironment("xpack.security.http.ssl.enabled", "false")
+			.WithPortBinding(9200, true)
+			.WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(9200).ForPath("/_cluster/health")))
+			.Build();
 
 		await _container.StartAsync();
 
@@ -154,7 +153,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		foreach (var doc in docs)
 		{
 			doc.ContentLastUpdated.Should().NotBeNull($"document {doc.Url} should have content_last_updated");
-			doc.ContentLastUpdated
+			doc
+				.ContentLastUpdated
 				.Value
 				.Year
 				.Should()
@@ -217,7 +217,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		foreach (var doc in secondRunDocs)
 		{
 			var originalDate = firstRunDates[doc.Url];
-			doc.ContentLastUpdated
+			doc
+				.ContentLastUpdated
 				.Should()
 				.Be(originalDate!.Value, $"document {doc.Url} content didn't change, so content_last_updated should be preserved");
 		}
@@ -277,11 +278,13 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var changed = secondRunDocs.Single(d => d.Url == "url1");
 		var unchanged = secondRunDocs.Single(d => d.Url == "url2");
 
-		changed.ContentLastUpdated
+		changed
+			.ContentLastUpdated
 			.Should()
 			.BeAfter(firstRunDates["url1"]!.Value, "url1 content changed, so content_last_updated should advance");
 
-		unchanged.ContentLastUpdated
+		unchanged
+			.ContentLastUpdated
 			.Should()
 			.Be(firstRunDates["url2"]!.Value, "url2 content didn't change, so content_last_updated should be preserved");
 	}
@@ -319,7 +322,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		// Read back from ES
 		var response = await _transport.GetAsync<StringResponse>($"{index}/_doc/{doc.Path}", CancellationToken.None);
-		response.ApiCallDetails
+		response
+			.ApiCallDetails
 			.HasSuccessfulStatusCode
 			.Should()
 			.BeTrue($"Failed to get document: {response.ApiCallDetails.DebugInformation}");
@@ -481,12 +485,14 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		changed.ContentLastUpdated.Should().BeAfter(firstRunDates["url1"]!.Value, "url1 content changed — date should advance");
 
 		var unchanged2 = secondRunDocs.Single(d => d.Url == "url2");
-		unchanged2.ContentLastUpdated
+		unchanged2
+			.ContentLastUpdated
 			.Should()
 			.Be(firstRunDates["url2"]!.Value, "url2 was a noop — filter should have skipped it, preserving its date");
 
 		var unchanged3 = secondRunDocs.Single(d => d.Url == "url3");
-		unchanged3.ContentLastUpdated
+		unchanged3
+			.ContentLastUpdated
 			.Should()
 			.Be(firstRunDates["url3"]!.Value, "url3 was a noop — filter should have skipped it, preserving its date");
 	}
@@ -513,7 +519,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		};
 
 		var response = await _transport.PutAsync<StringResponse>(index, PostData.String(body.ToJsonString()), CancellationToken.None);
-		response.ApiCallDetails
+		response
+			.ApiCallDetails
 			.HasSuccessfulStatusCode
 			.Should()
 			.BeTrue($"Failed to create test index: {response.ApiCallDetails.DebugInformation}");
@@ -548,9 +555,13 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	{
 		var doc = new JsonObject { ["url"] = url, ["content_hash"] = contentHash, ["title"] = title };
 
-		var response =
-			await _transport.PutAsync<StringResponse>($"{index}/_doc/{url}", PostData.String(doc.ToJsonString()), CancellationToken.None);
-		response.ApiCallDetails
+		var response = await _transport.PutAsync<StringResponse>(
+			$"{index}/_doc/{url}",
+			PostData.String(doc.ToJsonString()),
+			CancellationToken.None
+		);
+		response
+			.ApiCallDetails
 			.HasSuccessfulStatusCode
 			.Should()
 			.BeTrue($"Failed to index document {url}: {response.ApiCallDetails.DebugInformation}");
@@ -559,7 +570,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	private async Task<TestDocument> GetDocument(string index, string id)
 	{
 		var response = await _transport.GetAsync<StringResponse>($"{index}/_doc/{id}", CancellationToken.None);
-		response.ApiCallDetails
+		response
+			.ApiCallDetails
 			.HasSuccessfulStatusCode
 			.Should()
 			.BeTrue($"Failed to get document {id}: {response.ApiCallDetails.DebugInformation}");
@@ -577,7 +589,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	private async Task<string> ResolveIndexName(string indexPattern)
 	{
 		var response = await _transport.GetAsync<StringResponse>($"/_resolve/index/{indexPattern}", CancellationToken.None);
-		response.ApiCallDetails
+		response
+			.ApiCallDetails
 			.HasSuccessfulStatusCode
 			.Should()
 			.BeTrue($"Failed to resolve index pattern {indexPattern}: {response.ApiCallDetails.DebugInformation}");
@@ -596,14 +609,18 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	{
 		var body = new JsonObject { ["size"] = 100, ["_source"] = new JsonArray("url", "content_hash", "content_last_updated", "title") };
 
-		var response =
-			await _transport.PostAsync<StringResponse>($"{index}/_search", PostData.String(body.ToJsonString()), CancellationToken.None);
+		var response = await _transport.PostAsync<StringResponse>(
+			$"{index}/_search",
+			PostData.String(body.ToJsonString()),
+			CancellationToken.None
+		);
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue($"Search failed: {response.ApiCallDetails.DebugInformation}");
 
 		var json = JsonNode.Parse(response.Body);
 		var hits = json?["hits"]?["hits"]?.AsArray() ?? [];
 
-		return hits.Where(h => h?["_source"] is not null)
+		return hits
+			.Where(h => h?["_source"] is not null)
 			.Select(h =>
 			{
 				var source = h!["_source"]!;

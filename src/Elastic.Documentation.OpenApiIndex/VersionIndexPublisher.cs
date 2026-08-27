@@ -69,8 +69,10 @@ public sealed class VersionIndexPublisher(IAmazonS3 s3Client, string bucketName)
 	{
 		try
 		{
-			using var response =
-				await s3Client.GetObjectAsync(new GetObjectRequest { BucketName = bucketName, Key = IndexKey }, ctx).ConfigureAwait(false);
+			using var response = await s3Client.GetObjectAsync(
+				new GetObjectRequest { BucketName = bucketName, Key = IndexKey },
+				ctx
+			).ConfigureAwait(false);
 
 			using var reader = new StreamReader(response.ResponseStream);
 			return (response.ETag, await reader.ReadToEndAsync(ctx).ConfigureAwait(false));

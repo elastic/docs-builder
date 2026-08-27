@@ -69,7 +69,8 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		if (navigation is not VirtualFileNavigation<MarkdownFile> node)
 			return;
 
-		var ruleNavigations = node.NavigationItems
+		var ruleNavigations = node
+			.NavigationItems
 			.OfType<ILeafNavigationItem<IDocumentationFile>>()
 			.Where(n => n.Model is DetectionRuleFile)
 			.ToArray();

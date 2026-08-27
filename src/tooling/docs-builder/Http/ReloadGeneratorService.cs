@@ -73,14 +73,13 @@ public sealed class ReloadGeneratorService(
 		Logger.LogInformation("Start file watch on: {Directory}", directory);
 		var watcher = new FileSystemWatcher(directory)
 		{
-			NotifyFilter =
-				NotifyFilters.Attributes
-					| NotifyFilters.CreationTime
-					| NotifyFilters.DirectoryName
-					| NotifyFilters.FileName
-					| NotifyFilters.LastWrite
-					| NotifyFilters.Security
-					| NotifyFilters.Size
+			NotifyFilter = NotifyFilters.Attributes
+				| NotifyFilters.CreationTime
+				| NotifyFilters.DirectoryName
+				| NotifyFilters.FileName
+				| NotifyFilters.LastWrite
+				| NotifyFilters.Security
+				| NotifyFilters.Size
 		};
 
 		watcher.Changed += OnChanged;
@@ -273,19 +272,18 @@ public sealed class ReloadGeneratorService(
 				newCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 				_pendingCts = newCts;
 			}
-			_ =
-				Task.Run(
-					async () =>
+			_ = Task.Run(
+				async () =>
+				{
+					try
 					{
-						try
-						{
-							await Task.Delay(window, newCts.Token);
-							await action(newCts.Token);
-						}
-						catch (OperationCanceledException) { }
-					},
-					newCts.Token
-				);
+						await Task.Delay(window, newCts.Token);
+						await action(newCts.Token);
+					}
+					catch (OperationCanceledException) { }
+				},
+				newCts.Token
+			);
 		}
 
 		public void Dispose()

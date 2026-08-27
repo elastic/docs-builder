@@ -39,12 +39,11 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		if (fromRepository == null && toRepository == null)
 		{
-			fromRepository ??=
-				GitCheckoutInformationFactory.Create(
-					root,
-					fileSystem,
-					logFactory.CreateLogger(nameof(GitCheckoutInformation))
-				).RepositoryName;
+			fromRepository ??= GitCheckoutInformationFactory.Create(
+				root,
+				fileSystem,
+				logFactory.CreateLogger(nameof(GitCheckoutInformation))
+			).RepositoryName;
 			if (fromRepository == null)
 				throw new Exception("Unable to determine repository name");
 		}
@@ -68,10 +67,10 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 			? fileSystem.DirectoryInfo.New(path)
 			: fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var repository = GitCheckoutInformationFactory.Create(
-				root,
-				fileSystem,
-				logFactory.CreateLogger(nameof(GitCheckoutInformation))
-			).RepositoryName
+			root,
+			fileSystem,
+			logFactory.CreateLogger(nameof(GitCheckoutInformation))
+		).RepositoryName
 			?? throw new Exception("Unable to determine repository name");
 
 		var localLinksJson = fileSystem.FileInfo.New(Path.Join(root.FullName, file));
@@ -152,24 +151,23 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 				var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{uri.Scheme}/main/links.json";
 				if (crossLinks.LinkIndexEntries.TryGetValue(uri.Scheme, out var linkIndexEntry))
 					linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{linkIndexEntry.Path}";
-				_ =
-					resolver.TryResolve(
-						s =>
+				_ = resolver.TryResolve(
+					s =>
+					{
+						if (s.Contains("is not a valid link in the"))
 						{
-							if (s.Contains("is not a valid link in the"))
-							{
-								//
-								var error = $"'elastic/{repository}' links to unknown file: " + s;
-								error = error.Replace("is not a valid link in the", "in the");
-								collector.EmitError(linksJson, error);
-								return;
-							}
+							//
+							var error = $"'elastic/{repository}' links to unknown file: " + s;
+							error = error.Replace("is not a valid link in the", "in the");
+							collector.EmitError(linksJson, error);
+							return;
+						}
 
-							collector.EmitError(repository, s);
-						},
-						uri,
-						out _
-					);
+						collector.EmitError(repository, s);
+					},
+					uri,
+					out _
+				);
 			}
 		}
 

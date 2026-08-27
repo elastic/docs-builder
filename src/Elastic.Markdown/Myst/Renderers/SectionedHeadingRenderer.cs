@@ -29,21 +29,21 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 
 		var slug = slugTarget.Slugify();
 
-		_ =
-			renderer.Write(@"<div class=""heading-wrapper"" id=""")
-				.Write(slug)
-				.Write(@""">")
-				.Write('<')
-				.Write(headingText)
-				.WriteAttributes(obj)
-				.Write('>')
-				.Write($"""<a class="headerlink" href="#{slug}">""")
-				.WriteLeafInline(obj)
-				.Write("</a>")
-				.Write("</")
-				.Write(headingText)
-				.WriteLine('>')
-				.Write("</div>")
-				.EnsureLine();
+		_ = renderer
+			.Write(@"<div class=""heading-wrapper"" id=""")
+			.Write(slug)
+			.Write(@""">")
+			.Write('<')
+			.Write(headingText)
+			.WriteAttributes(obj)
+			.Write('>')
+			.Write($"""<a class="headerlink" href="#{slug}">""")
+			.WriteLeafInline(obj)
+			.Write("</a>")
+			.Write("</")
+			.Write(headingText)
+			.WriteLine('>')
+			.Write("</div>")
+			.EnsureLine();
 	}
 }

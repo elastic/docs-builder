@@ -72,7 +72,8 @@ public class AssembleSources
 			availableExporters
 		);
 
-		var declaredProducts = sources.AssembleSets
+		var declaredProducts = sources
+			.AssembleSets
 			.Values
 			.SelectMany(s => s.BuildContext.Configuration.ReleaseNotesProducts)
 			.Distinct(StringComparer.Ordinal)
@@ -125,22 +126,21 @@ public class AssembleSources
 		UriResolver = uriResolver;
 		CrossLinkResolver = crossLinkResolver;
 		AssembleContext = assembleContext;
-		AssembleSets =
-			checkouts.Where(c => c.Repository is { Skip: false })
-				.Select(
-					c =>
-						new AssemblerDocumentationSet(
-							logFactory,
-							assembleContext,
-							c,
-							crossLinkResolver,
-							releaseNotesResolver,
-							configurationContext,
-							availableExporters
-						)
+		AssembleSets = checkouts
+			.Where(c => c.Repository is { Skip: false })
+			.Select(
+				c => new AssemblerDocumentationSet(
+					logFactory,
+					assembleContext,
+					c,
+					crossLinkResolver,
+					releaseNotesResolver,
+					configurationContext,
+					availableExporters
 				)
-				.ToDictionary(s => s.Checkout.Repository.Name, s => s)
-				.ToFrozenDictionary();
+			)
+			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
+			.ToFrozenDictionary();
 	}
 
 	public static FrozenDictionary<Uri, NavigationTocMapping> GetTocMappings(AssembleContext context)

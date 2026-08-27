@@ -153,8 +153,15 @@ public class IncrementalDeployRoundTripTests
 		// Act — Plan
 		// deleteThreshold: 1.0 permits any delete ratio (needed because the validator
 		// enforces a 0.8 floor for small sync sets where TotalSyncRequests < 100)
-		var planOk =
-			await svc.Plan(context.Collector, context, "fake-bucket", planPath, deleteThreshold: 1.0f, excludePatterns: [], Cancel.None);
+		var planOk = await svc.Plan(
+			context.Collector,
+			context,
+			"fake-bucket",
+			planPath,
+			deleteThreshold: 1.0f,
+			excludePatterns: [],
+			Cancel.None
+		);
 		planOk.Should().BeTrue("plan should succeed with valid file mix");
 		fs.File.Exists(planPath).Should().BeTrue("plan JSON must be written to the mock filesystem");
 
@@ -166,14 +173,17 @@ public class IncrementalDeployRoundTripTests
 		A.CallTo(() => gh.SetOutputAsync("plan-valid", "true")).MustHaveHappenedOnceExactly();
 
 		// Assert — uploads: 3 adds + 1 update; skip.md and remote-only delete.md not uploaded
-		transferredFiles.Select(Path.GetFileName)
+		transferredFiles
+			.Select(Path.GetFileName)
 			.Should()
 			.BeEquivalentTo(["add1.md", "add2.md", "add3.md", "update.md"], "skip.md is unchanged (ETag matches) so it is not re-uploaded");
 
 		// Assert — deletes: exactly one S3 delete call for docs/delete.md
 		A.CallTo(
-			() =>
-				s3.DeleteObjectsAsync(A<DeleteObjectsRequest>.That.Matches(r => r.Objects.Any(o => o.Key == "docs/delete.md")), A<Cancel>._)
+			() => s3.DeleteObjectsAsync(
+				A<DeleteObjectsRequest>.That.Matches(r => r.Objects.Any(o => o.Key == "docs/delete.md")),
+				A<Cancel>._
+			)
 		).MustHaveHappenedOnceExactly();
 
 		// Assert — uploads called once
@@ -238,16 +248,15 @@ public class IncrementalDeployExcludeTests
 		var context = new CodexContext(codexConfig, configFile, collector, codexFs2, null, outputDir);
 
 		var planPath = Path.Join(outputDir, "sync-plan.json");
-		var planOk =
-			await svc.Plan(
-				context.Collector,
-				context,
-				"fake-bucket",
-				planPath,
-				deleteThreshold: 1.0f,
-				excludePatterns: ["_preview/*", "403/*", "404/*"],
-				Cancel.None
-			);
+		var planOk = await svc.Plan(
+			context.Collector,
+			context,
+			"fake-bucket",
+			planPath,
+			deleteThreshold: 1.0f,
+			excludePatterns: ["_preview/*", "403/*", "404/*"],
+			Cancel.None
+		);
 		planOk.Should().BeTrue("plan should succeed");
 
 		var applyOk = await svc.Apply(context.Collector, context, "fake-bucket", planPath, Cancel.None);
@@ -256,19 +265,22 @@ public class IncrementalDeployExcludeTests
 		// The plan must not contain deletions for any excluded key
 		var planJson = fs.File.ReadAllText(planPath);
 		var plan = SyncPlan.Deserialize(planJson);
-		plan.DeleteRequests
+		plan
+			.DeleteRequests
 			.Should()
 			.NotContain(
 				r => r.DestinationPath.StartsWith("_preview/", StringComparison.Ordinal),
 				"excluded _preview/* objects must not be queued for deletion"
 			);
-		plan.DeleteRequests
+		plan
+			.DeleteRequests
 			.Should()
 			.NotContain(
 				r => r.DestinationPath.StartsWith("403/", StringComparison.Ordinal),
 				"excluded 403/* objects must not be queued for deletion"
 			);
-		plan.DeleteRequests
+		plan
+			.DeleteRequests
 			.Should()
 			.NotContain(
 				r => r.DestinationPath.StartsWith("404/", StringComparison.Ordinal),
@@ -280,19 +292,17 @@ public class IncrementalDeployExcludeTests
 
 		// No S3 delete calls should include excluded prefixes
 		A.CallTo(
-			() =>
-				s3.DeleteObjectsAsync(
-					A<DeleteObjectsRequest>.That.Matches(
-						r =>
-							r.Objects.Any(
-								o =>
-									o.Key.StartsWith("_preview/", StringComparison.Ordinal) ||
-										o.Key.StartsWith("403/", StringComparison.Ordinal) ||
-										o.Key.StartsWith("404/", StringComparison.Ordinal)
-							)
-					),
-					A<Cancel>._
-				)
+			() => s3.DeleteObjectsAsync(
+				A<DeleteObjectsRequest>.That.Matches(
+					r => r.Objects.Any(
+						o => o.Key.StartsWith("_preview/", StringComparison.Ordinal) || o.Key.StartsWith(
+							"403/",
+							StringComparison.Ordinal
+						) || o.Key.StartsWith("404/", StringComparison.Ordinal)
+					)
+				),
+				A<Cancel>._
+			)
 		).MustNotHaveHappened();
 
 		// Excluded patterns are recorded in the plan file

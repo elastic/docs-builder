@@ -51,40 +51,36 @@ public class AwsS3SyncPlanStrategy(
 		var updateRequests = new ConcurrentBag<UpdateRequest>();
 		var skipRequests = new ConcurrentBag<SkipRequest>();
 
-		await Parallel.ForEachAsync(
-			localObjects,
-			ctx,
-			async (localFile, token) =>
+		await Parallel.ForEachAsync(localObjects, ctx, async (localFile, token) =>
+		{
+			var relativePath = Path.GetRelativePath(context.OutputDirectory.FullName, localFile.FullName);
+			var destinationPath = relativePath.Replace('\\', '/');
+
+			if (IsExcluded(destinationPath, excludeGlobs))
+				return;
+
+			if (remoteObjects.TryGetValue(destinationPath, out var remoteObject))
 			{
-				var relativePath = Path.GetRelativePath(context.OutputDirectory.FullName, localFile.FullName);
-				var destinationPath = relativePath.Replace('\\', '/');
-
-				if (IsExcluded(destinationPath, excludeGlobs))
-					return;
-
-				if (remoteObjects.TryGetValue(destinationPath, out var remoteObject))
+				// Check if the ETag differs for updates
+				var localETag = await _s3EtagCalculator.CalculateS3ETag(localFile.FullName, token);
+				var remoteETag = remoteObject.ETag.Trim('"'); // Remove quotes from remote ETag
+				if (localETag == remoteETag)
 				{
-					// Check if the ETag differs for updates
-					var localETag = await _s3EtagCalculator.CalculateS3ETag(localFile.FullName, token);
-					var remoteETag = remoteObject.ETag.Trim('"'); // Remove quotes from remote ETag
-					if (localETag == remoteETag)
-					{
-						var skipRequest = new SkipRequest { LocalPath = localFile.FullName, DestinationPath = remoteObject.Key };
-						skipRequests.Add(skipRequest);
-					}
-					else
-					{
-						var updateRequest = new UpdateRequest() { LocalPath = localFile.FullName, DestinationPath = remoteObject.Key };
-						updateRequests.Add(updateRequest);
-					}
+					var skipRequest = new SkipRequest { LocalPath = localFile.FullName, DestinationPath = remoteObject.Key };
+					skipRequests.Add(skipRequest);
 				}
 				else
 				{
-					var addRequest = new AddRequest { LocalPath = localFile.FullName, DestinationPath = destinationPath };
-					addRequests.Add(addRequest);
+					var updateRequest = new UpdateRequest() { LocalPath = localFile.FullName, DestinationPath = remoteObject.Key };
+					updateRequests.Add(updateRequest);
 				}
 			}
-		);
+			else
+			{
+				var addRequest = new AddRequest { LocalPath = localFile.FullName, DestinationPath = destinationPath };
+				addRequests.Add(addRequest);
+			}
+		});
 
 		// Find deletions (files in S3 but not locally), honouring excludes
 		foreach (var remoteObject in remoteObjects)

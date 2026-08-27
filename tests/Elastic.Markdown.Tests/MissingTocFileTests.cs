@@ -48,7 +48,8 @@ public class MissingTocFileTests(ITestOutputHelper output)
 		act.Should().NotThrow("a missing toc file must surface a validation error, not crash the build");
 
 		collector.Errors.Should().BeGreaterThan(0);
-		collector.Diagnostics
+		collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("missing.md") && d.Message.Contains("does not exist"));
 	}

@@ -148,11 +148,13 @@ public class DocumentationPathsResolverTests
 			fs
 		);
 
-		fromRoot.CheckoutDirectory
+		fromRoot
+			.CheckoutDirectory
 			.FullName
 			.Should()
 			.Be(fromDocs.CheckoutDirectory.FullName, "--path /repo and --path /repo/docs must converge on the same checkout");
-		fromRoot.SourceDirectory
+		fromRoot
+			.SourceDirectory
 			.FullName
 			.Should()
 			.Be(fromDocs.SourceDirectory.FullName, "--path /repo and --path /repo/docs must converge on the same source");
@@ -172,7 +174,8 @@ public class DocumentationPathsResolverTests
 		var paths = DocumentationPathsResolver.Resolve(invocation, new DocumentationScopeOptions { Inner = fs }, fs);
 
 		paths.SourceDirectory.FullName.Should().Be(P(fs, "/repo/docs/resilience-team"));
-		paths.CheckoutDirectory
+		paths
+			.CheckoutDirectory
 			.FullName
 			.Should()
 			.Be(P(fs, "/repo"), "the anchor's depth below the invocation root should widen the git-root search, not require --git-dir");
@@ -195,7 +198,8 @@ public class DocumentationPathsResolverTests
 
 		var paths = DocumentationPathsResolver.Resolve(invocation, opts, fs);
 
-		paths.CheckoutDirectory
+		paths
+			.CheckoutDirectory
 			.FullName
 			.Should()
 			.Be(
@@ -266,7 +270,8 @@ public class DocumentationPathsResolverTests
 
 		paths.GitDirectories.Should().HaveCount(2);
 		paths.GitDirectories.Should().Contain(P(fs, "/worktree/.git"), "pointer file path must be in scope so the .git file is readable");
-		paths.GitDirectories
+		paths
+			.GitDirectories
 			.Should()
 			.Contain(P(fs, "/main/.git"), "resolved commondir target must be included so config/HEAD are readable");
 	}
@@ -301,7 +306,8 @@ public class DocumentationPathsResolverTests
 			fs
 		);
 
-		fromWorktreeRoot.CheckoutDirectory
+		fromWorktreeRoot
+			.CheckoutDirectory
 			.FullName
 			.Should()
 			.Be(
@@ -431,7 +437,8 @@ public class DocumentationPathsResolverTests
 		var fromRoot = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), opts, fs);
 		var fromDocs = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo/docs"), opts, fs);
 
-		fromRoot.OutputDirectory
+		fromRoot
+			.OutputDirectory
 			.FullName
 			.Should()
 			.Be(fromDocs.OutputDirectory.FullName, "--path /repo and --path /repo/docs must produce the same default output directory");
@@ -477,12 +484,11 @@ public class DocumentationPathsResolverTests
 		fs.AddDirectory("/empty");
 
 		var act =
-			() =>
-				DocumentationPathsResolver.Resolve(
-					fs.DirectoryInfo.New("/empty"),
-					new DocumentationScopeOptions { Inner = fs, Git = GitCheckoutInformation.Unavailable },
-					fs
-				);
+			() => DocumentationPathsResolver.Resolve(
+				fs.DirectoryInfo.New("/empty"),
+				new DocumentationScopeOptions { Inner = fs, Git = GitCheckoutInformation.Unavailable },
+				fs
+			);
 
 		act.Should().Throw<DocumentationPathException>().WithMessage("*docset.yml*");
 	}

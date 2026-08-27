@@ -53,7 +53,8 @@ public class SharedAnalysisFactoryTests
 	public void SynonymsFixedAnalyzer_HasMorphologyOverrideBeforeKstem()
 	{
 		var json = BuildAnalysisJson();
-		var filters = json.GetProperty("analyzer")
+		var filters = json
+			.GetProperty("analyzer")
 			.GetProperty("synonyms_fixed_analyzer")
 			.GetProperty("filter")
 			.EnumerateArray()
@@ -66,7 +67,8 @@ public class SharedAnalysisFactoryTests
 	public void SynonymsAnalyzer_HasMorphologyOverrideBeforeKstem()
 	{
 		var json = BuildAnalysisJson();
-		var filters = json.GetProperty("analyzer")
+		var filters = json
+			.GetProperty("analyzer")
 			.GetProperty("synonyms_analyzer")
 			.GetProperty("filter")
 			.EnumerateArray()

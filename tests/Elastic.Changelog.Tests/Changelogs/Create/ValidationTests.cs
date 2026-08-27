@@ -141,7 +141,8 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("invalid-product") && d.Message.Contains("not in available products"));
 	}

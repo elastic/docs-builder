@@ -46,8 +46,15 @@ internal sealed class RefactorCommands(
 		serviceInvoker.AddCommand(
 			service,
 			(source, target, dryRun, path, fs),
-			static async (s, collector, state, ctx) =>
-				await s.Move(collector, state.source, state.target, state.dryRun, state.path, state.fs, ctx)
+			static async (s, collector, state, ctx) => await s.Move(
+				collector,
+				state.source,
+				state.target,
+				state.dryRun,
+				state.path,
+				state.fs,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

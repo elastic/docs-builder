@@ -212,7 +212,8 @@ public class LinkWithUnresolvedInterpolationError(ITestOutputHelper output) : Li
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
 		Collector.Diagnostics.First().Severity.Should().Be(Severity.Error);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.First()
 			.Message
 			.Should()
@@ -251,7 +252,8 @@ public class InternalLinksWithInterpolationWarning(ITestOutputHelper output) : L
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
 		Collector.Diagnostics.First().Severity.Should().Be(Severity.Error);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.First()
 			.Message
 			.Should()

@@ -34,7 +34,7 @@ public class OpenApiGeneratorMultiVersionTests
 		ProductsConfiguration? productsConfiguration = null,
 		GitCheckoutInformation? git = null
 	) =>
-		new BuildContext(
+		new(
 			collector,
 			DocumentationFileSystem.Resolve(
 				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
@@ -63,10 +63,9 @@ public class OpenApiGeneratorMultiVersionTests
 		{
 			Products = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
 			PublicReferenceProducts = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			ProductDisplayNames =
-				products.ToDictionary(p => p.Id, p => p.DisplayName, StringComparer.OrdinalIgnoreCase).ToFrozenDictionary(
-					StringComparer.OrdinalIgnoreCase
-				)
+			ProductDisplayNames = products.ToDictionary(p => p.Id, p => p.DisplayName, StringComparer.OrdinalIgnoreCase).ToFrozenDictionary(
+				StringComparer.OrdinalIgnoreCase
+			)
 		};
 
 	private static OpenApiDocument SpecDocument(string title) =>
@@ -116,19 +115,16 @@ public class OpenApiGeneratorMultiVersionTests
 		documents.Should().HaveCount(3);
 		documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9", "8"]);
 		documents.Should().ContainSingle(
-			d =>
-				ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch" &&
-					d.Document.Info.Title == "Elasticsearch main"
+			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch" && d.Document.Info.Title ==
+				"Elasticsearch main"
 		);
 		documents.Should().ContainSingle(
-			d =>
-				ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v9" &&
-					d.Document.Info.Title == "Elasticsearch 9"
+			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v9" && d.Document.Info.Title ==
+				"Elasticsearch 9"
 		);
 		documents.Should().ContainSingle(
-			d =>
-				ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v8" &&
-					d.Document.Info.Title == "Elasticsearch 8"
+			d => ApiUrlBuilder.ProductSuffix("elasticsearch", d.Version.Moniker) == "elasticsearch/v8" && d.Document.Info.Title ==
+				"Elasticsearch 8"
 		);
 	}
 
@@ -226,8 +222,11 @@ public class OpenApiGeneratorMultiVersionTests
 		var reader = CreateSequentialReader(SpecDocument("Elasticsearch 9"), SpecDocument("Elasticsearch 8"));
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
-		var resolved =
-			await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			ApiConfig(product),
+			TestContext.Current.CancellationToken
+		);
 
 		resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
 		resolved.UnmatchedBaseFilesMoniker.Should().BeNull();
@@ -244,7 +243,8 @@ public class OpenApiGeneratorMultiVersionTests
 		var navigation = generator.CreateNavigation("elasticsearch/v8", SpecDocument("Elasticsearch 8"));
 
 		navigation.Url.Should().Be("/api/doc/elasticsearch/v8");
-		var operation = navigation.NavigationItems
+		var operation = navigation
+			.NavigationItems
 			.OfType<TagNavigationItem>()
 			.Single()
 			.NavigationItems
@@ -274,7 +274,8 @@ public class OpenApiGeneratorMultiVersionTests
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
-		context.WriteFileSystem
+		context
+			.WriteFileSystem
 			.File
 			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping", "index.html"))
 			.Should()
@@ -363,13 +364,12 @@ public class OpenApiGeneratorMultiVersionTests
 	private static HttpResponseMessage SpecResponse() =>
 		new(HttpStatusCode.OK)
 		{
-			Content =
-				new StringContent(
-					/*lang=json,strict*/
-					"""{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""",
-					System.Text.Encoding.UTF8,
-					"application/json"
-				)
+			Content = new StringContent(
+				/*lang=json,strict*/
+				"""{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""",
+				System.Text.Encoding.UTF8,
+				"application/json"
+			)
 		};
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

@@ -108,8 +108,14 @@ public class AssemblerBuildService(
 			throw new Exception("No checkouts found");
 
 		_logger.LogInformation("Preparing all assemble sources for build");
-		var assembleSources =
-			await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(
+			logFactory,
+			assembleContext,
+			checkouts,
+			configurationContext,
+			exporters,
+			ctx
+		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));

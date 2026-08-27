@@ -65,13 +65,13 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		// Query for all leaf items using the base interface type
-		var allLeafItems = navigation.NavigationItems
+		var allLeafItems = navigation
+			.NavigationItems
 			.Concat([navigation.Index])
 			.SelectMany(
-				item =>
-					item is INodeNavigationItem<IDocumentationFile, INavigationItem> node
-						? node.NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().Concat([node.Index])
-						: item is ILeafNavigationItem<IDocumentationFile> leaf ? [leaf] : []
+				item => item is INodeNavigationItem<IDocumentationFile, INavigationItem> node
+					? node.NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().Concat([node.Index])
+					: item is ILeafNavigationItem<IDocumentationFile> leaf ? [leaf] : []
 			)
 			.ToList();
 
@@ -185,7 +185,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var setupIndex = setupFolder.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		setupIndex.Url.Should().Be("/setup"); // index.md becomes /setup
 
-		var advancedToc = setupFolder.NavigationItems
+		var advancedToc = setupFolder
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
@@ -197,7 +198,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var advancedIndex = advancedToc.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		advancedIndex.Url.Should().Be("/setup/advanced");
 
-		var performanceToc = advancedToc.NavigationItems
+		var performanceToc = advancedToc
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
@@ -271,7 +273,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		// Setup folder has index.md and advanced TOC
 		setupFolder.NavigationItems.Should().HaveCount(1);
 
-		var advancedToc = setupFolder.NavigationItems
+		var advancedToc = setupFolder
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
@@ -282,7 +285,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		// Advanced TOC has index.md and performance TOC
 		advancedToc.NavigationItems.Should().HaveCount(1);
 
-		var performanceToc = advancedToc.NavigationItems
+		var performanceToc = advancedToc
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
@@ -366,7 +370,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 			item.NavigationRoot.Should().NotBeNull($"NavigationRoot should be set for {item.GetType().Name} at URL: {item.Url}");
 
 			// Verify NavigationRoot is actually a root item
-			item.NavigationRoot
+			item
+				.NavigationRoot
 				.Should()
 				.BeAssignableTo<IRootNavigationItem<IDocumentationFile, INavigationItem>>(
 					$"NavigationRoot should be a root navigation item for {item.GetType().Name} at URL: {item.Url}"
@@ -388,17 +393,20 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
 		// ALL items including TOCs should point to DocumentationSetNavigation as NavigationRoot
-		var advancedToc = setupFolder.NavigationItems
+		var advancedToc = setupFolder
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
 			.Subject;
-		advancedToc.NavigationRoot
+		advancedToc
+			.NavigationRoot
 			.Should()
 			.BeSameAs(navigation, "TOC NavigationRoot should be DocumentationSetNavigation in isolated builds");
 
 		var advancedIndex = advancedToc.NavigationItems.First();
-		advancedIndex.NavigationRoot
+		advancedIndex
+			.NavigationRoot
 			.Should()
 			.BeSameAs(navigation, "TOC children should point to DocumentationSetNavigation in isolated builds");
 

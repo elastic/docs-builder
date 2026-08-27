@@ -16,7 +16,8 @@ internal sealed class InfoLoggerMiddleware(
 {
 	public async ValueTask InvokeAsync(CommandContext context, CommandMiddlewareDelegate next)
 	{
-		var assemblyVersion = Assembly.GetExecutingAssembly()
+		var assemblyVersion = Assembly
+			.GetExecutingAssembly()
 			.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 			.FirstOrDefault()?.InformationalVersion;
 

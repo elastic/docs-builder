@@ -118,7 +118,8 @@ public class ChangelogKeysTests
 
 	[Fact]
 	public void ChangelogFileKey_BranchSlashesBecomeKeySegments() =>
-		ChangelogKeys.ChangelogFileKey("elastic", "kibana", "feature/foo", "entry.yaml")
+		ChangelogKeys
+			.ChangelogFileKey("elastic", "kibana", "feature/foo", "entry.yaml")
 			.Should()
 			.Be("changelog/elastic/kibana/feature/foo/entry.yaml");
 

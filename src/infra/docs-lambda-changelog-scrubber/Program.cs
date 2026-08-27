@@ -19,7 +19,8 @@ var publicBucketName = Environment.GetEnvironmentVariable("PUBLIC_BUCKET_NAME")
 
 var allowRepos = BuildAllowlist();
 
-await LambdaBootstrapBuilder.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
+await LambdaBootstrapBuilder
+	.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
 	.Build()
 	.RunAsync();
 

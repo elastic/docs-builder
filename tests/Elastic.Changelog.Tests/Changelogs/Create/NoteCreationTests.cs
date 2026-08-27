@@ -59,7 +59,8 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("target"));
 	}
@@ -81,7 +82,8 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("elasticsearch") && d.Message.Contains("target"));
 	}
@@ -155,7 +157,8 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
@@ -178,7 +181,8 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
@@ -231,7 +235,8 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}
@@ -254,7 +259,8 @@ public class NoteCreationTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = await service.CreateNote(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--owner") && d.Message.Contains("--repo"));
 	}

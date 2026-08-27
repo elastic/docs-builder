@@ -38,7 +38,8 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 		{
 			// Wait for AssemblerServe to be ready (it hosts the embedded Lambda API)
 			Console.WriteLine("Waiting for AssemblerServe (with embedded API) to become healthy...");
-			await fixture.DistributedApplication
+			await fixture
+				.DistributedApplication
 				.ResourceNotifications
 				.WaitForResourceHealthyAsync(ResourceNames.AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
 				.WaitAsync(TimeSpan.FromMinutes(2), TestContext.Current.CancellationToken);
@@ -74,11 +75,11 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			fixture.DistributedApplication.Services.GetRequiredService<ResourceNotificationService>();
 
 			// Wait for the resource to be available
-			var resourceEvent =
-				await fixture.DistributedApplication
-					.ResourceNotifications
-					.WaitForResourceAsync(ResourceNames.ElasticsearchIngest, _ => true, TestContext.Current.CancellationToken)
-					.WaitAsync(TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+			var resourceEvent = await fixture
+				.DistributedApplication
+				.ResourceNotifications
+				.WaitForResourceAsync(ResourceNames.ElasticsearchIngest, _ => true, TestContext.Current.CancellationToken)
+				.WaitAsync(TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
 
 			// Get the resource instance
 			var resource = resourceEvent.Resource;
@@ -115,15 +116,15 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			Console.WriteLine("Waiting for indexer to complete...");
 
 			// Wait for the indexer to complete
-			_ =
-				await fixture.DistributedApplication
-					.ResourceNotifications
-					.WaitForResourceAsync(
-						ResourceNames.ElasticsearchIngest,
-						KnownResourceStates.TerminalStates,
-						cancellationToken: TestContext.Current.CancellationToken
-					)
-					.WaitAsync(TimeSpan.FromMinutes(10), TestContext.Current.CancellationToken);
+			_ = await fixture
+				.DistributedApplication
+				.ResourceNotifications
+				.WaitForResourceAsync(
+					ResourceNames.ElasticsearchIngest,
+					KnownResourceStates.TerminalStates,
+					cancellationToken: TestContext.Current.CancellationToken
+				)
+				.WaitAsync(TimeSpan.FromMinutes(10), TestContext.Current.CancellationToken);
 
 			Console.WriteLine("Elasticsearch indexer reached terminal state. Validating exit code...");
 

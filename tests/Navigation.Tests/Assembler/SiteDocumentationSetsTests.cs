@@ -25,7 +25,8 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var repositories = checkoutDir.GetDirectories();
 
 		repositories.Should().HaveCount(5);
-		repositories.Select(r => r.Name)
+		repositories
+			.Select(r => r.Name)
 			.Should()
 			.Contain(["observability", "serverless-search", "serverless-security", "platform", "elasticsearch-reference"]);
 		var collector = new TestDiagnosticsCollector(output);

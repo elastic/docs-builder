@@ -20,8 +20,9 @@ public class DocumentSerializationTests
 	/// </summary>
 	private static readonly JsonSerializerOptions FallbackOptions = new()
 	{
-		TypeInfoResolver =
-			JsonTypeInfoResolver.Combine(SourceGenerationContext.Default).WithAddedModifier(SearchDocumentPolymorphism.WithFallback())
+		TypeInfoResolver = JsonTypeInfoResolver.Combine(SourceGenerationContext.Default).WithAddedModifier(
+			SearchDocumentPolymorphism.WithFallback()
+		)
 	};
 
 	/// <summary>

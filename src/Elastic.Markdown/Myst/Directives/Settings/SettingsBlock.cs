@@ -54,7 +54,8 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 				return [];
 
 			var level = GroupHeadingLevel;
-			return settings.Groups
+			return settings
+				.Groups
 				.Where(g => ActiveDeploymentFilter is null || DeploymentFilter.AnyVisible(g.Settings, ActiveDeploymentFilter, null))
 				.Select(
 					g => new PageTocItem { Heading = g.Name ?? string.Empty, Slug = SettingsViewModel.GroupHeadingSlug(g), Level = level }
@@ -214,8 +215,10 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			CollectSubstitutionUsageFromYaml(yaml, Build);
-			_parsedSettings =
-				PrepareSettingsForRendering(YamlSerialization.Deserialize<YamlSettings>(yaml, Build.ProductsConfiguration), Context);
+			_parsedSettings = PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, Build.ProductsConfiguration),
+				Context
+			);
 			return _parsedSettings;
 		}
 		catch (YamlException)

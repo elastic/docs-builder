@@ -123,7 +123,8 @@ public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : Direc
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("only supports including snippets from `_snippet` folders."));
 	}
@@ -143,7 +144,8 @@ public class IncludeRelativeTraversalBlocked(ITestOutputHelper output) : Directi
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
 	}

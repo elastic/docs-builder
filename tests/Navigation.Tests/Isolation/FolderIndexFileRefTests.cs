@@ -114,9 +114,9 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		context.Collector.Hints.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
 		diagnostics.Should().Contain(
-			d =>
-				d.Severity == Severity.Hint && d.Message.Contains("intro.md") && d.Message.Contains("getting-started") &&
-					d.Message.Contains("Best practice")
+			d => d.Severity == Severity.Hint && d.Message.Contains("intro.md") && d.Message.Contains(
+				"getting-started"
+			) && d.Message.Contains("Best practice")
 		);
 	}
 
@@ -177,9 +177,9 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		context.Collector.Errors.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
 		diagnostics.Should().Contain(
-			d =>
-				d.Severity == Severity.Error && d.Message.Contains("Deep linking on folder 'file' is not supported") &&
-					d.Message.Contains("intro/file.md")
+			d => d.Severity == Severity.Error && d.Message.Contains("Deep linking on folder 'file' is not supported") && d.Message.Contains(
+				"intro/file.md"
+			)
 		);
 	}
 

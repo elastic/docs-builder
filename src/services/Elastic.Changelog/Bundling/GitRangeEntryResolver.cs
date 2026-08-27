@@ -86,13 +86,13 @@ public record GitRangeBundleReport
 	public string ToMarkdown()
 	{
 		var sb = new StringBuilder();
-		_ =
-			sb.AppendLine(CultureInfo.InvariantCulture, $"### Changelog bundle for `{StartRef}..{EndRef}`")
-				.AppendLine()
-				.AppendLine(CultureInfo.InvariantCulture, $"{TotalCommits} commit(s), {Rows.Count} pull request(s).")
-				.AppendLine()
-				.AppendLine("| PR | Source | Entry |")
-				.AppendLine("|---|---|---|");
+		_ = sb
+			.AppendLine(CultureInfo.InvariantCulture, $"### Changelog bundle for `{StartRef}..{EndRef}`")
+			.AppendLine()
+			.AppendLine(CultureInfo.InvariantCulture, $"{TotalCommits} commit(s), {Rows.Count} pull request(s).")
+			.AppendLine()
+			.AppendLine("| PR | Source | Entry |")
+			.AppendLine("|---|---|---|");
 
 		foreach (var row in Rows)
 		{

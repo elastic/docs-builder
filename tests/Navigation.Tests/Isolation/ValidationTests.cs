@@ -201,9 +201,9 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		context.Collector.Hints.Should().BeGreaterThan(0, "should have emitted a hint for deep-linking virtual file");
 		var diagnostics = context.Diagnostics;
 		diagnostics.Should().Contain(
-			d =>
-				d.Severity == Severity.Hint && d.Message.Contains("a/b/c/getting-started.md") && d.Message.Contains("deep-linking") &&
-					d.Message.Contains("folder")
+			d => d.Severity == Severity.Hint && d.Message.Contains("a/b/c/getting-started.md") && d.Message.Contains(
+				"deep-linking"
+			) && d.Message.Contains("folder")
 		);
 	}
 
@@ -234,9 +234,9 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		context.Collector.Hints.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
 		diagnostics.Should().Contain(
-			d =>
-				d.Severity == Severity.Hint && d.Message.Contains("guides/api/overview.md") &&
-					d.Message.Contains("Virtual files are primarily intended to group sibling files together")
+			d => d.Severity == Severity.Hint && d.Message.Contains("guides/api/overview.md") && d.Message.Contains(
+				"Virtual files are primarily intended to group sibling files together"
+			)
 		);
 	}
 

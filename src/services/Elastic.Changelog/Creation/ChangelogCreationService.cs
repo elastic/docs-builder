@@ -228,7 +228,8 @@ public class ChangelogCreationService(
 		// First, try config defaults
 		if (productsConfig?.Default is { Count: > 0 })
 		{
-			var products = productsConfig.Default
+			var products = productsConfig
+				.Default
 				.Select(d => new ProductArgument { Product = d.Product, Lifecycle = d.Lifecycle })
 				.ToList();
 			_logger.LogInformation(
@@ -271,8 +272,15 @@ public class ChangelogCreationService(
 		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()).Where(prTrimmed => !string.IsNullOrWhiteSpace(prTrimmed)))
 		{
 			// Check PR for blockers
-			var (shouldSkip, prInfo) =
-				await _prProcessor.CheckPrForBlockersAsync(collector, prTrimmed, input.Owner, input.Repo, input.Products, config, ctx);
+			var (shouldSkip, prInfo) = await _prProcessor.CheckPrForBlockersAsync(
+				collector,
+				prTrimmed,
+				input.Owner,
+				input.Repo,
+				input.Products,
+				config,
+				ctx
+			);
 
 			if (shouldSkip)
 			{
@@ -393,8 +401,15 @@ public class ChangelogCreationService(
 
 		foreach (var issueUrl in input.Issues.Select(i => i.Trim()).Where(i => !string.IsNullOrWhiteSpace(i)))
 		{
-			var (shouldSkip, issueInfo) =
-				await _issueProcessor.CheckIssueForBlockersAsync(collector, issueUrl, input.Owner, input.Repo, input.Products, config, ctx);
+			var (shouldSkip, issueInfo) = await _issueProcessor.CheckIssueForBlockersAsync(
+				collector,
+				issueUrl,
+				input.Owner,
+				input.Repo,
+				input.Products,
+				config,
+				ctx
+			);
 
 			if (shouldSkip)
 			{

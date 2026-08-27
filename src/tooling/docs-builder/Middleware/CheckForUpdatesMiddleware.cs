@@ -52,7 +52,8 @@ internal sealed class CheckForUpdatesMiddleware(ILogger<CheckForUpdatesMiddlewar
 			return;
 		}
 
-		var assemblyVersion = Assembly.GetExecutingAssembly()
+		var assemblyVersion = Assembly
+			.GetExecutingAssembly()
 			.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 			.FirstOrDefault()?.InformationalVersion;
 

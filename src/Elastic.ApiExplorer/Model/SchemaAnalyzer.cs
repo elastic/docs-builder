@@ -256,7 +256,8 @@ public class SchemaAnalyzer(OpenApiDocument document, string? currentPageType = 
 
 			if (!hasDirectProps && document.Components?.Schemas != null)
 			{
-				var matchingSchema = document.Components
+				var matchingSchema = document
+					.Components
 					.Schemas
 					.FirstOrDefault(kvp => kvp.Key.EndsWith("." + baseName) || kvp.Key == baseName);
 				if (matchingSchema.Value != null)

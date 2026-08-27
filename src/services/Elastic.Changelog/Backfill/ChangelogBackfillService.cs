@@ -552,22 +552,20 @@ public partial class ChangelogBackfillService(
 		foreach (var r in results)
 		{
 			var pct = r.Entries > 0 ? r.NoPrEntries * 100.0 / r.Entries : 0;
-			_ =
-				sb.AppendLine(
-					CultureInfo.InvariantCulture,
-					$"| `{r.ProductId}` | {r.Outcome} | {r.Versions} | {r.Entries} | {r.FilesWritten} | {r.NoPrEntries} | {pct:F1}% | {r.Detail} |"
-				);
+			_ = sb.AppendLine(
+				CultureInfo.InvariantCulture,
+				$"| `{r.ProductId}` | {r.Outcome} | {r.Versions} | {r.Entries} | {r.FilesWritten} | {r.NoPrEntries} | {pct:F1}% | {r.Detail} |"
+			);
 		}
 
 		var totalEntries = results.Sum(r => r.Entries);
 		var totalFiles = results.Sum(r => r.FilesWritten);
 		var totalNoPr = results.Sum(r => r.NoPrEntries);
 		var totalPct = totalEntries > 0 ? totalNoPr * 100.0 / totalEntries : 0;
-		_ =
-			sb.AppendLine(
-				CultureInfo.InvariantCulture,
-				$"| **totals** | | {results.Sum(r => r.Versions)} | {totalEntries} | {totalFiles} | {totalNoPr} | {totalPct:F1}% | |"
-			);
+		_ = sb.AppendLine(
+			CultureInfo.InvariantCulture,
+			$"| **totals** | | {results.Sum(r => r.Versions)} | {totalEntries} | {totalFiles} | {totalNoPr} | {totalPct:F1}% | |"
+		);
 
 		return sb.ToString();
 	}

@@ -29,10 +29,9 @@ public class ScrubberProcessorTests
 	{
 		// The real scrub pass has its own tests; here it just marks content so assertions can
 		// tell a scrubbed write from a raw copy.
-		_ =
-			A.CallTo(() => _scrubber.ScrubAsync(A<string>._, A<string>._, A<Cancel>._)).ReturnsLazily(
-				(string _, string content, Cancel _) => Task.FromResult(new ScrubResult { Content = "scrubbed: " + content })
-			);
+		_ = A.CallTo(() => _scrubber.ScrubAsync(A<string>._, A<string>._, A<Cancel>._)).ReturnsLazily(
+			(string _, string content, Cancel _) => Task.FromResult(new ScrubResult { Content = "scrubbed: " + content })
+		);
 
 		var reconciler = new BundleRegistryReconciler(
 			NullLoggerFactory.Instance,
@@ -56,17 +55,16 @@ public class ScrubberProcessorTests
 			retryBaseDelay: TimeSpan.Zero,
 			metrics: _metrics
 		);
-		_processor =
-			new ScrubberProcessor(
-				NullLoggerFactory.Instance,
-				_s3.Client,
-				PublicBucket,
-				_scrubber,
-				reconciler,
-				shallowReconciler,
-				notesReconciler,
-				_metrics
-			);
+		_processor = new ScrubberProcessor(
+			NullLoggerFactory.Instance,
+			_s3.Client,
+			PublicBucket,
+			_scrubber,
+			reconciler,
+			shallowReconciler,
+			notesReconciler,
+			_metrics
+		);
 	}
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;
@@ -126,19 +124,19 @@ public class ScrubberProcessorTests
 		// Private object is gone; a late ObjectCreated must converge on deletion — and the group
 		// reconcile then removes the now-empty group's manifest.
 		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml", "stale-public");
-		_ =
-			_s3.Seed(
-				PublicBucket,
-				"bundle/elasticsearch/registry.json",
-				/*lang=json,strict*/
-				"""{"schema_version":1,"product":"elasticsearch","generated_at":"2026-01-01T00:00:00+00:00","bundles":[]}"""
-			);
+		_ = _s3.Seed(
+			PublicBucket,
+			"bundle/elasticsearch/registry.json",
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","generated_at":"2026-01-01T00:00:00+00:00","bundles":[]}"""
+		);
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml")], Ctx);
 
 		failed.Should().BeEmpty();
 		_s3.Exists(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml").Should().BeFalse();
-		_s3.Exists(PublicBucket, "bundle/elasticsearch/registry.json")
+		_s3
+			.Exists(PublicBucket, "bundle/elasticsearch/registry.json")
 			.Should()
 			.BeFalse("an empty group's manifest is deleted: absent ≠ empty");
 	}
@@ -203,7 +201,8 @@ public class ScrubberProcessorTests
 
 		failed.Should().BeEmpty();
 		_s3.ContentOf(PublicBucket, "changelog/elastic/kibana/main/100.yaml").Should().Be("scrubbed: entry");
-		_s3.Exists(PublicBucket, "changelog/elastic/kibana/main/registry.json")
+		_s3
+			.Exists(PublicBucket, "changelog/elastic/kibana/main/registry.json")
 			.Should()
 			.BeFalse("the reconciler no longer produces pool manifests");
 		_metrics.GroupReconciles.Should().Be(0);
@@ -230,14 +229,13 @@ public class ScrubberProcessorTests
 		_ = _s3.Seed(PrivateBucket, "changelog/elastic/kibana/main/100.yaml", "one");
 		_ = _s3.Seed(PrivateBucket, "changelog/elastic/elasticsearch/main/200.yaml", "two");
 
-		var failed =
-			await _processor.ProcessAsync(
-				[
-					Message("ObjectCreated:Put", "changelog/elastic/kibana/main/100.yaml"),
-					Message("ObjectCreated:Put", "changelog/elastic/elasticsearch/main/200.yaml")
-				],
-				Ctx
-			);
+		var failed = await _processor.ProcessAsync(
+			[
+				Message("ObjectCreated:Put", "changelog/elastic/kibana/main/100.yaml"),
+				Message("ObjectCreated:Put", "changelog/elastic/elasticsearch/main/200.yaml")
+			],
+			Ctx
+		);
 
 		failed.Should().BeEmpty();
 		_s3.Puts.Where(p => p.Key == "changelog/registry.json").Should().ContainSingle("one tree gets one map write per batch");
@@ -250,14 +248,13 @@ public class ScrubberProcessorTests
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/stray.json", "{}");
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/notes.txt", "text");
 
-		var failed =
-			await _processor.ProcessAsync(
-				[
-					Message("ObjectCreated:Put", "bundle/elasticsearch/stray.json"),
-					Message("ObjectCreated:Put", "bundle/elasticsearch/notes.txt")
-				],
-				Ctx
-			);
+		var failed = await _processor.ProcessAsync(
+			[
+				Message("ObjectCreated:Put", "bundle/elasticsearch/stray.json"),
+				Message("ObjectCreated:Put", "bundle/elasticsearch/notes.txt")
+			],
+			Ctx
+		);
 
 		failed.Should().BeEmpty();
 		_s3.Puts.Should().BeEmpty();
@@ -269,15 +266,14 @@ public class ScrubberProcessorTests
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "content");
 
-		var failed =
-			await _processor.ProcessAsync(
-				[
-					Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml"),
-					Message("ObjectRemoved:Delete", "bundle/elasticsearch/es-9.1.0.yaml"),
-					Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml")
-				],
-				Ctx
-			);
+		var failed = await _processor.ProcessAsync(
+			[
+				Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml"),
+				Message("ObjectRemoved:Delete", "bundle/elasticsearch/es-9.1.0.yaml"),
+				Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml")
+			],
+			Ctx
+		);
 
 		failed.Should().BeEmpty();
 		_metrics.ObjectReconciles.Should().Be(1, "the event type is ignored, so one key needs one look");
@@ -291,15 +287,14 @@ public class ScrubberProcessorTests
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.2.0.yaml", "two");
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.3.0.yaml", "three");
 
-		var failed =
-			await _processor.ProcessAsync(
-				[
-					Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml"),
-					Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.2.0.yaml"),
-					Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.3.0.yaml")
-				],
-				Ctx
-			);
+		var failed = await _processor.ProcessAsync(
+			[
+				Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml"),
+				Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.2.0.yaml"),
+				Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.3.0.yaml")
+			],
+			Ctx
+		);
 
 		failed.Should().BeEmpty();
 		_metrics.ObjectReconciles.Should().Be(3);
@@ -333,11 +328,13 @@ public class ScrubberProcessorTests
 		const string privateKey = "changelog/elastic/elasticsearch/main/12345-fix.yaml";
 		const string canonicalKey = "changelog/elastic/elasticsearch/main/12345.yaml";
 		_ = _s3.Seed(PrivateBucket, privateKey, "entry-content");
-		_ =
-			A.CallTo(() => _scrubber.ScrubAsync(privateKey, A<string>._, A<Cancel>._)).ReturnsLazily(
-				(string _, string content, Cancel _) =>
-					Task.FromResult(new ScrubResult { Content = "scrubbed: " + content, CanonicalKey = canonicalKey })
-			);
+		_ = A.CallTo(() => _scrubber.ScrubAsync(privateKey, A<string>._, A<Cancel>._)).ReturnsLazily(
+			(string _, string content, Cancel _) => Task.FromResult(new ScrubResult
+			{
+				Content = "scrubbed: " + content,
+				CanonicalKey = canonicalKey
+			})
+		);
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", privateKey)], Ctx);
 
@@ -346,7 +343,8 @@ public class ScrubberProcessorTests
 		// A source pointer is written at the source key so the delete path can trace back to the
 		// canonical key when the private object is eventually removed.
 		_s3.Exists(PublicBucket, privateKey).Should().BeTrue("source pointer must exist so delete events can trace to the canonical key");
-		_s3.ContentOf(PublicBucket, privateKey)
+		_s3
+			.ContentOf(PublicBucket, privateKey)
 			.Should()
 			.Contain("link:", "source pointer must be a link marker pointing to the canonical PR number");
 	}
@@ -357,28 +355,28 @@ public class ScrubberProcessorTests
 		// Scrubber returns markers for PRs 200 and 300 pointing to the primary PR 100.
 		const string privateKey = "changelog/elastic/elasticsearch/main/100.yaml";
 		_ = _s3.Seed(PrivateBucket, privateKey, "multi-pr-content");
-		_ =
-			A.CallTo(() => _scrubber.ScrubAsync(privateKey, A<string>._, A<Cancel>._)).ReturnsLazily(
-				(string _, string content, Cancel _) =>
-					Task.FromResult(new ScrubResult
-					{
-						Content = "scrubbed: " + content,
-						Markers =
-						[
-							("changelog/elastic/elasticsearch/main/200.yaml", "link: \"100\"\n"),
-							("changelog/elastic/elasticsearch/main/300.yaml", "link: \"100\"\n")
-						]
-					})
-			);
+		_ = A.CallTo(() => _scrubber.ScrubAsync(privateKey, A<string>._, A<Cancel>._)).ReturnsLazily(
+			(string _, string content, Cancel _) => Task.FromResult(new ScrubResult
+			{
+				Content = "scrubbed: " + content,
+				Markers =
+				[
+					("changelog/elastic/elasticsearch/main/200.yaml", "link: \"100\"\n"),
+					("changelog/elastic/elasticsearch/main/300.yaml", "link: \"100\"\n")
+				]
+			})
+		);
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", privateKey)], Ctx);
 
 		failed.Should().BeEmpty();
 		_s3.ContentOf(PublicBucket, privateKey).Should().Be("scrubbed: multi-pr-content");
-		_s3.ContentOf(PublicBucket, "changelog/elastic/elasticsearch/main/200.yaml")
+		_s3
+			.ContentOf(PublicBucket, "changelog/elastic/elasticsearch/main/200.yaml")
 			.Should()
 			.Be("link: \"100\"\n", "marker for PR 200 must be written to public bucket");
-		_s3.ContentOf(PublicBucket, "changelog/elastic/elasticsearch/main/300.yaml")
+		_s3
+			.ContentOf(PublicBucket, "changelog/elastic/elasticsearch/main/300.yaml")
 			.Should()
 			.Be("link: \"100\"\n", "marker for PR 300 must be written to public bucket");
 	}
@@ -388,10 +386,9 @@ public class ScrubberProcessorTests
 	{
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/bad.yaml", "bad");
 		_ = _s3.Seed(PrivateBucket, "bundle/kibana/good.yaml", "good");
-		_ =
-			A.CallTo(() => _scrubber.ScrubAsync("bundle/elasticsearch/bad.yaml", A<string>._, A<Cancel>._)).Throws(
-				new InvalidOperationException("cannot scrub")
-			);
+		_ = A.CallTo(() => _scrubber.ScrubAsync("bundle/elasticsearch/bad.yaml", A<string>._, A<Cancel>._)).Throws(
+			new InvalidOperationException("cannot scrub")
+		);
 
 		var badMessage = Message("ObjectCreated:Put", "bundle/elasticsearch/bad.yaml");
 		var goodMessage = Message("ObjectCreated:Put", "bundle/kibana/good.yaml");
@@ -458,14 +455,13 @@ public class ScrubberProcessorTests
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
 		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/registry.json", "{}");
 
-		var failed =
-			await _processor.ProcessAsync(
-				[
-					Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml"),
-					Message("ObjectCreated:Put", "bundle/elasticsearch/registry.json")
-				],
-				Ctx
-			);
+		var failed = await _processor.ProcessAsync(
+			[
+				Message("ObjectCreated:Put", "bundle/elasticsearch/es-9.1.0.yaml"),
+				Message("ObjectCreated:Put", "bundle/elasticsearch/registry.json")
+			],
+			Ctx
+		);
 
 		failed.Should().BeEmpty();
 		_metrics.GroupReconciles.Should().Be(1);
@@ -499,8 +495,10 @@ public class ScrubberProcessorTests
 			""";
 		_s3.Seed(PrivateBucket, "changelog/elastic/elasticsearch/main/note-rollover.yml", noteYaml);
 
-		var failed =
-			await _processor.ProcessAsync([Message("ObjectCreated:Put", "changelog/elastic/elasticsearch/main/note-rollover.yml")], Ctx);
+		var failed = await _processor.ProcessAsync(
+			[Message("ObjectCreated:Put", "changelog/elastic/elasticsearch/main/note-rollover.yml")],
+			Ctx
+		);
 
 		failed.Should().BeEmpty();
 		// The note was scrubbed and copied to the public bucket
@@ -518,15 +516,15 @@ public class ScrubberProcessorTests
 		const string markerKey = "changelog/elastic/elasticsearch/main/20.yaml";
 		_ = _s3.Seed(PrivateBucket, markerKey, "link: \"10\"\n");
 		_ = _s3.Seed(PublicBucket, markerKey, "scrubbed canonical content at 20");
-		_ =
-			A.CallTo(() => _scrubber.ScrubAsync(markerKey, A<string>._, A<Cancel>._)).ReturnsLazily(
-				(string _, string content, Cancel _) => Task.FromResult(new ScrubResult { Content = content, IsMarker = true })
-			);
+		_ = A.CallTo(() => _scrubber.ScrubAsync(markerKey, A<string>._, A<Cancel>._)).ReturnsLazily(
+			(string _, string content, Cancel _) => Task.FromResult(new ScrubResult { Content = content, IsMarker = true })
+		);
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", markerKey)], Ctx);
 
 		failed.Should().BeEmpty();
-		_s3.ContentOf(PublicBucket, markerKey)
+		_s3
+			.ContentOf(PublicBucket, markerKey)
 			.Should()
 			.Be("scrubbed canonical content at 20", "pass-through marker must not overwrite existing canonical content");
 	}
@@ -544,25 +542,23 @@ public class ScrubberProcessorTests
 		// Simulate state left by the prior write: source pointer at privateKey, canonical at
 		// canonicalKey, and a secondary-PR marker at markerKey.
 		// The source pointer must carry source-redirect: true to be distinguishable from a plain marker.
-		_ =
-			_s3.Seed(
-				PublicBucket,
-				privateKey,
-				ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "12345", SourceRedirect = true })
-			);
-		_ =
-			_s3.Seed(
-				PublicBucket,
-				canonicalKey,
-				// language=yaml
-				"""
+		_ = _s3.Seed(
+			PublicBucket,
+			privateKey,
+			ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "12345", SourceRedirect = true })
+		);
+		_ = _s3.Seed(
+			PublicBucket,
+			canonicalKey,
+			// language=yaml
+			"""
 			type: enhancement
 			title: "Example"
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/12345
 			  - https://github.com/elastic/elasticsearch/pull/67890
 			"""
-			);
+		);
 		_ = _s3.Seed(PublicBucket, markerKey, "link: \"12345\"\n");
 
 		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", privateKey)], Ctx);
@@ -581,12 +577,11 @@ public class ScrubberProcessorTests
 		const string canonicalKey = "changelog/elastic/elasticsearch/main/100.yaml";
 		const string marker200 = "changelog/elastic/elasticsearch/main/200.yaml";
 		const string marker300 = "changelog/elastic/elasticsearch/main/300.yaml";
-		_ =
-			_s3.Seed(
-				PublicBucket,
-				canonicalKey,
-				// language=yaml
-				"""
+		_ = _s3.Seed(
+			PublicBucket,
+			canonicalKey,
+			// language=yaml
+			"""
 			type: enhancement
 			title: "Multi-PR entry"
 			prs:
@@ -594,7 +589,7 @@ public class ScrubberProcessorTests
 			  - https://github.com/elastic/elasticsearch/pull/200
 			  - https://github.com/elastic/elasticsearch/pull/300
 			"""
-			);
+		);
 		_ = _s3.Seed(PublicBucket, marker200, "link: \"100\"\n");
 		_ = _s3.Seed(PublicBucket, marker300, "link: \"100\"\n");
 
@@ -622,7 +617,8 @@ public class ScrubberProcessorTests
 
 		failed.Should().BeEmpty();
 		_s3.Exists(PublicBucket, privateKey).Should().BeFalse("the source-key public object is deleted");
-		_s3.Exists(PublicBucket, canonicalKey)
+		_s3
+			.Exists(PublicBucket, canonicalKey)
 			.Should()
 			.BeTrue("a plain link: marker must not trigger canonical deletion — only source-redirect: true does");
 	}
@@ -634,19 +630,19 @@ public class ScrubberProcessorTests
 		// The delete path must check SourceRedirect first, not the filename shape.
 		const string privateKey = "changelog/elastic/elasticsearch/main/12345.yml";
 		const string canonicalKey = "changelog/elastic/elasticsearch/main/12345.yaml";
-		_ =
-			_s3.Seed(
-				PublicBucket,
-				privateKey,
-				ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "12345", SourceRedirect = true })
-			);
+		_ = _s3.Seed(
+			PublicBucket,
+			privateKey,
+			ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "12345", SourceRedirect = true })
+		);
 		_ = _s3.Seed(PublicBucket, canonicalKey, "type: enhancement\ntitle: Real\n");
 
 		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", privateKey)], Ctx);
 
 		failed.Should().BeEmpty();
 		_s3.Exists(PublicBucket, privateKey).Should().BeFalse("source pointer is cleaned up");
-		_s3.Exists(PublicBucket, canonicalKey)
+		_s3
+			.Exists(PublicBucket, canonicalKey)
 			.Should()
 			.BeFalse("canonical must be deleted via pointer tracing — .yml stem being numeric must not block this");
 	}
@@ -660,19 +656,19 @@ public class ScrubberProcessorTests
 		// filename-shape heuristic — so canonical 100.yaml is not orphaned.
 		const string privateKey = "changelog/elastic/elasticsearch/main/12345.yaml";
 		const string canonicalKey = "changelog/elastic/elasticsearch/main/100.yaml";
-		_ =
-			_s3.Seed(
-				PublicBucket,
-				privateKey,
-				ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "100", SourceRedirect = true })
-			);
+		_ = _s3.Seed(
+			PublicBucket,
+			privateKey,
+			ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = "100", SourceRedirect = true })
+		);
 		_ = _s3.Seed(PublicBucket, canonicalKey, "type: enhancement\ntitle: Real\n");
 
 		var failed = await _processor.ProcessAsync([Message("ObjectRemoved:Delete", privateKey)], Ctx);
 
 		failed.Should().BeEmpty();
 		_s3.Exists(PublicBucket, privateKey).Should().BeFalse("source pointer is cleaned up");
-		_s3.Exists(PublicBucket, canonicalKey)
+		_s3
+			.Exists(PublicBucket, canonicalKey)
 			.Should()
 			.BeFalse("canonical must be deleted via pointer tracing even when the source key is numeric");
 	}

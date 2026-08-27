@@ -83,7 +83,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		IReadOnlySet<string>? ancestors
 	)
 	{
-		var unionOptions = unionSchemas.Where(s => s is not null)
+		var unionOptions = unionSchemas
+			.Where(s => s is not null)
 			.Select(s =>
 			{
 				var info = _analyzer.GetTypeInfo(s);
@@ -220,8 +221,12 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			&& !isSimpleArrayUnion
 			&& typeInfo.AnyOfOptions.Any(_analyzer.UnionOptionHasProperties);
 
-		var (simpleUnionHasExpandableProps, simpleUnionSchema, simpleUnionNestedOptions) =
-			ResolveSimpleUnionExpansion(typeInfo, isSimpleArrayUnion, simpleUnionBaseName, depth);
+		var (simpleUnionHasExpandableProps, simpleUnionSchema, simpleUnionNestedOptions) = ResolveSimpleUnionExpansion(
+			typeInfo,
+			isSimpleArrayUnion,
+			simpleUnionBaseName,
+			depth
+		);
 
 		var nestedCount = 0;
 		if (hasNestedProps)
@@ -347,9 +352,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		var allEnumLike = sortedOptions.Length > 0
 			&& sortedOptions.All(
-				o =>
-					!o.EndsWith("[]") && !string.IsNullOrEmpty(o) && !SchemaHelpers.PrimitiveTypeNames.Contains(o) &&
-						(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_'))
+				o => !o.EndsWith("[]") && !string.IsNullOrEmpty(o) && !SchemaHelpers.PrimitiveTypeNames.Contains(o) &&
+					(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_'))
 			);
 
 		if (allEnumLike)
@@ -479,9 +483,11 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				NestedCount = expansion.NestedCount,
 				UseHidden = options.UseHiddenUntilFound && dictIsCollapsible && !dictDefaultExpanded,
 				ValueType = Describe(row.TypeInfo.DictValueSchema),
-				Properties =
-					BuildPropertyList(row.TypeInfo.DictValueSchema, childScope with { Prefix = keyAnchorId, Depth = childScope.Depth + 1 })
-						?? new ApiPropertyList([])
+				Properties = BuildPropertyList(
+					row.TypeInfo.DictValueSchema,
+					childScope with { Prefix = keyAnchorId, Depth = childScope.Depth + 1 }
+				)
+					?? new ApiPropertyList([])
 			}
 		};
 	}
@@ -523,7 +529,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		if (
 			typeInfo is { IsUnion: true, AnyOfOptions: not null }
-			&& typeInfo.AnyOfOptions
+			&& typeInfo
+				.AnyOfOptions
 				.Select(option => option.Name.EndsWith("[]") ? option.Name[..^2] : option.Name)
 				.Any(baseName => IsAncestorType(baseName, ancestors))
 		)
@@ -633,7 +640,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private List<VariantCandidate> CollectVariantsToRender(List<UnionOption> unionOptions)
 	{
 		// Sort: array variants first within each base-name group, preserving group order
-		var sortedOptions = unionOptions.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
+		var sortedOptions = unionOptions
+			.GroupBy(o => o.Name.EndsWith("[]") ? o.Name[..^2] : o.Name)
 			.SelectMany(g => g.OrderByDescending(o => o.Name.EndsWith("[]")))
 			.ToList();
 

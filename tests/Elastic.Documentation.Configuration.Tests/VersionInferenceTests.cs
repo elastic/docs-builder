@@ -227,7 +227,8 @@ public class VersionInferenceTests
 
 		if (productsConfiguration.Products.TryGetValue(resultingProductId, out var expectedProduct))
 		{
-			result.Id
+			result
+				.Id
 				.Should()
 				.Be(
 					expectedProduct.VersioningSystem!.Id,
@@ -437,7 +438,8 @@ public class VersionInferenceTests
 			Base = new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0)
 		};
 
-		versioningSystem.IsVersionless
+		versioningSystem
+			.IsVersionless
 			.Should()
 			.BeTrue($"Versioning system {id} with version {VersioningSystem.VersionlessSentinel} should be marked as versionless");
 	}
@@ -457,7 +459,8 @@ public class VersionInferenceTests
 			Base = new SemVersion(major, 0, 0)
 		};
 
-		versioningSystem.IsVersionless
+		versioningSystem
+			.IsVersionless
 			.Should()
 			.BeFalse($"Versioning system {id} with version {major}.{minor}.{patch} should not be marked as versionless");
 	}
@@ -466,7 +469,8 @@ public class VersionInferenceTests
 	public void VersionlessSentinelMatchesConfigValue() =>
 		// This test ensures the sentinel value matches what's used in config/versions.yml
 		// If this test fails, update VersioningSystem.VersionlessSentinel to match versions.yml
-		VersioningSystem.VersionlessSentinel
+		VersioningSystem
+			.VersionlessSentinel
 			.Should()
 			.Be(99999, "VersionlessSentinel should match the value used in config/versions.yml for 'all' versioning system");
 
@@ -501,7 +505,8 @@ public class VersionInferenceTests
 		{
 			if (versionsConfig.VersioningSystems.TryGetValue(id, out var versioningSystem))
 			{
-				versioningSystem.IsVersionless
+				versioningSystem
+					.IsVersionless
 					.Should()
 					.BeTrue($"Versioning system {id} uses 'all' alias in versions.yml and should be marked as versionless");
 			}
@@ -512,7 +517,8 @@ public class VersionInferenceTests
 		{
 			if (!ExpectedVersionlessIds.Contains(id))
 			{
-				versioningSystem.IsVersionless
+				versioningSystem
+					.IsVersionless
 					.Should()
 					.BeFalse($"Versioning system {id} has version {versioningSystem.Current} and should NOT be marked as versionless");
 			}
@@ -535,7 +541,8 @@ public class VersionInferenceTests
 		var versionedSystems = versionsConfig.VersioningSystems.Values.Where(v => !v.IsVersionless).ToList();
 
 		// The versionless systems should match our expected list
-		versionlessSystems.Select(v => v.Id)
+		versionlessSystems
+			.Select(v => v.Id)
 			.Should()
 			.BeEquivalentTo(
 				ExpectedVersionlessIds,
@@ -545,7 +552,8 @@ public class VersionInferenceTests
 		// All versioned systems should have version < 99999
 		foreach (var system in versionedSystems)
 		{
-			system.Current
+			system
+				.Current
 				.Major
 				.Should()
 				.BeLessThan(

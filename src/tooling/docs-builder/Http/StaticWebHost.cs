@@ -40,11 +40,11 @@ public class StaticWebHost
 		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
-		_ =
-			builder.Logging
-				.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
-				.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
-				.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
+		_ = builder
+			.Logging
+			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
+			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
+			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
 		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
 
 		WebApplication = builder.Build();
@@ -57,27 +57,26 @@ public class StaticWebHost
 
 	private void SetUpRoutes()
 	{
-		_ =
-			WebApplication.Use(async (context, next) =>
+		_ = WebApplication.Use(async (context, next) =>
+		{
+			try
 			{
-				try
-				{
-					await next(context);
-				}
-				catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
-				{
-					// Client disconnected or navigated away — normal, no need to log or rethrow.
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
-					Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
-					if (ex.InnerException != null)
-						Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+				await next(context);
+			}
+			catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+			{
+				// Client disconnected or navigated away — normal, no need to log or rethrow.
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
+				Console.WriteLine($"[STACK TRACE] {ex.StackTrace}");
+				if (ex.InnerException != null)
+					Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
 
-					throw; // Re-throw to let ASP.NET Core handle it
-				}
-			});
+				throw; // Re-throw to let ASP.NET Core handle it
+			}
+		});
 		_ = WebApplication.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions()).UseRouting();
 
 		_ = WebApplication.MapGet("/", ServeRootIndex);

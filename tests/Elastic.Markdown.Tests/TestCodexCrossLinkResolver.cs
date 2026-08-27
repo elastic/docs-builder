@@ -56,15 +56,14 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 
 		var indexEntries = linkReferences.ToDictionary(
 			e => e.Key,
-			e =>
-				new LinkRegistryEntry
-				{
-					Repository = e.Key,
-					Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
-					Branch = "main",
-					ETag = Guid.NewGuid().ToString(),
-					GitReference = Guid.NewGuid().ToString()
-				}
+			e => new LinkRegistryEntry
+			{
+				Repository = e.Key,
+				Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
+				Branch = "main",
+				ETag = Guid.NewGuid().ToString(),
+				GitReference = Guid.NewGuid().ToString()
+			}
 		);
 		_crossLinks = new FetchedCrossLinks
 		{

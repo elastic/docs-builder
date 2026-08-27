@@ -92,7 +92,8 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void RequiresContentToFollow() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.HaveCount(1)
 			.And
@@ -118,7 +119,8 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void RequiresContentToFollow() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.HaveCount(1)
 			.And
@@ -195,7 +197,8 @@ BLOCK TWO
 
 	[Fact]
 	public void RequiresContentToFollow() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.HaveCount(1)
 			.And
@@ -221,7 +224,8 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void RequiresContentToFollow() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.HaveCount(1)
 			.And
@@ -492,7 +496,8 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void EmitsErrorForTooManyParagraphs() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.HaveCount(1)
 			.And
@@ -519,7 +524,8 @@ var z = y - 2; <2>
 
 	[Fact]
 	public void EmitsErrorForNoList() =>
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.HaveCount(1)
 			.And

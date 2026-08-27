@@ -434,26 +434,19 @@ public static partial class ReleaseNotesPageParser
 	{
 		var prs = new List<string>();
 
-		var title = PrLinkRegex().Replace(
-			text,
-			m =>
-			{
-				prs.Add(m.Groups["url"].Value);
-				return string.Empty;
-			}
-		);
+		var title = PrLinkRegex().Replace(text, m =>
+		{
+			prs.Add(m.Groups["url"].Value);
+			return string.Empty;
+		});
 
 		if (scope.Owner is not null && scope.Repo is not null)
 		{
-			title =
-				BarePrRefRegex().Replace(
-					title,
-					m =>
-					{
-						prs.Add($"https://github.com/{scope.Owner}/{scope.Repo}/pull/{m.Groups["number"].Value}");
-						return string.Empty;
-					}
-				);
+			title = BarePrRefRegex().Replace(title, m =>
+			{
+				prs.Add($"https://github.com/{scope.Owner}/{scope.Repo}/pull/{m.Groups["number"].Value}");
+				return string.Empty;
+			});
 		}
 
 		return (NormalizeTitle(title), prs);

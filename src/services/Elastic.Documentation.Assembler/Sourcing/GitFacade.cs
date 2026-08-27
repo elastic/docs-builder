@@ -60,34 +60,32 @@ public class SingleCommitOptimizedGitRepository(
 	public void Init() => ExecIn(EnvironmentVars, "git", "init");
 	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));
 	public void Pull(string branch) =>
-		_ =
-			ExecInWithRetry(
-				EnvironmentVars,
-				_networkRetry,
-				"git",
-				"pull",
-				"--depth",
-				"1",
-				"--allow-unrelated-histories",
-				"--no-ff",
-				"origin",
-				branch
-			);
+		_ = ExecInWithRetry(
+			EnvironmentVars,
+			_networkRetry,
+			"git",
+			"pull",
+			"--depth",
+			"1",
+			"--allow-unrelated-histories",
+			"--no-ff",
+			"origin",
+			branch
+		);
 	public void Fetch(string reference) =>
-		_ =
-			ExecInWithRetry(
-				EnvironmentVars,
-				_networkRetry,
-				"git",
-				"fetch",
-				"--no-tags",
-				"--prune",
-				"--no-recurse-submodules",
-				"--depth",
-				"1",
-				"origin",
-				reference
-			);
+		_ = ExecInWithRetry(
+			EnvironmentVars,
+			_networkRetry,
+			"git",
+			"fetch",
+			"--no-tags",
+			"--prune",
+			"--no-recurse-submodules",
+			"--depth",
+			"1",
+			"origin",
+			reference
+		);
 	public void EnableSparseCheckout(string[] folders) =>
 		ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);
 

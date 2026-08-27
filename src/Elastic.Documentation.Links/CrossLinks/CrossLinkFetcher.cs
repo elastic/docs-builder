@@ -104,8 +104,8 @@ public abstract class CrossLinkFetcher(
 	)
 	{
 		var linkIndexEntry = (repositoryLinks.TryGetValue("main", out var link)
-				? link
-				: repositoryLinks.TryGetValue("master", out link) ? link : null)
+			? link
+			: repositoryLinks.TryGetValue("master", out link) ? link : null)
 			?? throw new Exception($"Repository {repository} found in link index, but no main or master branch found");
 		return linkIndexEntry;
 	}

@@ -26,17 +26,16 @@ public partial class NavigationSearchService(
 
 	public async Task<NavigationSearchResponse> NavigationSearchAsync(NavigationSearchRequest request, Cancel ctx = default)
 	{
-		var resp =
-			await inner.AutocompleteAsync(
-				new AutocompleteRequest
-				{
-					Query = request.Query,
-					PageNumber = request.PageNumber,
-					PageSize = request.PageSize,
-					TypeFilter = request.TypeFilter
-				},
-				ctx
-			);
+		var resp = await inner.AutocompleteAsync(
+			new AutocompleteRequest
+			{
+				Query = request.Query,
+				PageNumber = request.PageNumber,
+				PageSize = request.PageSize,
+				TypeFilter = request.TypeFilter
+			},
+			ctx
+		);
 
 		var response = new NavigationSearchResponse
 		{
@@ -44,24 +43,22 @@ public partial class NavigationSearchService(
 			PageNumber = resp.PageNumber,
 			PageSize = resp.PageSize,
 			Aggregations = new NavigationSearchAggregations { Type = resp.Aggregations.Type },
-			Results =
-				resp.Results
-					.Select(
-						item =>
-							new NavigationSearchResultItem
-							{
-								Type = item.Document.ContentType,
-								Url = item.Document.Path,
-								Title = item.Title,
-								Description = item.Description,
-								Parents =
-									(item.Document.Parents ?? []).Select(
-										p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path }
-									).ToArray(),
-								Score = item.Score
-							}
-					)
-					.ToList()
+			Results = resp
+				.Results
+				.Select(
+					item => new NavigationSearchResultItem
+					{
+						Type = item.Document.ContentType,
+						Url = item.Document.Path,
+						Title = item.Title,
+						Description = item.Description,
+						Parents = (item.Document.Parents ?? []).Select(
+							p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path }
+						).ToArray(),
+						Score = item.Score
+					}
+				)
+				.ToList()
 		};
 
 		LogNavigationSearchResults(

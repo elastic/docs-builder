@@ -57,16 +57,14 @@ public class DocumentationDocumentSerializationTests
 			Path = "/test/deployment",
 			Title = "Deployment Test",
 			SearchTitle = "Deployment Test",
-			Applies =
-				new ApplicableTo
+			Applies = new ApplicableTo
+			{
+				Deployment = new DeploymentApplicability
 				{
-					Deployment = new DeploymentApplicability
-					{
-						Ess = AppliesCollection.GenerallyAvailable,
-						Ece =
-							new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"3.5.0" }])
-					}
-				}.ToAppliesTo()
+					Ess = AppliesCollection.GenerallyAvailable,
+					Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"3.5.0" }])
+				}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -101,22 +99,19 @@ public class DocumentationDocumentSerializationTests
 			Path = "/test/serverless",
 			Title = "Serverless Test",
 			SearchTitle = "Serverless Test",
-			Applies =
-				new ApplicableTo
+			Applies = new ApplicableTo
+			{
+				Serverless = new ServerlessProjectApplicability
 				{
-					Serverless = new ServerlessProjectApplicability
-					{
-						Elasticsearch =
-							new AppliesCollection([
-								new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }
-							]),
-						Security =
-							new AppliesCollection([
-								new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"1.0.0" }
-							]),
-						VectorDatabase = AppliesCollection.GenerallyAvailable
-					}
-				}.ToAppliesTo()
+					Elasticsearch = new AppliesCollection([
+						new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }
+					]),
+					Security = new AppliesCollection([
+						new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"1.0.0" }
+					]),
+					VectorDatabase = AppliesCollection.GenerallyAvailable
+				}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -158,12 +153,10 @@ public class DocumentationDocumentSerializationTests
 			Path = "/test/product",
 			Title = "Product Test",
 			SearchTitle = "Product Test",
-			Applies =
-				new ApplicableTo
-				{
-					Product =
-						new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"2.0.0" }])
-				}.ToAppliesTo()
+			Applies = new ApplicableTo
+			{
+				Product = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"2.0.0" }])
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -190,21 +183,18 @@ public class DocumentationDocumentSerializationTests
 			Path = "/test/apm",
 			Title = "APM Test",
 			SearchTitle = "APM Test",
-			Applies =
-				new ApplicableTo
+			Applies = new ApplicableTo
+			{
+				ProductApplicability = new ProductApplicability
 				{
-					ProductApplicability = new ProductApplicability
-					{
-						ApmAgentDotnet =
-							new AppliesCollection([
-								new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.5.0" }
-							]),
-						ApmAgentNode =
-							new AppliesCollection([
-								new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"2.0.0" }
-							])
-					}
-				}.ToAppliesTo()
+					ApmAgentDotnet = new AppliesCollection([
+						new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.5.0" }
+					]),
+					ApmAgentNode = new AppliesCollection([
+						new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"2.0.0" }
+					])
+				}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -239,16 +229,14 @@ public class DocumentationDocumentSerializationTests
 			Path = "/test/complex",
 			Title = "Complex Test",
 			SearchTitle = "Complex Test",
-			Applies =
-				new ApplicableTo
-				{
-					Stack =
-						new AppliesCollection([
-							new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }
-						]),
-					Deployment = new DeploymentApplicability { Ess = AppliesCollection.GenerallyAvailable },
-					Serverless = new ServerlessProjectApplicability { Elasticsearch = AppliesCollection.GenerallyAvailable }
-				}.ToAppliesTo()
+			Applies = new ApplicableTo
+			{
+				Stack = new AppliesCollection([
+					new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }
+				]),
+				Deployment = new DeploymentApplicability { Ess = AppliesCollection.GenerallyAvailable },
+				Serverless = new ServerlessProjectApplicability { Elasticsearch = AppliesCollection.GenerallyAvailable }
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -318,10 +306,9 @@ public class DocumentationDocumentSerializationTests
 	{
 		var originalApplies = new ApplicableTo
 		{
-			Stack =
-				new AppliesCollection([
-					new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.5.0" }
-				]),
+			Stack = new AppliesCollection([
+				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.5.0" }
+			]),
 			Deployment = new DeploymentApplicability
 			{
 				Ess = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"8.6.0" }])
@@ -355,7 +342,8 @@ public class DocumentationDocumentSerializationTests
 		deserialized.Applies.Should().NotBeNull();
 		deserialized.Applies.Should().HaveCount(2);
 		deserialized.Applies.Should().Contain(e => e.Type == "stack" && e.Lifecycle == "ga" && e.Version == "8.5+");
-		deserialized.Applies
+		deserialized
+			.Applies
 			.Should()
 			.Contain(e => e.Type == "deployment" && e.SubType == "ess" && e.Lifecycle == "beta" && e.Version == "8.6+");
 		deserialized.ContentLastUpdated.Should().Be(original.ContentLastUpdated);
@@ -412,16 +400,14 @@ public class DocumentationDocumentSerializationTests
 			Path = "/test/multiple",
 			Title = "Multiple Test",
 			SearchTitle = "Multiple Test",
-			Applies =
-				new ApplicableTo
-				{
-					Stack =
-						new AppliesCollection([
-							new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" },
-							new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"7.17.0" },
-							new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"7.0.0" }
-						])
-				}.ToAppliesTo()
+			Applies = new ApplicableTo
+			{
+				Stack = new AppliesCollection([
+					new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" },
+					new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"7.17.0" },
+					new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"7.0.0" }
+				])
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -456,7 +442,8 @@ public class DocumentationDocumentSerializationTests
 
 		var json = JsonSerializer.Serialize(doc, _options);
 		using var jsonDoc = JsonDocument.Parse(json);
-		jsonDoc.RootElement
+		jsonDoc
+			.RootElement
 			.GetProperty("source_url")
 			.GetString()
 			.Should()

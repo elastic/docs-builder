@@ -199,7 +199,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		private static string FormatGroupTitle(string slug) =>
 			string.Join(
 				" ",
-				slug.Replace('-', ' ')
+				slug
+					.Replace('-', ' ')
 					.Replace('_', ' ')
 					.Split(' ', StringSplitOptions.RemoveEmptyEntries)
 					.Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant())

@@ -32,13 +32,13 @@ public static class SearchExplainExtensions
 
 		var combinedQuery = (Query)new BoolQuery { Should = [lexicalQuery], MinimumShouldMatch = 1 };
 
-		var getDocResponse =
-			await service.Client
-				.SearchAsync<TDocument>(
-					s => s.Indices(service.IndexAlias).Query(q => q.Term(t => t.Field("url").Value(documentUrl))).Size(1),
-					ct
-				)
-				.ConfigureAwait(false);
+		var getDocResponse = await service
+			.Client
+			.SearchAsync<TDocument>(
+				s => s.Indices(service.IndexAlias).Query(q => q.Term(t => t.Field("url").Value(documentUrl))).Size(1),
+				ct
+			)
+			.ConfigureAwait(false);
 
 		if (!getDocResponse.IsValidResponse || getDocResponse.Documents.Count == 0)
 		{
@@ -53,10 +53,10 @@ public static class SearchExplainExtensions
 
 		var documentId = getDocResponse.Hits.First().Id;
 
-		var explainResponse =
-			await service.Client
-				.ExplainAsync<TDocument>(service.IndexAlias, documentId, e => e.Query(combinedQuery), ct)
-				.ConfigureAwait(false);
+		var explainResponse = await service
+			.Client
+			.ExplainAsync<TDocument>(service.IndexAlias, documentId, e => e.Query(combinedQuery), ct)
+			.ConfigureAwait(false);
 
 		if (!explainResponse.IsValidResponse)
 		{
@@ -88,10 +88,10 @@ public static class SearchExplainExtensions
 		CancellationToken ct = default
 	) where TDocument : SearchDocumentBase
 	{
-		var top =
-			await service.AutocompleteAsync(new AutocompleteRequest { Query = query, PageNumber = 1, PageSize = 1 }, ct).ConfigureAwait(
-				false
-			);
+		var top = await service.AutocompleteAsync(
+			new AutocompleteRequest { Query = query, PageNumber = 1, PageSize = 1 },
+			ct
+		).ConfigureAwait(false);
 		var topResultUrl = top.Results.Count > 0 ? top.Results[0].Document.Path : null;
 
 		if (string.IsNullOrEmpty(topResultUrl))

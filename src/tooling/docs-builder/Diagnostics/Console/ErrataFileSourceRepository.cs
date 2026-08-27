@@ -98,7 +98,8 @@ public class ErrataFileSourceRepository : ISourceRepository
 		// Errata's Report.Render collapses embedded newlines in the message headline, making
 		// multi-line exception messages and stack traces unreadable. Route them to a dedicated
 		// Panel renderer that preserves line breaks; only file-anchored diagnostics go to Errata.
-		var globalDiagnostics = errors.Where(d => string.IsNullOrEmpty(d.File))
+		var globalDiagnostics = errors
+			.Where(d => string.IsNullOrEmpty(d.File))
 			.Concat(warnings.Where(d => string.IsNullOrEmpty(d.File)))
 			.ToArray();
 
@@ -106,7 +107,8 @@ public class ErrataFileSourceRepository : ISourceRepository
 		var fileWarnings = warnings.Where(d => !string.IsNullOrEmpty(d.File)).ToArray();
 
 		var report = new Report(this);
-		var limited = fileErrors.Concat(fileWarnings)
+		var limited = fileErrors
+			.Concat(fileWarnings)
 			.OrderBy(
 				d =>
 					d.Severity switch
@@ -136,17 +138,16 @@ public class ErrataFileSourceRepository : ISourceRepository
 			if (item is { Line: not null, Column: not null })
 			{
 				var location = new Location(item.Line ?? 0, item.Column ?? 0);
-				d =
-					d.WithLabel(new Label(item.File, location, "")
-						.WithLength(item.Length == null ? 1 : Math.Clamp(item.Length.Value, 1, item.Length.Value + 3))
-						.WithPriority(1)
-						.WithColor(item.Severity switch
-						{
-							Severity.Error => Color.Red,
-							Severity.Warning => Color.Blue,
-							Severity.Hint => Color.Yellow,
-							_ => Color.Blue
-						}));
+				d = d.WithLabel(new Label(item.File, location, "")
+					.WithLength(item.Length == null ? 1 : Math.Clamp(item.Length.Value, 1, item.Length.Value + 3))
+					.WithPriority(1)
+					.WithColor(item.Severity switch
+					{
+						Severity.Error => Color.Red,
+						Severity.Warning => Color.Blue,
+						Severity.Hint => Color.Yellow,
+						_ => Color.Blue
+					}));
 			}
 			else
 				d = d.WithNote(item.File);

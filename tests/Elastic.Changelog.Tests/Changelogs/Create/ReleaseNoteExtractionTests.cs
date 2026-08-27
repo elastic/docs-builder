@@ -25,13 +25,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -92,13 +91,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -160,13 +158,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -227,13 +224,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -298,13 +294,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -366,13 +361,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -434,13 +428,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -500,13 +493,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -571,13 +563,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -649,12 +640,20 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync("https://github.com/elastic/elasticsearch/pull/100", null, null, A<CancellationToken>._)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/100",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo1);
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync("https://github.com/elastic/elasticsearch/pull/200", null, null, A<CancellationToken>._)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/200",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo2);
 
 		// language=yaml
@@ -725,13 +724,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -799,13 +797,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -870,13 +867,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml

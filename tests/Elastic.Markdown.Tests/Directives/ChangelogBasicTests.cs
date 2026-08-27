@@ -661,7 +661,8 @@ public class ChangelogCdnUndeclaredProductTests(ITestOutputHelper output) : Dire
 	public void EmitsErrorWhenProductIsNotDeclared()
 	{
 		Block!.Found.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("not declared in docset.yml") && d.Message.Contains("release_notes"));
 	}
@@ -678,10 +679,10 @@ internal static class ChangelogCdnTestResolver
 		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(bundleContents, _ => { });
 		return new ReleaseNotesResolver(new FetchedReleaseNotes
 		{
-			BundlesByProduct =
-				new Dictionary<string, IReadOnlyList<LoadedBundle>>(StringComparer.Ordinal) { [product] = bundles }.ToFrozenDictionary(
-					StringComparer.Ordinal
-				),
+			BundlesByProduct = new Dictionary<string, IReadOnlyList<LoadedBundle>>(StringComparer.Ordinal)
+			{
+				[product] = bundles
+			}.ToFrozenDictionary(StringComparer.Ordinal),
 			DeclaredProducts = new[] { product }.ToFrozenSet(StringComparer.Ordinal)
 		});
 	}

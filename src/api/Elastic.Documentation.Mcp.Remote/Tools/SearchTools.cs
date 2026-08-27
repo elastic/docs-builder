@@ -76,23 +76,22 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 				Query = query,
 				TotalHits = result.TotalResults,
 				IsSemanticQuery = result.IsSemanticQuery,
-				Results =
-					result.Results
-						.Select(
-							r =>
-								new SearchResultDto
-								{
-									Url = r.Url,
-									Title = r.Title,
-									Description = r.Description,
-									Score = r.Score,
-									AiShortSummary = r.AiShortSummary,
-									NavigationSection = r.NavigationSection,
-									Product = r.Product?.DisplayName,
-									LastUpdated = r.LastUpdated
-								}
-						)
-						.ToList()
+				Results = result
+					.Results
+					.Select(
+						r => new SearchResultDto
+						{
+							Url = r.Url,
+							Title = r.Title,
+							Description = r.Description,
+							Score = r.Score,
+							AiShortSummary = r.AiShortSummary,
+							NavigationSection = r.NavigationSection,
+							Product = r.Product?.DisplayName,
+							LastUpdated = r.LastUpdated
+						}
+					)
+					.ToList()
 			};
 
 			McpToolTelemetry.MarkSuccess(activity);
@@ -168,21 +167,20 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 			{
 				Topic = topic,
 				Count = result.Results.Count,
-				RelatedDocs =
-					result.Results
-						.Select(
-							r =>
-								new RelatedDocDto
-								{
-									Url = r.Url,
-									Title = r.Title,
-									Description = r.Description,
-									Score = r.Score,
-									AiShortSummary = r.AiShortSummary,
-									Product = r.Product?.DisplayName
-								}
-						)
-						.ToList()
+				RelatedDocs = result
+					.Results
+					.Select(
+						r => new RelatedDocDto
+						{
+							Url = r.Url,
+							Title = r.Title,
+							Description = r.Description,
+							Score = r.Score,
+							AiShortSummary = r.AiShortSummary,
+							Product = r.Product?.DisplayName
+						}
+					)
+					.ToList()
 			};
 
 			McpToolTelemetry.MarkSuccess(activity);

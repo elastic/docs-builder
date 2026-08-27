@@ -44,7 +44,8 @@ public static class AppDefaultsExtensions
 			builder.Environment.EnvironmentName = dotnetEnv;
 
 		// We do not use appsettings.json — all config comes from env vars / user secrets / code.
-		var jsonSources = builder.Configuration
+		var jsonSources = builder
+			.Configuration
 			.Sources
 			.OfType<JsonConfigurationSource>()
 			.Where(s => s.Path is not null && s.Path.StartsWith("appsettings", StringComparison.OrdinalIgnoreCase))
@@ -52,31 +53,27 @@ public static class AppDefaultsExtensions
 		foreach (var s in jsonSources)
 			_ = builder.Configuration.Sources.Remove(s);
 
-		var services = builder.Services
+		var services = builder
+			.Services
 			.AddElasticDocumentationLogging(cliOptions.LogLevel)
 			.ConfigureHttpClientDefaults(http =>
 			{
-				_ =
-					http.AddStandardResilienceHandler(options =>
-					{
-						options.Retry.DisableForUnsafeHttpMethods();
-					});
-			})
-			.AddConfigurationFileProvider(
-				cliOptions.SkipPrivateRepositories,
-				cliOptions.ConfigSource,
-				(s, p) =>
+				_ = http.AddStandardResilienceHandler(options =>
 				{
-					var versionConfiguration = p.CreateVersionConfiguration();
-					var products = p.CreateProducts(versionConfiguration);
-					var search = p.CreateSearchConfiguration();
-					_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
-					_ = s.AddSingleton(products);
-					_ = s.AddSingleton(versionConfiguration);
-					_ = s.AddSingleton(search);
-					configure?.Invoke(s, p);
-				}
-			)
+					options.Retry.DisableForUnsafeHttpMethods();
+				});
+			})
+			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
+			{
+				var versionConfiguration = p.CreateVersionConfiguration();
+				var products = p.CreateProducts(versionConfiguration);
+				var search = p.CreateSearchConfiguration();
+				_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
+				_ = s.AddSingleton(products);
+				_ = s.AddSingleton(versionConfiguration);
+				_ = s.AddSingleton(search);
+				configure?.Invoke(s, p);
+			})
 			.AddSingleton(cliOptions);
 
 		var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
@@ -90,13 +87,12 @@ public static class AppDefaultsExtensions
 		LogLevel logLevel
 	) where TServiceCollection : IServiceCollection
 	{
-		_ =
-			services.AddLogging(x =>
-			{
-				_ = x.ClearProviders().SetMinimumLevel(logLevel);
-				services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
-				_ = x.AddConsole(c => c.FormatterName = "condensed");
-			});
+		_ = services.AddLogging(x =>
+		{
+			_ = x.ClearProviders().SetMinimumLevel(logLevel);
+			services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
+			_ = x.AddConsole(c => c.FormatterName = "condensed");
+		});
 		return services;
 	}
 

@@ -160,14 +160,16 @@ public class MappingHashTests
 
 	[Fact]
 	public void SiteDocument_ExtraField_DiffersFrom_ExtraAiField() =>
-		SiteExtraFieldMappingContext.SiteDocumentWithExtraField
+		SiteExtraFieldMappingContext
+			.SiteDocumentWithExtraField
 			.Hash
 			.Should()
 			.NotBe(SiteExtraAiFieldMappingContext.SiteDocumentWithExtraAiField.Hash);
 
 	[Fact]
 	public void GuideDocument_ExtraField_DiffersFrom_ExtraAiField() =>
-		GuideExtraFieldMappingContext.GuideDocumentWithExtraField
+		GuideExtraFieldMappingContext
+			.GuideDocumentWithExtraField
 			.Hash
 			.Should()
 			.NotBe(GuideExtraAiFieldMappingContext.GuideDocumentWithExtraAiField.Hash);

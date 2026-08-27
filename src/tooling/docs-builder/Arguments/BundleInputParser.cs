@@ -35,10 +35,9 @@ public static class BundleInputParser
 		{
 			BundleFile = NormalizePath(parts[0]),
 			Repo = parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) ? parts[1] : null,
-			HideLinks =
-				parts.Length > 2
-					&& !string.IsNullOrWhiteSpace(parts[2])
-					&& parts[2].Equals("hide-links", StringComparison.OrdinalIgnoreCase)
+			HideLinks = parts.Length > 2
+				&& !string.IsNullOrWhiteSpace(parts[2])
+				&& parts[2].Equals("hide-links", StringComparison.OrdinalIgnoreCase)
 		};
 	}
 

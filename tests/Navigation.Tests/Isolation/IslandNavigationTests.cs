@@ -95,7 +95,8 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
-		var reference = navigation.NavigationItems
+		var reference = navigation
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
@@ -155,7 +156,8 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
-		var advanced = navigation.NavigationItems
+		var advanced = navigation
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
@@ -289,7 +291,8 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		);
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
-		var security = navigation.NavigationItems
+		var security = navigation
+			.NavigationItems
 			.ElementAt(0)
 			.Should()
 			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
@@ -393,7 +396,8 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
 		// The listing with island: true and no visual: should emit an error
-		context.Diagnostics
+		context
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("island: true") && d.Message.Contains("visual: none"));
 		// And the listing is not added to navigation

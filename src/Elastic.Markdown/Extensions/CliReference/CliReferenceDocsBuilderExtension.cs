@@ -224,7 +224,8 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 
 		foreach (var cliRef in cliRefs)
 		{
-			var schemaFileInfo = Build.ReadFileSystem
+			var schemaFileInfo = Build
+				.ReadFileSystem
 				.FileInfo
 				.New(Build.ReadFileSystem.Path.Join(Build.DocumentationSourceDirectory.FullName, cliRef.SchemaPath));
 

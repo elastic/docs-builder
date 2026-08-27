@@ -107,8 +107,11 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		ArrangeRelease();
 		var outputDir = OutputDir();
 
-		var result =
-			await Service(PoolWithEntry()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(PoolWithEntry()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var entryPath = FileSystem.Path.Join(outputDir, "12345.yaml");
@@ -126,25 +129,24 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		// successful write: ProcessPrReference should still fall through to PR-body extraction /
 		// title fallback, and the PR must still count as an error worth surfacing.
 		ArrangeRelease();
-		_ =
-			A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "Just a description of the change, no release-note block.",
-				Labels = [],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "Just a description of the change, no release-note block.",
+			Labels = [],
+			LinkedIssues = []
+		});
 		var outputDir = OutputDir();
 
-		var result =
-			await Service(PoolWithUnparseableEntry()).CreateChangelogsFromRelease(
-				Collector,
-				Input(outputDir),
-				TestContext.Current.CancellationToken
-			);
+		var result = await Service(PoolWithUnparseableEntry()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
-		FileSystem.File
+		FileSystem
+			.File
 			.Exists(FileSystem.Path.Join(outputDir, "12345.yaml"))
 			.Should()
 			.BeFalse("the malformed pool file is never written verbatim");
@@ -152,7 +154,8 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		files.Should().ContainSingle("a synthesized entry must exist for the PR despite the unusable pool file");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		content.Should().Contain("Fix query parsing edge case");
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Message.Contains("could not be parsed", StringComparison.Ordinal),
@@ -184,38 +187,34 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			Body = sharedBody
 		});
 
-		_ =
-			A.CallTo(
-				() =>
-					_prService.FetchPrInfoAsync(
-						A<string>.That.Matches(u => u.EndsWith("12345", StringComparison.Ordinal)),
-						A<string?>._,
-						A<string?>._,
-						A<Cancel>._
-					)
-			).Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "No release note here.",
-				Labels = [],
-				LinkedIssues = []
-			});
-		_ =
-			A.CallTo(
-				() =>
-					_prService.FetchPrInfoAsync(
-						A<string>.That.Matches(u => u.EndsWith("12346", StringComparison.Ordinal)),
-						A<string?>._,
-						A<string?>._,
-						A<Cancel>._
-					)
-			).Returns(new GitHubPrInfo
-			{
-				Title = "Improve indexing throughput",
-				Body = "No release note here either.",
-				Labels = [],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(
+			() => _prService.FetchPrInfoAsync(
+				A<string>.That.Matches(u => u.EndsWith("12345", StringComparison.Ordinal)),
+				A<string?>._,
+				A<string?>._,
+				A<Cancel>._
+			)
+		).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "No release note here.",
+			Labels = [],
+			LinkedIssues = []
+		});
+		_ = A.CallTo(
+			() => _prService.FetchPrInfoAsync(
+				A<string>.That.Matches(u => u.EndsWith("12346", StringComparison.Ordinal)),
+				A<string?>._,
+				A<string?>._,
+				A<Cancel>._
+			)
+		).Returns(new GitHubPrInfo
+		{
+			Title = "Improve indexing throughput",
+			Body = "No release note here either.",
+			Labels = [],
+			LinkedIssues = []
+		});
 
 		var handler = new StubHandler(req =>
 		{
@@ -244,18 +243,20 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 	public async Task PrBodyReleaseNote_BecomesEntryDescription()
 	{
 		ArrangeRelease();
-		_ =
-			A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "Context.\n\n## Release Note\nQueries with trailing wildcards no longer fail.\n\nInternal notes.",
-				Labels = [],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "Context.\n\n## Release Note\nQueries with trailing wildcards no longer fail.\n\nInternal notes.",
+			Labels = [],
+			LinkedIssues = []
+		});
 		var outputDir = OutputDir();
 
-		var result =
-			await Service(EmptyPool()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -268,18 +269,20 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 	public async Task LinkedIssues_AreCarriedOntoTheEntry()
 	{
 		ArrangeRelease();
-		_ =
-			A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "Fixes #999",
-				Labels = [],
-				LinkedIssues = ["https://github.com/elastic/elasticsearch/issues/999"]
-			});
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "Fixes #999",
+			Labels = [],
+			LinkedIssues = ["https://github.com/elastic/elasticsearch/issues/999"]
+		});
 		var outputDir = OutputDir();
 
-		var result =
-			await Service(EmptyPool()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -291,18 +294,20 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 	public async Task NoReleaseNoteInBody_FallsBackToTitleOnly()
 	{
 		ArrangeRelease();
-		_ =
-			A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
-			{
-				Title = "Fix query parsing edge case",
-				Body = "Just a description of the change, no release-note block.",
-				Labels = [],
-				LinkedIssues = []
-			});
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "Just a description of the change, no release-note block.",
+			Labels = [],
+			LinkedIssues = []
+		});
 		var outputDir = OutputDir();
 
-		var result =
-			await Service(EmptyPool()).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -319,12 +324,11 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		ArrangeRelease();
 		var outputDir = OutputDir();
 
-		var result =
-			await Service(PoolWithEntry()).CreateChangelogsFromRelease(
-				Collector,
-				Input(outputDir, createBundle: true),
-				TestContext.Current.CancellationToken
-			);
+		var result = await Service(PoolWithEntry()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir, createBundle: true),
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue();
 		var bundlesDir = FileSystem.Path.Join(outputDir, "bundles");

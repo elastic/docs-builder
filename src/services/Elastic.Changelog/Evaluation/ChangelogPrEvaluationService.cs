@@ -61,8 +61,13 @@ public class ChangelogPrEvaluationService(
 		// Manual edit detection (only if a file exists)
 		if (changelogFilePath != null)
 		{
-			var fileAuthor =
-				await gitHubPrService.FetchLastFileCommitAuthorAsync(input.Owner, input.Repo, changelogFilePath, input.HeadRef, ctx);
+			var fileAuthor = await gitHubPrService.FetchLastFileCommitAuthorAsync(
+				input.Owner,
+				input.Repo,
+				changelogFilePath,
+				input.HeadRef,
+				ctx
+			);
 			if (!string.IsNullOrEmpty(fileAuthor) && !string.Equals(fileAuthor, input.BotName, StringComparison.OrdinalIgnoreCase))
 			{
 				_logger.LogInformation("Skipping: changelog file {File} manually edited by {Author}", changelogFilePath, fileAuthor);
@@ -142,15 +147,14 @@ public class ChangelogPrEvaluationService(
 				string.Empty,
 				"No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label."
 			);
-			_ =
-				await SetOutputs(
-					PrEvaluationResult.NoLabel,
-					title,
-					resolvedDescription: description,
-					labelTable: BuildLabelTable(config.LabelToType),
-					productLabelTable: productLabelTable,
-					skipLabels: skipLabels
-				);
+			_ = await SetOutputs(
+				PrEvaluationResult.NoLabel,
+				title,
+				resolvedDescription: description,
+				labelTable: BuildLabelTable(config.LabelToType),
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels
+			);
 			return false;
 		}
 
@@ -165,14 +169,13 @@ public class ChangelogPrEvaluationService(
 				string.Empty,
 				"No matching product label found on this PR. Add a label from your changelog.yml pivot.products."
 			);
-			_ =
-				await SetOutputs(
-					PrEvaluationResult.NoLabel,
-					title,
-					resolvedDescription: description,
-					productLabelTable: productLabelTable,
-					skipLabels: skipLabels
-				);
+			_ = await SetOutputs(
+				PrEvaluationResult.NoLabel,
+				title,
+				resolvedDescription: description,
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels
+			);
 			return false;
 		}
 

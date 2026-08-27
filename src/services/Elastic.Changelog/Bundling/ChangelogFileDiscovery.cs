@@ -20,7 +20,8 @@ public class ChangelogFileDiscovery(IFileSystem fileSystem, ILogger logger)
 		var outputFileName = fileSystem.Path.GetFileName(outputPath);
 
 		// Read all YAML files from directory
-		var allYamlFiles = fileSystem.Directory
+		var allYamlFiles = fileSystem
+			.Directory
 			.GetFiles(directory, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(fileSystem.Directory.GetFiles(directory, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();

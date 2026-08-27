@@ -55,7 +55,8 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
 
@@ -230,7 +231,8 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		// Assert — product-specific rule should have blocked creation
 		result.Should().BeTrue(); // Succeed but skip
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
 

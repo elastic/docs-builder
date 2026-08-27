@@ -202,15 +202,14 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	{
 		var urlPathPrefix = context.BuildContext.UrlPathPrefix;
 		var canonicalBaseUrl = context.BuildContext.CanonicalBaseUrl;
-		var body = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(
-			context.BuildContext,
-			url => RewriteLinkUrl(url, urlPathPrefix, canonicalBaseUrl),
-			context.Document,
-			static (renderer, document) =>
-			{
-				_ = renderer.Render(document);
-			}
-		);
+		var body = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context.BuildContext, url => RewriteLinkUrl(
+			url,
+			urlPathPrefix,
+			canonicalBaseUrl
+		), context.Document, static (renderer, document) =>
+		{
+			_ = renderer.Render(document);
+		});
 
 		var sourceFile = context.SourceFile;
 		var frontMatter = DocumentationObjectPoolProvider.StringBuilderPool.Get();
@@ -323,7 +322,8 @@ public class OkfMarkdownExporter : IMarkdownExporter
 			}
 		}
 
-		var subdirectoriesByParent = directories.Where(d => d.Length > 0)
+		var subdirectoriesByParent = directories
+			.Where(d => d.Length > 0)
 			.GroupBy(GetDirectory, StringComparer.Ordinal)
 			.ToDictionary(g => g.Key, g => g.OrderBy(d => d, StringComparer.Ordinal).ToList(), StringComparer.Ordinal);
 

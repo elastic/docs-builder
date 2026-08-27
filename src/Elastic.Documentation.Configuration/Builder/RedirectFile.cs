@@ -19,7 +19,8 @@ public record RedirectFile
 	{
 		var docsetConfigurationPath = context.ConfigurationPath;
 		var redirectFileName = docsetConfigurationPath.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
-		var redirectFileInfo = docsetConfigurationPath.FileSystem
+		var redirectFileInfo = docsetConfigurationPath
+			.FileSystem
 			.FileInfo
 			.New(Path.Join(docsetConfigurationPath.Directory!.FullName, redirectFileName));
 		Source = source ?? redirectFileInfo;

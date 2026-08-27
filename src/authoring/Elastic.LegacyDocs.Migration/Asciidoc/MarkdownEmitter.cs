@@ -358,7 +358,8 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 	}
 
 	private static bool IsComplexTable(TableNode table) =>
-		table.HeaderRows
+		table
+			.HeaderRows
 			.Concat(table.BodyRows)
 			.SelectMany(r => r.Cells)
 			.Any(c => c.ColSpan > 1 || c.RowSpan > 1 || c.Content.Count > 1 || (c.Content.Count == 1 && c.Content[0] is not ParagraphNode));
@@ -617,15 +618,12 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 
 	// Replaces <<anchor>> and <<anchor,text>> xrefs in raw title strings.
 	private string SubstituteTitleXrefs(string title) =>
-		TitleXrefRegex().Replace(
-			title,
-			m =>
-			{
-				var anchor = m.Groups[1].Value.Trim();
-				var text = m.Groups[2].Success ? m.Groups[2].Value.Trim() : anchor;
-				if (options.AnchorToSlugMap.TryGetValue(anchor, out var slug))
-					return slug == options.PageSlug ? $"[{text}](#{anchor})" : $"[{text}]({slug}.md#{anchor})";
-				return $"[{text}](#{anchor})";
-			}
-		);
+		TitleXrefRegex().Replace(title, m =>
+		{
+			var anchor = m.Groups[1].Value.Trim();
+			var text = m.Groups[2].Success ? m.Groups[2].Value.Trim() : anchor;
+			if (options.AnchorToSlugMap.TryGetValue(anchor, out var slug))
+				return slug == options.PageSlug ? $"[{text}](#{anchor})" : $"[{text}]({slug}.md#{anchor})";
+			return $"[{text}](#{anchor})";
+		});
 }

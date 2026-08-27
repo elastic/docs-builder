@@ -33,7 +33,8 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 	{
 		//Skipping on CI since this relies on checking out private repositories
 		Assert.SkipWhen(!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")), "Skipping in CI");
-		var builder = Host.CreateApplicationBuilder()
+		var builder = Host
+			.CreateApplicationBuilder()
 			.AddDocumentationServiceDefaults((s, p) =>
 			{
 				_ = s.AddSingleton(AssemblyConfiguration.Create(p));
@@ -58,8 +59,14 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			throw new Exception("No checkouts found");
 
 		var ctx = TestContext.Current.CancellationToken;
-		var assembleSources =
-			await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, new HashSet<Exporter>(), ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(
+			logFactory,
+			assembleContext,
+			checkouts,
+			configurationContext,
+			new HashSet<Exporter>(),
+			ctx
+		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));

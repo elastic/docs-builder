@@ -52,8 +52,12 @@ public record AssemblyConfiguration
 				env.Name = name;
 			config.Narrative = RepositoryDefaults(config.Narrative, NarrativeRepository.RepositoryName);
 
-			config.AvailableRepositories =
-				config.ReferenceRepositories.Values.Where(r => !r.Skip).Concat([config.Narrative]).ToDictionary(kvp => kvp.Name, kvp => kvp);
+			config.AvailableRepositories = config
+				.ReferenceRepositories
+				.Values
+				.Where(r => !r.Skip)
+				.Concat([config.Narrative])
+				.ToDictionary(kvp => kvp.Name, kvp => kvp);
 
 			config.PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 			return config;

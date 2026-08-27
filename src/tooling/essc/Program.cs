@@ -36,7 +36,8 @@ builder.Services.AddSingleton<ConsoleFormatter, CondensedConsoleFormatter>();
 builder.Services.AddSingleton(_ => SourcingConfiguration.CreateFromEnvironment());
 builder.Services.AddSingleton<ContentStackConfiguration>(sp => sp.GetRequiredService<SourcingConfiguration>().RequireContentStack());
 
-var csHttpClient = builder.Services
+var csHttpClient = builder
+	.Services
 	.AddHttpClient<ContentStackClient>()
 	.ConfigurePrimaryHttpMessageHandler(
 		() => new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
@@ -61,22 +62,20 @@ builder.Services.AddSingleton<CrawlerRateLimiter>();
 
 static void ConfigureLabsCrawlHttp(IHttpClientBuilder b)
 {
-	_ =
-		b.ConfigurePrimaryHttpMessageHandler(
-			() => new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
-		);
-	_ =
-		b.AddStandardResilienceHandler(o =>
-		{
-			o.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
-			o.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(30);
-			o.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(120);
-			o.CircuitBreaker.MinimumThroughput = 20;
-			o.Retry.MaxRetryAttempts = 8;
-			o.Retry.UseJitter = true;
-			o.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
-			o.Retry.Delay = TimeSpan.FromSeconds(2);
-		});
+	_ = b.ConfigurePrimaryHttpMessageHandler(
+		() => new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
+	);
+	_ = b.AddStandardResilienceHandler(o =>
+	{
+		o.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+		o.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(30);
+		o.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(120);
+		o.CircuitBreaker.MinimumThroughput = 20;
+		o.Retry.MaxRetryAttempts = 8;
+		o.Retry.UseJitter = true;
+		o.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
+		o.Retry.Delay = TimeSpan.FromSeconds(2);
+	});
 }
 
 ConfigureLabsCrawlHttp(builder.Services.AddHttpClient<ISitemapParser, SitemapParser>());
@@ -89,19 +88,15 @@ builder.Services.AddSingleton<FindUrlCommand>();
 builder.Services.AddSingleton<LabsCommands>();
 builder.Services.AddSingleton<IndicesCommands>();
 
-builder.Services.AddArgh(
-	args,
-	argh =>
-	{
-		_ =
-			argh.UseCliDescription(
-				"Elastic Site Search CLI — tooling to ingest and enrich data published on elastic.co (not the Elastic documentation site)."
-			);
-		_ = argh.MapNamespace<ContentStackCommands>("contentstack");
-		_ = argh.MapNamespace<LabsCommands>("labs");
-		_ = argh.MapNamespace<IndicesCommands>("indices");
-	}
-);
+builder.Services.AddArgh(args, argh =>
+{
+	_ = argh.UseCliDescription(
+		"Elastic Site Search CLI — tooling to ingest and enrich data published on elastic.co (not the Elastic documentation site)."
+	);
+	_ = argh.MapNamespace<ContentStackCommands>("contentstack");
+	_ = argh.MapNamespace<LabsCommands>("labs");
+	_ = argh.MapNamespace<IndicesCommands>("indices");
+});
 
 using var host = builder.Build();
 await host.RunAsync().ConfigureAwait(false);

@@ -379,8 +379,14 @@ public partial class ChangelogBundlingService(
 				if (requestedEntryNames is not null)
 				{
 					// --files on the CDN path: fetch each entry directly by key; no registry needed.
-					var selected =
-						await FetchCdnNamedEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, requestedEntryNames, ctx);
+					var selected = await FetchCdnNamedEntriesAsync(
+						collector,
+						authoringOwner,
+						authoringRepo,
+						authoringBranch,
+						requestedEntryNames,
+						ctx
+					);
 					if (selected == null)
 						return false;
 					_logger.LogInformation("Matching {Count} explicitly selected changelog entries from the CDN", selected.Count);
@@ -391,8 +397,14 @@ public partial class ChangelogBundlingService(
 				{
 					// --prs / --report / --release-version on the CDN path: probe one key per PR number.
 					// Each entry lives at changelog/{org}/{repo}/{branch}/{pr}.yaml; 404 = no entry for that PR.
-					var probed =
-						await FetchCdnProbedEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, prsToMatch, ctx);
+					var probed = await FetchCdnProbedEntriesAsync(
+						collector,
+						authoringOwner,
+						authoringRepo,
+						authoringBranch,
+						prsToMatch,
+						ctx
+					);
 					if (probed == null)
 						return false;
 					_logger.LogInformation(
@@ -674,7 +686,8 @@ public partial class ChangelogBundlingService(
 			// Parse output_products pattern with version/lifecycle substitution
 			if (!string.IsNullOrWhiteSpace(profile.OutputProducts))
 			{
-				var outputProductsPattern = profile.OutputProducts
+				var outputProductsPattern = profile
+					.OutputProducts
 					.Replace("{version}", filterResult.Version)
 					.Replace("{lifecycle}", resolvedLifecycle);
 				if (
@@ -730,14 +743,13 @@ public partial class ChangelogBundlingService(
 					return null;
 				}
 
-				profileDescription =
-					BundleDescriptionSubstitution.SubstitutePlaceholders(
-						descriptionTemplate,
-						filterResult.Version,
-						resolvedLifecycle,
-						owner,
-						repo
-					);
+				profileDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+					descriptionTemplate,
+					filterResult.Version,
+					resolvedLifecycle,
+					owner,
+					repo
+				);
 			}
 		}
 
@@ -903,12 +915,11 @@ public partial class ChangelogBundlingService(
 		}
 
 		var owner = string.IsNullOrWhiteSpace(sourcing.Owner) ? DefaultOwner : sourcing.Owner;
-		var resolution =
-			await _commitRangeService.ResolvePullRequestsAsync(
-				collector,
-				new CommitRangeArguments { Owner = owner, Repo = sourcing.Repo, StartRef = input.StartGitRef!, EndRef = input.EndGitRef! },
-				ctx
-			);
+		var resolution = await _commitRangeService.ResolvePullRequestsAsync(
+			collector,
+			new CommitRangeArguments { Owner = owner, Repo = sourcing.Repo, StartRef = input.StartGitRef!, EndRef = input.EndGitRef! },
+			ctx
+		);
 		if (resolution == null)
 			return false;
 
@@ -922,22 +933,21 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		var resolver = new GitRangeEntryResolver(_prService, _logger);
-		var result =
-			await resolver.ResolveAsync(
-				collector,
-				resolution,
-				candidates,
-				config,
-				new GitRangeEntryResolutionOptions
-				{
-					Owner = owner,
-					Repo = sourcing.Repo,
-					StartRef = input.StartGitRef!,
-					EndRef = input.EndGitRef!,
-					FallbackProducts = input.OutputProducts
-				},
-				ctx
-			);
+		var result = await resolver.ResolveAsync(
+			collector,
+			resolution,
+			candidates,
+			config,
+			new GitRangeEntryResolutionOptions
+			{
+				Owner = owner,
+				Repo = sourcing.Repo,
+				StartRef = input.StartGitRef!,
+				EndRef = input.EndGitRef!,
+				FallbackProducts = input.OutputProducts
+			},
+			ctx
+		);
 
 		var report = result.Report.ToMarkdown();
 		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
@@ -1226,7 +1236,8 @@ public partial class ChangelogBundlingService(
 			valid = false;
 		}
 
-		var collisions = profiles.Select(kvp => (Name: kvp.Key, Product: ResolvePrimaryProductFromProfile(kvp.Value)))
+		var collisions = profiles
+			.Select(kvp => (Name: kvp.Key, Product: ResolvePrimaryProductFromProfile(kvp.Value)))
 			.Where(p => !string.IsNullOrWhiteSpace(p.Product))
 			.GroupBy(p => p.Product, StringComparer.OrdinalIgnoreCase)
 			.Where(g => g.Count() > 1);
@@ -1281,16 +1292,15 @@ public partial class ChangelogBundlingService(
 			return null;
 		}
 
-		var entries =
-			await _entryFetcher.FetchNamedAsync(
-				baseUri,
-				resolvedOrg,
-				repo,
-				resolvedBranch,
-				fileNames,
-				msg => collector.EmitError(string.Empty, msg),
-				ctx
-			);
+		var entries = await _entryFetcher.FetchNamedAsync(
+			baseUri,
+			resolvedOrg,
+			repo,
+			resolvedBranch,
+			fileNames,
+			msg => collector.EmitError(string.Empty, msg),
+			ctx
+		);
 
 		if (entries == null)
 			return null;
@@ -1340,20 +1350,19 @@ public partial class ChangelogBundlingService(
 		}
 
 		var fatalFailure = false;
-		var entries =
-			await _entryFetcher.FetchAsync(
-				baseUri,
-				resolvedOrg,
-				repo,
-				resolvedBranch,
-				msg =>
-				{
-					fatalFailure = true;
-					collector.EmitError(string.Empty, msg);
-				},
-				msg => collector.EmitWarning(string.Empty, msg),
-				ctx
-			);
+		var entries = await _entryFetcher.FetchAsync(
+			baseUri,
+			resolvedOrg,
+			repo,
+			resolvedBranch,
+			msg =>
+			{
+				fatalFailure = true;
+				collector.EmitError(string.Empty, msg);
+			},
+			msg => collector.EmitWarning(string.Empty, msg),
+			ctx
+		);
 
 		// The fetcher emits an error (via the callback above) for any fatal condition — a registry that
 		// cannot be read, or a registry-listed entry still missing after its retry budget. Either would
@@ -1397,19 +1406,18 @@ public partial class ChangelogBundlingService(
 			return [];
 
 		var hadError = false;
-		var cdnEntries =
-			await _entryFetcher.FetchNotesAsync(
-				baseUri,
-				resolvedOrg,
-				repo,
-				target,
-				msg =>
-				{
-					hadError = true;
-					collector.EmitError(string.Empty, msg);
-				},
-				ctx
-			);
+		var cdnEntries = await _entryFetcher.FetchNotesAsync(
+			baseUri,
+			resolvedOrg,
+			repo,
+			target,
+			msg =>
+			{
+				hadError = true;
+				collector.EmitError(string.Empty, msg);
+			},
+			ctx
+		);
 
 		if (hadError)
 			return null;
@@ -1567,8 +1575,14 @@ public partial class ChangelogBundlingService(
 				continue;
 			}
 
-			var parentCdnEntry =
-				await _entryFetcher.FetchPrEntryAsync(baseUri, resolvedOrg, repo, resolvedBranch, parentPr, ctx).ConfigureAwait(false);
+			var parentCdnEntry = await _entryFetcher.FetchPrEntryAsync(
+				baseUri,
+				resolvedOrg,
+				repo,
+				resolvedBranch,
+				parentPr,
+				ctx
+			).ConfigureAwait(false);
 			if (parentCdnEntry is null)
 			{
 				collector.EmitError(
@@ -1747,7 +1761,8 @@ public partial class ChangelogBundlingService(
 	{
 		if (input.OutputProducts is not { Count: > 0 })
 			return [];
-		return input.OutputProducts
+		return input
+			.OutputProducts
 			.Where(p => !string.IsNullOrWhiteSpace(p.Target) && p.Target != "*")
 			.Select(p => p.Target!)
 			.Distinct(StringComparer.Ordinal)
@@ -2048,7 +2063,8 @@ public partial class ChangelogBundlingService(
 		// BUNDLE-LEVEL: Determine rule context product once for entire bundle
 		// Always use alphabetical first for consistency, regardless of source
 		var ruleContextProduct = outputProductIds?.OrderBy(id => id, StringComparer.OrdinalIgnoreCase).FirstOrDefault()
-			?? entries.SelectMany(e => e.Data.Products?.Select(p => p.ProductId) ?? [])
+			?? entries
+				.SelectMany(e => e.Data.Products?.Select(p => p.ProductId) ?? [])
 				.Distinct(StringComparer.OrdinalIgnoreCase)
 				.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
 				.FirstOrDefault();
@@ -2092,7 +2108,8 @@ public partial class ChangelogBundlingService(
 						&& !ruleStats.ContainsKey("ineffective_pattern_warned")
 					)
 					{
-						var wouldIncludeAll = resolveResult.Rule
+						var wouldIncludeAll = resolveResult
+							.Rule
 							.IncludeProducts
 							.Contains(ruleContextProduct ?? "", StringComparer.OrdinalIgnoreCase);
 						collector.EmitHint(

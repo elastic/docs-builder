@@ -161,7 +161,8 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
 		// Pick a deep leaf inside the observability docset via NavigationIndexedByOrder
-		var deepLeaf = nav.NavigationIndexedByOrder
+		var deepLeaf = nav
+			.NavigationIndexedByOrder
 			.Values
 			.OfType<ILeafNavigationItem<IDocumentationFile>>()
 			.FirstOrDefault(l => l.Url.Contains("monitoring"));

@@ -146,7 +146,8 @@ public class McpServerInstructionTests
 	}
 
 	private static List<string> ExtractBullets(string instructions) =>
-		instructions.Split('\n')
+		instructions
+			.Split('\n')
 			.Where(l => l.TrimStart().StartsWith("- ", StringComparison.Ordinal))
 			.Select(l => l.TrimStart()[2..])
 			.ToList();

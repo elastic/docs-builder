@@ -96,14 +96,16 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 
 		contextFromRepoRoot.DocumentationCheckoutDirectory.Should().NotBeNull();
 		contextFromDocsFolder.DocumentationCheckoutDirectory.Should().NotBeNull();
-		contextFromRepoRoot.DocumentationCheckoutDirectory
+		contextFromRepoRoot
+			.DocumentationCheckoutDirectory
 			.FullName
 			.Should()
 			.Be(
 				contextFromDocsFolder.DocumentationCheckoutDirectory.FullName,
 				"--path repo/ and --path repo/docs/ must resolve to the same CheckoutDirectory"
 			);
-		contextFromRepoRoot.DocumentationSourceDirectory
+		contextFromRepoRoot
+			.DocumentationSourceDirectory
 			.FullName
 			.Should()
 			.Be(

@@ -40,7 +40,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		var xTagGroups = OpenApiExtensionReader.ParseXTagGroups(openApiDocument);
 		var orphanTagsLogged = new HashSet<string>(StringComparer.Ordinal);
 
-		var ops = openApiDocument.Paths
+		var ops = openApiDocument
+			.Paths
 			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
 			.Select(pair =>
 			{

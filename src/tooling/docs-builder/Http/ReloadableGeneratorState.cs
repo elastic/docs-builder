@@ -89,8 +89,11 @@ public class ReloadableGeneratorState : IDisposable
 			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
 				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem())
 				: null;
-			_crossLinkFetcher =
-				new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
+			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
+				_logFactory,
+				_context.Configuration,
+				codexLinkIndexReader: _codexReader
+			);
 		}
 		var crossLinks = _cachedCrossLinks;
 		if (crossLinks is null || reloadConfiguration)

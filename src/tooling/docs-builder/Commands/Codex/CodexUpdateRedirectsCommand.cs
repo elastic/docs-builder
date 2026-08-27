@@ -44,15 +44,14 @@ internal sealed class CodexUpdateRedirectsCommand(IDiagnosticsCollector collecto
 		serviceInvoker.AddCommand(
 			service,
 			(environment: resolvedEnvironment, redirectsFile, kvsNamePrefix: "codex", defaultRedirectsFile: ".artifacts/codex/docs/redirects.json"),
-			static async (s, col, state, c) =>
-				await s.UpdateRedirects(
-					col,
-					state.environment,
-					state.redirectsFile?.FullName,
-					state.kvsNamePrefix,
-					state.defaultRedirectsFile,
-					ctx: c
-				)
+			static async (s, col, state, c) => await s.UpdateRedirects(
+				col,
+				state.environment,
+				state.redirectsFile?.FullName,
+				state.kvsNamePrefix,
+				state.defaultRedirectsFile,
+				ctx: c
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

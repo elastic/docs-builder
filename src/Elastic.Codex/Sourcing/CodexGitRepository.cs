@@ -47,20 +47,19 @@ public class CodexGitRepository(
 	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));
 
 	public void Fetch(string reference) =>
-		_ =
-			ExecInWithRetry(
-				EnvironmentVars,
-				NetworkRetry,
-				"git",
-				"fetch",
-				"--no-tags",
-				"--prune",
-				"--no-recurse-submodules",
-				"--depth",
-				"1",
-				"origin",
-				reference
-			);
+		_ = ExecInWithRetry(
+			EnvironmentVars,
+			NetworkRetry,
+			"git",
+			"fetch",
+			"--no-tags",
+			"--prune",
+			"--no-recurse-submodules",
+			"--depth",
+			"1",
+			"origin",
+			reference
+		);
 
 	public void EnableSparseCheckout(string[] folders) =>
 		ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);

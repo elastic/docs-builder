@@ -263,7 +263,8 @@ public static class EuiSvgIcons
 		var assemblyName = assembly.GetName().Name;
 		var fullPrefix = $"{assemblyName}.{folderPrefix}";
 
-		return assembly.GetManifestResourceNames()
+		return assembly
+			.GetManifestResourceNames()
 			.Where(r => r.StartsWith(fullPrefix, StringComparison.Ordinal) && r.EndsWith(".svg", StringComparison.Ordinal))
 			.Where(r =>
 			{
@@ -275,17 +276,14 @@ public static class EuiSvgIcons
 				}
 				return true;
 			})
-			.ToDictionary(
-				r => r[fullPrefix.Length..^4], // Remove prefix and ".svg" suffix
-
-				r =>
-				{
-					using var stream = assembly.GetManifestResourceStream(r);
-					if (stream is null)
-						return string.Empty;
-					using var reader = new StreamReader(stream);
-					return reader.ReadToEnd();
-				}
-			);
+			.ToDictionary(r => r[fullPrefix.Length..^4], // Remove prefix and ".svg" suffix
+			 r =>
+			{
+				using var stream = assembly.GetManifestResourceStream(r);
+				if (stream is null)
+					return string.Empty;
+				using var reader = new StreamReader(stream);
+				return reader.ReadToEnd();
+			});
 	}
 }

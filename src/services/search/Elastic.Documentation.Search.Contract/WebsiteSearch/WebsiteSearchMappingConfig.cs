@@ -21,7 +21,8 @@ public class WebsiteSearchLexicalConfig : IConfigureElasticsearch<WebsiteSearchD
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
-		mappings.AddSearchDocumentMappings()
+		mappings
+			.AddSearchDocumentMappings()
 			.AddSiteMappings()
 			// WebsiteSearchDocument has no C# property for applies_to (DocumentationDocument-only) and
 			// its inherited parents field lacks the docs-specific keyword/multi-field topology — merge
@@ -38,7 +39,8 @@ public class WebsiteSearchSemanticConfig : IConfigureElasticsearch<WebsiteSearch
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
-		mappings.AddSearchDocumentMappings(semantic: true)
+		mappings
+			.AddSearchDocumentMappings(semantic: true)
 			.AddSiteMappings()
 			.Merge(DocumentationMappingContext.DocumentationDocumentSemantic, d => d.AddDocumentationMappings());
 }

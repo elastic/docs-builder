@@ -39,7 +39,8 @@ public class CrossLinkRegistryTests
 		var docSet = CreateDocSet("internal", ["other-internal-repo"]);
 		var config = CreateConfiguration(docSet);
 
-		config.CrossLinkEntries
+		config
+			.CrossLinkEntries
 			.Should()
 			.ContainSingle()
 			.Which

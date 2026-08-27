@@ -209,7 +209,8 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		// ExtractBaseVersion strips the pre-release suffix at run time too, so plan's file name must
 		// drop "-beta.1" the same way to stay in sync with the bundle 'run' actually writes.
-		result.OutputPath
+		result
+			.OutputPath
 			.Should()
 			.EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
 	}

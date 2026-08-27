@@ -61,14 +61,13 @@ public class ElasticsearchCrawlCache(ILogger<ElasticsearchCrawlCache> logger, Di
 					if (string.IsNullOrEmpty(src.Path))
 						continue;
 
-					cache[src.Path] =
-						new CachedDocInfo(
-							src.Path,
-							src.Hash ?? string.Empty,
-							src.LastUpdated ?? DateTimeOffset.MinValue,
-							src.Http?.Etag,
-							src.Http?.LastModified
-						);
+					cache[src.Path] = new CachedDocInfo(
+						src.Path,
+						src.Hash ?? string.Empty,
+						src.LastUpdated ?? DateTimeOffset.MinValue,
+						src.Http?.Etag,
+						src.Http?.LastModified
+					);
 
 					loaded++;
 					progress?.Report((loaded, src.Path));

@@ -81,8 +81,11 @@ public class ElasticsearchOperations(ITransport transport, ILogger logger, IDiag
 		bool completed;
 		do
 		{
-			var taskResponse =
-				await WithRetryAsync(() => _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ct), $"GET _tasks/{taskId}", ct);
+			var taskResponse = await WithRetryAsync(
+				() => _transport.GetAsync<DynamicResponse>($"/_tasks/{taskId}", ct),
+				$"GET _tasks/{taskId}",
+				ct
+			);
 
 			completed = taskResponse.Body.Get<bool>("completed");
 			var total = taskResponse.Body.Get<int>("task.status.total");

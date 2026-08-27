@@ -49,7 +49,8 @@ public class ChangelogOnboardingValidationService(
 
 	public async Task<bool> ValidateOnboardingAsync(IDiagnosticsCollector collector, ValidateOnboardingArguments args, Cancel ctx)
 	{
-		var prestageProducts = configurationContext.ProductsConfiguration
+		var prestageProducts = configurationContext
+			.ProductsConfiguration
 			.Products
 			.Values
 			.Where(p => p.Features.ReleaseNotes == ReleaseNotesPath.Prestage)

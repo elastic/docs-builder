@@ -169,8 +169,12 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "Release notes with no pull request references." });
 
 		// Act – replicate command logic: parse, detect zero refs, warn and return success
-		var release =
-			await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken);
+		var release = await _mockReleaseService.FetchReleaseAsync(
+			"elastic",
+			"elasticsearch",
+			"v9.2.0",
+			TestContext.Current.CancellationToken
+		);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
 
 		// Assert
@@ -193,8 +197,12 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 		);
 
 		// Act
-		var release =
-			await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken);
+		var release = await _mockReleaseService.FetchReleaseAsync(
+			"elastic",
+			"elasticsearch",
+			"v9.2.0",
+			TestContext.Current.CancellationToken
+		);
 
 		// Assert – command returns error on null release
 		release.Should().BeNull();

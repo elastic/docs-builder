@@ -18,13 +18,12 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var prInfo = new GitHubPrInfo { Title = "[ES|QL]: Update Vector Similarity To Support BFLOAT16", Labels = ["type:feature"] };
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -79,13 +78,12 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var prInfo = new GitHubPrInfo { Title = "[Security] Improve authentication handling", Labels = ["type:feature"] };
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml
@@ -139,13 +137,12 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var prInfo = new GitHubPrInfo { Title = "[Discover][ESQL] Fix filtering by multiline string fields", Labels = ["type:bug-fix"] };
 
 		A.CallTo(
-			() =>
-				MockGitHubService.FetchPrInfoAsync(
-					"https://github.com/elastic/elasticsearch/pull/12345",
-					null,
-					null,
-					A<CancellationToken>._
-				)
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
 		).Returns(prInfo);
 
 		// language=yaml

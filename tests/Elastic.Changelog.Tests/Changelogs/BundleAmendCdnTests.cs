@@ -50,12 +50,11 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var handler = CdnHandler(("existing.yaml", ExistingEntry));
 		var service = ServiceWithCdn(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["/changelog/elastic/elasticsearch/main/existing.yaml"] },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["/changelog/elastic/elasticsearch/main/existing.yaml"] },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/registry.json", StringComparison.Ordinal));
@@ -72,15 +71,15 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var handler = CdnHandler(("existing.yaml", ExistingEntry), ("late.yaml", LateEntry));
 		var service = ServiceWithCdn(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = bundlePath, AddFiles = ["late.yaml"] },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = ["late.yaml"] },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		handler.RequestedPaths
+		handler
+			.RequestedPaths
 			.Should()
 			.NotContain(p => p.EndsWith("/existing.yaml", StringComparison.Ordinal), "only requested names are fetched");
 		var amend = await ReadSingleAmendAsync(bundlePath);
@@ -94,15 +93,15 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var bundlePath = await WriteParentBundleAsync("existing.yaml", ExistingEntry);
 		var service = ServiceWithCdn(CdnHandler(("existing.yaml", ExistingEntry)));
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = bundlePath, AddFiles = ["never-uploaded.yaml"] },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = ["never-uploaded.yaml"] },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("could not be fetched")
@@ -121,12 +120,11 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var service = ServiceWithCdn(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [localFile], ForceLocal = true },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [localFile], ForceLocal = true },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().BeEmpty("--force-local must not reach the CDN");
@@ -140,12 +138,11 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var bundlePath = await WriteParentBundleAsync("existing.yaml", ExistingEntry);
 		var service = ServiceWithCdn(CdnHandler(("existing.yaml", ChangedEntry)));
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["existing.yaml"] },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["existing.yaml"] },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("different checksum"));
@@ -178,12 +175,11 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var handler = CdnHandler(("existing.yaml", ExistingEntry));
 		var service = ServiceWithCdn(handler);
 
-		var result =
-			await service.AmendBundle(
-				Collector,
-				new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["300.yaml"], Force = true },
-				TestContext.Current.CancellationToken
-			);
+		var result = await service.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["300.yaml"], Force = true },
+			TestContext.Current.CancellationToken
+		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/300.yaml");

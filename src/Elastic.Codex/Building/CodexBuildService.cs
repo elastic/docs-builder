@@ -313,7 +313,8 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 		// ExportOptions.Default is a shared static HashSet -- copy before mutating, never touch it in place.
 		var withoutLlm = new HashSet<Exporter>(exporters);
 		_ = withoutLlm.Remove(Exporter.LLMText);
-		return withoutLlm.CreateMarkdownExporters(logFactory, docContext)
+		return withoutLlm
+			.CreateMarkdownExporters(logFactory, docContext)
 			.Append(new LlmMarkdownExporter(writeFileSystem: context.WriteFileSystem))
 			.ToArray();
 	}
@@ -347,17 +348,15 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
 
 			{
-				_ =
-					linkResolver.TryResolve(
-						specificErrorMessage =>
-							context.Collector.EmitError(
-								context.ConfigurationPath.FullName,
-								$"An error occurred while resolving cross-link {path}",
-								specificErrorMessage
-							),
-						new Uri(path),
-						out uri
-					);
+				_ = linkResolver.TryResolve(
+					specificErrorMessage => context.Collector.EmitError(
+						context.ConfigurationPath.FullName,
+						$"An error occurred while resolving cross-link {path}",
+						specificErrorMessage
+					),
+					new Uri(path),
+					out uri
+				);
 			}
 			else // Relative links
 
@@ -374,7 +373,8 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 		var uniqueRedirects = redirects.Where(
 			x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
 		).ToDictionary();
-		var redirectsFile = context.WriteFileSystem
+		var redirectsFile = context
+			.WriteFileSystem
 			.FileInfo
 			.New(context.WriteFileSystem.Path.Join(context.OutputDirectory.FullName, "redirects.json"));
 		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", uniqueRedirects.Count, redirectsFile.FullName);

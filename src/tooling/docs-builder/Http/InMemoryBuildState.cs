@@ -176,26 +176,25 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 
 			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
 
-			_ =
-				await service.Build(
-					streamingCollector,
-					new IsolatedBuildOptions
-					{
-						Path = new DirectoryInfo(sourcePath),
-						Force = true,
-						Strict = false,
-						AllowIndexing = false,
-						MetadataOnly = false,
-						// Validation-only: parse + emit diagnostics without LLM export, config copy,
-						// link-index, or redirect generation — none make sense for an in-memory build.
-						Exporters = ExportOptions.Validation,
-						SkipApi = true,
-						SkipCrossLinks = false
-					},
-					WriteFileSystem, // reuse MockFileSystem across builds for caching; initialized above
+			_ = await service.Build(
+				streamingCollector,
+				new IsolatedBuildOptions
+				{
+					Path = new DirectoryInfo(sourcePath),
+					Force = true,
+					Strict = false,
+					AllowIndexing = false,
+					MetadataOnly = false,
+					// Validation-only: parse + emit diagnostics without LLM export, config copy,
+					// link-index, or redirect generation — none make sense for an in-memory build.
+					Exporters = ExportOptions.Validation,
+					SkipApi = true,
+					SkipCrossLinks = false
+				},
+				WriteFileSystem, // reuse MockFileSystem across builds for caching; initialized above
 
-					ct
-				);
+				ct
+			);
 
 			// Stop the collector to complete the channel
 			await streamingCollector.StopAsync(ct);

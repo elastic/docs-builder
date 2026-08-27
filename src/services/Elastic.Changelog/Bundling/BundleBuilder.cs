@@ -65,22 +65,21 @@ public class BundleBuilder
 
 		if (outputProducts is { Count: > 0 })
 		{
-			bundledProducts =
-				outputProducts.OrderBy(p => p.Product)
-					.ThenBy(p => p.Target ?? string.Empty)
-					.ThenBy(p => p.Lifecycle ?? string.Empty)
-					.Select(
-						p =>
-							new BundledProduct
-							{
-								ProductId = p.Product ?? "",
-								Target = p.Target == "*" ? null : p.Target,
-								Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
-								Repo = repo,
-								Owner = owner
-							}
-					)
-					.ToList();
+			bundledProducts = outputProducts
+				.OrderBy(p => p.Product)
+				.ThenBy(p => p.Target ?? string.Empty)
+				.ThenBy(p => p.Lifecycle ?? string.Empty)
+				.Select(
+					p => new BundledProduct
+					{
+						ProductId = p.Product ?? "",
+						Target = p.Target == "*" ? null : p.Target,
+						Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
+						Repo = repo,
+						Owner = owner
+					}
+				)
+				.ToList();
 		}
 		else if (entries.Count > 0)
 		{
@@ -96,27 +95,27 @@ public class BundleBuilder
 				}
 			}
 
-			bundledProducts =
-				productVersions.OrderBy(pv => pv.product)
-					.ThenBy(pv => pv.version)
-					.ThenBy(pv => pv.lifecycle?.ToStringFast(true) ?? string.Empty)
-					.Select(
-						pv =>
-							new BundledProduct(
-								pv.product,
-								string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
-								pv.lifecycle,
-								repo,
-								owner
-							)
+			bundledProducts = productVersions
+				.OrderBy(pv => pv.product)
+				.ThenBy(pv => pv.version)
+				.ThenBy(pv => pv.lifecycle?.ToStringFast(true) ?? string.Empty)
+				.Select(
+					pv => new BundledProduct(
+						pv.product,
+						string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+						pv.lifecycle,
+						repo,
+						owner
 					)
-					.ToList();
+				)
+				.ToList();
 		}
 		else
 			bundledProducts = [];
 
 		// Check for products with same product ID but different versions
-		var productsByProductId = bundledProducts.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
+		var productsByProductId = bundledProducts
+			.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
 			.Where(g => g.Count() > 1)
 			.ToList();
 

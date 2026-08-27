@@ -51,7 +51,8 @@ public static class ApplicabilityRenderer
 		var allApplications = new AppliesCollection([.. applicabilities]);
 
 		// Sort by version (highest first), then by lifecycle priority as tiebreaker
-		var sortedApplicabilities = applicabilities.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance)
+		var sortedApplicabilities = applicabilities
+			.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance)
 			.ThenBy(a => ProductLifecycleInfo.GetOrder(a.Lifecycle))
 			.ToList();
 
@@ -90,9 +91,8 @@ public static class ApplicabilityRenderer
 			if (isFutureVersion)
 			{
 				var previousLifecycle = sortedApplicabilities.FirstOrDefault(
-					a =>
-						a != firstApplicability &&
-							(a.Version is null || a.Version == AllVersionsSpec.Instance || a.Version.Min <= versioningSystem.Current)
+					a => a != firstApplicability &&
+						(a.Version is null || a.Version == AllVersionsSpec.Instance || a.Version.Min <= versioningSystem.Current)
 				);
 
 				if (previousLifecycle is not null)
@@ -190,9 +190,10 @@ public static class ApplicabilityRenderer
 
 		return new PopoverData(
 			ProductDescription: productInfo?.Description,
-			AvailabilityItems: orderedApplicabilities.Select(
-				applicability => BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count)
-			).OfType<PopoverAvailabilityItem>().ToArray(),
+			AvailabilityItems: orderedApplicabilities
+				.Select(applicability => BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count))
+				.OfType<PopoverAvailabilityItem>()
+				.ToArray(),
 			AdditionalInfo: productInfo?.AdditionalAvailabilityInfo,
 			ShowVersionNote: showVersionNote,
 			VersionNote: showVersionNote ? ProductDescriptions.VersionNote : null

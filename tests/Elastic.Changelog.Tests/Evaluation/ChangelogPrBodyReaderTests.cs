@@ -39,7 +39,8 @@ public class ChangelogPrBodyReaderTests(ITestOutputHelper output)
 		var result = await ChangelogPrBodyReader.ReadAsync(bodyPath, collector, scopedFs, TestContext.Current.CancellationToken);
 
 		result.Should().BeNull();
-		collector.Diagnostics
+		collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains("points to a missing file", StringComparison.Ordinal));
 	}
@@ -58,7 +59,8 @@ public class ChangelogPrBodyReaderTests(ITestOutputHelper output)
 		var result = await ChangelogPrBodyReader.ReadAsync(bodyPath, collector, scopedFs, TestContext.Current.CancellationToken);
 
 		result.Should().BeNull();
-		collector.Diagnostics
+		collector
+			.Diagnostics
 			.Should()
 			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains("PR_BODY_FILE", StringComparison.Ordinal));
 	}

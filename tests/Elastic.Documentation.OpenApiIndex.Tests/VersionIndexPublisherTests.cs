@@ -22,7 +22,8 @@ public class VersionIndexPublisherTests
 	private readonly List<PutObjectRequest> _puts = [];
 
 	public VersionIndexPublisherTests() =>
-		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
+		A
+			.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
 			.Invokes((PutObjectRequest request, Cancel _) => _puts.Add(request))
 			.Returns(new PutObjectResponse());
 

@@ -20,14 +20,13 @@ public class ShallowRegistryReconcilerTests
 	private readonly ShallowRegistryReconciler _reconciler;
 
 	public ShallowRegistryReconcilerTests() =>
-		_reconciler =
-			new ShallowRegistryReconciler(
-				NullLoggerFactory.Instance,
-				_s3.Client,
-				PublicBucket,
-				retryBaseDelay: TimeSpan.Zero,
-				metrics: _metrics
-			);
+		_reconciler = new ShallowRegistryReconciler(
+			NullLoggerFactory.Instance,
+			_s3.Client,
+			PublicBucket,
+			retryBaseDelay: TimeSpan.Zero,
+			metrics: _metrics
+		);
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;
 
@@ -165,7 +164,8 @@ public class ShallowRegistryReconcilerTests
 		await _reconciler.ReconcileAsync(ChangelogScopeKind.Bundle, [BundleScope("elasticsearch")], Ctx);
 
 		Map(BundleMapKey).Keys.Should().BeEquivalentTo("elasticsearch", "kibana");
-		_s3.Puts
+		_s3
+			.Puts
 			.Should()
 			.ContainSingle()
 			.Which

@@ -170,11 +170,13 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		// Assert: by default the bulk fetch failure is a single, loud summary warning (not an error).
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Diagnostics
+		Collector
+			.Diagnostics
 			.Should()
 			.Contain(
-				d =>
-					d.Severity == Severity.Warning && d.Message.Contains("2 of 2") && d.Message.Contains("could not be fetched from GitHub")
+				d => d.Severity == Severity.Warning && d.Message.Contains("2 of 2") && d.Message.Contains(
+					"could not be fetched from GitHub"
+				)
 			);
 	}
 

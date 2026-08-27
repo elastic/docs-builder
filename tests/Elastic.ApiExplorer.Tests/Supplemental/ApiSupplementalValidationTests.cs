@@ -21,7 +21,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	{
 		var collector = Validate(FolderWith(("op-does-not-exist.md", "# supplemental")), fixture.Document, "main");
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("op-does-not-exist.md") && m.Contains("does not match any operationId in the latest spec"));
 	}
@@ -31,7 +32,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	{
 		var collector = Validate(FolderWith(("tag-does-not-exist.md", "# supplemental")), fixture.Document, "main");
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("tag-does-not-exist.md") && m.Contains("does not match any tag in the latest spec"));
 	}
@@ -66,7 +68,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			"main"
 		);
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("Parameter 'nope'") && m.Contains("operation 'search'") && m.Contains("the latest spec"));
 	}
@@ -93,7 +96,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			"main"
 		);
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle()
 			.Which
@@ -161,7 +165,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			emitUnmatchedBaseFiles: true
 		);
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("op-does-not-exist.md") && m.Contains("does not match any operationId in the latest spec"));
 	}
@@ -176,7 +181,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			emitUnmatchedBaseFiles: true
 		);
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("op-does-not-exist.md") && m.Contains("does not match any operationId in the latest spec"));
 	}
@@ -195,7 +201,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			"next"
 		);
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("Parameter 'nope'") && m.Contains("operation 'search'") && m.Contains("the latest spec"));
 	}
@@ -214,7 +221,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			"8"
 		);
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("Parameter 'pretty'") && m.Contains("operation 'search'") && m.Contains("version 8"));
 	}
@@ -224,7 +232,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	{
 		var collector = Validate(FolderWith(("op-nope.v8.md", "# supplemental")), SpecWith("ping"), "8");
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("op-nope.v8.md") && m.Contains("does not match any operationId in version 8"));
 	}
@@ -242,7 +251,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 	{
 		var collector = Validate(FolderWith(("tag-nope.v8.md", "# supplemental")), SpecWith("ping"), "8");
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("tag-nope.v8.md") && m.Contains("does not match any tag in version 8"));
 	}
@@ -255,7 +265,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 
 		var collector = Validate(FolderWith(("tag-foo-bar.v8.md", "# supplemental")), spec, "8");
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("tag-foo-bar.v8.md") && m.Contains("does not match any tag in version 8"));
 	}
@@ -276,7 +287,8 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 			"8"
 		);
 
-		collector.ErrorMessages
+		collector
+			.ErrorMessages
 			.Should()
 			.ContainSingle(m => m.Contains("Parameter 'nope'") && m.Contains("operation 'search'") && m.Contains("version 8"));
 	}
@@ -317,10 +329,9 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture) : IClass
 						{
 							OperationId = operationId,
 							Tags = new HashSet<OpenApiTagReference> { new("core") },
-							Parameters =
-								parameterNames.Select(
-									name => (IOpenApiParameter)new OpenApiParameter { Name = name, In = ParameterLocation.Query }
-								).ToList(),
+							Parameters = parameterNames.Select(
+								name => (IOpenApiParameter)new OpenApiParameter { Name = name, In = ParameterLocation.Query }
+							).ToList(),
 							Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
 						}
 					}

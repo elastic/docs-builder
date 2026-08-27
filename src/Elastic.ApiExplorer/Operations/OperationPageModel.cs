@@ -146,24 +146,23 @@ public record OperationPageModel
 			ExternalDocs = externalDocs,
 			Servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers,
 			Overloads = ResolveOverloads(context),
-			PathParameters =
-				(operation.Parameters ?? [])
-					.Where(p => p.In == ParameterLocation.Path)
-					.Select(
-						p =>
-							new ApiPathParameter
-							{
-								Parameter = p,
-								DescriptionHtml =
-									ApiMarkdown.Render(context, supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description)
-							}
-					)
-					.ToArray(),
-			QueryParameters =
-				(operation.Parameters ?? [])
-					.Where(p => p.In == ParameterLocation.Query)
-					.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
-					.ToArray(),
+			PathParameters = (operation.Parameters ?? [])
+				.Where(p => p.In == ParameterLocation.Path)
+				.Select(
+					p => new ApiPathParameter
+					{
+						Parameter = p,
+						DescriptionHtml = ApiMarkdown.Render(
+							context,
+							supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description
+						)
+					}
+				)
+				.ToArray(),
+			QueryParameters = (operation.Parameters ?? [])
+				.Where(p => p.In == ParameterLocation.Query)
+				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
+				.ToArray(),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = requestSchema is not null
 				? builder.BuildPropertyList(
@@ -191,13 +190,12 @@ public record OperationPageModel
 		examples is null
 			? []
 			: examples.Select(
-				e =>
-					new ExampleDisplay(
-						string.IsNullOrEmpty(e.Value?.Summary) ? e.Key : e.Value.Summary,
-						string.IsNullOrEmpty(e.Value?.Description) ? null : renderMarkdown(e.Value.Description),
-						e.Value?.Value?.ToString(),
-						string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue
-					)
+				e => new ExampleDisplay(
+					string.IsNullOrEmpty(e.Value?.Summary) ? e.Key : e.Value.Summary,
+					string.IsNullOrEmpty(e.Value?.Description) ? null : renderMarkdown(e.Value.Description),
+					e.Value?.Value?.ToString(),
+					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue
+				)
 			).ToArray();
 
 	private static IReadOnlyCollection<OperationNavigationItem> ResolveOverloads(ApiRenderContext context)
@@ -225,12 +223,13 @@ public record OperationPageModel
 			Type = schema is not null ? builder.Describe(schema) : null,
 			Constraints = schema is not null ? ApiPropertyTreeBuilder.BuildConstraints(schema) : [],
 			EnumValues = CollectEnumValues(schema, analyzer),
-			UnionOptions =
-				CollectUnionOptionNames(schema, analyzer).Select(
-					n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n))
-				).ToArray(),
-			DescriptionHtml =
-				ApiMarkdown.Render(context, supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description)
+			UnionOptions = CollectUnionOptionNames(schema, analyzer)
+				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
+				.ToArray(),
+			DescriptionHtml = ApiMarkdown.Render(
+				context,
+				supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description
+			)
 		};
 	}
 
@@ -253,7 +252,8 @@ public record OperationPageModel
 		if (unionSchemas is not null)
 		{
 			enumValues.AddRange(
-				unionSchemas.Select(analyzer.ResolveSchema)
+				unionSchemas
+					.Select(analyzer.ResolveSchema)
 					.Where(r => r?.Enum is { Count: > 0 })
 					.SelectMany(r => r!.Enum!.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)))
 			);
@@ -297,21 +297,22 @@ public record OperationPageModel
 					: statusCode.StartsWith('4') || statusCode.StartsWith('5') ? "error" : "info",
 				Contents = response.Content is null
 					? []
-					: response.Content
+					: response
+						.Content
 						.Where(ct => ct.Value?.Schema is not null)
 						.Select(ct => BuildResponseContent(ct.Key, ct.Value!.Schema!, statusCode, analyzer, builder))
 						.ToArray(),
 				Headers = response.Headers is null
 					? []
-					: response.Headers
+					: response
+						.Headers
 						.Select(
-							h =>
-								new ApiResponseHeader
-								{
-									Name = h.Key,
-									Header = h.Value,
-									Type = h.Value?.Schema is not null ? builder.Describe(h.Value.Schema) : null
-								}
+							h => new ApiResponseHeader
+							{
+								Name = h.Key,
+								Header = h.Value,
+								Type = h.Value?.Schema is not null ? builder.Describe(h.Value.Schema) : null
+							}
 						)
 						.ToArray()
 			});

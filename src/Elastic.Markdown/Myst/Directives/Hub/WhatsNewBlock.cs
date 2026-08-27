@@ -98,21 +98,18 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 		if (!Build.ReadFileSystem.File.Exists(path))
 			return null;
 
-		var config = CentralConfigCache.GetOrAdd(
-			path,
-			p =>
+		var config = CentralConfigCache.GetOrAdd(path, p =>
+		{
+			try
 			{
-				try
-				{
-					var yaml = Build.ReadFileSystem.File.ReadAllText(p);
-					return YamlSerialization.Deserialize<WhatsNewConfig>(yaml, Build.ProductsConfiguration);
-				}
-				catch
-				{
-					return null;
-				}
+				var yaml = Build.ReadFileSystem.File.ReadAllText(p);
+				return YamlSerialization.Deserialize<WhatsNewConfig>(yaml, Build.ProductsConfiguration);
 			}
-		);
+			catch
+			{
+				return null;
+			}
+		});
 
 		if (config?.Products is null)
 			return null;
