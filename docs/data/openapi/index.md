@@ -4,11 +4,13 @@ navigation_title: OpenAPI
 
 # OpenAPI Support
 
-{{dbuild}} can generate documentation from OpenAPI specifications. The API Explorer renders specs as interactive, navigable reference documentation directly within your documentation site.
+{{dbuild}} can generate documentation from OpenAPI specifications. The API Explorer renders the spec as API reference pages on your documentation site.
 
 ## API Explorer
 
-The [API Explorer](./api-explorer.md) generates pages for every operation, tag, and shared schema type from an OpenAPI JSON specification. Configure it in your `docset.yml`:
+Configure a spec in `docset.yml`. Then preview the generated pages. See [API Explorer](./api-explorer.md) for setup, page URLs, multi-version trees, and OpenAPI extensions.
+
+To override a description or a parameter, add an `op-*.md` or `tag-*.md` file next to the spec. To add extra sections, use the same files. See [Writing supplemental content](./supplemental.md).
 
 ```yaml
 api:
@@ -20,4 +22,4 @@ api:
       product: kibana
 ```
 
-Each product key produces its own section of API documentation with tag grouping, code samples, and schema type pages.
+Each product key produces its own API documentation section under `/api/doc/<key>/`. The section includes tag grouping, code samples, and schema type pages.
