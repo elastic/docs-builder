@@ -67,7 +67,7 @@ public class CliSupplementalDocTests
 
 		var supplemental = CliSupplementalDoc.Parse(raw);
 		var body = CliMarkdownGenerator.RootPage(schema, supplemental).ReplaceLineEndings("\n");
-		var combined = $"{supplemental!.FrontMatter.ReplaceLineEndings("\n")}\n\n{body}";
+		var combined = $"{supplemental!.FrontMatter?.ReplaceLineEndings("\n")}\n\n{body}";
 
 		combined.Should().StartWith("---\n");
 		combined.Should().Contain("---\n\n# elastic");
