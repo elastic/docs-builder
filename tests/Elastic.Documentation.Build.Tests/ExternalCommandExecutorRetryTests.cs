@@ -113,6 +113,27 @@ public class ExternalCommandExecutorRetryTests
 		executor.Diagnostics.Errors.Should().Be(1);
 	}
 
+	[Fact]
+	public void ExecInWithRetry_OnRetry_CallsOnBeforeRetryOncePerRetryNotBeforeFirstAttempt()
+	{
+		var executor = CreateExecutor(ExitCode(1), ExitCode(1), ExitCode(0));
+
+		var succeeded = executor.Retry(FiveAttempts);
+
+		succeeded.Should().BeTrue();
+		executor.OnBeforeRetryCallCount.Should().Be(2);
+	}
+
+	[Fact]
+	public void ExecInWithRetry_OnFirstAttemptSuccess_OnBeforeRetryNeverCalled()
+	{
+		var executor = CreateExecutor(ExitCode(0));
+
+		executor.Retry(FiveAttempts);
+
+		executor.OnBeforeRetryCallCount.Should().Be(0);
+	}
+
 	// ── Helpers ──────────────────────────────────────────────────────────────────
 
 	/// <summary>Scripts a normal process exit.</summary>
@@ -134,6 +155,8 @@ public class ExternalCommandExecutorRetryTests
 	{
 		public int CallCount { get; private set; }
 
+		public int OnBeforeRetryCallCount { get; private set; }
+
 		public List<TimeSpan> RecordedDelays { get; } = [];
 
 		public IDiagnosticsCollector Diagnostics => Collector;
@@ -146,6 +169,8 @@ public class ExternalCommandExecutorRetryTests
 				throw new InvalidOperationException($"Unexpected invocation {CallCount + 1}, only {steps.Length} steps were scripted");
 			return steps[CallCount++]();   // may throw ProcExecException
 		}
+
+		protected override void OnBeforeRetry() => OnBeforeRetryCallCount++;
 
 		protected override void DelayBeforeRetry(TimeSpan delay) => RecordedDelays.Add(delay);
 

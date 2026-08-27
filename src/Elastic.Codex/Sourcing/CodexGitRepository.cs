@@ -31,6 +31,10 @@ public class CodexGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector
 		BaseDelay: TimeSpan.FromSeconds(5),
 		AttemptTimeout: GitTimeouts.CiDefault);
 
+	protected override void OnBeforeRetry() =>
+		GitLocks.ClearStale(WorkingDirectory.FileSystem, WorkingDirectory.FullName,
+			f => Logger.LogWarning("Removed stale git lock file {LockFile}", f));
+
 	public string GetCurrentCommit() => Capture("git", "rev-parse", "HEAD");
 
 	public bool HasHead() => !string.IsNullOrEmpty(CaptureQuiet("git", "rev-parse", "--verify", "HEAD"));
