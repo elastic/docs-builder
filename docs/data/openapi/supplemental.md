@@ -4,63 +4,47 @@ navigation_title: Supplemental content
 
 # Writing supplemental content
 
-Supplemental files add context to generated API Explorer pages. They also add usage examples and richer parameter descriptions. You do not edit the OpenAPI spec.
+Supplemental files change generated operation pages and tag landing pages. Put the files in `api/<key>/`. Do not put them next to the spec file. Do not list them in `toc.yml`.
 
-**Files are discovered automatically.** Drop a file into `api/<key>/` that follows the naming convention. The next build finds the file. Do not add it to `toc.yml` or `children:`.
+{{dbuild}} reads only top-level `*.md` files in that folder. Nested folders are ignored.
 
-**Validation is strict.** If a file name does not match an `operationId` or tag in the spec, the build fails. If a parameter key or request-body key is unknown, the build also fails. If you rename or remove an operation, an old file fails the build.
+If an `op-*.md` or `tag-*.md` name does not match the spec, the build fails. If an operation file lists a parameter or request-body field that the spec does not have, the build also fails.
 
-**Frontmatter is metadata only.** YAML frontmatter can set `description`, `applies_to`, and `navigation_title`. {{dbuild}} copies that metadata to the generated page. It does not render frontmatter as the page body.
+Schema type pages do not use supplemental files.
 
-Schema type pages use descriptions from the OpenAPI spec only. There is no `schema-*.md` convention.
-
-For a step-by-step example, see [API Explorer](./api-explorer.md).
+For a walkthrough that uses this repository, see [API Explorer](./api-explorer.md).
 
 ## File naming
 
-{{dbuild}} discovers only top-level `*.md` files in `api/<key>/`. It ignores nested folders.
-
 | File pattern | Matches |
 |---|---|
-| `op-<operationId>.md` | Operation whose spec `operationId` equals `<operationId>` with no rewriting |
+| `op-<operationId>.md` | Operation whose spec `operationId` equals `<operationId>` |
 | `tag-<tagSlug>.md` | Tag whose URL slug equals `<tagSlug>` |
-| `op-<operationId>.vN.md` | Same operation, merged on major `N` only |
-| `tag-<tagSlug>.vN.md` | Same tag, merged on major `N` only |
+| `op-<operationId>.vN.md` | Same operation, merged for major `N` only |
+| `tag-<tagSlug>.vN.md` | Same tag, merged for major `N` only |
 
 The `op-` stem is the spec `operationId` with no change. Do not slugify it.
 
 The `tag-` stem is the tag URL slug. {{dbuild}} replaces spaces with hyphens. It lowercases the name. Underscores stay. `search` matches `tag-search.md`. `ML Anomaly` matches `tag-ml-anomaly.md`. `ml_anomaly` matches `tag-ml_anomaly.md`.
 
 ```text
-api/elasticsearch/
+api/docs-builder-elasticsearch/
   op-async-search-get.md
-  op-search.md
-  op-search.v8.md
-  tag-search.md
-  getting-started.md          # not auto-discovered; list it under children:
 ```
 
-{{dbuild}} ignores any other top-level `.md` file during supplemental discovery. If you want that file as a page, list it under `children:`.
+A top-level `.md` file that is not `op-*.md` or `tag-*.md` is not a supplemental file. If you want that file as its own page, list it under `children:`.
 
 ## Heading rules
 
-The heading structure of a supplemental file controls what the file adds to the generated page.
+Headings control how {{dbuild}} merges the file into the generated page.
 
 ### Frontmatter
 
-```markdown
----
-description: Retrieve results of a previously submitted async search.
-applies_to:
-  stack: ga
----
+{{dbuild}} strips YAML frontmatter so it is not the page body.
 
-## Description
+For `op-*.md` and `tag-*.md`, frontmatter is not applied to the generated page. `applies_to` and `navigation_title` in those files have no effect. Operation titles come from the spec summary. Availability badges come from the spec, not from supplemental YAML.
 
-Poll `GET /_async_search/{id}` until `is_running` is `false`.
-```
-
-{{dbuild}} keeps frontmatter as metadata. It uses the `## Description` section as the page description. If the file has only frontmatter, it uses the spec description.
+For `children:` pages, `navigation_title` in frontmatter sets the navigation label. Those pages run through the normal Markdown pipeline.
 
 ### No headings
 
@@ -72,77 +56,61 @@ Retrieve the results of a previously submitted asynchronous search request.
 
 ### Description
 
-A `## Description` section replaces the spec description. Other sections in the same file still apply:
-
-```markdown
-## Description
-
-Retrieve results of a previously submitted async search.
-Elasticsearch restricts access to the user or API key that submitted the request.
-
-## When to poll
-
-Retry until `is_running` is `false`.
-```
+A `## Description` section replaces the spec description. Other sections in the same file still apply.
 
 ### Parameters and request body
 
-These headings replace descriptions of the fields you list:
+These headings work on **operation** files only:
 
 - `## Parameters`
 - `## Query parameters`
 - `## Path parameters`
 - `## Request body`
 
-Unlisted fields keep the spec text.
+Each listed field starts with `: field_name` or `: \`field_name\``. Unlisted fields keep the spec text. An unknown key fails the build.
 
-Each entry starts with `: field_name` or `: \`field_name\``:
+On a **tag** file, those headings are not shown. Tag files use the description and extra `##` sections only.
 
 ```markdown
 ## Parameters
 
 : `keep_alive`
-  How long Elasticsearch keeps this search. Extending it also extends the
-  validity of the saved results.
+  How long Elasticsearch keeps this search and its saved results.
 
 : id
   The async search id returned by the submit request.
 ```
 
-If a key is unknown, the build fails.
-
 ### Additional sections
 
-Any other `##` heading is appended after the generated reference content. Headings stay in document order. Use these sections for examples or background that belong after the parameter tables.
+Any other `##` heading is appended after the generated reference content. Headings stay in document order.
 
 ## Version-specific files
 
-If a description or parameter must differ for one major, add a `.vN.md` file next to the base file:
+If one major needs different text, add a `.vN.md` file next to the base file:
 
 ```text
 api/elasticsearch/
-  op-search.md        # every version that has this operation
-  op-search.v8.md     # merged on top of the base file for 8.x only
-  tag-ml-anomaly.md
-  tag-ml-anomaly.v9.md
+  op-search.md
+  op-search.v8.md
 ```
 
-The version file uses the same heading rules as the base file. Two files merge, so one extra rule applies:
+The version file uses the same heading rules as the base file. The two files merge as follows:
 
 - `## Description` or bare text replaces the base description for that version.
 - Listed parameter and request-body keys replace or add to the base overrides. Unlisted keys stay.
-- Extra `##` sections with a new heading are added alongside the base file. If both files use the same extra heading, the version file replaces the base section.
-- Sections you omit keep the base file.
+- A new extra `##` heading is added. If both files use the same extra heading, the version file replaces that section.
+- Omitted sections keep the base file.
 
-If a version has no matching `.vN.md`, that version uses the base file with no change. Tag files use this same merge.
+If a version has no `.vN.md` file, that version uses the base file only.
 
-The unversioned `main` tree uses the overlay of the current major. Then `/api/doc/{key}/` matches `/vN/` for that major. Versionless products (serverless and similar) get no overlay.
+The unversioned `/api/doc/{key}/` tree uses the overlay of the highest numeric major that this product renders. Versionless products render only `main`. They have no numeric major, so they get no overlay.
 
-{{dbuild}} validates a version-suffixed file against that major's spec. `op-search.v8.md` must match an `operationId` in the v8 spec. A match in `main` only is not enough.
+{{dbuild}} checks a version-suffixed file against that major's spec. `op-search.v8.md` must match an `operationId` in the v8 spec.
 
 ## `children:` pages
 
-`children:` pages are full Markdown pages under the product root. You declare them in `docset.yml`. {{dbuild}} does not discover them by name:
+`children:` pages are separate Markdown pages under the product root. You declare them in `docset.yml`. {{dbuild}} does not pick them up by file name.
 
 ```yaml
 api:
@@ -153,9 +121,9 @@ api:
         - file: kibana-api-overview.md
 ```
 
-Paths are relative to `api/<key>/`. Child pages can use all MyST directives, substitutions, and cross-links.
+Paths are relative to `api/<key>/`. These pages can use MyST directives, substitutions, and cross-links.
 
-A `*.vN.md` suffix limits that child to major `N` only. `getting-started.md` appears in every version. `knn-guide.v9.md` appears only in 9.x. If 9 is the current major, it also appears in the unversioned `main` tree.
+A `*.vN.md` suffix limits that child to major `N`. `getting-started.md` appears in every version. `knn-guide.v9.md` appears in 9.x. If 9 is the highest numeric major, it also appears on the unversioned `main` tree.
 
 ### Child slugs
 
@@ -164,19 +132,19 @@ A `*.vN.md` suffix limits that child to major `N` only. `getting-started.md` app
 - It lowercases the name.
 - It replaces spaces and underscores with hyphens.
 - It removes the `.md` extension.
-- It does not include a `.vN` suffix in the slug.
+- It drops a `.vN` suffix from the slug.
 
 `Getting-Started.md` becomes `getting-started`. `knn-guide.v9.md` becomes `knn-guide`.
 
-These slugs are reserved. Do not use them as child file names:
+These slugs are reserved:
 
 | Reserved slug | Reason |
 |---|---|
-| `types` | Schema type pages live under `/types/` |
-| `group` | Tag landing pages live under `/group/` |
-| `operation` | Operation pages live under `/operation/` |
+| `types` | Schema type pages use `/types/` |
+| `group` | Tag landing pages use `/group/` |
+| `operation` | Operation pages use `/operation/` |
 
-Do not list `op-*.md` or `tag-*.md` under `children:`. {{dbuild}} discovers those files automatically.
+Do not list `op-*.md` or `tag-*.md` under `children:`.
 
 ## Validation errors
 
@@ -192,7 +160,7 @@ API supplemental: Parameter 'typo' not found in operation 'async-search-get' in 
 API supplemental: Request body field 'typo' not found in operation 'search' in the latest spec
 ```
 
-Unmatched base files (`op-*.md` without `.vN`) are reported against `the latest spec`. Version-suffixed files are reported against `version {N}`.
+Unmatched base files are reported against `the latest spec`. Version-suffixed files are reported against `version {N}`.
 
 **`children:` and slugs**
 
