@@ -18,6 +18,7 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
+using Elastic.Changelog.Onboarding;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
@@ -721,7 +722,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
-	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output</c>.</param>
+	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as <c>{product}-{version}.yaml</c> from the profile's primary output product.</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output_products</c>.</param>
 	/// <param name="owner">GitHub repository owner for PR/issue numbers or --release-version. Falls back to <c>bundle.owner</c> or "elastic". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.owner</c> or <c>bundle.profiles.&lt;name&gt;.owner</c>.</param>
 	/// <param name="branch">Branch whose CDN changelog entry pool (<c>changelog/{org}/{repo}/{branch}/...</c>) is sourced from. Falls back to <c>bundle.branch</c> or "main". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.branch</c> or <c>bundle.profiles.&lt;name&gt;.branch</c>.</param>
@@ -1862,6 +1863,29 @@ internal sealed partial class ChangelogCommands(
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)
 		);
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>Validate that every product registered with <c>features.release-notes: prestage</c> has the required onboarding files in its repository.</summary>
+	/// <remarks>
+	/// Probes each Prestage product's repository (resolved from <c>products.yml</c>: the product key
+	/// or its <c>repository:</c> override) via the GitHub contents API for the changelog
+	/// configuration (<c>docs/changelog.yml</c> or <c>changelog.yml</c>) and the
+	/// <c>changelog-validate</c>, <c>changelog-submit</c>, <c>changelog-upload</c>, and
+	/// <c>changelog-bundle-stage</c> workflows. Exits non-zero when anything is missing, so CI can
+	/// gate on registration drift. Set <c>GITHUB_TOKEN</c> to probe private repositories.
+	/// </remarks>
+	/// <param name="owner">GitHub owner (org) the product repositories live under.</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> ValidateOnboarding(string owner = "elastic", CancellationToken ct = default)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+		var service = new ChangelogOnboardingValidationService(logFactory, configurationContext);
+		var args = new ValidateOnboardingArguments { Owner = owner };
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.ValidateOnboardingAsync(c, state, ct));
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 

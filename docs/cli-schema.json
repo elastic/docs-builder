@@ -3246,7 +3246,7 @@
               "name": "output",
               "type": "string",
               "required": false,
-              "summary": "Output path for the bundled changelog (directory or .yml/.yaml file). Uses config bundle.output_directory or defaults to \u0027changelog-bundle.yaml\u0027 in the input directory. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.output."
+              "summary": "Output path for the bundled changelog (directory or .yml/.yaml file). Uses config bundle.output_directory or defaults to \u0027changelog-bundle.yaml\u0027 in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as {product}-{version}.yaml from the profile\u0027s primary output product."
             },
             {
               "role": "flag",
@@ -4844,6 +4844,63 @@
               "required": false,
               "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
               "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "validate-onboarding",
+          "summary": "Validate that every product registered with features.release-notes: prestage has the required onboarding files in its repository.",
+          "notes": "Probes each Prestage product\u0027s repository (resolved from products.yml: the product key\nor its repository: override) via the GitHub contents API for the changelog\nconfiguration (docs/changelog.yml or changelog.yml) and the\nchangelog-validate, changelog-submit, changelog-upload, and\nchangelog-bundle-stage workflows. Exits non-zero when anything is missing, so CI can\ngate on registration drift. Set GITHUB_TOKEN to probe private repositories.",
+          "usage": "docs-builder changelog validate-onboarding [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub owner (org) the product repositories live under.",
+              "defaultValue": "elastic"
             },
             {
               "role": "flag",

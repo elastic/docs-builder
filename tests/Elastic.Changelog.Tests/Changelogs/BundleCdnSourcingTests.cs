@@ -466,7 +466,6 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			    es-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} {lifecycle}"
 			""".Replace("PLACEHOLDER", outputDir);
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");

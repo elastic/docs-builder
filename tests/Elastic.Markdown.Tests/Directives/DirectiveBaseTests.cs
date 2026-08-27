@@ -5,6 +5,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
@@ -74,7 +75,10 @@ $"""
 		// ReSharper disable once VirtualMemberCallInConstructor
 		var environment = GetEnvironment();
 		// ReSharper disable once VirtualMemberCallInConstructor
-		var context = new BuildContext(Collector, TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()), configurationContext, environment);
+		var context = new BuildContext(Collector, TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()), configurationContext, environment)
+		{
+			ContentSource = GetContentSource()
+		};
 		var linkResolver = new TestCrossLinkResolver();
 		// ReSharper disable once VirtualMemberCallInConstructor
 		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
@@ -107,6 +111,12 @@ $"""
 
 	/// <summary>Override to inject a deterministic environment for env-dependent config (e.g. <c>storybook.registry</c>).</summary>
 	protected virtual IEnvironmentVariables? GetEnvironment() => null;
+
+	/// <summary>
+	/// Override to simulate an assembler build publishing a specific content source
+	/// (<c>current</c> = production, <c>next</c> = staging). Null (default) mimics isolated builds.
+	/// </summary>
+	protected virtual ContentSource? GetContentSource() => null;
 
 	public virtual async ValueTask InitializeAsync()
 	{
