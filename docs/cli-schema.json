@@ -95,7 +95,7 @@
           "name": "assume-build",
           "type": "boolean",
           "required": false,
-          "summary": "Skip the build step when .artifacts/docs/index.html already exists. Intended for test scenarios only."
+          "summary": "Skip the build when the build stamp is up to date. When omitted, the assembler defaults to\n            true locally and false on CI. Use --no-assume-build to force a full rebuild."
         },
         {
           "role": "flag",
@@ -1269,7 +1269,7 @@
               "name": "assume-build",
               "type": "boolean",
               "required": false,
-              "summary": "Skip the build step when .artifacts/docs/index.html already exists. Intended for test scenarios only."
+              "summary": "Skip the build when the build stamp is up to date. When omitted, the assembler defaults to\n            true locally and false on CI. Use --no-assume-build to force a full rebuild."
             },
             {
               "role": "flag",
