@@ -297,7 +297,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			if (matchingLabel != null)
 			{
-				collector.EmitWarning(
+				collector.EmitHint(
 					string.Empty,
 					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
 				);
@@ -317,7 +317,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (!hasMatch)
 			{
 				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitWarning(
+				collector.EmitHint(
 					string.Empty,
 					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
 				);

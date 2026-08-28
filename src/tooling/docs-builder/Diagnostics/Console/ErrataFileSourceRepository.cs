@@ -96,15 +96,13 @@ public class ErrataFileSourceRepository : ISourceRepository
 	{
 		// Fileless/global diagnostics (File == "") have no source location and no Errata label.
 		// Errata's Report.Render collapses embedded newlines in the message headline, making
-		// multi-line exception messages and stack traces unreadable. Route them to a dedicated
-		// Panel renderer that preserves line breaks; only file-anchored diagnostics go to Errata.
-		var globalDiagnostics = errors
-			.Where(d => string.IsNullOrEmpty(d.File))
-			.Concat(warnings.Where(d => string.IsNullOrEmpty(d.File)))
-			.ToArray();
+		// multi-line exception messages and stack traces unreadable. Route them by severity;
+		// only file-anchored diagnostics go to Errata.
+		var fileless = FilelessDiagnosticClassifier.Group(errors.Concat(warnings).Concat(hints));
 
 		var fileErrors = errors.Where(d => !string.IsNullOrEmpty(d.File)).ToArray();
 		var fileWarnings = warnings.Where(d => !string.IsNullOrEmpty(d.File)).ToArray();
+		var fileHints = hints.Where(d => !string.IsNullOrEmpty(d.File)).ToList();
 
 		var report = new Report(this);
 		var limited = fileErrors
@@ -122,9 +120,9 @@ public class ErrataFileSourceRepository : ISourceRepository
 			.Take(100)
 			.ToArray();
 
-		// show hints if we don't have plenty of errors/warnings to show
+		// show file-anchored hints if we don't have plenty of errors/warnings to show
 		if (limited.Length < 100)
-			limited = limited.Concat(hints).Take(100).ToArray();
+			limited = limited.Concat(fileHints).Take(100).ToArray();
 
 		foreach (var item in limited)
 		{
@@ -166,41 +164,36 @@ public class ErrataFileSourceRepository : ISourceRepository
 
 		AnsiConsole.WriteLine();
 
-		if (globalDiagnostics.Length > 0)
-			DisplayGlobalDiagnostics(globalDiagnostics);
+		if (!fileless.IsEmpty)
+			DisplayFilelessDiagnostics(fileless);
 
 		if (totalFileCount <= 0)
 		{
-			if (hints.Count > 0)
-				DisplayHintsOnly(report, hints);
+			if (fileHints.Count > 0)
+				DisplayHintsOnly(report, fileHints);
 			return;
 		}
 
 		DisplayErrorAndWarningSummary(report, totalFileCount, limited);
 	}
 
-	private static void DisplayGlobalDiagnostics(Diagnostic[] diagnostics)
+	private static void DisplayFilelessDiagnostics(FilelessDiagnosticGroups groups)
 	{
-		var rows = new List<IRenderable>();
-		var first = true;
-		foreach (var d in diagnostics)
-		{
-			if (!first)
-				rows.Add(new Rule { Style = Style.Parse("grey") });
-			first = false;
+		foreach (var diagnostic in groups.Exceptions)
+			DisplayExceptionPanel(diagnostic);
 
-			// Normalize line endings so \r\n (Windows) and \n both split cleanly.
-			var lines = d.Message.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
-			var headline = lines.Length > 0 ? lines[0] : d.Message;
-			rows.Add(new Markup($"[bold red]{headline.EscapeMarkup()}[/]"));
+		DisplayFilelessLines("Errors", "red", groups.Errors);
+		DisplayFilelessLines("Warnings", "blue", groups.Warnings);
+		DisplayFilelessLines("Hints", "yellow", groups.Hints);
+	}
 
-			if (lines.Length > 1)
-			{
-				// Join remaining lines preserving structure; Markup renders \n as a real newline.
-				var trace = string.Join("\n", lines[1..]);
-				rows.Add(new Markup(trace.EscapeMarkup()));
-			}
-		}
+	private static void DisplayExceptionPanel(Diagnostic diagnostic)
+	{
+		var lines = diagnostic.Message.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+		var headline = lines.Length > 0 ? lines[0] : diagnostic.Message;
+		var rows = new List<IRenderable> { new Markup($"[bold red]{headline.EscapeMarkup()}[/]") };
+		if (lines.Length > 1)
+			rows.Add(new Markup(string.Join("\n", lines[1..]).EscapeMarkup()));
 
 		var panel = new Panel(new Rows(rows))
 		{
@@ -210,6 +203,29 @@ public class ErrataFileSourceRepository : ISourceRepository
 			Padding = new Padding(2, 1)
 		};
 		AnsiConsole.Write(panel);
+		AnsiConsole.WriteLine();
+	}
+
+	private static void DisplayFilelessLines(string header, string color, Diagnostic[] diagnostics)
+	{
+		if (diagnostics.Length == 0)
+			return;
+
+		AnsiConsole.MarkupLine($"[bold {color}]{header}[/]");
+		foreach (var diagnostic in diagnostics)
+		{
+			var lines = diagnostic.Message.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+			if (lines.Length == 0)
+			{
+				AnsiConsole.MarkupLine($"  [{color}]{diagnostic.Message.EscapeMarkup()}[/]");
+				continue;
+			}
+
+			AnsiConsole.MarkupLine($"  [{color}]{lines[0].EscapeMarkup()}[/]");
+			foreach (var line in lines.Skip(1))
+				AnsiConsole.MarkupLine($"  {line.EscapeMarkup()}");
+		}
+
 		AnsiConsole.WriteLine();
 	}
 
