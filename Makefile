@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 BAKE ?= docker buildx bake
 BAKE_FILE ?= docker-bake.hcl
 
-.PHONY: help build rebuild docs serve serve-detached stop test test-markdown clean
+.PHONY: help build rebuild tooling runtime docs serve serve-detached stop test test-markdown clean
 
 help:
 	@echo "Available targets:"
@@ -22,12 +22,18 @@ build:
 rebuild:
 	$(BAKE) --file $(BAKE_FILE) --no-cache --load all
 
+tooling:
+	@docker image inspect docs-builder:tooling >/dev/null 2>&1 || $(BAKE) --file $(BAKE_FILE) --load tooling
+
+runtime:
+	@docker image inspect docs-builder:local >/dev/null 2>&1 || $(BAKE) --file $(BAKE_FILE) --load runtime
+
 docs:
-	$(BAKE) --file $(BAKE_FILE) --load runtime
+	$(MAKE) runtime
 	$(COMPOSE) run --rm --no-build docs-builder build
 
 serve:
-	$(BAKE) --file $(BAKE_FILE) --load tooling
+	$(MAKE) tooling
 	$(COMPOSE) up --no-build serve
 
 serve-detached:
@@ -38,11 +44,11 @@ stop:
 	$(COMPOSE) stop serve
 
 test:
-	$(BAKE) --file $(BAKE_FILE) --load tooling
+	$(MAKE) tooling
 	$(COMPOSE) run --rm --no-build tests
 
 test-markdown:
-	$(BAKE) --file $(BAKE_FILE) --load tooling
+	$(MAKE) tooling
 	$(COMPOSE) run --rm --no-build tests dotnet test tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj
 
 clean:
