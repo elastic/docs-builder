@@ -207,6 +207,7 @@ toc:
         children:
           - file: index.md
           - file: api-explorer.md
+          - file: supplemental.md
       - folder: cli-schema
         children:
           - file: index.md

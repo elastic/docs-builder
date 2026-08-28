@@ -12,7 +12,7 @@ type:
 # For the acceptable values, refer to https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs
 products:
 
-# A required array of objects that denote the affected products and their target release.
+# A required array of objects that denote the affected products.
 
     - product:
 
@@ -22,9 +22,9 @@ products:
       
       versions:
 
-      # Note files only — a required list of release versions this note applies to.
-      # This field is mandatory only when the changelog is a note (i.e. doesn't have a PR).
-      # Example: [9.3.0, 9.4.0]
+      # Required when the changelog is not tied to a pull request (known issues, advisories).
+      # Omit this field when `prs` attaches the change to a release.
+      # Use a YAML list such as [9.3.0, 9.4.0], not "*" and not a pipe-separated string.
 
       lifecycle:
 
