@@ -10,6 +10,18 @@ services:
     volumes:
       - .:/workspace
 
+  # Run the repository's unit-test suite without installing the .NET SDK on
+  # the host machine.
+  tests:
+    build:
+      context: .
+      target: tooling
+    image: docs-builder:tooling
+    working_dir: /src
+    command: ["./build.sh", "unit-test"]
+    volumes:
+      - .:/src
+
   # Build the current documentation set and keep it refreshed while files
   # change. Open http://localhost:3000 after starting this service.
   serve:
@@ -18,6 +30,8 @@ services:
     image: docs-builder:local
     working_dir: /workspace
     command: ["serve", "--port", "3000"]
+    environment:
+      DOCS_BUILDER_BIND_ADDRESS: 0.0.0.0
     ports:
       - "3000:3000"
     volumes:

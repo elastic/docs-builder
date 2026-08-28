@@ -9,19 +9,30 @@ WORKDIR /src
 # The documentation site is built as part of the docs-builder project, and
 # Native AOT compilation requires a C/C++ toolchain.
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /usr/local/bin/npm /usr/local/bin/npm
-COPY --from=node /usr/local/bin/npx /usr/local/bin/npx
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends clang git \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 COPY . .
 
-RUN dotnet publish src/tooling/docs-builder/docs-builder.csproj \
+FROM build AS tooling
+
+ARG TARGETARCH
+
+FROM tooling AS publish
+
+RUN case "${TARGETARCH}" in \
+      amd64) rid="linux-x64" ;; \
+      arm64) rid="linux-arm64" ;; \
+      *) echo "Unsupported Docker architecture: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac \
+    && dotnet publish src/tooling/docs-builder/docs-builder.csproj \
     --configuration Release \
-    --runtime linux-x64 \
+    --runtime "${rid}" \
     --self-contained true \
     --output /app/publish
 

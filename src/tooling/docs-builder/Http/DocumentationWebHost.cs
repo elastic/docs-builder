@@ -71,6 +71,8 @@ public class DocumentationWebHost
 		var collector = new LiveModeDiagnosticsCollector(logFactory);
 
 		var hostUrl = $"http://localhost:{port}";
+		var bindAddress = Environment.GetEnvironmentVariable("DOCS_BUILDER_BIND_ADDRESS") ?? "localhost";
+		var listenUrl = $"http://{bindAddress}:{port}";
 
 		_hostedService = collector;
 		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { InnerWrite = new MockFileSystem() });
@@ -112,7 +114,7 @@ public class DocumentationWebHost
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
 
-		_ = builder.WebHost.UseUrls(hostUrl);
+		_ = builder.WebHost.UseUrls(listenUrl);
 
 		_webApplication = builder.Build();
 		SetUpRoutes();
