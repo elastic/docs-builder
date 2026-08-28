@@ -104,6 +104,26 @@ public class DocumentationSetFileTests
 	}
 
 	[Fact]
+	public void DeserializesApiLocalSpec()
+	{
+		var yaml =
+			"""
+		           project: 'test-project'
+		           api:
+		             elasticsearch:
+		               - spec: elasticsearch.json
+		                 local_spec: ../output/openapi/elasticsearch.json
+		                 product: elasticsearch
+		           """;
+
+		var result = Deserialize(yaml);
+		var entry = result.Api["elasticsearch"].SingleEntry!;
+
+		entry.Spec.Should().Be("elasticsearch.json");
+		entry.LocalSpec.Should().Be("../output/openapi/elasticsearch.json");
+	}
+
+	[Fact]
 	public void DeserializesFileReference()
 	{
 		// language=yaml

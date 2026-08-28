@@ -32,6 +32,7 @@ module CrossLinkResolverAssertions =
             { new IDocumentationSetContext with
                 member _.Collector = collector
                 member _.DocumentationSourceDirectory = mockFileSystem.DirectoryInfo.New("/docs")
+                member _.DocumentationCheckoutDirectory = mockFileSystem.DirectoryInfo.New("/docs")
                 member _.Git = GitCheckoutInformation.Unavailable
                 member _.ReadFileSystem = DocumentationFileSystem.Resolve(mockFileSystem.DirectoryInfo.New("/docs"), DocumentationScopeOptions(Inner = (mockFileSystem :> IFileSystem), ConfigurationFile = "/docs/docset.yml")) :> IDocumentationFileSystem
                 member _.WriteFileSystem = DocumentationWriteFileSystem(mockFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, mockFileSystem)

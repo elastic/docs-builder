@@ -529,41 +529,8 @@ public record ConfigurationFile
 			return null;
 		}
 
-		var fullSpecPath = Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, entry.Spec));
-		var specFile = context.ReadFileSystem.FileInfo.New(fullSpecPath);
-		if (!specFile.IsSubPathOf(context.DocumentationSourceDirectory))
-		{
-			context.Collector.Write(new Diagnostic
-			{
-				Severity = Severity.Error,
-				File = context.ConfigurationPath.FullName,
-				Line = entry.SpecLine ?? entry.Line,
-				Column = entry.SpecColumn ?? entry.Column,
-				Message = $"'spec: {entry.Spec}' for API '{productKey}' escapes the documentation source directory."
-			});
+		if (!TryResolveLocalSpecFile(productKey, entry, specFileName, context, out var localSpecFile))
 			return null;
-		}
-
-		// A missing local file is expected, not an error: docsets that don't carry the spec
-		// locally resolve the current version from S3 via the version index instead.
-		IFileInfo? localSpecFile = null;
-		if (specFile.Exists)
-		{
-			var symlinkError = ValidateFileAccess(specFile, context.DocumentationSourceDirectory);
-			if (symlinkError is not null)
-			{
-				context.Collector.Write(new Diagnostic
-				{
-					Severity = Severity.Error,
-					File = context.ConfigurationPath.FullName,
-					Line = entry.SpecLine ?? entry.Line,
-					Column = entry.SpecColumn ?? entry.Column,
-					Message = $"'spec: {entry.Spec}' for API '{productKey}' is unsafe: {symlinkError}"
-				});
-				return null;
-			}
-			localSpecFile = specFile;
-		}
 
 		string? repository = null;
 		if (!string.IsNullOrWhiteSpace(entry.Repository))
@@ -604,6 +571,136 @@ public record ConfigurationFile
 			ApiContentDirectory = apiContentDirectory
 		};
 	}
+
+	/// <summary>
+	/// Resolves the optional local OAS file. <c>local_spec:</c> is bound to the git checkout.
+	/// When it is omitted, a file at the docset-relative <c>spec:</c> path is still an implicit
+	/// override. Returns <see langword="false"/> only when a declared path is unsafe or escapes
+	/// its trust root. A missing <c>local_spec:</c> file is a warning, not a failure.
+	/// </summary>
+	private static bool TryResolveLocalSpecFile(
+		string productKey,
+		ApiProductEntry entry,
+		string specFileName,
+		IDocumentationSetContext context,
+		out IFileInfo? localSpecFile
+	)
+	{
+		if (entry.HasLocalSpec)
+			return TryResolveDeclaredLocalSpec(productKey, entry, specFileName, context, out localSpecFile);
+
+		return TryResolveImplicitLocalSpec(productKey, entry, context, out localSpecFile);
+	}
+
+	private static bool TryResolveDeclaredLocalSpec(
+		string productKey,
+		ApiProductEntry entry,
+		string specFileName,
+		IDocumentationSetContext context,
+		out IFileInfo? localSpecFile
+	)
+	{
+		localSpecFile = null;
+		var declared = entry.LocalSpec!.Trim();
+		var fullPath = Path.IsPathRooted(declared)
+			? Path.GetFullPath(declared)
+			: Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, declared));
+		var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
+		var checkout = context.DocumentationCheckoutDirectory;
+
+		if (!specFile.IsSubPathOf(checkout))
+		{
+			EmitApiDiagnostic(
+				context,
+				Severity.Error,
+				entry.LocalSpecLine ?? entry.Line,
+				entry.LocalSpecColumn ?? entry.Column,
+				$"'local_spec: {entry.LocalSpec}' for API '{productKey}' escapes the repository checkout."
+			);
+			return false;
+		}
+
+		if (!specFile.Exists)
+		{
+			EmitApiDiagnostic(
+				context,
+				Severity.Warning,
+				entry.LocalSpecLine ?? entry.Line,
+				entry.LocalSpecColumn ?? entry.Column,
+				$"Local OpenAPI spec '{entry.LocalSpec}' for API '{productKey}' was not found. " +
+					$"Rendering the hosted spec '{specFileName}' from the version index instead."
+			);
+			return true;
+		}
+
+		var symlinkError = ValidateFileAccess(specFile, checkout);
+		if (symlinkError is not null)
+		{
+			EmitApiDiagnostic(
+				context,
+				Severity.Error,
+				entry.LocalSpecLine ?? entry.Line,
+				entry.LocalSpecColumn ?? entry.Column,
+				$"'local_spec: {entry.LocalSpec}' for API '{productKey}' is unsafe: {symlinkError}"
+			);
+			return false;
+		}
+
+		localSpecFile = specFile;
+		return true;
+	}
+
+	private static bool TryResolveImplicitLocalSpec(
+		string productKey,
+		ApiProductEntry entry,
+		IDocumentationSetContext context,
+		out IFileInfo? localSpecFile
+	)
+	{
+		localSpecFile = null;
+		var fullSpecPath = Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, entry.Spec));
+		var specFile = context.ReadFileSystem.FileInfo.New(fullSpecPath);
+		if (!specFile.IsSubPathOf(context.DocumentationSourceDirectory))
+		{
+			EmitApiDiagnostic(
+				context,
+				Severity.Error,
+				entry.SpecLine ?? entry.Line,
+				entry.SpecColumn ?? entry.Column,
+				$"'spec: {entry.Spec}' for API '{productKey}' escapes the documentation source directory."
+			);
+			return false;
+		}
+
+		if (!specFile.Exists)
+			return true;
+
+		var symlinkError = ValidateFileAccess(specFile, context.DocumentationSourceDirectory);
+		if (symlinkError is not null)
+		{
+			EmitApiDiagnostic(
+				context,
+				Severity.Error,
+				entry.SpecLine ?? entry.Line,
+				entry.SpecColumn ?? entry.Column,
+				$"'spec: {entry.Spec}' for API '{productKey}' is unsafe: {symlinkError}"
+			);
+			return false;
+		}
+
+		localSpecFile = specFile;
+		return true;
+	}
+
+	private static void EmitApiDiagnostic(IDocumentationSetContext context, Severity severity, int? line, int? column, string message) =>
+		context.Collector.Write(new Diagnostic
+		{
+			Severity = severity,
+			File = context.ConfigurationPath.FullName,
+			Line = line,
+			Column = column,
+			Message = message
+		});
 
 	/// Children resolve only under 'api/&lt;key&gt;/'; escaping paths and symlinks are rejected the
 	/// same way branding image paths are (see <see cref="ValidateBrandingImage"/>).

@@ -13,8 +13,8 @@ This feature is still under development and the functionality described on this 
 ## Configure the API Explorer
 
 Add the `api` key to your `docset.yml` file to enable the API Explorer. Each product key takes a
-single-entry sequence with a required `spec:` and `product:`, and optional `repository:` and
-`children:`:
+single-entry sequence with a required `spec:` and `product:`, and optional `local_spec:`,
+`repository:`, and `children:`:
 
 ```yaml
 api:
@@ -32,14 +32,33 @@ The `api` key is only valid in `docset.yml`. You can't use it in `toc.yml` files
 
 ### `spec:` (required)
 
-A path to an OpenAPI spec file, relative to the folder that contains `docset.yml`. `spec:` serves
-two purposes at once:
+The hosted spec name in the remote version index. Use the basename only, for example
+`elasticsearch-openapi.json`. {{dbuild}} looks up this API by that basename, whether or not a
+local file exists. See [Remote spec resolution](#remote-spec-resolution).
 
-- If a file exists at that path, {{dbuild}} renders it directly. This is the common setup for a
-  docset that carries its own spec file.
-- Its basename (for example `elasticsearch-openapi.json`) is always used to look up this API's
-  entry in the remote version index, whether or not the file exists locally. See
-  [Remote spec resolution](#remote-spec-resolution).
+If you omit `local_spec:` and a file with this name exists next to `docset.yml` (or in a
+subfolder of it), {{dbuild}} uses that file as an implicit local override for `main`.
+
+### `local_spec:` (optional)
+
+A path to a local OpenAPI file, relative to the folder that contains `docset.yml`. The file may
+sit anywhere in the same git checkout. An absolute path is allowed only when it stays under the
+checkout root.
+
+When the file exists, {{dbuild}} uses it for the current (`main`) version. When the file is
+missing, {{dbuild}} emits a warning and renders the hosted spec named in `spec:`.
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch.json
+      local_spec: ../output/openapi/elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+```
+
+Do not set `local_spec:` in a docset that never carries a local file. A missing implicit
+`spec:` file stays silent and uses the hosted spec.
 
 ### `product:` (required)
 
@@ -115,9 +134,12 @@ specs per product are not currently supported.
 
 ## Remote spec resolution
 
-When `spec:` does not resolve to a file on disk, {{dbuild}} resolves the current (`main`) version
-of that spec remotely through a CloudFront-backed version index shared by every Elastic repository
-that publishes OpenAPI specs.
+When no local file is in use, {{dbuild}} resolves the current (`main`) version remotely.
+It uses a CloudFront-backed version index shared by every Elastic repository that publishes
+OpenAPI specs.
+
+A local file is in use when `local_spec:` points at an existing file. A local file is also
+in use when `local_spec:` is omitted and a file exists at the docset-relative `spec:` path.
 
 ### How specs are published
 
@@ -195,11 +217,31 @@ Run `docs-builder serve` (without `--watch`) and open any path above.
 
 ## Place your spec files
 
-To carry a spec locally, place the OpenAPI specification file in the same folder as your
-`docset.yml` (or in a subfolder of it). The path you specify in `spec:` is resolved relative to
-the `docset.yml` location.
+`spec:` names the hosted file in the version index. It does not have to exist on disk.
 
-For example, if your content set is structured like this:
+To preview a local file, set `local_spec:` to a path relative to `docset.yml`. That path may
+walk up into the rest of the same git checkout:
+
+```
+repo/
+  docs/
+    docset.yml
+  output/
+    openapi/
+      elasticsearch.json
+```
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch.json
+      local_spec: ../output/openapi/elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+```
+
+You can also keep the spec next to `docset.yml` and omit `local_spec:`. {{dbuild}} still uses
+that file when it exists:
 
 ```
 docs/
@@ -207,10 +249,7 @@ docs/
   elasticsearch-openapi.json
   kibana-openapi.json
   index.md
-  ...
 ```
-
-Your `docset.yml` references the specs as follows:
 
 ```yaml
 api:

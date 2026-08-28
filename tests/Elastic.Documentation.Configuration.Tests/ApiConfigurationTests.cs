@@ -23,10 +23,22 @@ public class ApiProductEntryTests
 	[Fact]
 	public void HasSpec_And_HasProduct_ReflectPresence()
 	{
-		var entry = new ApiProductEntry { Spec = "api.json", Product = "elasticsearch" };
+		var entry = new ApiProductEntry { Spec = "api.json", Product = "elasticsearch", LocalSpec = "../output/api.json" };
 
 		entry.HasSpec.Should().BeTrue();
 		entry.HasProduct.Should().BeTrue();
+		entry.HasLocalSpec.Should().BeTrue();
+	}
+
+	[Theory]
+	[InlineData(null)]
+	[InlineData("")]
+	[InlineData("   ")]
+	public void HasLocalSpec_FalseWhenBlank(string? localSpec)
+	{
+		var entry = new ApiProductEntry { Spec = "api.json", Product = "elasticsearch", LocalSpec = localSpec };
+
+		entry.HasLocalSpec.Should().BeFalse();
 	}
 
 	[Theory]
@@ -219,6 +231,38 @@ public class ApiConfigurationConverterTests
 	}
 
 	[Fact]
+	public void AcceptsLocalSpecPath()
+	{
+		const string yaml =
+			"""
+			- spec: elasticsearch.json
+			  local_spec: ../output/openapi/bundled.json
+			  product: elasticsearch
+			""";
+
+		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var entry = sequence.SingleEntry!;
+
+		entry.Spec.Should().Be("elasticsearch.json");
+		entry.LocalSpec.Should().Be("../output/openapi/bundled.json");
+		entry.HasLocalSpec.Should().BeTrue();
+		entry.LocalSpecLine.Should().Be(2);
+	}
+
+	[Fact]
+	public void LocalSpec_IsOptional()
+	{
+		const string yaml = """
+			- spec: api.json
+			  product: elasticsearch
+			""";
+
+		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+
+		sequence.SingleEntry!.HasLocalSpec.Should().BeFalse();
+	}
+
+	[Fact]
 	public void RejectsLegacyScalarShape()
 	{
 		const string yaml = "elasticsearch-openapi.json";
@@ -313,6 +357,7 @@ public class ConfigurationFileApiTests
 		var (config, collector) = CreateConfiguration(docSetFile, withLocalSpecFile: false);
 
 		collector.Errors.Should().Be(0);
+		collector.Warnings.Should().Be(0);
 		var resolved = config.ApiConfigurations!["elasticsearch"];
 		resolved.SpecFileName.Should().Be("elasticsearch-openapi.json");
 		resolved.LocalSpecFile.Should().BeNull();
@@ -348,6 +393,93 @@ public class ConfigurationFileApiTests
 			Api = new Dictionary<string, ApiProductSequence>
 			{
 				["elasticsearch"] = new() { Entries = [new ApiProductEntry { Product = "elasticsearch" }] }
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(docSetFile);
+
+		collector.Errors.Should().Be(1);
+		config.ApiConfigurations.Should().BeNull();
+	}
+
+	[Fact]
+	public void ResolvesLocalSpec_WhenFileIsOutsideDocsFolderButInsideCheckout()
+	{
+		var docSetFile = new DocumentationSetFile
+		{
+			Api = new Dictionary<string, ApiProductSequence>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntry
+						{
+							Spec = "elasticsearch.json",
+							LocalSpec = "../output/elasticsearch.json",
+							Product = "elasticsearch"
+						}
+					]
+				}
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(docSetFile, extraCheckoutFiles: ["output/elasticsearch.json"]);
+
+		collector.Errors.Should().Be(0);
+		collector.Warnings.Should().Be(0);
+		var resolved = config.ApiConfigurations!["elasticsearch"];
+		resolved.SpecFileName.Should().Be("elasticsearch.json");
+		resolved.LocalSpecFile.Should().NotBeNull();
+		resolved.LocalSpecFile!.Name.Should().Be("elasticsearch.json");
+		resolved.LocalSpecFile.Directory!.Name.Should().Be("output");
+	}
+
+	[Fact]
+	public void Warns_WhenLocalSpecIsDeclaredButMissing()
+	{
+		var docSetFile = new DocumentationSetFile
+		{
+			Api = new Dictionary<string, ApiProductSequence>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntry
+						{
+							Spec = "elasticsearch.json",
+							LocalSpec = "../output/elasticsearch.json",
+							Product = "elasticsearch"
+						}
+					]
+				}
+			}
+		};
+
+		var (config, collector) = CreateConfiguration(docSetFile, withLocalSpecFile: false);
+
+		collector.Errors.Should().Be(0);
+		collector.Warnings.Should().Be(1);
+		var resolved = config.ApiConfigurations!["elasticsearch"];
+		resolved.SpecFileName.Should().Be("elasticsearch.json");
+		resolved.LocalSpecFile.Should().BeNull();
+	}
+
+	[Fact]
+	public void EmitsError_WhenLocalSpecEscapesCheckout()
+	{
+		var docSetFile = new DocumentationSetFile
+		{
+			Api = new Dictionary<string, ApiProductSequence>
+			{
+				["elasticsearch"] = new()
+				{
+					Entries =
+					[
+						new ApiProductEntry { Spec = "elasticsearch.json", LocalSpec = "../../outside.json", Product = "elasticsearch" }
+					]
+				}
 			}
 		};
 
@@ -701,7 +833,8 @@ public class ConfigurationFileApiTests
 		DocumentationSetFile docSet,
 		string[]? extraProducts = null,
 		bool withLocalSpecFile = true,
-		string[]? extraMarkdownFiles = null
+		string[]? extraMarkdownFiles = null,
+		string[]? extraCheckoutFiles = null
 	)
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -717,6 +850,8 @@ public class ConfigurationFileApiTests
 			files[Path.Join(root, "docs", "elasticsearch-openapi.json")] = new MockFileData("{}");
 		foreach (var name in extraMarkdownFiles ?? [])
 			files[Path.Join(root, "docs", "api", "elasticsearch", name)] = new MockFileData("# extra");
+		foreach (var relative in extraCheckoutFiles ?? [])
+			files[Path.Join(root, relative)] = new MockFileData("{}");
 		var fileSystem = new MockFileSystem(files, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
@@ -758,6 +893,7 @@ public class ConfigurationFileApiTests
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;
 		public IDirectoryInfo DocumentationSourceDirectory => documentationSourceDirectory;
+		public IDirectoryInfo DocumentationCheckoutDirectory => fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		public GitCheckoutInformation Git => GitCheckoutInformationFactory.Create(documentationSourceDirectory, fileSystem);
 		public IEnvironmentVariables Environment => SystemEnvironmentVariables.Instance;
 	}
