@@ -21,7 +21,7 @@ using Elastic.Documentation.Integrations.S3;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.IntegrationTests;
+namespace Elastic.Documentation.Deploying.Tests;
 
 /// <summary>
 /// End-to-end round-trip tests that drive <see cref="IncrementalDeployService"/> — plan writes

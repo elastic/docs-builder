@@ -221,7 +221,7 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Create a new changelog entry YAML file.</summary>
-	/// <param name="products">Optional: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"). If not specified, will be inferred from repository or config defaults.</param>
+	/// <param name="products">Optional: Products affected in format "product [lifecycle], ..." (e.g., "cloud-serverless, kibana" or "elasticsearch ga"). Do not include a version or date; that is an error. Use 'changelog note' for version-listed items. If not specified, products are inferred from the repository or config defaults.</param>
 	/// <param name="action">Optional: What users must do to mitigate</param>
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
@@ -556,13 +556,13 @@ internal sealed partial class ChangelogCommands(
 
 	/// <summary>Create a <c>note-*.yml</c> changelog fragment for items that have no associated PR.</summary>
 	/// <remarks>
-	/// Use this command for release notes that are not tied to a specific pull request — for example, a
-	/// known-issue entry or a cross-cutting change that spans many PRs. Every product listed must have a
-	/// concrete <c>target</c> (not a wildcard); <c>--prs</c> and <c>--issues</c> are still accepted as
+	/// Use this command for version-listed changelogs that are not tied to a specific pull request — for example, a
+	/// known issue or a security advisory. Every product listed must include at least one concrete version
+	/// (not a wildcard); <c>--prs</c> and <c>--issues</c> are still accepted as
 	/// optional citations but do not affect the output filename.
 	/// </remarks>
 	/// <param name="name">Explicit slug for the note filename. Defaults to a slug derived from the title.</param>
-	/// <param name="products">Products in format "product target lifecycle, ..." (for example, "elasticsearch 9.2.0 ga"). Target is required for all products.</param>
+	/// <param name="products">Products in format "product versions [lifecycle], ..." (for example, "elasticsearch 9.2.0|9.3.0 ga"). At least one concrete version is required for each product.</param>
 	/// <param name="action">Optional action text.</param>
 	/// <param name="areas">Optional area tags.</param>
 	/// <param name="concise">Omit schema reference comments from the generated YAML.</param>
@@ -754,7 +754,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="hideFeatures">Feature IDs (comma-separated) or a path to a newline-delimited file. Entries with matching feature-id values are hidden when the bundle is rendered. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.hide_features</c>.</param>
 	/// <param name="noReleaseDate">Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.release_dates: false</c> or <c>bundle.profiles.&lt;name&gt;.release_dates: false</c>.</param>
 	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
-	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
+	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). A non-wildcard target matches products[].versions (changelog note) or a legacy target; not supported when sourcing from the CDN. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
 	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as <c>{product}-{version}.yaml</c> from the profile's primary output product.</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output_products</c>.</param>
@@ -765,7 +765,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="startGitRef">Start ref (exclusive) of a git commit range to bundle, for example the previously published endpoint ref. Must be provided together with --end-git-ref; the start ref is never inferred. The PR list is derived from the range itself (GitHub compare API + GraphQL associatedPullRequests), each PR's entry is sourced pool-first with PR-metadata fallback, and requires GITHUB_TOKEN. Supported in profile-based commands (for example, 'bundle serverless-release 2026-08-13 --start-git-ref abc123 --end-git-ref def456'); mutually exclusive with all other filter options.</param>
 	/// <param name="endGitRef">End ref (inclusive) of the git commit range to bundle — the currently published endpoint ref. Must be provided together with --start-git-ref. Recorded in the bundle output as the <c>git_ref</c> metadata field.</param>
 	/// <param name="dryRun">Resolve the commit range and print the run report (resolved PR list with per-PR entry source: pool, inferred, or missing) as Markdown without writing a bundle. Only valid together with --start-git-ref/--end-git-ref. Supported in profile-based commands.</param>
-	/// <param name="forceLocal">Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config). Allowed in profile-based commands.</param>
+	/// <param name="forceLocal">Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config). Allowed in profile-based commands. Skips automatic inclusion of CDN changelog notes that match output_products.</param>
 	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
 	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.source: github_release</c>.</param>
