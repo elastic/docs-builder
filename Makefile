@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 BAKE ?= docker buildx bake
 BAKE_FILE ?= docker-bake.hcl
 
-.PHONY: help build rebuild tooling runtime docs serve serve-fast serve-detached stop test test-markdown clean
+.PHONY: help build rebuild tooling runtime docs serve serve-fast serve-detached stop test test-area test-markdown clean
 
 help:
 	@echo "Available targets:"
@@ -14,6 +14,7 @@ help:
 	@echo "  make serve-detached  Serve docs in the background"
 	@echo "  make stop            Stop the development server"
 	@echo "  make test            Run the unit-test suite in Docker"
+	@echo "  make test-area AREA=authoring  Run one test area in Docker"
 	@echo "  make test-markdown   Run Markdown tests in Docker"
 	@echo "  make clean           Stop Compose services and remove containers"
 
@@ -50,9 +51,24 @@ test:
 	$(MAKE) tooling
 	$(COMPOSE) run --rm tests
 
+test-area:
+	$(MAKE) tooling
+	@set -eu; \
+	case "$(AREA)" in \
+		authoring) project="tests/authoring/authoring.fsproj" ;; \
+		markdown) project="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" ;; \
+		configuration) project="tests/Elastic.Documentation.Configuration.Tests/Elastic.Documentation.Configuration.Tests.csproj" ;; \
+		navigation) project="tests/Navigation.Tests/Navigation.Tests.csproj" ;; \
+		indexing) project="tests/Elastic.Documentation.Indexing.Tests/Elastic.Documentation.Indexing.Tests.csproj" ;; \
+		api-explorer) project="tests/Elastic.ApiExplorer.Tests/Elastic.ApiExplorer.Tests.csproj" ;; \
+		legacy-migration) project="tests/Elastic.LegacyDocs.Migration.Tests/Elastic.LegacyDocs.Migration.Tests.csproj" ;; \
+		*) echo "Unknown AREA='$(AREA)'. Use authoring, markdown, configuration, navigation, indexing, api-explorer, or legacy-migration." >&2; exit 2 ;; \
+	esac; \
+	$(COMPOSE) run --rm tests dotnet test -c Release "$$project" $(TEST_ARGS)
+
 test-markdown:
 	$(MAKE) tooling
-	$(COMPOSE) run --rm tests dotnet test tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj
+	$(COMPOSE) run --rm tests dotnet test -c Release tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj
 
 clean:
 	$(COMPOSE) down --remove-orphans
