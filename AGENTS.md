@@ -73,6 +73,7 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `src/authoring/Elastic.LegacyDocs.Migration/` | `dotnet test tests/Elastic.LegacyDocs.Migration.Tests/` |
 | `src/tooling/essc/` | `dotnet test tests/Elastic.SiteSearch.Tests/` (essc's root namespace is `Elastic.SiteSearch.Cli`) |
 | `src/Elastic.ApiExplorer/` | `dotnet test tests/Elastic.ApiExplorer.Tests/` |
+| `src/services/Elastic.Documentation.Deploying/` | `dotnet test tests/Elastic.Documentation.Deploying.Tests/` |
 | `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |
 | `tests-integration/` | `./build.sh integrate` |
 | Multiple / uncertain | `./build.sh unit-test` |

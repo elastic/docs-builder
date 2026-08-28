@@ -23,18 +23,17 @@ internal static class AspireHost
 	/// <summary>
 	/// Starts the Elastic documentation Aspire AppHost.
 	/// </summary>
-	/// <param name="startElasticsearch">Start a local Elasticsearch container</param>
-	/// <param name="assumeCloned">Skip cloning; assume repositories are already present on disk</param>
-	/// <param name="assumeBuild">Skip building; assume build output already exists</param>
-	/// <param name="skipPrivateRepositories">Skip cloning private repositories</param>
+	/// <param name="assumeCloned">
+	///   Skip cloning; assume repositories are already present on disk.
+	///   Defaults to <c>true</c>. Pass <c>--no-assume-cloned</c> to force a fresh clone.
+	/// </param>
+	/// <param name="assumeBuild">
+	///   Skip the build step when the stamp matches. When omitted the assembler applies an
+	///   environment-aware default (skip locally, always build on CI).
+	///   Pass <c>--assume-build</c> to force skip, <c>--no-assume-build</c> to force rebuild.
+	/// </param>
 	[NoOptionsInjection]
-	internal static async Task Run(
-		bool startElasticsearch = false,
-		bool assumeCloned = false,
-		bool assumeBuild = false,
-		bool skipPrivateRepositories = false,
-		CancellationToken ct = default
-	)
+	internal static async Task Run(bool? assumeCloned = null, bool? assumeBuild = null, CancellationToken ct = default)
 	{
 		var builder = DistributedApplication.CreateBuilder();
 
@@ -45,19 +44,22 @@ internal static class AspireHost
 		var elasticsearchApiKey = builder.AddParameter("ElasticsearchApiKey", secret: true);
 
 		var cloneAll = builder.AddProject<Projects.docs_builder>(AssemblerClone);
-		string[] cloneArgs = assumeCloned ? ["--assume-cloned"] : [];
+		// default-on: reuse existing clones unless the caller explicitly opts out
+		string[] cloneArgs = (assumeCloned ?? true) ? ["--assume-cloned"] : [];
 		cloneAll = cloneAll.WithArgs(["assembler", "clone", .. GlobalArguments, .. cloneArgs]);
 
 		var buildAll = builder.AddProject<Projects.docs_builder>(AssemblerBuild);
-		string[] buildArgs = assumeBuild ? ["--assume-build"] : [];
+		// forward an explicit choice to docs-builder; omit when null so docs-builder applies its own default
+		string[] buildArgs = assumeBuild switch
+		{
+			true => ["--assume-build"],
+			false => ["--no-assume-build"],
+			null => []
+		};
 		buildAll = buildAll
 			.WithArgs(["assembler", "build", .. GlobalArguments, .. buildArgs])
 			.WaitForCompletion(cloneAll)
 			.WithParentRelationship(cloneAll);
-
-		IResourceBuilder<ElasticsearchResource>? elasticsearchLocal = null;
-		if (startElasticsearch)
-			elasticsearchLocal = builder.AddElasticsearch(ElasticsearchLocal).WithEnvironment("LICENSE", "trial");
 
 		var elasticsearchRemote = builder.AddExternalService(ElasticsearchRemote, elasticsearchUrl);
 
@@ -68,75 +70,39 @@ internal static class AspireHost
 		var rawBuildType = Environment.GetEnvironmentVariable("DOCS_BUILD_TYPE");
 		var buildType = string.IsNullOrWhiteSpace(rawBuildType) ? "assembler" : rawBuildType;
 
-		var api = builder
+		_ = builder
 			.AddProject<Projects.Elastic_Documentation_Api>(Api, launchProfileName: "http")
 			.WithArgs(GlobalArguments)
 			.WithEnvironment("ENVIRONMENT", serviceEnvironment)
 			.WithEnvironment("DOCS_BUILD_TYPE", buildType)
 			.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
 			.WithEnvironment("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", llmServiceAccountPath)
-			.WithHttpHealthCheck("/docs/_api/health");
+			.WithHttpHealthCheck("/docs/_api/health")
+			.WithReference(elasticsearchRemote)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
 
-		// ReSharper disable once RedundantAssignment
-		api = startElasticsearch
-			? api
-				.WithReference(elasticsearchLocal!)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal!.GetEndpoint("http"))
-				.WithEnvironment(
-					context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
-				)
-				.WithParentRelationship(elasticsearchLocal!)
-				.WaitFor(elasticsearchLocal!)
-			: api
-				.WithReference(elasticsearchRemote)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
-
-		var mcp = builder
+		_ = builder
 			.AddProject<Projects.Elastic_Documentation_Mcp_Remote>(RemoteMcp)
 			.WithArgs(GlobalArguments)
 			.WithEnvironment("ENVIRONMENT", serviceEnvironment)
 			.WithEnvironment("DOCS_BUILD_TYPE", buildType)
-			.WithHttpHealthCheck("/docs/_mcp/health");
+			.WithHttpHealthCheck("/docs/_mcp/health")
+			.WithReference(elasticsearchRemote)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
 
-		// ReSharper disable once RedundantAssignment
-		mcp = startElasticsearch
-			? mcp
-				.WithReference(elasticsearchLocal!)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal!.GetEndpoint("http"))
-				.WithEnvironment(
-					context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
-				)
-				.WithParentRelationship(elasticsearchLocal!)
-				.WaitFor(elasticsearchLocal!)
-			: mcp
-				.WithReference(elasticsearchRemote)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
-
-		var indexElasticsearch = builder
+		_ = builder
 			.AddProject<Projects.docs_builder>(ElasticsearchIngest)
 			.WithArgs(["assembler", "index", .. GlobalArguments])
 			.WaitForCompletion(cloneAll)
-			.WithExplicitStart();
+			.WithExplicitStart()
+			.WithReference(elasticsearchRemote)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
+			.WithParentRelationship(elasticsearchRemote);
 
-		// ReSharper disable once RedundantAssignment
-		indexElasticsearch = startElasticsearch
-			? indexElasticsearch
-				.WaitFor(elasticsearchLocal!)
-				.WithReference(elasticsearchLocal!)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal!.GetEndpoint("http"))
-				.WithEnvironment(
-					context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
-				)
-				.WithParentRelationship(elasticsearchLocal!)
-			: indexElasticsearch
-				.WithReference(elasticsearchRemote)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey)
-				.WithParentRelationship(elasticsearchRemote);
-
-		var serveStatic = builder
+		_ = builder
 			.AddProject<Projects.docs_builder>(AssemblerServe)
 			.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
 			.WithEnvironment("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", llmServiceAccountPath)
@@ -144,34 +110,30 @@ internal static class AspireHost
 			.WithArgs(["assembler", "serve", .. GlobalArguments])
 			.WithHttpHealthCheck("/", 200)
 			.WaitForCompletion(buildAll)
-			.WithParentRelationship(cloneAll);
-
-		serveStatic = startElasticsearch
-			? serveStatic
-				.WithReference(elasticsearchLocal!)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchLocal!.GetEndpoint("http"))
-				.WithEnvironment(
-					context => context.EnvironmentVariables["DOCUMENTATION_ELASTIC_PASSWORD"] = elasticsearchLocal!.Resource.PasswordParameter
-				)
-			: serveStatic
-				.WithReference(elasticsearchRemote)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
-				.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
-
-		// ReSharper disable once RedundantAssignment
-		serveStatic = startElasticsearch ? serveStatic.WaitFor(elasticsearchLocal!) : serveStatic.WaitFor(buildAll);
+			.WithParentRelationship(cloneAll)
+			.WithReference(elasticsearchRemote)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_URL", elasticsearchUrl)
+			.WithEnvironment("DOCUMENTATION_ELASTIC_APIKEY", elasticsearchApiKey);
 
 		await builder.Build().RunAsync(ct);
 	}
 
 	/// <summary>
-	/// Extracts global doc-builder flags (--log-level, --config-source, --skip-private-repositories)
-	/// from <paramref name="args"/> in-place, returning them for forwarding to docs-builder sub-processes.
+	/// Extracts global doc-builder flags (--log-level, --config-source,
+	/// --skip-private-repositories / --no-skip-private-repositories) from
+	/// <paramref name="args"/> in-place, returning them for forwarding to
+	/// docs-builder sub-processes.
+	/// <para>
+	/// <c>--skip-private-repositories</c> defaults to <c>true</c>: when neither
+	/// the flag nor its <c>--no-</c> counterpart is present the flag is injected
+	/// automatically. Pass <c>--no-skip-private-repositories</c> to opt out.
+	/// </para>
 	/// </summary>
 	internal static string[] ExtractGlobalArgs(ref string[] args)
 	{
 		var global = new List<string>();
 		var remaining = new List<string>();
+		bool? skipPrivateRepositories = null;
 		for (var i = 0; i < args.Length; i++)
 		{
 			if (args[i] == "--log-level" && i + 1 < args.Length)
@@ -185,10 +147,15 @@ internal static class AspireHost
 				global.Add(args[++i]);
 			}
 			else if (args[i] == "--skip-private-repositories")
-				global.Add("--skip-private-repositories");
+				skipPrivateRepositories = true;
+			else if (args[i] == "--no-skip-private-repositories")
+				skipPrivateRepositories = false;
 			else
 				remaining.Add(args[i]);
 		}
+		// default-on: skip private repos unless the caller explicitly opted out
+		if (skipPrivateRepositories ?? true)
+			global.Add("--skip-private-repositories");
 		args = [.. remaining];
 		return [.. global];
 	}

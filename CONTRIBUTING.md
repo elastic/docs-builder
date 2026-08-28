@@ -2,47 +2,73 @@
 
 ## Prerequisites
 
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 - [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
-  - [Aspire 9.4.1](https://learn.microsoft.com/en-us/dotnet/aspire/)
-	```bash
-	dotnet workload install aspire
-	```
+
+The Aspire toolchain is bundled as a local dotnet tool — no workload install required.
+
+```bash
+dotnet tool restore
+```
 
 ## Validate the fully assembled documentation
+
+```bash
+dotnet aspire run
+```
+
+Or equivalently via the project directly:
 
 ```bash
 dotnet run --project aspire
 ```
 
-Will spin up all our services and clone and build all the documentation sets. 
+Will spin up all our services and clone and build all the documentation sets.
 
-```markdown
-dotnet run --project aspire -- --assume-cloned --skip-private-repositories
+By default, private repositories are skipped, existing clones are reused, and the build is skipped when code/config/content is unchanged. To opt out of any default:
+
+```bash
+dotnet aspire run -- --no-skip-private-repositories  # include private repos (requires auth tokens)
+dotnet aspire run -- --no-assume-cloned              # force a fresh clone
+dotnet aspire run -- --no-assume-build               # force a full rebuild even if stamp matches
 ```
 
-`--assume-cloned` will assume a documentation set set is already cloned if available locally.
+`--skip-private-repositories` (default) injects `docs-builder`'s own docs into the navigation
+so you can validate new features without production credentials.
 
-`--skip-private-repositories` will skip cloning private repositories. It will also inject our `docs-builder docs into the 
-navigation. This allows us to validate new features' effect on the assembly process.
-
-Our [Integration Tests](./tests-integration/Elastic.Assembler.IntegrationTests) use this exact command to validate the 
+Our [Integration Tests](./tests-integration/Elastic.Documentation.IntegrationTests) use these defaults to validate the
 assembler builds.
 
-## Continuously build all assets during development.
+> **Tip**: Install the [Aspire skills plugin](https://github.com/microsoft/aspire-skills) for day-to-day orchestration and monitoring support in Claude Code:
+> ```
+> /plugin marketplace add microsoft/aspire-skills
+> /plugin install aspire@aspire-skills
+> ```
+
+## Continuously build during development
+
+Two watch loops are available depending on what you're working on:
+
+### Single-docset watch (authoring, templates, frontend)
 
 ```shell
 ./build.sh watch
 ```
 
-This will monitor code, cshtml template files & static files and reload the application
-if any changes.
+Monitors code, Razor template files, and frontend assets for a **single documentation set**.
+Markdown files refresh via live reload without a recompile. Code or layout changes relaunch
+the server automatically. Web assets are rebuilt by `parcel watch` in the background.
 
-Web assets are reloaded through `parcel watch` and don't require a recompilation.
+### Full assembled-site watch (assembler, navigation, multi-repo)
 
-Markdown files are refreshed automatically through livereload
+```shell
+./build.sh watchall
+```
 
-Code or layout changes will relaunch the server automatically
+Runs `dotnet watch` on the Aspire AppHost. When you edit any `.cs` file the AppHost restarts,
+the assembler clone step is skipped (default-on `--assume-cloned`), and the build step
+consults the MVID stamp — if code actually changed it rebuilds; otherwise it skips in seconds.
+No live reload; the site comes back on port 4000 after each restart.
 
 ## CLI reference maintenance
 
