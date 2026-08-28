@@ -39,6 +39,8 @@ let private format _ =
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
+let private watchAll _ = exec { run "dotnet" "watch" "--project" "aspire" "--configuration" "debug" }
+
 let private lint _ =
     match exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
     | 0 -> printfn "No formatting violations found."
@@ -248,6 +250,7 @@ let Setup (parsed:ParseResults<Build>) =
 
         | Format -> Build.Step format
         | Watch -> Build.Step watch
+        | Watch_All -> Build.Step watchAll
 
         // steps
         | Lint -> Build.Step lint

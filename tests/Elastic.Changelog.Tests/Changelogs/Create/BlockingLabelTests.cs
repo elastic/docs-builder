@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
@@ -54,11 +55,16 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog
-		Collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Errors.Should().Be(0);
+		Collector.Hints.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
 			.Should()
-			.Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
+			.Contain(
+				d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation") && d.Message.Contains(
+					"skip:releaseNotes"
+				)
+			);
 
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -103,7 +109,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			Products =
 			[
 				new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" },
-				new ProductArgument { Product = "cloud-serverless", Target = "2025-08-05" }
+				new ProductArgument { Product = "cloud-serverless", Lifecycle = "ga" }
 			],
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -114,8 +120,12 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog due to cloud-serverless blocker
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("ILM"));
+		Collector.Errors.Should().Be(0);
+		Collector.Hints.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation") && d.Message.Contains("ILM"));
 
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -160,7 +170,7 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 			Products =
 			[
 				new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" },
-				new ProductArgument { Product = "cloud-serverless", Target = "2025-08-05" }
+				new ProductArgument { Product = "cloud-serverless", Lifecycle = "ga" }
 			],
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -171,8 +181,14 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog due to blocker
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains(">non-issue"));
+		Collector.Errors.Should().Be(0);
+		Collector.Hints.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation") && d.Message.Contains(">non-issue")
+			);
 
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -231,15 +247,67 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		// Assert — product-specific rule should have blocked creation
 		result.Should().BeTrue(); // Succeed but skip
+		Collector.Errors.Should().Be(0);
 		Collector
 			.Diagnostics
 			.Should()
-			.Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
+			.Contain(
+				d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation") && d.Message.Contains(
+					"skip:releaseNotes"
+				)
+			);
 
 		var outputDir = input.Output;
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(0);
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithAllPrsSkippedByCreateRules_ReturnsSuccessWithoutErrors()
+	{
+		var prInfo = new GitHubPrInfo { Title = "PR with blocking label", Labels = ["type:feature", "skip:releaseNotes"] };
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
+			  - ga
+			rules:
+			  create:
+			    products:
+			      elasticsearch:
+			        exclude: "skip:releaseNotes"
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+		var service = CreateService();
+		var outputDir = CreateOutputDirectory();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/111", "https://github.com/elastic/elasticsearch/pull/222"],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = outputDir
+		};
+
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("returned false without emitting errors"));
+		Collector.Diagnostics.Should().OnlyContain(d => d.Severity != Severity.Error);
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation"));
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty();
 	}
 }

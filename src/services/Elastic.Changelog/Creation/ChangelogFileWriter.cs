@@ -290,9 +290,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#       Valid values are defined in https://github.com/elastic/docs-builder/blob/main/config/products.yml
 			#
 			#     versions:
-			#       Note-only. A list of release versions this note applies to.
+			#       Required when the changelog is not tied to a pull request.
 			#       Example: [9.3.0, 9.4.0] or [2026-05-15]
-			#       For PR-anchored entries, leave this absent — the branch is the address.
+			#       Omit when the file lists prs.
 			#
 			#     lifecycle:
 			#       An optional string for new features or enhancements that have a specific availability.

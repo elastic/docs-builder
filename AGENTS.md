@@ -73,6 +73,7 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `src/authoring/Elastic.LegacyDocs.Migration/` | `dotnet test tests/Elastic.LegacyDocs.Migration.Tests/` |
 | `src/tooling/essc/` | `dotnet test tests/Elastic.SiteSearch.Tests/` (essc's root namespace is `Elastic.SiteSearch.Cli`) |
 | `src/Elastic.ApiExplorer/` | `dotnet test tests/Elastic.ApiExplorer.Tests/` |
+| `src/services/Elastic.Documentation.Deploying/` | `dotnet test tests/Elastic.Documentation.Deploying.Tests/` |
 | `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |
 | `tests-integration/` | `./build.sh integrate` |
 | Multiple / uncertain | `./build.sh unit-test` |
@@ -128,6 +129,14 @@ Beyond what `.editorconfig` can check:
 - **Comments**: only when *why* is non-obvious. No `#region`. No multi-paragraph docstrings.
 
 Use `/style-review` to check a diff against these rules.
+
+## Agentic skills
+
+Always invoke the skill for the following tasks — never substitute your own format:
+
+- **Commits** — use `/commit` before creating any git commit.
+- **Pull requests** — use `/pr` before running `gh pr create`. Never write your own PR body or title without going through the skill first.
+- **Issues** — use `/issue` before running `gh issue create`. Never file an issue without going through the skill first.
 
 ## Documentation
 

@@ -110,7 +110,8 @@ bundle:
 
 ### Bundle by git commit range [profile-git-range]
 
-If the source of truth for what was shipped in each release is a **git commit range** — for example, a date-promotion deployment that hands off the previously and currently published commit hashes — pass `--start-git-ref` and `--end-git-ref` alongside the profile. The command derives the PR list from the range itself (GitHub compare API + GraphQL `associatedPullRequests`), so no PR list file or promotion report is needed.
+If the source of truth for what was shipped in each release is a git commit range, pass `--start-git-ref` and `--end-git-ref` alongside the profile.
+The command derives the PR list from the range itself (GitHub compare API + GraphQL `associatedPullRequests`), so no PR list file or promotion report is needed.
 
 Your profile must **not** contain a `products` pattern or `source: github_release`; it contributes output metadata only. For example:
 
@@ -169,14 +170,16 @@ bundle:
 ```
 
 1. This profile collects all changelogs from the `directory`.
-2. This profile collects any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command.
-3. This profile collects any changelogs that have `product: kibana`, `lifecycle: ga`, and the version specified in the command. No two profiles may target the same primary product — they would collide on the same conventional `{product}-{version}.yaml` bundle name.
-4. In this case, the lifecycle is inferred from the version specified in the command. For example, if the version is `9.2.0-beta.1` the lifecycle is `beta`. ISO date arguments (for example, `2026-07-21`) derive `ga`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference).
+2. This profile collects any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. The date pattern matches files that declare `products[].versions` (or a legacy `target`), typically files created with `changelog note`. It does not match PR-linked changelogs that omit `versions`.
+3. This profile collects any changelogs that have `product: kibana`, `lifecycle: ga`, and the version specified in the command. Like the date pattern, a concrete version only matches files that declare `products[].versions` (or a legacy `target`). No two profiles may target the same primary product — they would collide on the same conventional `{product}-{version}.yaml` bundle name.
+4. In this case, the lifecycle is inferred from the version specified in the command. For example, if the version is `9.2.0-beta.1` the lifecycle is `beta`. ISO date arguments (for example, `2026-07-21`) derive `ga`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference). A concrete `{version}` in `products` has the same `versions`/`target` matching rule as the previous examples.
 
 For date-based and semver profiles, lifecycle is controlled only in the profile YAML: omit it from the pattern, use `{lifecycle}` to derive it, or hardcode `ga`, `beta`, or `preview`. Non-`ga` date-based releases are exceptional and should hardcode the lifecycle.
 
 :::{note}
 The `products` field determines which changelog files are gathered for consideration. You can still apply [rules](#rules) afterward to further filter changelogs from the bundle. The input stage and bundle filtering stage are conceptually separate.
+
+A concrete version or date in the middle slot of `products` (including `{version}` and `{version}-*`) only matches files that have `products[].versions` or a legacy `target`. A `*` in that slot (for example `products: "* * *"`) still matches every file, including PR-linked changelogs. This filter is local/directory only: when changelog files are sourced from the CDN, `--input-products` and an equivalent versioned profile `products` pattern are not supported.
 :::
 
 ## Create bundles
@@ -272,6 +275,10 @@ For example, if the source of truth for what was shipped in each release is:
 
 By default all changelogs that match the chosen source of truth are included in the bundle.
 Bundles are self-contained: the full content of each changelog is embedded in the bundle, so you can freely move or remove the changelog files afterward.
+
+When you create a release bundle for a product version from a PR list or GitHub release and the command is sourcing from the CDN, it also adds uploaded changelogs whose `products[].versions` include that version (the version comes from `output_products`). Those files are appended to the same `entries` list as the PR-linked changelogs — they are not a separate section. `rules.bundle` applies to them too. This automatic add does not apply to git-range bundles or `--force-local`.
+
+To create a bundle that contains only "note" changelogs (including files that have different `versions` values), use a [path list](/data/release-notes/bundle.md) (profile third argument or `--files`).
 
 To apply additional filtering by the changelog type, areas, or products, add [bundle rules](#rules).
 

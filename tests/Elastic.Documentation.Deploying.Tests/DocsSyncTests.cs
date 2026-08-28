@@ -21,7 +21,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 
-namespace Elastic.Documentation.IntegrationTests;
+namespace Elastic.Documentation.Deploying.Tests;
 
 public class DocsSyncTests
 {
