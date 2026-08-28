@@ -22,7 +22,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	public void AllFileNavigationItemsHaveValidFileInfoForSimpleFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: getting-started.md
@@ -30,11 +31,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		             - file: configuration.md
 		           """;
 
-		var fileSystem = CreateMockFileSystemWithFiles([
-			"/docs/getting-started.md",
-			"/docs/installation.md",
-			"/docs/configuration.md"
-		]);
+		var fileSystem = CreateMockFileSystemWithFiles(["/docs/getting-started.md", "/docs/installation.md", "/docs/configuration.md"]);
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
@@ -58,7 +55,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	public void AllFileNavigationItemsHaveValidFileInfoForVirtualFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -102,7 +100,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	public void AllFileNavigationItemsHaveValidFileInfoForFoldersWithFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: setup
@@ -150,7 +149,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	public void AllFileNavigationItemsHaveValidFileInfoForDeeplyNestedTocFiles()
 	{
 		// language=yaml
-		var docsetYaml = """
+		var docsetYaml =
+			"""
 		                 project: 'test-project'
 		                 toc:
 		                   - file: index.md
@@ -163,7 +163,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 
 		// Create a TOC file in a subdirectory
 		// language=yaml
-		var developmentTocYaml = """
+		var developmentTocYaml =
+			"""
 		                         toc:
 		                           - file: index.md
 		                           - file: contributing.md
@@ -174,7 +175,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 
 		// Create a deeply nested TOC file
 		// language=yaml
-		var advancedTocYaml = """
+		var advancedTocYaml =
+			"""
 		                      toc:
 		                        - file: index.md
 		                        - file: patterns.md
@@ -183,7 +185,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 
 		// Create a third-level nested TOC
 		// language=yaml
-		var performanceTocYaml = """
+		var performanceTocYaml =
+			"""
 		                         toc:
 		                           - file: index.md
 		                           - file: optimization.md
@@ -237,7 +240,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	public void AllFileNavigationItemsHaveValidFileInfoForComplexMixedStructure()
 	{
 		// language=yaml
-		var docsetYaml = """
+		var docsetYaml =
+			"""
 		                 project: 'test-project'
 		                 toc:
 		                   - file: index.md
@@ -261,7 +265,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 
 		// Setup/advanced TOC
 		// language=yaml
-		var setupAdvancedTocYaml = """
+		var setupAdvancedTocYaml =
+			"""
 		                           toc:
 		                             - file: index.md
 		                             - file: custom-config.md
@@ -269,7 +274,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 
 		// Reference TOC
 		// language=yaml
-		var referenceTocYaml = """
+		var referenceTocYaml =
+			"""
 		                       toc:
 		                         - file: index.md
 		                         - file: api.md
@@ -319,12 +325,13 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
-			var path = fileSystem.FileInfo.New(Path.Join(context.DocumentationSourceDirectory.FullName, fileRef.PathRelativeToDocumentationSet));
+			var path = fileSystem.FileInfo.New(
+				Path.Join(context.DocumentationSourceDirectory.FullName, fileRef.PathRelativeToDocumentationSet)
+			);
 			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
 		}
 
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
-
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -346,7 +353,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	public void AllFileNavigationItemsHaveValidFileInfoForNestedFolders()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: docs
@@ -388,7 +396,8 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	public void AllFileNavigationItemsHaveValidFileInfoForVirtualFilesWithNestedChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -453,7 +462,9 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 	/// Recursively collects all FileNavigationLeaf instances from the navigation tree.
 	/// For VirtualFileNavigation items, extracts the Index (which is a FileNavigationLeaf).
 	/// </summary>
-	private static HashSet<FileNavigationLeaf<IDocumentationFile>> GetAllFileNavigationItems(INodeNavigationItem<INavigationModel, INavigationItem> node)
+	private static HashSet<FileNavigationLeaf<IDocumentationFile>> GetAllFileNavigationItems(
+		INodeNavigationItem<INavigationModel, INavigationItem> node
+	)
 	{
 		var result = new HashSet<FileNavigationLeaf<IDocumentationFile>>();
 		if (node.Index is FileNavigationLeaf<IDocumentationFile> index)

@@ -17,9 +17,7 @@ public class CondensedConsoleFormatter() : ConsoleFormatter("condensed")
 	private const string Yellow = "\x1b[33m";
 	private const string Blue = "\x1b[34m";
 
-	public override void Write<TState>(
-		in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter
-	)
+	public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
 	{
 		var message = logEntry.Formatter.Invoke(logEntry.State, logEntry.Exception);
 		var logLevel = GetLogLevel(logEntry.LogLevel);

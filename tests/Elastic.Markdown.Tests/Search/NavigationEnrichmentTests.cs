@@ -21,12 +21,8 @@ public class NavigationEnrichmentTests
 {
 	private const int PenaltyDefault = 50;
 
-	private static DocumentationDocument NewDoc() => new()
-	{
-		Path = "/docs/reference/some-page",
-		Title = "Some Page",
-		SearchTitle = "Some Page"
-	};
+	private static DocumentationDocument NewDoc() =>
+		new() { Path = "/docs/reference/some-page", Title = "Some Page", SearchTitle = "Some Page" };
 
 	[Fact]
 	public void LandingPageRoot_GetsLowDepthAndNonDefaultToc()
@@ -45,11 +41,19 @@ public class NavigationEnrichmentTests
 	[Fact]
 	public void ReleaseNotesRoot_IsDampenedRelativeToOtherRootsAtTheSameDepth()
 	{
-		var releaseNotesRoot = new FakeRootNavigationItem { NavigationTitle = "Release Notes", Parent = new FakeNodeNavigationItem { NavigationTitle = "Parent" } };
+		var releaseNotesRoot = new FakeRootNavigationItem
+		{
+			NavigationTitle = "Release Notes",
+			Parent = new FakeNodeNavigationItem { NavigationTitle = "Parent" }
+		};
 		var releaseNotesDoc = NewDoc();
 		ElasticsearchMarkdownExporter.CommonEnrichments(releaseNotesDoc, releaseNotesRoot);
 
-		var otherRoot = new FakeRootNavigationItem { NavigationTitle = "Reference", Parent = new FakeNodeNavigationItem { NavigationTitle = "Parent" } };
+		var otherRoot = new FakeRootNavigationItem
+		{
+			NavigationTitle = "Reference",
+			Parent = new FakeNodeNavigationItem { NavigationTitle = "Parent" }
+		};
 		var otherDoc = NewDoc();
 		ElasticsearchMarkdownExporter.CommonEnrichments(otherDoc, otherRoot);
 

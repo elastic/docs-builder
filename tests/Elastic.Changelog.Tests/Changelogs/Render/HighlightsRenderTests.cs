@@ -42,7 +42,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			  - product: elasticsearch
 			    target: 9.3.0
 			""",
-			("1755268130-highlight-feature.yaml", changelog1));
+			("1755268130-highlight-feature.yaml", changelog1)
+		);
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -105,7 +106,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			  - product: elasticsearch
 			    target: 9.3.0
 			""",
-			("1755268130-regular-feature.yaml", changelog1));
+			("1755268130-regular-feature.yaml", changelog1)
+		);
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -158,7 +160,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			  - product: elasticsearch
 			    target: 9.3.0
 			""",
-			("1755268130-highlight-enhancement.yaml", changelog1));
+			("1755268130-highlight-enhancement.yaml", changelog1)
+		);
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -235,7 +238,8 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			    target: 9.3.0
 			""",
 			("1755268130-search.yaml", changelog1),
-			("1755268140-indexing.yaml", changelog2));
+			("1755268140-indexing.yaml", changelog2)
+		);
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());

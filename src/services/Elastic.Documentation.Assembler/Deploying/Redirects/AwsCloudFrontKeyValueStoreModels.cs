@@ -6,10 +6,18 @@ using System.Text.Json.Serialization;
 
 namespace Elastic.Documentation.Assembler.Deploying.Redirects;
 
-public record DescribeKeyValueStoreResponse([property: JsonPropertyName("ETag")] string ETag, [property: JsonPropertyName("KeyValueStore")] KeyValueStore KeyValueStore);
+public record DescribeKeyValueStoreResponse(
+	[property: JsonPropertyName("ETag")] string ETag,
+	[property: JsonPropertyName("KeyValueStore")] KeyValueStore KeyValueStore
+);
+
 public record KeyValueStore([property: JsonPropertyName("ARN")] string ARN);
 
-public record ListKeysResponse([property: JsonPropertyName("NextToken")] string? NextToken, [property: JsonPropertyName("Items")] List<KeyItem> Items);
+public record ListKeysResponse(
+	[property: JsonPropertyName("NextToken")] string? NextToken,
+	[property: JsonPropertyName("Items")] List<KeyItem> Items
+);
+
 public record KeyItem([property: JsonPropertyName("Key")] string Key);
 
 public record UpdateKeysResponse([property: JsonPropertyName("ETag")] string ETag);

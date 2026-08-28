@@ -26,12 +26,7 @@ public class PrInfoProcessorLabelBlockerTests
 	[Fact]
 	public void AreAllProductsBlocked_GlobalExclude_MatchingLabel_ReturnsTrue()
 	{
-		var rules = new CreateRules
-		{
-			Labels = ["changelog:skip"],
-			Mode = FieldMode.Exclude,
-			Match = MatchMode.Any
-		};
+		var rules = new CreateRules { Labels = ["changelog:skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any };
 
 		PrInfoProcessor.AreAllProductsBlocked(["changelog:skip", "type:feature"], rules).Should().BeTrue();
 	}
@@ -39,12 +34,7 @@ public class PrInfoProcessorLabelBlockerTests
 	[Fact]
 	public void AreAllProductsBlocked_GlobalExclude_NoMatchingLabel_ReturnsFalse()
 	{
-		var rules = new CreateRules
-		{
-			Labels = ["changelog:skip"],
-			Mode = FieldMode.Exclude,
-			Match = MatchMode.Any
-		};
+		var rules = new CreateRules { Labels = ["changelog:skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any };
 
 		PrInfoProcessor.AreAllProductsBlocked(["type:feature"], rules).Should().BeFalse();
 	}
@@ -52,12 +42,7 @@ public class PrInfoProcessorLabelBlockerTests
 	[Fact]
 	public void AreAllProductsBlocked_GlobalInclude_NoneMatch_ReturnsTrue()
 	{
-		var rules = new CreateRules
-		{
-			Labels = ["changelog:include"],
-			Mode = FieldMode.Include,
-			Match = MatchMode.Any
-		};
+		var rules = new CreateRules { Labels = ["changelog:include"], Mode = FieldMode.Include, Match = MatchMode.Any };
 
 		PrInfoProcessor.AreAllProductsBlocked(["type:feature"], rules).Should().BeTrue();
 	}
@@ -65,12 +50,7 @@ public class PrInfoProcessorLabelBlockerTests
 	[Fact]
 	public void AreAllProductsBlocked_GlobalInclude_HasMatch_ReturnsFalse()
 	{
-		var rules = new CreateRules
-		{
-			Labels = ["changelog:include"],
-			Mode = FieldMode.Include,
-			Match = MatchMode.Any
-		};
+		var rules = new CreateRules { Labels = ["changelog:include"], Mode = FieldMode.Include, Match = MatchMode.Any };
 
 		PrInfoProcessor.AreAllProductsBlocked(["changelog:include", "type:feature"], rules).Should().BeFalse();
 	}
@@ -85,18 +65,8 @@ public class PrInfoProcessorLabelBlockerTests
 			Match = MatchMode.Any,
 			ByProduct = new Dictionary<string, CreateRules>
 			{
-				["elasticsearch"] = new()
-				{
-					Labels = ["changelog:skip"],
-					Mode = FieldMode.Exclude,
-					Match = MatchMode.Any
-				},
-				["kibana"] = new()
-				{
-					Labels = ["kibana:skip"],
-					Mode = FieldMode.Exclude,
-					Match = MatchMode.Any
-				}
+				["elasticsearch"] = new() { Labels = ["changelog:skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
+				["kibana"] = new() { Labels = ["kibana:skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
 			}
 		};
 
@@ -114,18 +84,8 @@ public class PrInfoProcessorLabelBlockerTests
 			Match = MatchMode.Any,
 			ByProduct = new Dictionary<string, CreateRules>
 			{
-				["elasticsearch"] = new()
-				{
-					Labels = ["changelog:skip"],
-					Mode = FieldMode.Exclude,
-					Match = MatchMode.Any
-				},
-				["kibana"] = new()
-				{
-					Labels = ["changelog:skip"],
-					Mode = FieldMode.Exclude,
-					Match = MatchMode.Any
-				}
+				["elasticsearch"] = new() { Labels = ["changelog:skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
+				["kibana"] = new() { Labels = ["changelog:skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
 			}
 		};
 
@@ -135,12 +95,7 @@ public class PrInfoProcessorLabelBlockerTests
 	[Fact]
 	public void AreAllProductsBlocked_ExcludeMatchAll_OnlyBlocksWhenAllLabelsMatch()
 	{
-		var rules = new CreateRules
-		{
-			Labels = ["skip-a", "skip-b"],
-			Mode = FieldMode.Exclude,
-			Match = MatchMode.All
-		};
+		var rules = new CreateRules { Labels = ["skip-a", "skip-b"], Mode = FieldMode.Exclude, Match = MatchMode.All };
 
 		// Only one of the two exclude labels present — MatchMode.All means ALL pr labels must be in the exclude list
 		PrInfoProcessor.AreAllProductsBlocked(["skip-a", "other"], rules).Should().BeFalse();
@@ -157,12 +112,7 @@ public class PrInfoProcessorLabelBlockerTests
 			Match = MatchMode.Any,
 			ByProduct = new Dictionary<string, CreateRules>
 			{
-				["elasticsearch"] = new()
-				{
-					Labels = [">test"],
-					Mode = FieldMode.Exclude,
-					Match = MatchMode.Any
-				}
+				["elasticsearch"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
 			}
 		};
 
@@ -181,12 +131,7 @@ public class PrInfoProcessorLabelBlockerTests
 			Match = MatchMode.Any,
 			ByProduct = new Dictionary<string, CreateRules>
 			{
-				["elasticsearch"] = new()
-				{
-					Labels = [">test"],
-					Mode = FieldMode.Exclude,
-					Match = MatchMode.Any
-				}
+				["elasticsearch"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
 			}
 		};
 
@@ -204,18 +149,19 @@ public class PrInfoProcessorLabelBlockerTests
 	//       cloud-serverless:
 	//         exclude: ">non-issue, ILM"
 
-	private static CreateRules DocumentedExampleRules() => new()
-	{
-		Labels = [">non-issue"],
-		Mode = FieldMode.Exclude,
-		Match = MatchMode.Any,
-		ByProduct = new Dictionary<string, CreateRules>
+	private static CreateRules DocumentedExampleRules() =>
+		new()
 		{
-			["elasticsearch"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
-			["kibana"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
-			["cloud-serverless"] = new() { Labels = [">non-issue", "ILM"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
-		}
-	};
+			Labels = [">non-issue"],
+			Mode = FieldMode.Exclude,
+			Match = MatchMode.Any,
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["elasticsearch"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
+				["kibana"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
+				["cloud-serverless"] = new() { Labels = [">non-issue", "ILM"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
+			}
+		};
 
 	[Fact]
 	public void DocExample_NonIssueOnly_NotAllBlocked()
@@ -313,12 +259,7 @@ public class PrInfoProcessorLabelBlockerTests
 	[Fact]
 	public void AreAllProductsBlocked_IncludeMatchAll_PartialMatch_ReturnsTrue()
 	{
-		var rules = new CreateRules
-		{
-			Labels = ["required-a", "required-b"],
-			Mode = FieldMode.Include,
-			Match = MatchMode.All
-		};
+		var rules = new CreateRules { Labels = ["required-a", "required-b"], Mode = FieldMode.Include, Match = MatchMode.All };
 
 		// Include + all: blocked if NOT ALL PR labels are in the include list
 		// PR has "required-a" and "other" — "other" is not in the include list → blocked
@@ -328,12 +269,7 @@ public class PrInfoProcessorLabelBlockerTests
 	[Fact]
 	public void AreAllProductsBlocked_IncludeMatchAll_AllMatch_ReturnsFalse()
 	{
-		var rules = new CreateRules
-		{
-			Labels = ["required-a", "required-b"],
-			Mode = FieldMode.Include,
-			Match = MatchMode.All
-		};
+		var rules = new CreateRules { Labels = ["required-a", "required-b"], Mode = FieldMode.Include, Match = MatchMode.All };
 
 		// All PR labels are in the include list → not blocked
 		PrInfoProcessor.AreAllProductsBlocked(["required-a", "required-b"], rules).Should().BeFalse();
@@ -368,12 +304,7 @@ public class PrInfoProcessorLabelBlockerTests
 	[Fact]
 	public void AreAllProductsBlocked_CaseInsensitiveMatching()
 	{
-		var rules = new CreateRules
-		{
-			Labels = ["Changelog:Skip"],
-			Mode = FieldMode.Exclude,
-			Match = MatchMode.Any
-		};
+		var rules = new CreateRules { Labels = ["Changelog:Skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any };
 
 		PrInfoProcessor.AreAllProductsBlocked(["changelog:skip"], rules).Should().BeTrue();
 		PrInfoProcessor.AreAllProductsBlocked(["CHANGELOG:SKIP"], rules).Should().BeTrue();

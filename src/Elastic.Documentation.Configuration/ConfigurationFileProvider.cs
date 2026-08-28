@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
@@ -25,6 +26,8 @@ public partial class ConfigurationFileProvider
 	public static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
 		.WithTypeConverter(new HintTypeSetConverter())
+		.WithTypeConverter(new DurationYamlConverter())
+		.WithTypeConverter(new ApplicableToYamlConverter([]))
 		.WithTypeConverter(new TocItemCollectionYamlConverter())
 		.WithTypeConverter(new TocItemYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())
@@ -63,19 +66,22 @@ public partial class ConfigurationFileProvider
 		else
 		{
 			string[] spotChecks = ["navigation.yml", "versions.yml", "products.yml", "assembler.yml", "search.yml"];
-			var defaultSource =
-				fileSystem.Directory.Exists(LocalConfigurationDirectory)
-					&& spotChecks.All(f => fileSystem.File.Exists(Path.Join(LocalConfigurationDirectory, f)))
+			var defaultSource = fileSystem.Directory.Exists(LocalConfigurationDirectory)
+				&& spotChecks.All(f => fileSystem.File.Exists(Path.Join(LocalConfigurationDirectory, f)))
 				? ConfigurationSource.Local
 				: ConfigurationSource.Embedded;
 			ConfigurationSource = defaultSource;
 		}
 
 		if (ConfigurationSource == ConfigurationSource.Local && !fileSystem.Directory.Exists(LocalConfigurationDirectory))
-			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist.");
+			throw new Exception(
+				$"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist."
+			);
 
 		if (ConfigurationSource == ConfigurationSource.Remote && !fileSystem.Directory.Exists(AppDataConfigurationDirectory))
-			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)} directory {AppDataConfigurationDirectory} does not exist.");
+			throw new Exception(
+				$"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)} directory {AppDataConfigurationDirectory} does not exist."
+			);
 
 		var path = GetAppDataPath("git-ref.txt");
 		if (_fileSystem.File.Exists(path))
@@ -85,19 +91,28 @@ public partial class ConfigurationFileProvider
 
 		if (ConfigurationSource == ConfigurationSource.Remote)
 		{
-			_logger.LogInformation("{ConfigurationSource}: git ref '{GitReference}', in {Directory}",
-				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)}", GitReference, AppDataConfigurationDirectory);
+			_logger.LogInformation(
+				"{ConfigurationSource}: git ref '{GitReference}', in {Directory}",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)}",
+				GitReference,
+				AppDataConfigurationDirectory
+			);
 		}
 
 		if (ConfigurationSource == ConfigurationSource.Local)
 		{
-			_logger.LogInformation("{ConfigurationSource}: located {Directory}",
-				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)}", LocalConfigurationDirectory);
+			_logger.LogInformation(
+				"{ConfigurationSource}: located {Directory}",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)}",
+				LocalConfigurationDirectory
+			);
 		}
 		if (ConfigurationSource == ConfigurationSource.Embedded)
 		{
-			_logger.LogInformation("{ConfigurationSource} using embedded in binary configuration",
-				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Embedded)}");
+			_logger.LogInformation(
+				"{ConfigurationSource} using embedded in binary configuration",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Embedded)}"
+			);
 		}
 
 		VersionFile = CreateTemporaryConfigurationFile("versions.yml");
@@ -169,7 +184,6 @@ public partial class ConfigurationFileProvider
 				spacing = -1;
 				reindenting = -1;
 			}
-
 			else if (spacing != -1 && Regex.IsMatch(line, $@"^(\s{{{spacing + 3},}})\S"))
 			{
 				var matches = Regex.Match(line, $@"^(?<spacing>\s{{{spacing}}})(?<remainder>.+)$");
@@ -190,10 +204,14 @@ public partial class ConfigurationFileProvider
 				_fileSystem.File.AppendAllLines(tempFile, [line]);
 		}
 
-		if (configuration.AvailableRepositories.TryGetValue("docs-builder", out var docsBuildRepository) && docsBuildRepository is { Skip: false, Path: not null })
+		if (
+			configuration.AvailableRepositories.TryGetValue("docs-builder", out var docsBuildRepository)
+			&& docsBuildRepository is { Skip: false, Path: not null }
+		)
 		{
 			// language=yaml
-			_fileSystem.File.AppendAllText(tempFile,
+			_fileSystem.File.AppendAllText(
+				tempFile,
 				"""
 
 						  - toc: docs-builder://
@@ -204,12 +222,11 @@ public partial class ConfigurationFileProvider
 						        children:
 						          - toc: docs-builder://development/link-validation
 						            path_prefix: reference/docs-builder/dev/link-val
-						""");
+						"""
+			);
 		}
 		NavigationFile = _fileSystem.FileInfo.New(tempFile);
 		return NavigationFile;
-
-
 	}
 
 	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
@@ -280,14 +297,21 @@ public partial class ConfigurationFileProvider
 
 public static class ConfigurationFileProviderServiceCollectionExtensions
 {
-	public static IServiceCollection AddConfigurationFileProvider(this IServiceCollection services,
+	public static IServiceCollection AddConfigurationFileProvider(
+		this IServiceCollection services,
 		bool skipPrivateRepositories,
 		ConfigurationSource? configurationSource,
-		Action<IServiceCollection, ConfigurationFileProvider> configure)
+		Action<IServiceCollection, ConfigurationFileProvider> configure
+	)
 	{
 		using var sp = services.BuildServiceProvider();
 		var logFactory = sp.GetRequiredService<ILoggerFactory>();
-		var provider = new ConfigurationFileProvider(logFactory, new ConfigurationFileSystem(), skipPrivateRepositories, configurationSource);
+		var provider = new ConfigurationFileProvider(
+			logFactory,
+			new ConfigurationFileSystem(),
+			skipPrivateRepositories,
+			configurationSource
+		);
 		_ = services.AddSingleton(provider);
 		configure(services, provider);
 		return services;

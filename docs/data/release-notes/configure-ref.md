@@ -73,9 +73,9 @@ The authoring repo is resolved with the same precedence as `changelog upload`: `
 Sourcing is decided per run:
 
 - **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
-- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue/file filters to the downloaded set. Path-list / `--files` filters match pool entries by file name, so the listed paths do not need to exist locally.
+- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). Product/PR/issue filters fetch `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then apply the bundle's own filters. Path-list / `--files` and `changelog bundle-amend --add` / `--remove` skip the registry: they GET each requested file by name from that same org/repo/branch pool, so the listed paths do not need to exist locally.
 
-Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml` — including path-list / `--files` runs that should read freshly authored files from disk instead of the CDN pool.
+Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml` — including path-list / `--files` runs and `changelog bundle-amend --add` / `--remove` that should read freshly authored files from disk instead of the CDN.
 
 Because entries are org/repo/branch-scoped, one repository can produce a bundle for a shared product (for example, `cloud-serverless`) while sourcing its own entries from `changelog/{org}/{repo}/{branch}/`, without that product appearing in the repository's `docset.yml`. The `{changelog}` directive's `:cdn:` mode still consumes product-scoped *bundles*, so a repository that also renders its own release notes declares each product under `release_notes` as before.
 
@@ -124,11 +124,9 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   When the bundle is rendered, entries with matching `feature-id` values are commented out.
 
 `output`
-:   The output filename pattern for the bundle file.
-:   Supports `{version}` and `{lifecycle}` placeholders.
-:   When not set, the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
-:   Setting this is recommended so each profile produces a distinctly named file rather than overwriting the default.
-:   Example: `"elasticsearch/{version}.yaml"`
+:   Removed. Bundle output names are derived by convention as `{product}-{version}.yaml` from the profile's primary output product (the first product in `output_products`, or `products`) and the version argument. Setting `output` on any profile is a hard error at bundle time; remove the field.
+:   When no primary product or version resolves (for example, a promotion-report invocation without a version argument), the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
+:   No two profiles in the same configuration may share a primary output product — they would resolve to the same `{product}-{version}.yaml` target for any given version, which is also a hard error.
 
 `output_products`
 :   The bundle's `products` metadata, which affects the bundle rules that are applied and the product and version titles that ultimately appear in documentation.

@@ -10,22 +10,9 @@ using Elastic.Mapping.Mappings;
 namespace Elastic.Documentation.Search.Contract;
 
 [ElasticsearchMappingContext]
-[Index<GuideDocument>(
-	NameTemplate = "guide-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(GuideLexicalConfig)
-)]
-[Index<GuideDocument>(
-	NameTemplate = "guide-{type}.semantic-{env}",
-	Variant = "Semantic",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(GuideSemanticConfig)
-)]
-[AiEnrichment<GuideDocument>(
-	Role = "Expert content analyst creating search metadata for Elastic's legacy /guide documentation pages.",
-	MatchField = "url",
-	IndexVariant = "Semantic"
-)]
+[Index<GuideDocument>(NameTemplate = "guide-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(GuideLexicalConfig))]
+[Index<GuideDocument>(NameTemplate = "guide-{type}.semantic-{env}", Variant = "Semantic", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(GuideSemanticConfig))]
+[AiEnrichment<GuideDocument>(Role = "Expert content analyst creating search metadata for Elastic's legacy /guide documentation pages.", MatchField = "url", IndexVariant = "Semantic")]
 public static partial class GuideMappingContext;
 
 public class GuideLexicalConfig : IConfigureElasticsearch<GuideDocument>
@@ -53,8 +40,7 @@ public static class GuideMappingExtensions
 {
 	public static MappingsBuilder<GuideDocument> AddGuideMappings(this MappingsBuilder<GuideDocument> m) =>
 		m
-			// Aliases for pre-nesting field names — remove once all indices are rebuilt under the
-			// new `http.*` shape and no consumer queries the old names.
-			.AddField("http_etag", f => f.Alias("http.etag"))
-			.AddField("http_last_modified", f => f.Alias("http.last_modified"));
+		// Aliases for pre-nesting field names — remove once all indices are rebuilt under the
+		// new `http.*` shape and no consumer queries the old names.
+		.AddField("http_etag", f => f.Alias("http.etag")).AddField("http_last_modified", f => f.Alias("http.last_modified"));
 }

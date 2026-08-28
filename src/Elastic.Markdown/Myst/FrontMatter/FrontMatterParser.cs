@@ -13,7 +13,6 @@ namespace Elastic.Markdown.Myst.FrontMatter;
 [YamlSerializable]
 public class YamlFrontMatter
 {
-
 	[YamlMember(Alias = "title")]
 	public string? Title { get; set; }
 
