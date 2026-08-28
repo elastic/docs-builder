@@ -13,23 +13,28 @@ Creates a GitHub PR with a body focused on *why* and *what*, labeled for the rel
 
 Run these to see what the PR contains:
 ```bash
+git status
 git log main..HEAD --oneline
 git diff main...HEAD --stat
 ```
 
-### 2. Push the branch (if needed)
+### 2. Commit uncommitted work if needed
+
+If the working tree has changes that belong in this PR, read and follow [commit](../commit/SKILL.md) first. Do not commit inline. Do not skip hooks.
+
+### 3. Push the branch (if needed)
 
 ```bash
 git push -u origin HEAD
 ```
 
-### 3. Write the PR title
+### 4. Write the PR title
 
 - ≤70 characters
 - Imperative mood, no trailing period
 - Describes the change at a human level (not a file list)
 
-### 4. Write the PR body
+### 5. Write the PR body
 
 Use this structure:
 
@@ -49,7 +54,7 @@ Use this structure:
 
 **Do not** include bullet lists of changed files. Do not summarize what's already obvious from the diff.
 
-### 5. Choose exactly ONE label
+### 6. Choose exactly ONE label
 
 Pick the single best-fit label. Apply it with `--label <label>`.
 
@@ -70,7 +75,7 @@ Pick the single best-fit label. Apply it with `--label <label>`.
 
 When in doubt between `feature` and `enhancement`: `feature` = didn't exist, `enhancement` = existed but got better.
 
-### 6. Create the PR
+### 7. Create the PR
 
 ```bash
 gh pr create --title "<title>" --label "<label>" --body "$(cat <<'EOF'
@@ -85,6 +90,6 @@ EOF
 )"
 ```
 
-### 7. Return the PR URL
+### 8. Return the PR URL
 
 Always print the PR URL so the user can open it directly.

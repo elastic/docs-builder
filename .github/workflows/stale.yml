@@ -1,0 +1,34 @@
+name: Close stale issues and PRs
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v11
+        with:
+          days-before-stale: 90
+          days-before-close: 14
+          stale-issue-label: stale
+          stale-pr-label: stale
+          close-issue-label: closed-stale
+          close-pr-label: closed-stale
+          exempt-issue-labels: "never-stale,good first issue"
+          exempt-pr-labels: "never-stale"
+          exempt-draft-pr: false
+          stale-issue-message: >
+            This issue is stale because it has been open 90 days with no activity.
+            Remove the `stale` label, or leave a comment, or this will be closed in 14 days.
+          stale-pr-message: >
+            This pull request is stale because it has been open 90 days with no activity.
+            Remove the `stale` label, or leave a comment, or this will be closed in 14 days.
