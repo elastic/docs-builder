@@ -16,6 +16,8 @@ services:
     command: ["./build.sh", "unit-test"]
     volumes:
       - .:/src
+      - nuget-packages:/root/.nuget/packages
+      - npm-cache:/root/.npm
 
   # Run the development server with dotnet watch. Code changes restart the
   # CLI, while Markdown and static-file changes use the existing live reload.
@@ -46,7 +48,11 @@ services:
       - "3000:3000"
     volumes:
       - .:/src
+      - nuget-packages:/root/.nuget/packages
+      - npm-cache:/root/.npm
       - site-node-modules:/src/src/Elastic.Documentation.Site/node_modules
 
 volumes:
+  npm-cache:
+  nuget-packages:
   site-node-modules:
