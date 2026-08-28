@@ -81,17 +81,43 @@ api:
 
 - Child pages are fully rendered Markdown with access to all MyST directives, substitutions, and cross-links.
 - Child files are automatically excluded from normal HTML generation — you do not need to add them to the `exclude:` list.
+- A `*.vN.md` suffix limits that child to major `N` only. `getting-started.md` appears in every version. `knn-guide.v9.md` appears only in 9.x (including the unversioned `main` tree when 9 is the current major).
 
-Per-operation and per-tag Markdown files in `api/<key>/` (`op-*.md`, `tag-*.md`) override
-descriptions and can append extra sections. Parameter and request-body field text can be
-replaced with definition lists. Schema type pages still take descriptions from the OpenAPI
-spec only. Full authoring rules will land with the content-enrichment docs.
+Per-operation and per-tag Markdown files in `api/<key>/` (`op-*.md`, `tag-*.md`) work like CLI supplemental files: drop a file named after the operation or tag, and the build picks it up. Heading rules:
+
+- No `##` headings: the whole body replaces the spec description.
+- `## Description`: replaces the spec description. Other sections in the same file still apply.
+- `## Parameters` (or `## Query parameters` / `## Path parameters`) and `## Request body`: definition-list entries replace those field descriptions. Unlisted fields keep the spec text.
+- Any other `##` heading is appended after the generated reference content.
+
+YAML frontmatter is metadata only (`description`, `applies_to`, `navigation_title`). It is not page body text. Schema type pages still take descriptions from the OpenAPI spec only.
+
+#### Version-specific supplemental files
+
+API Explorer is multi-version. CLI reference is not. When a description or parameter must differ for one major, add a version-suffixed file next to the base file:
+
+```text
+api/elasticsearch/
+  op-search.md        # every version that has this operation
+  op-search.v8.md     # merged on top of the base file for 8.x only
+  tag-ml-anomaly.md
+  tag-ml-anomaly.v9.md
+```
+
+The version file uses the same heading rules as the base file, with one extra rule because two files are merging:
+
+- `## Description` or bare text replaces the base description for that version.
+- Listed parameter and request-body keys replace or add to the base overrides. Unlisted keys stay.
+- Extra `##` sections with a new heading are added alongside the base file. If both files use the same extra heading, the version file replaces the base section.
+- Sections you omit keep the base file.
+
+A version with no matching `.vN.md` uses the base file unchanged. Tag files use this same merge. The unversioned `main` tree uses the current major's overlay, so `/api/doc/<key>/` matches `/vN/` for that major.
 
 #### Child file naming and validation
 
 A file's URL slug is derived from its filename: lowercase, with spaces and underscores replaced by
-hyphens, and the `.md` extension removed. For example, `Getting-Started.md` becomes the slug
-`getting-started`.
+hyphens, and the `.md` extension removed. A `.vN` version suffix is not part of the slug.
+For example, `Getting-Started.md` becomes `getting-started`, and `knn-guide.v9.md` becomes `knn-guide`.
 
 The following slugs are reserved and cannot be used as child file names:
 
