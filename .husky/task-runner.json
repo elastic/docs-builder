@@ -15,7 +15,7 @@
       "name": "dotnet-lint",
       "group": "pre-commit",
       "command": "dotnet",
-      "args": ["curb", "check", ".", "--cache", ".artifacts/curb.cache"],
+      "args": ["tool", "run", "curb", "--", "check", ".", "--cache", ".artifacts/curb.cache"],
       "include": ["**/*.cs"]
     },
     {
