@@ -35,6 +35,7 @@ services:
       [
         "dotnet",
         "watch",
+        "--no-restore",
         "--project",
         "src/tooling/docs-builder",
         "--configuration",
@@ -53,3 +54,7 @@ services:
       - "3000:3000"
     volumes:
       - .:/src
+      - site-node-modules:/src/src/Elastic.Documentation.Site/node_modules
+
+volumes:
+  site-node-modules:

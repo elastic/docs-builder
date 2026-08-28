@@ -23,6 +23,10 @@ FROM build AS tooling
 
 ARG TARGETARCH
 
+# Keep the SDK dependency graph in the tooling image so dotnet watch does not
+# need to restore packages every time the development container starts.
+RUN dotnet restore src/tooling/docs-builder/docs-builder.csproj
+
 FROM tooling AS publish
 
 RUN case "${TARGETARCH}" in \
