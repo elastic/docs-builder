@@ -1,0 +1,24 @@
+services:
+  # Run a one-shot CLI command, for example:
+  #   docker compose run --rm docs-builder
+  #   docker compose run --rm docs-builder inbound-links validate-link-reference
+  docs-builder:
+    build:
+      context: .
+    image: docs-builder:local
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+
+  # Build the current documentation set and keep it refreshed while files
+  # change. Open http://localhost:3000 after starting this service.
+  serve:
+    build:
+      context: .
+    image: docs-builder:local
+    working_dir: /workspace
+    command: ["serve", "--port", "3000"]
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/workspace
