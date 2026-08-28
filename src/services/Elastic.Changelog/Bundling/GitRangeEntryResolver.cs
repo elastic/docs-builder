@@ -86,7 +86,8 @@ public record GitRangeBundleReport
 	public string ToMarkdown()
 	{
 		var sb = new StringBuilder();
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Changelog bundle for `{StartRef}..{EndRef}`")
+		_ = sb
+			.AppendLine(CultureInfo.InvariantCulture, $"### Changelog bundle for `{StartRef}..{EndRef}`")
 			.AppendLine()
 			.AppendLine(CultureInfo.InvariantCulture, $"{TotalCommits} commit(s), {Rows.Count} pull request(s).")
 			.AppendLine()
@@ -109,9 +110,7 @@ public record GitRangeBundleReport
 
 		if (CommitsWithoutPullRequest.Count > 0)
 		{
-			_ = sb.AppendLine()
-				.AppendLine("Commits without an associated pull request:")
-				.AppendLine();
+			_ = sb.AppendLine().AppendLine("Commits without an associated pull request:").AppendLine();
 			foreach (var sha in CommitsWithoutPullRequest)
 				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"- `{sha}`");
 		}
@@ -148,7 +147,8 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		IReadOnlyList<(string FileName, string Content)> candidates,
 		ChangelogConfiguration? config,
 		GitRangeEntryResolutionOptions options,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var parsedCandidates = candidates.Select(c => ParseCandidate(c.FileName, c.Content)).ToList();
 
@@ -159,7 +159,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 		foreach (var pr in resolution.PullRequests)
 		{
-			var matches = parsedCandidates.Where(c => MatchesPr(c, pr.Number, options)).ToList();
+			var matches = parsedCandidates.Where(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)).ToList();
 			if (matches.Count > 0)
 			{
 				var fileNames = new List<string>();
@@ -170,8 +170,10 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 						continue;
 					if (match.Entry == null)
 					{
-						collector.EmitError(match.FileName,
-							$"Changelog entry '{match.FileName}' matches PR #{pr.Number} but could not be parsed: {match.ParseError}");
+						collector.EmitError(
+							match.FileName,
+							$"Changelog entry '{match.FileName}' matches PR #{pr.Number} but could not be parsed: {match.ParseError}"
+						);
 						success = false;
 						continue;
 					}
@@ -206,17 +208,19 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 			CommitsWithoutPullRequest = resolution.CommitsWithoutPullRequest
 		};
 
-		return new GitRangeEntryResolutionResult
-		{
-			Success = success,
-			Entries = entries,
-			Report = report
-		};
+		return new GitRangeEntryResolutionResult { Success = success, Entries = entries, Report = report };
 	}
 
-	private sealed record ParsedCandidate(string FileName, IReadOnlyList<int> FileNameNumbers, MatchedChangelogFile? Entry, string? ParseError, IReadOnlyList<string> NormalizedPrs);
+	internal sealed record ChangelogPoolCandidate(
+		string FileName,
+		string Content,
+		IReadOnlyList<int> FileNameNumbers,
+		MatchedChangelogFile? Entry,
+		string? ParseError,
+		IReadOnlyList<string> Prs
+	);
 
-	private static ParsedCandidate ParseCandidate(string fileName, string content)
+	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content)
 	{
 		var numbers = ParseLeadingPrNumbers(fileName);
 		try
@@ -232,11 +236,11 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 				Checksum = checksum
 			};
 			var prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : new List<string>());
-			return new ParsedCandidate(fileName, numbers, entry, null, prs);
+			return new ChangelogPoolCandidate(fileName, content, numbers, entry, null, prs);
 		}
 		catch (YamlException ex)
 		{
-			return new ParsedCandidate(fileName, numbers, null, ex.Message, []);
+			return new ChangelogPoolCandidate(fileName, content, numbers, null, ex.Message, []);
 		}
 	}
 
@@ -265,14 +269,18 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		return numbers;
 	}
 
-	private static bool MatchesPr(ParsedCandidate candidate, int prNumber, GitRangeEntryResolutionOptions options)
+	/// <summary>
+	/// Whether a pool entry belongs to a PR: by file-name-derived PR numbers (file names survive
+	/// scrubbing, so this works for private pools whose <c>prs</c> references were removed from the
+	/// public copies) or by the entry's <c>prs</c> references.
+	/// </summary>
+	internal static bool MatchesPr(ChangelogPoolCandidate candidate, int prNumber, string owner, string repo)
 	{
 		if (candidate.FileNameNumbers.Contains(prNumber))
 			return true;
 
-		var expected = $"{options.Owner}/{options.Repo}#{prNumber}".ToLowerInvariant();
-		return candidate.NormalizedPrs.Any(pr =>
-			ChangelogBundlingService.NormalizePrForComparison(pr, options.Owner, options.Repo) == expected);
+		var expected = $"{owner}/{repo}#{prNumber}".ToLowerInvariant();
+		return candidate.Prs.Any(pr => ChangelogBundlingService.NormalizePrForComparison(pr, owner, repo) == expected);
 	}
 
 	/// <summary>
@@ -286,21 +294,22 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		CommitRangePullRequest pr,
 		ChangelogConfiguration? config,
 		GitRangeEntryResolutionOptions options,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var prInfo = await prService.FetchPrInfoAsync(pr.Url, options.Owner, options.Repo, ctx);
 		if (prInfo == null || string.IsNullOrWhiteSpace(prInfo.Title))
 		{
-			collector.EmitWarning(string.Empty,
+			collector.EmitWarning(
+				string.Empty,
 				$"No checked-in changelog entry was found for PR {pr.Url} and its metadata could not be fetched from GitHub. " +
-				"The bundle will not include an entry for this PR.");
+					"The bundle will not include an entry for this PR."
+			);
 			return (Row(pr, GitRangePrSourceKind.Missing), null, false);
 		}
 
 		var labels = prInfo.Labels.ToArray();
-		var labelProducts = config?.LabelToProducts != null
-			? PrInfoProcessor.MapLabelsToProducts(labels, config.LabelToProducts)
-			: [];
+		var labelProducts = config?.LabelToProducts != null ? PrInfoProcessor.MapLabelsToProducts(labels, config.LabelToProducts) : [];
 
 		if (config != null)
 		{
@@ -313,44 +322,39 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		if (config?.Extract.StripTitlePrefix == true)
 			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
 
-		var typeString = config?.LabelToType != null
-			? PrInfoProcessor.MapLabelsToType(labels, config.LabelToType)
-			: null;
+		var typeString = config?.LabelToType != null ? PrInfoProcessor.MapLabelsToType(labels, config.LabelToType) : null;
 		if (typeString == null)
 		{
-			collector.EmitWarning(pr.Url,
+			collector.EmitWarning(
+				pr.Url,
 				$"Could not derive a changelog type from the labels of PR #{pr.Number}; defaulting to 'other'. " +
-				"Configure pivot.types in changelog.yml to map labels to types.");
+					"Configure pivot.types in changelog.yml to map labels to types."
+			);
 		}
 
-		var type = ChangelogEntryTypeExtensions.TryParse(typeString ?? "other", out var parsedType, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? parsedType
-			: ChangelogEntryType.Other;
+		var type = ChangelogEntryTypeExtensions.TryParse(
+			typeString ?? "other",
+			out var parsedType,
+			ignoreCase: true,
+			allowMatchingMetadataAttribute: true
+		) ? parsedType : ChangelogEntryType.Other;
 
 		var products = ResolveProducts(collector, pr, labelProducts, options);
 		if (products == null)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
-		var description = config?.Extract.ReleaseNotes != false
-			? ReleaseNotesExtractor.FindReleaseNote(prInfo.Body)
-			: null;
+		var description = config?.Extract.ReleaseNotes != false ? ReleaseNotesExtractor.FindReleaseNote(prInfo.Body) : null;
 
-		var areas = config?.LabelToAreas != null
-			? PrInfoProcessor.MapLabelsToAreas(labels, config.LabelToAreas)
-			: [];
+		var areas = config?.LabelToAreas != null ? PrInfoProcessor.MapLabelsToAreas(labels, config.LabelToAreas) : [];
 
 		var featureId = config?.LabelToFeatures != null
 			? PrInfoProcessor.MapLabelsToFeatureId(labels, config.LabelToFeatures, collector)
 			: null;
 
-		var highlight = config?.HighlightLabels is { Count: > 0 } highlightLabels &&
-			labels.Any(label => highlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase))
-			? true
-			: (bool?)null;
+		var highlight = config?.HighlightLabels is { Count: > 0 } highlightLabels
+			&& labels.Any(label => highlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase)) ? true : (bool?)null;
 
-		var issues = config?.Extract.Issues != false && prInfo.LinkedIssues.Count > 0
-			? prInfo.LinkedIssues.ToList()
-			: null;
+		var issues = config?.Extract.Issues != false && prInfo.LinkedIssues.Count > 0 ? prInfo.LinkedIssues.ToList() : null;
 
 		var entryData = new ChangelogEntry
 		{
@@ -389,7 +393,8 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
 		IReadOnlyList<ProductArgument> labelProducts,
-		GitRangeEntryResolutionOptions options)
+		GitRangeEntryResolutionOptions options
+	)
 	{
 		var source = labelProducts.Count > 0
 			? labelProducts
@@ -397,20 +402,17 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 		if (source.Count == 0)
 		{
-			collector.EmitError(string.Empty,
+			collector.EmitError(
+				string.Empty,
 				$"Cannot determine products for the entry synthesized from PR {pr.Url}: its labels map to no product and no output products are configured. " +
-				"Configure pivot.products label mappings or set output_products on the bundle profile.");
+					"Configure pivot.products label mappings or set output_products on the bundle profile."
+			);
 			return null;
 		}
 
 		return source.Select(p => p.ToProductReference()).ToList();
 	}
 
-	private static GitRangePrReportRow Row(CommitRangePullRequest pr, GitRangePrSourceKind source, string? fileName = null) => new()
-	{
-		Number = pr.Number,
-		Url = pr.Url,
-		Source = source,
-		EntryFileNames = fileName != null ? [fileName] : []
-	};
+	private static GitRangePrReportRow Row(CommitRangePullRequest pr, GitRangePrSourceKind source, string? fileName = null) =>
+		new() { Number = pr.Number, Url = pr.Url, Source = source, EntryFileNames = fileName != null ? [fileName] : [] };
 }

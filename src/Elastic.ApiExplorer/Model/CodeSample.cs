@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Operations;
+
 namespace Elastic.ApiExplorer.Model;
 
 /// <summary>

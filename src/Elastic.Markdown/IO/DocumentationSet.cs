@@ -87,7 +87,15 @@ public class DocumentationSet : INavigationTraversable
 		EnabledExtensions = InstantiateExtensions();
 
 		var fileFactory = new MarkdownFileFactory(context, MarkdownParser, EnabledExtensions);
-		Navigation = new DocumentationSetNavigation<MarkdownFile>(context.ConfigurationYaml, context, fileFactory, null, null, context.UrlPathPrefix, CrossLinkResolver);
+		Navigation = new DocumentationSetNavigation<MarkdownFile>(
+			context.ConfigurationYaml,
+			context,
+			fileFactory,
+			null,
+			null,
+			context.UrlPathPrefix,
+			CrossLinkResolver
+		);
 		VisitNavigation(Navigation);
 
 		Name = Context.Git != GitCheckoutInformation.Unavailable
@@ -117,12 +125,10 @@ public class DocumentationSet : INavigationTraversable
 		if (Context.BuildType != BuildType.Isolated || Configuration.Registry == DocSetRegistry.Public)
 			return;
 
-		var indexFile = Context.ReadFileSystem.FileInfo.New(
-			Path.Join(SourceDirectory.FullName, "index.md"));
+		var indexFile = Context.ReadFileSystem.FileInfo.New(Path.Join(SourceDirectory.FullName, "index.md"));
 
 		if (!indexFile.Exists)
-			Context.EmitError(Configuration.SourceFile,
-				"Non-public documentation sets require a root index.md file");
+			Context.EmitError(Configuration.SourceFile, "Non-public documentation sets require a root index.md file");
 	}
 
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
@@ -171,13 +177,8 @@ public class DocumentationSet : INavigationTraversable
 
 		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
 		{
-			if (to.Contains("://"))
-			{
-				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
-					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
-
+			if (TryValidateCrossRepoRedirect(from, to))
 				return;
-			}
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				to = to.Replace('/', Path.DirectorySeparatorChar);
@@ -187,7 +188,6 @@ public class DocumentationSet : INavigationTraversable
 			{
 				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
 				return;
-
 			}
 
 			if (file is not MarkdownFile markdownFile)
@@ -199,13 +199,44 @@ public class DocumentationSet : INavigationTraversable
 			if (valueAnchors is null or { Count: 0 })
 				return;
 
-			markdownFile.AnchorRemapping =
-				markdownFile.AnchorRemapping?
-					.Concat(valueAnchors)
-					.DistinctBy(kv => kv.Key)
-					.ToDictionary(kv => kv.Key, kv => kv.Value) ?? valueAnchors;
+			markdownFile.AnchorRemapping = markdownFile.AnchorRemapping?.Concat(valueAnchors)
+				.DistinctBy(kv => kv.Key)
+				.ToDictionary(kv => kv.Key, kv => kv.Value)
+				?? valueAnchors;
 		}
 	}
+
+	private bool TryValidateCrossRepoRedirect(string from, string to)
+	{
+		if (!to.Contains("://", StringComparison.Ordinal))
+			return false;
+
+		if (!Uri.TryCreate(to, UriKind.Absolute, out var uri))
+		{
+			Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
+			return true;
+		}
+
+		if (!CrossLinkValidator.IsCrossLink(uri) || IsPassthroughCustomProtocolScheme(uri.Scheme))
+			return true;
+
+		if (CrossLinkResolver is NoopCrossLinkResolver)
+			return true;
+
+		_ = CrossLinkResolver.TryResolve(
+			s => Context.Collector.EmitError(
+				Configuration.SourceFile.FullName,
+				$"Redirect {from} points to {to} which is not a valid cross-link",
+				s
+			),
+			uri,
+			out _
+		);
+		return true;
+	}
+
+	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
+		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase) || scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
 
 	public FrozenSet<MarkdownFile> MarkdownFiles { get; }
 
@@ -245,8 +276,11 @@ public class DocumentationSet : INavigationTraversable
 			MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount * 4, 32),
 			CancellationToken = ctx
 		};
-		await Parallel.ForEachAsync(MarkdownFiles, options,
-			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
+		await Parallel.ForEachAsync(
+			MarkdownFiles,
+			options,
+			async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token)
+		);
 
 		_resolved = true;
 	}
@@ -256,18 +290,12 @@ public class DocumentationSet : INavigationTraversable
 		var redirects = Configuration.Redirects;
 		var crossLinks = Context.Collector.CrossLinks.ToHashSet().OrderBy(l => l).ToArray();
 
-		var leafs = NavigationIndexedByOrder.Values
-			.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
-		var nodes = NavigationIndexedByOrder.Values
-			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
-			.ToArray();
+		var leafs = NavigationIndexedByOrder.Values.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
+		var nodes = NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToArray();
 
-		var markdownInNavigation =
-			leafs
+		var markdownInNavigation = leafs
 			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
-			.Concat(nodes
-				.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g))
-			)
+			.Concat(nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)))
 			.ToList();
 
 		var links = markdownInNavigation
@@ -280,17 +308,11 @@ public class DocumentationSet : INavigationTraversable
 			})
 			.DistinctBy(tuple => tuple.Path)
 			.OrderBy(tuple => tuple.Path)
-			.ToDictionary(
-				tuple => tuple.Path,
-				tuple =>
-				{
-					var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
-					return new LinkMetadata
-					{
-						Anchors = anchors,
-						Hidden = tuple.Navigation.ExcludeFromIndexing
-					};
-				});
+			.ToDictionary(tuple => tuple.Path, tuple =>
+			{
+				var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
+				return new LinkMetadata { Anchors = anchors, Hidden = tuple.Navigation.ExcludeFromIndexing };
+			});
 
 		return new RepositoryLinks
 		{

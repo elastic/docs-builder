@@ -37,8 +37,16 @@ public class ApiMarkdownIntraApiLinkTests
 		var renderer = new CapturingRenderer();
 		var collector = new DiagnosticsCollector([]);
 		var fs = new FileSystem();
-		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), TestHelpers.CreateConfigurationContext(fs));
-		var renderContext = new ApiRenderContext(context, new OpenApiDocument(), new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)))
+		var context = new BuildContext(
+			collector,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			TestHelpers.CreateConfigurationContext(fs)
+		);
+		var renderContext = new ApiRenderContext(
+			context,
+			new OpenApiDocument(),
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+		)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = new LandingNavigationItem("/api/doc/kibana").Index,
@@ -46,7 +54,8 @@ public class ApiMarkdownIntraApiLinkTests
 			ApiExplorerLog = null
 		};
 
-		var markdown = """
+		var markdown =
+			"""
 			See [data views](../group/endpoint-data-views) and [export](../operation/operation-post-saved-objects-export).
 			""";
 

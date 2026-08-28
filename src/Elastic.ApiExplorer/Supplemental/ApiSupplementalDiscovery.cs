@@ -31,7 +31,8 @@ public static class ApiSupplementalDiscovery
 	public static ApiSupplementalDiscoveryResult Discover(
 		IDirectoryInfo? folder,
 		IReadOnlyCollection<string> operationIds,
-		IReadOnlyCollection<string> tagNames)
+		IReadOnlyCollection<string> tagNames
+	)
 	{
 		var (tagBySlug, collisions) = IndexTags(tagNames);
 		return MatchFiles(folder, operationIds.ToHashSet(StringComparer.Ordinal), tagBySlug, collisions);
@@ -39,16 +40,17 @@ public static class ApiSupplementalDiscovery
 
 	public static ApiSupplementalDiscoveryResult Discover(IDirectoryInfo? folder, OpenApiDocument document)
 	{
-		var (operationIds, tagNames) = CollectEntities(document);
+		var (operationsById, tagNames) = CollectEntities(document);
 		var (tagBySlug, collisions) = IndexTags(tagNames);
-		return MatchFiles(folder, operationIds, tagBySlug, collisions);
+		return MatchFiles(folder, operationsById.Keys.ToHashSet(StringComparer.Ordinal), tagBySlug, collisions);
 	}
 
 	private static ApiSupplementalDiscoveryResult MatchFiles(
 		IDirectoryInfo? folder,
 		HashSet<string> operationIds,
 		Dictionary<string, string> tagBySlug,
-		IReadOnlyList<TagSlugCollision> collisions)
+		IReadOnlyList<TagSlugCollision> collisions
+	)
 	{
 		if (folder is null || !folder.Exists)
 			return NoFiles(collisions);
@@ -98,9 +100,11 @@ public static class ApiSupplementalDiscovery
 		};
 	}
 
-	private static (HashSet<string> OperationIds, HashSet<string> TagNames) CollectEntities(OpenApiDocument document)
+	internal static (Dictionary<string, OpenApiOperation> OperationsById, HashSet<string> TagNames) CollectEntities(
+		OpenApiDocument document
+	)
 	{
-		var operations = new HashSet<string>(StringComparer.Ordinal);
+		var operations = new Dictionary<string, OpenApiOperation>(StringComparer.Ordinal);
 		var tags = new HashSet<string>(StringComparer.Ordinal);
 
 		if (document.Tags is not null)
@@ -120,7 +124,7 @@ public static class ApiSupplementalDiscovery
 			foreach (var operation in path.Value.Operations.Values)
 			{
 				if (!string.IsNullOrWhiteSpace(operation.OperationId))
-					_ = operations.Add(operation.OperationId);
+					operations[operation.OperationId] = operation;
 
 				if (operation.Tags is null)
 					continue;
@@ -140,8 +144,9 @@ public static class ApiSupplementalDiscovery
 	private static string? OperationTagName(OpenApiTagReference tagRef) =>
 		!string.IsNullOrEmpty(tagRef.Name) ? tagRef.Name : tagRef.Reference?.Id;
 
-	private static (Dictionary<string, string> UniqueBySlug, IReadOnlyList<TagSlugCollision> Collisions) IndexTags(
-		IReadOnlyCollection<string> tagNames)
+	internal static (Dictionary<string, string> UniqueBySlug, IReadOnlyList<TagSlugCollision> Collisions) IndexTags(
+		IReadOnlyCollection<string> tagNames
+	)
 	{
 		var bySlug = new Dictionary<string, List<string>>(StringComparer.Ordinal);
 		foreach (var tagName in tagNames)
@@ -170,13 +175,14 @@ public static class ApiSupplementalDiscovery
 		return (unique, collisions);
 	}
 
-	private static ApiSupplementalDiscoveryResult NoFiles(IReadOnlyList<TagSlugCollision> collisions) => new()
-	{
-		Operations = new Dictionary<string, IFileInfo>(),
-		Tags = new Dictionary<string, IFileInfo>(),
-		Unmatched = [],
-		Ignored = [],
-		VersionSuffixed = [],
-		TagSlugCollisions = collisions
-	};
+	private static ApiSupplementalDiscoveryResult NoFiles(IReadOnlyList<TagSlugCollision> collisions) =>
+		new()
+		{
+			Operations = new Dictionary<string, IFileInfo>(),
+			Tags = new Dictionary<string, IFileInfo>(),
+			Unmatched = [],
+			Ignored = [],
+			VersionSuffixed = [],
+			TagSlugCollisions = collisions
+		};
 }

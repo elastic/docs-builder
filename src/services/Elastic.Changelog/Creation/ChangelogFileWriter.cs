@@ -32,7 +32,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		ChangelogConfiguration config,
 		bool titleMissing,
 		bool typeMissing,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Build changelog data from input
 		var changelogData = BuildChangelogData(input);
@@ -62,6 +63,56 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return true;
 	}
 
+	public async Task<bool> WriteNoteAsync(CreateChangelogArguments input, ChangelogConfiguration config, Cancel ctx)
+	{
+		var changelogData = BuildChangelogData(input);
+		var yamlContent = input.Concise
+			? GenerateConciseYaml(changelogData)
+			: GenerateYaml(changelogData, config, titleMissing: false, typeMissing: false);
+
+		var outputDir = input.Output ?? fileSystem.Directory.GetCurrentDirectory();
+		if (!fileSystem.Directory.Exists(outputDir))
+			_ = fileSystem.Directory.CreateDirectory(outputDir);
+
+		var filename = GenerateNoteFilename(input.NoteName, input.Title);
+		var filePath = fileSystem.Path.Join(outputDir, filename);
+
+		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
+		await fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
+		logger.LogInformation("Created note fragment: {FilePath}", filePath);
+		return true;
+	}
+
+	private static string GenerateNoteFilename(string? noteName, string? title)
+	{
+		var source = !string.IsNullOrWhiteSpace(noteName) ? noteName : title;
+		if (string.IsNullOrWhiteSpace(source))
+			return "note-untitled.yml";
+		var slug = Slugify(source);
+		return string.IsNullOrEmpty(slug) ? "note-untitled.yml" : $"note-{slug}.yml";
+	}
+
+	private static string Slugify(string text)
+	{
+		var sb = new StringBuilder(text.Length);
+		var prevWasHyphen = false;
+		foreach (var ch in text.ToLowerInvariant())
+		{
+			if (char.IsLetterOrDigit(ch))
+			{
+				_ = sb.Append(ch);
+				prevWasHyphen = false;
+			}
+			else if (!prevWasHyphen && sb.Length > 0)
+			{
+				_ = sb.Append('-');
+				prevWasHyphen = true;
+			}
+		}
+		var result = sb.ToString().TrimEnd('-');
+		return result.Length > 60 ? result[..60].TrimEnd('-') : result;
+	}
+
 	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
 	private const int MaxFilenameLength = 200;
 
@@ -69,7 +120,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 	{
 		if (input.Prs is { Length: > 0 })
 		{
-			var numbers = input.Prs
+			var numbers = input
+				.Prs
 				.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
 				.Where(n => n.HasValue)
 				.Select(n => n!.Value)
@@ -81,29 +133,37 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			{
 				var joined = $"{string.Join("-", numbers)}.yaml";
 				if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
+
 					return joined;
 				// Too many PRs: use compact format to avoid path-too-long errors
 				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
 			}
 		}
 
-		collector.EmitError(string.Empty,
-			"Could not derive a PR number from the provided --prs values. " +
-			"Changelog entries must be anchored to a PR number. " +
-			"For items with no PR use 'changelog note' instead.");
+		collector.EmitError(
+			string.Empty,
+			"Could not derive a PR number from the provided --prs values. " + "Changelog entries must be anchored to a PR number. " +
+				"For items with no PR use 'changelog note' instead."
+		);
 		return null;
 	}
 
 	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input)
 	{
-		var entryType = ChangelogEntryTypeExtensions.TryParse(input.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? parsed
-			: ChangelogEntryType.Other;
+		var entryType = ChangelogEntryTypeExtensions.TryParse(
+			input.Type,
+			out var parsed,
+			ignoreCase: true,
+			allowMatchingMetadataAttribute: true
+		) ? parsed : ChangelogEntryType.Other;
 
 		var subtype = !string.IsNullOrWhiteSpace(input.Subtype)
-			? (ChangelogEntrySubtypeExtensions.TryParse(input.Subtype, out var subtypeParsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
-				? subtypeParsed
-				: (ChangelogEntrySubtype?)null)
+			? (ChangelogEntrySubtypeExtensions.TryParse(
+				input.Subtype,
+				out var subtypeParsed,
+				ignoreCase: true,
+				allowMatchingMetadataAttribute: true
+			) ? subtypeParsed : (ChangelogEntrySubtype?)null)
 			: null;
 
 		return new()
@@ -188,10 +248,10 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			}
 
 			// Find the first non-empty, non-comment line (start of actual YAML data)
-			var insertIndex = lines.FindIndex(line =>
-				!string.IsNullOrWhiteSpace(line) &&
-				!line.TrimStart().StartsWith('#') &&
-				!line.TrimStart().StartsWith("---", StringComparison.Ordinal));
+			var insertIndex = lines.FindIndex(
+				line => !string.IsNullOrWhiteSpace(line) && !line.TrimStart().StartsWith('#') &&
+					!line.TrimStart().StartsWith("---", StringComparison.Ordinal)
+			);
 
 			lines.InsertRange(insertIndex >= 0 ? insertIndex : lines.Count, commentedFields);
 
@@ -208,7 +268,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var lifecyclesList = string.Join("\n", config.Lifecycles.Select(l => $"#       - {l.ToStringFast(true)}"));
 
 		// Add schema comments using raw string literal
-		var result = $"""
+		var result =
+			$"""
 			##### Required fields #####
 
 			# title:
@@ -228,8 +289,10 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#       A required string with a valid product ID.
 			#       Valid values are defined in https://github.com/elastic/docs-builder/blob/main/config/products.yml
 			#
-			#     target:
-			#       An optional string with the target version or date.
+			#     versions:
+			#       Required when the changelog is not tied to a pull request.
+			#       Example: [9.3.0, 9.4.0] or [2026-05-15]
+			#       Omit when the file lists prs.
 			#
 			#     lifecycle:
 			#       An optional string for new features or enhancements that have a specific availability.

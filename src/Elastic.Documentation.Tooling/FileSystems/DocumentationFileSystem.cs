@@ -23,8 +23,10 @@ public class DocumentationFileSystem : ScopedFileSystem, IDocumentationFileSyste
 {
 	private static readonly FileSystem Physical = new();
 
-	private DocumentationFileSystem(ResolvedDocumentationPaths paths, IFileSystem inner, IFileSystem? innerWrite = null)
-		: base(inner, BuildReadOptions(paths))
+	private DocumentationFileSystem(ResolvedDocumentationPaths paths, IFileSystem inner, IFileSystem? innerWrite = null) : base(
+			inner,
+			BuildReadOptions(paths)
+		)
 	{
 		Paths = paths;
 		Write = new DocumentationWriteFileSystem(paths.CheckoutDirectory, paths.OutputDirectory, innerWrite ?? inner);
@@ -100,7 +102,12 @@ public class DocumentationFileSystem : ScopedFileSystem, IDocumentationFileSyste
 		return new ScopedFileSystemOptions([.. roots])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{
+				".git",
+				".doc.state",
+				".pagefind-net-frontend-version"
+			}
 		};
 	}
 }

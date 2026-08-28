@@ -9,20 +9,25 @@ namespace Elastic.Markdown.Tests.DocSet;
 public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(output)
 {
 	[Fact]
-	public void ParsesATableOfContents() =>
-		Set.Navigation.Should().NotBeNull();
+	public void ParsesATableOfContents() => Set.Navigation.Should().NotBeNull();
 
 	[Fact]
 	public void ParsesRedirects()
 	{
 		Configuration.Should().NotBeNull();
 
-		Configuration.Redirects.Should()
+		Configuration
+			.Redirects
+			.Should()
 			.NotBeNullOrEmpty()
-			.And.ContainKey("redirects/first-page-old.md")
-			.And.ContainKey("redirects/second-page-old.md")
-			.And.ContainKey("redirects/4th-page.md")
-			.And.ContainKey("redirects/third-page.md");
+			.And
+			.ContainKey("redirects/first-page-old.md")
+			.And
+			.ContainKey("redirects/second-page-old.md")
+			.And
+			.ContainKey("redirects/4th-page.md")
+			.And
+			.ContainKey("redirects/third-page.md");
 
 		var redirect1 = Configuration.Redirects["redirects/first-page-old.md"];
 		redirect1.To.Should().Be("redirects/second-page.md");

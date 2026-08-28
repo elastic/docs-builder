@@ -2606,6 +2606,14 @@
                 },
                 {
                   "role": "flag",
+                  "name": "no-delete",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Only PUT the new entries without deleting any existing KVS keys.\nUse for per-docset isolated builds that should not remove other repos\u0027 redirects.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
                   "name": "log-level",
                   "shortName": "l",
                   "type": "enum",
@@ -2794,7 +2802,7 @@
               "name": "products",
               "type": "string",
               "required": false,
-              "summary": "Optional: Products affected in format \u0022product target lifecycle, ...\u0022 (e.g., \u0022elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05\u0022). If not specified, will be inferred from repository or config defaults."
+              "summary": "Optional: Products affected in format \u0022product [lifecycle], ...\u0022 (e.g., \u0022cloud-serverless, kibana\u0022 or \u0022elasticsearch ga\u0022). Do not include a version or date; that is an error. Use \u0027changelog note\u0027 for version-listed items. If not specified, products are inferred from the repository or config defaults."
             },
             {
               "role": "flag",
@@ -3036,6 +3044,96 @@
           "path": [
             "changelog"
           ],
+          "name": "backfill",
+          "summary": "Backfill changelog entries, notes, and bundles from published release-notes pages.",
+          "notes": "Fetches every product\u0027s release-notes Markdown \u2014 either from the published elastic.co site page\nor from a pinned raw.githubusercontent.com ref for products whose published page is an empty\n\u003Cchangelog\u003E stub \u2014 parses it into typed bundle YAML, and writes all output to\n--output (default: .artifacts/release-notes-backfill/). Nothing is written to S3;\nuse changelog upload --directory \u003Cproduct\u003E/changelog/bundles to publish.\n\nThe scope table (BackfillScope.All) covers 38 products (37 site-source \u002B 1 repo-source); use --products to narrow\na run. Entries without a PR reference are emitted as note-*.yaml files. Sourced from a\nprototype (scripts/scrape-release-notes.py, 2026-08-25).",
+          "usage": "docs-builder changelog backfill [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "products",
+              "type": "array",
+              "required": false,
+              "summary": "Restrict the run to specific product ids (comma-separated or repeated). Defaults to every product in the scope table.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "versions",
+              "type": "array",
+              "required": false,
+              "summary": "Restrict the run to specific versions (comma-separated or repeated).",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "output",
+              "type": "string",
+              "required": false,
+              "summary": "Output directory. Defaults to .artifacts/release-notes-backfill/ under the checkout root."
+            },
+            {
+              "role": "flag",
+              "name": "concurrency",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum number of pages fetched concurrently (1\u201316, default 4).",
+              "defaultValue": "4"
+            },
+            {
+              "role": "dryRun",
+              "name": "dry-run",
+              "type": "boolean",
+              "required": false,
+              "summary": "Fetch and parse every page but write nothing to disk.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
           "name": "bundle",
           "summary": "Aggregate changelog entries matching a filter into a single bundle YAML.",
           "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. Only --plan is supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
@@ -3141,14 +3239,14 @@
               "name": "input-products",
               "type": "string",
               "required": false,
-              "summary": "Filter by products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta\u0022). All three parts are required but can be wildcards (*). This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.products."
+              "summary": "Filter by products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta\u0022). All three parts are required but can be wildcards (*). A non-wildcard target matches products[].versions (changelog note) or a legacy target; not supported when sourcing from the CDN. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.products."
             },
             {
               "role": "flag",
               "name": "output",
               "type": "string",
               "required": false,
-              "summary": "Output path for the bundled changelog (directory or .yml/.yaml file). Uses config bundle.output_directory or defaults to \u0027changelog-bundle.yaml\u0027 in the input directory. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.output."
+              "summary": "Output path for the bundled changelog (directory or .yml/.yaml file). Uses config bundle.output_directory or defaults to \u0027changelog-bundle.yaml\u0027 in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as {product}-{version}.yaml from the profile\u0027s primary output product."
             },
             {
               "role": "flag",
@@ -3180,7 +3278,7 @@
               "name": "force-local",
               "type": "boolean",
               "required": false,
-              "summary": "Force local entry sourcing for this run (equivalent to bundle.use_local_changelogs: true without editing config). Allowed in profile-based commands.",
+              "summary": "Force local entry sourcing for this run (equivalent to bundle.use_local_changelogs: true without editing config). Allowed in profile-based commands. Skips automatic inclusion of CDN changelog notes that match output_products.",
               "defaultValue": "false"
             },
             {
@@ -3302,7 +3400,7 @@
           ],
           "name": "bundle-amend",
           "summary": "Append or exclude changelog entries in a published bundle without modifying it.",
-          "notes": "Creates an immutable .amend-N.yaml sidecar file alongside the original bundle.",
+          "notes": "Creates an immutable .amend-N sidecar using the same .yaml or .yml extension\nas the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator\n/bundle/{product}/{file}.yaml (the sidecar is written under --output,\nbundle.output_directory, or the current directory).\nUpload the sidecar separately with changelog upload --artifact-type bundle.",
           "usage": "docs-builder changelog bundle-amend \u003Cbundle-path\u003E [options]",
           "examples": [],
           "parameters": [
@@ -3311,29 +3409,14 @@
               "name": "bundle-path",
               "type": "string",
               "required": true,
-              "summary": "Required: Path to the original bundle file to amend",
-              "validations": [
-                {
-                  "kind": "rejectSymbolicLinks"
-                },
-                {
-                  "kind": "existing"
-                },
-                {
-                  "kind": "fileExtensions",
-                  "values": [
-                    "yml",
-                    "yaml"
-                  ]
-                }
-              ]
+              "summary": "Required: Local path to the parent bundle, or a CDN locator /bundle/{product}/{file}.yaml (leading slash optional; an absolute http(s) URL with that path is also accepted). Locator syntax takes precedence: prefix with ./ to force local resolution of a relative path that would otherwise match the locator shape. Local paths support tilde (~) expansion and must be a .yml/.yaml file that exists on disk."
             },
             {
               "role": "flag",
               "name": "add",
               "type": "array",
               "required": false,
-              "summary": "Optional: Changelog YAML paths to add. Repeat --add or pass a comma-separated list in one value (for example, --add \u0022file1.yaml,file2.yaml\u0022). Supports tilde (~) expansion and relative paths.",
+              "summary": "Optional: Changelog YAML paths to add. Repeat --add or pass a comma-separated list in one value (for example, --add \u0022file1.yaml,file2.yaml\u0022). Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN (the default when bundle.repo or the parent bundle\u0027s repo resolves), paths are matched by file name and do not need to exist locally; with local sourcing (--force-local or bundle.use_local_changelogs) the paths must exist on disk.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3342,7 +3425,7 @@
               "name": "remove",
               "type": "array",
               "required": false,
-              "summary": "Optional: Changelog YAML paths to exclude from the effective bundle. Repeat --remove or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.",
+              "summary": "Optional: Changelog YAML paths to exclude from the effective bundle. Repeat --remove or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN, paths are matched by file name and do not need to exist locally; with local sourcing the paths must exist on disk unless --force is used to exclude by file name.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3351,7 +3434,15 @@
               "name": "force",
               "type": "boolean",
               "required": false,
-              "summary": "Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.",
+              "summary": "Optional: When removing, match by file name even if the bundle checksum differs from the sourced changelog, or when no YAML can be sourced (inferred git-ref entries).",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "force-local",
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: Force local entry sourcing for this run (equivalent to bundle.use_local_changelogs: true without editing config).",
               "defaultValue": "false"
             },
             {
@@ -3361,6 +3452,13 @@
               "required": false,
               "summary": "Optional: Preview changes without writing an amend file.",
               "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "output",
+              "type": "string",
+              "required": false,
+              "summary": "Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a .yaml/.yml path whose file name must be {parent}.amend-N plus the same extension as the parent for the next unused N. Falls back to bundle.output_directory in changelog.yml, then the current directory. Ignored for a local parent."
             },
             {
               "role": "flag",
@@ -3849,44 +3947,192 @@
           "path": [
             "changelog"
           ],
-          "name": "migrate-from-web",
-          "summary": "TEMPORARY: One-off migration of published release notes into the S3 bundle store; removed after elastic/docs-eng-team#683.",
-          "notes": "Fetches the release-notes Markdown that backs the published pages (at the pinned git ref in the\nchecked-in scope table), maps it to the existing bundle YAML shape, and uploads to\nbundle/{product}/ with create-only semantics (If-None-Match: *) \u2014 existing keys are\nskipped, never overwritten. Prints a per-key run report (created / skipped / failed with reason and\nobject ETag) suitable for pasting into the tracking issue.\n\nMigrates every product in the checked-in scope table by default. The table lives in code\n(MigrateFromWebScope.All: product id \u2192 source repo, release-notes path, pinned ref, version\ncutoff) and grows per rollout wave; use --products to narrow a run for tests and pilots.\nTracked by elastic/docs-eng-team#736.",
-          "usage": "docs-builder changelog migrate-from-web [options]",
+          "name": "note",
+          "summary": "Create a note-*.yml changelog fragment for items that have no associated PR.",
+          "notes": "Use this command for version-listed changelogs that are not tied to a specific pull request \u2014 for example, a\nknown issue or a security advisory. Every product listed must include at least one concrete version\n(not a wildcard); --prs and --issues are still accepted as\noptional citations but do not affect the output filename.",
+          "usage": "docs-builder changelog note [options]",
           "examples": [],
           "parameters": [
             {
               "role": "flag",
-              "name": "products",
-              "type": "array",
-              "required": false,
-              "summary": "Optional: restrict the run to specific product ids (comma-separated or repeated), e.g. \u0022edot-java\u0022. Defaults to every product in the checked-in scope table.",
-              "repeatable": true,
-              "elementType": "string"
-            },
-            {
-              "role": "flag",
-              "name": "s3-bucket-name",
+              "name": "name",
               "type": "string",
               "required": false,
-              "summary": "Destination S3 bucket. Required unless --dry-run; when provided with --dry-run, existing keys are still inspected so the report distinguishes would-create from skipped."
+              "summary": "Explicit slug for the note filename. Defaults to a slug derived from the title."
             },
             {
               "role": "flag",
-              "name": "versions",
+              "name": "products",
+              "type": "string",
+              "required": false,
+              "summary": "Products in format \u0022product versions [lifecycle], ...\u0022 (for example, \u0022elasticsearch 9.2.0|9.3.0 ga\u0022). At least one concrete version is required for each product."
+            },
+            {
+              "role": "flag",
+              "name": "action",
+              "type": "string",
+              "required": false,
+              "summary": "Optional action text."
+            },
+            {
+              "role": "flag",
+              "name": "areas",
               "type": "array",
               "required": false,
-              "summary": "Optional: restrict the run to specific versions (comma-separated or repeated). Versions above a product\u0027s cutoff are always skipped.",
+              "summary": "Optional area tags.",
               "repeatable": true,
               "elementType": "string"
             },
             {
-              "role": "dryRun",
-              "name": "dry-run",
+              "role": "flag",
+              "name": "concise",
               "type": "boolean",
               "required": false,
-              "summary": "Do everything except the S3 writes and report what would be created.",
+              "summary": "Omit schema reference comments from the generated YAML.",
               "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": false,
+              "summary": "Path to the changelog.yml configuration file.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "description",
+              "type": "string",
+              "required": false,
+              "summary": "Entry description."
+            },
+            {
+              "role": "flag",
+              "name": "no-extract-release-notes",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip extracting release note text from PR/issue descriptions.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "no-extract-issues",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip extracting linked issues/PRs from PR/issue body.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "feature-id",
+              "type": "string",
+              "required": false,
+              "summary": "Optional feature ID."
+            },
+            {
+              "role": "flag",
+              "name": "highlight",
+              "type": "boolean",
+              "required": false,
+              "summary": "Mark the entry as a highlight.",
+              "defaultValue": "default"
+            },
+            {
+              "role": "flag",
+              "name": "impact",
+              "type": "string",
+              "required": false,
+              "summary": "Optional impact text."
+            },
+            {
+              "role": "flag",
+              "name": "issues",
+              "type": "array",
+              "required": false,
+              "summary": "Optional issue URLs (cited but not used as anchor).",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub owner. Falls back to bundle.owner or \u0022elastic\u0022."
+            },
+            {
+              "role": "flag",
+              "name": "output",
+              "type": "string",
+              "required": false,
+              "summary": "Output directory."
+            },
+            {
+              "role": "flag",
+              "name": "prs",
+              "type": "array",
+              "required": false,
+              "summary": "Optional PR URLs (cited but not used as anchor).",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "repo",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub repository name."
+            },
+            {
+              "role": "flag",
+              "name": "strip-title-prefix",
+              "type": "boolean",
+              "required": false,
+              "summary": "Strip a repo-name prefix from the title.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "strict-fetch",
+              "type": "boolean",
+              "required": false,
+              "summary": "Treat GitHub fetch failures as errors.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "subtype",
+              "type": "string",
+              "required": false,
+              "summary": "Entry subtype."
+            },
+            {
+              "role": "flag",
+              "name": "title",
+              "type": "string",
+              "required": false,
+              "summary": "Entry title (required)."
+            },
+            {
+              "role": "flag",
+              "name": "type",
+              "type": "string",
+              "required": false,
+              "summary": "Entry type (required)."
             },
             {
               "role": "flag",
@@ -4598,6 +4844,63 @@
               "required": false,
               "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
               "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "validate-onboarding",
+          "summary": "Validate that every product registered with features.release-notes: prestage has the required onboarding files in its repository.",
+          "notes": "Probes each Prestage product\u0027s repository (resolved from products.yml: the product key\nor its repository: override) via the GitHub contents API for the changelog\nconfiguration (docs/changelog.yml or changelog.yml) and the\nchangelog-validate, changelog-submit, changelog-upload, and\nchangelog-bundle-stage workflows. Exits non-zero when anything is missing, so CI can\ngate on registration drift. Set GITHUB_TOKEN to probe private repositories.",
+          "usage": "docs-builder changelog validate-onboarding [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub owner (org) the product repositories live under.",
+              "defaultValue": "elastic"
             },
             {
               "role": "flag",

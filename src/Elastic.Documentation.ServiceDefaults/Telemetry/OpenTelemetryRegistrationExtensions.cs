@@ -30,8 +30,10 @@ public static class OpenTelemetryRegistrationExtensions
 	/// No-ops if OTEL_EXPORTER_OTLP_ENDPOINT is not set.
 	/// </summary>
 	/// <returns>The builder for chaining</returns>
-	public static TBuilder AddDocumentationOpenTelemetry<TBuilder>(this TBuilder builder, OtelRegistration registration)
-		where TBuilder : IHostApplicationBuilder
+	public static TBuilder AddDocumentationOpenTelemetry<TBuilder>(
+		this TBuilder builder,
+		OtelRegistration registration
+	) where TBuilder : IHostApplicationBuilder
 	{
 		var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 		if (!useOtlpExporter)
@@ -61,10 +63,16 @@ public static class OpenTelemetryRegistrationExtensions
 
 		_ = builder.AddElasticOpenTelemetry(options, edotBuilder =>
 		{
-			_ = edotBuilder.ConfigureResource(r => ResourceBuilderExtensions.AddService(r, serviceName: serviceName, serviceVersion: VersionHelper.InformationalVersion)
-				.AddAttributes(new Dictionary<string, object>
+			_ = edotBuilder.ConfigureResource(
+				r => ResourceBuilderExtensions.AddService(
+					r,
+					serviceName: serviceName,
+					serviceVersion: VersionHelper.InformationalVersion
+				).AddAttributes(new Dictionary<string, object>
 				{
-					["deployment.environment"] = !string.IsNullOrWhiteSpace(environment) ? environment : builder.Environment.EnvironmentName,
+					["deployment.environment"] = !string.IsNullOrWhiteSpace(environment)
+						? environment
+						: builder.Environment.EnvironmentName,
 				})
 			);
 			_ = edotBuilder
@@ -80,8 +88,8 @@ public static class OpenTelemetryRegistrationExtensions
 						.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
 						{
 							// Exclude requests from our own synthetics monitors from tracing
-							aspNetCoreOptions.Filter = httpContext =>
-								!httpContext.Request.Headers.ContainsKey(TelemetryConstants.SyntheticMonitorHeaderName);
+							aspNetCoreOptions.Filter =
+								httpContext => !httpContext.Request.Headers.ContainsKey(TelemetryConstants.SyntheticMonitorHeaderName);
 							// Enrich spans with custom attributes from HTTP context
 							aspNetCoreOptions.EnrichWithHttpRequest = (activity, httpRequest) =>
 							{
@@ -94,15 +102,13 @@ public static class OpenTelemetryRegistrationExtensions
 							};
 						})
 						.AddProcessor<EuidSpanProcessor>() // Automatically add euid to all child spans
+
 						.AddHttpClientInstrumentation();
 					registration.Tracing?.Invoke(options, tracing);
 				})
 				.WithMetrics(metrics =>
 				{
-					_ = metrics
-						.AddAspNetCoreInstrumentation()
-						.AddRuntimeInstrumentation()
-						.AddHttpClientInstrumentation();
+					_ = metrics.AddAspNetCoreInstrumentation().AddRuntimeInstrumentation().AddHttpClientInstrumentation();
 					registration.Metrics?.Invoke(options, metrics);
 				});
 		});

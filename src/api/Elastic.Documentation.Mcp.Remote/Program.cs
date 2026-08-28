@@ -19,25 +19,24 @@ try
 	var env = SystemEnvironmentVariables.Instance;
 	var profile = McpServerProfile.Resolve(env.McpServerProfile);
 
-	var builder = WebApplication.CreateSlimBuilder(args)
+	var builder = WebApplication
+		.CreateSlimBuilder(args)
 		.AddDocumentationServiceDefaults()
 		.HealthCheckBuilderExtensions()
 		.AddDocumentationOpenTelemetry(new OtelRegistration(profile.ServiceName)
 		{
-			Tracing = (_, t) => t
-				.WithElasticDefaults()
-				.AddSource(McpToolTelemetry.McpToolSourceName)
-				.AddProcessor(new McpSpanRenameProcessor()),
-			Metrics = (_, m) => m
-				.WithElasticDefaults()
-				.AddMeter(McpToolTelemetry.McpMeterName)
+			Tracing =
+				(_, t) => t.WithElasticDefaults().AddSource(McpToolTelemetry.McpToolSourceName).AddProcessor(new McpSpanRenameProcessor()),
+			Metrics = (_, m) => m.WithElasticDefaults().AddMeter(McpToolTelemetry.McpMeterName)
 		});
 
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
-	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+	if (
+		string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
 		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
-		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
+		&& string.IsNullOrEmpty(builder.Configuration["URLS"])
+	)
 	{
 		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
 		{
@@ -63,7 +62,8 @@ try
 	// In SDK 1.4+, stateless and SSE are mutually exclusive; EnableLegacySse (default false)
 	// cannot be combined with Stateless = true. SSE-only clients should use the mcp-remote bridge:
 	// npx -y mcp-remote https://<host>/docs/_mcp
-	var mcpBuilder = builder.Services
+	var mcpBuilder = builder
+		.Services
 		.AddMcpServer(options => options.ServerInstructions = profile.ComposeServerInstructions())
 		.WithHttpTransport(o => o.Stateless = true);
 

@@ -91,8 +91,7 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 
 		if (ColumnWidths.Count > 0 && ColumnWidths.Count != columnCount)
 		{
-			this.EmitError(
-				$"Column width count ({ColumnWidths.Count}) does not match table column count ({columnCount}).");
+			this.EmitError($"Column width count ({ColumnWidths.Count}) does not match table column count ({columnCount}).");
 			ColumnWidths = [];
 		}
 	}
@@ -118,7 +117,8 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 			if (!int.TryParse(part, out var unit) || unit < 1 || unit > 12)
 			{
 				block.EmitError(
-					$"Invalid widths value '{value}'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4).");
+					$"Invalid widths value '{value}'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4)."
+				);
 				return null;
 			}
 
