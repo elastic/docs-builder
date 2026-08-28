@@ -100,6 +100,8 @@ dotnet husky install
 
 That's it! The hooks will now run automatically on every commit.
 
+The pre-commit hook runs `dotnet tool restore` before curb, so a new worktree does not need a manual restore before the first commit. You still need `dotnet husky install` in that worktree so `.husky/_/husky.sh` exists.
+
 ### Usage
 
 Once installed, hooks run automatically when you commit:
