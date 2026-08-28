@@ -15,10 +15,10 @@ help:
 	@echo "  make clean           Stop Compose services and remove containers"
 
 build:
-	$(COMPOSE) build docs-builder
+	$(COMPOSE) build docs-builder serve
 
 rebuild:
-	$(COMPOSE) build --no-cache docs-builder
+	$(COMPOSE) build --no-cache docs-builder serve
 
 docs:
 	$(COMPOSE) run --rm docs-builder build
