@@ -17,12 +17,6 @@ dotnet tool restore
 dotnet aspire run
 ```
 
-Or equivalently via the project directly:
-
-```bash
-dotnet run --project aspire
-```
-
 Will spin up all our services and clone and build all the documentation sets.
 
 By default, private repositories are skipped, existing clones are reused, and the build is skipped when code/config/content is unchanged. To opt out of any default:

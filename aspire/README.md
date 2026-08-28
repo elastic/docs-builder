@@ -11,22 +11,16 @@ We do not use Aspire to generate production deployment scripts since [this is no
 
 ## Run all services locally
 
-The Aspire toolchain ships as a local dotnet tool — no workload install needed. Restore once per clone:
-
-```bash
-dotnet tool restore
-```
-
-Then start all services:
+We're on **Aspire 13.5.3** — the latest standalone CLI release. No workload install, no `dotnet workload restore`. One command brings up the full stack:
 
 ```bash
 dotnet aspire run
 ```
 
-Or equivalently via `dotnet run`:
+The Aspire CLI ships as a local dotnet tool pinned in `dotnet-tools.json`. Restore it once per clone alongside the other repo tools:
 
 ```bash
-dotnet run --project aspire
+dotnet tool restore
 ```
 
 This will automatically:
@@ -57,42 +51,7 @@ Our integration tests use these defaults to run tokenless on CI.
 
 All Elasticsearch connectivity targets **Elastic Cloud with EIS** (Elastic Inference Service). There is no local Elasticsearch container option — the index layout, inference endpoints, and semantic search configuration all require a Cloud deployment and cannot be replicated locally.
 
-Configure your Cloud endpoint via user secrets (see [User secrets](#user-secrets) below).
-
-## User secrets
-
-We use the [Aspire CLI](https://aspire.dev/reference/cli/overview/) to manage secrets for the AppHost. Secrets are stored in the `docs-builder` dotnet user-secrets store.
-
-```bash
-dotnet aspire secret list
-```
-
-Should show:
-
-> LlmGatewayUrl = https://****
-> LlmGatewayServiceAccountPath = <PATH_TO_GCP_SERVICE_CREDENTIALS_FILE>
-> ElasticsearchUrl = https://*.elastic.cloud:443
-> ElasticsearchApiKey = ****
-
-To set them:
-
-```bash
-dotnet aspire secret set ElasticsearchApiKey <VALUE>
-dotnet aspire secret set ElasticsearchUrl <VALUE>
-dotnet aspire secret set LlmGatewayUrl <VALUE>
-dotnet aspire secret set LlmGatewayServiceAccountPath <VALUE>
-```
-
-Do note these secrets are only used on local development machines. CI fetches credentials from AWS SSM.
-
-The store id is `docs-builder`. If you set up secrets before the rename from the old GUID id,
-migrate your existing store:
-
-```bash
-mv ~/.microsoft/usersecrets/72f50f33-6fb9-4d08-bff3-39568fe370b3 ~/.microsoft/usersecrets/docs-builder
-```
-
-(On Windows: `%APPDATA%\Microsoft\UserSecrets\`.)
+Configure your Cloud endpoint via `dotnet aspire secret set` — see [Aspire CLI reference](#aspire-cli-reference) below.
 
 ## Integration Tests
 
@@ -116,4 +75,48 @@ Use `dotnet aspire start` to launch the stack in the background:
 dotnet aspire start    # uses all defaults (skip private, reuse clones, stamp-based build skip)
 dotnet aspire ps       # list running stacks
 dotnet aspire stop     # shut down
+```
+
+## Aspire CLI reference
+
+The `dotnet aspire` command is the primary interface for the local stack. Key commands:
+
+### Running the stack
+
+```bash
+dotnet aspire run      # start interactively (blocks; Ctrl-C stops all services)
+dotnet aspire start    # start in the background (detached)
+dotnet aspire ps       # list running stacks and their dashboard URLs
+dotnet aspire stop     # stop the background stack
+```
+
+### Managing secrets
+
+Secrets are stored in the dotnet user-secrets store under the ID `docs-builder`. The Aspire CLI manages them directly — no need to open `secrets.json` by hand.
+
+List all configured secrets:
+
+```bash
+dotnet aspire secret list
+```
+
+Set a secret:
+
+```bash
+dotnet aspire secret set <KEY> <VALUE>
+```
+
+For example:
+
+```bash
+dotnet aspire secret set ElasticsearchUrl    https://<your-cluster>.elastic.cloud:443
+dotnet aspire secret set ElasticsearchApiKey <your-api-key>
+dotnet aspire secret set LlmGatewayUrl       https://<llm-gateway-url>
+dotnet aspire secret set LlmGatewayServiceAccountPath /path/to/service-account.json
+```
+
+Remove a secret:
+
+```bash
+dotnet aspire secret remove <KEY>
 ```
