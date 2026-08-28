@@ -19,3 +19,438 @@ No body content or options are required. Configuration happens in the widget UI.
 ## Requirements
 
 This directive only produces useful output where the assembled documentation site includes the vector sizing bundle (see `src/Elastic.Documentation.Site/Assets/web-components/VectorSizingCalculator/`).
+
+:::{warning}
+**Draft for docs-content.** This section is a staging copy of the kNN memory guidance the calculator implements. Merge it into `deploy-manage/production-guidance/optimize-performance/approximate-knn-search.md` (**Ensure data nodes have enough memory**) in a follow-up PR, then delete it from this syntax page.
+:::
+
+## Ensure data nodes have enough memory [_ensure_data_nodes_have_enough_memory]
+
+{{es}} uses either the Hierarchical Navigable Small World ([HNSW](https://arxiv.org/abs/1603.09320)) algorithm or the Disk Better Binary Quantization ([DiskBBQ](https://www.elastic.co/search-labs/blog/diskbbq-elasticsearch-introduction)) algorithm for approximate kNN search.
+
+HNSW is a graph-based algorithm which only works efficiently when most vector data is held in memory. You should ensure that data nodes have at least enough RAM to hold the vector data and index structures.
+
+DiskBBQ is a clustering algorithm which can scale efficiently often on less memory than HNSW. Where HNSW typically performs poorly without sufficient memory to fit the entire structure in RAM, DiskBBQ scales linearly when using less available memory than the total index size. You can start with enough RAM to hold the vector data and index structures but, in most cases, you should be able to reduce your RAM allocation and still maintain good performance. In testing, keeping all centroids resident plus as little as 5-10% of the posting lists (cluster vectors) in off-heap RAM is sufficient for reasonable performance for each set of queries that accesses largely overlapping clusters.
+
+To check the size of the vector data, you can use the [Analyze index disk usage](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-disk-usage) API.
+
+:::{tip}
+For `float` vectors with `dim` greater than or equal to `384`, using a [`quantized`](elasticsearch://reference/elasticsearch/mapping-reference/dense-vector.md#dense-vector-quantization) index is highly recommended. Quantization can reduce off-heap RAM by 4×, 8×, or as much as 32×.
+:::
+
+:::{note}
+{{es}} supports a maximum of 4,096 dimensions for `dense_vector` fields. Refer to the [`dense_vector` mapping reference](elasticsearch://reference/elasticsearch/mapping-reference/dense-vector.md#dense-vector-params) for supported parameters and limits.
+:::
+
+### Estimate disk usage [_estimate_disk_usage]
+
+Disk usage for a `dense_vector` field consists of three components: raw vector storage, quantized vector storage (if quantization is enabled), and index structure overhead.
+
+#### Raw vector storage
+
+The raw (unquantized) vectors are always stored on disk regardless of quantization settings. The size depends on the `element_type`:
+
+| `element_type` | Bytes per dimension | Disk per vector |
+| --- | --- | --- |
+| `float` | 4 | `num_dimensions × 4` |
+| `bfloat16` | 2 | `num_dimensions × 2` |
+| `byte` | 1 | `num_dimensions` |
+| `bit` | 1/8 | `⌈num_dimensions / 8⌉` |
+
+```{math}
+\text{raw\_vector\_bytes} = \text{num\_vectors} \times \text{bytes\_per\_vector}
+```
+
+#### Quantized vector storage
+
+When quantization is enabled, {{es}} stores both the raw vectors and an additional set of quantized vectors. This increases total disk usage but reduces off-heap RAM requirements. Quantized vector storage only applies to `float` and `bfloat16` element types.
+
+| `quantization` | Additional bytes per vector |
+| --- | --- |
+| `int8` | `num_dimensions + 16` |
+| `int4` | `⌈num_dimensions / 2⌉ + 16` |
+| `bbq` | `⌈num_dimensions / 64⌉ × 8 + 14` |
+
+```{math}
+\text{quantized\_disk} = \text{num\_vectors} \times \text{quantized\_bytes\_per\_vector}
+```
+
+#### Index structure on disk
+
+The index structure overhead depends on the algorithm used:
+
+::::{tab-set}
+
+:::{tab-item} HNSW
+The HNSW graph stores neighbor connections for each vector. The default value for `m` (connections per node) is `16`.
+
+```{math}
+\text{hnsw\_graph\_bytes} = \text{num\_vectors} \times 4 \times m
+```
+
+With the default `m = 16`:
+
+```{math}
+\text{hnsw\_graph\_bytes} = \text{num\_vectors} \times 64
+```
+:::
+
+:::{tab-item} Flat
+The flat (brute-force) index has no additional index structure on disk. Only the raw and quantized vectors are stored.
+
+```{math}
+\text{flat\_index\_bytes} = 0
+```
+:::
+
+:::{tab-item} DiskBBQ
+DiskBBQ stores cluster centroids and quantized vectors within clusters. The default value for `vectors_per_cluster` is `384`.
+
+First, compute the number of clusters:
+
+```{math}
+\text{num\_clusters} = \left\lceil \frac{\text{num\_vectors}}{\text{vectors\_per\_cluster}} \right\rceil
+```
+
+Then compute the centroid and quantized vector storage. Centroids are 7-bit OSQ-quantized (1 byte per dimension) plus a 16-byte correction:
+
+```{math}
+\text{centroid\_bytes} = \text{num\_clusters} \times (\text{num\_dimensions} + 16)
+```
+
+Cluster vectors use 1-bit codes when `num_dimensions ≥ 384` (`⌈num_dimensions / 8⌉` bytes) and 4-bit codes below that (`⌈num_dimensions / 2⌉` bytes), each with a 16-byte correction. The `× 2` is a conservative upper bound for SOAR overspill (a vector may be written to a second cluster):
+
+```{math}
+\text{quantized\_vector\_bytes} = \text{num\_vectors} \times 2 \times (\text{cluster\_code\_bytes} + 16)
+```
+
+```{math}
+\text{diskbbq\_total\_bytes} = \text{centroid\_bytes} + \text{quantized\_vector\_bytes}
+```
+:::
+
+::::
+
+#### Total disk per replica
+
+```{math}
+\text{total\_disk} = \text{raw\_vector\_bytes} + \text{quantized\_disk} + \text{index\_structure\_bytes}
+```
+
+### Estimate off-heap RAM [_estimate_off_heap_ram]
+
+Disk and off-heap RAM are two different numbers, and they can differ by a lot. Disk is every structure persisted for the field; off-heap RAM is the working set that must stay in the operating system's filesystem cache for fast, stable query latency. Vector data is memory-mapped, so it lives in the OS page cache, separate from the Java heap.
+
+Provision at least the off-heap RAM figure per copy, plus headroom. Once the working set no longer fits in cache, queries start reading from disk and latency climbs sharply. For quantized indexes the raw vectors stay on disk (read only for optional rescoring), so they count toward disk but not toward the required off-heap RAM.
+
+**What should stay in RAM, by index type:**
+
+- `flat`: the raw vectors.
+- `hnsw`: the raw vectors and the graph.
+- `int8_flat` / `int4_flat` / `bbq_flat`: the quantized codes only.
+- `int8_hnsw` / `int4_hnsw` / `bbq_hnsw`: the quantized codes and the graph.
+- `bbq_disk` (DiskBBQ): all centroids plus a small fraction (5-10%) of the posting lists; the rest of the postings and the raw vectors stay on disk. This is why DiskBBQ can serve far more vectors per GiB of RAM.
+
+#### Vector data in RAM
+
+The amount of vector data held in off-heap RAM depends on the `element_type` and `quantization`. When quantization is enabled, only the smaller quantized vectors need to be in RAM - the raw vectors are accessed from disk only during rescoring.
+
+| `element_type` | `quantization` | RAM per vector |
+| --- | --- | --- |
+| `float` | none | `num_dimensions × 4` |
+| `float` | `int8` | `num_dimensions + 16` |
+| `float` | `int4` | `⌈num_dimensions / 2⌉ + 16` |
+| `float` | `bbq` | `⌈num_dimensions / 64⌉ × 8 + 14` |
+| `bfloat16` | none | `num_dimensions × 2` |
+| `bfloat16` | `int8` | `num_dimensions + 16` |
+| `bfloat16` | `int4` | `⌈num_dimensions / 2⌉ + 16` |
+| `bfloat16` | `bbq` | `⌈num_dimensions / 64⌉ × 8 + 14` |
+| `byte` | none | `num_dimensions` |
+| `bit` | none | `⌈num_dimensions / 8⌉` |
+
+```{math}
+\text{vector\_ram} = \text{num\_vectors} \times \text{ram\_per\_vector}
+```
+
+#### Index structure in RAM
+
+::::::{tab-set}
+
+:::::{tab-item} HNSW
+The HNSW graph must be fully loaded in memory for efficient search. The default value for `m` is `16`.
+
+```{math}
+\text{hnsw\_ram} = \text{num\_vectors} \times 4 \times m
+```
+
+**Total off-heap RAM for HNSW:**
+
+```{math}
+\text{total\_ram} = \text{vector\_ram} + \text{hnsw\_ram}
+```
+:::::
+
+:::::{tab-item} Flat
+The flat index has no graph structure. Only vector data needs to be in RAM.
+
+```{math}
+\text{total\_ram} = \text{vector\_ram}
+```
+:::::
+
+:::::{tab-item} DiskBBQ
+DiskBBQ keeps all centroids resident and needs only a fraction of the posting lists (cluster vectors) in off-heap RAM. In testing, all centroids plus 5-10% of the posting lists provides reasonable performance.
+
+```{math}
+\text{diskbbq\_ram} \approx \text{centroid\_bytes} + (0.05 \text{ to } 0.10) \times \text{quantized\_vector\_bytes}
+```
+
+:::{tip}
+Start with all centroids plus ~5% of the posting lists in RAM and tune based on benchmark results. The required fraction depends on your query patterns - queries that access overlapping clusters benefit from caching more.
+:::
+:::::
+
+::::::
+
+### Cluster-wide totals [_cluster_wide_totals]
+
+Each shard replica holds a full copy of the vector data and index structures. To estimate cluster-wide resource requirements, multiply the per-replica estimates by the total number of copies:
+
+```{math}
+\text{total\_copies} = 1 \text{ (primary)} + \text{num\_replicas}
+```
+
+```{math}
+\text{cluster\_disk} = \text{total\_disk\_per\_replica} \times \text{total\_copies}
+```
+
+```{math}
+\text{cluster\_ram} = \text{total\_ram\_per\_replica} \times \text{total\_copies}
+```
+
+:::{note}
+The cluster-wide RAM is spread across data nodes that hold the shard replicas. Each data node only needs enough RAM for the replicas assigned to it.
+:::
+
+### Assumptions and limitations [_sizing_assumptions]
+
+These estimates are a planning baseline, not a guarantee. Real usage depends on your data, indexing settings, query patterns, merges, deletes, and rescoring options.
+
+- The raw vectors are always kept on disk, even for quantized indexes, because they are used for rescoring. Disk therefore barely changes across quantization types while required RAM drops sharply.
+- The HNSW graph size (`num_vectors × 4 × m`) is a planning heuristic; the stored graph is delta-encoded and its exact size varies with segment size.
+- The DiskBBQ off-heap RAM band (all centroids plus 5-10% of the posting lists) is benchmark-based; validate it against your own workload.
+- The `× 2` on DiskBBQ cluster vectors is a conservative upper bound for SOAR overspill (a vector may be written to a second cluster); real usage is between 1× and 2×.
+- Sizes use binary units (1 GiB = 1,024 MiB).
+- Figures assume newly-indexed data on the current Elasticsearch codecs; upgraded segments may use different layouts.
+
+### Worked examples [_sizing_worked_examples]
+
+::::{dropdown} Example: HNSW with float vectors and no quantization
+**Configuration:** 1,000,000 vectors, 1,024 dimensions, `element_type: float`, HNSW with `m = 16`, no quantization, 1 replica.
+
+**Disk (per replica):**
+
+```{math}
+\begin{align*}
+\text{raw vectors} &= 1{,}000{,}000 \times 1{,}024 \times 4 = 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GiB} \\
+\text{HNSW graph} &= 1{,}000{,}000 \times 4 \times 16 = 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MiB} \\
+\text{total disk} &\approx 3.87 \text{ GiB}
+\end{align*}
+```
+
+**Off-heap RAM (per replica):**
+
+```{math}
+\begin{align*}
+\text{vector RAM} &= 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GiB} \\
+\text{HNSW graph RAM} &= 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MiB} \\
+\text{total RAM} &\approx 3.87 \text{ GiB}
+\end{align*}
+```
+
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~7.74 GiB disk, ~7.74 GiB RAM
+::::
+
+::::{dropdown} Example: HNSW with float vectors and int8 quantization
+**Configuration:** 1,000,000 vectors, 1,024 dimensions, `element_type: float`, HNSW with `m = 16`, `int8` quantization, 1 replica.
+
+**Disk (per replica):**
+
+```{math}
+\begin{align*}
+\text{raw vectors} &= 1{,}000{,}000 \times 1{,}024 \times 4 = 4{,}096{,}000{,}000 \text{ bytes} \approx 3.81 \text{ GiB} \\
+\text{int8 quantized} &= 1{,}000{,}000 \times (1{,}024 + 16) = 1{,}040{,}000{,}000 \text{ bytes} \approx 992 \text{ MiB} \\
+\text{HNSW graph} &= 1{,}000{,}000 \times 64 = 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MiB} \\
+\text{total disk} &\approx 4.84 \text{ GiB}
+\end{align*}
+```
+
+**Off-heap RAM (per replica):**
+
+```{math}
+\begin{align*}
+\text{int8 vector RAM} &= 1{,}040{,}000{,}000 \text{ bytes} \approx 992 \text{ MiB} \\
+\text{HNSW graph RAM} &= 64{,}000{,}000 \text{ bytes} \approx 61.0 \text{ MiB} \\
+\text{total RAM} &\approx 1.03 \text{ GiB}
+\end{align*}
+```
+
+:::{note}
+With `int8` quantization, disk increases by ~25% (both raw and quantized vectors are stored), but RAM drops from 3.87 GiB to 1.03 GiB - a **~4× reduction**.
+:::
+
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~9.69 GiB disk, ~2.06 GiB RAM
+::::
+
+::::{dropdown} Example: HNSW with float vectors and BBQ quantization
+**Configuration:** 10,000,000 vectors, 768 dimensions, `element_type: float`, HNSW with `m = 16`, `bbq` quantization, 1 replica.
+
+**Disk (per replica):**
+
+```{math}
+\begin{align*}
+\text{raw vectors} &= 10{,}000{,}000 \times 768 \times 4 = 30{,}720{,}000{,}000 \text{ bytes} \approx 28.6 \text{ GiB} \\
+\text{BBQ quantized} &= 10{,}000{,}000 \times (96 + 14) = 1{,}100{,}000{,}000 \text{ bytes} \approx 1.02 \text{ GiB} \\
+\text{HNSW graph} &= 10{,}000{,}000 \times 64 = 640{,}000{,}000 \text{ bytes} \approx 596 \text{ MiB} \\
+\text{total disk} &\approx 30.2 \text{ GiB}
+\end{align*}
+```
+
+**Off-heap RAM (per replica):**
+
+```{math}
+\begin{align*}
+\text{BBQ vector RAM} &= 1{,}100{,}000{,}000 \text{ bytes} \approx 1.02 \text{ GiB} \\
+\text{HNSW graph RAM} &= 640{,}000{,}000 \text{ bytes} \approx 596 \text{ MiB} \\
+\text{total RAM} &\approx 1.62 \text{ GiB}
+\end{align*}
+```
+
+:::{note}
+BBQ quantization reduces RAM from ~29.2 GiB (unquantized) to ~1.62 GiB - a **~18× reduction** for 768-dimensional vectors. This is ideal for large-scale vector workloads.
+:::
+
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~60.4 GiB disk, ~3.24 GiB RAM
+::::
+
+::::{dropdown} Example: DiskBBQ
+**Configuration:** 10,000,000 vectors, 768 dimensions, `element_type: float`, DiskBBQ with `vectors_per_cluster = 384`, 1 replica.
+
+**Disk (per replica):**
+
+```{math}
+\begin{align*}
+\text{raw vectors} &= 10{,}000{,}000 \times 768 \times 4 = 30{,}720{,}000{,}000 \text{ bytes} \approx 28.6 \text{ GiB} \\
+\text{num\_clusters} &= \lceil 10{,}000{,}000 / 384 \rceil = 26{,}042 \\
+\text{centroid bytes} &= 26{,}042 \times (768 + 16) = 20{,}416{,}928 \text{ bytes} \approx 19.5 \text{ MiB} \\
+\text{quantized vectors} &= 10{,}000{,}000 \times 2 \times (96 + 16) = 2{,}240{,}000{,}000 \text{ bytes} \approx 2.09 \text{ GiB} \\
+\text{total disk} &\approx 30.7 \text{ GiB}
+\end{align*}
+```
+
+**Off-heap RAM (per replica):** all centroids stay resident; cache 5-10% of the posting lists.
+
+```{math}
+\begin{align*}
+\text{centroids (all)} &= 20{,}416{,}928 \text{ bytes} \approx 19.5 \text{ MiB} \\
+\text{RAM at 5\%} &= 20{,}416{,}928 + 0.05 \times 2{,}240{,}000{,}000 \approx 126 \text{ MiB} \\
+\text{RAM at 10\%} &= 20{,}416{,}928 + 0.10 \times 2{,}240{,}000{,}000 \approx 233 \text{ MiB}
+\end{align*}
+```
+
+:::{note}
+DiskBBQ requires dramatically less RAM than HNSW - ~126-233 MiB vs ~29.2 GiB for the same 10M×768 unquantized HNSW setup. Trade-off: DiskBBQ has higher query latency since most data is read from disk.
+:::
+
+**Cluster-wide (1 primary + 1 replica = 2 copies):** ~61.4 GiB disk, ~253-466 MiB RAM
+::::
+
+### Quick-reference: RAM reduction from quantization [_quantization_ram_comparison]
+
+The following table shows the RAM reduction factor for `float` vectors at common dimensions. All values assume HNSW with `m = 16`.
+
+| Dimensions | No quantization | `int8` | `int4` | `bbq` |
+| --- | --- | --- | --- | --- |
+| 384 | 1,536 B/vec | 400 B/vec (3.8×) | 208 B/vec (7.4×) | 62 B/vec (24.8×) |
+| 768 | 3,072 B/vec | 784 B/vec (3.9×) | 400 B/vec (7.7×) | 110 B/vec (27.9×) |
+| 1,024 | 4,096 B/vec | 1,040 B/vec (3.9×) | 528 B/vec (7.8×) | 142 B/vec (28.8×) |
+| 1,536 | 6,144 B/vec | 1,552 B/vec (4.0×) | 784 B/vec (7.8×) | 206 B/vec (29.8×) |
+
+:::{note}
+Values are vector data per vector (quantized code + correction). Add the constant HNSW graph overhead (~64 bytes per vector at `m = 16`) for total off-heap RAM; it applies equally to every HNSW variant, so it is excluded from the reduction factors.
+:::
+
+### Draft: calculator explainer copy [_calculator_copy_draft]
+
+:::{warning}
+**Draft for a later docs-content PR.** This copy used to render inside the vector sizing calculator ("How it is computed" and "Component breakdown (per replica)"). Merge it into the docs-content kNN page when the calculator ships on elastic.co/docs, then delete this subsection. Formulas above already cover the same math; keep the component-file table even if the prose is folded in.
+:::
+
+#### How it is computed
+
+Sizing a `dense_vector` field comes down to two figures, and they can differ by a lot:
+
+- **Disk** — every structure persisted for the field: the raw vectors, any quantized copies, and the search structure (HNSW graph or DiskBBQ clusters).
+- **Off-heap RAM** — the working set that must stay in the operating system's filesystem cache for fast, stable query latency. Vector data is memory-mapped, so it lives in the OS page cache, separate from the Java heap.
+
+Provision at least the off-heap RAM figure per copy, plus headroom. Once the working set no longer fits in cache, queries start reading from disk and latency climbs sharply. For quantized indexes the raw vectors stay on disk (read only for optional rescoring), so they count toward disk but not toward the required RAM.
+
+**What must stay in RAM, per index type:**
+
+- `flat` — the raw vectors.
+- `hnsw` — the raw vectors and the graph.
+- `int8_flat` / `int4_flat` / `bbq_flat` — the quantized codes only.
+- `int8_hnsw` / `int4_hnsw` / `bbq_hnsw` — the quantized codes and the graph.
+- `bbq_disk` (DiskBBQ) — all centroids plus a small fraction (5–10%) of the posting lists. The rest of the postings and the raw vectors stay on disk, and only clusters a query touches are paged in. This is why DiskBBQ can serve far more vectors per GiB of RAM.
+
+Quantization keeps the raw vectors on disk but only needs the much smaller codes in memory — so disk barely changes across quantization types while required RAM drops sharply.
+
+**How each size is calculated**
+
+With `V` vectors, `D` dimensions, `m` graph connections per node (default 16), `C` DiskBBQ vectors per cluster (default 384), and `f` bytes per element (`float` 4, `bfloat16` 2, `byte` 1, `bit` 1/8):
+
+**HNSW and flat indexes** — total on disk = raw vectors + quantized codes (if any) + graph (HNSW only):
+
+- **Raw vectors** (always kept): `V × D × f` (bit: `V × ⌈D/8⌉`).
+- **Quantization: none** — no extra codes; search uses the raw vectors.
+- **Quantization: int8**: `V × (D + 16)` — 1 byte per dimension plus a 16-byte correction.
+- **Quantization: int4**: `V × (⌈D/2⌉ + 16)` — half a byte per dimension plus the 16-byte correction.
+- **Quantization: BBQ**: `V × (⌈D/64⌉×8 + 14)` — 1 bit per dimension (padded up to a multiple of 64) plus a 14-byte correction.
+- **HNSW graph** (`hnsw` only): `V × 4 × m` — the planning estimate; the real graph is compressed and varies.
+
+**DiskBBQ (`bbq_disk`)** — total on disk = raw vectors + centroids + clusters:
+
+- **Raw vectors** (always kept): `V × D × f`.
+- **Centroids**: `⌈V / C⌉ × (D + 16)`.
+- **Clusters**: `V × 2 × (⌈D/8⌉ + 16)` when `D ≥ 384` (1-bit codes), otherwise `V × 2 × (⌈D/2⌉ + 16)` (4-bit). The `×2` covers vectors that spill into a second cluster.
+
+The 14- or 16-byte "correction" is a small per-vector value the quantizer stores so it can rescore accurately.
+
+**Assumptions and limitations**
+
+- These are estimates. Real usage depends on your data, indexing settings, query patterns, merges, deletes, and rescoring options.
+- Raw vectors are always kept, even for quantized indexes (they are needed for rescoring).
+- The HNSW graph size (`V × 4 × m`) is a planning heuristic; the stored graph is compressed and varies with segment size.
+- The DiskBBQ RAM band (all centroids + 5–10% of posting lists) is benchmark-based — validate it against your workload.
+- Sizes use binary units (1 GiB = 1,024 MiB).
+- Figures assume newly-indexed data on current {{es}} codecs.
+
+#### Component breakdown (per replica)
+
+Elasticsearch persists each structure as a Lucene file (also reported under `off_heap.*_size_bytes`). Off-heap RAM is whether that file must stay in the filesystem cache:
+
+- **Yes** — must stay resident (filesystem cache).
+- **Partial** — only touched parts are paged in.
+- **No** — lives on disk, read on demand.
+
+| Component | File | Formula | Off-heap RAM | Applies to | What it is |
+| --- | --- | --- | --- | --- | --- |
+| Raw vectors | `.vec` | `V × D × f` (bit: `V × ⌈D/8⌉`) | Yes if unquantized HNSW/flat; otherwise No | All | Full-precision vectors. Scanned during search when there is no quantization; otherwise kept on disk for optional rescoring. |
+| int8 quantized vectors | `.veq` | `V × (D + 16)` | Yes | HNSW/flat + `int8` | 1 byte/dim plus a 16-byte OSQ correction (3 floats + int component sum). |
+| int4 quantized vectors | `.veq` | `V × (⌈D/2⌉ + 16)` | Yes | HNSW/flat + `int4` | 0.5 byte/dim (nibble-packed) plus the same 16-byte OSQ correction. |
+| BBQ quantized vectors | `.veb` | `V × (⌈D/64⌉×8 + 14)` | Yes | HNSW/flat + `bbq` | 1 bit/dim (`D` padded up to a multiple of 64) plus a 14-byte correction (3 floats + short). |
+| HNSW graph | `.vex` | `V × 4 × m` | Yes | `hnsw` | Proximity graph, ~4 bytes per neighbour × `m`. Heuristic; the real `.vex` is varint delta-encoded and multi-level. |
+| DiskBBQ centroids | `.cenivf` | `⌈V / C⌉ × (D + 16)` | Yes | `bbq_disk` | 7-bit OSQ centroids (1 byte/dim) plus a 16-byte correction. Lower bound: excludes the parent centroid layer and vector→centroid lookup table. |
+| DiskBBQ clusters | `.clivf` | `V × 2 × (⌈D/8⌉ + 16)` when `D ≥ 384`; else `V × 2 × (⌈D/2⌉ + 16)` | Partial | `bbq_disk` | 1-bit OSQ vectors when `D ≥ 384`, otherwise 4-bit, plus a 16-byte correction. The `×2` is a conservative SOAR-overspill upper bound. Only touched clusters are paged in. |
+
+The data nodes should also leave a buffer for other ways that RAM is needed. For example your index might also include text fields and numerics, which also benefit from using filesystem cache. It's recommended to run benchmarks with your specific dataset to ensure there's a sufficient amount of memory to give good search performance. You can find [here](https://elasticsearch-benchmarks.elastic.co/#tracks/so_vector) and [here](https://elasticsearch-benchmarks.elastic.co/#tracks/dense_vector) some examples of datasets and configurations that we use for our nightly benchmarks.
