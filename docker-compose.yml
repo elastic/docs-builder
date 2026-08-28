@@ -1,21 +1,16 @@
 services:
   # Run a one-shot CLI command, for example:
-  #   docker compose run --rm docs-builder
+  #   make docs
   #   docker compose run --rm docs-builder inbound-links validate-link-reference
   docs-builder:
-    build:
-      context: .
     image: docs-builder:local
     working_dir: /workspace
     volumes:
       - .:/workspace
 
   # Run the repository's unit-test suite without installing the .NET SDK on
-  # the host machine.
+  # the host machine. Build the image with `make build` first.
   tests:
-    build:
-      context: .
-      target: tooling
     image: docs-builder:tooling
     working_dir: /src
     command: ["./build.sh", "unit-test"]
@@ -24,11 +19,8 @@ services:
 
   # Run the development server with dotnet watch. Code changes restart the
   # CLI, while Markdown and static-file changes use the existing live reload.
-  # Open http://localhost:3000 after starting this service.
+  # Build the image with `make serve` and open http://localhost:3000.
   serve:
-    build:
-      context: .
-      target: tooling
     image: docs-builder:tooling
     working_dir: /src
     command:

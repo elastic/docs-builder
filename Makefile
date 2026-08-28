@@ -1,4 +1,6 @@
 COMPOSE ?= docker compose
+BAKE ?= docker buildx bake
+BAKE_FILE ?= docker-bake.hcl
 
 .PHONY: help build rebuild docs serve serve-detached stop test test-markdown clean
 
@@ -15,28 +17,33 @@ help:
 	@echo "  make clean           Stop Compose services and remove containers"
 
 build:
-	$(COMPOSE) build docs-builder serve
+	$(BAKE) --file $(BAKE_FILE) --load all
 
 rebuild:
-	$(COMPOSE) build --no-cache docs-builder serve
+	$(BAKE) --file $(BAKE_FILE) --no-cache --load all
 
 docs:
-	$(COMPOSE) run --rm docs-builder build
+	$(BAKE) --file $(BAKE_FILE) --load runtime
+	$(COMPOSE) run --rm --no-build docs-builder build
 
 serve:
-	$(COMPOSE) up serve
+	$(BAKE) --file $(BAKE_FILE) --load tooling
+	$(COMPOSE) up --no-build serve
 
 serve-detached:
-	$(COMPOSE) up -d serve
+	$(BAKE) --file $(BAKE_FILE) --load tooling
+	$(COMPOSE) up --no-build -d serve
 
 stop:
 	$(COMPOSE) stop serve
 
 test:
-	$(COMPOSE) run --rm tests
+	$(BAKE) --file $(BAKE_FILE) --load tooling
+	$(COMPOSE) run --rm --no-build tests
 
 test-markdown:
-	$(COMPOSE) run --rm tests dotnet test tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj
+	$(BAKE) --file $(BAKE_FILE) --load tooling
+	$(COMPOSE) run --rm --no-build tests dotnet test tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj
 
 clean:
 	$(COMPOSE) down --remove-orphans
