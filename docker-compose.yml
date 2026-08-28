@@ -12,10 +12,10 @@ services:
   # the host machine. Build the image with `make build` first.
   tests:
     image: docs-builder:tooling
-    working_dir: /src
+    working_dir: /workspace/docs-builder
     command: ["./build.sh", "unit-test"]
     volumes:
-      - .:/src
+      - .:/workspace/docs-builder
       - nuget-packages:/root/.nuget/packages
       - npm-cache:/root/.npm
 
