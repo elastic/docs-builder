@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 BAKE ?= docker buildx bake
 BAKE_FILE ?= docker-bake.hcl
 
-.PHONY: help build rebuild tooling runtime docs serve serve-detached stop test test-markdown clean
+.PHONY: help build rebuild tooling runtime docs serve serve-fast serve-detached stop test test-markdown clean
 
 help:
 	@echo "Available targets:"
@@ -10,6 +10,7 @@ help:
 	@echo "  make rebuild         Rebuild the Docker image without cache"
 	@echo "  make docs            Build the current documentation set"
 	@echo "  make serve           Serve docs at http://localhost:3000"
+	@echo "  make serve-fast      Alias for the default fast serve mode"
 	@echo "  make serve-detached  Serve docs in the background"
 	@echo "  make stop            Stop the development server"
 	@echo "  make test            Run the unit-test suite in Docker"
@@ -35,6 +36,8 @@ docs:
 serve:
 	$(MAKE) tooling
 	$(COMPOSE) up --no-build serve
+
+serve-fast: serve
 
 serve-detached:
 	$(BAKE) --file $(BAKE_FILE) --load tooling

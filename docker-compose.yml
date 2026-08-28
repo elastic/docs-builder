@@ -37,6 +37,7 @@ services:
         "--",
         "serve",
         "--watch",
+        "--no-hud",
         "--port",
         "3000",
       ]
