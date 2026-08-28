@@ -71,9 +71,9 @@ const TOOLTIPS = {
     quantization:
         'Compresses vectors to reduce memory, at some cost to accuracy. Applies to float and bfloat16 vectors only. Available options depend on your index structure.',
     replicas:
-        'The number of replica copies, not counting the primary. Each replica holds a full copy of the vector data, so replicas multiply storage and memory. The default is 1.',
+        'The number of replica copies, not counting the primary. Each replica holds a full copy of the vector data, so replicas multiply storage and memory. The default is 0.',
     vectorsPerCluster:
-        'For DiskBBQ, vectors are grouped into clusters. This value sets how many vectors each cluster holds and affects cluster count and disk use.',
+        'The target number of vectors per cluster. Smaller values create more centroids in RAM and usually improve recall at the cost of performance. The default is 384.',
     offHeapRam:
         'The percentage of clustered vector data, called posting lists, held in off-heap RAM. Supported values are 0 to 10 percent. Lower values save memory. Higher values raise query throughput and lower latency. This estimate assumes all centroids stay in RAM, since performance drops sharply otherwise.',
     hnswIndexStructure: 'RAM estimates include the HNSW graph.',
