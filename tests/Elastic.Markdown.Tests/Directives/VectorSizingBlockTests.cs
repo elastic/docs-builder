@@ -7,8 +7,9 @@ using Elastic.Markdown.Myst.Directives.VectorSizing;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class VectorSizingBlockTests(ITestOutputHelper output) : DirectiveTest<VectorSizingBlock>(output,
-"""
+public class VectorSizingBlockTests(ITestOutputHelper output) : DirectiveTest<VectorSizingBlock>(
+	output,
+	"""
 :::{vector-sizing-calculator}
 :::
 """

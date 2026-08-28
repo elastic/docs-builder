@@ -865,10 +865,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteVectorSizing(HtmlRenderer renderer, VectorSizingBlock block)
 	{
-		var slice = VectorSizingView.Create(new VectorSizingViewModel
-		{
-			DirectiveBlock = block
-		});
+		var slice = VectorSizingView.Create(new VectorSizingViewModel { DirectiveBlock = block });
 		RenderRazorSlice(slice, renderer);
 	}
 

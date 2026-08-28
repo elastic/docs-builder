@@ -16,8 +16,7 @@ namespace Elastic.Markdown.Myst.Directives.VectorSizing;
 /// It renders a &lt;vector-sizing-calculator&gt; custom element that is
 /// hydrated client-side by the bundled React+EUI web component.
 /// </summary>
-public class VectorSizingBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class VectorSizingBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "vector-sizing-calculator";
 
