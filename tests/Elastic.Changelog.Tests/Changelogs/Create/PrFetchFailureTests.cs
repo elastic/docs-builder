@@ -294,7 +294,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		Collector
 			.Diagnostics
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("do not carry version applicability"));
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not require or allow product versions"));
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("could not be fetched"));
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Their changelogs were created"));
 		A.CallTo(
