@@ -177,8 +177,13 @@ public class DocumentationSet : INavigationTraversable
 
 		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
 		{
-			if (TryValidateCrossRepoRedirect(from, to))
+			if (to.Contains("://"))
+			{
+				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
+					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
+
 				return;
+			}
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				to = to.Replace('/', Path.DirectorySeparatorChar);
@@ -205,38 +210,6 @@ public class DocumentationSet : INavigationTraversable
 				?? valueAnchors;
 		}
 	}
-
-	private bool TryValidateCrossRepoRedirect(string from, string to)
-	{
-		if (!to.Contains("://", StringComparison.Ordinal))
-			return false;
-
-		if (!Uri.TryCreate(to, UriKind.Absolute, out var uri))
-		{
-			Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
-			return true;
-		}
-
-		if (!CrossLinkValidator.IsCrossLink(uri) || IsPassthroughCustomProtocolScheme(uri.Scheme))
-			return true;
-
-		if (CrossLinkResolver is NoopCrossLinkResolver)
-			return true;
-
-		_ = CrossLinkResolver.TryResolve(
-			s => Context.Collector.EmitError(
-				Configuration.SourceFile.FullName,
-				$"Redirect {from} points to {to} which is not a valid cross-link",
-				s
-			),
-			uri,
-			out _
-		);
-		return true;
-	}
-
-	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
-		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase) || scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
 
 	public FrozenSet<MarkdownFile> MarkdownFiles { get; }
 
