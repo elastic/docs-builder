@@ -31,7 +31,7 @@ runtime:
 
 docs:
 	$(MAKE) runtime
-	$(COMPOSE) run --rm --no-build docs-builder build
+	$(COMPOSE) run --rm docs-builder build
 
 serve:
 	$(MAKE) tooling
@@ -48,11 +48,11 @@ stop:
 
 test:
 	$(MAKE) tooling
-	$(COMPOSE) run --rm --no-build tests
+	$(COMPOSE) run --rm tests
 
 test-markdown:
 	$(MAKE) tooling
-	$(COMPOSE) run --rm --no-build tests dotnet test tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj
+	$(COMPOSE) run --rm tests dotnet test tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj
 
 clean:
 	$(COMPOSE) down --remove-orphans
