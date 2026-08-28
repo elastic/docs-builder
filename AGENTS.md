@@ -120,6 +120,14 @@ Beyond what `.editorconfig` can check:
 
 Use `/style-review` to check a diff against these rules.
 
+## Agentic skills
+
+Always invoke the skill for the following tasks — never substitute your own format:
+
+- **Commits** — use `/commit` before creating any git commit.
+- **Pull requests** — use `/pr` before running `gh pr create`. Never write your own PR body or title without going through the skill first.
+- **Issues** — use `/issue` before running `gh issue create`. Never file an issue without going through the skill first.
+
 ## Documentation
 
 Update `/docs/` whenever Markdown syntax or rendering behaviour changes.
