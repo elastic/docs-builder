@@ -30,20 +30,14 @@ To successfully implement a redirect:
 
 3. Fix all existing links to the moved or removed file within the repository where you're adding the redirect, by updating them to the new correct target, or by removing them if necessary. This is a best practice to keep our content healthy, and mandatory for your PR to pass CI checks.
 
-4. Create a PR with all of the changes made through the previous steps.
+4. Create a PR with all of the changes made through the previous steps. 
 
-Isolated `build --strict` resolves each `://` `to:` against the published link index of the target repository. `docs-builder diff validate` only checks that each deleted or renamed Markdown file has a redirect **key**. It does not check that the `to:` target exists.
-
-If you get validation errors about the redirect, check that your changes follow all the steps in this procedure. If the errors persist after a writer reviewed the PR, ask @elastic/docs-engineering for assistance.
+CI checks run to validate the newly added redirect and the docs build. 
+If you get validation errors about the redirect, double check that your changes follow all the steps in this procedure. If the errors persist after a writer reviewed the PR, ask @elastic/docs-engineering for assistance.
 
 ## Validation
 
-Running `docs-builder diff validate` reports missing redirect keys after you delete or rename Markdown files. It also runs on pull requests.
-
-Isolated `docs-builder build --strict` checks each `to:` value:
-
-* A same-repo path must be a Markdown file in this documentation set.
-* A `repo://path` target must exist in that repository's published link index.
+Running `docs-builder diff validate` will give you feedback on whether all necessary redirect rules are in place after your changes. It will also run on pull requests.
 
 ## File location
 
@@ -151,16 +145,12 @@ redirects:
 
 ### Redirecting to other repositories
 
-Use the `repo://path` syntax to redirect across repositories.
-
-The path is relative to the `docset.yml` directory in the target repository. Do not copy the GitHub blob path. If that repository keeps documentation under `docs/`, omit `docs/` from the cross-link.
+Use the `repo://path/to/page.md` syntax to redirect across repositories.
 
 ```yaml
 redirects:
-  'observability/monitor-applications/apm/advanced-settings.md': 'kibana://reference/advanced-settings.md'
+  'testing/redirects/cross-repo-page.md': 'other-repo://reference/section/new-cross-repo-page.md'
 ```
-
-Declare the target repository under `cross_links` in your `docset.yml`. Isolated CI fetches that index and fails the build if the path is missing.
 
 ### Managing complex scenarios with anchors
 
