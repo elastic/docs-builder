@@ -45,7 +45,7 @@ applies_to:
 
 ## Documentation discovery
 
-Each exported page includes a documentation resources note immediately after its title. The note directs agents to the site's `llms.txt` index before they explore other pages, and to the free Elastic Docs MCP server for targeted search, related-page discovery, and page retrieval.
+Each exported public documentation page includes a documentation resources callout before its title. The callout directs agents to the site's `llms.txt` index before they explore other pages, and to the free Elastic Docs MCP server for targeted search, related-page discovery, and page retrieval. Internal and Codex pages omit the callout.
 
 ## Content negotiation
 

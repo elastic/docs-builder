@@ -32,14 +32,55 @@ public class LlmMarkdownExporterTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public void CreateDocumentationResources_PublicDocsBuild_LinksToIndexAndFreeMcpServer()
+	public void CreateDocumentationResources_PublicDocsBuild_ReturnsCalloutBeforeContent()
+	{
+		var context = CreateBuildContext(DocSetRegistry.Public, BuildType.Isolated);
+
+		var resources = LlmMarkdownExporter.CreateDocumentationResources(context);
+
+		resources.Should().Be(
+			"""
+			> ## Documentation resources
+			>
+			> Fetch the complete documentation index at: https://www.elastic.co/docs/llms.txt
+			> Use this file to discover all available pages before exploring further.
+			>
+			> For targeted search and retrieval, use the free Elastic Docs MCP server at: https://www.elastic.co/docs/_mcp/
+			> The server provides tools to search, discover related pages, and retrieve page content.
+
+			"""
+		);
+	}
+
+	[Fact]
+	public void CreateDocumentationResources_InternalDocsBuild_ReturnsEmpty()
+	{
+		var context = CreateBuildContext(DocSetRegistry.Internal, BuildType.Isolated);
+
+		var resources = LlmMarkdownExporter.CreateDocumentationResources(context);
+
+		resources.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void CreateDocumentationResources_CodexBuild_ReturnsEmpty()
+	{
+		var context = CreateBuildContext(DocSetRegistry.Public, BuildType.Codex);
+
+		var resources = LlmMarkdownExporter.CreateDocumentationResources(context);
+
+		resources.Should().BeEmpty();
+	}
+
+	private BuildContext CreateBuildContext(DocSetRegistry registry, BuildType buildType)
 	{
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
 				["docs/docset.yml"] = new(
-					"""
+					$"""
 					project: test
+					registry: {registry.ToString().ToLowerInvariant()}
 					toc:
 					  - file: index.md
 					"""
@@ -49,28 +90,13 @@ public class LlmMarkdownExporterTests(ITestOutputHelper output)
 			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
 		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var context = new BuildContext(
+		return new BuildContext(
 			new TestDiagnosticsCollector(output),
 			TestHelpers.CreateDocumentationFileSystem(fileSystem),
 			configurationContext,
 			new PublicEnvironmentVariables()
 		)
-		{ CanonicalBaseUrl = new Uri("https://www.elastic.co/"), UrlPathPrefix = "/docs" };
-
-		var resources = LlmMarkdownExporter.CreateDocumentationResources(context);
-
-		resources.Should().Be(
-			"""
-			## Documentation resources
-
-			Fetch the complete documentation index at: https://www.elastic.co/docs/llms.txt
-			Use this file to discover all available pages before exploring further.
-
-			For targeted search and retrieval, use the free Elastic Docs MCP server at: https://www.elastic.co/docs/_mcp/
-			The server provides tools to search, discover related pages, and retrieve page content.
-
-			"""
-		);
+		{ BuildType = buildType, CanonicalBaseUrl = new Uri("https://www.elastic.co/"), UrlPathPrefix = "/docs" };
 	}
 
 	private sealed class PublicEnvironmentVariables : IEnvironmentVariables
