@@ -229,7 +229,10 @@ references:
     next: main
     skip: true
     sparse_paths: ["docs", "config"]
+  # Playground repos for release-notes automation (changelog link filtering; do not publish docs)
   docs-playground-release-notes-changelogs:
     private: true
+    skip: true
   docs-playground-release-notes-tagged:
     private: true
+    skip: true
