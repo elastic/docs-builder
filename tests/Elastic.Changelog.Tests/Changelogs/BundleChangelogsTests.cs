@@ -213,6 +213,68 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithPrsFilter_MatchesFilenameDigitsWhenYamlPrsEmpty()
+	{
+		var changelog =
+			"""
+			title: Filename identity
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			""";
+
+		var file = FileSystem.Path.Join(_changelogDir, "12345.yaml");
+		await FileSystem.File.WriteAllTextAsync(file, changelog, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 12345.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPrsFilter_MatchesTimestampFileViaYamlPrs()
+	{
+		var changelog =
+			"""
+			title: Timestamp identity
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/12345
+			""";
+
+		var file = FileSystem.Path.Join(_changelogDir, "1735-foo.yaml");
+		await FileSystem.File.WriteAllTextAsync(file, changelog, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1735-foo.yaml");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithIssuesFilter_FiltersCorrectly()
 	{
 		// Arrange

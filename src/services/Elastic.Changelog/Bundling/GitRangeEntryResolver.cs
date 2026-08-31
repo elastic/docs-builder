@@ -222,7 +222,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content)
 	{
-		var numbers = ParseLeadingPrNumbers(fileName);
+		var numbers = ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
 		try
 		{
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
@@ -242,31 +242,6 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		{
 			return new ChangelogPoolCandidate(fileName, content, numbers, null, ex.Message, []);
 		}
-	}
-
-	/// <summary>
-	/// Parses PR numbers from the leading dash-separated numeric segments of an entry file name,
-	/// covering the PR-number naming schemes (<c>123.yaml</c>, <c>123-456.yaml</c>,
-	/// <c>123-bug-fix-slug.yaml</c>). File names survive scrubbing, so this match works for
-	/// private pools whose <c>prs</c> references were removed from the public copies.
-	/// </summary>
-	internal static IReadOnlyList<int> ParseLeadingPrNumbers(string fileName)
-	{
-		var stem = fileName;
-		var extensionIndex = stem.LastIndexOf('.');
-		if (extensionIndex > 0)
-			stem = stem[..extensionIndex];
-
-		var numbers = new List<int>();
-		foreach (var segment in stem.Split('-'))
-		{
-			if (segment.Length > 0 && segment.All(char.IsAsciiDigit) && int.TryParse(segment, out var number))
-				numbers.Add(number);
-			else
-				break;
-		}
-
-		return numbers;
 	}
 
 	/// <summary>
