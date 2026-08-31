@@ -43,6 +43,10 @@ applies_to:
 ---
 ```
 
+## Documentation discovery
+
+Each exported page includes a documentation resources note immediately after its title. The note directs agents to the site's `llms.txt` index before they explore other pages, and to the free Elastic Docs MCP server for targeted search, related-page discovery, and page retrieval.
+
 ## Content negotiation
 
 Web servers (like the one serving elastic.co/docs) can use the co-located `.md` files to implement content negotiation:

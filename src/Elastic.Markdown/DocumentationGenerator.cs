@@ -557,7 +557,9 @@ public partial class DocumentationGenerator
 	{
 		await DocumentationSet.ResolveDirectoryTree(ctx);
 		var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
-		return LlmMarkdownExporter.ConvertToLlmMarkdown(document, DocumentationSet.Context);
+		var resources = LlmMarkdownExporter.CreateDocumentationResources(Context);
+		var content = LlmMarkdownExporter.ConvertToLlmMarkdown(document, DocumentationSet.Context);
+		return resources + content;
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx)

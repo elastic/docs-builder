@@ -10,6 +10,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
@@ -202,9 +203,39 @@ public class LlmMarkdownExporter(bool branded = false, DocumentationWriteFileSys
 		_ = metadata.AppendLine("---");
 		_ = metadata.AppendLine();
 		_ = metadata.AppendLine($"# {sourceFile.Title}");
+		_ = metadata.AppendLine();
+		_ = metadata.Append(CreateDocumentationResources(context.BuildContext));
 		_ = metadata.Append(llmMarkdown);
 
 		return metadata.ToString();
+	}
+
+	internal static string CreateDocumentationResources(BuildContext context)
+	{
+		var documentationRoot = context.SiteRootPath ?? context.UrlPathPrefix ?? string.Empty;
+		var indexPath = UrlPath.JoinUrl(documentationRoot, "llms.txt");
+		var indexUrl = CreateAbsoluteUrl(context.CanonicalBaseUrl, indexPath, trailingSlash: false);
+		var mcpUrl = CreateAbsoluteUrl(context.CanonicalBaseUrl, context.Environment.McpPrefix, trailingSlash: true);
+		var free = string.Equals(context.Environment.McpServerProfile, "public", StringComparison.OrdinalIgnoreCase)
+			? "free "
+			: string.Empty;
+
+		return $"""
+			## Documentation resources
+
+			Fetch the complete documentation index at: {indexUrl}
+			Use this file to discover all available pages before exploring further.
+
+			For targeted search and retrieval, use the {free}Elastic Docs MCP server at: {mcpUrl}
+			The server provides tools to search, discover related pages, and retrieve page content.
+
+			""";
+	}
+
+	private static string CreateAbsoluteUrl(Uri? canonicalBaseUrl, string path, bool trailingSlash)
+	{
+		var normalizedPath = $"/{path.Trim('/')}{(trailingSlash ? "/" : string.Empty)}";
+		return canonicalBaseUrl is null ? normalizedPath : new Uri(canonicalBaseUrl, normalizedPath).ToString();
 	}
 
 	private static List<string> GetAppliesToItems(ApplicableTo appliesTo, IDocumentationConfigurationContext buildContext)
