@@ -12,6 +12,7 @@ phantoms:
   - toc: docs-content://release-notes/elasticsearch-clients
   - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
+  - toc: docs-content://products
   - toc: cloud://release-notes
   # Temporary: elastic-agent renames reference/edot-collector → reference/otel-collector (elastic/elastic-agent#16022).
   # Remove this phantom and update the nav entry below once that PR merges.
