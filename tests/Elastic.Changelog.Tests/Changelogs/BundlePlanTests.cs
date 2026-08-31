@@ -75,9 +75,12 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeFalse();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 		// The bundle-PR action polls this URL for the scrubbed copy: {base}/bundle/{product}/{file}.
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-elasticsearch-9.2.0.yaml");
 	}
 
 	[Fact]
@@ -104,6 +107,10 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a repository name"));
 	}
 
 	[Fact]
@@ -181,13 +188,16 @@ public class BundlePlanTests : ChangelogTestBase
 		// 'source: github_release' names the bundle from ExtractBaseVersion(release.TagName) at run time
 		// (leading 'v' stripped), not the raw CLI argument — plan must mirror that so output_path matches
 		// the file 'bundle' actually writes.
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
 	public async Task Plan_ProfileMode_ConventionalName_UsesPrimaryOutputProduct()
 	{
-		// Output names follow the {product}-{version}.yaml convention; lifecycle only affects
+		// Output names follow {repo}-{product}-{version}.yaml; lifecycle only affects
 		// product metadata (output_products), never the file name.
 		// language=yaml
 		var configContent =
@@ -212,7 +222,7 @@ public class BundlePlanTests : ChangelogTestBase
 		result
 			.OutputPath
 			.Should()
-			.EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
+			.EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]

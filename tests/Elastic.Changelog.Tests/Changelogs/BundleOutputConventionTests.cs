@@ -11,9 +11,9 @@ namespace Elastic.Changelog.Tests.Changelogs;
 
 /// <summary>
 /// Tests for the standardized bundle output naming (B2 — elastic/docs-builder#3774):
-/// explicit <c>output:</c> patterns are a hard error, names derive from the profile's primary
-/// output product as <c>{product}-{version}.yaml</c>, and two profiles colliding on the same
-/// conventional target are rejected.
+/// explicit <c>output:</c> patterns are a hard error, names derive as
+/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves (else unprefixed with a warning),
+/// and two profiles colliding on the same conventional target are rejected.
 /// </summary>
 public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
@@ -76,7 +76,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("'output' is no longer supported") && d.Message.Contains(
-					"{product}-{version}.yaml"
+					"{repo}-{product}-{version}.yaml"
 				)
 			);
 	}
@@ -134,7 +134,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 			.Should()
 			.Contain(
 				d => d.Severity == Severity.Error && d.Message.Contains("'es-all', 'es-ga'") && d.Message.Contains(
-					"elasticsearch-{version}.yaml"
+					"{repo}-elasticsearch-{version}.yaml"
 				)
 			);
 	}
@@ -164,7 +164,195 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 			.File
 			.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch-9.3.0.yaml"))
 			.Should()
-			.BeTrue("bundle names derive from the primary output product and version");
+			.BeTrue("when no authoring repo resolves, names fall back to the unprefixed product-version.yaml convention");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a repository name"));
+	}
+
+	[Fact]
+	public async Task ProfileWithBundleRepo_PrefixesFileName()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: kibana
+			  profiles:
+			    serverless-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "cloud-serverless {version}"
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "serverless-release", ProfileArgument = "9.3.0", Config = configPath };
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-9.3.0.yaml"))
+			.Should()
+			.BeTrue("authoring repo prefixes the conventional product-version name");
+	}
+
+	[Fact]
+	public async Task Plan_ProfileWithBundleRepo_PrefixesFileName()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  repo: kibana
+			  profiles:
+			    serverless-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "cloud-serverless {version}"
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "serverless-release", ProfileArgument = "9.3.0", Config = configPath };
+		var plan = await Service().PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		plan.Should().NotBeNull();
+		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("kibana-cloud-serverless-9.3.0.yaml");
+	}
+
+	[Fact]
+	public async Task CliRepo_OverridesBundleRepo()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: elasticsearch
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "elasticsearch {version}"
+			"""
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "es-release",
+			ProfileArgument = "9.3.0",
+			Config = configPath,
+			Repo = "kibana"
+		};
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "kibana-elasticsearch-9.3.0.yaml")).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task ProfileRepo_OverridesBundleRepo()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: elasticsearch
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "elasticsearch {version}"
+			      repo: kibana
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "kibana-elasticsearch-9.3.0.yaml")).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task CombinedOwnerRepo_UsesRepoSegmentOnly()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: elastic/kibana
+			  profiles:
+			    serverless-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "cloud-serverless {version}"
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "serverless-release", ProfileArgument = "9.3.0", Config = configPath };
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-9.3.0.yaml")).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task GitOrigin_UsedWhenRepoUnset()
+	{
+		var gitRoot = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.Join(gitRoot, ".git"));
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(gitRoot, ".git", "config"),
+			"""
+			[remote "origin"]
+				url = https://github.com/elastic/kibana.git
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var changelogDir = FileSystem.Path.Join(gitRoot, "changelog");
+		FileSystem.Directory.CreateDirectory(changelogDir);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "entry.yaml"),
+			Entry,
+			TestContext.Current.CancellationToken
+		);
+		_changelogDir = changelogDir;
+
+		var configPath = FileSystem.Path.Join(gitRoot, "docs", "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  profiles:
+			    serverless-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "cloud-serverless {version}"
+			""".Replace(
+				"CHANGELOG_DIR",
+				changelogDir
+			),
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "serverless-release", ProfileArgument = "9.3.0", Config = configPath };
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem.File.Exists(FileSystem.Path.Join(changelogDir, "kibana-cloud-serverless-9.3.0.yaml")).Should().BeTrue();
 	}
 
 	[Fact]

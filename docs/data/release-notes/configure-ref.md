@@ -52,7 +52,7 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, and to scope uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
+| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, to scope uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing, and as the `{repo}` segment of profile-mode bundle file names (`{repo}-{product}-{version}.yaml`). Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
 | `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
 :::
@@ -124,9 +124,9 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   When the bundle is rendered, entries with matching `feature-id` values are commented out.
 
 `output`
-:   Removed. Bundle output names are derived by convention as `{product}-{version}.yaml` from the profile's primary output product (the first product in `output_products`, or `products`) and the version argument. Setting `output` on any profile is a hard error at bundle time; remove the field.
+:   Removed. Bundle output names are derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product (the first product in `output_products`, or `products`), and the version argument. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting `output` on any profile is a hard error at bundle time; remove the field.
 :   When no primary product or version resolves (for example, a promotion-report invocation without a version argument), the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
-:   No two profiles in the same configuration may share a primary output product — they would resolve to the same `{product}-{version}.yaml` target for any given version, which is also a hard error.
+:   No two profiles in the same configuration may share a primary output product — they would resolve to the same `{repo}-{product}-{version}.yaml` target for any given version, which is also a hard error.
 
 `output_products`
 :   The bundle's `products` metadata, which affects the bundle rules that are applied and the product and version titles that ultimately appear in documentation.
@@ -155,6 +155,7 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 `repo`
 :   Overrides [bundle.repo](#bundle-basic).
 :   Required when `source: github_release` is used and `bundle.repo` is not set.
+:   Also the `{repo}` segment of the conventional bundle file name.
 
 `source`
 :   Derive the list of changelogs from the specified source.

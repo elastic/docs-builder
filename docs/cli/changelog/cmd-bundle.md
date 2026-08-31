@@ -20,7 +20,7 @@ The second positional argument accepts:
 - A plain-text URL list file (one fully-qualified GitHub PR or issue URL per line)
 - A plain-text path list file (one changelog YAML path per line, ending in `.yaml` or `.yml`)
 
-When your profile uses `{version}` in its `output_products` pattern (or you want the conventional `{product}-{version}.yaml` bundle name) and you also want to filter by a report or list file, pass both arguments (version first, then the filter file).
+When your profile uses `{version}` in its `output_products` pattern (or you want the conventional `{repo}-{product}-{version}.yaml` bundle name) and you also want to filter by a report or list file, pass both arguments (version first, then the filter file).
 
 Example profile in `changelog.yml`:
 
@@ -33,9 +33,11 @@ bundle:
   profiles:
     elasticsearch-release:
       output_products: "elasticsearch {version}"
+    serverless-release:
+      output_products: "cloud-serverless {version}"
 ```
 
-The bundle's file name is derived by convention as `{product}-{version}.yaml` from the profile's primary output product and the version argument (for example, `docs/releases/elasticsearch-9.2.0.yaml`). Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
+The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument. For example, `docs-builder changelog bundle serverless-release 2026-08-31` writes `docs/releases/elasticsearch-cloud-serverless-2026-08-31.yaml`. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
 
 ## Option-based mode
 
@@ -96,7 +98,7 @@ Both refs are always required together — the start ref is never inferred from 
    - **PRs whose metadata cannot be fetched are reported as missing** with a warning.
 4. Records the end ref in the bundle output as the `git_ref` metadata field.
 
-Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. The bundle name follows the `{product}-{version}.yaml` convention.
+Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. The bundle name follows the `{repo}-{product}-{version}.yaml` convention.
 
 Re-running the same range produces the same bundle content; bundling never overwrites changelog entries.
 Commit-range mode does not automatically add changelog notes whose `products[].versions` match `output_products`. Use `--files` or a path list if those files must be in the bundle.
