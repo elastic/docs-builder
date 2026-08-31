@@ -74,11 +74,12 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			reader
 		);
 
-		var documents = (await generator.ResolveDocumentsForProduct(
-			"cloud-serverless",
-			ApiConfig(product, localFile),
-			TestContext.Current.CancellationToken
-		)).Documents;
+		var documents =
+			(await generator.ResolveDocumentsForProduct(
+				"cloud-serverless",
+				ApiConfig(product, localFile),
+				TestContext.Current.CancellationToken
+			));
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.CallCount.Should().Be(0, "a versionless local spec must short-circuit remote version resolution");
@@ -128,11 +129,8 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 
 		var errorsBeforeResolution = collector.Errors;
 
-		var documents = (await generator.ResolveDocumentsForProduct(
-			"elasticsearch",
-			ApiConfig(product),
-			TestContext.Current.CancellationToken
-		)).Documents;
+		var documents =
+			(await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken));
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.RequestedPaths.Should().BeEquivalentTo(["/index.json", "/elastic/elasticsearch/main/elasticsearch-openapi.json"]);
@@ -166,11 +164,8 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		);
 		var errorsBeforeResolution = collector.Errors;
 
-		var documents = (await generator.ResolveDocumentsForProduct(
-			"elasticsearch",
-			ApiConfig(product),
-			TestContext.Current.CancellationToken
-		)).Documents;
+		var documents =
+			(await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken));
 
 		documents.Should().BeEmpty();
 		collector.Errors.Should().BeGreaterThan(errorsBeforeResolution);

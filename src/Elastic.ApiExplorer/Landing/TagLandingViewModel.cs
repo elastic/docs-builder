@@ -19,19 +19,6 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 	/// <summary>Flattened overview table rows; built before the slice renders.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
 
-	public string? DescriptionMarkdown
-	{
-		get
-		{
-			if (RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc))
-				return doc.DescriptionOr(Tag.Description);
-			return Tag.Description;
-		}
-	}
-
-	public IReadOnlyList<ApiPostSection> PostSections =>
-		RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc) ? ApiPostSection.From(RenderContext, doc.PostSections) : [];
-
 	public TagExternalDocsDisplay? ExternalDocsDisplay =>
 		Tag.ExternalDocs is null
 			? null

@@ -26,6 +26,10 @@ public sealed record NavigationRenderNode
 	public required string Url { get; init; }
 	/// <summary>Badge parsed from a <c>[ns]</c>/<c>[cmd]</c>/<c>[alias]</c> title prefix; doubles as its CSS class suffix.</summary>
 	public string? Badge { get; init; }
+	/// <summary>Lowercase HTTP method for API operation leaves; drives the sidebar method glyph.</summary>
+	public string? HttpMethod { get; init; }
+	/// <summary>True when the row groups several HTTP operations under one endpoint.</summary>
+	public bool IsMultiOperation { get; init; }
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
@@ -344,6 +348,7 @@ public sealed record NavigationRenderModel
 			Badge = badge,
 			Url = node.Url,
 			Id = node.Id,
+			IsMultiOperation = node is IMultiOperationNavigationItem,
 			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
 			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
 		};
@@ -352,12 +357,16 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode CreateLeaf(INavigationItem item, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(item.NavigationTitle);
+		var httpMethod = item is ILeafNavigationItem<INavigationModel> { Model: IHttpMethodNavigationModel method }
+			? method.HttpMethod
+			: null;
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
+			HttpMethod = httpMethod,
 			Url = item.Url
 		};
 	}
@@ -417,6 +426,8 @@ public sealed record NavigationRenderModel
 		AppendInt(hash, node.IsTopLevel ? 1 : 0);
 		Append(hash, node.NavigationTitle);
 		Append(hash, node.Badge ?? string.Empty);
+		Append(hash, node.HttpMethod ?? string.Empty);
+		AppendInt(hash, node.IsMultiOperation ? 1 : 0);
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);

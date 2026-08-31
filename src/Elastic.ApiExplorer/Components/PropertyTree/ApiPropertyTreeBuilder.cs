@@ -178,7 +178,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			Constraints = BuildConstraints(propSchema),
 			EnumValues = typeInfo is { IsEnum: true, EnumValues.Length: > 0 } ? typeInfo.EnumValues : [],
 			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
-			ArrayItemTypeName = string.IsNullOrEmpty(typeInfo.ArrayItemType) ? null : typeInfo.ArrayItemType,
+			// Type annotation already reads "array of …"; skip the redundant "Array of:" row.
+			ArrayItemTypeName = null,
 			TypeLink = BuildTypeLink(typeInfo, expansion),
 			IsCollapsible = expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
@@ -698,17 +699,36 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 		if (typeInfo.IsArray)
 		{
-			spans.Add(new TypeSpan("[] ", "array-icon"));
+			spans.Add(new TypeSpan("array of ", "array-keyword"));
 			AppendArrayKeywordSpans(spans, typeInfo, hasActualProperties);
+			if (typeInfo.HasLink)
+				spans.Add(new TypeSpan("{} ", "object-icon"));
+			spans.Add(
+				new TypeSpan(
+					PluralizeArrayItemTypeName(typeName),
+					Title: string.IsNullOrEmpty(typeInfo.SchemaRef) ? null : typeInfo.SchemaRef
+				)
+			);
+			return new TypeAnnotation(spans);
 		}
-		else
-			AppendScalarKeywordSpans(spans, typeInfo, hasActualProperties);
+
+		AppendScalarKeywordSpans(spans, typeInfo, hasActualProperties);
 
 		if (typeInfo.HasLink)
 			spans.Add(new TypeSpan("{} ", "object-icon"));
 		spans.Add(new TypeSpan(typeName, Title: string.IsNullOrEmpty(typeInfo.SchemaRef) ? null : typeInfo.SchemaRef));
 		return new TypeAnnotation(spans);
 	}
+
+	private static string PluralizeArrayItemTypeName(string typeName) => typeName switch
+	{
+		"string" => "strings",
+		"integer" => "integers",
+		"number" => "numbers",
+		"boolean" => "booleans",
+		"object" => "objects",
+		_ => typeName
+	};
 
 	private static void AppendArrayKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
 	{

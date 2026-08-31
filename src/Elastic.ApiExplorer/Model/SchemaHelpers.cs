@@ -22,9 +22,8 @@ public static class SchemaHelpers
 	/// <summary>
 	/// Types that are known to be value types (resolve to primitives like string).
 	/// </summary>
-	public static readonly HashSet<string> KnownValueTypes =
-	[
-		with(StringComparer.OrdinalIgnoreCase),
+	public static readonly HashSet<string> KnownValueTypes = new(StringComparer.OrdinalIgnoreCase)
+	{
 		"Field",
 		"Fields",
 		"Id",
@@ -66,28 +65,26 @@ public static class SchemaHelpers
 		"sbyte",
 		"double",
 		"decimal"
-	];
+	};
 
 	/// <summary>
 	/// Types that have dedicated pages we can link to.
 	/// Only container types get their own pages - individual queries/aggregations are rendered inline.
 	/// </summary>
-	public static readonly HashSet<string> LinkedTypes =
-	[
-		with(StringComparer.OrdinalIgnoreCase),
+	public static readonly HashSet<string> LinkedTypes = new(StringComparer.OrdinalIgnoreCase)
+	{
 		"QueryContainer",
 		"AggregationContainer",
 		"Aggregate"
-	];
+	};
 
 	/// <summary>
 	/// Primitive/generic type names that are not named schema types.
 	/// These should not be considered for recursive type detection since they
 	/// represent generic types rather than specific schema references.
 	/// </summary>
-	public static readonly HashSet<string> PrimitiveTypeNames =
-	[
-		with(StringComparer.OrdinalIgnoreCase),
+	public static readonly HashSet<string> PrimitiveTypeNames = new(StringComparer.OrdinalIgnoreCase)
+	{
 		"boolean",
 		"number",
 		"string",
@@ -95,7 +92,7 @@ public static class SchemaHelpers
 		"object",
 		"null",
 		"array"
-	];
+	};
 
 	/// <summary>
 	/// Gets the URL for a container type's dedicated page under the given API root

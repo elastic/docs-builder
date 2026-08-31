@@ -50,6 +50,7 @@ public partial class ApiPagesNavRenderingTests
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
 			MarkdownUrl = "/api/doc/elasticsearch/v9.md",
+			Breadcrumbs = ApiBreadcrumbTrail.Empty,
 			VersionSwitcherItems =
 			[
 				new("Latest", "/api/doc/elasticsearch/", Selected: false),

@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
-using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
 using Microsoft.AspNetCore.Html;
@@ -39,12 +38,10 @@ public class SimpleMarkdownNavigationItem(
 	/// <inheritdoc />
 	public IApiModel Model => this;
 
-	/// <summary>Creates a URL slug from a markdown filename. A <c>.vN</c> suffix is not part of the slug.</summary>
+	/// <summary>Creates a URL slug from a markdown filename.</summary>
 	public static string CreateSlugFromFile(IFileInfo markdownFile)
 	{
 		var fileName = Path.GetFileNameWithoutExtension(markdownFile.Name);
-		if (ApiSupplementalName.TryParseVersionSuffix(markdownFile.Name, out var stem, out _))
-			fileName = stem;
 		return fileName.ToLowerInvariant().Replace(' ', '-').Replace('_', '-');
 	}
 

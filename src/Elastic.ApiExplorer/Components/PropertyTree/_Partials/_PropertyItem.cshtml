@@ -7,17 +7,9 @@
 		<a href="#@Model.AnchorId">
 			<code>@Model.Name</code>
 			@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
-			@if (Model.IsRequest && Model.IsRequired)
+			@if (Model.IsRequired)
 			{
 				<span class="required">required</span>
-			}
-			else if (!Model.IsRequest && !Model.IsRequired)
-			{
-				<span class="optional">optional</span>
-			}
-			@if (Model.IsRecursive)
-			{
-				@(await RenderPartialAsync<_RecursiveBadge>())
 			}
 			@if (Model.ShowDeprecatedBadge)
 			{

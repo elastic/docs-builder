@@ -3,16 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.ApiExplorer.Model;
-using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <summary>
-/// A page section heading. <paramref name="Route"/> adds the operation-page section navigation
-/// buttons; <paramref name="ContentTypeBadge"/> adds a content-type badge next to the title.
+/// A page section heading. <paramref name="ContentTypeBadge"/> adds a content-type badge next to the title.
 /// </summary>
 public record SectionHeader(string Title, string Anchor, string? Route = null, string? ContentTypeBadge = null);
 

@@ -29,19 +29,6 @@ public class SimpleMarkdownNavigationItemTests
 	}
 
 	[Theory]
-	[InlineData("knn-guide.v9.md", "knn-guide")]
-	[InlineData("migration-from-v7.v8.md", "migration-from-v7")]
-	public void CreateSlugFromFile_StripsVersionSuffix(string fileName, string expectedSlug)
-	{
-		var fileSystem = new MockFileSystem();
-		var file = fileSystem.FileInfo.New($"/docs/{fileName}");
-
-		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(file);
-
-		slug.Should().Be(expectedSlug);
-	}
-
-	[Theory]
 	[InlineData("types", "types")]
 	[InlineData("group", "group")]
 	[InlineData("operation", "operation")]
