@@ -13,7 +13,8 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void CliReferenceRefReadsTitleOverrides()
 	{
-		const string yaml = """
+		const string yaml =
+			"""
 			project: test
 			toc:
 			  - cli: cli/schema.json
@@ -43,22 +44,17 @@ public class PhysicalDocsetTests
 		docSet.DevDocs.Should().BeTrue();
 		docSet.Features.PrimaryNav.Should().BeFalse();
 
-		docSet.CrossLinks.Should().ContainSingle().Which.Should().Be("docs-content");
+		docSet.CrossLinks.Should().Equal("docs-content", "elasticsearch");
 		docSet.Exclude.Should().ContainSingle().Which.Should().Be("_*.md");
 		docSet.Subs.Should().NotBeEmpty();
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
-		docSet.Api.Should().HaveCount(6);
-
-		docSet.Api["elasticsearch"].SingleEntry!.Spec.Should().Be("elasticsearch.json");
-		docSet.Api["elasticsearch"].SingleEntry!.Repository.Should().Be("elastic/elasticsearch-specification");
-		docSet.Api["elasticsearch-serverless"].SingleEntry!.Repository.Should().Be("elastic/elasticsearch-specification");
-		docSet.Api["kibana"].SingleEntry!.Spec.Should().Be("kibana.yaml");
-		docSet.Api["kibana"].SingleEntry!.Repository.Should().Be("elastic/kibana");
-		docSet.Api["kibana"].SingleEntry!.Children.Should().ContainSingle(c => c.File == "kibana-api-overview.md");
-		docSet.Api["kibana-serverless"].SingleEntry!.Repository.Should().Be("elastic/kibana");
-		docSet.Api["cloud-connect"].SingleEntry!.Repository.Should().Be("elastic/cloud-connected-api");
-		docSet.Api["cloud-serverless"].SingleEntry!.Repository.Should().Be("elastic/serverless-api-specification");
+		docSet.Api.Should().ContainKey("docs-builder-elasticsearch");
+		var apiEntry = docSet.Api["docs-builder-elasticsearch"].SingleEntry;
+		apiEntry.Should().NotBeNull();
+		apiEntry.Spec.Should().Be("elasticsearch.json");
+		apiEntry.Product.Should().Be("elasticsearch");
+		apiEntry.Repository.Should().Be("elastic/elasticsearch-specification");
 
 		docSet.TableOfContents.Should().NotBeEmpty();
 
@@ -106,7 +102,10 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var documentationFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "documentation");
+		var documentationFolder = docSet
+			.TableOfContents
+			.OfType<FolderRef>()
+			.First(f => f.PathRelativeToDocumentationSet == "documentation");
 		documentationFolder.Children.Should().NotBeEmpty();
 
 		var nestedFolders = documentationFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
@@ -128,7 +127,9 @@ public class PhysicalDocsetTests
 		var yaml = File.ReadAllText(docsetPath);
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
 
-		var fileWithChildren = docSet.TableOfContents.OfType<FileRef>()
+		var fileWithChildren = docSet
+			.TableOfContents
+			.OfType<FileRef>()
 			.FirstOrDefault(f => f.PathRelativeToDocumentationSet == "cross-links.md" && f.Children.Count > 0);
 
 		fileWithChildren.Should().NotBeNull();

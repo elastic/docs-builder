@@ -16,11 +16,13 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// <summary>
 /// Tests for the <c>changelog bundle</c> command sourcing its individual changelog entries from the
 /// public CDN (the default when no <c>--directory</c> is passed and bundle.use_local_changelogs is false).
+/// Probe-based: one GET per PR number keyed as <c>{pr}.yaml</c>; no pool registry consulted.
 /// </summary>
 public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
 	// language=yaml
-	private const string EntryAlpha = """
+	private const string EntryAlpha =
+		"""
 		title: Alpha
 		type: feature
 		products:
@@ -32,7 +34,8 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		""";
 
 	// language=yaml
-	private const string EntryBravo = """
+	private const string EntryBravo =
+		"""
 		title: Bravo
 		type: feature
 		products:
@@ -43,72 +46,74 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		  - https://github.com/elastic/elasticsearch/pull/999
 		""";
 
-	// language=json
+	// language=yaml
+	private static string MarkerFor(int parentPr) => $"link: \"{parentPr}\"\n";
+
 	private const string RegistryJson =
+		/*lang=json,strict*/
 		"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-alpha.yaml" }, { "file": "2-bravo.yaml" } ] }""";
 
-	private static StubHandler RegistryHandler() => new(req =>
-	{
-		var path = req.RequestUri!.AbsolutePath;
-		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-			return Json(RegistryJson);
-		if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
-			return Yaml(EntryAlpha);
-		if (path.EndsWith("2-bravo.yaml", StringComparison.Ordinal))
-			return Yaml(EntryBravo);
-		return new HttpResponseMessage(HttpStatusCode.NotFound);
-	});
+	private static StubHandler ProbeHandler() =>
+		new(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/100.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("/999.yaml", StringComparison.Ordinal))
+				return Yaml(EntryBravo);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
 
 	// No-op sleeper so any entry retry stays instant in tests.
 	private static CdnChangelogEntryFetcher Fetcher(ITestOutputHelper output, StubHandler handler) =>
 		new(new TestLoggerFactory(output), handler, sleep: (_, _) => Task.CompletedTask);
 
-	private CdnChangelogEntryFetcher Fetcher() => Fetcher(Output, RegistryHandler());
+	private CdnChangelogEntryFetcher Fetcher() => Fetcher(Output, ProbeHandler());
 
-	private string OutputPath() =>
-		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+	private string OutputPath() => FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 
 	[Fact]
-	public async Task OptionMode_RepoResolvable_SourcesAllEntriesFromRepoPoolOnCdn()
+	public async Task OptionMode_RepoResolvable_ProbesEntriesByPrNumber()
 	{
-		// Under the artifact-root layout the CDN entry pool is keyed by the authoring repo, not the
-		// target product. A resolvable repo (here via --repo) is what enables CDN sourcing.
-		var handler = RegistryHandler();
+		// Probe-based: each PR URL is probed as {pr}.yaml directly; no registry.json is read.
+		var handler = ProbeHandler();
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/999"],
 			Output = output,
 			Repo = "elasticsearch"
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		// Entries are sourced from the authoring pool, with org/branch defaulting: changelog/{org}/{repo}/{branch}/...
-		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		// Entries are probed by PR number from the authoring pool.
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/100.yaml", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/999.yaml", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().NotContain(p => p.Contains("registry.json", StringComparison.Ordinal));
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Alpha");
 		bundle.Should().Contain("Bravo");
-		bundle.Should().Contain("name: 1-alpha.yaml");
 	}
 
 	[Fact]
-	public async Task OptionMode_OwnerAndBranchOverride_SourcesFromThatPoolOnCdn()
+	public async Task OptionMode_OwnerAndBranchOverride_ProbesFromThatPool()
 	{
-		// Explicit owner/branch select a specific pool; the branch is stored verbatim (dots kept).
-		var handler = RegistryHandler();
+		var handler = ProbeHandler();
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
 			Output = output,
 			Owner = "acme-corp",
 			Repo = "elasticsearch",
@@ -117,44 +122,54 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
-		handler.RequestedPaths.Should().Contain("/changelog/acme-corp/elasticsearch/8.x/registry.json");
+		handler
+			.RequestedPaths
+			.Should()
+			.Contain(
+				p => p.Contains("/acme-corp/elasticsearch/8.x/", StringComparison.Ordinal) && p.EndsWith(
+					"/100.yaml",
+					StringComparison.Ordinal
+				)
+			);
 	}
 
 	[Fact]
-	public async Task OptionMode_OwnerFromCombinedRepo_SourcesFromThatPool()
+	public async Task OptionMode_OwnerFromCombinedRepo_ProbesFromThatPool()
 	{
-		// When --repo is given in owner/repo form and no explicit owner is set, the owner segment must be
-		// taken from the repo prefix (not defaulted to elastic), so the CDN pool path stays correct.
-		var handler = RegistryHandler();
+		var handler = ProbeHandler();
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Prs = ["https://github.com/elastic/widget/pull/100"],
 			Output = output,
 			Repo = "acme-corp/widget"
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
-		handler.RequestedPaths.Should().Contain("/changelog/acme-corp/widget/main/registry.json");
+		handler.RequestedPaths.Should().Contain(p => p.Contains("/acme-corp/widget/main/", StringComparison.Ordinal));
 	}
 
 	[Fact]
 	public async Task OptionMode_NoResolvableRepo_FallsBackToLocal()
 	{
-		// With no --repo, no bundle.repo in config, and no git-remote resolution at the service layer, the
-		// authoring repo is unresolvable. With no --directory and no use_local_changelogs, the bundler
-		// still falls back to local folder sourcing rather than hitting the CDN.
 		var localDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		FileSystem.Directory.CreateDirectory(localDir);
 		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(localDir, "1-local.yaml"), EntryAlpha, TestContext.Current.CancellationToken);
+			FileSystem.Path.Join(localDir, "1-local.yaml"),
+			EntryAlpha,
+			TestContext.Current.CancellationToken
+		);
 
 		var configContent =
 			$"""
@@ -165,7 +180,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
-		var handler = RegistryHandler();
+		var handler = ProbeHandler();
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
@@ -173,7 +188,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		handler.RequestedPaths.Should().BeEmpty("local fallback must not reach the CDN");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
@@ -183,12 +200,13 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	[Fact]
 	public async Task OptionMode_UseLocalChangelogs_ForcesLocalEvenWithResolvableRepo()
 	{
-		// use_local_changelogs is the explicit opt-out: even when the authoring repo resolves (bundle.repo),
-		// entries are read from the local folder and the CDN is never touched.
 		var localDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		FileSystem.Directory.CreateDirectory(localDir);
 		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(localDir, "1-local.yaml"), EntryAlpha, TestContext.Current.CancellationToken);
+			FileSystem.Path.Join(localDir, "1-local.yaml"),
+			EntryAlpha,
+			TestContext.Current.CancellationToken
+		);
 
 		var configContent =
 			$"""
@@ -201,7 +219,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
-		var handler = RegistryHandler();
+		var handler = ProbeHandler();
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
@@ -214,7 +232,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		handler.RequestedPaths.Should().BeEmpty("use_local_changelogs must not reach the CDN");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
@@ -222,45 +242,29 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	}
 
 	[Fact]
-	public async Task RegistryFailure_FailsBundle()
+	public async Task CdnAll_ReturnsError()
 	{
-		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output),
-			new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)), sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher());
 
-		var input = new BundleChangelogsArguments
-		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
-			Output = OutputPath(),
-			Repo = "elasticsearch"
-		};
+		var input = new BundleChangelogsArguments { All = true, Output = OutputPath(), Repo = "elasticsearch" };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("registry"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--all") && d.Message.Contains("--force-local"));
 	}
 
 	[Fact]
-	public async Task EntryMissingAfterRetries_FailsBundle()
+	public async Task CdnInputProducts_ReturnsError()
 	{
-		// The registry lists two entries but the CDN never serves one of them. After the retry budget is
-		// spent the bundle must fail rather than silently omit the missing release entry.
-		var handler = new StubHandler(req =>
-		{
-			var path = req.RequestUri!.AbsolutePath;
-			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-				return Json(RegistryJson);
-			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
-				return Yaml(EntryAlpha);
-			return new HttpResponseMessage(HttpStatusCode.NotFound); // 2-bravo.yaml never propagates
-		});
-		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, maxAttempts: 2, sleep: (_, _) => Task.CompletedTask);
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher());
 
 		var input = new BundleChangelogsArguments
 		{
-			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }],
 			Output = OutputPath(),
 			Repo = "elasticsearch"
 		};
@@ -268,7 +272,248 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("2-bravo.yaml"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--input-products") && d.Message.Contains("--force-local"));
+	}
+
+	[Fact]
+	public async Task CdnIssues_ReturnsError()
+	{
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, Fetcher());
+
+		var input = new BundleChangelogsArguments
+		{
+			Issues = ["https://github.com/elastic/elasticsearch/issues/42"],
+			Output = OutputPath(),
+			Repo = "elasticsearch"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("--issues") && d.Message.Contains("--force-local"));
+	}
+
+	[Fact]
+	public async Task ProbeMiss_WarnsAndSkips()
+	{
+		// A 404 probe for a PR with no changelog entry warns and skips; the other entry is still included.
+		// One request per PR (no retries on 404).
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/100.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			return new HttpResponseMessage(HttpStatusCode.NotFound); // 999 has no entry
+		});
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var output = OutputPath();
+
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/999"],
+				Output = output,
+				Repo = "elasticsearch"
+			},
+			TestContext.Current.CancellationToken
+		);
+
+		result.Should().BeTrue("probe miss is a warn, not a fatal error");
+		Collector.Errors.Should().Be(0);
+		// 404 is authoritative on the probe path — not retried.
+		handler
+			.RequestedPaths
+			.Count(p => p.EndsWith("/999.yaml", StringComparison.Ordinal))
+			.Should()
+			.Be(1, "404 must not be retried on the probe path");
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		bundle.Should().Contain("Alpha", "the entry found by probe must appear in the bundle");
+	}
+
+	[Fact]
+	public async Task ProbedEntry_5xxTransient_Retried()
+	{
+		// A transient 5xx on the probe path uses the retry budget; the final content is returned.
+		var callCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.Contains("/100.yaml", StringComparison.Ordinal))
+			{
+				callCount++;
+				if (callCount < 3)
+					return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+				return Yaml(EntryAlpha);
+			}
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var fetcher = new CdnChangelogEntryFetcher(
+			new TestLoggerFactory(Output),
+			handler,
+			maxAttempts: 4,
+			sleep: (_, _) => Task.CompletedTask
+		);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+				Output = OutputPath(),
+				Repo = "elasticsearch"
+			},
+			TestContext.Current.CancellationToken
+		);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		callCount.Should().BeGreaterThan(1, "5xx must be retried");
+	}
+
+	[Fact]
+	public async Task MarkerEntry_ResolvesDepthOne()
+	{
+		// PR 200 is a marker pointing to PR 100 (the primary). Bundling PR 200 should resolve to the Alpha entry.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/100.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("/200.yaml", StringComparison.Ordinal))
+				return Yaml(MarkerFor(100));
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+
+		var output = OutputPath();
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
+				Output = output,
+				Repo = "elasticsearch"
+			},
+			TestContext.Current.CancellationToken
+		);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		bundle.Should().Contain("Alpha", "the marker must resolve to its parent entry");
+		bundle.Should().NotContain("link:", "the marker itself must not appear in the output");
+	}
+
+	[Fact]
+	public async Task MarkerEntry_DuplicateMarkersToSameParent_OneEntryInBundle()
+	{
+		// PRs 200 and 201 are both markers for PR 100. Bundling both should yield one Alpha entry.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/100.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("/200.yaml", StringComparison.Ordinal) || path.EndsWith("/201.yaml", StringComparison.Ordinal))
+				return Yaml(MarkerFor(100));
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+
+		var output = OutputPath();
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Prs = ["https://github.com/elastic/elasticsearch/pull/200", "https://github.com/elastic/elasticsearch/pull/201"],
+				Output = output,
+				Repo = "elasticsearch"
+			},
+			TestContext.Current.CancellationToken
+		);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		bundle.Split("title: Alpha").Length.Should().Be(2, "exactly one Alpha entry must appear");
+	}
+
+	[Fact]
+	public async Task MarkerEntry_Chain_FailsBundle()
+	{
+		// Marker chains (marker → marker) are hard errors.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/200.yaml", StringComparison.Ordinal))
+				return Yaml(MarkerFor(100));
+			if (path.EndsWith("/100.yaml", StringComparison.Ordinal))
+				return Yaml(MarkerFor(99)); // 100 is also a marker
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
+				Output = OutputPath(),
+				Repo = "elasticsearch"
+			},
+			TestContext.Current.CancellationToken
+		);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Marker chain"));
+	}
+
+	[Fact]
+	public async Task MarkerEntry_ParentMissing_FailsBundle()
+	{
+		// A marker whose parent doesn't exist is a hard error (the pipeline promises the parent exists).
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/200.yaml", StringComparison.Ordinal))
+				return Yaml(MarkerFor(100));
+			return new HttpResponseMessage(HttpStatusCode.NotFound); // 100.yaml missing
+		});
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Prs = ["https://github.com/elastic/elasticsearch/pull/200"],
+				Output = OutputPath(),
+				Repo = "elasticsearch"
+			},
+			TestContext.Current.CancellationToken
+		);
+
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("marker") && d.Message.Contains("100"));
 	}
 
 	[Fact]
@@ -281,8 +526,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  output_directory: PLACEHOLDER
 			  owner: elastic
@@ -290,29 +534,29 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			    es-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} {lifecycle}"
-			""".Replace("PLACEHOLDER", outputDir);
+			""".Replace(
+			"PLACEHOLDER",
+			outputDir
+		);
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		var releaseBody = "* Alpha by @user in https://github.com/elastic/elasticsearch/pull/100\n";
-		A.CallTo(() => releaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.3.0", TestContext.Current.CancellationToken))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = releaseBody });
+		A.CallTo(
+			() => releaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.3.0", TestContext.Current.CancellationToken)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = releaseBody });
 
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, releaseService, Fetcher());
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-release",
-			ProfileArgument = "9.3.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -320,6 +564,196 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Alpha");
 		bundle.Should().NotContain("Bravo");
+	}
+
+	// language=yaml
+	private const string NoteKnownIssueMain =
+		"""
+		title: Known issue on main
+		type: known-issue
+		products:
+		  - product: elasticsearch
+		    versions:
+		      - 9.3.0
+		    lifecycle: ga
+		""";
+
+	// language=yaml
+	private const string NoteKnownIssue94 =
+		"""
+		title: Known issue on 9.4 branch (backport)
+		type: known-issue
+		products:
+		  - product: elasticsearch
+		    versions:
+		      - 9.3.0
+		    lifecycle: ga
+		""";
+
+	// language=yaml
+	private const string NoteKnownIssueFeature =
+		"""
+		title: Known issue on feature branch
+		type: known-issue
+		products:
+		  - product: elasticsearch
+		    versions:
+		      - 9.3.0
+		    lifecycle: ga
+		""";
+
+	[Fact]
+	public async Task BackportCollision_MainBranchWins_WarnAndKeepMain()
+	{
+		// notes-9.3.0.json lists both main/note-known-issue.yml and 9.4/note-known-issue.yml.
+		// The fetcher requests note-known-issue.yml twice (same leaf URL), returning main content first
+		// and 9.4-branch content second. The backport rule must keep the main copy and warn about the 9.4 copy.
+		var callCount = new Dictionary<string, int>(StringComparer.Ordinal);
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/
+					"""{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}"""
+				);
+			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
+			{
+				callCount.TryGetValue(path, out var n);
+				callCount[path] = n + 1;
+				// First fetch → main content; second fetch → 9.4-branch content (simulates differing backport content).
+				return n == 0 ? Yaml(NoteKnownIssueMain) : Yaml(NoteKnownIssue94);
+			}
+			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("2-bravo.yaml", StringComparison.Ordinal))
+				return Yaml(EntryBravo);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+			Output = output,
+			Repo = "elasticsearch",
+			OutputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }]
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		// Only the main-branch note title should appear once.
+		bundle.Should().Contain("Known issue on main");
+		bundle.Should().NotContain("Known issue on 9.4 branch");
+	}
+
+	[Fact]
+	public async Task BackportCollision_NoMainOrMaster_KeepsOrdinalFirst()
+	{
+		// When neither branch is main/master, the alphabetically-first path wins.
+		// "9.4/note-known-issue.yml" < "feature/note-known-issue.yml" lexicographically.
+		var callCount = new Dictionary<string, int>(StringComparer.Ordinal);
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/
+					"""{"schema_version":1,"notes":[{"path":"9.4/note-known-issue.yml","bundle_seq":0},{"path":"feature/note-known-issue.yml","bundle_seq":0}]}"""
+				);
+			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
+			{
+				callCount.TryGetValue(path, out var n);
+				callCount[path] = n + 1;
+				return n == 0 ? Yaml(NoteKnownIssue94) : Yaml(NoteKnownIssueFeature);
+			}
+			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("2-bravo.yaml", StringComparison.Ordinal))
+				return Yaml(EntryBravo);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+			Output = output,
+			Repo = "elasticsearch",
+			OutputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }]
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		// "9.4/note-known-issue.yml" sorts before "feature/note-known-issue.yml".
+		bundle.Should().Contain("Known issue on 9.4 branch");
+		bundle.Should().NotContain("Known issue on feature branch");
+	}
+
+	[Fact]
+	public async Task BackportCollision_IdenticalContent_ChecksumDedupHandlesIt()
+	{
+		// Same leaf on two branches, identical content → same checksum → existing checksum dedup
+		// removes the duplicate; the backport rule emits no warning since DeduplicateNotesByLeaf
+		// sees two entries but the second is absorbed by seen.Add(checksum) before reaching combined.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(RegistryJson);
+			if (path.EndsWith("notes-9.3.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/
+					"""{"schema_version":1,"notes":[{"path":"main/note-known-issue.yml","bundle_seq":0},{"path":"9.4/note-known-issue.yml","bundle_seq":0}]}"""
+				);
+			if (path.EndsWith("note-known-issue.yml", StringComparison.Ordinal))
+				return Yaml(NoteKnownIssueMain); // identical for both branch fetches
+			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
+				return Yaml(EntryAlpha);
+			if (path.EndsWith("2-bravo.yaml", StringComparison.Ordinal))
+				return Yaml(EntryBravo);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+
+		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, null, null, fetcher);
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+			Output = output,
+			Repo = "elasticsearch",
+			OutputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "ga" }]
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+
+		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
+		bundle.Should().Contain("Known issue on main");
+		// Note appears exactly once (not duplicated).
+		bundle.Split("Known issue on main", StringSplitOptions.None).Length.Should().Be(2, "note must appear exactly once");
 	}
 
 	private static HttpResponseMessage Json(string body) =>

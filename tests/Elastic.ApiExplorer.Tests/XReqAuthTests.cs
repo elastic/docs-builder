@@ -12,13 +12,13 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class XReqAuthTests
 {
-	private static string TestDataPath(string fileName) =>
-		Path.Join(AppContext.BaseDirectory, "TestData", fileName);
+	private static string TestDataPath(string fileName) => Path.Join(AppContext.BaseDirectory, "TestData", fileName);
 
 	[Fact]
 	public async Task TryGetPrerequisiteLines_MinimalOpenApi3Spec_MatchesElasticsearchShape()
 	{
-		var json = /*lang=json,strict*/ """
+		var json = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.0",
 		  "info": { "title": "t", "version": "1" },
@@ -42,10 +42,7 @@ public class XReqAuthTests
 			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current.CancellationToken);
 			var loaded = await OpenApiDocument.LoadAsync(
 				jsonPath,
-				new OpenApiReaderSettings
-				{
-					LeaveStreamOpen = false
-				},
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
 				TestContext.Current.CancellationToken
 			);
 			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
@@ -69,7 +66,8 @@ public class XReqAuthTests
 	[Fact]
 	public async Task TryGetPrerequisiteLines_EmptyArray_ReturnsNull()
 	{
-		var json = /*lang=json,strict*/ """
+		var json = /*lang=json,strict*/
+			"""
 		{
 		  "openapi": "3.0.0",
 		  "info": { "title": "t", "version": "1" },
@@ -90,16 +88,15 @@ public class XReqAuthTests
 			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current.CancellationToken);
 			var loaded = await OpenApiDocument.LoadAsync(
 				jsonPath,
-				new OpenApiReaderSettings
-				{
-					LeaveStreamOpen = false
-				},
+				new OpenApiReaderSettings { LeaveStreamOpen = false },
 				TestContext.Current.CancellationToken
 			);
 			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
 
-			OpenApiXReqAuthParser.TryGetPrerequisiteLines(op, null, "/a", "op-a")
-				.Should().BeNull("empty x-req-auth should not show Prerequisites");
+			OpenApiXReqAuthParser
+				.TryGetPrerequisiteLines(op, null, "/a", "op-a")
+				.Should()
+				.BeNull("empty x-req-auth should not show Prerequisites");
 		}
 		finally
 		{
@@ -116,10 +113,7 @@ public class XReqAuthTests
 
 		var loaded = await OpenApiDocument.LoadAsync(
 			specPath,
-			new OpenApiReaderSettings
-			{
-				LeaveStreamOpen = false
-			},
+			new OpenApiReaderSettings { LeaveStreamOpen = false },
 			TestContext.Current.CancellationToken
 		);
 		var doc = loaded.Document!;
@@ -130,12 +124,7 @@ public class XReqAuthTests
 		a.Should().OnlyContain(s => !string.IsNullOrWhiteSpace(s));
 
 		var getIndicesIndex = doc.Paths!["/_cat/indices/{index}"].Operations![HttpMethod.Get]!;
-		var b = OpenApiXReqAuthParser.TryGetPrerequisiteLines(
-			getIndicesIndex,
-			null,
-			"/_cat/indices/{index}",
-			getIndicesIndex.OperationId
-		);
+		var b = OpenApiXReqAuthParser.TryGetPrerequisiteLines(getIndicesIndex, null, "/_cat/indices/{index}", getIndicesIndex.OperationId);
 		b.Should().NotBeNull();
 		b!.Should().NotBeEmpty();
 	}
@@ -148,10 +137,7 @@ public class XReqAuthTests
 
 		var loaded = await OpenApiDocument.LoadAsync(
 			specPath,
-			new OpenApiReaderSettings
-			{
-				LeaveStreamOpen = false
-			},
+			new OpenApiReaderSettings { LeaveStreamOpen = false },
 			TestContext.Current.CancellationToken
 		);
 		var doc = loaded.Document!;
@@ -173,12 +159,7 @@ public class XReqAuthTests
 					opLimitReached = true;
 					break;
 				}
-				var lines = OpenApiXReqAuthParser.TryGetPrerequisiteLines(
-					httpOp.Value,
-					null,
-					p.Key,
-					httpOp.Value.OperationId
-				);
+				var lines = OpenApiXReqAuthParser.TryGetPrerequisiteLines(httpOp.Value, null, p.Key, httpOp.Value.OperationId);
 				lines.Should().BeNull("sample Kibana-style spec has no x-req-auth on sampled operations");
 				opCount++;
 			}

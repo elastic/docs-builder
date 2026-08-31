@@ -31,15 +31,16 @@ public class HtmlWriter(
 	INavigationHtmlWriter? navigationHtmlWriter = null,
 	ILegacyUrlMapper? legacyUrlMapper = null,
 	IDocumentInferrerService? documentInferrerService = null
-)
-	: IMarkdownStringRenderer
+) : IMarkdownStringRenderer
 {
 	private DocumentationSet DocumentationSet { get; } = documentationSet;
 
-	private INavigationHtmlWriter NavigationHtmlWriter { get; } =
-		navigationHtmlWriter ?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Navigation);
+	private INavigationHtmlWriter NavigationHtmlWriter { get; } = navigationHtmlWriter
+		?? new IsolatedBuildNavigationHtmlWriter(documentationSet.Context, documentationSet.Navigation);
 
-	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(new EmbeddedOrPhysicalFileProvider(documentationSet.Context));
+	private StaticFileContentHashProvider StaticFileContentHashProvider { get; } = new(
+		new EmbeddedOrPhysicalFileProvider(documentationSet.Context)
+	);
 	private ILegacyUrlMapper LegacyUrlMapper { get; } = legacyUrlMapper ?? new NoopLegacyUrlMapper();
 	private INavigationTraversable NavigationTraversable { get; } = positionalNavigation ?? documentationSet;
 
@@ -47,8 +48,7 @@ public class HtmlWriter(
 	private IPageViewFactory PageViewFactory { get; } = pageViewFactory ?? new DefaultPageViewFactory();
 
 	/// <inheritdoc />
-	public string Render(string markdown, IFileInfo? source) =>
-		RenderCore(markdown, source, stripFirstHeadingLevel1: true);
+	public string Render(string markdown, IFileInfo? source) => RenderCore(markdown, source, stripFirstHeadingLevel1: true);
 
 	/// <inheritdoc />
 	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
@@ -91,16 +91,17 @@ public class HtmlWriter(
 		// For hidden nav items (e.g. individual detection rule pages) there is no rendered nav link,
 		// so JS can't mark anything as current. Point it at the nearest visible ancestor instead.
 		// Island pages have their own sidebar nav so JS uses window.location directly — skip the parent lookup.
-		var navActiveUrl = current.Hidden && current.FindIslandRoot() is null
-			? parents.FirstOrDefault(p => !p.Hidden)?.Url
-			: null;
+		var navActiveUrl = current.Hidden && current.FindIslandRoot() is null ? parents.FirstOrDefault(p => !p.Hidden)?.Url : null;
 		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
 		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable)
 		{
 			var checkoutDirectory = DocumentationSet.Context.DocumentationCheckoutDirectory;
-			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
+			var relativeSourcePath = Path.GetRelativePath(
+				checkoutDirectory.FullName,
+				DocumentationSet.Context.DocumentationSourceDirectory.FullName
+			);
 			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
 			editUrl = $"https://github.com/{gitHubRepo}/edit/{branch}/{path}";
 		}
@@ -144,29 +145,29 @@ public class HtmlWriter(
 		// Get versioning from inference result's product
 		var pageVersioning = inference.Product?.VersioningSystem
 			?? DocumentationSet.Context.VersionsConfiguration?.GetVersioningSystem(VersioningSystemId.Stack)
-			?? throw new InvalidOperationException($"No versioning system available for page '{markdown.RelativePath}'. " +
-				"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined.");
+			?? throw new InvalidOperationException(
+				$"No versioning system available for page '{markdown.RelativePath}'. " +
+					"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined."
+			);
 
-		var currentBaseVersion = pageVersioning.IsVersionless
-			? null
-			: $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
+		var currentBaseVersion = pageVersioning.IsVersionless ? null : $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
 		//TODO should we even distinctby
 		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
 		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
 		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
 
-
 		// Git info for isolated header
 		var gitBranch = DocumentationSet.Context.Git.Branch;
 		var gitRef = DocumentationSet.Context.Git.Ref;
 		string? gitHubDocsUrl = null;
-		if (gitHubRepo is not null
-			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
+		if (gitHubRepo is not null && !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
 		{
 			var docsCheckoutDir = DocumentationSet.Context.DocumentationCheckoutDirectory;
-			var relativeDocsPath = Path.GetRelativePath(docsCheckoutDir.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName)
-				.Replace(Path.DirectorySeparatorChar, '/');
+			var relativeDocsPath = Path.GetRelativePath(
+				docsCheckoutDir.FullName,
+				DocumentationSet.Context.DocumentationSourceDirectory.FullName
+			).Replace(Path.DirectorySeparatorChar, '/');
 			gitHubDocsUrl = $"https://github.com/{gitHubRepo}/tree/{gitBranch}/{relativeDocsPath}";
 		}
 
@@ -191,7 +192,9 @@ public class HtmlWriter(
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",
-			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.ExcludeFromIndexing),
+			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true &&
+				(markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is
+					DetectionRuleFile || !current.ExcludeFromIndexing),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
 			Optimizely = DocumentationSet.Context.Optimizely,
@@ -217,11 +220,7 @@ public class HtmlWriter(
 			Cta = cta
 		});
 
-		return new RenderResult
-		{
-			Html = await slice.RenderAsync(cancellationToken: ctx)
-		};
-
+		return new RenderResult { Html = await slice.RenderAsync(cancellationToken: ctx) };
 	}
 
 	private BreadcrumbsList CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] crumbs)
@@ -229,12 +228,16 @@ public class HtmlWriter(
 		List<BreadcrumbListItem> breadcrumbItems = [];
 		var position = 1;
 		// Add parents
-		breadcrumbItems.AddRange(crumbs.Select(parent => new BreadcrumbListItem
-		{
-			Position = position++,
-			Name = parent.NavigationTitle,
-			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
-		}));
+		breadcrumbItems.AddRange(
+			crumbs.Select(
+				parent => new BreadcrumbListItem
+				{
+					Position = position++,
+					Name = parent.NavigationTitle,
+					Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
+				}
+			)
+		);
 		// Add current page
 		breadcrumbItems.Add(new BreadcrumbListItem
 		{
@@ -242,14 +245,16 @@ public class HtmlWriter(
 			Name = markdown.Title ?? markdown.NavigationTitle,
 			Item = null,
 		});
-		var breadcrumbsList = new BreadcrumbsList
-		{
-			ItemListElement = breadcrumbItems
-		};
+		var breadcrumbsList = new BreadcrumbsList { ItemListElement = breadcrumbItems };
 		return breadcrumbsList;
 	}
 
-	public async Task<MarkdownDocument> WriteAsync(IFileInfo outputFile, MarkdownFile markdown, IConversionCollector? collector, Cancel ctx = default)
+	public async Task<MarkdownDocument> WriteAsync(
+		IFileInfo outputFile,
+		MarkdownFile markdown,
+		IConversionCollector? collector,
+		Cancel ctx = default
+	)
 	{
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
@@ -266,9 +271,7 @@ public class HtmlWriter(
 			if (dir is not null && !writeFileSystem.Directory.Exists(dir))
 				_ = writeFileSystem.Directory.CreateDirectory(dir);
 
-			path = dir is null
-				? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html"
-				: Path.Join(dir, "index.html");
+			path = dir is null ? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html" : Path.Join(dir, "index.html");
 		}
 
 		var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
@@ -279,8 +282,6 @@ public class HtmlWriter(
 
 		return document;
 	}
-
-
 }
 
 public record RenderResult

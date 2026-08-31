@@ -28,11 +28,7 @@ public record ChangelogArtifactMetadata
 	public CreateRules? CreateRules { get; init; }
 }
 
-[JsonSourceGenerationOptions(
-	WriteIndented = true,
-	UseStringEnumConverter = true,
-	PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower
-)]
+[JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(ChangelogArtifactMetadata))]
 [JsonSerializable(typeof(CreateRules))]
 [JsonSerializable(typeof(FieldMode))]

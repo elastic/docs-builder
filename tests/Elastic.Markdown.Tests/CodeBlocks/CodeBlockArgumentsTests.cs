@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-
 using AwesomeAssertions;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
@@ -53,24 +52,26 @@ public class CodeBlockArgumentsClassTests
 	}
 }
 
-
 public abstract class CodeBlockArgumentsTests(
 	ITestOutputHelper output,
 	string language,
 	string arguments,
 	[LanguageInjection("csharp")] string code,
 	[LanguageInjection("markdown")] string? markdown = null
-)
-	: BlockTest<EnhancedCodeBlock>(output,
-		$"""
+) : BlockTest<EnhancedCodeBlock>(
+	output,
+	$"""
 		 ```{language} {arguments}
 		 {code}
 		 ```
 		 {markdown}
 		 """
-	);
+);
 
-public class DisabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "callouts=false",
+public class DisabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests(
+	output,
+	"csharp",
+	"callouts=false",
 	"""
 	var x = 1; <1>
 	var y = x - 2;
@@ -85,7 +86,10 @@ public class DisabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTest
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class EnabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "callouts=true",
+public class EnabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests(
+	output,
+	"csharp",
+	"callouts=true",
 	"""
 	var x = 1; <1>
 	""",
@@ -101,7 +105,10 @@ public class EnabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class EnabledSubstitutions(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "subs=true",
+public class EnabledSubstitutions(ITestOutputHelper output) : CodeBlockArgumentsTests(
+	output,
+	"csharp",
+	"subs=true",
 	"""
 	{{a-variable}}
 	""",
@@ -117,8 +124,10 @@ public class EnabledSubstitutions(ITestOutputHelper output) : CodeBlockArguments
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-
-public class DisabledSubstitutions(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "subs=false",
+public class DisabledSubstitutions(ITestOutputHelper output) : CodeBlockArgumentsTests(
+	output,
+	"csharp",
+	"subs=false",
 	"""
 	{{a-variable}}
 	""",
@@ -134,7 +143,10 @@ public class DisabledSubstitutions(ITestOutputHelper output) : CodeBlockArgument
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MultipleArguments(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "subs=true, callouts=false",
+public class MultipleArguments(ITestOutputHelper output) : CodeBlockArgumentsTests(
+	output,
+	"csharp",
+	"subs=true, callouts=false",
 	"""
 	{{a-variable}} <1>
 	""",
@@ -144,9 +156,7 @@ public class MultipleArguments(ITestOutputHelper output) : CodeBlockArgumentsTes
 )
 {
 	[Fact]
-	public void Render() => Html
-		.Should().Contain("This is a variable")
-		.And.Contain("&lt;1&gt;");
+	public void Render() => Html.Should().Contain("This is a variable").And.Contain("&lt;1&gt;");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);

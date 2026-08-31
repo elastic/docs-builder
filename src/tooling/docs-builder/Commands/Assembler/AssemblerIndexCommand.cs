@@ -44,10 +44,14 @@ internal sealed class AssemblerIndexCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
-		var service = new AssemblerIndexService(logFactory, configuration, configurationContext, githubActionsService, environmentVariables);
-		serviceInvoker.AddCommand(service,
-			async (s, col, ctx) => await s.Index(col, fs, es, environment, ctx)
+		var service = new AssemblerIndexService(
+			logFactory,
+			configuration,
+			configurationContext,
+			githubActionsService,
+			environmentVariables
 		);
+		serviceInvoker.AddCommand(service, async (s, col, ctx) => await s.Index(col, fs, es, environment, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 }

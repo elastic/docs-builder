@@ -12,7 +12,7 @@ namespace Elastic.Documentation.AppliesTo;
 /// <summary>
 /// JSON converter for ApplicableTo that serializes to a flat array of objects with:
 /// - type: stack, deployment, serverless, or product
-/// - sub-type: the property name (e.g., "self", "ece", "elasticsearch", "ecctl")
+/// - sub-type: the property name (e.g., "self", "ece", "elasticsearch", "vectordb", "ecctl")
 /// - lifecycle: the lifecycle value (if applicable)
 /// - version: the version value (if applicable)
 /// </summary>
@@ -131,7 +131,9 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 				Self = deploymentProps.TryGetValue("self", out var self) ? new AppliesCollection(self.ToArray()) : null,
 				Ece = deploymentProps.TryGetValue("ece", out var ece) ? new AppliesCollection(ece.ToArray()) : null,
 				Eck = deploymentProps.TryGetValue("eck", out var eck) ? new AppliesCollection(eck.ToArray()) : null,
-				Ess = deploymentProps.TryGetValue("ech", out var ess) || deploymentProps.TryGetValue("ess", out ess) ? new AppliesCollection(ess.ToArray()) : null
+				Ess = deploymentProps.TryGetValue("ech", out var ess) || deploymentProps.TryGetValue("ess", out ess)
+					? new AppliesCollection(ess.ToArray())
+					: null
 			};
 		}
 
@@ -142,7 +144,8 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			{
 				Elasticsearch = serverlessProps.TryGetValue("elasticsearch", out var es) ? new AppliesCollection(es.ToArray()) : null,
 				Observability = serverlessProps.TryGetValue("observability", out var obs) ? new AppliesCollection(obs.ToArray()) : null,
-				Security = serverlessProps.TryGetValue("security", out var sec) ? new AppliesCollection(sec.ToArray()) : null
+				Security = serverlessProps.TryGetValue("security", out var sec) ? new AppliesCollection(sec.ToArray()) : null,
+				VectorDatabase = serverlessProps.TryGetValue("vectordb", out var vdb) ? new AppliesCollection(vdb.ToArray()) : null
 			};
 		}
 
@@ -154,8 +157,9 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 
 			foreach (var (key, items) in productProps)
 			{
-				var property = productType.GetProperties()
-					.FirstOrDefault(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name == key);
+				var property = productType.GetProperties().FirstOrDefault(
+					p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name == key
+				);
 
 				property?.SetValue(productApplicability, new AppliesCollection(items.ToArray()));
 			}
@@ -196,6 +200,8 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 				WriteApplicabilityEntries(writer, "serverless", "observability", value.Serverless.Observability);
 			if (value.Serverless.Security != null)
 				WriteApplicabilityEntries(writer, "serverless", "security", value.Serverless.Security);
+			if (value.Serverless.VectorDatabase != null)
+				WriteApplicabilityEntries(writer, "serverless", "vectordb", value.Serverless.VectorDatabase);
 		}
 
 		// Product (simple)

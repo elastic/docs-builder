@@ -43,7 +43,8 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 				Inner = fs,
 				ConfigurationFile = internalDocsetPath,
 				Output = Path.Join(root, "codex-configuration-file-test-out")
-			});
+			}
+		);
 
 		var context = new BuildContext(collector, docFs, configurationContext);
 
@@ -70,11 +71,8 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var docFs = DocumentationFileSystem.Resolve(
 			fs.DirectoryInfo.New(repoPath),
-			new DocumentationScopeOptions
-			{
-				Inner = fs,
-				Output = Path.Join(root, "codex-configuration-file-fallback-test-out")
-			});
+			new DocumentationScopeOptions { Inner = fs, Output = Path.Join(root, "codex-configuration-file-fallback-test-out") }
+		);
 
 		var context = new BuildContext(collector, docFs, configurationContext);
 

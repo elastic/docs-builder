@@ -4,50 +4,50 @@
 {
 	if (item.Kind == NavigationRenderNodeKind.Leaf)
 	{
-		<li class="flex group/li pr-8 @(item.IsTopLevel ? "font-semibold mt-6" : "mt-4")">
-			<a href="@item.Url" class="sidebar-link nav-link">
-				<span>@item.NavigationTitle</span>
+		<li class="flex group/li">
+			<a href="@item.Url" class="sidebar-link nav-link nav-v2-link">
+				<span class="nav-v2-nav-text">@item.NavigationTitle</span>
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 			</a>
 		</li>
 	}
 	else if (item.Kind == NavigationRenderNodeKind.Island)
 	{
-		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
-				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")">
-					<span>@item.NavigationTitle</span>
+		<li class="nav-folder">
+			<div class="peer nav-folder-peer w-full">
+				<a href="@item.Url" class="sidebar-link nav-folder-link nav-v2-link">
+					<span class="nav-v2-nav-text">@item.NavigationTitle</span>
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
-				</a>
-				<a href="@item.Url" class="group/label flex mr-2 items-start">
-					<div class="nav-toggle-btn">
-						<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-double-down"/></svg>
-					</div>
+					<span class="nav-island-arrow" aria-hidden="true">
+						<svg class="nav-island-chevron" viewBox="0 0 16 16"><use href="#icon-chevron-limit-right"/></svg>
+					</span>
 				</a>
 			</div>
 		</li>
 	}
 	else
 	{
-		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
-				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")">
-					<span>@item.NavigationTitle</span>
-					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
-				</a>
+		<li class="nav-folder">
+			<div class="peer nav-folder-peer w-full">
 				@if (item.ShowToggle)
 				{
-					<label for="@item.Id" class="group/label flex mr-2 items-start">
-						<div class="nav-toggle-btn">
-							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
-						</div>
-						<input
-							id="@item.Id"
-							type="checkbox"
-							class="hidden"
-							aria-hidden="true">
-					</label>
+					<input
+						id="@item.Id"
+						type="checkbox"
+						class="hidden"
+						tabindex="-1"
+						aria-hidden="true">
 				}
+				<a href="@item.Url" class="sidebar-link nav-folder-link nav-v2-link">
+					<span class="nav-v2-nav-text">@item.NavigationTitle</span>
+					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
+					@if (item.ShowToggle)
+					{
+						<span class="nav-folder-chevron" aria-hidden="true">
+							<svg class="nav-chevron" viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
+						</span>
+					}
+				</a>
 			</div>
 			<ul class="nav-subtree">
 				@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))

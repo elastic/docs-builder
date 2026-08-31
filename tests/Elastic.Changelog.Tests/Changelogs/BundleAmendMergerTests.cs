@@ -13,17 +13,9 @@ public class BundleAmendMergerTests
 	[Fact]
 	public void MergeEntries_AppliesExclusionsBeforeAdditionsWithinAmend()
 	{
-		var parent = new List<BundledEntry>
-		{
-			CreateFileEntry("keep.yaml", "aaa"),
-			CreateFileEntry("remove.yaml", "bbb")
-		};
+		var parent = new List<BundledEntry> { CreateFileEntry("keep.yaml", "aaa"), CreateFileEntry("remove.yaml", "bbb") };
 
-		var amend = new Bundle
-		{
-			ExcludeEntries = [CreateFileEntry("remove.yaml", "bbb")],
-			Entries = [CreateFileEntry("add.yaml", "ccc")]
-		};
+		var amend = new Bundle { ExcludeEntries = [CreateFileEntry("remove.yaml", "bbb")], Entries = [CreateFileEntry("add.yaml", "ccc")] };
 
 		var merged = BundleAmendMerger.MergeEntries(parent, [amend]);
 
@@ -38,14 +30,8 @@ public class BundleAmendMergerTests
 	{
 		var parent = new List<BundledEntry> { CreateFileEntry("one.yaml", "1") };
 
-		var amend1 = new Bundle
-		{
-			Entries = [CreateFileEntry("two.yaml", "2")]
-		};
-		var amend2 = new Bundle
-		{
-			ExcludeEntries = [CreateFileEntry("one.yaml", "1")]
-		};
+		var amend1 = new Bundle { Entries = [CreateFileEntry("two.yaml", "2")] };
+		var amend2 = new Bundle { ExcludeEntries = [CreateFileEntry("one.yaml", "1")] };
 
 		var merged = BundleAmendMerger.MergeEntries(parent, [amend1, amend2]);
 
@@ -58,6 +44,8 @@ public class BundleAmendMergerTests
 	[InlineData("repo-9.3.0.amend-12.yml", "repo-9.3.0.yml")]
 	[InlineData("cloud-2025-11.AMEND-2.YAML", "cloud-2025-11.YAML")]
 	[InlineData("/releases/9.3.0.amend-1.yaml", "/releases/9.3.0.yaml")]
+	[InlineData("elasticsearch-9.3.0.amend-notes.yaml", "elasticsearch-9.3.0.yaml")]
+	[InlineData("cloud-2025-11.amend-notes.yml", "cloud-2025-11.yml")]
 	public void GetParentBundlePath_AmendFile_StripsAmendSuffix(string amendPath, string expectedParent) =>
 		BundleAmendMerger.GetParentBundlePath(amendPath).Should().Be(expectedParent);
 
@@ -65,15 +53,8 @@ public class BundleAmendMergerTests
 	[InlineData("9.3.0.yaml")]
 	[InlineData("9.3.0.amend-.yaml")]
 	[InlineData("9.3.0.amend-1.json")]
-	public void GetParentBundlePath_NonAmendFile_ReturnsNull(string path) =>
-		BundleAmendMerger.GetParentBundlePath(path).Should().BeNull();
+	public void GetParentBundlePath_NonAmendFile_ReturnsNull(string path) => BundleAmendMerger.GetParentBundlePath(path).Should().BeNull();
 
-	private static BundledEntry CreateFileEntry(string name, string checksum) => new()
-	{
-		File = new BundledFile
-		{
-			Name = name,
-			Checksum = checksum
-		}
-	};
+	private static BundledEntry CreateFileEntry(string name, string checksum) =>
+		new() { File = new BundledFile { Name = name, Checksum = checksum } };
 }

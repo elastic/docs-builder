@@ -69,8 +69,5 @@ public interface IGitHubCommitRangeService
 	/// Returns <c>null</c> after emitting an error when the range cannot be resolved
 	/// (unknown refs, missing credentials, API failures).
 	/// </summary>
-	Task<CommitRangeResolution?> ResolvePullRequestsAsync(
-		IDiagnosticsCollector collector,
-		CommitRangeArguments args,
-		Cancel ctx);
+	Task<CommitRangeResolution?> ResolvePullRequestsAsync(IDiagnosticsCollector collector, CommitRangeArguments args, Cancel ctx);
 }

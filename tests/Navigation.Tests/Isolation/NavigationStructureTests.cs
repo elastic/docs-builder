@@ -18,7 +18,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 	public void NavigationIndexIsSetCorrectly()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: first.md
@@ -43,7 +44,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 	public void CanQueryNavigationForBothInterfaceAndConcreteTypes()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: first.md
@@ -63,12 +65,14 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
 
 		// Query for all leaf items using the base interface type
-		var allLeafItems = navigation.NavigationItems.Concat([navigation.Index])
-			.SelectMany(item => item is INodeNavigationItem<IDocumentationFile, INavigationItem> node
-				? node.NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().Concat([node.Index])
-				: item is ILeafNavigationItem<IDocumentationFile> leaf
-					? [leaf]
-					: [])
+		var allLeafItems = navigation
+			.NavigationItems
+			.Concat([navigation.Index])
+			.SelectMany(
+				item => item is INodeNavigationItem<IDocumentationFile, INavigationItem> node
+					? node.NavigationItems.OfType<ILeafNavigationItem<IDocumentationFile>>().Concat([node.Index])
+					: item is ILeafNavigationItem<IDocumentationFile> leaf ? [leaf] : []
+			)
 			.ToList();
 
 		// All items are queryable as ILeafNavigationItem<IDocumentationFile> due to covariance
@@ -109,7 +113,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 	public async Task ComplexNestedStructureBuildsCorrectly()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'docs-builder'
 		           features:
 		             primary-nav: true
@@ -126,16 +131,21 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs/setup/advanced");
 		fileSystem.AddDirectory("/docs/setup/advanced/performance");
-		fileSystem.AddFile("/docs/setup/advanced/toc.yml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"/docs/setup/advanced/toc.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			toc:
 			  - file: index.md
 			  - toc: performance
-			"""));
+			"""
+			)
+		);
 
 		// language=yaml
-		var performanceTocYaml = """
+		var performanceTocYaml =
+			"""
 		                         toc:
 		                           - file: index.md
 		                           - file: tuning.md
@@ -151,7 +161,12 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 
 		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
 
@@ -170,7 +185,12 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var setupIndex = setupFolder.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		setupIndex.Url.Should().Be("/setup"); // index.md becomes /setup
 
-		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var advancedToc = setupFolder
+			.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
 		advancedToc.Url.Should().Be("/setup/advanced");
 		// Advanced TOC has index.md and the nested performance TOC as children
 		advancedToc.NavigationItems.Should().HaveCount(1);
@@ -178,7 +198,12 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var advancedIndex = advancedToc.Index.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		advancedIndex.Url.Should().Be("/setup/advanced");
 
-		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var performanceToc = advancedToc
+			.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
 		performanceToc.Url.Should().Be("/setup/advanced/performance");
 		performanceToc.NavigationItems.Should().HaveCount(2);
 
@@ -205,7 +230,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		// without duplicating path segments (e.g., /setup/advanced not /setup/setup/advanced)
 
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: setup
@@ -215,14 +241,16 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		           """;
 
 		// language=yaml
-		var advancedTocYaml = """
+		var advancedTocYaml =
+			"""
 		                      toc:
 		                        - file: index.md
 		                        - toc: performance
 		                      """;
 
 		// language=yaml
-		var performanceTocYaml = """
+		var performanceTocYaml =
+			"""
 		                         toc:
 		                           - file: index.md
 		                         """;
@@ -245,14 +273,24 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		// Setup folder has index.md and advanced TOC
 		setupFolder.NavigationItems.Should().HaveCount(1);
 
-		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var advancedToc = setupFolder
+			.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
 		// Verify the URL is /setup/advanced and not /setup/setup/advanced
 		advancedToc.Url.Should().Be("/setup/advanced");
 
 		// Advanced TOC has index.md and performance TOC
 		advancedToc.NavigationItems.Should().HaveCount(1);
 
-		var performanceToc = advancedToc.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var performanceToc = advancedToc
+			.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
 		// Verify the URL is /setup/advanced/performance and not /setup/advanced/setup/advanced/performance
 		performanceToc.Url.Should().Be("/setup/advanced/performance");
 
@@ -263,7 +301,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 	public void AllNavigationItemsHaveNavigationRootSet()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -280,7 +319,8 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		           """;
 
 		// language=yaml
-		var advancedTocYaml = """
+		var advancedTocYaml =
+			"""
 		                      toc:
 		                        - file: index.md
 		                        - file: configuration.md
@@ -295,10 +335,16 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 
 		// Helper to recursively visit all navigation items
 		var allItems = new List<INavigationItem>();
+
 		void VisitNavigationItems(INavigationItem item)
 		{
 			allItems.Add(item);
@@ -324,8 +370,12 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 			item.NavigationRoot.Should().NotBeNull($"NavigationRoot should be set for {item.GetType().Name} at URL: {item.Url}");
 
 			// Verify NavigationRoot is actually a root item
-			item.NavigationRoot.Should().BeAssignableTo<IRootNavigationItem<IDocumentationFile, INavigationItem>>(
-				$"NavigationRoot should be a root navigation item for {item.GetType().Name} at URL: {item.Url}");
+			item
+				.NavigationRoot
+				.Should()
+				.BeAssignableTo<IRootNavigationItem<IDocumentationFile, INavigationItem>>(
+					$"NavigationRoot should be a root navigation item for {item.GetType().Name} at URL: {item.Url}"
+				);
 		}
 
 		// Verify specific cases:
@@ -343,11 +393,22 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		// According to url-building.md: "In isolated builds the NavigationRoot is always the DocumentationSetNavigation"
 		// ALL items including TOCs should point to DocumentationSetNavigation as NavigationRoot
-		var advancedToc = setupFolder.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
-		advancedToc.NavigationRoot.Should().BeSameAs(navigation, "TOC NavigationRoot should be DocumentationSetNavigation in isolated builds");
+		var advancedToc = setupFolder
+			.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
+		advancedToc
+			.NavigationRoot
+			.Should()
+			.BeSameAs(navigation, "TOC NavigationRoot should be DocumentationSetNavigation in isolated builds");
 
 		var advancedIndex = advancedToc.NavigationItems.First();
-		advancedIndex.NavigationRoot.Should().BeSameAs(navigation, "TOC children should point to DocumentationSetNavigation in isolated builds");
+		advancedIndex
+			.NavigationRoot
+			.Should()
+			.BeSameAs(navigation, "TOC children should point to DocumentationSetNavigation in isolated builds");
 
 		// Items in file with children should point to DocumentationSetNavigation
 		var guideFile = navigation.NavigationItems.ElementAt(1).Should().BeOfType<VirtualFileNavigation<TestDocumentationFile>>().Subject;
@@ -362,5 +423,4 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 
 		context.Diagnostics.Should().BeEmpty();
 	}
-
 }

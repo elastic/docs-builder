@@ -21,9 +21,7 @@ internal sealed class LambdaLoggerFactory(ILambdaLogger lambdaLogger) : ILoggerF
 		// Providers are meaningless here; everything goes to the Lambda logger.
 	}
 
-	public void Dispose()
-	{
-	}
+	public void Dispose() { }
 
 	private sealed class LambdaLoggerAdapter(string categoryName, ILambdaLogger lambdaLogger) : ILogger
 	{
@@ -31,7 +29,13 @@ internal sealed class LambdaLoggerFactory(ILambdaLogger lambdaLogger) : ILoggerF
 
 		public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Information;
 
-		public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+		public void Log<TState>(
+			LogLevel logLevel,
+			EventId eventId,
+			TState state,
+			Exception? exception,
+			Func<TState, Exception?, string> formatter
+		)
 		{
 			if (!IsEnabled(logLevel))
 				return;

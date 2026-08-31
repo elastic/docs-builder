@@ -76,11 +76,7 @@ internal static partial class ContentStackMapper
 			Translated = true,
 			// navigation.depth/navigation.table_of_contents are rank features with positive_score_impact:false,
 			// designed for hierarchical docs: lower values score higher.
-			Navigation = new NavigationMetrics
-			{
-				Depth = ComputeNavigationDepth(url) + 1,
-				TableOfContents = 100
-			},
+			Navigation = new NavigationMetrics { Depth = ComputeNavigationDepth(url) + 1, TableOfContents = 100 },
 			Locale = language,
 			PublishedDate = publishedDate,
 			ModifiedDate = modifiedDate,
@@ -287,9 +283,7 @@ internal static partial class ContentStackMapper
 		// site-served prefixes are always two letters, never the full locale code — so every
 		// non-English variant still gets its own document id, or it silently collides with (and
 		// can 409 against) the entry for another locale of the same underlying ContentStack url.
-		var prefix = LocaleUrlPrefixes.TryGetValue(locale, out var mapped)
-			? mapped
-			: locale.Split('-')[0].ToLowerInvariant();
+		var prefix = LocaleUrlPrefixes.TryGetValue(locale, out var mapped) ? mapped : locale.Split('-')[0].ToLowerInvariant();
 		return $"/{prefix}{url}";
 	}
 
@@ -325,9 +319,7 @@ internal static partial class ContentStackMapper
 
 	private static int ComputeNavigationDepth(string url)
 	{
-		var path = url.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-			? new Uri(url).AbsolutePath
-			: url;
+		var path = url.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? new Uri(url).AbsolutePath : url;
 		return path.Split('/', StringSplitOptions.RemoveEmptyEntries).Length;
 	}
 
@@ -439,10 +431,7 @@ internal static partial class ContentStackMapper
 	internal static string[] ExtractHeadings(string html)
 	{
 		var matches = HeadingRegex().Matches(html);
-		return matches
-			.Select(m => StripHtml(m.Groups[1].Value))
-			.Where(h => !string.IsNullOrWhiteSpace(h))
-			.ToArray();
+		return matches.Select(m => StripHtml(m.Groups[1].Value)).Where(h => !string.IsNullOrWhiteSpace(h)).ToArray();
 	}
 
 	private static string ComputeHash(string content)

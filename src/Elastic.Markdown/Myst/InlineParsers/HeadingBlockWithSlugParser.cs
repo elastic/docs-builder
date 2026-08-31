@@ -43,7 +43,9 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 		var text = headingBlock.Lines.Lines[0].Slice.AsSpan();
 
 		if (AppliesToSyntax.IsMatch(text))
-			processor.EmitWarning("Do not use inline 'applies_to' annotations with headings. Use a section 'applies_to' annotation instead.");
+			processor.EmitWarning(
+				"Do not use inline 'applies_to' annotations with headings. Use a section 'applies_to' annotation instead."
+			);
 
 		// Remove icon syntax from the heading text
 		var cleanText = IconSyntax.Replace(text.ToString(), "").Trim();

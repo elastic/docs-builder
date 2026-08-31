@@ -53,8 +53,13 @@ public class SharedAnalysisFactoryTests
 	public void SynonymsFixedAnalyzer_HasMorphologyOverrideBeforeKstem()
 	{
 		var json = BuildAnalysisJson();
-		var filters = json.GetProperty("analyzer").GetProperty("synonyms_fixed_analyzer")
-			.GetProperty("filter").EnumerateArray().Select(e => e.GetString()).ToArray();
+		var filters = json
+			.GetProperty("analyzer")
+			.GetProperty("synonyms_fixed_analyzer")
+			.GetProperty("filter")
+			.EnumerateArray()
+			.Select(e => e.GetString())
+			.ToArray();
 		filters.Should().ContainInOrder("lowercase", "morphology_override_filter", "synonyms_fixed_filter", "kstem");
 	}
 
@@ -62,8 +67,13 @@ public class SharedAnalysisFactoryTests
 	public void SynonymsAnalyzer_HasMorphologyOverrideBeforeKstem()
 	{
 		var json = BuildAnalysisJson();
-		var filters = json.GetProperty("analyzer").GetProperty("synonyms_analyzer")
-			.GetProperty("filter").EnumerateArray().Select(e => e.GetString()).ToArray();
+		var filters = json
+			.GetProperty("analyzer")
+			.GetProperty("synonyms_analyzer")
+			.GetProperty("filter")
+			.EnumerateArray()
+			.Select(e => e.GetString())
+			.ToArray();
 		filters.Should().ContainInOrder("lowercase", "morphology_override_filter", "synonyms_filter", "kstem");
 	}
 

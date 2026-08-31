@@ -61,12 +61,7 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 
 		try
 		{
-			_index.AddHtmlRecord(new HtmlPageData
-			{
-				Url = url,
-				Sections = sections,
-				Meta = meta
-			});
+			_index.AddHtmlRecord(new HtmlPageData { Url = url, Sections = sections, Meta = meta });
 			_indexed++;
 		}
 		catch (PagefindIndexingException ex)
@@ -153,8 +148,7 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		var staticDir = Path.Combine(outputFolder.FullName, "_static");
 		await _index.WriteAsync(staticDir, ctx);
 		var pagefindDir = Path.Combine(staticDir, "pagefind");
-		_ = await PagefindFrontend.ExtractToAsync(
-			_fileSystem!, pagefindDir, force: false, ctx);
+		_ = await PagefindFrontend.ExtractToAsync(_fileSystem!, pagefindDir, force: false, ctx);
 
 		_logger.LogInformation("Generated static search index with {Count} pages", _indexed);
 		return true;

@@ -16,11 +16,9 @@ public class S3EtagCalculatorTests
 	private readonly MockFileSystem _fileSystem = new();
 	private readonly S3EtagCalculator _calculator;
 
-	public S3EtagCalculatorTests() =>
-		_calculator = new S3EtagCalculator(NullLoggerFactory.Instance, _fileSystem);
+	public S3EtagCalculatorTests() => _calculator = new S3EtagCalculator(NullLoggerFactory.Instance, _fileSystem);
 
-	private string TempPath(string name) =>
-		_fileSystem.Path.Join(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), name);
+	private string TempPath(string name) => _fileSystem.Path.Join(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), name);
 
 	[Fact]
 	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms")]
