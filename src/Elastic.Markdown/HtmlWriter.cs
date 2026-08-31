@@ -111,7 +111,7 @@ public class HtmlWriter(
 		// Resolve the right-gutter CTA: an explicit, known frontmatter id wins, then any `default_cta`
 		// registered on the page's navigation file. Both are 'custom' and render in isolated builds too
 		// (so authors can preview them); the built-in default stays assembler-only to preserve today's behavior.
-		var cta = DocumentationSet.Configuration.ResolveCta(markdown.YamlFrontMatter?.Cta?.Id, markdown.RelativePath, out var ctaWarning);
+		var cta = DocumentationSet.Configuration.ResolveCallToAction(markdown.YamlFrontMatter?.Cta?.Id, markdown.RelativePath, out var ctaWarning);
 		if (ctaWarning is not null)
 			DocumentationSet.Context.Collector.EmitWarning(markdown.FilePath, ctaWarning);
 
@@ -204,7 +204,7 @@ public class HtmlWriter(
 			GitHubRef = DocumentationSet.Context.Git.GitHubRef,
 			Branding = DocumentationSet.Configuration.Branding,
 			RedirectUrl = markdown.RedirectUrl,
-			Cta = cta
+			CallToAction = cta
 		});
 
 		return new RenderResult

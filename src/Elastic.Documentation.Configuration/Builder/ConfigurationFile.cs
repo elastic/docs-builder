@@ -92,16 +92,16 @@ public record ConfigurationFile
 	/// </summary>
 	public BrandingConfiguration? Branding { get; private set; }
 
-	private readonly Dictionary<string, Cta> _ctas = new(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
+	private readonly Dictionary<string, CallToAction> _ctas = new(StringComparer.OrdinalIgnoreCase) { [CallToAction.DefaultName] = CallToAction.Default };
 
 	// Pages registered with a default CTA via `default_cta` on docset.yml or nested toc.yml files.
 	private readonly IReadOnlyDictionary<string, string> _tocDefaultCtas;
 
 	/// <summary>
 	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
-	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
+	/// Always contains at least the built-in <see cref="CallToAction.DefaultName"/> entry.
 	/// </summary>
-	public IReadOnlyDictionary<string, Cta> Ctas => _ctas;
+	public IReadOnlyDictionary<string, CallToAction> CallToActions => _ctas;
 
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
@@ -308,7 +308,7 @@ public record ConfigurationFile
 			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
 			foreach (var (name, definition) in docSetFile.Cta)
 			{
-				if (ValidateCta(name, definition, context) is not { } cta)
+				if (ValidateCallToAction(name, definition, context) is not { } cta)
 					continue;
 				_ctas[name] = cta;
 			}
@@ -366,28 +366,28 @@ public record ConfigurationFile
 	/// <summary>
 	/// Resolves the right-gutter CTA for a page. An explicit, known <c>cta</c> frontmatter <paramref name="id"/>
 	/// always wins. Otherwise the template registered via <c>default_cta</c> on the page's navigation file
-	/// applies, falling back to <see cref="Cta.DefaultName"/>.
+	/// applies, falling back to <see cref="CallToAction.DefaultName"/>.
 	/// </summary>
 	/// <param name="id">The page's <c>cta.id</c> frontmatter value, if any.</param>
 	/// <param name="relativePath">The page's docset-root-relative source path, used for toc default lookup.</param>
 	/// <param name="warning">Set when <paramref name="id"/> is unknown, so the caller can report it.</param>
-	public Cta ResolveCta(string? id, string? relativePath, out string? warning)
+	public CallToAction ResolveCallToAction(string? id, string? relativePath, out string? warning)
 	{
 		warning = null;
 		if (id is not null)
 		{
-			if (Ctas.TryGetValue(id, out var selected))
+			if (CallToActions.TryGetValue(id, out var selected))
 				return selected;
 			// Unknown id: warn, then resolve as if the page had no `cta` frontmatter.
-			warning = UnknownCtaWarning(id, Ctas.Keys);
+			warning = UnknownCtaWarning(id, CallToActions.Keys);
 		}
 		if (relativePath is { Length: > 0 })
 		{
 			var normalizedPath = DocumentationSetFile.NormalizeDocsetRelativePath(relativePath);
-			if (_tocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && Ctas.TryGetValue(tocDefault, out var scoped))
+			if (_tocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && CallToActions.TryGetValue(tocDefault, out var scoped))
 				return scoped;
 		}
-		return Ctas[Cta.DefaultName];
+		return CallToActions[CallToAction.DefaultName];
 	}
 
 	private static string UnknownCtaWarning(string ctaName, IEnumerable<string> knownCtaNames)
@@ -404,7 +404,7 @@ public record ConfigurationFile
 		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml and is ignored. {hint}";
 	}
 
-	private static Cta? ValidateCta(string name, CtaDefinition definition, IDocumentationSetContext context)
+	private static CallToAction? ValidateCallToAction(string name, CtaDefinition definition, IDocumentationSetContext context)
 	{
 		if (string.IsNullOrWhiteSpace(definition.Button?.Label) || string.IsNullOrWhiteSpace(definition.Button?.Url))
 		{
@@ -418,12 +418,12 @@ public record ConfigurationFile
 			context.EmitError(context.ConfigurationPath, $"'cta.{name}.button.url' must use http/https or a relative URL.");
 			return null;
 		}
-		if (definition.Benefits.Count > Cta.MaxBenefits)
+		if (definition.Benefits.Count > CallToAction.MaxBenefits)
 		{
-			context.EmitError(context.ConfigurationPath, $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed.");
+			context.EmitError(context.ConfigurationPath, $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {CallToAction.MaxBenefits} is allowed.");
 			return null;
 		}
-		return new Cta
+		return new CallToAction
 		{
 			Name = name,
 			Label = definition.Button.Label,

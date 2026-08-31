@@ -42,7 +42,7 @@ public class ConfigurationFileCtaTests
 			("# Quickstart", "solutions/observability/get-started/quickstart.md"));
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCta("monitor-kubernetes", "solutions/observability/get-started/quickstart.md", out var warning);
+		var cta = config.ResolveCallToAction("monitor-kubernetes", "solutions/observability/get-started/quickstart.md", out var warning);
 
 		cta.Name.Should().Be("monitor-kubernetes");
 		warning.Should().BeNull();
@@ -69,7 +69,7 @@ public class ConfigurationFileCtaTests
 			("# APM", "solutions/observability/apps/apm.md"));
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCta(null, "solutions/observability/apps/apm.md", out var warning);
+		var cta = config.ResolveCallToAction(null, "solutions/observability/apps/apm.md", out var warning);
 
 		cta.Name.Should().Be("observability");
 		warning.Should().BeNull();
@@ -91,9 +91,9 @@ public class ConfigurationFileCtaTests
 			("# ES|QL", "reference/query-languages/esql.md"));
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCta(null, "reference/query-languages/esql.md", out var warning);
+		var cta = config.ResolveCallToAction(null, "reference/query-languages/esql.md", out var warning);
 
-		cta.Name.Should().Be(Cta.DefaultName);
+		cta.Name.Should().Be(CallToAction.DefaultName);
 		warning.Should().BeNull();
 	}
 
@@ -130,9 +130,9 @@ public class ConfigurationFileCtaTests
 
 		var config = CreateConfiguration(docSet);
 
-		config.ResolveCta(null, "solutions/observability/get-started/quickstart.md", out _)
+		config.ResolveCallToAction(null, "solutions/observability/get-started/quickstart.md", out _)
 			.Name.Should().Be("monitor-kubernetes");
-		config.ResolveCta(null, "solutions/observability/apps/apm.md", out _)
+		config.ResolveCallToAction(null, "solutions/observability/apps/apm.md", out _)
 			.Name.Should().Be("observability");
 	}
 
@@ -157,7 +157,7 @@ public class ConfigurationFileCtaTests
 			("# APM", "solutions/observability/apps/apm.md"));
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCta("does-not-exist", "solutions/observability/apps/apm.md", out var warning);
+		var cta = config.ResolveCallToAction("does-not-exist", "solutions/observability/apps/apm.md", out var warning);
 
 		cta.Name.Should().Be("observability");
 		warning.Should().Contain("does-not-exist").And.Contain("ignored");
@@ -180,7 +180,7 @@ public class ConfigurationFileCtaTests
 			("# Home", "index.md"));
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCta(null, "index.md", out _);
+		var cta = config.ResolveCallToAction(null, "index.md", out _);
 
 		cta.Name.Should().Be("observability");
 	}

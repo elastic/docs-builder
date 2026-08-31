@@ -944,7 +944,7 @@ public class CtaButton
 /// A resolved, validated right-gutter CTA, ready to render. See <see cref="CtaDefinition"/> for the raw
 /// <c>docset.yml</c> shape this is parsed from.
 /// </summary>
-public record Cta
+public record CallToAction
 {
 	/// <summary>Name of the template this was resolved from; <see cref="DefaultName"/> for the built-in default.</summary>
 	public required string Name { get; init; }
@@ -958,7 +958,7 @@ public record Cta
 	/// <summary>Right-gutter card space is limited; benefit bullet lists are capped at this many entries.</summary>
 	public const int MaxBenefits = 3;
 
-	public static Cta Default { get; } = new()
+	public static CallToAction Default { get; } = new()
 	{
 		Name = DefaultName,
 		Label = "Get started free",

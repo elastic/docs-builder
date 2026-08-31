@@ -35,7 +35,7 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 	public string? RedirectUrl { get; init; }
 
 	/// <summary>The resolved right-gutter CTA for this page (docset.yml template, or the built-in default).</summary>
-	public required Cta Cta { get; init; }
+	public required CallToAction CallToAction { get; init; }
 }
 
 public record PageTocItem
