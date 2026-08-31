@@ -123,6 +123,7 @@ toc:
       - file: links.md
       - file: list-sub-pages.md
       - file: page-card.md
+      - file: related-learning.md
       - file: stepper.md
       - file: substitutions.md
       - file: version-variables.md
@@ -190,6 +191,7 @@ toc:
         children:
           - file: index.md
           - file: products.md
+          - file: related-learning.md
           - file: versions.md
           - file: synonyms.md
           - file: legacy-url-mappings.md
