@@ -697,7 +697,7 @@ public partial class ChangelogBundlingService(
 						input.Config
 					)
 				);
-				outputPath = JoinProfileOutputPath(config.Bundle.OutputDirectory, input.OutputDirectory, config.Bundle.Directory, fileName);
+				outputPath = JoinProfileOutputPath(config, input, fileName);
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -1153,7 +1153,7 @@ public partial class ChangelogBundlingService(
 				_fileSystem,
 				new BundleOutputNameRequest(primaryProduct, planVersion, input.Repo, profileDef.Repo, config?.Bundle?.Repo, input.Config)
 			);
-			outputPath = JoinProfileOutputPath(config?.Bundle?.OutputDirectory, input.OutputDirectory, config?.Bundle?.Directory, fileName);
+			outputPath = JoinProfileOutputPath(config, input, fileName);
 		}
 		else
 			outputPath = ResolveResolvedOutputPath(collector, input, config);
@@ -1229,7 +1229,7 @@ public partial class ChangelogBundlingService(
 
 		var outputDir = !string.IsNullOrWhiteSpace(input.Output)
 			? input.Output
-			: config?.Bundle?.OutputDirectory
+			: ResolveConfiguredOutputDirectory(config, input)
 				?? input.OutputDirectory
 				?? input.Directory
 				?? config?.Bundle?.Directory
@@ -1249,18 +1249,32 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
-	/// → bundle.directory → CWD.
+	/// Profile <c>output_directory</c> replaces <c>bundle.output_directory</c> (same as option-mode
+	/// <c>--output</c> as a directory). Then <c>input.OutputDirectory</c>, <c>bundle.directory</c>, CWD.
 	/// </summary>
-	private string JoinProfileOutputPath(
-		string? configOutputDirectory,
-		string? inputOutputDirectory,
-		string? configDirectory,
-		string fileName
-	)
+	private string JoinProfileOutputPath(ChangelogConfiguration? config, BundleChangelogsArguments input, string fileName)
 	{
-		var outputDir = configOutputDirectory ?? inputOutputDirectory ?? configDirectory ?? _fileSystem.Directory.GetCurrentDirectory();
+		var outputDir = ResolveConfiguredOutputDirectory(config, input)
+			?? input.OutputDirectory
+			?? config?.Bundle?.Directory
+			?? _fileSystem.Directory.GetCurrentDirectory();
 		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
+	}
+
+	/// <summary>
+	/// Profile <c>output_directory</c> when the invoked profile sets it; otherwise
+	/// <c>bundle.output_directory</c>.
+	/// </summary>
+	private static string? ResolveConfiguredOutputDirectory(ChangelogConfiguration? config, BundleChangelogsArguments input)
+	{
+		if (
+			!string.IsNullOrWhiteSpace(input.Profile)
+			&& config?.Bundle?.Profiles?.TryGetValue(input.Profile, out var profile) == true
+			&& !string.IsNullOrWhiteSpace(profile.OutputDirectory)
+		)
+			return profile.OutputDirectory;
+
+		return config?.Bundle?.OutputDirectory;
 	}
 
 	/// <summary>The first concrete product id from a profile's <c>output_products</c>/<c>products</c> pattern.</summary>
@@ -1290,15 +1304,27 @@ public partial class ChangelogBundlingService(
 		foreach (var (name, profile) in profiles)
 		{
 #pragma warning disable CS0618 // intentionally reading the obsolete field to reject profiles that still set it
-			if (string.IsNullOrWhiteSpace(profile.Output))
-				continue;
+			if (!string.IsNullOrWhiteSpace(profile.Output))
 #pragma warning restore CS0618
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
-					$"as '{BundleOutputNaming.PrefixedConvention}' from the profile's output_products and authoring repo."
-			);
-			valid = false;
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
+						$"as '{BundleOutputNaming.PrefixedConvention}' from the profile's output_products and authoring repo."
+				);
+				valid = false;
+			}
+
+			if (BundleOutputNaming.IsYamlFilePath(profile.OutputDirectory))
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Profile '{name}': 'output_directory' must be a directory, not a file path. " +
+						$"The bundle file name is derived by convention as '{BundleOutputNaming.PrefixedConvention}'. " +
+						"To choose a folder, set output_directory the same way option-mode --output does when it is a directory."
+				);
+				valid = false;
+			}
 		}
 
 		var collisions = profiles

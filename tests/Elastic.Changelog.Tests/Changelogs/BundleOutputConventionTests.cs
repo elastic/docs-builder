@@ -522,7 +522,7 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 
 		var plan = await Service().PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 		plan.Should().NotBeNull();
-		plan!
+		plan
 			.OutputPath
 			.Should()
 			.Be(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
@@ -532,6 +532,111 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		FileSystem.File.Exists(plan.OutputPath).Should().BeTrue("--plan output_path matches the file bundle writes");
+	}
+
+	[Fact]
+	public async Task ProfileOutputDirectory_WritesConventionalNameInThatDirectory()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  output_directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: kibana
+			  profiles:
+			    kibana-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "kibana {version}"
+			    serverless-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "cloud-serverless {version}"
+			      output_directory: CHANGELOG_DIR/cloud-serverless
+			"""
+		);
+
+		var serverlessInput = new BundleChangelogsArguments
+		{
+			Profile = "serverless-release",
+			ProfileArgument = "9.3.0",
+			Config = configPath
+		};
+		var serverlessResult = await Service().BundleChangelogs(Collector, serverlessInput, TestContext.Current.CancellationToken);
+		serverlessResult.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, "cloud-serverless", "kibana-cloud-serverless-9.3.0.yaml"))
+			.Should()
+			.BeTrue("profile output_directory replaces bundle.output_directory like --output as a directory");
+
+		var kibanaInput = new BundleChangelogsArguments { Profile = "kibana-release", ProfileArgument = "9.3.0", Config = configPath };
+		var kibanaResult = await Service().BundleChangelogs(Collector, kibanaInput, TestContext.Current.CancellationToken);
+		kibanaResult.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, "kibana-kibana-9.3.0.yaml"))
+			.Should()
+			.BeTrue("a sibling profile without output_directory still uses the global directory");
+	}
+
+	[Fact]
+	public async Task Plan_ProfileOutputDirectory_MatchesRun()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  output_directory: CHANGELOG_DIR
+			  repo: kibana
+			  profiles:
+			    serverless-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "cloud-serverless {version}"
+			      output_directory: CHANGELOG_DIR/cloud-serverless
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "serverless-release", ProfileArgument = "9.3.0", Config = configPath };
+		var plan = await Service().PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		plan.Should().NotBeNull();
+		plan
+			.OutputPath
+			.Should()
+			.Be(FileSystem.Path.Join(_changelogDir, "cloud-serverless", "kibana-cloud-serverless-9.3.0.yaml").OptionalWindowsReplace());
+	}
+
+	[Fact]
+	public async Task ProfileOutputDirectory_YamlFilePath_EmitsHardError()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} *"
+			      output_directory: CHANGELOG_DIR/elasticsearch-9.3.0.yaml
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.3.0", Config = configPath };
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("'output_directory' must be a directory") && d.Message.Contains(
+					"{repo}-{product}-{version}.yaml"
+				)
+			);
 	}
 
 	[Fact]

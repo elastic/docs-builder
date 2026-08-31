@@ -3246,7 +3246,7 @@
               "name": "output",
               "type": "string",
               "required": false,
-              "summary": "Output path for the bundled changelog. A .yml/.yaml file is used as-is. A directory, or omitting this option, writes {repo}-{product}-{version}.yaml (from --repo / bundle.repo / git origin, --output-products then --input-products, then --release-version). Warns and writes changelog-bundle.yaml if product or version cannot be resolved, or {product}-{version}.yaml if no repo resolves. Not supported in profile-based commands (same convention from the profile)."
+              "summary": "Output path for the bundled changelog. A .yml/.yaml file is used as-is. A directory, or omitting this option, writes {repo}-{product}-{version}.yaml (from --repo / bundle.repo / git origin, --output-products then --input-products, then --release-version). Warns and writes changelog-bundle.yaml if product or version cannot be resolved, or {product}-{version}.yaml if no repo resolves. Not supported in profile-based commands; the equivalent configuration option is bundle.profiles.\u003Cname\u003E.output_directory (directory only; same convention for the file name)."
             },
             {
               "role": "flag",
