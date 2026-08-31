@@ -122,7 +122,16 @@ When you bundle from a PR list or GitHub release and the command is sourcing fro
 
 ## CI usage
 
-Pass `--plan` to emit GitHub Actions step outputs (`needs_network`, `needs_github_token`, `output_path`) without generating the bundle. Use this in a planning step to decide whether subsequent steps require a GitHub token or network access.
+Pass `--plan` to emit GitHub Actions step outputs without generating the bundle. Use this in a planning step to decide whether subsequent steps require a GitHub token or network access.
+
+| Output | Description |
+|--------|-------------|
+| `mode` | Resolved bundle mode: `gh-release` when no `bundle.profiles` are configured; `bundle` for profile-based bundling |
+| `output_path` | Resolved output file path for the bundle |
+| `needs_network` | `true` if the bundle step requires network access |
+| `needs_github_token` | `true` if the bundle step requires a GitHub token |
+
+When `mode` is `gh-release` (no profiles configured), pass only `--config` and a version — no profile name or filter flags are needed. The plan step resolves `output_path` from `bundle.output_directory` so the bundle-upload step does not need to discover the file separately.
 
 For full configuration reference, see [Bundle changelogs](/data/release-notes/bundle.md).
 

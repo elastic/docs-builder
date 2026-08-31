@@ -20,7 +20,16 @@ namespace Elastic.Changelog.Uploading;
 public enum ArtifactType
 {
 	Changelog,
-	Bundle
+	Bundle,
+
+	/// <summary>
+	/// Amend sidecars only: files matching <c>*.amend-{N}.yaml|yml</c> in the bundle output directory.
+	/// The Lambda-reserved <c>.amend-notes</c> suffix is excluded. Keyed identically to
+	/// <see cref="Bundle"/> (product list comes from the sidecar, falling back to the parent bundle).
+	/// Use this on <c>push</c> to sync manual post-release overrides from <c>main</c> without
+	/// accidentally overwriting a freshly-published parent bundle.
+	/// </summary>
+	Amend
 }
 
 public enum UploadTargetKind
@@ -89,7 +98,7 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var directory = args.ArtifactType == ArtifactType.Bundle
+		var directory = args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend
 			? await ResolveBundleDirectory(collector, args, ctx)
 			: await ResolveChangelogDirectory(collector, args, ctx);
 
@@ -102,9 +111,12 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var targets = args.ArtifactType == ArtifactType.Bundle
-			? DiscoverBundleUploadTargets(collector, directory)
-			: DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch);
+		var targets = args.ArtifactType switch
+		{
+			ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
+			ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
+			_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch)
+		};
 
 		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
 		// unscoped and a silent skip would look like "nothing to upload".
@@ -274,6 +286,72 @@ public class ChangelogUploadService(
 		var markers = prNumbers.Skip(1).Select(pr => ($"{pr}.yaml", markerContent)).ToList();
 
 		return (canonicalFileName, markers);
+	}
+
+	/// <summary>
+	/// Discovers numbered amend sidecars (<c>*.amend-{N}.yaml|yml</c>) in <paramref name="bundleDir"/>.
+	/// The Lambda-reserved <c>.amend-notes.yaml</c> sidecar is excluded; only user-authored amends
+	/// (those with a positive numeric suffix) are returned. Each sidecar is keyed identically to a
+	/// parent bundle: product list comes from the sidecar, falling back to the sibling parent bundle
+	/// file when the sidecar predates the products-copy feature.
+	/// </summary>
+	internal IReadOnlyList<UploadTarget> DiscoverAmendUploadTargets(IDiagnosticsCollector collector, string bundleDir)
+	{
+		var rootDir = _fileSystem.DirectoryInfo.New(bundleDir);
+
+		var yamlFiles = _fileSystem
+			.Directory
+			.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
+			.Concat(_fileSystem.Directory.GetFiles(bundleDir, "*.yml", SearchOption.TopDirectoryOnly))
+			.ToList();
+
+		var targets = new List<UploadTarget>();
+
+		foreach (var filePath in yamlFiles)
+		{
+			// Only numbered amend sidecars; skip parent bundles and the Lambda-reserved .amend-notes sidecar
+			if (!BundleAmendMerger.IsAmendFile(filePath))
+				continue;
+			if (BundleAmendMerger.GetAmendFileNumber(filePath) <= 0)
+				continue;
+
+			var fileInfo = _fileSystem.FileInfo.New(filePath);
+			if (SymlinkValidator.ValidateFileAccess(fileInfo, rootDir) is { } accessError)
+			{
+				collector.EmitWarning(filePath, $"Skipping: {accessError}");
+				continue;
+			}
+
+			var products = ReadProductsFromBundle(filePath);
+			if (products.Count == 0)
+			{
+				products = ReadProductsFromParentBundle(filePath);
+				if (products.Count == 0)
+				{
+					collector.EmitWarning(
+						filePath,
+						"Amend bundle declares no products and its parent bundle is missing or has none; " +
+							"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products."
+					);
+					continue;
+				}
+			}
+
+			var fileName = _fileSystem.Path.GetFileName(filePath);
+			foreach (var product in products)
+			{
+				if (!ChangelogKeys.IsValidProduct(product))
+				{
+					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
+					continue;
+				}
+
+				var s3Key = ChangelogKeys.BundleFileKey(product, fileName);
+				targets.Add(new UploadTarget(filePath, s3Key));
+			}
+		}
+
+		return targets;
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
