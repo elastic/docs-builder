@@ -10,16 +10,17 @@ Evaluate a pull request for changelog generation eligibility. Performs pre-fligh
 
 | Output | Description |
 |--------|-------------|
-| `status` | Evaluation result: `skipped`, `manually-edited`, `no-title`, `no-label`, or `proceed` |
+| `status` | Evaluation result: `skipped`, `manually-edited`, `no-title`, `no-label`, `missing-entry`, or `proceed` |
 | `should-generate` | `true` if `changelog add` should run |
-| `should-upload` | `true` if the artifact should be uploaded |
 | `title` | Resolved PR title |
 | `description` | Release note extracted from the PR body (when `extract.release_notes` is enabled and a release note is found). Long or multi-line release notes (over 120 characters) are placed here. Passed downstream as `CHANGELOG_DESCRIPTION` for `changelog add`. |
 | `type` | Resolved changelog type |
 | `products` | Comma-separated product specs resolved from PR labels via `pivot.products` mappings |
 | `label-table` | Markdown table of configured label-to-type mappings |
 | `product-label-table` | Markdown table of configured label-to-product mappings |
+| `changelog-dir` | Resolved changelog directory (from `bundle.directory` or default `docs/changelog`) |
 | `existing-changelog-filename` | Filename of a previously committed changelog for this PR (if any) |
+| `skip-labels` | Comma-separated list of configured skip labels (from `rules.create` exclude rules) |
 
 ## Environment variables
 
@@ -40,5 +41,8 @@ docs-builder changelog evaluate-pr \
   --head-ref feature-branch \
   --head-sha abc123 \
   --event-action opened \
-  --strip-title-prefix
+  --strip-title-prefix \
+  --require-changelog-file
 ```
+
+Pass `--require-changelog-file` to fail the PR (`missing-entry`) when no changelog entry file exists for the PR number. The entry file is looked up in `bundle.directory` (default `docs/changelog`). This flag is designed to be passed as a workflow input rather than hardcoded in `changelog.yml`.
