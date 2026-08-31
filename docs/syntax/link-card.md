@@ -41,7 +41,7 @@ sub-list, so every group of links reads the same way wherever it appears.
 
 `variant: es`, `obs`, or `sec` adds a left border in the matching solution colour. Use it for solution cards.
 
-`icon` takes the same product keys as [`{hero}`](hero.md): `elasticsearch`, `kibana`, `observability`, `security`.
+`icon` takes the same product keys as [`{hero}`](hero.md): `elasticsearch`, `kibana`, `logstash`, `observability`, `security`, `elastic-stack`.
 
 ## Inside `{explore}`
 
