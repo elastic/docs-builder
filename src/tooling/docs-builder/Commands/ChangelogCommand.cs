@@ -221,7 +221,7 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Create a new changelog entry YAML file.</summary>
-	/// <param name="products">Optional: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"). If not specified, will be inferred from repository or config defaults.</param>
+	/// <param name="products">Optional: Products affected in format "product [lifecycle], ..." (e.g., "cloud-serverless, kibana" or "elasticsearch ga"). Do not include a version or date; that is an error. Use 'changelog note' for version-listed items. If not specified, products are inferred from the repository or config defaults.</param>
 	/// <param name="action">Optional: What users must do to mitigate</param>
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
@@ -556,13 +556,13 @@ internal sealed partial class ChangelogCommands(
 
 	/// <summary>Create a <c>note-*.yml</c> changelog fragment for items that have no associated PR.</summary>
 	/// <remarks>
-	/// Use this command for release notes that are not tied to a specific pull request — for example, a
-	/// known-issue entry or a cross-cutting change that spans many PRs. Every product listed must have a
-	/// concrete <c>target</c> (not a wildcard); <c>--prs</c> and <c>--issues</c> are still accepted as
+	/// Use this command for version-listed changelogs that are not tied to a specific pull request — for example, a
+	/// known issue or a security advisory. Every product listed must include at least one concrete version
+	/// (not a wildcard); <c>--prs</c> and <c>--issues</c> are still accepted as
 	/// optional citations but do not affect the output filename.
 	/// </remarks>
 	/// <param name="name">Explicit slug for the note filename. Defaults to a slug derived from the title.</param>
-	/// <param name="products">Products in format "product target lifecycle, ..." (for example, "elasticsearch 9.2.0 ga"). Target is required for all products.</param>
+	/// <param name="products">Products in format "product versions [lifecycle], ..." (for example, "elasticsearch 9.2.0|9.3.0 ga"). At least one concrete version is required for each product.</param>
 	/// <param name="action">Optional action text.</param>
 	/// <param name="areas">Optional area tags.</param>
 	/// <param name="concise">Omit schema reference comments from the generated YAML.</param>
@@ -754,7 +754,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="hideFeatures">Feature IDs (comma-separated) or a path to a newline-delimited file. Entries with matching feature-id values are hidden when the bundle is rendered. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.hide_features</c>.</param>
 	/// <param name="noReleaseDate">Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.release_dates: false</c> or <c>bundle.profiles.&lt;name&gt;.release_dates: false</c>.</param>
 	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
-	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
+	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). A non-wildcard target matches products[].versions (changelog note) or a legacy target; not supported when sourcing from the CDN. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
 	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as <c>{product}-{version}.yaml</c> from the profile's primary output product.</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output_products</c>.</param>
@@ -765,7 +765,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="startGitRef">Start ref (exclusive) of a git commit range to bundle, for example the previously published endpoint ref. Must be provided together with --end-git-ref; the start ref is never inferred. The PR list is derived from the range itself (GitHub compare API + GraphQL associatedPullRequests), each PR's entry is sourced pool-first with PR-metadata fallback, and requires GITHUB_TOKEN. Supported in profile-based commands (for example, 'bundle serverless-release 2026-08-13 --start-git-ref abc123 --end-git-ref def456'); mutually exclusive with all other filter options.</param>
 	/// <param name="endGitRef">End ref (inclusive) of the git commit range to bundle — the currently published endpoint ref. Must be provided together with --start-git-ref. Recorded in the bundle output as the <c>git_ref</c> metadata field.</param>
 	/// <param name="dryRun">Resolve the commit range and print the run report (resolved PR list with per-PR entry source: pool, inferred, or missing) as Markdown without writing a bundle. Only valid together with --start-git-ref/--end-git-ref. Supported in profile-based commands.</param>
-	/// <param name="forceLocal">Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config). Allowed in profile-based commands.</param>
+	/// <param name="forceLocal">Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config). Allowed in profile-based commands. Skips automatic inclusion of CDN changelog notes that match output_products.</param>
 	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
 	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.source: github_release</c>.</param>
@@ -985,6 +985,39 @@ internal sealed partial class ChangelogCommands(
 
 			if (specifiedFilters.Count == 0)
 			{
+				// --plan with no filters and no profile: auto-resolve the release mode from the config.
+				// If the config has no profiles → gh-release mode; otherwise the caller must name a profile.
+				if (plan)
+				{
+					var bundleConfigLoader = new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem);
+					var bundleConfig = await bundleConfigLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+
+					var profiles = bundleConfig?.Bundle?.Profiles;
+					if (profiles is { Count: > 0 })
+					{
+						var profileNames = string.Join(", ", profiles.Keys);
+						collector.EmitError(
+							string.Empty,
+							$"--plan without a profile: the config has {profiles.Count} profile(s) ({profileNames}). " +
+								"Pass the profile name as the first argument (e.g. 'bundle my-profile 9.2.0 --plan')."
+						);
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+
+					// No profiles → gh-release mode. Resolve the output path the same way gh-release would.
+					var ghReleaseOutput = bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory;
+
+					await githubActionsService.SetOutputAsync("mode", "gh-release");
+					await githubActionsService.SetOutputAsync("needs_network", "true");
+					await githubActionsService.SetOutputAsync("needs_github_token", "true");
+					if (ghReleaseOutput != null)
+						await githubActionsService.SetOutputAsync("output_path", ghReleaseOutput);
+					return 0;
+				}
+
 				collector.EmitError(
 					string.Empty,
 					"At least one filter option must be specified: --all, --input-products, --prs, --issues, --report, --files, --start-git-ref/--end-git-ref, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')"
@@ -1120,6 +1153,7 @@ internal sealed partial class ChangelogCommands(
 			if (planResult == null)
 				return 1;
 
+			await githubActionsService.SetOutputAsync("mode", planResult.Mode ?? "bundle");
 			await githubActionsService.SetOutputAsync("needs_network", planResult.NeedsNetwork ? "true" : "false");
 			await githubActionsService.SetOutputAsync("needs_github_token", planResult.NeedsGithubToken ? "true" : "false");
 			if (planResult.OutputPath != null)
@@ -1549,13 +1583,15 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		// --output CLI > bundle.directory config > ./changelogs (service default)
+		// --output CLI > bundle.output_directory > bundle.directory > ./changelogs (service default)
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
 			collector,
 			config?.FullName,
 			ctx
 		);
-		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output)
+			? output
+			: (bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory);
 
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
@@ -1691,6 +1727,7 @@ internal sealed partial class ChangelogCommands(
 		bool titleChanged = false,
 		bool bodyChanged = false,
 		bool stripTitlePrefix = false,
+		bool requireChangelogFile = false,
 		string botName = "github-actions[bot]",
 		CancellationToken ct = default
 	)
@@ -1722,11 +1759,51 @@ internal sealed partial class ChangelogCommands(
 			TitleChanged = titleChanged,
 			BodyChanged = bodyChanged,
 			StripTitlePrefix = stripTitlePrefix,
+			RequireChangelogFile = requireChangelogFile,
 			BotName = botName
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.EvaluatePr(collector, state, ctx));
 
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI) Validate PR labels against the changelog config without writing any files or calling the GitHub API.</summary>
+	/// <remarks>
+	/// A lightweight label-only gate intended for the <c>pull_request</c> event. Resolves
+	/// <c>pivot.types</c>, <c>pivot.products</c>, and <c>rules.create</c> skip labels against the PR's
+	/// label set and exits non-zero on <c>no-label</c>. Does not perform title resolution, bot-loop
+	/// detection, or changelog-file lookup — use <see cref="EvaluatePr"/> when those are needed.
+	///
+	/// <para>
+	/// Outputs: <c>status</c> (ok | no-label | skipped), <c>type</c>, <c>products</c>,
+	/// <c>label-table</c> (shown on failure), <c>product-label-table</c> (shown on product failure),
+	/// <c>skip-labels</c>.
+	/// </para>
+	/// </remarks>
+	/// <param name="config">Path to the changelog.yml configuration file.</param>
+	/// <param name="prLabels">Comma-separated list of PR labels (use <c>${{ join(github.event.pull_request.labels.*.name, ',') }}</c> in actions).</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> ValidateLabels(
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		string prLabels,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
+		var service = new ChangelogLabelValidationService(logFactory, configurationContext, githubActionsService, fileSystem);
+
+		var args = new ValidateLabelsArguments
+		{
+			Config = config.FullName,
+			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		};
+
+		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateLabels(collector, state, ctx));
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
@@ -1924,9 +2001,23 @@ internal sealed partial class ChangelogCommands(
 	)
 	{
 		var ctx = ct;
-		if (!Enum.TryParse<ArtifactType>(artifactType, ignoreCase: true, out var parsedArtifactType))
+
+		// Accept a comma-separated list of artifact types (e.g. "changelog,amend")
+		var artifactTypeList = artifactType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var parsedArtifactTypes = new List<ArtifactType>(artifactTypeList.Length);
+		foreach (var typeStr in artifactTypeList)
 		{
-			collector.EmitError(string.Empty, $"Invalid artifact type '{artifactType}'. Valid values: changelog, bundle");
+			if (!Enum.TryParse<ArtifactType>(typeStr, ignoreCase: true, out var parsed))
+			{
+				collector.EmitError(string.Empty, $"Invalid artifact type '{typeStr}'. Valid values: changelog, bundle, amend");
+				return 1;
+			}
+			parsedArtifactTypes.Add(parsed);
+		}
+
+		if (parsedArtifactTypes.Count == 0)
+		{
+			collector.EmitError(string.Empty, "--artifact-type must not be empty");
 			return 1;
 		}
 
@@ -1959,19 +2050,25 @@ internal sealed partial class ChangelogCommands(
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, _fileSystem, configurationContext);
-		var args = new ChangelogUploadArguments
+
+		// Run one upload per requested artifact type; all failures are collected
+		foreach (var parsedArtifactType in parsedArtifactTypes)
 		{
-			ArtifactType = parsedArtifactType,
-			Target = parsedTarget,
-			S3BucketName = s3BucketName,
-			Config = resolvedConfig,
-			Directory = resolvedDirectory,
-			Repo = resolvedRepo,
-			Owner = resolvedOwner,
-			Branch = resolvedBranch,
-			SkipEtagCheck = skipEtagCheck
-		};
-		serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
+			var args = new ChangelogUploadArguments
+			{
+				ArtifactType = parsedArtifactType,
+				Target = parsedTarget,
+				S3BucketName = s3BucketName,
+				Config = resolvedConfig,
+				Directory = resolvedDirectory,
+				Repo = resolvedRepo,
+				Owner = resolvedOwner,
+				Branch = resolvedBranch,
+				SkipEtagCheck = skipEtagCheck
+			};
+			serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
+		}
+
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 

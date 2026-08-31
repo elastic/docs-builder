@@ -32,7 +32,6 @@ bundle:
   output_directory: docs/releases
   profiles:
     elasticsearch-release:
-      products: "elasticsearch {version} {lifecycle}"
       output_products: "elasticsearch {version}"
 ```
 
@@ -45,7 +44,7 @@ Supply filter flags directly when you don't have a profile configured or need a 
 Exactly one of the following filter flags is required:
 
 - `--all` — include every changelog in the directory
-- `--input-products` — match by product, target date, and lifecycle (e.g. `"elasticsearch * *"`)
+- `--input-products` — match by product, version or date, and lifecycle (e.g. `"elasticsearch * *"`). A concrete version or date only matches files with `products[].versions` (or a legacy `target`); use `*` in the middle slot for PR-linked files. Local/directory only — not supported when sourcing from the CDN.
 - `--prs` — filter by PR URLs or a newline-delimited file of PR URLs
 - `--issues` — filter by issue URLs or a newline-delimited file of issue URLs
 - `--release-version` — fetch PR references from a GitHub release tag (e.g. `v9.2.0` or `latest`)
@@ -59,9 +58,9 @@ Exactly one of the following filter flags is required:
 # Bundle all changelogs in docs/changelog/
 docs-builder changelog bundle --all --directory docs/changelog
 
-# Bundle changelogs for a specific product release
+# Bundle local elasticsearch changelogs (including PR-linked files that omit versions)
 docs-builder changelog bundle \
-  --input-products "elasticsearch 9.2.0 ga" \
+  --input-products "elasticsearch * *" \
   --output docs/releases/9.2.0.yaml
 
 # Bundle from a GitHub release
@@ -100,6 +99,7 @@ Both refs are always required together — the start ref is never inferred from 
 Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. The bundle name follows the `{product}-{version}.yaml` convention.
 
 Re-running the same range produces the same bundle content; bundling never overwrites changelog entries.
+Commit-range mode does not automatically add changelog notes whose `products[].versions` match `output_products`. Use `--files` or a path list if those files must be in the bundle.
 
 :::{note}
 Commit-range mode requires a `GITHUB_TOKEN` environment variable: the GraphQL API used for commit→PR association does not accept anonymous requests.
@@ -118,9 +118,20 @@ docs-builder changelog bundle serverless-release 2026-08-13 \
 
 Every bundle embeds the full content of each changelog entry (`title`, `type`, `products`, and so on), plus a `file` block recording the source file name and checksum for provenance. Rendering — via the `{changelog}` directive, `changelog render`, or the CDN pipeline — never reads the original changelog files, so you can clean them up with `docs-builder changelog remove` immediately after bundling.
 
+When you bundle from a PR list or GitHub release and the command is sourcing from the CDN, it also adds uploaded changelogs whose `products[].versions` include that version (from `output_products`). Those files are appended to the same `entries` list; `rules.bundle` applies to them too. This automatic add does not apply to git-range bundles or `--force-local`. For more detail, see [Bundle changelogs](/data/release-notes/bundle.md).
+
 ## CI usage
 
-Pass `--plan` to emit GitHub Actions step outputs (`needs_network`, `needs_github_token`, `output_path`) without generating the bundle. Use this in a planning step to decide whether subsequent steps require a GitHub token or network access.
+Pass `--plan` to emit GitHub Actions step outputs without generating the bundle. Use this in a planning step to decide whether subsequent steps require a GitHub token or network access.
+
+| Output | Description |
+|--------|-------------|
+| `mode` | Resolved bundle mode: `gh-release` when no `bundle.profiles` are configured; `bundle` for profile-based bundling |
+| `output_path` | Resolved output file path for the bundle |
+| `needs_network` | `true` if the bundle step requires network access |
+| `needs_github_token` | `true` if the bundle step requires a GitHub token |
+
+When `mode` is `gh-release` (no profiles configured), pass only `--config` and a version — no profile name or filter flags are needed. The plan step resolves `output_path` from `bundle.output_directory` so the bundle-upload step does not need to discover the file separately.
 
 For full configuration reference, see [Bundle changelogs](/data/release-notes/bundle.md).
 
@@ -141,6 +152,8 @@ For example:
 - `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
 
 If you use `"* * *"` in the `--input-products` command option or `bundle.profiles.<name>.products` configuration setting, it's equivalent to the `--all` command option.
+
+For `--input-products` and profile `products`, a concrete version or date in the middle slot only matches files that have `products[].versions` or a legacy `target` (typically files created with `changelog note`). A `*` in that slot still matches every file, including PR-linked changelogs. This filter is local/directory only: when changelog files are sourced from the CDN, `--input-products` and an equivalent versioned profile `products` pattern are not supported. `--output-products` is bundle metadata, not a file filter.
 
 ## Lifecycle inference [lifecycle-inference]
 
@@ -305,6 +318,8 @@ You can use the `--input-products` option to create a bundle of changelogs that 
 When using `--input-products`, you must provide all three parts: product, target, and lifecycle.
 Each part can be a wildcard (`*`) to match any value.
 
+A concrete target (version or date, including a prefix such as `2025-11-*`) only matches files that declare `products[].versions` or a legacy `target`. Use `"elasticsearch * *"` (or `"* * *"`) when you need PR-linked changelogs that omit `versions`. `--input-products` is not supported when sourcing from the CDN; use `--prs`, `--release-version`, a report, `--files`, or a profile without a versioned `products` pattern instead.
+
 :::{tip}
 If you use profile-based bundling, provide this information in the `bundle.profiles.<name>.products` field.
 :::
@@ -314,7 +329,7 @@ docs-builder changelog bundle \
   --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
 ```
 
-1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/bundle.md#product-format).
+1. Include local changelogs that have the `cloud-serverless` product identifier and `products[].versions` (or a legacy `target`) of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). This does not match PR-linked changelogs that omit `versions`. For more information about product values, refer to [Product format](/cli/changelog/bundle.md#product-format).
 
 You can use wildcards in any of the three parts:
 
@@ -391,6 +406,7 @@ To apply additional filtering by the changelog type, areas, or products, add [ru
 ### Bundle by file paths [changelog-bundle-files]
 
 Use `--files` when you know the exact changelog files to include and they may not have `prs` or `issues` metadata.
+Path-list / `--files` selection is by file name and is not filtered by `products[].versions`, so listed files may declare different versions or dates.
 
 ```sh
 docs-builder changelog bundle \
@@ -424,6 +440,7 @@ docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/prs.txt 
 
 `--force-local` is allowed in both option-based and profile-based commands.
 Use it with path-list / `--files` filters when the listed files should be read from disk instead of matched against the CDN pool.
+Because local sourcing skips the CDN note auto-merge, include those files with `--files` or a path list if they belong in the bundle.
 
 ### Hide features [changelog-bundle-hide-features]
 
@@ -431,7 +448,7 @@ You can use the `--hide-features` option to embed feature IDs that should be hid
 
 ```sh
 docs-builder changelog bundle \
-  --input-products "elasticsearch 9.3.0 *" \
+  --input-products "elasticsearch * *" \
   --hide-features "feature:hidden-api,feature:experimental" \ <1>
   --output /path/to/bundles/9.3.0.yaml
 ```

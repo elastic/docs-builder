@@ -16,12 +16,14 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
 using Markdig.Parsers;
 using Markdig.Syntax;
@@ -176,6 +178,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 				return new VersionBlock(this, version[1..^1], context);
 		}
 
+		if (info.IndexOf("{related-learning}") > 0)
+			return new RelatedLearningBlock(this, context);
+
 		if (info.IndexOf("{page-card}") > 0)
 			return new PageCardBlock(this, context);
 
@@ -190,6 +195,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{button}") > 0)
 			return new ButtonBlock(this, context);
+
+		if (info.IndexOf("{vector-sizing-calculator}") > 0)
+			return new VectorSizingBlock(this, context);
 
 		if (info.IndexOf("{list-sub-pages}") > 0)
 			return new ListSubPagesBlock(this, context);

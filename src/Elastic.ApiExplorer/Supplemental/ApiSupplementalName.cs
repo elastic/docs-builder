@@ -49,6 +49,23 @@ public static partial class ApiSupplementalName
 		return true;
 	}
 
+	/// <summary>
+	/// True when <paramref name="fileName"/> is <c>*.vN.md</c>. Stem is the name without the suffix.
+	/// Used for <c>children:</c> pages. Convention files use <see cref="TryParse"/>.
+	/// </summary>
+	public static bool TryParseVersionSuffix(string fileName, out string stem, out int major)
+	{
+		stem = Path.GetFileNameWithoutExtension(fileName);
+		major = 0;
+		var dot = stem.LastIndexOf(".v", StringComparison.OrdinalIgnoreCase);
+		if (dot <= 0)
+			return false;
+		if (!int.TryParse(stem[(dot + 2)..], out major) || major < 0)
+			return false;
+		stem = stem[..dot];
+		return stem.Length > 0;
+	}
+
 	[GeneratedRegex(@"^(op|tag)-(.+?)(?:\.v(\d+))?\.md$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex FileNamePattern();
 }

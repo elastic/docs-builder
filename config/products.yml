@@ -69,6 +69,16 @@ products:
     repository: 'docs-builder'
     features:
       public-reference: false
+  docs-playground-release-notes-changelogs:
+    display: 'Release Notes Playground (Changelogs)'
+    features:
+      public-reference: false
+      release-notes: prestage
+  docs-playground-release-notes-tagged:
+    display: 'Release Notes Playground (Tagged)'
+    features:
+      public-reference: false
+      release-notes: on-release
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:

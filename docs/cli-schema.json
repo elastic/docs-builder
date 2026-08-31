@@ -95,7 +95,7 @@
           "name": "assume-build",
           "type": "boolean",
           "required": false,
-          "summary": "Skip the build step when .artifacts/docs/index.html already exists. Intended for test scenarios only."
+          "summary": "Skip the build when the build stamp is up to date. When omitted, the assembler defaults to\n            true locally and false on CI. Use --no-assume-build to force a full rebuild."
         },
         {
           "role": "flag",
@@ -1269,7 +1269,7 @@
               "name": "assume-build",
               "type": "boolean",
               "required": false,
-              "summary": "Skip the build step when .artifacts/docs/index.html already exists. Intended for test scenarios only."
+              "summary": "Skip the build when the build stamp is up to date. When omitted, the assembler defaults to\n            true locally and false on CI. Use --no-assume-build to force a full rebuild."
             },
             {
               "role": "flag",
@@ -2802,7 +2802,7 @@
               "name": "products",
               "type": "string",
               "required": false,
-              "summary": "Optional: Products affected in format \u0022product target lifecycle, ...\u0022 (e.g., \u0022elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05\u0022). If not specified, will be inferred from repository or config defaults."
+              "summary": "Optional: Products affected in format \u0022product [lifecycle], ...\u0022 (e.g., \u0022cloud-serverless, kibana\u0022 or \u0022elasticsearch ga\u0022). Do not include a version or date; that is an error. Use \u0027changelog note\u0027 for version-listed items. If not specified, products are inferred from the repository or config defaults."
             },
             {
               "role": "flag",
@@ -3239,7 +3239,7 @@
               "name": "input-products",
               "type": "string",
               "required": false,
-              "summary": "Filter by products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta\u0022). All three parts are required but can be wildcards (*). This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.products."
+              "summary": "Filter by products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta\u0022). All three parts are required but can be wildcards (*). A non-wildcard target matches products[].versions (changelog note) or a legacy target; not supported when sourcing from the CDN. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.products."
             },
             {
               "role": "flag",
@@ -3278,7 +3278,7 @@
               "name": "force-local",
               "type": "boolean",
               "required": false,
-              "summary": "Force local entry sourcing for this run (equivalent to bundle.use_local_changelogs: true without editing config). Allowed in profile-based commands.",
+              "summary": "Force local entry sourcing for this run (equivalent to bundle.use_local_changelogs: true without editing config). Allowed in profile-based commands. Skips automatic inclusion of CDN changelog notes that match output_products.",
               "defaultValue": "false"
             },
             {
@@ -3677,6 +3677,13 @@
             },
             {
               "role": "flag",
+              "name": "require-changelog-file",
+              "type": "boolean",
+              "required": false,
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "bot-name",
               "type": "string",
               "required": false,
@@ -3949,7 +3956,7 @@
           ],
           "name": "note",
           "summary": "Create a note-*.yml changelog fragment for items that have no associated PR.",
-          "notes": "Use this command for release notes that are not tied to a specific pull request \u2014 for example, a\nknown-issue entry or a cross-cutting change that spans many PRs. Every product listed must have a\nconcrete target (not a wildcard); --prs and --issues are still accepted as\noptional citations but do not affect the output filename.",
+          "notes": "Use this command for version-listed changelogs that are not tied to a specific pull request \u2014 for example, a\nknown issue or a security advisory. Every product listed must include at least one concrete version\n(not a wildcard); --prs and --issues are still accepted as\noptional citations but do not affect the output filename.",
           "usage": "docs-builder changelog note [options]",
           "examples": [],
           "parameters": [
@@ -3965,7 +3972,7 @@
               "name": "products",
               "type": "string",
               "required": false,
-              "summary": "Products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022elasticsearch 9.2.0 ga\u0022). Target is required for all products."
+              "summary": "Products in format \u0022product versions [lifecycle], ...\u0022 (for example, \u0022elasticsearch 9.2.0|9.3.0 ga\u0022). At least one concrete version is required for each product."
             },
             {
               "role": "flag",
@@ -4844,6 +4851,78 @@
               "required": false,
               "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
               "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "validate-labels",
+          "summary": "(CI) Validate PR labels against the changelog config without writing any files or calling the GitHub API.",
+          "notes": "A lightweight label-only gate intended for the pull_request event. Resolves\npivot.types, pivot.products, and rules.create skip labels against the PR\u0027s\nlabel set and exits non-zero on no-label. Does not perform title resolution, bot-loop\ndetection, or changelog-file lookup \u2014 use EvaluatePr when those are needed.\n\n\nOutputs: status (ok | no-label | skipped), type, products,\nlabel-table (shown on failure), product-label-table (shown on product failure),\nskip-labels.",
+          "usage": "docs-builder changelog validate-labels --config \u003Cfile\u003E --pr-labels \u003Cstring\u003E",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": true,
+              "summary": "Path to the changelog.yml configuration file.",
+              "validations": [
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "pr-labels",
+              "type": "string",
+              "required": true,
+              "summary": "Comma-separated list of PR labels (use ${{ join(github.event.pull_request.labels.*.name, \u0027,\u0027) }} in actions)."
             },
             {
               "role": "flag",

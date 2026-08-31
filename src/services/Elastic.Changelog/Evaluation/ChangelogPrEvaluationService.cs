@@ -179,6 +179,20 @@ public class ChangelogPrEvaluationService(
 			return false;
 		}
 
+		// Entry-required gate: fail when the flag is set and no file exists for this PR
+		if (input.RequireChangelogFile && existingFilename == null)
+		{
+			var expectedPath = $"{changelogDir}/{input.PrNumber}.yaml";
+			_logger.LogInformation("Missing changelog file for PR #{PrNumber}; require-changelog-file is set", input.PrNumber);
+			collector.EmitError(
+				string.Empty,
+				$"No changelog entry file found for PR #{input.PrNumber}. " + $"Expected: {expectedPath}. " +
+					"Add a changelog entry file to the PR or disable the require-changelog-file gate."
+			);
+			_ = await SetOutputs(PrEvaluationResult.MissingEntry, changelogDir: changelogDir);
+			return false;
+		}
+
 		_logger.LogInformation(
 			"PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}",
 			title,

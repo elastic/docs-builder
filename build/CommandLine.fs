@@ -27,6 +27,7 @@ type Build =
 
     | [<CliPrefix(CliPrefix.None);SubCommand>] Format
     | [<CliPrefix(CliPrefix.None);SubCommand>] Watch
+    | [<CliPrefix(CliPrefix.None);SubCommand>] Watch_All
 
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] Lint
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PristineCheck
@@ -68,6 +69,7 @@ with
             | Format -> "runs dotnet format"
 
             | Watch -> "runs dotnet watch to continuous build code/templates and web assets on the fly"
+            | Watch_All -> "runs dotnet watch on the Aspire AppHost to continuously rebuild and serve the fully assembled site"
 
             // steps
             | Lint -> "runs dotnet curb check"

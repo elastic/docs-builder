@@ -23,9 +23,9 @@ journey('navigation test', ({ page, params }) => {
         tags: [`env:${params.environment}`],
     })
 
-    const host = params.baseUrl
-    step(`Go to ${host}`, async () => {
-        await page.goto(`${host}/docs`, {
+    const docsRoot = params.docsRoot as string
+    step(`Go to ${docsRoot}`, async () => {
+        await page.goto(docsRoot, {
             timeout: 60000,
             waitUntil: 'domcontentloaded',
         })
@@ -58,7 +58,7 @@ journey('navigation test', ({ page, params }) => {
             .getByRole('link', { name: 'Elastic Fundamentals' })
             .first()
             .click()
-        await expect(page).toHaveURL(`${host}/docs/get-started`)
+        await expect(page).toHaveURL(`${docsRoot}/get-started`)
         await expect(page).toHaveTitle(/Elastic fundamentals/)
         await expect(
             page.getByRole('heading', { name: 'Elastic fundamentals' })
@@ -112,7 +112,7 @@ journey('navigation test', ({ page, params }) => {
             .first()
             .click()
         await expect(page).toHaveURL(
-            `${host}/docs/get-started/deployment-options`
+            `${docsRoot}/get-started/deployment-options`
         )
         await expect(page).toHaveTitle(/Deployment options/)
         await expect(
@@ -142,7 +142,7 @@ journey('navigation test', ({ page, params }) => {
             .first()
             .click()
         await expect(page).toHaveURL(
-            `${host}/docs/deploy-manage/deploy/elastic-cloud`
+            `${docsRoot}/deploy-manage/deploy/elastic-cloud`
         )
         await expect(page).toHaveTitle(/Elastic Cloud/)
 
@@ -170,7 +170,7 @@ journey('navigation test', ({ page, params }) => {
             .locator('#secondary-nav')
             .getByRole('link', { name: 'Reference', exact: true })
             .click()
-        await expect(page).toHaveURL(`${host}/docs/reference`)
+        await expect(page).toHaveURL(`${docsRoot}/reference`)
     })
 
     step(
@@ -180,10 +180,10 @@ journey('navigation test', ({ page, params }) => {
                 page.locator('#pages-nav .pages-nav-v2__heading-text')
             ).toHaveText('Reference')
             await page
-                .locator('#pages-nav a[href$="/docs/reference/elasticsearch"]')
+                .locator('#pages-nav a[href$="/reference/elasticsearch"]')
                 .first()
                 .click()
-            await expect(page).toHaveURL(/\/docs\/reference\/elasticsearch/)
+            await expect(page).toHaveURL(/\/reference\/elasticsearch/)
             await expect(
                 page.locator('#pages-nav .pages-nav-v2__heading-text')
             ).toHaveText('Elasticsearch')
@@ -191,7 +191,7 @@ journey('navigation test', ({ page, params }) => {
                 page.locator('#pages-nav .nav-v2-nav-text').first()
             ).toHaveText('Overview')
             await page.goBack()
-            await expect(page).toHaveURL(/\/docs\/reference\/?$/)
+            await expect(page).toHaveURL(/\/reference\/?$/)
             await expect(
                 page.locator('#pages-nav .pages-nav-v2__heading-text')
             ).toHaveText('Reference')
@@ -217,20 +217,20 @@ journey('navigation test', ({ page, params }) => {
     )
 
     step('/docs/api link triggers a full page load, not htmx', async () => {
-        await page.evaluate(() => {
+        const apiUrl = `${docsRoot}/api/`
+        await page.evaluate((href) => {
             const a = document.createElement('a')
-            a.href = '/docs/api/'
+            a.href = href
             a.id = 'synthetic-api-link'
             a.textContent = 'api'
             document.querySelector('#content-container')?.appendChild(a)
-        })
+        }, apiUrl)
         // A full page load is a navigation request; an htmx request would be an
         // XHR carrying the ?v= cache-buster. Status doesn't matter (404 locally).
         const [request] = await Promise.all([
-            page.waitForRequest(
-                (req) => req.url().startsWith(`${host}/docs/api/`),
-                { timeout: 30000 }
-            ),
+            page.waitForRequest((req) => req.url().startsWith(apiUrl), {
+                timeout: 30000,
+            }),
             page.locator('#synthetic-api-link').click(),
         ])
         expect(request.isNavigationRequest()).toBe(true)

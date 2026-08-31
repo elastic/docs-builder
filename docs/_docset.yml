@@ -3,6 +3,7 @@ max_toc_depth: 2
 dev_docs: true
 cross_links:
   - docs-content
+  - elasticsearch
 exclude:
   - '_*.md'
 subs:
@@ -113,6 +114,7 @@ toc:
       - file: kbd.md
       - file: link-card.md
       - file: math.md
+      - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
       - file: task-lists.md
@@ -121,6 +123,7 @@ toc:
       - file: links.md
       - file: list-sub-pages.md
       - file: page-card.md
+      - file: related-learning.md
       - file: stepper.md
       - file: substitutions.md
       - file: version-variables.md
@@ -188,6 +191,7 @@ toc:
         children:
           - file: index.md
           - file: products.md
+          - file: related-learning.md
           - file: versions.md
           - file: synonyms.md
           - file: legacy-url-mappings.md
@@ -205,6 +209,7 @@ toc:
         children:
           - file: index.md
           - file: api-explorer.md
+          - file: supplemental.md
       - folder: cli-schema
         children:
           - file: index.md
