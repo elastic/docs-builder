@@ -32,8 +32,8 @@ public static class DistributedApplicationExtensions
 		_ = configBuilder.AddUserSecrets("docs-builder");
 		var config = configBuilder.Build();
 
-		builder.Configuration[$"Parameters:ElasticsearchUrl"] = config["Parameters:ElasticsearchUrl"] ?? "http://localhost.example:9200";
-		builder.Configuration[$"Parameters:ElasticsearchApiKey"] = config["Parameters:ElasticsearchApiKey"] ?? "not-configured";
+		builder.Configuration["Parameters:ElasticsearchUrl"] = config["Parameters:ElasticsearchUrl"] ?? "http://localhost.example:9200";
+		builder.Configuration["Parameters:ElasticsearchApiKey"] = config["Parameters:ElasticsearchApiKey"] ?? "not-configured";
 		return builder;
 	}
 }
@@ -47,11 +47,10 @@ public class DocumentationFixture : IAsyncLifetime
 	/// <inheritdoc />
 	public async ValueTask InitializeAsync()
 	{
-		// --assume-build is not allowed on CI (blocks stale content), so only use it locally
-		var isCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
-		string[] args = isCI
-			? ["--skip-private-repositories", "--assume-cloned"]
-			: ["--skip-private-repositories", "--assume-cloned", "--assume-build"];
+		// All three flags (--skip-private-repositories, --assume-cloned, --assume-build) default
+		// on locally and off on CI, so no explicit args are needed here. The assembler and AppHost
+		// apply the right defaults based on the GITHUB_ACTIONS environment variable.
+		string[] args = [];
 
 		var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.aspire>(args, (options, _) =>
 		{
@@ -118,9 +117,9 @@ public class DocumentationFixture : IAsyncLifetime
 		}
 	}
 
-	public HttpClient CreateApiClient() => DistributedApplication.CreateHttpClient(ResourceNames.Api);
+	public HttpClient CreateApiClient() => DistributedApplication.CreateHttpClient(ResourceNames.Api, "http");
 
-	public HttpClient CreateMcpClient() => DistributedApplication.CreateHttpClient(RemoteMcp);
+	public HttpClient CreateMcpClient() => DistributedApplication.CreateHttpClient(RemoteMcp, "http");
 
 	private async ValueTask ValidateExitCode(string resourceName)
 	{

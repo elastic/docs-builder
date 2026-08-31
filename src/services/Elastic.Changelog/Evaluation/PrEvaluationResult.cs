@@ -31,6 +31,10 @@ public enum PrEvaluationResult
 	[Display(Name = "manually-edited")]
 	ManuallyEdited,
 
+	/// <summary>The <c>require-changelog-file</c> gate is on but no changelog entry file was found for this PR.</summary>
+	[Display(Name = "missing-entry")]
+	MissingEntry,
+
 	/// <summary>An error occurred during artifact preparation (e.g., generate step failed or YAML missing).</summary>
 	[Display(Name = "error")]
 	Error

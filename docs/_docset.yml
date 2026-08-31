@@ -3,6 +3,7 @@ max_toc_depth: 2
 dev_docs: true
 cross_links:
   - docs-content
+  - elasticsearch
 exclude:
   - '_*.md'
 subs:
@@ -113,6 +114,7 @@ toc:
       - file: kbd.md
       - file: link-card.md
       - file: math.md
+      - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
       - file: task-lists.md

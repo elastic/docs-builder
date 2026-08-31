@@ -112,6 +112,10 @@ public class ChangelogCreationService(
 				input = input with { Description = null };
 			}
 
+			// CLI-supplied products must not carry versions; fail before any GitHub fetches.
+			if (input.Products.Count > 0 && !_validator.ValidateNoVersionTarget(collector, input))
+				return false;
+
 			// Multiple PRs: one changelog per PR (--use-pr-number uses PR number as each filename)
 			if (input.Prs != null && input.Prs.Length > 1)
 				return await CreateChangelogsForMultiplePrsAsync(collector, input, config, ctx);
@@ -267,7 +271,7 @@ public class ChangelogCreationService(
 
 		var successCount = 0;
 		var skippedCount = 0;
-		var fetchFailedCount = 0;
+		var fetchFailedAndWritten = 0;
 
 		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()).Where(prTrimmed => !string.IsNullOrWhiteSpace(prTrimmed)))
 		{
@@ -288,33 +292,38 @@ public class ChangelogCreationService(
 				continue;
 			}
 
-			// A null prInfo here means the GitHub fetch failed: this PR bypasses rules.create
-			// label filtering and is written without a derived title/type. Track it so the failure
-			// is surfaced as a single summary rather than buried among per-PR warnings.
-			if (prInfo == null)
-				fetchFailedCount++;
-
 			// Create a copy of input for this PR
 			var prInput = CreateInputForSinglePr(input, prTrimmed);
 
 			// Process this PR (treat as single PR); the loop owns fetch-failure reporting
 			var result = await CreateSingleChangelogAsync(collector, prInput, config, ctx, reportFetchFailure: false);
-			if (result)
-				successCount++;
+			if (!result)
+				continue;
+
+			successCount++;
+			// A null prInfo here means the GitHub fetch failed: this PR bypasses rules.create
+			// label filtering and is written without a derived title/type. Only count it when a
+			// file was actually written so the summary does not claim creation after a later error.
+			if (prInfo == null)
+				fetchFailedAndWritten++;
 		}
 
-		ReportBulkFetchFailures(collector, fetchFailedCount, input.Prs.Length, input.StrictFetch, "pull request");
+		ReportBulkFetchFailures(collector, fetchFailedAndWritten, input.Prs.Length, input.StrictFetch, "pull request");
 
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation(
-			"Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched",
-			successCount,
-			skippedCount,
-			fetchFailedCount
-		);
-		return successCount > 0;
+		if (successCount > 0)
+		{
+			_logger.LogInformation(
+				"Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched",
+				successCount,
+				skippedCount,
+				fetchFailedAndWritten
+			);
+		}
+
+		return successCount > 0 || skippedCount > 0;
 	}
 
 	private async Task<bool> CreateSingleChangelogAsync(
@@ -401,7 +410,7 @@ public class ChangelogCreationService(
 
 		var successCount = 0;
 		var skippedCount = 0;
-		var fetchFailedCount = 0;
+		var fetchFailedAndWritten = 0;
 
 		foreach (var issueUrl in input.Issues.Select(i => i.Trim()).Where(i => !string.IsNullOrWhiteSpace(i)))
 		{
@@ -421,29 +430,35 @@ public class ChangelogCreationService(
 				continue;
 			}
 
-			// A null issueInfo means the GitHub fetch failed: the entry bypasses rules.create
-			// filtering and is written without a derived title/type. Track it for a summary report.
-			if (issueInfo == null)
-				fetchFailedCount++;
-
 			var issueInput = input with { Issues = [issueUrl] };
 			var result = await CreateSingleChangelogFromIssueAsync(collector, issueInput, config, ctx, reportFetchFailure: false);
-			if (result)
-				successCount++;
+			if (!result)
+				continue;
+
+			successCount++;
+			// A null issueInfo means the GitHub fetch failed: the entry bypasses rules.create
+			// filtering and is written without a derived title/type. Only count it when a file
+			// was actually written so the summary does not claim creation after a later error.
+			if (issueInfo == null)
+				fetchFailedAndWritten++;
 		}
 
-		ReportBulkFetchFailures(collector, fetchFailedCount, input.Issues.Length, input.StrictFetch, "issue");
+		ReportBulkFetchFailures(collector, fetchFailedAndWritten, input.Issues.Length, input.StrictFetch, "issue");
 
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation(
-			"Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched",
-			successCount,
-			skippedCount,
-			fetchFailedCount
-		);
-		return successCount > 0;
+		if (successCount > 0)
+		{
+			_logger.LogInformation(
+				"Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched",
+				successCount,
+				skippedCount,
+				fetchFailedAndWritten
+			);
+		}
+
+		return successCount > 0 || skippedCount > 0;
 	}
 
 	private async Task<bool> CreateSingleChangelogFromIssueAsync(

@@ -44,7 +44,7 @@ public class PhysicalDocsetTests
 		docSet.DevDocs.Should().BeTrue();
 		docSet.Features.PrimaryNav.Should().BeFalse();
 
-		docSet.CrossLinks.Should().ContainSingle().Which.Should().Be("docs-content");
+		docSet.CrossLinks.Should().Equal("docs-content", "elasticsearch");
 		docSet.Exclude.Should().ContainSingle().Which.Should().Be("_*.md");
 		docSet.Subs.Should().NotBeEmpty();
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
