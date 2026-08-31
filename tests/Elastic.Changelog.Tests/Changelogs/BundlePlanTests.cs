@@ -244,6 +244,31 @@ public class BundlePlanTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task Plan_OptionMode_OutputProducts_UsesConventionalName()
+	{
+		var configContent = """
+			bundle:
+			  output_directory: docs/releases
+			  repo: kibana
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Config = configPath,
+			OutputProducts = [new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" }]
+		};
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().NotBeNull();
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
+	}
+
+	[Fact]
 	public async Task Plan_ProfileNotFound_ReturnsResultWithNeedsNetworkFalse()
 	{
 		// language=yaml

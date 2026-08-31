@@ -6,14 +6,16 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
 /// <summary>
 /// Tests for the standardized bundle output naming (B2 — elastic/docs-builder#3774):
-/// explicit <c>output:</c> patterns are a hard error, names derive as
-/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves (else unprefixed with a warning),
-/// and two profiles colliding on the same conventional target are rejected.
+/// explicit profile <c>output:</c> patterns are a hard error, names derive as
+/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves (else unprefixed with a warning)
+/// in both profile and option mode, and two profiles colliding on the same conventional
+/// target are rejected.
 /// </summary>
 public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
@@ -374,5 +376,186 @@ public class BundleOutputConventionTests(ITestOutputHelper output) : ChangelogTe
 
 		plan.Should().BeNull();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("'output' is no longer supported"));
+	}
+
+	[Fact]
+	public async Task OptionMode_OutputProductsAndBundleRepo_WritesPrefixedName()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: kibana
+			"""
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Config = configPath,
+			OutputProducts = [new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" }]
+		};
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-2026-08-27.yaml"))
+			.Should()
+			.BeTrue("option mode without --output uses the same repo-product-version convention as profile mode");
+	}
+
+	[Fact]
+	public async Task OptionMode_ExplicitYamlOutput_Unchanged()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: kibana
+			"""
+		);
+
+		var custom = FileSystem.Path.Join(_changelogDir, "custom.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Config = configPath,
+			Output = custom,
+			OutputProducts = [new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" }]
+		};
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem.File.Exists(custom).Should().BeTrue("an explicit yaml --output path is used as-is");
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-2026-08-27.yaml")).Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task OptionMode_DirectoryOutput_JoinsConventionalName()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: kibana
+			"""
+		);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Config = configPath,
+			Output = outputDir,
+			OutputProducts = [new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" }]
+		};
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(outputDir, "kibana-cloud-serverless-2026-08-27.yaml"))
+			.Should()
+			.BeTrue("a directory --output joins the conventional file name");
+	}
+
+	[Fact]
+	public async Task OptionMode_MissingProductAndVersion_WarnsAndUsesFallbackName()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: kibana
+			"""
+		);
+
+		var input = new BundleChangelogsArguments { All = true, Config = configPath };
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, BundleOutputNaming.FallbackFileName))
+			.Should()
+			.BeTrue("option mode without a concrete product and version keeps the legacy fallback file name");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a product and version"));
+	}
+
+	[Fact]
+	public async Task OptionMode_PlanMatchesRunPath()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  output_directory: CHANGELOG_DIR
+			  repo: kibana
+			"""
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Config = configPath,
+			OutputProducts = [new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" }]
+		};
+
+		var plan = await Service().PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		plan.Should().NotBeNull();
+		plan!
+			.OutputPath
+			.Should()
+			.Be(FileSystem.Path.Join(_changelogDir, "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
+
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem.File.Exists(plan.OutputPath).Should().BeTrue("--plan output_path matches the file bundle writes");
+	}
+
+	[Fact]
+	public void ResolveVersion_PrefersOutputProductsThenInputThenReleaseTag()
+	{
+		BundleOutputNaming
+			.ResolveVersion(
+				[new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" }],
+				[new ProductArgument { Product = "elasticsearch", Target = "9.3.0" }],
+				"v9.2.0"
+			)
+			.Should()
+			.Be("2026-08-27");
+
+		BundleOutputNaming
+			.ResolveVersion(null, [new ProductArgument { Product = "elasticsearch", Target = "9.3.0" }], "v9.2.0")
+			.Should()
+			.Be("9.3.0");
+
+		BundleOutputNaming
+			.ResolveVersion(null, [new ProductArgument { Product = "elasticsearch", Target = "*" }], "v9.2.0-beta.1")
+			.Should()
+			.Be("9.2.0");
+
+		BundleOutputNaming.ResolveVersion(null, null, "latest").Should().BeNull();
 	}
 }

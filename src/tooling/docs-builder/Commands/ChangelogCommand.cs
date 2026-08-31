@@ -756,7 +756,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). A non-wildcard target matches products[].versions (changelog note) or a legacy target; not supported when sourcing from the CDN. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
-	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as <c>{repo}-{product}-{version}.yaml</c> from the authoring repo and the profile's primary output product.</param>
+	/// <param name="output">Output path for the bundled changelog. A .yml/.yaml file is used as-is. A directory, or omitting this option, writes <c>{repo}-{product}-{version}.yaml</c> (from --repo / bundle.repo / git origin, --output-products then --input-products, then --release-version). Warns and writes changelog-bundle.yaml if product or version cannot be resolved, or <c>{product}-{version}.yaml</c> if no repo resolves. Not supported in profile-based commands (same convention from the profile).</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output_products</c>.</param>
 	/// <param name="owner">GitHub repository owner for PR/issue numbers or --release-version. Falls back to <c>bundle.owner</c> or "elastic". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.owner</c> or <c>bundle.profiles.&lt;name&gt;.owner</c>.</param>
 	/// <param name="branch">Branch whose CDN changelog entry pool (<c>changelog/{org}/{repo}/{branch}/...</c>) is sourced from. Falls back to <c>bundle.branch</c> or "main". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.branch</c> or <c>bundle.profiles.&lt;name&gt;.branch</c>.</param>
@@ -1126,8 +1126,8 @@ internal sealed partial class ChangelogCommands(
 					return 1;
 				}
 
-				// It's a directory path - append default filename
-				processedOutput = Path.Join(output, "changelog-bundle.yaml");
+				// Directory: the service joins the conventional file name (or changelog-bundle.yaml).
+				processedOutput = output;
 			}
 		}
 
@@ -1143,7 +1143,10 @@ internal sealed partial class ChangelogCommands(
 				Files = allFiles.Count > 0 ? allFiles.ToArray() : null,
 				ForceLocal = forceLocal,
 				Directory = directory?.FullName,
+				InputProducts = inputProducts,
+				OutputProducts = outputProducts,
 				Repo = repo,
+				ReleaseVersion = releaseVersion,
 				Config = config?.FullName,
 				Description = description,
 				StartGitRef = startGitRef,
@@ -1209,6 +1212,7 @@ internal sealed partial class ChangelogCommands(
 			ForceLocal = forceLocal,
 			Owner = owner,
 			Repo = repo,
+			ReleaseVersion = releaseVersion,
 			Branch = branch,
 			Profile = profile,
 			ProfileArgument = profileArg,
