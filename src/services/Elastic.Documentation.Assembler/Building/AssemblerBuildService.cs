@@ -213,8 +213,10 @@ public class AssemblerBuildService(
 
 		var success = strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
 
-		// Write the stamp after a successful non-ES-only build so the next run can skip it.
-		if (success && !elasticsearchExportOnly)
+		// Write the stamp only for local dev runs (effectiveAssumeBuild=true) so the next
+		// local run can skip the build. Never write it on CI — stamps must not appear in
+		// deployed output, and CI always does a full build anyway.
+		if (success && !elasticsearchExportOnly && effectiveAssumeBuild)
 		{
 			var stampPath = Path.Join(assembleContext.OutputDirectory.FullName, AssemblerBuildStampService.StampFileName);
 			var stamp = AssemblerBuildStampService.Compute(
