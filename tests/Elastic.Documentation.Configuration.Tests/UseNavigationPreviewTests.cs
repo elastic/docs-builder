@@ -13,7 +13,12 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class UseNavigationPreviewTests
 {
 	private static ConfigurationFileProvider CreateProvider(MockFileSystem fileSystem) =>
-		new(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem), skipPrivateRepositories: true, ConfigurationSource.Embedded);
+		new(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(fileSystem),
+			skipPrivateRepositories: true,
+			ConfigurationSource.Embedded
+		);
 
 	private static AssemblyConfiguration CreateConfig(params string[] privateRepoNames)
 	{
@@ -29,7 +34,8 @@ public class UseNavigationPreviewTests
 		var provider = CreateProvider(fileSystem);
 
 		// language=yaml
-		var previewYaml = """
+		var previewYaml =
+			"""
 		                  toc:
 		                    - toc: elasticsearch://reference/elasticsearch
 		                      path_prefix: reference/elasticsearch
@@ -37,7 +43,8 @@ public class UseNavigationPreviewTests
 		                  """;
 
 		// language=yaml
-		var mainYaml = """
+		var mainYaml =
+			"""
 		               toc:
 		                 - toc: elasticsearch://reference/elasticsearch
 		                   path_prefix: reference/elasticsearch
@@ -46,9 +53,7 @@ public class UseNavigationPreviewTests
 		fileSystem.File.WriteAllText(provider.NavigationFile.FullName, mainYaml);
 
 		// Simulate navigation_preview.yml existing alongside navigation.yml in the same temp dir
-		var previewPath = Path.Join(
-			Path.GetDirectoryName(provider.NavigationFile.FullName),
-			"navigation_preview.yml");
+		var previewPath = Path.Join(Path.GetDirectoryName(provider.NavigationFile.FullName), "navigation_preview.yml");
 		fileSystem.File.WriteAllText(previewPath, previewYaml);
 
 		// Now simulate what ConfigurationSource.Local does — replace NavigationFile content
@@ -70,43 +75,26 @@ public class UseNavigationPreviewTests
 		// Regression guard: the ctor-doesn't-normalize trap.
 		// PublishEnvironment.FeatureFlags keys use UPPER_SNAKE yaml convention; FeatureFlags.IsEnabled
 		// looks up normalized lower-kebab keys. ToFeatureFlags() must bridge this via Set().
-		var env = new PublishEnvironment
-		{
-			FeatureFlags = new Dictionary<string, bool>
-			{
-				["NAVIGATION_PREVIEW"] = true
-			}
-		};
+		var env = new PublishEnvironment { FeatureFlags = new Dictionary<string, bool> { ["NAVIGATION_PREVIEW"] = true } };
 
 		var flags = env.ToFeatureFlags();
-		flags.NavigationPreviewEnabled.Should().BeTrue(
-			"ToFeatureFlags() normalizes UPPER_SNAKE keys through Set() before storing them");
+		flags.NavigationPreviewEnabled.Should().BeTrue("ToFeatureFlags() normalizes UPPER_SNAKE keys through Set() before storing them");
 	}
 
 	[Fact]
 	public void NavigationPreviewEnabled_FalseWhenNotSet()
 	{
-		var env = new PublishEnvironment
-		{
-			FeatureFlags = []
-		};
+		var env = new PublishEnvironment { FeatureFlags = [] };
 
 		var flags = env.ToFeatureFlags();
-		flags.NavigationPreviewEnabled.Should().BeFalse(
-			"flag must be inert when not declared in the environment");
+		flags.NavigationPreviewEnabled.Should().BeFalse("flag must be inert when not declared in the environment");
 	}
 
 	[Fact]
 	public void ToFeatureFlags_DoesNotAffectOtherFlags()
 	{
 		// NAVIGATION_PREVIEW enabled must not accidentally enable sibling flags
-		var env = new PublishEnvironment
-		{
-			FeatureFlags = new Dictionary<string, bool>
-			{
-				["NAVIGATION_PREVIEW"] = true
-			}
-		};
+		var env = new PublishEnvironment { FeatureFlags = new Dictionary<string, bool> { ["NAVIGATION_PREVIEW"] = true } };
 
 		var flags = env.ToFeatureFlags();
 		flags.WebsiteSearchEnabled.Should().BeFalse();
@@ -123,7 +111,8 @@ public class UseNavigationPreviewTests
 		var provider = CreateProvider(fileSystem);
 
 		// language=yaml
-		var previewYaml = """
+		var previewYaml =
+			"""
 		                  toc:
 		                    - toc: public-repo://reference
 		                      path_prefix: reference

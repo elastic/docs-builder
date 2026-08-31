@@ -69,8 +69,7 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 				return schemaRef.Properties.Keys;
 
 			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) &&
-				Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
+			if (!string.IsNullOrEmpty(refId) && Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
 			{
 				return GetSchemaPropertyNames(resolvedSchema);
 			}
@@ -109,8 +108,7 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 			// Try resolving via Reference.Id
 			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) &&
-				Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
+			if (!string.IsNullOrEmpty(refId) && Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
 			{
 				return HasSchemaProperties(resolvedSchema);
 			}

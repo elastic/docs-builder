@@ -71,7 +71,8 @@ public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 					break;
 				default:
 					throw new ArgumentException(
-						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, pagefind, default, metadata, none.");
+						$"Unknown exporter '{token}'. Valid values: html, llm, es, config, links, state, redirects, okf, pagefind, default, metadata, none."
+					);
 			}
 		}
 		result = set;

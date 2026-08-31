@@ -3,6 +3,8 @@
 Create a changelog file that describes a single item in the release documentation.
 For details and examples, go to [](/data/release-notes/create.md).
 
+For changelogs that don't need a PR link (for example, known issues or security advisories), use [`changelog note`](/cli/changelog/note.md) instead.
+
 ## Options
 
 : `--no-extract-release-notes`
@@ -10,7 +12,8 @@ For details and examples, go to [](/data/release-notes/create.md).
   By default, the behavior is determined by the [extract.release_notes](/data/release-notes/configure-ref.md#extract) changelog configuration setting. Release notes are extracted when using `--prs` or `--report` (and from issues when using `--issues`).
 
 : `--products`
-  Products affected in format `"product target lifecycle, ..."` (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
+  Products affected in format `"product [lifecycle], ..."` (for example, `"cloud-serverless, kibana"` or `"elasticsearch ga"`).
+  Do not include a version or date in the middle slot; that is an error.
   The valid product identifiers are listed in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
   For more information about valid product and lifecycle values, go to [Product format](#product-format-and-resolution).
 
@@ -45,12 +48,12 @@ You can override those settings with the `--use-pr-number` or `--use-issue-numbe
 ```sh
 docs-builder changelog add \
   --prs 1234 \
-  --products "elasticsearch 9.2.3" \
+  --products "elasticsearch ga" \
   --use-pr-number
 
 docs-builder changelog add \
   --issues 4567 \
-  --products "elasticsearch 9.3.0" \
+  --products "elasticsearch" \
   --use-issue-number
 ```
 
@@ -62,19 +65,18 @@ docs-builder changelog add \
 
 ## Product format and resolution
 
-The `--products` option accepts values with the format `"product target lifecycle, ..."` where:
+The `--products` option accepts values with the format `"product [lifecycle], ..."` where:
 
 - `product` is a product ID that exists in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (required)
-- `target` is the target version or date (optional)
 - `lifecycle` exists in [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) (optional)
 
 You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 
 For example:
 
-- `"kibana 9.2.0 ga"`
-- `"cloud-serverless 2025-08-05"`
-- `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
+- `"kibana"`
+- `"kibana ga"`
+- `"cloud-serverless, kibana"`
 
 The `changelog add` command resolves product values in the following order:
 

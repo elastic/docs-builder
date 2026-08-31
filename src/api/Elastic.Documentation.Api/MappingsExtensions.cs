@@ -29,14 +29,25 @@ public static class MappingsExtension
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
 	{
 		var askAiGroup = group.MapGroup("/ask-ai");
-		_ = askAiGroup.MapPost("/stream", async (HttpContext context, AskAiRequest askAiRequest, IAskAiService askAiService, IStreamTransformer streamTransformer, ILogger<Program> logger, Cancel ctx) =>
+		_ = askAiGroup.MapPost("/stream", async (
+			HttpContext context,
+			AskAiRequest askAiRequest,
+			IAskAiService askAiService,
+			IStreamTransformer streamTransformer,
+			ILogger<Program> logger,
+			Cancel ctx
+		) =>
 		{
 			context.Response.ContentType = "text/event-stream";
 			context.Response.Headers.CacheControl = "no-cache";
 			context.Response.Headers.Connection = "keep-alive";
 
 			var askAiActivitySource = new ActivitySource(TelemetryConstants.AskAiSourceName);
-			logger.LogInformation("Starting AskAI chat with {AgentProvider} and {AgentId}", streamTransformer.AgentProvider, streamTransformer.AgentId);
+			logger.LogInformation(
+				"Starting AskAI chat with {AgentProvider} and {AgentId}",
+				streamTransformer.AgentProvider,
+				streamTransformer.AgentId
+			);
 			var activity = askAiActivitySource.StartActivity($"chat {streamTransformer.AgentProvider}", ActivityKind.Client);
 			_ = activity?.SetTag("gen_ai.operation.name", "chat");
 			_ = activity?.SetTag("gen_ai.provider.name", streamTransformer.AgentProvider);
@@ -44,10 +55,7 @@ public static class MappingsExtension
 			if (askAiRequest.ConversationId is not null)
 				_ = activity?.SetTag("gen_ai.conversation.id", askAiRequest.ConversationId.ToString());
 
-			var inputMessages = new[]
-			{
-				new InputMessage("user", [new MessagePart("text", askAiRequest.Message)])
-			};
+			var inputMessages = new[] { new InputMessage("user", [new MessagePart("text", askAiRequest.Message)]) };
 			var inputMessagesJson = JsonSerializer.Serialize(inputMessages, ApiJsonContext.Default.InputMessageArray);
 			_ = activity?.SetTag("gen_ai.input.messages", inputMessagesJson);
 			var sanitizedMessage = askAiRequest.Message?.Replace("\r", "").Replace("\n", "");
@@ -64,12 +72,19 @@ public static class MappingsExtension
 				response.Stream,
 				response.GeneratedConversationId,
 				activity,
-				ctx);
+				ctx
+			);
 			await transformedStream.CopyToAsync(context.Response.Body, ctx);
 		});
 
 		// UUID validation is automatic via Guid type deserialization (returns 400 if invalid)
-		_ = askAiGroup.MapPost("/message-feedback", async (HttpContext context, AskAiMessageFeedbackRequest request, IAskAiMessageFeedbackService feedbackService, ILogger<Program> logger, Cancel ctx) =>
+		_ = askAiGroup.MapPost("/message-feedback", async (
+			HttpContext context,
+			AskAiMessageFeedbackRequest request,
+			IAskAiMessageFeedbackService feedbackService,
+			ILogger<Program> logger,
+			Cancel ctx
+		) =>
 		{
 			// Extract euid cookie for user tracking
 			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
@@ -84,14 +99,10 @@ public static class MappingsExtension
 				"Recording message feedback for message {MessageId} in conversation {ConversationId}: {Reaction}",
 				request.MessageId,
 				request.ConversationId,
-				request.Reaction);
-
-			var record = new AskAiMessageFeedbackRecord(
-				request.MessageId,
-				request.ConversationId,
-				request.Reaction,
-				euid
+				request.Reaction
 			);
+
+			var record = new AskAiMessageFeedbackRecord(request.MessageId, request.ConversationId, request.Reaction, euid);
 
 			await feedbackService.RecordFeedbackAsync(record, ctx);
 			return Results.NoContent();
@@ -101,79 +112,65 @@ public static class MappingsExtension
 	private static void MapNavigationSearch(IEndpointRouteBuilder group)
 	{
 		var searchGroup = group.MapGroup("/navigation-search");
-		_ = searchGroup.MapGet("/",
-			async (
-				[FromQuery(Name = "q")] string query,
-				[FromQuery(Name = "page")] int? pageNumber,
-				[FromQuery(Name = "type")] string? typeFilter,
-				INavigationSearchService navigationSearchService,
-				Cancel ctx
-			) =>
-			{
-				var request = new NavigationSearchRequest
-				{
-					Query = query,
-					PageNumber = pageNumber ?? 1,
-					TypeFilter = typeFilter
-				};
-				var response = await navigationSearchService.NavigationSearchAsync(request, ctx);
-				return Results.Ok(response);
-			});
+		_ = searchGroup.MapGet("/", async (
+			[FromQuery(Name = "q")] string query,
+			[FromQuery(Name = "page")] int? pageNumber,
+			[FromQuery(Name = "type")] string? typeFilter,
+			INavigationSearchService navigationSearchService,
+			Cancel ctx
+		) =>
+		{
+			var request = new NavigationSearchRequest { Query = query, PageNumber = pageNumber ?? 1, TypeFilter = typeFilter };
+			var response = await navigationSearchService.NavigationSearchAsync(request, ctx);
+			return Results.Ok(response);
+		});
 	}
 
 	private static void MapFullSearch(IEndpointRouteBuilder group)
 	{
 		var searchGroup = group.MapGroup("/search");
-		_ = searchGroup.MapGet("/",
-			async (
-				[FromQuery(Name = "q")] string query,
-				[FromQuery(Name = "page")] int? pageNumber,
-				[FromQuery(Name = "size")] int? pageSize,
-				[FromQuery(Name = "type")] string[]? typeFilter,
-				[FromQuery(Name = "section")] string[]? sectionFilter,
-				[FromQuery(Name = "deployment")] string[]? deploymentFilter,
-				[FromQuery(Name = "product")] string[]? productFilter,
-				[FromQuery(Name = "version")] string? versionFilter,
-				[FromQuery(Name = "sort")] string? sortBy,
-				IFullSearchService searchService,
-				Cancel ctx
-			) =>
+		_ = searchGroup.MapGet("/", async (
+			[FromQuery(Name = "q")] string query,
+			[FromQuery(Name = "page")] int? pageNumber,
+			[FromQuery(Name = "size")] int? pageSize,
+			[FromQuery(Name = "type")] string[]? typeFilter,
+			[FromQuery(Name = "section")] string[]? sectionFilter,
+			[FromQuery(Name = "deployment")] string[]? deploymentFilter,
+			[FromQuery(Name = "product")] string[]? productFilter,
+			[FromQuery(Name = "version")] string? versionFilter,
+			[FromQuery(Name = "sort")] string? sortBy,
+			IFullSearchService searchService,
+			Cancel ctx
+		) =>
+		{
+			var request = new FullSearchRequest
 			{
-				var request = new FullSearchRequest
-				{
-					Query = query,
-					PageNumber = pageNumber ?? 1,
-					PageSize = pageSize ?? 20,
-					TypeFilter = typeFilter,
-					SectionFilter = sectionFilter,
-					DeploymentFilter = deploymentFilter,
-					ProductFilter = productFilter,
-					VersionFilter = versionFilter,
-					SortBy = sortBy ?? "relevance"
-				};
-				var response = await searchService.SearchAsync(request, ctx);
-				return Results.Ok(response);
-			});
+				Query = query,
+				PageNumber = pageNumber ?? 1,
+				PageSize = pageSize ?? 20,
+				TypeFilter = typeFilter,
+				SectionFilter = sectionFilter,
+				DeploymentFilter = deploymentFilter,
+				ProductFilter = productFilter,
+				VersionFilter = versionFilter,
+				SortBy = sortBy ?? "relevance"
+			};
+			var response = await searchService.SearchAsync(request, ctx);
+			return Results.Ok(response);
+		});
 	}
 
 	private static void MapChanges(IEndpointRouteBuilder group) =>
-		group.MapGet("/changes",
-			async (
-				[FromQuery(Name = "since")] DateTimeOffset since,
-				[FromQuery(Name = "cursor")] string? cursor,
-				[FromQuery(Name = "size")] int? pageSize,
-				IChangesService changesService,
-				Cancel ctx
-			) =>
-			{
-				var request = new ChangesRequest
-				{
-					Since = since,
-					PageSize = pageSize ?? ChangesDefaults.PageSize,
-					Cursor = cursor
-				};
-				var response = await changesService.GetChangesAsync(request, ctx);
-				return Results.Ok(response);
-			});
-
+		group.MapGet("/changes", async (
+			[FromQuery(Name = "since")] DateTimeOffset since,
+			[FromQuery(Name = "cursor")] string? cursor,
+			[FromQuery(Name = "size")] int? pageSize,
+			IChangesService changesService,
+			Cancel ctx
+		) =>
+		{
+			var request = new ChangesRequest { Since = since, PageSize = pageSize ?? ChangesDefaults.PageSize, Cursor = cursor };
+			var response = await changesService.GetChangesAsync(request, ctx);
+			return Results.Ok(response);
+		});
 }

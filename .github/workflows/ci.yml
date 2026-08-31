@@ -18,6 +18,7 @@ env:
 
 jobs:
   validate-assembler:
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -35,48 +36,12 @@ jobs:
         run: dotnet run --project src/tooling/docs-builder -c release -- assembler content-source validate
 
   build-link-index-updater-lambda:
+    needs: [lint]
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
 
   build-openapi-index-lambda:
+    needs: [lint]
     uses: ./.github/workflows/build-openapi-index-lambda.yml
-
-  synthetics:
-    runs-on: ubuntu-latest
-    env:
-      MSBuildNoWarn: IDE0032
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-        
-      - name: Bootstrap Action Workspace
-        id: bootstrap
-        uses: ./.github/actions/bootstrap
-          
-      - name: Install dependencies
-        working-directory: src/Elastic.Documentation.Site
-        run: npm ci
-        
-      - name: Run assembler
-        run: |
-          mkdir ../assembler-workspace
-          cd ../assembler-workspace
-          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler config init --local 
-          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler clone -c local --skip-private-repositories
-          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler build -c local --skip-private-repositories
-          dotnet run --project ../docs-builder/src/tooling/docs-builder -- assembler serve &
-        
-      - name: Wait for docs
-        working-directory: src/Elastic.Documentation.Site
-        run: npx wait-on http-get://localhost:4000/docs
-          
-      - name: Run synthetics
-        working-directory: src/Elastic.Documentation.Site
-        run: npm run synthetics:test
-
-      - name: Run accessibility synthetics
-        working-directory: src/Elastic.Documentation.Site
-        run: npm run synthetics:test:accessibility
 
   npm:
     runs-on: ubuntu-latest
@@ -125,14 +90,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Bootstrap Action Workspace
-        id: bootstrap
-        uses: ./.github/actions/bootstrap
-
       - name: Lint
-        run: dotnet run --project build -c release -- lint
+        uses: nullean/curb@c399bcd201b5ca466cfbcf5776825a629abf4f4b # 0.7.1
+        with:
+          command: check
+          path: .
 
   build:
+    needs: [lint]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -155,9 +120,6 @@ jobs:
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
-
-      - name: Install Aspire workload
-        run: dotnet workload install aspire
 
       - name: Compile
         run: dotnet run --project build -c release -- compile
@@ -205,9 +167,6 @@ jobs:
         id: bootstrap
         uses: ./.github/actions/bootstrap
 
-      - name: Install Aspire workload
-        run: dotnet workload install aspire
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
@@ -220,8 +179,9 @@ jobs:
           ES_KEY=$(aws ssm get-parameter --name /elastic-docs-v3/prod/docs-elasticsearch-github-actions-readonly-api-key --with-decryption --query Parameter.Value --output text)
           echo "::add-mask::$ES_URL"
           echo "::add-mask::$ES_KEY"
-          dotnet user-secrets set "Parameters:ElasticsearchUrl" "$ES_URL" --project aspire
-          dotnet user-secrets set "Parameters:ElasticsearchApiKey" "$ES_KEY" --project aspire
+          dotnet tool restore
+          dotnet aspire secret set ElasticsearchUrl "$ES_URL"
+          dotnet aspire secret set ElasticsearchApiKey "$ES_KEY"
 
       - name: Integration Tests
         env:

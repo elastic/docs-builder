@@ -30,15 +30,14 @@ public class KibanaApiMarkdownNavigationTests
 	private sealed class StubMarkdownRenderer : IMarkdownStringRenderer
 	{
 		public string Render(string markdown, IFileInfo? source) => "<p>stub-body</p>";
-		public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
-			"<h1>Kibana spaces</h1><p>stub-body</p>";
+		public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) => "<h1>Kibana spaces</h1><p>stub-body</p>";
 	}
 
 	private static (LandingNavigationItem navigation, SimpleMarkdownNavigationItem introNav) SetupKibanaNavigation()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
-		var introPath = Path.Combine(root, "docs", "api", "kibana", "kibana-api-overview.md");
-		var specPath = Path.Combine(root, "docs", "kibana-openapi.json");
+		var introPath = Path.Combine(root, "tests", "Elastic.ApiExplorer.Tests", "TestData", "kibana-api-overview.md");
+		var specPath = Path.Combine(root, "tests", "Elastic.ApiExplorer.Tests", "TestData", "kibana-openapi-no-x-req-auth-sample.json");
 		var fs = new FileSystem();
 		var introFile = fs.FileInfo.New(introPath);
 		var specFile = fs.FileInfo.New(specPath);
@@ -47,14 +46,18 @@ public class KibanaApiMarkdownNavigationTests
 		{
 			ProductKey = "kibana",
 			Product = new Product { Id = "kibana", DisplayName = "Kibana" },
-			SpecFileName = "kibana-openapi.json",
+			SpecFileName = "kibana-openapi-no-x-req-auth-sample.json",
 			LocalSpecFile = specFile,
 			Children = [introFile]
 		};
 
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
+		var context = new BuildContext(
+			collector,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			configurationContext
+		);
 		var doc = OpenApiReader.Instance.ReadAsync(specFile).GetAwaiter().GetResult();
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);

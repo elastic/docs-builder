@@ -8,8 +8,9 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class MermaidFlowchartTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
+public class MermaidFlowchartTests(ITestOutputHelper output) : DirectiveTest(
+	output,
+	"""
 ```mermaid
 flowchart LR
 A[Start] --> B[Process]
@@ -45,8 +46,9 @@ B --> C[End]
 	}
 }
 
-public class MermaidSequenceTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
+public class MermaidSequenceTests(ITestOutputHelper output) : DirectiveTest(
+	output,
+	"""
 ```mermaid
 sequenceDiagram
     participant A as Alice
@@ -77,8 +79,9 @@ sequenceDiagram
 	}
 }
 
-public class MermaidStateDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
+public class MermaidStateDiagramTests(ITestOutputHelper output) : DirectiveTest(
+	output,
+	"""
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
@@ -110,8 +113,9 @@ stateDiagram-v2
 	}
 }
 
-public class MermaidClassDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
+public class MermaidClassDiagramTests(ITestOutputHelper output) : DirectiveTest(
+	output,
+	"""
 ```mermaid
 classDiagram
     Animal <|-- Duck
@@ -142,8 +146,9 @@ classDiagram
 	}
 }
 
-public class MermaidErDiagramTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
+public class MermaidErDiagramTests(ITestOutputHelper output) : DirectiveTest(
+	output,
+	"""
 ```mermaid
 erDiagram
     CUSTOMER ||--o{ ORDER : places
@@ -175,8 +180,9 @@ erDiagram
 
 // classDef/style directives are stripped by strict styling (Strip mode) — diagram still renders as SVG,
 // each stripped item fires OnStripped as a hint.
-public class MermaidStyledFlowchartTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
+public class MermaidStyledFlowchartTests(ITestOutputHelper output) : DirectiveTest(
+	output,
+	"""
 ```mermaid
 flowchart LR
 A[Start] --> B[Process]
@@ -198,8 +204,9 @@ style B fill:#0A52B3,color:#fff
 }
 
 // Allowlisted semantic classes render correctly with site palette colors baked into SVG.
-public class MermaidStrictClassTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
+public class MermaidStrictClassTests(ITestOutputHelper output) : DirectiveTest(
+	output,
+	"""
 ```mermaid
 flowchart LR
 A[Start]:::warning --> B[End]
@@ -221,8 +228,9 @@ A[Start]:::warning --> B[End]
 }
 
 // DataPalette: pie chart SVG should use our theme palette, not the Tableau CB10 default.
-public class MermaidPieDataPaletteTests(ITestOutputHelper output) : DirectiveTest(output,
-"""
+public class MermaidPieDataPaletteTests(ITestOutputHelper output) : DirectiveTest(
+	output,
+	"""
 ```mermaid
 pie
 "Blue" : 40

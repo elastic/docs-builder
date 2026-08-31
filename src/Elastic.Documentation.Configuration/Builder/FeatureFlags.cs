@@ -14,11 +14,7 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		_featureFlags[normalizedKey] = value;
 	}
 
-	public bool PrimaryNavEnabled
-	{
-		get => IsEnabled("primary-nav");
-		set => _featureFlags["primary-nav"] = value;
-	}
+	public bool PrimaryNavEnabled { get => IsEnabled("primary-nav"); set => _featureFlags["primary-nav"] = value; }
 
 	public bool DisableGitHubEditLink
 	{
@@ -26,43 +22,25 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["disable-github-edit-link"] = value;
 	}
 
-	public bool StagingElasticNavEnabled
-	{
-		get => IsEnabled("staging-elastic-nav");
-		set => _featureFlags["staging-elastic-nav"] = value;
-	}
+	public bool StagingElasticNavEnabled { get => IsEnabled("staging-elastic-nav"); set => _featureFlags["staging-elastic-nav"] = value; }
 
-	public bool WebsiteSearchEnabled
-	{
-		get => IsEnabled("website-search");
-		set => _featureFlags["website-search"] = value;
-	}
+	public bool WebsiteSearchEnabled { get => IsEnabled("website-search"); set => _featureFlags["website-search"] = value; }
 
 	public string? WebsiteSearchScriptUrl { get; set; }
 
-	public bool AirGappedEnabled
+	public bool AirGappedEnabled { get => IsEnabled("air-gapped"); set => _featureFlags["air-gapped"] = value; }
+
+	public bool DiagnosticsPanelEnabled { get => IsEnabled("diagnostics-panel"); set => _featureFlags["diagnostics-panel"] = value; }
+
+	public bool AssemblerApiExplorerEnabled
 	{
-		get => IsEnabled("air-gapped");
-		set => _featureFlags["air-gapped"] = value;
+		get => IsEnabled("assembler-api-explorer");
+		set => _featureFlags["assembler-api-explorer"] = value;
 	}
 
-	public bool DiagnosticsPanelEnabled
-	{
-		get => IsEnabled("diagnostics-panel");
-		set => _featureFlags["diagnostics-panel"] = value;
-	}
+	public bool GuideNavEnabled { get => IsEnabled("guide-nav"); set => _featureFlags["guide-nav"] = value; }
 
-	public bool GuideNavEnabled
-	{
-		get => IsEnabled("guide-nav");
-		set => _featureFlags["guide-nav"] = value;
-	}
-
-	public bool NavigationPreviewEnabled
-	{
-		get => IsEnabled("navigation-preview");
-		set => _featureFlags["navigation-preview"] = value;
-	}
+	public bool NavigationPreviewEnabled { get => IsEnabled("navigation-preview"); set => _featureFlags["navigation-preview"] = value; }
 
 	private bool IsEnabled(string key)
 	{

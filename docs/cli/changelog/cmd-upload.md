@@ -80,7 +80,7 @@ Use `--artifact-type` to choose what to upload:
 Keying differs by artifact type:
 
 - **Changelog entries** are uploaded **once** under the authoring owner/repo/branch, regardless of how many products they list (or none). The owner is resolved from `--owner`, then `bundle.owner` in `changelog.yml`, then the git remote origin; the repo from `--repo`, then `bundle.repo`, then the git remote origin; the branch from `--branch`, then the current checkout's branch. The branch is stored verbatim, so a branch name containing `/` (for example `feature/foo`) becomes additional key segments.
-- **Bundles** are uploaded once per product listed in the bundle's `products[].product` field (a bundle that declares multiple products is written under each product prefix).
+- **Bundles** are uploaded once per product listed in the bundle's `products[].product` field (a bundle that declares multiple products is written under each product prefix). Amend sidecars produced from a CDN parent (`changelog bundle-amend /bundle/{product}/{file}.yaml`) are uploaded like any other bundle YAML.
 
 ## Upload targets
 

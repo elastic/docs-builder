@@ -22,6 +22,7 @@ using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
 using Markdig.Parsers;
 using Markdig.Syntax;
@@ -78,8 +79,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "csv-table", 33 }
 	}.ToFrozenDictionary();
 
-	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup =
-		UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
+	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup = UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
 
 	protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
 	{
@@ -192,6 +192,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{button}") > 0)
 			return new ButtonBlock(this, context);
 
+		if (info.IndexOf("{vector-sizing-calculator}") > 0)
+			return new VectorSizingBlock(this, context);
+
 		if (info.IndexOf("{list-sub-pages}") > 0)
 			return new ListSubPagesBlock(this, context);
 
@@ -274,6 +277,5 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		directiveBlock.AddProperty(name, data);
 
 		return BlockState.Continue;
-
 	}
 }

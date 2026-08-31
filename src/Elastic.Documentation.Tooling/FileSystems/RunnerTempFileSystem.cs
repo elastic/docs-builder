@@ -16,14 +16,17 @@ namespace Elastic.Documentation.FileSystems;
 /// Used by <c>evaluate-pr</c>, <c>evaluate-artifact</c>, and <c>prepare-artifact</c> —
 /// all three operate on paths vended by the CI environment, not a fixed docset or checkout.
 /// Permits <c>.git</c> so changelog configuration can be located by the config loader.
+/// Permits <c>.artifacts</c> so <c>prepare-artifact</c> can write the staging dirs that
+/// <c>elastic/docs-actions</c> passes (<c>.artifacts/changelog-staging</c> /
+/// <c>.artifacts/changelog-artifact</c>). Those paths are descendants of the working root,
+/// so they are not added as extra roots and must be allowlisted as hidden folders.
 /// </para>
 /// </summary>
 public class RunnerTempFileSystem(
 	IDirectoryInfo workingRoot,
 	IEnumerable<string>? ciPaths = null,
-	IFileSystem? inner = null)
-	: ScopedFileSystem(inner ?? Physical, BuildOptions(workingRoot, ciPaths)),
-	IRunnerTempFileSystem
+	IFileSystem? inner = null
+) : ScopedFileSystem(inner ?? Physical, BuildOptions(workingRoot, ciPaths)), IRunnerTempFileSystem
 {
 	private static readonly FileSystem Physical = new();
 
@@ -49,7 +52,7 @@ public class RunnerTempFileSystem(
 
 		return new ScopedFileSystemOptions([.. roots])
 		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
 		};
 	}
@@ -59,9 +62,7 @@ public class RunnerTempFileSystem(
 		var fs = inner ?? Physical;
 		var workingRoot = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var runnerTemp = env.GetEnvironmentVariable("RUNNER_TEMP");
-		return new RunnerTempFileSystem(workingRoot,
-			ciPaths: string.IsNullOrWhiteSpace(runnerTemp) ? null : [runnerTemp],
-			inner: inner);
+		return new RunnerTempFileSystem(workingRoot, ciPaths: string.IsNullOrWhiteSpace(runnerTemp) ? null : [runnerTemp], inner: inner);
 	}
 
 	public static RunnerTempFileSystem ForEvaluateArtifact(string metadataPath, IFileSystem? inner = null)
@@ -69,9 +70,7 @@ public class RunnerTempFileSystem(
 		var fs = inner ?? Physical;
 		var workingRoot = fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		var metadataDir = System.IO.Path.GetDirectoryName(metadataPath);
-		return new RunnerTempFileSystem(workingRoot,
-			ciPaths: string.IsNullOrWhiteSpace(metadataDir) ? null : [metadataDir],
-			inner: inner);
+		return new RunnerTempFileSystem(workingRoot, ciPaths: string.IsNullOrWhiteSpace(metadataDir) ? null : [metadataDir], inner: inner);
 	}
 
 	public static RunnerTempFileSystem ForPrepareArtifact(string? stagingDir, string? outputDir, IFileSystem? inner = null)

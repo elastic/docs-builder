@@ -22,7 +22,11 @@ namespace Elastic.ApiExplorer.Tests;
 
 public static class TestHelpers
 {
-	public static IConfigurationContext CreateConfigurationContext(IFileSystem fileSystem, VersionsConfiguration? versionsConfiguration = null, ProductsConfiguration? productsConfiguration = null)
+	public static IConfigurationContext CreateConfigurationContext(
+		IFileSystem fileSystem,
+		VersionsConfiguration? versionsConfiguration = null,
+		ProductsConfiguration? productsConfiguration = null
+	)
 	{
 		versionsConfiguration ??= CreateStackVersionsConfiguration(currentMajor: 9, currentMinor: 0);
 		if (productsConfiguration is null)
@@ -30,7 +34,8 @@ public static class TestHelpers
 			var products = new Dictionary<string, Product>
 			{
 				{
-					"elasticsearch", new Product
+					"elasticsearch",
+					new Product
 					{
 						Id = "elasticsearch",
 						DisplayName = "Elasticsearch",
@@ -48,10 +53,7 @@ public static class TestHelpers
 		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
-			Endpoints = new DocumentationEndpoints
-			{
-				Elasticsearch = ElasticsearchEndpoint.Default,
-			},
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem)),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
@@ -66,7 +68,8 @@ public static class TestHelpers
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Stack, new VersioningSystem
+					VersioningSystemId.Stack,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
 						Current = new SemVersion(currentMajor, currentMinor, patch),
@@ -82,7 +85,8 @@ public static class TestHelpers
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Serverless, new VersioningSystem
+					VersioningSystemId.Serverless,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Serverless,
 						Current = new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0),
@@ -93,10 +97,5 @@ public static class TestHelpers
 		};
 
 	public static Product CreateProduct(string id, VersioningSystem versioningSystem, string? displayName = null) =>
-		new()
-		{
-			Id = id,
-			DisplayName = displayName ?? id,
-			VersioningSystem = versioningSystem
-		};
+		new() { Id = id, DisplayName = displayName ?? id, VersioningSystem = versioningSystem };
 }

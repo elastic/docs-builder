@@ -103,13 +103,9 @@ public class EnvironmentInterpolationTests
 	{
 		private readonly Dictionary<string, string?> _variables = [with(StringComparer.Ordinal)];
 
-		public string? this[string name]
-		{
-			set => _variables[name] = value;
-		}
+		public string? this[string name] { set => _variables[name] = value; }
 
-		public string? GetEnvironmentVariable(string name) =>
-			_variables.GetValueOrDefault(name);
+		public string? GetEnvironmentVariable(string name) => _variables.GetValueOrDefault(name);
 
 		public bool IsRunningOnCI => false;
 	}

@@ -24,7 +24,9 @@ public class CsvIncludeViewModel : DirectiveViewModel
 		{
 			if (rowCount >= csvBlock.MaxRows)
 			{
-				csvBlock.EmitWarning($"CSV file contains more than {csvBlock.MaxRows} rows. Only the first {csvBlock.MaxRows} rows will be displayed.");
+				csvBlock.EmitWarning(
+					$"CSV file contains more than {csvBlock.MaxRows} rows. Only the first {csvBlock.MaxRows} rows will be displayed."
+				);
 				return false;
 			}
 
@@ -32,7 +34,9 @@ public class CsvIncludeViewModel : DirectiveViewModel
 			{
 				if (!columnCountExceeded)
 				{
-					csvBlock.EmitWarning($"CSV file contains more than {csvBlock.MaxColumns} columns. Only the first {csvBlock.MaxColumns} columns will be displayed.");
+					csvBlock.EmitWarning(
+						$"CSV file contains more than {csvBlock.MaxColumns} columns. Only the first {csvBlock.MaxColumns} columns will be displayed."
+					);
 					columnCountExceeded = true;
 				}
 			}
@@ -60,9 +64,5 @@ public class CsvIncludeViewModel : DirectiveViewModel
 	}
 
 	public static CsvIncludeViewModel Create(CsvIncludeBlock csvBlock, Func<string, HtmlString> renderMarkdown) =>
-		new()
-		{
-			DirectiveBlock = csvBlock,
-			RenderMarkdown = renderMarkdown
-		};
+		new() { DirectiveBlock = csvBlock, RenderMarkdown = renderMarkdown };
 }

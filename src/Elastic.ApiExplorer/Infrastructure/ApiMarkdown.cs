@@ -38,9 +38,7 @@ public static partial class ApiMarkdown
 
 	private static IFileInfo CreateVirtualSource(ApiRenderContext context)
 	{
-		var relativePath = context.CurrentNavigation.Url
-			.TrimStart('/')
-			.TrimEnd('/');
+		var relativePath = context.CurrentNavigation.Url.TrimStart('/').TrimEnd('/');
 		if (string.IsNullOrEmpty(relativePath))
 			relativePath = "api";
 
