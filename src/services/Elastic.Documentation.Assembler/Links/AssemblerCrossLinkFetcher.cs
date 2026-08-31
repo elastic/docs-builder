@@ -12,8 +12,12 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Assembler.Links;
 
 /// fetches all the cross-links for all repositories defined in assembler.yml configuration <see cref="AssemblyConfiguration"/>
-public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfiguration configuration, PublishEnvironment publishEnvironment, ILinkIndexReader linkIndexProvider)
-	: CrossLinkFetcher(logFactory, linkIndexProvider)
+public class AssemblerCrossLinkFetcher(
+	ILoggerFactory logFactory,
+	AssemblyConfiguration configuration,
+	PublishEnvironment publishEnvironment,
+	ILinkIndexReader linkIndexProvider
+) : CrossLinkFetcher(logFactory, linkIndexProvider)
 {
 	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
 	{
@@ -21,9 +25,7 @@ public class AssemblerCrossLinkFetcher(ILoggerFactory logFactory, AssemblyConfig
 
 		// We do want to always fetch cross-link data for all repositories.
 		// This is public information
-		var repositories = configuration.AvailableRepositories.Values
-			.Concat(configuration.PrivateRepositories.Values)
-			.ToList();
+		var repositories = configuration.AvailableRepositories.Values.Concat(configuration.PrivateRepositories.Values).ToList();
 
 		// Deduplicate and filter skipped repos
 		var declaredRepositories = new HashSet<string>();

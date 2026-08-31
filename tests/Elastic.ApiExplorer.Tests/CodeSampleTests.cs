@@ -134,17 +134,13 @@ public class CodeSampleTests
 	[InlineData("Java", "language-java")]
 	[InlineData("Go", "language-go")]
 	[InlineData("TypeScript", "language-typescript")]
-	public void GetHighlightClass_MapsLanguagesCorrectly(string language, string expected)
-	{
+	public void GetHighlightClass_MapsLanguagesCorrectly(string language, string expected) =>
 		CodeSample.GetHighlightClass(language).Should().Be(expected);
-	}
 
 	[Fact]
 	public void CodeSamples_SetsCorrectHighlightClass()
 	{
-		var samples = new JsonArray(
-			new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET ..." }
-		);
+		var samples = new JsonArray(new JsonObject { ["lang"] = "curl", ["source"] = "curl -X GET ..." });
 		var operation = CreateOperationWithCodeSamples(samples);
 
 		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
@@ -165,8 +161,7 @@ public class CodeSampleTests
 		CodeSample.GetHighlightGroupClass("some-other-class").Should().Be("highlight-plaintext");
 
 	[Fact]
-	public void GetHighlightGroupClass_HandlesEmptyInput() =>
-		CodeSample.GetHighlightGroupClass("").Should().Be("highlight-plaintext");
+	public void GetHighlightGroupClass_HandlesEmptyInput() => CodeSample.GetHighlightGroupClass("").Should().Be("highlight-plaintext");
 
 	[Fact]
 	public void GetHighlightGroupClass_HandlesLanguagePrefixOnly() =>

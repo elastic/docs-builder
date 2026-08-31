@@ -113,7 +113,8 @@ public static class ElasticsearchEndpointConfigurator
 		ElasticsearchIndexOptions options,
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (options.Endpoint is not null)
 			cfg.Uri = options.Endpoint;

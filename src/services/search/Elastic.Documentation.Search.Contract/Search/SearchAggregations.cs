@@ -10,6 +10,9 @@ public record SearchAggregations
 	public IReadOnlyDictionary<string, long> Type { get; init; } = new Dictionary<string, long>();
 	public IReadOnlyDictionary<string, long> NavigationSection { get; init; } = new Dictionary<string, long>();
 	public IReadOnlyDictionary<string, long> DeploymentType { get; init; } = new Dictionary<string, long>();
-	public IReadOnlyDictionary<string, ProductAggregationBucket> Product { get; init; } =
-		new Dictionary<string, ProductAggregationBucket>();
+	public IReadOnlyDictionary<string, ProductAggregationBucket> Product
+	{
+		get;
+		init;
+	} = new Dictionary<string, ProductAggregationBucket>();
 }

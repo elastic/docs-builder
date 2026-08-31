@@ -38,7 +38,8 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_RemovesMatchingChangelogs()
 	{
 		// Arrange – two changelog files each referencing a specific PR
-		await WriteChangelog("pr-12345.yaml",
+		await WriteChangelog(
+			"pr-12345.yaml",
 			"""
 			title: Fix query parsing
 			type: bug-fix
@@ -48,9 +49,11 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/12345
-			""");
+			"""
+		);
 
-		await WriteChangelog("pr-12346.yaml",
+		await WriteChangelog(
+			"pr-12346.yaml",
 			"""
 			title: New aggregation API
 			type: feature
@@ -60,10 +63,12 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/12346
-			""");
+			"""
+		);
 
 		// A third file whose PR is NOT in the release — must not be removed
-		await WriteChangelog("pr-99999.yaml",
+		await WriteChangelog(
+			"pr-99999.yaml",
 			"""
 			title: Unrelated change
 			type: feature
@@ -73,7 +78,8 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/99999
-			""");
+			"""
+		);
 
 		// Release body references only the first two PRs
 		var releaseBody =
@@ -86,16 +92,13 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
 			""";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		// Act – simulate what the command does: fetch release → build PR URL list → call service
 		var prUrls = await ResolveReleasePrUrls("elastic", "elasticsearch", "v9.2.0");
-		var input = new ChangelogRemoveArguments
-		{
-			Directory = _changelogDir,
-			Prs = prUrls
-		};
+		var input = new ChangelogRemoveArguments { Directory = _changelogDir, Prs = prUrls };
 
 		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
@@ -113,7 +116,8 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_DryRun_DoesNotDeleteFiles()
 	{
 		// Arrange
-		await WriteChangelog("pr-12345.yaml",
+		await WriteChangelog(
+			"pr-12345.yaml",
 			"""
 			title: Fix query parsing
 			type: bug-fix
@@ -123,20 +127,17 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/12345
-			""");
+			"""
+		);
 
 		var releaseBody = "* Fix query parsing by @user in #12345\n";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		var prUrls = await ResolveReleasePrUrls("elastic", "elasticsearch", "v9.2.0");
-		var input = new ChangelogRemoveArguments
-		{
-			Directory = _changelogDir,
-			Prs = prUrls,
-			DryRun = true
-		};
+		var input = new ChangelogRemoveArguments { Directory = _changelogDir, Prs = prUrls, DryRun = true };
 
 		// Act
 		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -144,8 +145,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		// Assert – file must still exist after a dry run
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "pr-12345.yaml"))
-			.Should().BeTrue("dry run must not delete files");
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "pr-12345.yaml")).Should().BeTrue("dry run must not delete files");
 	}
 
 	// -----------------------------------------------------------------------
@@ -156,16 +156,17 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_WithNoMatchingPrs_EmitsWarning()
 	{
 		// Arrange – release body has no PR references
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo
-			{
-				TagName = "v9.2.0",
-				Name = "9.2.0",
-				Body = "Release notes with no pull request references."
-			});
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "Release notes with no pull request references." });
 
 		// Act – replicate command logic: parse, detect zero refs, warn and return without deleting
-		var release = await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken);
+		var release = await _mockReleaseService.FetchReleaseAsync(
+			"elastic",
+			"elasticsearch",
+			"v9.2.0",
+			TestContext.Current.CancellationToken
+		);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
 
 		// Assert – the parser found nothing, so the command would emit a warning and exit early
@@ -180,11 +181,17 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_FetchFailure_ReturnsNull()
 	{
 		// Arrange
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync(A<string>._, A<string>._, A<string?>._, A<Cancel>._))
-			.Returns((GitHubReleaseInfo?)null);
+		A.CallTo(() => _mockReleaseService.FetchReleaseAsync(A<string>._, A<string>._, A<string?>._, A<Cancel>._)).Returns(
+			(GitHubReleaseInfo?)null
+		);
 
 		// Act
-		var release = await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken);
+		var release = await _mockReleaseService.FetchReleaseAsync(
+			"elastic",
+			"elasticsearch",
+			"v9.2.0",
+			TestContext.Current.CancellationToken
+		);
 
 		// Assert – command returns error on null release
 		release.Should().BeNull();
@@ -198,20 +205,17 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_Latest_CallsFetchWithLatestTag()
 	{
 		// Arrange
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo
-			{
-				TagName = "v9.2.0",
-				Name = "9.2.0",
-				Body = "No PR references."
-			});
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "No PR references." });
 
 		// Act
 		_ = await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken);
 
 		// Assert
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._)
+		).MustHaveHappenedOnceExactly();
 	}
 
 	// -----------------------------------------------------------------------
@@ -222,7 +226,8 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_OnlyRemovesChangelogsMatchingReleasePrs()
 	{
 		// Arrange – three changelogs; release only references two
-		await WriteChangelog("es-pr-100.yaml",
+		await WriteChangelog(
+			"es-pr-100.yaml",
 			"""
 			title: Feature A
 			type: feature
@@ -232,9 +237,11 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
-			""");
+			"""
+		);
 
-		await WriteChangelog("es-pr-200.yaml",
+		await WriteChangelog(
+			"es-pr-200.yaml",
 			"""
 			title: Feature B
 			type: feature
@@ -244,9 +251,11 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/200
-			""");
+			"""
+		);
 
-		await WriteChangelog("es-pr-300.yaml",
+		await WriteChangelog(
+			"es-pr-300.yaml",
 			"""
 			title: Feature C (different release)
 			type: feature
@@ -256,24 +265,21 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/300
-			""");
+			"""
+		);
 
 		// Release only contains PRs 100 and 200
-		var releaseBody =
-			"""
+		var releaseBody = """
 			* Feature A by @user in #100
 			* Feature B by @user in #200
 			""";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		var prUrls = await ResolveReleasePrUrls("elastic", "elasticsearch", "v9.2.0");
-		var input = new ChangelogRemoveArguments
-		{
-			Directory = _changelogDir,
-			Prs = prUrls
-		};
+		var input = new ChangelogRemoveArguments { Directory = _changelogDir, Prs = prUrls };
 
 		// Act
 		var result = await _removeService.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -301,8 +307,6 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	{
 		var release = await _mockReleaseService.FetchReleaseAsync(owner, repo, version, TestContext.Current.CancellationToken);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
-		return parsed.PrReferences
-			.Select(r => $"https://github.com/{owner}/{repo}/pull/{r.PrNumber}")
-			.ToArray();
+		return parsed.PrReferences.Select(r => $"https://github.com/{owner}/{repo}/pull/{r.PrNumber}").ToArray();
 	}
 }

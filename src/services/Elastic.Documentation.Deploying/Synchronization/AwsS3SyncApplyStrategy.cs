@@ -33,62 +33,65 @@ public partial class AwsS3SyncApplyStrategy(
 	private static readonly Histogram<double> FilesPerDeploymentHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.deployment.files.count",
 		"files",
-		"Number of files per deployment operation (added + updated + deleted + skipped)");
+		"Number of files per deployment operation (added + updated + deleted + skipped)"
+	);
 
 	private static readonly Counter<double> FilesTotalCounter = SyncMeter.CreateCounter<double>(
 		"docs.deployment.files.total",
 		"files",
-		"Total number of files in deployment (added + updated + deleted + skipped)");
+		"Total number of files in deployment (added + updated + deleted + skipped)"
+	);
 
 	private static readonly Counter<double> FilesAddedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.added.total",
 		"files",
-		"Total number of files added to S3");
+		"Total number of files added to S3"
+	);
 
 	private static readonly Counter<double> FilesUpdatedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.updated.total",
 		"files",
-		"Total number of files updated in S3");
+		"Total number of files updated in S3"
+	);
 
 	private static readonly Counter<double> FilesDeletedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.deleted.total",
 		"files",
-		"Total number of files deleted from S3");
+		"Total number of files deleted from S3"
+	);
 
 	private static readonly Counter<double> FilesSkippedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.skipped.total",
 		"files",
-		"Total number of files skipped (unchanged)");
+		"Total number of files skipped (unchanged)"
+	);
 
 	private static readonly Histogram<double> FileSizeHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.file.size",
 		"By",
-		"Distribution of file sizes synced to S3");
+		"Distribution of file sizes synced to S3"
+	);
 
 	private static readonly Counter<double> FilesByExtensionCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.by_extension",
 		"files",
-		"File operations grouped by extension");
+		"File operations grouped by extension"
+	);
 
 	private static readonly Histogram<double> SyncDurationHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.duration",
 		"s",
-		"Duration of sync operations");
+		"Duration of sync operations"
+	);
 
 	private readonly ILogger<AwsS3SyncApplyStrategy> _logger = logFactory.CreateLogger<AwsS3SyncApplyStrategy>();
 
 	private void DisplayProgress(object? sender, UploadDirectoryProgressArgs args) => LogProgress(_logger, args);
 
-	[LoggerMessage(
-		EventId = 2,
-		Level = LogLevel.Debug,
-		Message = "{Args}")]
+	[LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = "{Args}")]
 	private static partial void LogProgress(ILogger logger, UploadDirectoryProgressArgs args);
 
-	[LoggerMessage(
-		EventId = 3,
-		Level = LogLevel.Information,
-		Message = "File operation: {Operation} | Path: {FilePath} | Size: {FileSize} bytes")]
+	[LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "File operation: {Operation} | Path: {FilePath} | Size: {FileSize} bytes")]
 	private static partial void LogFileOperation(ILogger logger, string operation, string filePath, long fileSize);
 
 	public async Task Apply(SyncPlan plan, Cancel ctx = default)
@@ -137,7 +140,13 @@ public partial class AwsS3SyncApplyStrategy(
 
 		_logger.LogInformation(
 			"Deployment sync: {TotalFiles} files ({AddCount} added, {UpdateCount} updated, {DeleteCount} deleted, {SkipCount} skipped) in {Environment}",
-			totalFiles, addCount, updateCount, deleteCount, skipCount, context.EnvironmentName);
+			totalFiles,
+			addCount,
+			updateCount,
+			deleteCount,
+			skipCount,
+			context.EnvironmentName
+		);
 
 		await Upload(plan, ctx);
 		await Delete(plan, ctx);
@@ -195,8 +204,12 @@ public partial class AwsS3SyncApplyStrategy(
 				_logger.LogInformation("Uploading {Count} files to S3 bucket {BucketName}", uploadRequests.Count, bucketName);
 				_logger.LogDebug("Starting directory upload from {TempDir}", tempDir);
 				await transferUtility.UploadDirectoryAsync(directoryRequest, ctx);
-				_logger.LogInformation("Successfully uploaded {Count} files ({AddCount} added, {UpdateCount} updated)",
-					uploadRequests.Count, addCount, updateCount);
+				_logger.LogInformation(
+					"Successfully uploaded {Count} files ({AddCount} added, {UpdateCount} updated)",
+					uploadRequests.Count,
+					addCount,
+					updateCount
+				);
 			}
 			finally
 			{
@@ -228,9 +241,7 @@ public partial class AwsS3SyncApplyStrategy(
 				// Record by extension (low cardinality)
 				if (!string.IsNullOrEmpty(extension))
 				{
-					FilesByExtensionCounter.Add(1,
-						new("operation", "delete"),
-						new("extension", extension));
+					FilesByExtensionCounter.Add(1, new("operation", "delete"), new("extension", extension));
 				}
 
 				// Log individual file operations for detailed analysis
@@ -243,10 +254,7 @@ public partial class AwsS3SyncApplyStrategy(
 				var deleteObjectsRequest = new DeleteObjectsRequest
 				{
 					BucketName = bucketName,
-					Objects = batch.Select(d => new KeyVersion
-					{
-						Key = d.DestinationPath
-					}).ToList()
+					Objects = batch.Select(d => new KeyVersion { Key = d.DestinationPath }).ToList()
 				};
 				var response = await s3Client.DeleteObjectsAsync(deleteObjectsRequest, ctx);
 				if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
@@ -261,8 +269,12 @@ public partial class AwsS3SyncApplyStrategy(
 				else
 				{
 					deleteCount += batch.Length;
-					_logger.LogInformation("Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
-						batch.Length, deleteCount, deleteRequests.Count);
+					_logger.LogInformation(
+						"Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
+						batch.Length,
+						deleteCount,
+						deleteRequests.Count
+					);
 				}
 			}
 

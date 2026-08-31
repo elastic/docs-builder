@@ -25,7 +25,8 @@ public static class AssemblerOpenApiBuildStep
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
 		AssembleSources assembleSources,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
 		var env = assembleContext.Environment;
@@ -58,7 +59,8 @@ public static class AssemblerOpenApiBuildStep
 				logFactory,
 				owner.Set.BuildContext,
 				generator.MarkdownStringRenderer,
-				versionIndexClient);
+				versionIndexClient
+			);
 			var entries = await openApiGenerator.GenerateProducts(ctx).ConfigureAwait(false);
 			catalogEntries.AddRange(entries);
 		}
@@ -70,7 +72,8 @@ public static class AssemblerOpenApiBuildStep
 				logFactory,
 				catalogContext,
 				new DocumentationGenerator(owners[0].Set.DocumentationSet, logFactory).MarkdownStringRenderer,
-				versionIndexClient);
+				versionIndexClient
+			);
 			await catalogGenerator.GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
 		}
 
@@ -78,12 +81,14 @@ public static class AssemblerOpenApiBuildStep
 		logger.LogInformation(
 			"Finished generating OpenAPI pages under {OutputDirectory} in {DurationMs} ms",
 			assembleContext.OutputWithPathPrefixDirectory.FullName,
-			stopwatch.ElapsedMilliseconds);
+			stopwatch.ElapsedMilliseconds
+		);
 	}
 
 	internal static IReadOnlyList<AssemblerApiOwner> DiscoverApiOwners(
 		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets,
-		IDiagnosticsCollector collector)
+		IDiagnosticsCollector collector
+	)
 	{
 		var keyOwners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		var owners = new List<AssemblerApiOwner>();
@@ -99,7 +104,8 @@ public static class AssemblerOpenApiBuildStep
 				if (keyOwners.TryGetValue(apiKey, out var existingRepository))
 				{
 					collector.EmitGlobalError(
-						$"Duplicate API key '{apiKey}' declared in {existingRepository} and {set.Checkout.Repository.Name}");
+						$"Duplicate API key '{apiKey}' declared in {existingRepository} and {set.Checkout.Repository.Name}"
+					);
 					continue;
 				}
 
@@ -112,9 +118,7 @@ public static class AssemblerOpenApiBuildStep
 		return owners;
 	}
 
-	private static void ApplyFeatureFlags(
-		AssemblerDocumentationSet set,
-		IReadOnlyDictionary<string, bool> featureFlags)
+	private static void ApplyFeatureFlags(AssemblerDocumentationSet set, IReadOnlyDictionary<string, bool> featureFlags)
 	{
 		foreach (var (key, value) in featureFlags)
 			set.BuildContext.Configuration.Features.Set(key, value);

@@ -44,10 +44,7 @@ public class NaturalStringComparerTests
 		var files = new[] { "3_10_0.md", "3_2_0.md", "3_1_0.md", "3_0_0.md" };
 		var sorted = files.OrderBy(f => f, Comparer).ToList();
 
-		sorted.Should().BeEquivalentTo(
-			["3_0_0.md", "3_1_0.md", "3_2_0.md", "3_10_0.md"],
-			options => options.WithStrictOrdering()
-		);
+		sorted.Should().BeEquivalentTo(["3_0_0.md", "3_1_0.md", "3_2_0.md", "3_10_0.md"], options => options.WithStrictOrdering());
 	}
 
 	[Fact]
@@ -56,10 +53,7 @@ public class NaturalStringComparerTests
 		var files = new[] { "3.10.0.md", "3.2.0.md", "3.1.0.md", "3.0.0.md" };
 		var sorted = files.OrderBy(f => f, Comparer).ToList();
 
-		sorted.Should().BeEquivalentTo(
-			["3.0.0.md", "3.1.0.md", "3.2.0.md", "3.10.0.md"],
-			options => options.WithStrictOrdering()
-		);
+		sorted.Should().BeEquivalentTo(["3.0.0.md", "3.1.0.md", "3.2.0.md", "3.10.0.md"], options => options.WithStrictOrdering());
 	}
 
 	[Fact]
@@ -86,10 +80,7 @@ public class NaturalStringComparerTests
 		var files = new[] { "file2.md", "file10.md", "file1.md" };
 		var sorted = files.OrderBy(f => f, Comparer).ToList();
 
-		sorted.Should().BeEquivalentTo(
-			["file1.md", "file2.md", "file10.md"],
-			options => options.WithStrictOrdering()
-		);
+		sorted.Should().BeEquivalentTo(["file1.md", "file2.md", "file10.md"], options => options.WithStrictOrdering());
 	}
 
 	[Fact]

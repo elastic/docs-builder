@@ -20,7 +20,8 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 	public TestCodexCrossLinkResolver(bool useRelativePaths)
 	{
 		// language=json
-		var json = """
+		var json =
+			"""
 		           {
 		              "content_source": "current",
 		           	  "origin": {
@@ -53,14 +54,17 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 
 		var codexRepositories = new HashSet<string> { "docs-content", "kibana" }.ToFrozenSet();
 
-		var indexEntries = linkReferences.ToDictionary(e => e.Key, e => new LinkRegistryEntry
-		{
-			Repository = e.Key,
-			Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
-			Branch = "main",
-			ETag = Guid.NewGuid().ToString(),
-			GitReference = Guid.NewGuid().ToString()
-		});
+		var indexEntries = linkReferences.ToDictionary(
+			e => e.Key,
+			e => new LinkRegistryEntry
+			{
+				Repository = e.Key,
+				Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
+				Branch = "main",
+				ETag = Guid.NewGuid().ToString(),
+				GitReference = Guid.NewGuid().ToString()
+			}
+		);
 		_crossLinks = new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,

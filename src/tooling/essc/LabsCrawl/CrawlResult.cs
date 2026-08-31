@@ -23,7 +23,8 @@ public record CrawlResult
 		string content,
 		DateTimeOffset? lastModified,
 		string? etag = null,
-		DateTimeOffset? httpLastModified = null) =>
+		DateTimeOffset? httpLastModified = null
+	) =>
 		new()
 		{
 			Url = url,
@@ -35,14 +36,7 @@ public record CrawlResult
 		};
 
 	public static CrawlResult NotModifiedResult(string url, string cachedHash) =>
-		new()
-		{
-			Url = url,
-			Success = true,
-			NotModified = true,
-			CachedHash = cachedHash,
-			StatusCode = 304
-		};
+		new() { Url = url, Success = true, NotModified = true, CachedHash = cachedHash, StatusCode = 304 };
 
 	public static CrawlResult Failed(string url, string error, int? statusCode = null) =>
 		new() { Url = url, Success = false, Error = error, StatusCode = statusCode };

@@ -5,33 +5,24 @@ using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class CommentTest(ITestOutputHelper output) : InlineTest(output,
-"""
+public class CommentTest(ITestOutputHelper output) : InlineTest(output, """
 % comment
 not a comment
-"""
-)
+""")
 {
-
 	[Fact]
 	public void GeneratesAttributesInHtml()
 	{
 		// language=html
-		Html.Should().NotContain(
-				"""<p>% comment"""
-			)
-			.And.Contain(
-				"""<p>not a comment</p>"""
-			);
-		Html.ShouldBeHtml(
-			"""
+		Html.Should().NotContain("""<p>% comment""").And.Contain("""<p>not a comment</p>""");
+		Html.ShouldBeHtml("""
 			<p>not a comment</p>
-			"""
-		);
+			""");
 	}
 }
 
-public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(output,
+public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(
+	output,
 	"""
 	not a comment, and multi line comment below
 	<!--
@@ -44,22 +35,21 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(outp
 	"""
 )
 {
-
 	[Fact]
 	public void GeneratesAttributesInHtml()
 	{
 		// language=html
-		Html.Should().NotContainAny(
+		Html
+			.Should()
+			.NotContainAny(
 				"<p><!--",
 				"<p>Multi line comment, first line",
 				"<p>Another line inside the commented area",
 				"<p>end of comments",
 				"<p>-->"
 			)
-			.And.ContainAll(
-				"<p>not a comment, and multi line comment below</p>",
-				"<p>also not a comment</p>"
-			);
+			.And
+			.ContainAll("<p>not a comment, and multi line comment below</p>", "<p>also not a comment</p>");
 		Html.ShouldBeHtml(
 			"""
 			<p>not a comment, and multi line comment below</p>
@@ -69,7 +59,8 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(outp
 	}
 }
 
-public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineTest(output,
+public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineTest(
+	output,
 	"""
 	not a comment, and multi line comment below
 	<!--
@@ -90,17 +81,19 @@ public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineT
 	public void GeneratesAttributesInHtml()
 	{
 		// language=html
-		Html.ReplaceLineEndings().Should().NotContainAny(
+		Html
+			.ReplaceLineEndings()
+			.Should()
+			.NotContainAny(
 				"<p><!--",
 				"<p>Multi line comment, first line",
 				"regular link",
 				"global search field",
 				"<p>end of comments",
-				"<p>-->")
-			.And.ContainAll(
-				"<p>not a comment, and multi line comment below</p>",
-				"<p>also not a comment</p>"
-			);
+				"<p>-->"
+			)
+			.And
+			.ContainAll("<p>not a comment, and multi line comment below</p>", "<p>also not a comment</p>");
 		Html.ShouldBeHtml(
 			"""
 			<p>not a comment, and multi line comment below</p>
@@ -114,7 +107,8 @@ public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineT
 /// Tests for GitHub issue #2456: Silent build errors on malformed multiline comments.
 /// When closing --> is on the same line as other content, the comment should still close properly.
 /// </summary>
-public class CommentWithClosingTagAtEndOfLineTest(ITestOutputHelper output) : InlineTest(output,
+public class CommentWithClosingTagAtEndOfLineTest(ITestOutputHelper output) : InlineTest(
+	output,
 	"""
 	content before comment
 
@@ -136,18 +130,17 @@ public class CommentWithClosingTagAtEndOfLineTest(ITestOutputHelper output) : In
 	}
 
 	[Fact]
-	public void ContentBeforeCommentShouldBeRendered() =>
-		Html.Should().Contain("<p>content before comment</p>");
+	public void ContentBeforeCommentShouldBeRendered() => Html.Should().Contain("<p>content before comment</p>");
 
 	[Fact]
-	public void CommentContentShouldNotBeRendered() =>
-		Html.Should().NotContain("TODO: Uncomment once page is live.");
+	public void CommentContentShouldNotBeRendered() => Html.Should().NotContain("TODO: Uncomment once page is live.");
 }
 
 /// <summary>
 /// Tests single-line HTML comments like <!-- comment -->
 /// </summary>
-public class SingleLineCommentTest(ITestOutputHelper output) : InlineTest(output,
+public class SingleLineCommentTest(ITestOutputHelper output) : InlineTest(
+	output,
 	"""
 	content before
 
@@ -158,22 +151,18 @@ public class SingleLineCommentTest(ITestOutputHelper output) : InlineTest(output
 )
 {
 	[Fact]
-	public void ContentBeforeAndAfterShouldBeRendered()
-	{
-		Html.Should()
-			.Contain("<p>content before</p>")
-			.And.Contain("<p>content after</p>");
-	}
+	public void ContentBeforeAndAfterShouldBeRendered() =>
+		Html.Should().Contain("<p>content before</p>").And.Contain("<p>content after</p>");
 
 	[Fact]
-	public void CommentContentShouldNotBeRendered() =>
-		Html.Should().NotContain("single line comment");
+	public void CommentContentShouldNotBeRendered() => Html.Should().NotContain("single line comment");
 }
 
 /// <summary>
 /// Tests comment with opening and content on same line, closing on different line
 /// </summary>
-public class CommentWithOpeningContentOnSameLineTest(ITestOutputHelper output) : InlineTest(output,
+public class CommentWithOpeningContentOnSameLineTest(ITestOutputHelper output) : InlineTest(
+	output,
 	"""
 	content before
 
@@ -186,19 +175,10 @@ public class CommentWithOpeningContentOnSameLineTest(ITestOutputHelper output) :
 )
 {
 	[Fact]
-	public void ContentBeforeAndAfterShouldBeRendered()
-	{
-		Html.Should()
-			.Contain("<p>content before</p>")
-			.And.Contain("<p>content after</p>");
-	}
+	public void ContentBeforeAndAfterShouldBeRendered() =>
+		Html.Should().Contain("<p>content before</p>").And.Contain("<p>content after</p>");
 
 	[Fact]
-	public void CommentContentShouldNotBeRendered()
-	{
-		Html.Should()
-			.NotContain("start of comment")
-			.And.NotContain("middle of comment")
-			.And.NotContain("end of comment");
-	}
+	public void CommentContentShouldNotBeRendered() =>
+		Html.Should().NotContain("start of comment").And.NotContain("middle of comment").And.NotContain("end of comment");
 }

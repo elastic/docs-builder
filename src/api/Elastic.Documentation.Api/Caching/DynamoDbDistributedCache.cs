@@ -16,7 +16,11 @@ namespace Elastic.Documentation.Api.Caching;
 /// Provides distributed caching across all Lambda containers using DynamoDB as backing store.
 /// Clean Code: Constructor injection (Dependency Inversion), small focused methods.
 /// </summary>
-public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string tableName, ILogger<DynamoDbDistributedCache> logger) : IDistributedCache
+public sealed class DynamoDbDistributedCache(
+	IAmazonDynamoDB dynamoDb,
+	string tableName,
+	ILogger<DynamoDbDistributedCache> logger
+) : IDistributedCache
 {
 	private static readonly ActivitySource ActivitySource = new(TelemetryConstants.CacheSourceName);
 
@@ -35,14 +39,14 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 
 		try
 		{
-			var response = await dynamoDb.GetItemAsync(new GetItemRequest
-			{
-				TableName = tableName,
-				Key = new Dictionary<string, AttributeValue>
+			var response = await dynamoDb.GetItemAsync(
+				new GetItemRequest
 				{
-					[AttributeCacheKey] = new() { S = hashedKey }
-				}
-			}, ct);
+					TableName = tableName,
+					Key = new Dictionary<string, AttributeValue> { [AttributeCacheKey] = new() { S = hashedKey } }
+				},
+				ct
+			);
 
 			if (!response.IsItemSet)
 			{
@@ -53,9 +57,7 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 
 			// DynamoDB TTL handles expiration automatically
 			// Items may still be returned briefly after expiration until DynamoDB deletes them
-			var value = response.Item.TryGetValue(AttributeValue, out var valueAttr)
-				? valueAttr.S
-				: null;
+			var value = response.Item.TryGetValue(AttributeValue, out var valueAttr) ? valueAttr.S : null;
 
 			_ = (activity?.SetTag("cache.hit", value != null));
 			if (value != null)
@@ -108,16 +110,19 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 			var expiresAt = DateTimeOffset.UtcNow.Add(ttl);
 			var ttlTimestamp = expiresAt.ToUnixTimeSeconds();
 
-			_ = await dynamoDb.PutItemAsync(new PutItemRequest
-			{
-				TableName = tableName,
-				Item = new Dictionary<string, AttributeValue>
+			_ = await dynamoDb.PutItemAsync(
+				new PutItemRequest
 				{
-					[AttributeCacheKey] = new() { S = hashedKey },
-					[AttributeValue] = new() { S = value },
-					[AttributeTtl] = new() { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) }
-				}
-			}, ct);
+					TableName = tableName,
+					Item = new Dictionary<string, AttributeValue>
+					{
+						[AttributeCacheKey] = new() { S = hashedKey },
+						[AttributeValue] = new() { S = value },
+						[AttributeTtl] = new() { N = ttlTimestamp.ToString(CultureInfo.InvariantCulture) }
+					}
+				},
+				ct
+			);
 
 			logger.LogDebug("Cache set for key: {CacheKey}, TTL: {TTL}s", hashedKey, ttl.TotalSeconds);
 		}
@@ -131,7 +136,12 @@ public sealed class DynamoDbDistributedCache(IAmazonDynamoDB dynamoDb, string ta
 		catch (ProvisionedThroughputExceededException ex)
 		{
 			_ = activity?.SetTag("cache.error", "provisioned_throughput_exceeded");
-			logger.LogWarning(ex, "Provisioned throughput exceeded for DynamoDB cache table {TableName}. Unable to cache key {CacheKey}.", tableName, hashedKey);
+			logger.LogWarning(
+				ex,
+				"Provisioned throughput exceeded for DynamoDB cache table {TableName}. Unable to cache key {CacheKey}.",
+				tableName,
+				hashedKey
+			);
 		}
 		catch (InternalServerErrorException ex)
 		{

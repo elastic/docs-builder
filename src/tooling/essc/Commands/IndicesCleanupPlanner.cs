@@ -7,21 +7,10 @@ using Elastic.Documentation.Search.Contract;
 namespace Elastic.SiteSearch.Cli.Commands;
 
 /// <summary>Describes one alias-family to monitor and clean up.</summary>
-internal sealed record AliasEntry(
-	string Source,
-	string Variant,
-	string Environment,
-	string LatestAlias,
-	string IndexPattern
-);
+internal sealed record AliasEntry(string Source, string Variant, string Environment, string LatestAlias, string IndexPattern);
 
 /// <summary>One concrete backing index and its cleanup disposition.</summary>
-internal sealed record BackingIndex(
-	string Name,
-	DateTime Date,
-	bool IsActive,
-	AliasEntry Group
-);
+internal sealed record BackingIndex(string Name, DateTime Date, bool IsActive, AliasEntry Group);
 
 /// <summary>The computed cleanup plan for a single run.</summary>
 internal sealed record CleanupPlan(
@@ -99,7 +88,8 @@ internal static class IndicesCleanupPlanner
 		IReadOnlyDictionary<string, IReadOnlySet<string>> indexAliases,
 		IReadOnlyList<AliasEntry> knownAliases,
 		int keep,
-		string? pageAlias = null)
+		string? pageAlias = null
+	)
 	{
 		keep = Math.Max(1, keep);
 		var knownLatestAliasSet = new HashSet<string>(knownAliases.Select(a => a.LatestAlias), StringComparer.OrdinalIgnoreCase);
@@ -111,9 +101,7 @@ internal static class IndicesCleanupPlanner
 
 		if (pageAlias is not null)
 		{
-			var semanticLatestAlias = knownAliases
-				.FirstOrDefault(a => a.Source == "ws-catalog" && a.Variant == "semantic")
-				?.LatestAlias;
+			var semanticLatestAlias = knownAliases.FirstOrDefault(a => a.Source == "ws-catalog" && a.Variant == "semantic")?.LatestAlias;
 			if (semanticLatestAlias is not null)
 			{
 				string? pageTarget = null, semanticTarget = null;
@@ -124,11 +112,15 @@ internal static class IndicesCleanupPlanner
 					if (aliases.Contains(semanticLatestAlias, StringComparer.OrdinalIgnoreCase))
 						semanticTarget = idx;
 				}
-				if (pageTarget is not null && semanticTarget is not null &&
-					!string.Equals(pageTarget, semanticTarget, StringComparison.OrdinalIgnoreCase))
+				if (
+					pageTarget is not null
+					&& semanticTarget is not null
+					&& !string.Equals(pageTarget, semanticTarget, StringComparison.OrdinalIgnoreCase)
+				)
 				{
 					warnings.Add(
-						$"'{pageAlias}' → '{pageTarget}' differs from '{semanticLatestAlias}' → '{semanticTarget}'; both indices are protected");
+						$"'{pageAlias}' → '{pageTarget}' differs from '{semanticLatestAlias}' → '{semanticTarget}'; both indices are protected"
+					);
 				}
 			}
 		}
@@ -146,12 +138,21 @@ internal static class IndicesCleanupPlanner
 			var suffix = indexName[prefix.Length..];
 
 			// Well-known auxiliary indices (e.g. -ai-cache) are intentionally excluded from cleanup.
-			if (suffix.EndsWith("-ai-cache", StringComparison.OrdinalIgnoreCase) ||
-				suffix.Equals("ai-cache", StringComparison.OrdinalIgnoreCase))
+			if (
+				suffix.EndsWith("-ai-cache", StringComparison.OrdinalIgnoreCase)
+				|| suffix.Equals("ai-cache", StringComparison.OrdinalIgnoreCase)
+			)
 				continue;
 
-			if (!DateTime.TryParseExact(suffix, DateSuffix, System.Globalization.CultureInfo.InvariantCulture,
-					System.Globalization.DateTimeStyles.AssumeUniversal, out var date))
+			if (
+				!DateTime.TryParseExact(
+					suffix,
+					DateSuffix,
+					System.Globalization.CultureInfo.InvariantCulture,
+					System.Globalization.DateTimeStyles.AssumeUniversal,
+					out var date
+				)
+			)
 			{
 				warnings.Add($"Skipping '{indexName}': suffix '{suffix}' did not parse as {DateSuffix}");
 				continue;
@@ -180,7 +181,9 @@ internal static class IndicesCleanupPlanner
 			toDelete.AddRange(nonActive.Skip(keepNonActive));
 
 			if (active.Count > keep)
-				warnings.Add($"Active index count ({active.Count}) for {group.Key.Source}.{group.Key.Variant} exceeds --keep ({keep}); all active indices are retained.");
+				warnings.Add(
+					$"Active index count ({active.Count}) for {group.Key.Source}.{group.Key.Variant} exceeds --keep ({keep}); all active indices are retained."
+				);
 		}
 
 		return new CleanupPlan(toKeep.AsReadOnly(), toDelete.AsReadOnly(), warnings.AsReadOnly());

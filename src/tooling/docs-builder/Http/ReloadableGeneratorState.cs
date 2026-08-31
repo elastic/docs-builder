@@ -33,7 +33,8 @@ public class ReloadableGeneratorState : IDisposable
 	private ILinkIndexReader? _codexReader;
 	private FetchedCrossLinks? _cachedCrossLinks;
 
-	public ReloadableGeneratorState(ILoggerFactory logFactory,
+	public ReloadableGeneratorState(
+		ILoggerFactory logFactory,
 		IDirectoryInfo sourcePath,
 		IDirectoryInfo outputPath,
 		BuildContext context,
@@ -60,7 +61,7 @@ public class ReloadableGeneratorState : IDisposable
 	// Track OpenAPI spec file modification times to detect changes
 	private readonly Dictionary<string, DateTimeOffset> _openApiSpecLastModified = [];
 
-	// Track intro/outro markdown file modification times to detect changes
+	// Track API markdown modification times so serve reloads on overlay and children: edits.
 	private readonly Dictionary<string, DateTimeOffset> _apiMarkdownFilesLastModified = [];
 
 	private volatile bool _apiReferencesStale = true;
@@ -71,8 +72,13 @@ public class ReloadableGeneratorState : IDisposable
 	{
 		// Content-only changes (e.g. .md edits) don't need a full rebuild:
 		// RenderLayout -> ParseFullAsync reads fresh content from disk on each request.
+		// API overlay files are an exception: they are baked into generated HTML, so mark
+		// refs stale and let EnsureApiReferencesAsync re-check timestamps on the next /api request.
 		if (!reloadConfiguration && _cachedCrossLinks is not null)
+		{
+			_apiReferencesStale = true;
 			return;
+		}
 
 		SourcePath.Refresh();
 		OutputPath.Refresh();
@@ -83,7 +89,11 @@ public class ReloadableGeneratorState : IDisposable
 			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
 				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem())
 				: null;
-			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
+			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
+				_logFactory,
+				_context.Configuration,
+				codexLinkIndexReader: _codexReader
+			);
 		}
 		var crossLinks = _cachedCrossLinks;
 		if (crossLinks is null || reloadConfiguration)
@@ -151,35 +161,55 @@ public class ReloadableGeneratorState : IDisposable
 		if (config.ApiConfigurations is null)
 			return false;
 
-		// First run - no timestamps yet
 		if (_openApiSpecLastModified.Count == 0 && _apiMarkdownFilesLastModified.Count == 0)
 			return true;
 
 		foreach (var apiConfig in config.ApiConfigurations.Values)
 		{
-			// The local spec override, when present. A spec with no local file resolves
-			// remotely and has nothing on disk to watch here.
 			if (apiConfig.LocalSpecFile is { } specFile)
 			{
 				specFile.Refresh();
 				if (!_openApiSpecLastModified.TryGetValue(specFile.FullName, out var lastModified))
-					return true; // New file
+					return true;
 				if (specFile.LastWriteTimeUtc > lastModified)
-					return true; // File modified
-			}
-
-			// Explicit children declared via 'children:'
-			foreach (var childFile in apiConfig.Children)
-			{
-				childFile.Refresh();
-				if (!_apiMarkdownFilesLastModified.TryGetValue(childFile.FullName, out var lastModified))
-					return true; // New file
-				if (childFile.LastWriteTimeUtc > lastModified)
-					return true; // File modified
+					return true;
 			}
 		}
 
+		return HaveApiMarkdownFilesChanged(config);
+	}
+
+	private bool HaveApiMarkdownFilesChanged(ConfigurationFile config)
+	{
+		var current = CurrentApiMarkdownTimestamps(config);
+		if (current.Count != _apiMarkdownFilesLastModified.Count)
+			return true;
+
+		foreach (var (path, time) in current)
+		{
+			if (!_apiMarkdownFilesLastModified.TryGetValue(path, out var lastModified) || time > lastModified)
+				return true;
+		}
+
 		return false;
+	}
+
+	private static Dictionary<string, DateTimeOffset> CurrentApiMarkdownTimestamps(ConfigurationFile config)
+	{
+		var current = new Dictionary<string, DateTimeOffset>(StringComparer.Ordinal);
+		if (config.ApiConfigurations is null)
+			return current;
+
+		foreach (var apiConfig in config.ApiConfigurations.Values)
+		{
+			foreach (var file in apiConfig.EnumerateApiMarkdownFiles().Concat(apiConfig.Children))
+			{
+				file.Refresh();
+				current[file.FullName] = file.LastWriteTimeUtc;
+			}
+		}
+
+		return current;
 	}
 
 	private void UpdateOpenApiSpecTimestamps(ConfigurationFile config)
@@ -197,13 +227,10 @@ public class ReloadableGeneratorState : IDisposable
 				specFile.Refresh();
 				_openApiSpecLastModified[specFile.FullName] = specFile.LastWriteTimeUtc;
 			}
-
-			foreach (var childFile in apiConfig.Children)
-			{
-				childFile.Refresh();
-				_apiMarkdownFilesLastModified[childFile.FullName] = childFile.LastWriteTimeUtc;
-			}
 		}
+
+		foreach (var (path, time) in CurrentApiMarkdownTimestamps(config))
+			_apiMarkdownFilesLastModified[path] = time;
 	}
 
 	public async Task ReloadApiReferences(Cancel ctx) => await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);

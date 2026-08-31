@@ -8,12 +8,7 @@ using Elastic.LegacyDocs.Migration.Asciidoc.Ast;
 
 namespace Elastic.LegacyDocs.Migration.Asciidoc;
 
-public record PageOutput(
-	string Slug,
-	string Title,
-	string? NavigationTitle,
-	string MarkdownContent,
-	IReadOnlyList<PageOutput> Children);
+public record PageOutput(string Slug, string Title, string? NavigationTitle, string MarkdownContent, IReadOnlyList<PageOutput> Children);
 
 public static partial class PageChunker
 {
@@ -29,8 +24,11 @@ public static partial class PageChunker
 	/// is &lt;= chunkLevel + 1 (where chunkLevel == conf.yaml chunk:).
 	/// </summary>
 	public static IReadOnlyList<PageOutput> Chunk(
-		AsciidocDocument document, int chunkLevel, MarkdownEmitter emitter,
-		Action<string>? onDiagnostic = null)
+		AsciidocDocument document,
+		int chunkLevel,
+		MarkdownEmitter emitter,
+		Action<string>? onDiagnostic = null
+	)
 	{
 		if (chunkLevel <= 0)
 		{
@@ -67,7 +65,13 @@ public static partial class PageChunker
 
 		// Single traversal: build the page tree, anchor maps, and inline content together.
 		var (rootPageNodes, indexInlineContent) = Traverse(
-			rootChildren, effectiveChunkLevel, slugMap, titleMap, allocatedSlugs, onDiagnostic);
+			rootChildren,
+			effectiveChunkLevel,
+			slugMap,
+			titleMap,
+			allocatedSlugs,
+			onDiagnostic
+		);
 
 		// Map any inline content at the doc root to the index slug.
 		CollectChildAnchors(indexInlineContent, "index", slugMap, titleMap);
@@ -76,9 +80,7 @@ public static partial class PageChunker
 		emitter.UpdateAnchorMap(slugMap, titleMap);
 
 		// Emit the index page using the book root section so its H1 and id are included.
-		var indexSection = bookRoot is not null
-			? bookRoot with { Children = indexInlineContent, Level = 0 }
-			: null;
+		var indexSection = bookRoot is not null ? bookRoot with { Children = indexInlineContent, Level = 0 } : null;
 		emitter.UpdatePageSlug("index");
 		emitter.UpdateHeadingBase(0);
 		var indexContent = indexSection is not null
@@ -97,7 +99,8 @@ public static partial class PageChunker
 		string Slug,
 		string? NavigationTitle,
 		List<IAsciidocNode> InlineContent,
-		List<PageNode> ChildPages);
+		List<PageNode> ChildPages
+	);
 
 	// ── Traversal ─────────────────────────────────────────────────────────────
 
@@ -106,9 +109,13 @@ public static partial class PageChunker
 	/// Pages become their own entries in the nav tree; inline content stays in the parent page body.
 	/// </summary>
 	private static (List<PageNode> Pages, List<IAsciidocNode> Inline) Traverse(
-		IReadOnlyList<IAsciidocNode> children, int effectiveChunkLevel,
-		Dictionary<string, string> slugMap, Dictionary<string, string> titleMap,
-		HashSet<string> allocatedSlugs, Action<string>? onDiagnostic)
+		IReadOnlyList<IAsciidocNode> children,
+		int effectiveChunkLevel,
+		Dictionary<string, string> slugMap,
+		Dictionary<string, string> titleMap,
+		HashSet<string> allocatedSlugs,
+		Action<string>? onDiagnostic
+	)
 	{
 		var pages = new List<PageNode>();
 		var inline = new List<IAsciidocNode>();
@@ -121,7 +128,13 @@ public static partial class PageChunker
 					{
 						// Transparent container: hoist inner pages up; rewrap remaining inline nodes.
 						var (innerPages, innerInline) = Traverse(
-							open.Children, effectiveChunkLevel, slugMap, titleMap, allocatedSlugs, onDiagnostic);
+							open.Children,
+							effectiveChunkLevel,
+							slugMap,
+							titleMap,
+							allocatedSlugs,
+							onDiagnostic
+						);
 						pages.AddRange(innerPages);
 						if (innerInline.Count > 0)
 							inline.Add(open with { Children = innerInline });
@@ -139,7 +152,13 @@ public static partial class PageChunker
 						}
 
 						var (subPages, subInline) = Traverse(
-							section.Children, effectiveChunkLevel, slugMap, titleMap, allocatedSlugs, onDiagnostic);
+							section.Children,
+							effectiveChunkLevel,
+							slugMap,
+							titleMap,
+							allocatedSlugs,
+							onDiagnostic
+						);
 
 						// Map all inline sub-content's anchors to this page's slug.
 						CollectChildAnchors(subInline, slug, slugMap, titleMap);
@@ -154,7 +173,13 @@ public static partial class PageChunker
 				case SectionNode section:
 					{
 						var (innerPages, innerInline) = Traverse(
-							section.Children, effectiveChunkLevel, slugMap, titleMap, allocatedSlugs, onDiagnostic);
+							section.Children,
+							effectiveChunkLevel,
+							slugMap,
+							titleMap,
+							allocatedSlugs,
+							onDiagnostic
+						);
 						pages.AddRange(innerPages);
 						if (section.Level == 0 && !section.IsIncludeRoot)
 						{
@@ -183,8 +208,11 @@ public static partial class PageChunker
 
 	/// <summary>Maps every block anchor and non-page sub-section id to the parent page's slug.</summary>
 	private static void CollectChildAnchors(
-		IReadOnlyList<IAsciidocNode> children, string parentSlug,
-		Dictionary<string, string> slugMap, Dictionary<string, string> titleMap)
+		IReadOnlyList<IAsciidocNode> children,
+		string parentSlug,
+		Dictionary<string, string> slugMap,
+		Dictionary<string, string> titleMap
+	)
 	{
 		foreach (var child in children)
 		{
@@ -210,8 +238,7 @@ public static partial class PageChunker
 
 	// ── Emission ──────────────────────────────────────────────────────────────
 
-	private static IReadOnlyList<PageOutput> EmitPageNodes(
-		IReadOnlyList<PageNode> nodes, MarkdownEmitter emitter)
+	private static IReadOnlyList<PageOutput> EmitPageNodes(IReadOnlyList<PageNode> nodes, MarkdownEmitter emitter)
 	{
 		var result = new List<PageOutput>(nodes.Count);
 		foreach (var node in nodes)
@@ -248,11 +275,9 @@ public static partial class PageChunker
 	/// - Level > 0: page when level &lt;= effectiveChunkLevel (== conf.yaml chunk + 1).
 	/// </summary>
 	private static bool IsPage(SectionNode section, int effectiveChunkLevel) =>
-		!section.IsDiscrete &&
-		(section.Level == 0 ? section.IsIncludeRoot : section.Level <= effectiveChunkLevel);
+		!section.IsDiscrete && (section.Level == 0 ? section.IsIncludeRoot : section.Level <= effectiveChunkLevel);
 
-	private static string AllocateSlug(
-		SectionNode section, HashSet<string> allocatedSlugs, Action<string>? onDiagnostic)
+	private static string AllocateSlug(SectionNode section, HashSet<string> allocatedSlugs, Action<string>? onDiagnostic)
 	{
 		var baseSlug = section.Id ?? AutoId(section.Title);
 		if (allocatedSlugs.Add(baseSlug))
@@ -263,8 +288,7 @@ public static partial class PageChunker
 			var candidate = $"{baseSlug}_{i}";
 			if (allocatedSlugs.Add(candidate))
 			{
-				onDiagnostic?.Invoke(
-					$"Slug collision for '{baseSlug}' (section '{section.Title}'); using '{candidate}'");
+				onDiagnostic?.Invoke($"Slug collision for '{baseSlug}' (section '{section.Title}'); using '{candidate}'");
 				return candidate;
 			}
 		}

@@ -21,7 +21,7 @@ public class ReaderTests
 	private static IFileInfo LocalSpecFile()
 	{
 		var fileSystem = new FileSystem();
-		var path = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch-openapi-docs.json");
+		var path = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json");
 		return fileSystem.FileInfo.New(path);
 	}
 
@@ -35,7 +35,7 @@ public class ReaderTests
 	}
 
 	[Theory]
-	[InlineData("json", /*lang=json,strict*/ """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
+	[InlineData("json", /*lang=json,strict*/  """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
 	[InlineData("yaml", "openapi: 3.1.0\ninfo:\n  title: Test\n  version: 1.0\npaths: {}")]
 	public async Task ReadsStream(string extension, string specification)
 	{
@@ -52,7 +52,11 @@ public class ReaderTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName), configurationContext);
+		var context = new BuildContext(
+			collector,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			configurationContext
+		);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
 		var openApiDocument = await OpenApiReader.Instance.ReadAsync(LocalSpecFile());

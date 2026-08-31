@@ -10,17 +10,21 @@ namespace Elastic.Markdown.Tests.Directives;
 
 public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDateVersionedBundlesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDateVersionedBundlesTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Create multiple bundles with date-based versions (Cloud Serverless style)
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-01.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-01.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-01
@@ -32,11 +36,15 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-01
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-15.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-15.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-15
@@ -48,11 +56,15 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-15
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-05
@@ -64,7 +76,9 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -101,17 +115,21 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 
 public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMixedVersionTypesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMixedVersionTypesTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Create bundles with mixed version types (semver and dates)
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -123,11 +141,15 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -139,11 +161,15 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			    target: 9.2.0
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-05
@@ -155,11 +181,15 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  prs:
 			  - "333333"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-07-01.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-07-01.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-07-01
@@ -171,7 +201,9 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-07-01
 			  prs:
 			  - "444444"
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -223,16 +255,20 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogYearMonthVersionTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogYearMonthVersionTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/2025-12.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-12.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-hosted
 			  target: 2025-12
@@ -244,11 +280,15 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-12
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-10.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-10.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-hosted
 			  target: 2025-10
@@ -260,11 +300,15 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-10
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-08.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-hosted
 			  target: 2025-08
@@ -283,7 +327,9 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08
 			  prs:
 			  - "333334"
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -362,17 +408,21 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 
 public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogRawVersionFallbackTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogRawVersionFallbackTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Create bundles with non-standard version formats (edge case)
-		FileSystem.AddFile("docs/changelog/bundles/release-alpha.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/release-alpha.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: experimental
 			  target: release-alpha
@@ -384,11 +434,15 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 			    target: release-alpha
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/release-beta.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/release-beta.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: experimental
 			  target: release-beta
@@ -400,7 +454,9 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 			    target: release-beta
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]

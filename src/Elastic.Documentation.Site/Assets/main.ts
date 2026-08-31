@@ -300,9 +300,15 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     }
 })
 
-// Boosted navigations swap the whole <body>; scroll to top like a normal page load
+// Boosted navigations swap #main-container. show:none on <body> stops HTMX
+// from scrolling the container into view (that jumps the page up to the
+// horizontal tabs). Instant window reset still matches a full page load.
 document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
-    if (event.target === document.body) {
+    const target = event.target
+    if (
+        target === document.body ||
+        (target instanceof Element && target.id === 'main-container')
+    ) {
         window.scrollTo(0, 0)
     }
 })

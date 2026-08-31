@@ -14,14 +14,11 @@ namespace Elastic.SiteSearch.Tests;
 public class IndexTimeSynonymsTests
 {
 	[Fact]
-	public void Docs_ContainsAggAliasRule() =>
-		IndexTimeSynonyms.Docs.Should().Contain("agg, aggs => aggregations");
+	public void Docs_ContainsAggAliasRule() => IndexTimeSynonyms.Docs.Should().Contain("agg, aggs => aggregations");
 
 	[Fact]
-	public void Docs_ContainsEsqlAliasRule() =>
-		IndexTimeSynonyms.Docs.Should().Contain("esql, es|ql => esql");
+	public void Docs_ContainsEsqlAliasRule() => IndexTimeSynonyms.Docs.Should().Contain("esql, es|ql => esql");
 
 	[Fact]
-	public void Docs_ContainsDataStreamsAliasRules() =>
-		IndexTimeSynonyms.Docs.Should().Contain("data-streams, data streams, datastreams");
+	public void Docs_ContainsDataStreamsAliasRules() => IndexTimeSynonyms.Docs.Should().Contain("data-streams, data streams, datastreams");
 }

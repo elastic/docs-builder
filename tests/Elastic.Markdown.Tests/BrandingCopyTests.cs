@@ -18,23 +18,25 @@ public class BrandingCopyTests(ITestOutputHelper output)
 	{
 		var logger = new TestLoggerFactory(output);
 
-		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "docs/docset.yml",
-				//language=yaml
-				new MockFileData("""
+		var fs = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{
+					"docs/docset.yml",
+					//language=yaml
+					new MockFileData("""
 project: test
 toc:
 - file: index.md
 branding:
   icon: assets/logo.svg
-""") },
-			{ "docs/index.md", new MockFileData("# Hello") },
-			{ "docs/assets/logo.svg", new MockFileData("<svg/>") }
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+""")
+				},
+				{ "docs/index.md", new MockFileData("# Hello") },
+				{ "docs/assets/logo.svg", new MockFileData("<svg/>") }
+			},
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
 
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);

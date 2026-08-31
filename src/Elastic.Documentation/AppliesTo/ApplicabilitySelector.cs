@@ -19,8 +19,9 @@ public static class ApplicabilitySelector
 	/// <returns>The most relevant applicability for display</returns>
 	public static Applicability GetPrimaryApplicability(IReadOnlyCollection<Applicability> applicabilities, SemVersion currentVersion)
 	{
-		var availableApplicabilities = applicabilities
-			.Where(a => a.Version is null || a.Version is AllVersionsSpec || a.Version.Min <= currentVersion).ToArray();
+		var availableApplicabilities = applicabilities.Where(
+			a => a.Version is null || a.Version is AllVersionsSpec || a.Version.Min <= currentVersion
+		).ToArray();
 
 		if (availableApplicabilities.Length > 0)
 		{
@@ -30,8 +31,9 @@ public static class ApplicabilitySelector
 				.First();
 		}
 
-		var futureApplicabilities = applicabilities
-			.Where(a => a.Version is not null && a.Version is not AllVersionsSpec && a.Version.Min > currentVersion).ToArray();
+		var futureApplicabilities = applicabilities.Where(
+			a => a.Version is not null && a.Version is not AllVersionsSpec && a.Version.Min > currentVersion
+		).ToArray();
 
 		if (futureApplicabilities.Length > 0)
 		{

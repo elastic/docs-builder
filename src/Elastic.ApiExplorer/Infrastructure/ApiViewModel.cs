@@ -28,15 +28,19 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 public abstract class ApiViewModel(ApiRenderContext context)
 {
 	public string NavigationHtml { get; } = context?.NavigationHtml ?? string.Empty;
-	public StaticFileContentHashProvider StaticFileContentHashProvider { get; } = context?.StaticFileContentHashProvider ?? throw new ArgumentNullException(nameof(context), "StaticFileContentHashProvider cannot be null");
-	public INavigationItem CurrentNavigationItem { get; } = context?.CurrentNavigation ?? throw new ArgumentNullException(nameof(context), "CurrentNavigation cannot be null");
-	public IMarkdownStringRenderer MarkdownRenderer { get; } = context?.MarkdownRenderer ?? throw new ArgumentNullException(nameof(context), "MarkdownRenderer cannot be null");
-	public BuildContext BuildContext { get; } = context?.BuildContext ?? throw new ArgumentNullException(nameof(context), "BuildContext cannot be null");
-	public OpenApiDocument Document { get; } = context?.Model ?? throw new ArgumentNullException(nameof(context), "OpenApiDocument cannot be null");
+	public StaticFileContentHashProvider StaticFileContentHashProvider { get; } = context?.StaticFileContentHashProvider
+		?? throw new ArgumentNullException(nameof(context), "StaticFileContentHashProvider cannot be null");
+	public INavigationItem CurrentNavigationItem { get; } = context?.CurrentNavigation
+		?? throw new ArgumentNullException(nameof(context), "CurrentNavigation cannot be null");
+	public IMarkdownStringRenderer MarkdownRenderer { get; } = context?.MarkdownRenderer
+		?? throw new ArgumentNullException(nameof(context), "MarkdownRenderer cannot be null");
+	public BuildContext BuildContext { get; } = context?.BuildContext
+		?? throw new ArgumentNullException(nameof(context), "BuildContext cannot be null");
+	public OpenApiDocument Document { get; } = context?.Model
+		?? throw new ArgumentNullException(nameof(context), "OpenApiDocument cannot be null");
 
 	/// <summary>Current API render context (OpenAPI model, nav, optional logging).</summary>
 	protected ApiRenderContext RenderContext { get; } = context ?? throw new ArgumentNullException(nameof(context));
-
 
 	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
 
@@ -58,9 +62,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	{
 		var docTitle = Document.Info?.Title ?? "API Documentation";
 		var pageTitle = LayoutPageTitle;
-		var documentTitle = pageTitle is not null
-			? $"{pageTitle} | {docTitle}"
-			: docTitle;
+		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
 
 		return new()
 		{

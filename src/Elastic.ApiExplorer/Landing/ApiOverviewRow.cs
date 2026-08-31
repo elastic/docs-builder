@@ -72,7 +72,12 @@ public static class ApiOverviewBuilder
 					AddEndpointRow(endpoint, rows, AddProductRows);
 					break;
 				case OperationNavigationItem operation:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.Operation, Title = operation.NavigationTitle, Operations = [operation] });
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.Operation,
+						Title = operation.NavigationTitle,
+						Operations = [operation]
+					});
 					break;
 				case SchemaCategoryNavigationItem schemaCategory:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
@@ -88,7 +93,12 @@ public static class ApiOverviewBuilder
 					});
 					break;
 				case SimpleMarkdownNavigationItem markdownPage:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.MarkdownPage, Title = markdownPage.NavigationTitle, Url = markdownPage.Url });
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.MarkdownPage,
+						Title = markdownPage.NavigationTitle,
+						Url = markdownPage.Url
+					});
 					break;
 				default:
 					throw new InvalidOperationException($"Unexpected type: {navigationItem.GetType().FullName}");
@@ -109,7 +119,12 @@ public static class ApiOverviewBuilder
 					AddEndpointRow(endpoint, rows, AddTagRows);
 					break;
 				case OperationNavigationItem operation:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.Operation, Title = operation.NavigationTitle, Operations = [operation] });
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.Operation,
+						Title = operation.NavigationTitle,
+						Operations = [operation]
+					});
 					break;
 				default:
 					throw new InvalidOperationException($"Unexpected type on tag landing: {navigationItem.GetType().FullName}");
@@ -117,13 +132,22 @@ public static class ApiOverviewBuilder
 		}
 	}
 
-	private static void AddEndpointRow(EndpointNavigationItem endpoint, List<ApiOverviewRow> rows, Action<INavigationItem, List<ApiOverviewRow>> recurse)
+	private static void AddEndpointRow(
+		EndpointNavigationItem endpoint,
+		List<ApiOverviewRow> rows,
+		Action<INavigationItem, List<ApiOverviewRow>> recurse
+	)
 	{
 		var endpointOperations = endpoint is { NavigationItems.Count: > 0 } && endpoint.NavigationItems.All(n => n.Hidden)
 			? endpoint.NavigationItems
 			: [];
 		if (endpointOperations.Count > 0)
-			rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.Endpoint, Title = endpoint.NavigationTitle, Operations = endpointOperations });
+			rows.Add(new ApiOverviewRow
+			{
+				Kind = OverviewRowKind.Endpoint,
+				Title = endpoint.NavigationTitle,
+				Operations = endpointOperations
+			});
 		else
 			recurse(endpoint, rows);
 	}

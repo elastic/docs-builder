@@ -11,9 +11,14 @@
 	{
 		<p class="api-tag-canonical"><code>@Model.Tag.Name</code></p>
 	}
-	@if (!string.IsNullOrEmpty(Model.Tag.Description))
+	@if (!string.IsNullOrEmpty(Model.DescriptionMarkdown))
 	{
-		<div class="api-tag-description">@Model.RenderMarkdown(Model.Tag.Description)</div>
+		<div class="api-tag-description">@Model.RenderMarkdown(Model.DescriptionMarkdown)</div>
+	}
+	@foreach (var extra in Model.PostSections)
+	{
+		<h3 id="@extra.Anchor">@extra.Heading</h3>
+		<div>@extra.BodyHtml</div>
 	}
 	@if (Model.ExternalDocsDisplay is not null)
 	{

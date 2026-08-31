@@ -37,8 +37,8 @@ public class PlainTextEmphasisRenderer : MarkdownObjectRenderer<PlainTextRendere
 /// </summary>
 public class PlainTextSubstitutionRenderer : MarkdownObjectRenderer<PlainTextRenderer, SubstitutionLeaf>
 {
-	protected override void Write(PlainTextRenderer renderer, SubstitutionLeaf obj)
-		=> renderer.Write(obj.Found ? obj.Replacement : obj.Content);
+	protected override void Write(PlainTextRenderer renderer, SubstitutionLeaf obj) =>
+		renderer.Write(obj.Found ? obj.Replacement : obj.Content);
 }
 
 /// <summary>
@@ -46,8 +46,7 @@ public class PlainTextSubstitutionRenderer : MarkdownObjectRenderer<PlainTextRen
 /// </summary>
 public class PlainTextCodeInlineRenderer : MarkdownObjectRenderer<PlainTextRenderer, CodeInline>
 {
-	protected override void Write(PlainTextRenderer renderer, CodeInline obj)
-		=> renderer.Write(obj.Content);
+	protected override void Write(PlainTextRenderer renderer, CodeInline obj) => renderer.Write(obj.Content);
 }
 
 /// <summary>
@@ -55,8 +54,7 @@ public class PlainTextCodeInlineRenderer : MarkdownObjectRenderer<PlainTextRende
 /// </summary>
 public class PlainTextLiteralRenderer : MarkdownObjectRenderer<PlainTextRenderer, LiteralInline>
 {
-	protected override void Write(PlainTextRenderer renderer, LiteralInline obj)
-		=> renderer.Write(obj.Content.ToString());
+	protected override void Write(PlainTextRenderer renderer, LiteralInline obj) => renderer.Write(obj.Content.ToString());
 }
 
 /// <summary>
@@ -93,7 +91,8 @@ public class PlainTextRoleRenderer : MarkdownObjectRenderer<PlainTextRenderer, R
 				var appliesText = LlmApplicabilityHelper.RenderForLlm(
 					appliesToRole.AppliesTo,
 					appliesToRole.BuildContext.VersionsConfiguration,
-					useInlineTag: false);
+					useInlineTag: false
+				);
 				if (!string.IsNullOrEmpty(appliesText))
 					renderer.Write($"({appliesText})");
 				break;

@@ -6,9 +6,7 @@ namespace Elastic.Documentation.Configuration.Builder;
 
 public class EnabledExtensions(IReadOnlyCollection<string> extensions)
 {
-	private readonly HashSet<string> _extensionsSet = [
-		..extensions
-	];
+	private readonly HashSet<string> _extensionsSet = [.. extensions];
 
 	private bool IsEnabled(string key) => _extensionsSet.Contains(key);
 

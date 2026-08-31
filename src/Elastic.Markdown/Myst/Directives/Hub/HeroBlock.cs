@@ -24,8 +24,7 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// :::
 /// </code>
 /// </example>
-public partial class HeroBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public partial class HeroBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "hero";
 

@@ -36,8 +36,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -102,8 +101,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -118,7 +116,8 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
-			Dropdowns = false // Explicitly set to false for clarity
+			Dropdowns =
+				false // Explicitly set to false for clarity
 		};
 
 		// Act
@@ -172,8 +171,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -240,8 +238,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -252,11 +249,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		// Test both dropdown and flattened modes
-		var testCases = new[]
-		{
-			new { Dropdowns = true, ExpectDropdown = true },
-			new { Dropdowns = false, ExpectDropdown = false }
-		};
+		var testCases = new[] { new { Dropdowns = true, ExpectDropdown = true }, new { Dropdowns = false, ExpectDropdown = false } };
 
 		foreach (var testCase in testCases)
 		{
@@ -329,8 +322,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0

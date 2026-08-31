@@ -13,13 +13,17 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 	private string DefaultVersion { get; }
 	private LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 
-	public PageLegacyUrlMapper(LegacyPageService legacyPageService, VersionsConfiguration versions, LegacyUrlMappingConfiguration legacyUrlMappings)
+	public PageLegacyUrlMapper(
+		LegacyPageService legacyPageService,
+		VersionsConfiguration versions,
+		LegacyUrlMappingConfiguration legacyUrlMappings
+	)
 	{
 		LegacyPageService = legacyPageService;
-		DefaultVersion = $"{versions.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{versions.VersioningSystems[VersioningSystemId.Stack].Base.Minor}";
+		DefaultVersion =
+			$"{versions.VersioningSystems[VersioningSystemId.Stack].Base.Major}.{versions.VersioningSystems[VersioningSystemId.Stack].Base.Minor}";
 		LegacyUrlMappings = legacyUrlMappings;
 	}
-
 
 	public IReadOnlyCollection<LegacyPageMapping>? MapLegacyUrl(IReadOnlyCollection<string>? mappedPages)
 	{
@@ -28,8 +32,19 @@ public record PageLegacyUrlMapper : ILegacyUrlMapper
 
 		var mappedPage = mappedPages.First();
 
-		if (LegacyUrlMappings.Mappings.FirstOrDefault(x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase)) is not { } legacyMappingMatch)
-			return [new LegacyPageMapping(LegacyUrlMappings.Mappings.First(x => x.Product.Id.Equals("elastic-stack", StringComparison.OrdinalIgnoreCase)).Product, mappedPages.FirstOrDefault() ?? string.Empty, DefaultVersion, false)];
+		if (
+			LegacyUrlMappings.Mappings.FirstOrDefault(
+				x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase)
+			) is not { } legacyMappingMatch
+		)
+			return [
+				new LegacyPageMapping(
+					LegacyUrlMappings.Mappings.First(x => x.Product.Id.Equals("elastic-stack", StringComparison.OrdinalIgnoreCase)).Product,
+					mappedPages.FirstOrDefault() ?? string.Empty,
+					DefaultVersion,
+					false
+				)
+			];
 
 		var allVersions = new List<LegacyPageMapping>();
 

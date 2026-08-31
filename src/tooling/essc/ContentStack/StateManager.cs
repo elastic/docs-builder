@@ -16,9 +16,7 @@ internal sealed class StateManager
 	public StateManager(string? cacheFolderOverride = null)
 	{
 		CacheFolder = cacheFolderOverride
-			?? Path.Combine(
-				Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-				AppName);
+			?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
 		_ = Directory.CreateDirectory(CacheFolder);
 	}
 

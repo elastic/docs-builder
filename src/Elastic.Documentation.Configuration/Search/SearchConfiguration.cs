@@ -124,7 +124,8 @@ public static class SearchConfigurationExtensions
 			return new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 
 		var searchDto = ConfigurationFileProvider.Deserializer.Deserialize<SearchConfigDto>(searchFile.OpenText());
-		var synonyms = searchDto.Synonyms
+		var synonyms = searchDto
+			.Synonyms
 			.Where(s => s.Count > 1)
 			.Select(s => s.ToArray())
 			.GroupBy(s => s[0], StringComparer.OrdinalIgnoreCase)
@@ -139,9 +140,7 @@ public static class SearchConfigurationExtensions
 		new()
 		{
 			RuleId = dto.RuleId,
-			Type = Enum.TryParse<QueryRuleType>(dto.Type, ignoreCase: true, out var ruleType)
-				? ruleType
-				: QueryRuleType.Pinned,
+			Type = Enum.TryParse<QueryRuleType>(dto.Type, ignoreCase: true, out var ruleType) ? ruleType : QueryRuleType.Pinned,
 			Criteria = dto.Criteria.Select(ParseCriteria).ToImmutableArray(),
 			Actions = new QueryRuleActions { Ids = dto.Actions.Ids.ToImmutableArray() }
 		};

@@ -102,9 +102,6 @@ public class ReleaseNoteParserTests
 	[Theory]
 	[InlineData("## 🐛 Bug Fixes")]
 	[InlineData("### 🐛 Bug Fixes")]
-	public void DetectFormat_EmojiHeadersAtAnyLevel_IsReleaseDrafter(string header)
-	{
-		ReleaseNoteParser.DetectFormat($"{header}\n\n- Fix it by @alice in #1")
-			.Should().Be(ReleaseNoteFormat.ReleaseDrafter);
-	}
+	public void DetectFormat_EmojiHeadersAtAnyLevel_IsReleaseDrafter(string header) =>
+		ReleaseNoteParser.DetectFormat($"{header}\n\n- Fix it by @alice in #1").Should().Be(ReleaseNoteFormat.ReleaseDrafter);
 }

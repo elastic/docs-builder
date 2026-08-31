@@ -27,7 +27,8 @@ public class CoherenceToolsIntegrationTests(ITestOutputHelper output) : McpTools
 		var resultJson = await coherenceTools.CheckCoherence(
 			"elasticsearch security",
 			limit: 10,
-			cancellationToken: TestContext.Current.CancellationToken);
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -58,7 +59,8 @@ public class CoherenceToolsIntegrationTests(ITestOutputHelper output) : McpTools
 		var resultJson = await coherenceTools.FindInconsistencies(
 			"authentication",
 			focusArea: "configuration",
-			cancellationToken: TestContext.Current.CancellationToken);
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");

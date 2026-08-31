@@ -11,8 +11,7 @@ namespace Elastic.Changelog.Tests.Changelogs.Render;
 public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
 {
 	// language=yaml
-	private const string BundleHeader =
-		"""
+	private const string BundleHeader = """
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
@@ -61,16 +60,13 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		var bundleDir = CreateBundleDir();
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		await WriteBundleAsync(bundleFile,
-			CreateResolvedBundleContent(BundleHeader, ("1000000001-feature.yaml", ChangelogFeature1)));
+		await WriteBundleAsync(bundleFile, CreateResolvedBundleContent(BundleHeader, ("1000000001-feature.yaml", ChangelogFeature1)));
 
 		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
-		await WriteBundleAsync(amend1,
-			CreateResolvedBundleContent(BundleHeader, ("1000000002-enhancement.yaml", ChangelogFeature2)));
+		await WriteBundleAsync(amend1, CreateResolvedBundleContent(BundleHeader, ("1000000002-enhancement.yaml", ChangelogFeature2)));
 
 		var amend2 = FileSystem.Path.Join(bundleDir, "bundle.amend-2.yaml");
-		await WriteBundleAsync(amend2,
-			CreateResolvedBundleContent(BundleHeader, ("1000000003-bugfix.yaml", ChangelogFeature3)));
+		await WriteBundleAsync(amend2, CreateResolvedBundleContent(BundleHeader, ("1000000003-bugfix.yaml", ChangelogFeature3)));
 
 		var input = CreateRenderInput(bundleFile);
 
@@ -100,8 +96,7 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		var bundleDir = CreateBundleDir();
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		await WriteBundleAsync(bundleFile,
-			CreateResolvedBundleContent(BundleHeader, ("1000000001-feature.yaml", ChangelogFeature1)));
+		await WriteBundleAsync(bundleFile, CreateResolvedBundleContent(BundleHeader, ("1000000001-feature.yaml", ChangelogFeature1)));
 
 		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
 		// language=yaml
@@ -145,8 +140,7 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		var bundleDir = CreateBundleDir();
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		await WriteBundleAsync(bundleFile,
-			CreateResolvedBundleContent(BundleHeader, ("1000000001-feature.yaml", ChangelogFeature1)));
+		await WriteBundleAsync(bundleFile, CreateResolvedBundleContent(BundleHeader, ("1000000001-feature.yaml", ChangelogFeature1)));
 
 		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
 		// language=yaml
@@ -187,11 +181,10 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 
 		var file2 = "1000000002-enhancement.yaml";
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		await WriteBundleAsync(bundleFile,
-			CreateResolvedBundleContent(
-				BundleHeader,
-				("1000000001-feature.yaml", ChangelogFeature1),
-				(file2, ChangelogFeature2)));
+		await WriteBundleAsync(
+			bundleFile,
+			CreateResolvedBundleContent(BundleHeader, ("1000000001-feature.yaml", ChangelogFeature1), (file2, ChangelogFeature2))
+		);
 
 		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
 		await FileSystem.File.WriteAllTextAsync(
@@ -203,7 +196,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 			      name: {file2}
 			      checksum: {ComputeSha1(ChangelogFeature2)}
 			""",
-			TestContext.Current.CancellationToken);
+			TestContext.Current.CancellationToken
+		);
 
 		var input = CreateRenderInput(bundleFile);
 

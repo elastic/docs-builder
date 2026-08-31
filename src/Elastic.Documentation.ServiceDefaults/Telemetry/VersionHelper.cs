@@ -29,8 +29,6 @@ internal static class VersionHelper
 		 */
 
 		var indexOfPlusSign = informationalVersion.IndexOf('+');
-		return indexOfPlusSign > 0
-			? informationalVersion[..indexOfPlusSign]
-			: informationalVersion;
+		return indexOfPlusSign > 0 ? informationalVersion[..indexOfPlusSign] : informationalVersion;
 	}
 }

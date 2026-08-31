@@ -29,7 +29,12 @@ public class MappingStructureTests
 	public void GuideDocument_GetId_ReturnsUrl()
 	{
 		var ctx = GuideMappingContext.GuideDocument.CreateContext(type: "en", env: "test");
-		var doc = new GuideDocument { Title = "t", SearchTitle = "t", Path = "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" };
+		var doc = new GuideDocument
+		{
+			Title = "t",
+			SearchTitle = "t",
+			Path = "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html"
+		};
 		ctx.GetId!(doc).Should().Be("https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html");
 	}
 
@@ -77,8 +82,7 @@ public class MappingStructureTests
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		doc.RootElement.GetProperty("properties").GetProperty("path")
-			.GetProperty("type").GetString().Should().Be("keyword");
+		doc.RootElement.GetProperty("properties").GetProperty("path").GetProperty("type").GetString().Should().Be("keyword");
 	}
 
 	[Fact]
@@ -86,8 +90,7 @@ public class MappingStructureTests
 	{
 		var json = GuideMappingContext.GuideDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		doc.RootElement.GetProperty("properties").GetProperty("path")
-			.GetProperty("type").GetString().Should().Be("keyword");
+		doc.RootElement.GetProperty("properties").GetProperty("path").GetProperty("type").GetString().Should().Be("keyword");
 	}
 
 	// ── content_type: [Keyword] on base ──────────────────────────────────────
@@ -97,8 +100,7 @@ public class MappingStructureTests
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		doc.RootElement.GetProperty("properties").GetProperty("content_type")
-			.GetProperty("type").GetString().Should().Be("keyword");
+		doc.RootElement.GetProperty("properties").GetProperty("content_type").GetProperty("type").GetString().Should().Be("keyword");
 	}
 
 	// ── tags: copy_to target for content_type/section ─────
@@ -108,8 +110,7 @@ public class MappingStructureTests
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		doc.RootElement.GetProperty("properties").GetProperty("content_type")
-			.GetProperty("copy_to").GetString().Should().Be("tags");
+		doc.RootElement.GetProperty("properties").GetProperty("content_type").GetProperty("copy_to").GetString().Should().Be("tags");
 	}
 
 	[Fact]
@@ -117,8 +118,7 @@ public class MappingStructureTests
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		doc.RootElement.GetProperty("properties").GetProperty("section")
-			.GetProperty("copy_to").GetString().Should().Be("tags");
+		doc.RootElement.GetProperty("properties").GetProperty("section").GetProperty("copy_to").GetString().Should().Be("tags");
 	}
 
 	[Fact]
@@ -138,8 +138,7 @@ public class MappingStructureTests
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		doc.RootElement.GetProperty("properties").GetProperty("content_tier")
-			.GetProperty("type").GetString().Should().Be("keyword");
+		doc.RootElement.GetProperty("properties").GetProperty("content_tier").GetProperty("type").GetString().Should().Be("keyword");
 	}
 
 	[Fact]
@@ -156,8 +155,7 @@ public class MappingStructureTests
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		doc.RootElement.GetProperty("properties").GetProperty("hash")
-			.GetProperty("type").GetString().Should().Be("keyword");
+		doc.RootElement.GetProperty("properties").GetProperty("hash").GetProperty("type").GetString().Should().Be("keyword");
 	}
 
 	// ── Title multi-fields from AddSearchDocumentMappings ────────────────────
@@ -228,7 +226,10 @@ public class MappingStructureTests
 		var urlFields = doc.RootElement.GetProperty("properties").GetProperty("path").GetProperty("fields");
 
 		urlFields.TryGetProperty("match", out _).Should().BeTrue("path.match is configured in AddCommonTitleMappings");
-		urlFields.TryGetProperty("prefix", out _).Should().BeTrue("path.prefix (hierarchy_analyzer) is configured in AddCommonTitleMappings");
+		urlFields
+			.TryGetProperty("prefix", out _)
+			.Should()
+			.BeTrue("path.prefix (hierarchy_analyzer) is configured in AddCommonTitleMappings");
 		urlFields.GetProperty("prefix").GetProperty("analyzer").GetString().Should().Be("hierarchy_analyzer");
 	}
 
@@ -249,7 +250,12 @@ public class MappingStructureTests
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
-		var toc = doc.RootElement.GetProperty("properties").GetProperty("navigation").GetProperty("properties").GetProperty("table_of_contents");
+		var toc = doc
+			.RootElement
+			.GetProperty("properties")
+			.GetProperty("navigation")
+			.GetProperty("properties")
+			.GetProperty("table_of_contents");
 		toc.GetProperty("type").GetString().Should().Be("rank_feature");
 		toc.GetProperty("positive_score_impact").GetBoolean().Should().BeFalse();
 	}
@@ -306,20 +312,16 @@ public class MappingStructureTests
 	// ── Field name constants match JSON property names ────────────────────────
 
 	[Fact]
-	public void SiteDocument_Fields_UrlMatchesJsonPropertyName() =>
-		SiteMappingContext.SiteDocument.Fields.Path.Should().Be("path");
+	public void SiteDocument_Fields_UrlMatchesJsonPropertyName() => SiteMappingContext.SiteDocument.Fields.Path.Should().Be("path");
 
 	[Fact]
-	public void SiteDocument_Fields_TitleMatchesJsonPropertyName() =>
-		SiteMappingContext.SiteDocument.Fields.Title.Should().Be("title");
+	public void SiteDocument_Fields_TitleMatchesJsonPropertyName() => SiteMappingContext.SiteDocument.Fields.Title.Should().Be("title");
 
 	[Fact]
-	public void SiteDocument_Fields_HashMatchesJsonPropertyName() =>
-		SiteMappingContext.SiteDocument.Fields.Hash.Should().Be("hash");
+	public void SiteDocument_Fields_HashMatchesJsonPropertyName() => SiteMappingContext.SiteDocument.Fields.Hash.Should().Be("hash");
 
 	[Fact]
-	public void GuideDocument_Fields_UrlMatchesJsonPropertyName() =>
-		GuideMappingContext.GuideDocument.Fields.Path.Should().Be("path");
+	public void GuideDocument_Fields_UrlMatchesJsonPropertyName() => GuideMappingContext.GuideDocument.Fields.Path.Should().Be("path");
 
 	// ── parents: shared topology declared once in SharedMappingConfig ────────
 

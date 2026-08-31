@@ -26,10 +26,7 @@ public class DocumentationDocumentSerializationTests
 			Path = "/test/page",
 			Title = "Test Page",
 			SearchTitle = "Test Page",
-			Applies = new ApplicableTo
-			{
-				Stack = AppliesCollection.GenerallyAvailable
-			}.ToAppliesTo()
+			Applies = new ApplicableTo { Stack = AppliesCollection.GenerallyAvailable }.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -106,8 +103,12 @@ public class DocumentationDocumentSerializationTests
 			{
 				Serverless = new ServerlessProjectApplicability
 				{
-					Elasticsearch = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }]),
-					Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"1.0.0" }]),
+					Elasticsearch = new AppliesCollection([
+						new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }
+					]),
+					Security = new AppliesCollection([
+						new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"1.0.0" }
+					]),
 					VectorDatabase = AppliesCollection.GenerallyAvailable
 				}
 			}.ToAppliesTo()
@@ -186,8 +187,12 @@ public class DocumentationDocumentSerializationTests
 			{
 				ProductApplicability = new ProductApplicability
 				{
-					ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.5.0" }]),
-					ApmAgentNode = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"2.0.0" }])
+					ApmAgentDotnet = new AppliesCollection([
+						new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.5.0" }
+					]),
+					ApmAgentNode = new AppliesCollection([
+						new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"2.0.0" }
+					])
 				}
 			}.ToAppliesTo()
 		};
@@ -226,15 +231,11 @@ public class DocumentationDocumentSerializationTests
 			SearchTitle = "Complex Test",
 			Applies = new ApplicableTo
 			{
-				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }]),
-				Deployment = new DeploymentApplicability
-				{
-					Ess = AppliesCollection.GenerallyAvailable
-				},
-				Serverless = new ServerlessProjectApplicability
-				{
-					Elasticsearch = AppliesCollection.GenerallyAvailable
-				}
+				Stack = new AppliesCollection([
+					new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }
+				]),
+				Deployment = new DeploymentApplicability { Ess = AppliesCollection.GenerallyAvailable },
+				Serverless = new ServerlessProjectApplicability { Elasticsearch = AppliesCollection.GenerallyAvailable }
 			}.ToAppliesTo()
 		};
 
@@ -305,7 +306,9 @@ public class DocumentationDocumentSerializationTests
 	{
 		var originalApplies = new ApplicableTo
 		{
-			Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.5.0" }]),
+			Stack = new AppliesCollection([
+				new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.5.0" }
+			]),
 			Deployment = new DeploymentApplicability
 			{
 				Ess = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"8.6.0" }])
@@ -339,7 +342,10 @@ public class DocumentationDocumentSerializationTests
 		deserialized.Applies.Should().NotBeNull();
 		deserialized.Applies.Should().HaveCount(2);
 		deserialized.Applies.Should().Contain(e => e.Type == "stack" && e.Lifecycle == "ga" && e.Version == "8.5+");
-		deserialized.Applies.Should().Contain(e => e.Type == "deployment" && e.SubType == "ess" && e.Lifecycle == "beta" && e.Version == "8.6+");
+		deserialized
+			.Applies
+			.Should()
+			.Contain(e => e.Type == "deployment" && e.SubType == "ess" && e.Lifecycle == "beta" && e.Version == "8.6+");
 		deserialized.ContentLastUpdated.Should().Be(original.ContentLastUpdated);
 		deserialized.ContentBodyHash.Should().Be(original.ContentBodyHash);
 		deserialized.ContentType.Should().Be(original.ContentType);
@@ -350,13 +356,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		foreach (var type in new[] { "doc", "api" })
 		{
-			var doc = new DocumentationDocument
-			{
-				ContentType = type,
-				Path = $"/test/{type}",
-				Title = "T",
-				SearchTitle = "T"
-			};
+			var doc = new DocumentationDocument { ContentType = type, Path = $"/test/{type}", Title = "T", SearchTitle = "T" };
 
 			var json = JsonSerializer.Serialize(doc, _options);
 			using var parsed = JsonDocument.Parse(json);
@@ -370,7 +370,8 @@ public class DocumentationDocumentSerializationTests
 	[Fact]
 	public void ContentType_FromJson_Overrides_Type()
 	{
-		var json = """
+		var json =
+			"""
 		{
 			"title": "Legacy",
 			"search_title": "Legacy",
@@ -401,8 +402,7 @@ public class DocumentationDocumentSerializationTests
 			SearchTitle = "Multiple Test",
 			Applies = new ApplicableTo
 			{
-				Stack = new AppliesCollection(
-				[
+				Stack = new AppliesCollection([
 					new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" },
 					new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"7.17.0" },
 					new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"7.0.0" }
@@ -442,20 +442,18 @@ public class DocumentationDocumentSerializationTests
 
 		var json = JsonSerializer.Serialize(doc, _options);
 		using var jsonDoc = JsonDocument.Parse(json);
-		jsonDoc.RootElement.GetProperty("source_url").GetString()
-			.Should().Be("https://github.com/elastic/docs-content/blob/main/docs/some-page.md");
+		jsonDoc
+			.RootElement
+			.GetProperty("source_url")
+			.GetString()
+			.Should()
+			.Be("https://github.com/elastic/docs-content/blob/main/docs/some-page.md");
 	}
 
 	[Fact]
 	public void SerializeDocument_OmitsSourceUrlWhenNull()
 	{
-		var doc = new DocumentationDocument
-		{
-			Path = "/docs/some-page",
-			Title = "Some Page",
-			SearchTitle = "Some Page",
-			SourceUrl = null
-		};
+		var doc = new DocumentationDocument { Path = "/docs/some-page", Title = "Some Page", SearchTitle = "Some Page", SourceUrl = null };
 
 		var json = JsonSerializer.Serialize(doc, _options);
 		using var jsonDoc = JsonDocument.Parse(json);

@@ -22,6 +22,5 @@ public static class UrlPath
 	/// Joins two path segments with a single '/', trimming duplicate slashes at the join point.
 	/// Assumes both segments already use forward slashes.
 	/// </summary>
-	public static string JoinUrl(string left, string right) =>
-		$"{left.TrimEnd('/')}/{right.TrimStart('/')}";
+	public static string JoinUrl(string left, string right) => $"{left.TrimEnd('/')}/{right.TrimStart('/')}";
 }

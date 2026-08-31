@@ -20,6 +20,7 @@ public interface IMarkdownStringRenderer
 	/// </summary>
 	string RenderApiDescription(string markdown, IFileInfo? source) => Render(markdown, source);
 }
+
 public class NoopMarkdownStringRenderer : IMarkdownStringRenderer
 {
 	private NoopMarkdownStringRenderer() { }

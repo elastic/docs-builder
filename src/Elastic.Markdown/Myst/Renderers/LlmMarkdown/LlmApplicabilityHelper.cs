@@ -31,14 +31,18 @@ public static class LlmApplicabilityHelper
 		RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.StackRow, useInlineTag);
 
 	/// <summary>Deployment and serverless line for settings-style split layout.</summary>
-	public static string RenderSupportedOnRowForLlm(ApplicableTo? appliesTo, VersionsConfiguration versionsConfig, bool useInlineTag = true) =>
-		RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.SupportedOnRow, useInlineTag);
+	public static string RenderSupportedOnRowForLlm(
+		ApplicableTo? appliesTo,
+		VersionsConfiguration versionsConfig,
+		bool useInlineTag = true
+	) => RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.SupportedOnRow, useInlineTag);
 
 	private static string RenderPlacementForLlm(
 		ApplicableTo? appliesTo,
 		VersionsConfiguration versionsConfig,
 		ApplicabilityBadgePlacement placement,
-		bool useInlineTag)
+		bool useInlineTag
+	)
 	{
 		if (appliesTo is null || appliesTo == ApplicableTo.All)
 			return string.Empty;
@@ -122,6 +126,5 @@ public static class LlmApplicabilityHelper
 	/// <summary>
 	/// Converts display name from HTML entities to plain text (e.g., "Elastic&amp;nbsp;Stack" -> "Elastic Stack")
 	/// </summary>
-	private static string GetPlainDisplayName(string displayName) =>
-		displayName.Replace("&nbsp;", " ");
+	private static string GetPlainDisplayName(string displayName) => displayName.Replace("&nbsp;", " ");
 }

@@ -162,10 +162,12 @@ public class OkfMarkdownExporter : IMarkdownExporter
 		if (string.IsNullOrEmpty(url))
 			return url;
 
-		if (canonicalBaseUrl is not null
+		if (
+			canonicalBaseUrl is not null
 			&& Uri.TryCreate(url, UriKind.Absolute, out var absolute)
 			&& string.Equals(absolute.Scheme, canonicalBaseUrl.Scheme, StringComparison.OrdinalIgnoreCase)
-			&& string.Equals(absolute.Host, canonicalBaseUrl.Host, StringComparison.OrdinalIgnoreCase))
+			&& string.Equals(absolute.Host, canonicalBaseUrl.Host, StringComparison.OrdinalIgnoreCase)
+		)
 			url = absolute.PathAndQuery + absolute.Fragment;
 
 		if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
@@ -200,7 +202,11 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	{
 		var urlPathPrefix = context.BuildContext.UrlPathPrefix;
 		var canonicalBaseUrl = context.BuildContext.CanonicalBaseUrl;
-		var body = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context.BuildContext, url => RewriteLinkUrl(url, urlPathPrefix, canonicalBaseUrl), context.Document, static (renderer, document) =>
+		var body = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context.BuildContext, url => RewriteLinkUrl(
+			url,
+			urlPathPrefix,
+			canonicalBaseUrl
+		), context.Document, static (renderer, document) =>
 		{
 			_ = renderer.Render(document);
 		});
@@ -297,9 +303,11 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	/// </summary>
 	private async Task WriteIndexFilesAsync(IFileSystem fs, IDirectoryInfo staging, Cancel ctx)
 	{
-		var byDirectory = _entries
-			.GroupBy(e => GetDirectory(e.BundlePath), StringComparer.Ordinal)
-			.ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
+		var byDirectory = _entries.GroupBy(e => GetDirectory(e.BundlePath), StringComparer.Ordinal).ToDictionary(
+			g => g.Key,
+			g => g.ToList(),
+			StringComparer.Ordinal
+		);
 
 		var directories = new HashSet<string>(byDirectory.Keys, StringComparer.Ordinal) { "" };
 		foreach (var directory in byDirectory.Keys)
@@ -343,7 +351,8 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	internal static string RenderIndexContent(
 		string directory,
 		IReadOnlyCollection<ConceptEntry> concepts,
-		IReadOnlyCollection<string> subdirectories)
+		IReadOnlyCollection<string> subdirectories
+	)
 	{
 		var sb = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 		try

@@ -32,8 +32,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -112,16 +111,17 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
 			""";
-		var bundleContent = CreateResolvedBundleContent(bundleHeader,
+		var bundleContent = CreateResolvedBundleContent(
+			bundleHeader,
 			("feature.yaml", featureChangelog),
 			("deprecation.yaml", deprecationChangelog),
-			("highlight.yaml", highlightChangelog));
+			("highlight.yaml", highlightChangelog)
+		);
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -198,8 +198,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -217,11 +216,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles =
-			[
-				new BundleInput { BundleFile = bundle1 },
-				new BundleInput { BundleFile = bundle2 }
-			],
+			Bundles = [new BundleInput { BundleFile = bundle1 }, new BundleInput { BundleFile = bundle2 }],
 			Output = outputDir,
 			Title = "9.2.0"
 		};

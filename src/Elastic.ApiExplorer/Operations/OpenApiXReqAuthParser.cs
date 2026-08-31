@@ -32,7 +32,12 @@ public static class OpenApiXReqAuthParser
 		{
 			if (jne.Node is not JsonArray array)
 			{
-				log?.LogWarning("Failed to parse {Extension} extension for operation {OperationId} on path {Path}: expected a JSON array", ExtensionKey, operationId, route);
+				log?.LogWarning(
+					"Failed to parse {Extension} extension for operation {OperationId} on path {Path}: expected a JSON array",
+					ExtensionKey,
+					operationId,
+					route
+				);
 				return null;
 			}
 
@@ -53,15 +58,19 @@ public static class OpenApiXReqAuthParser
 		}
 		catch (Exception ex)
 		{
-			log?.LogWarning(ex, "Failed to parse {Extension} extension for operation {OperationId} on path {Path}", ExtensionKey, operationId, route);
+			log?.LogWarning(
+				ex,
+				"Failed to parse {Extension} extension for operation {OperationId} on path {Path}",
+				ExtensionKey,
+				operationId,
+				route
+			);
 			return null;
 		}
 	}
 
 	private static string LineFromNode(JsonNode node) =>
 		node is JsonValue value
-			? value.GetValueKind() == JsonValueKind.String
-				? value.GetValue<string>() ?? ""
-				: value.ToString() ?? ""
+			? value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>() ?? "" : value.ToString() ?? ""
 			: node.ToString() ?? "";
 }

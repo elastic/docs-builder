@@ -13,21 +13,13 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// <param name="Data">The full parsed bundle data.</param>
 /// <param name="FilePath">The absolute path to the bundle file.</param>
 /// <param name="Entries">Resolved changelog entries (from inline data or file references).</param>
-public record LoadedBundle(
-	string Version,
-	string Repo,
-	string Owner,
-	Bundle Data,
-	string FilePath,
-	IReadOnlyList<ChangelogEntry> Entries)
+public record LoadedBundle(string Version, string Repo, string Owner, Bundle Data, string FilePath, IReadOnlyList<ChangelogEntry> Entries)
 {
 	/// <summary>
 	/// Entries grouped by their changelog entry type.
 	/// </summary>
 	public IReadOnlyDictionary<ChangelogEntryType, IReadOnlyCollection<ChangelogEntry>> EntriesByType =>
-		Entries
-			.GroupBy(e => e.Type)
-			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToList().AsReadOnly());
+		Entries.GroupBy(e => e.Type).ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToList().AsReadOnly());
 
 	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.

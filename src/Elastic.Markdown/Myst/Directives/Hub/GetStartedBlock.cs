@@ -22,8 +22,7 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// :::
 /// </code>
 /// </example>
-public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "get-started";
 
@@ -50,7 +49,6 @@ public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context)
 
 		if (string.IsNullOrWhiteSpace(Data.Title))
 			this.EmitError("{get-started} requires a `title` field in its YAML body.");
-
 
 		foreach (var step in Data.Steps)
 		{

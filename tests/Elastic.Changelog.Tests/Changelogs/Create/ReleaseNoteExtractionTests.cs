@@ -24,12 +24,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -51,7 +53,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -88,12 +90,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -115,7 +119,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -144,7 +148,8 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 	{
 		// Arrange
 		// The regex stops at double newline, so we need a release note that spans multiple lines without double newline
-		var multiLineReleaseNote = "Adds support for new aggregation types\nThis includes date histogram and range aggregations\nwith improved performance";
+		var multiLineReleaseNote =
+			"Adds support for new aggregation types\nThis includes date histogram and range aggregations\nwith improved performance";
 		var prInfo = new GitHubPrInfo
 		{
 			Title = "Implement new aggregation API",
@@ -152,12 +157,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -179,7 +186,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -216,12 +223,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -243,7 +252,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -284,12 +293,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -311,7 +322,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true,
@@ -349,12 +360,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -376,7 +389,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true,
@@ -414,12 +427,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -443,10 +458,11 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
-			ExtractReleaseNotes = null  // CLI did not specify; config default applies
+			ExtractReleaseNotes =
+				null // CLI did not specify; config default applies
 		};
 
 		// Act
@@ -476,12 +492,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -515,7 +533,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = null
@@ -544,12 +562,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -582,7 +602,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = false
@@ -619,18 +639,22 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:bug-fix"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/100",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo1);
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<CancellationToken>._
+			)
+		).Returns(prInfo1);
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/200",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo2);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo2);
 
 		// language=yaml
 		var configContent =
@@ -664,12 +688,8 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var output = CreateOutputDirectory();
 		var input = new CreateChangelogArguments
 		{
-			Prs =
-			[
-				"https://github.com/elastic/elasticsearch/pull/100",
-				"https://github.com/elastic/elasticsearch/pull/200"
-			],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/200"],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = output,
 			ExtractReleaseNotes = null,
@@ -703,12 +723,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -743,7 +765,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = null
@@ -774,12 +796,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -813,7 +837,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
@@ -842,12 +866,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -879,7 +905,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = false,

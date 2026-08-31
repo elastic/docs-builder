@@ -19,12 +19,7 @@ public class ContentStackMappingTests
 		var path = Path.Combine("Fixtures", "ContentStack", fixtureName);
 		var json = File.ReadAllText(path);
 		var data = JsonSerializer.Deserialize<JsonElement>(json);
-		return new SyncItem
-		{
-			Type = "entry_published",
-			ContentTypeUid = contentTypeUid,
-			Data = data
-		};
+		return new SyncItem { Type = "entry_published", ContentTypeUid = contentTypeUid, Data = data };
 	}
 
 	/// <summary>Covers: blog (legacy v1 with flat body_l10n)</summary>
@@ -335,12 +330,7 @@ public class ContentStackMappingTests
 	}
 
 	private static SyncItem LoadFromJson(string json, string contentTypeUid) =>
-		new()
-		{
-			Type = "entry_published",
-			ContentTypeUid = contentTypeUid,
-			Data = JsonSerializer.Deserialize<JsonElement>(json)
-		};
+		new() { Type = "entry_published", ContentTypeUid = contentTypeUid, Data = JsonSerializer.Deserialize<JsonElement>(json) };
 
 	/// <summary>
 	/// Root cause: ContentStack "publishes" the same entry into multiple locale variants that
@@ -356,10 +346,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_UnprefixedUrl_UnmappedNonEnglishLocale_NamespacesUnderBaseLanguageSubtag()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/support/matrix", "locale": "xx-yy",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -371,10 +364,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_MissingLocale_ResolvesToEnglish()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/support/matrix",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -386,10 +382,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_EnglishVariantLocale_ResolvesToEnglish()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/support/matrix", "locale": "en-gb",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -403,10 +402,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_PrefixedUrl_ResolvesPerPrefix_RegardlessOfLocale()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/de/support/matrix", "locale": "en-us",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -423,10 +425,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_NonMasterLocale_NamespacesUrlUnderSitePrefix()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/support/matrix", "locale": "es-mx",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();

@@ -162,10 +162,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		// Arrange
 		var bundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			Entries =
 			[
 				new BundledEntry { Title = "Test feature", Type = ChangelogEntryType.Feature },
@@ -189,10 +186,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		// Arrange - a reference-style entry (file block only, no inline content) is invalid
 		var bundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			Entries =
 			[
 				new BundledEntry { Title = "Inline feature", Type = ChangelogEntryType.Feature },
@@ -246,10 +240,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			new() { Title = "Bug fix", Type = ChangelogEntryType.BugFix }
 		};
 
-		var publishBlocker = new PublishBlocker
-		{
-			Types = ["regression"]
-		};
+		var publishBlocker = new PublishBlocker { Types = ["regression"] };
 
 		// Act
 		var filtered = service.FilterEntries(entries, publishBlocker);
@@ -271,10 +262,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			new() { Title = "Mixed feature", Type = ChangelogEntryType.Feature, Areas = ["Search", "Internal"] }
 		};
 
-		var publishBlocker = new PublishBlocker
-		{
-			Areas = ["Internal"]
-		};
+		var publishBlocker = new PublishBlocker { Areas = ["Internal"] };
 
 		// Act
 		var filtered = service.FilterEntries(entries, publishBlocker);
@@ -296,11 +284,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			new() { Title = "Hidden by area", Type = ChangelogEntryType.Feature, Areas = ["Internal"] }
 		};
 
-		var publishBlocker = new PublishBlocker
-		{
-			Types = ["regression"],
-			Areas = ["Internal"]
-		};
+		var publishBlocker = new PublishBlocker { Types = ["regression"], Areas = ["Internal"] };
 
 		// Act
 		var filtered = service.FilterEntries(entries, publishBlocker);
@@ -321,8 +305,14 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/bundle.yaml",
-				[new ChangelogEntry { Title = "Entry 1", Type = ChangelogEntryType.Feature }])
+			new(
+				"9.3.0",
+				"elasticsearch",
+				"elastic",
+				new Bundle(),
+				"/path/to/bundle.yaml",
+				[new ChangelogEntry { Title = "Entry 1", Type = ChangelogEntryType.Feature }]
+			)
 		};
 
 		// Act
@@ -340,10 +330,22 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.3.0.yaml",
-				[new ChangelogEntry { Title = "Entry 9.3.0", Type = ChangelogEntryType.Feature }]),
-			new("9.2.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.2.0.yaml",
-				[new ChangelogEntry { Title = "Entry 9.2.0", Type = ChangelogEntryType.Feature }])
+			new(
+				"9.3.0",
+				"elasticsearch",
+				"elastic",
+				new Bundle(),
+				"/path/to/9.3.0.yaml",
+				[new ChangelogEntry { Title = "Entry 9.3.0", Type = ChangelogEntryType.Feature }]
+			),
+			new(
+				"9.2.0",
+				"elasticsearch",
+				"elastic",
+				new Bundle(),
+				"/path/to/9.2.0.yaml",
+				[new ChangelogEntry { Title = "Entry 9.2.0", Type = ChangelogEntryType.Feature }]
+			)
 		};
 
 		// Act
@@ -360,10 +362,22 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/es.yaml",
-				[new ChangelogEntry { Title = "ES Entry", Type = ChangelogEntryType.Feature }]),
-			new("9.3.0", "kibana", "elastic", new Bundle(), "/path/to/kibana.yaml",
-				[new ChangelogEntry { Title = "Kibana Entry", Type = ChangelogEntryType.Feature }])
+			new(
+				"9.3.0",
+				"elasticsearch",
+				"elastic",
+				new Bundle(),
+				"/path/to/es.yaml",
+				[new ChangelogEntry { Title = "ES Entry", Type = ChangelogEntryType.Feature }]
+			),
+			new(
+				"9.3.0",
+				"kibana",
+				"elastic",
+				new Bundle(),
+				"/path/to/kibana.yaml",
+				[new ChangelogEntry { Title = "Kibana Entry", Type = ChangelogEntryType.Feature }]
+			)
 		};
 
 		// Act
@@ -1024,10 +1038,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			HideFeatures = ["feature:first", "feature:second", "feature:third"],
 			Entries =
 			[
@@ -1063,7 +1074,8 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var bundlesFolder = "/docs/changelog/bundles";
 		_fileSystem.Directory.CreateDirectory(bundlesFolder);
 
-		var multilineDescription = """
+		var multilineDescription =
+			"""
 			This is a test description with multiple paragraphs.
 
 			It includes:
@@ -1076,10 +1088,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			Description = multilineDescription,
 			Entries =
 			[
@@ -1120,10 +1129,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			Description = null,
 			Entries =
 			[
@@ -1159,10 +1165,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "apm-agent-dotnet", Target = "1.34.0" }
-			],
+			Products = [new BundledProduct { ProductId = "apm-agent-dotnet", Target = "1.34.0" }],
 			ReleaseDate = new DateOnly(2026, 4, 9),
 			Entries =
 			[
@@ -1197,10 +1200,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			ReleaseDate = null,
 			Entries =
 			[
@@ -1343,12 +1343,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	public void LoadedBundle_HideFeatures_ExposedFromBundleData()
 	{
 		// Arrange - Verify that LoadedBundle.HideFeatures properly exposes Data.HideFeatures
-		var bundleData = new Bundle
-		{
-			Products = [],
-			HideFeatures = ["feature:a", "feature:b"],
-			Entries = []
-		};
+		var bundleData = new Bundle { Products = [], HideFeatures = ["feature:a", "feature:b"], Entries = [] };
 		var entries = new List<ChangelogEntry>();
 		var bundle = new LoadedBundle("9.3.0", "elasticsearch", "elastic", bundleData, "/path/to/bundle.yaml", entries);
 

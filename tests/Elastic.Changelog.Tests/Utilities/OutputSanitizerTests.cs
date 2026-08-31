@@ -10,25 +10,20 @@ namespace Elastic.Changelog.Tests.Utilities;
 public class OutputSanitizerTests
 {
 	[Fact]
-	public void NullInput_ReturnsEmpty() =>
-		OutputSanitizer.SanitizeForOutput(null, 100).Should().Be(string.Empty);
+	public void NullInput_ReturnsEmpty() => OutputSanitizer.SanitizeForOutput(null, 100).Should().Be(string.Empty);
 
 	[Fact]
-	public void EmptyInput_ReturnsEmpty() =>
-		OutputSanitizer.SanitizeForOutput(string.Empty, 100).Should().Be(string.Empty);
+	public void EmptyInput_ReturnsEmpty() => OutputSanitizer.SanitizeForOutput(string.Empty, 100).Should().Be(string.Empty);
 
 	[Fact]
-	public void ZeroMaxLength_ReturnsEmpty() =>
-		OutputSanitizer.SanitizeForOutput("anything", 0).Should().Be(string.Empty);
+	public void ZeroMaxLength_ReturnsEmpty() => OutputSanitizer.SanitizeForOutput("anything", 0).Should().Be(string.Empty);
 
 	[Fact]
-	public void NegativeMaxLength_ReturnsEmpty() =>
-		OutputSanitizer.SanitizeForOutput("anything", -1).Should().Be(string.Empty);
+	public void NegativeMaxLength_ReturnsEmpty() => OutputSanitizer.SanitizeForOutput("anything", -1).Should().Be(string.Empty);
 
 	[Fact]
 	public void PlainAscii_PassesThrough() =>
-		OutputSanitizer.SanitizeForOutput("Add new search API", 100)
-			.Should().Be("Add new search API");
+		OutputSanitizer.SanitizeForOutput("Add new search API", 100).Should().Be("Add new search API");
 
 	[Fact]
 	public void PreservesNewlinesAndTabs()
@@ -38,12 +33,10 @@ public class OutputSanitizerTests
 	}
 
 	[Fact]
-	public void StripsNullBytes() =>
-		OutputSanitizer.SanitizeForOutput("hello\0world", 100).Should().Be("helloworld");
+	public void StripsNullBytes() => OutputSanitizer.SanitizeForOutput("hello\0world", 100).Should().Be("helloworld");
 
 	[Fact]
-	public void StripsCarriageReturn() =>
-		OutputSanitizer.SanitizeForOutput("line1\r\nline2", 100).Should().Be("line1\nline2");
+	public void StripsCarriageReturn() => OutputSanitizer.SanitizeForOutput("line1\r\nline2", 100).Should().Be("line1\nline2");
 
 	[Theory]
 	[InlineData('\u0001')]
@@ -99,15 +92,16 @@ public class OutputSanitizerTests
 	public void RealisticPrTitle_FitsWithinTitleCap()
 	{
 		var input = "[7.17] Backport: improve search aggregation performance for large indices";
-		OutputSanitizer.SanitizeForOutput(input, OutputSanitizer.TitleMaxLength)
-			.Should().Be(input);
+		OutputSanitizer.SanitizeForOutput(input, OutputSanitizer.TitleMaxLength).Should().Be(input);
 	}
 
 	[Fact]
 	public void HugeBody_TruncatedToDescriptionCap()
 	{
 		var input = new string('x', OutputSanitizer.DescriptionMaxLength * 2);
-		OutputSanitizer.SanitizeForOutput(input, OutputSanitizer.DescriptionMaxLength)
-			.Should().HaveLength(OutputSanitizer.DescriptionMaxLength);
+		OutputSanitizer
+			.SanitizeForOutput(input, OutputSanitizer.DescriptionMaxLength)
+			.Should()
+			.HaveLength(OutputSanitizer.DescriptionMaxLength);
 	}
 }

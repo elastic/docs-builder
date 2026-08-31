@@ -38,7 +38,11 @@ public class AssemblerBuilder(
 
 	private ILegacyUrlMapper? LegacyUrlMapper { get; } = legacyUrlMapper;
 
-	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
+	public async Task BuildAllAsync(
+		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets,
+		IReadOnlySet<Exporter> exportOptions,
+		Cancel ctx
+	)
 	{
 		if (context.OutputDirectory.Exists)
 			context.OutputDirectory.Delete(true);
@@ -137,32 +141,49 @@ public class AssemblerBuilder(
 					allRedirects[Resolve(k)] = Resolve(t);
 			}
 		}
+
 		string Resolve(string path)
 		{
 			Uri? uri;
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
+
 			{
 				_ = linkResolver.TryResolve(
-					specificErrorMessage => context.Collector.EmitError(path, $"An error occurred while resolving cross-link {path}", specificErrorMessage),
+					specificErrorMessage => context.Collector.EmitError(
+						path,
+						$"An error occurred while resolving cross-link {path}",
+						specificErrorMessage
+					),
 					new Uri(path),
-					out uri);
+					out uri
+				);
 			}
 			else // Relative links
+
 			{
-				uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{path}"),
-					PublishEnvironmentUriResolver.MarkdownPathToUrlPath(path));
+				uri = linkResolver.UriResolver.Resolve(
+					new Uri($"{repository}://{path}"),
+					PublishEnvironmentUriResolver.MarkdownPathToUrlPath(path)
+				);
 			}
 
 			return uri?.AbsolutePath ?? string.Empty;
 		}
 	}
 
-	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, IDocumentInferrerService documentInferrer, Cancel ctx)
+	private async Task<GenerationResult> BuildAsync(
+		AssemblerDocumentationSet set,
+		IMarkdownExporter[]? markdownExporters,
+		IDocumentInferrerService documentInferrer,
+		Cancel ctx
+	)
 	{
 		SetFeatureFlags(set);
 		var generator = new DocumentationGenerator(
 			set.DocumentationSet,
-			logFactory, NavigationTraversable, HtmlWriter,
+			logFactory,
+			NavigationTraversable,
+			HtmlWriter,
 			pathProvider,
 			legacyUrlMapper: LegacyUrlMapper,
 			markdownExporters: markdownExporters,
@@ -177,7 +198,11 @@ public class AssemblerBuilder(
 		set.DocumentationSet.Configuration.Features.PrimaryNavEnabled = true;
 		foreach (var configurationFeatureFlag in set.AssembleContext.Environment.FeatureFlags)
 		{
-			_logger.LogInformation("Setting feature flag: {ConfigurationFeatureFlagKey}={ConfigurationFeatureFlagValue}", configurationFeatureFlag.Key, configurationFeatureFlag.Value);
+			_logger.LogInformation(
+				"Setting feature flag: {ConfigurationFeatureFlagKey}={ConfigurationFeatureFlagValue}",
+				configurationFeatureFlag.Key,
+				configurationFeatureFlag.Value
+			);
 			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
 		}
 		set.DocumentationSet.Configuration.Features.WebsiteSearchScriptUrl = set.AssembleContext.Environment.WebsiteSearchScriptUrl;
@@ -197,7 +222,9 @@ public class AssemblerBuilder(
 		var omittedCount = sortedTimes.Count - significantBuilds.Count;
 
 		var maxNameLength = significantBuilds.Count > 0 ? significantBuilds.Max(x => x.Name.Length) : 0;
-		var maxFileCountLength = significantBuilds.Count > 0 ? significantBuilds.Max(x => x.FileCount.ToString(CultureInfo.InvariantCulture).Length) : 0;
+		var maxFileCountLength = significantBuilds.Count > 0
+			? significantBuilds.Max(x => x.FileCount.ToString(CultureInfo.InvariantCulture).Length)
+			: 0;
 
 		_logger.LogInformation("Build times (descending):");
 		foreach (var (name, fileCount, duration) in significantBuilds)
@@ -207,20 +234,34 @@ public class AssemblerBuilder(
 			var paddedFiles = fileCount.ToString(CultureInfo.InvariantCulture).PadLeft(maxFileCountLength);
 			var paddedName = name.PadRight(maxNameLength);
 			var paddedMsPerFile = msPerFile.ToString("F2", CultureInfo.InvariantCulture).PadLeft(5);
-			_logger.LogInformation("  {Time}  {Files} files  {MsPerFile} ms/file  {Name}", paddedTime, paddedFiles, paddedMsPerFile, paddedName);
+			_logger.LogInformation(
+				"  {Time}  {Files} files  {MsPerFile} ms/file  {Name}",
+				paddedTime,
+				paddedFiles,
+				paddedMsPerFile,
+				paddedName
+			);
 		}
 
 		if (omittedCount > 0)
-			_logger.LogInformation("  ... omitted {OmittedCount} repositories with insignificant contribution to build times", omittedCount);
+			_logger.LogInformation(
+				"  ... omitted {OmittedCount} repositories with insignificant contribution to build times",
+				omittedCount
+			);
 
-		_logger.LogInformation("Total: {TotalDuration:mm\\:ss\\.fff}  {TotalFiles} files  {AvgMsPerFile:F2} ms/file", totalDuration, totalFiles, avgMsPerFile);
+		_logger.LogInformation(
+			"Total: {TotalDuration:mm\\:ss\\.fff}  {TotalFiles} files  {AvgMsPerFile:F2} ms/file",
+			totalDuration,
+			totalFiles,
+			avgMsPerFile
+		);
 	}
 
 	private async Task OutputRedirectsAsync(Dictionary<string, string> redirects, Cancel ctx)
 	{
-		var uniqueRedirects = redirects
-			.Where(x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-			.ToDictionary();
+		var uniqueRedirects = redirects.Where(
+			x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+		).ToDictionary();
 		var redirectsFile = context.WriteFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, "redirects.json"));
 		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", uniqueRedirects.Count, redirectsFile.FullName);
 

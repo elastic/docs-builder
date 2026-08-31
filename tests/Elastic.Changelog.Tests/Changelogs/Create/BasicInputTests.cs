@@ -19,8 +19,9 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		{
 			Title = "Add new search feature",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Description = "This is a new search feature",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
@@ -48,7 +49,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		yamlContent.Should().Contain("title: Add new search feature");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("product: elasticsearch");
-		yamlContent.Should().Contain("target: 9.2.0");
+		// entries no longer carry a target/version — the origin branch is the address
 		yamlContent.Should().Contain("lifecycle: ga");
 		yamlContent.Should().Contain("description: This is a new search feature");
 	}
@@ -65,9 +66,10 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 			Type = "feature",
 			Products =
 			[
-				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
-				new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }
+				new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" },
+				new ProductArgument { Product = "kibana", Lifecycle = "ga" }
 			],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
@@ -109,9 +111,10 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 			Title = "Breaking API change",
 			Type = "breaking-change",
 			Subtype = "api",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Impact = "API clients will need to update",
 			Action = "Update your API client code",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 

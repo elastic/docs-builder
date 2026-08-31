@@ -22,17 +22,19 @@ namespace Elastic.Documentation.ServiceDefaults;
 
 public static class AppDefaultsExtensions
 {
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder)
-		where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), null);
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder =>
+		builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), null);
 
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, Action<IServiceCollection, ConfigurationFileProvider>? configure)
-		where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), configure);
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(
+		this TBuilder builder,
+		Action<IServiceCollection, ConfigurationFileProvider>? configure
+	) where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), configure);
 
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(
 		this TBuilder builder,
 		GlobalCliOptions cliOptions,
-		Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
-		where TBuilder : IHostApplicationBuilder
+		Action<IServiceCollection, ConfigurationFileProvider>? configure = null
+	) where TBuilder : IHostApplicationBuilder
 	{
 		// Map ENVIRONMENT (dev/edge/staging/prod) to the .NET hosting environment so
 		// IsDevelopment()/IsStaging()/IsProduction() reflect the real deployment environment.
@@ -42,14 +44,17 @@ public static class AppDefaultsExtensions
 			builder.Environment.EnvironmentName = dotnetEnv;
 
 		// We do not use appsettings.json — all config comes from env vars / user secrets / code.
-		var jsonSources = builder.Configuration.Sources
+		var jsonSources = builder
+			.Configuration
+			.Sources
 			.OfType<JsonConfigurationSource>()
 			.Where(s => s.Path is not null && s.Path.StartsWith("appsettings", StringComparison.OrdinalIgnoreCase))
 			.ToList();
 		foreach (var s in jsonSources)
 			_ = builder.Configuration.Sources.Remove(s);
 
-		var services = builder.Services
+		var services = builder
+			.Services
 			.AddElasticDocumentationLogging(cliOptions.LogLevel)
 			.ConfigureHttpClientDefaults(http =>
 			{
@@ -77,8 +82,10 @@ public static class AppDefaultsExtensions
 		return builder;
 	}
 
-	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel)
-		where TServiceCollection : IServiceCollection
+	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(
+		this TServiceCollection services,
+		LogLevel logLevel
+	) where TServiceCollection : IServiceCollection
 	{
 		_ = services.AddLogging(x =>
 		{
@@ -91,8 +98,7 @@ public static class AppDefaultsExtensions
 
 	public static TBuilder HealthCheckBuilderExtensions<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
 	{
-		_ = builder.Services.AddHealthChecks()
-			.AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+		_ = builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
 
 		return builder;
 	}

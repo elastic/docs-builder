@@ -23,7 +23,8 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 		// A plain - toc: entry in navigation.yml with no island: property
 		// must still be marked as an island by SiteNavigation's constructor.
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: observability://
 		                      path_prefix: observability
@@ -33,15 +34,18 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
-		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
+		var obsDocset = DocumentationSetFile.LoadAndResolve(
+			obsContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		var obsNode = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
+		var obsNode = navigation.NavigationItems.ElementAt(0).Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
 
 		// No island: declared in either docset.yml or navigation.yml
 		obsNode.IsIsland.Should().BeTrue("SiteNavigation marks every top-level section as an island implicitly");
@@ -55,7 +59,8 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 	public void NavigationYamlIsland_MarksResolvedNode()
 	{
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: observability://
 		                      path_prefix: observability
@@ -66,15 +71,18 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
-		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
+		var obsDocset = DocumentationSetFile.LoadAndResolve(
+			obsContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		var obsNode = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
+		var obsNode = navigation.NavigationItems.ElementAt(0).Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
 
 		// The node was marked as an island from navigation.yml
 		obsNode.IsIsland.Should().BeTrue("navigation.yml declared island: true");
@@ -90,7 +98,8 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 	public void DocsetRootIsland_IsAnIsland_InAssemblerBuild()
 	{
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: observability://
 		                      path_prefix: observability
@@ -100,8 +109,10 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Inject island: true into the observability docset.yml
-		fileSystem.AddFile("/checkouts/current/observability/docs/docset.yml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"/checkouts/current/observability/docs/docset.yml",
+			new MockFileData(
+				"""
 			project: observability
 			island: true
 			toc:
@@ -116,13 +127,23 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 			      - file: logs.md
 			      - file: metrics.md
 			      - file: traces.md
-			"""));
+			"""
+			)
+		);
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
-		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
+		var obsDocset = DocumentationSetFile.LoadAndResolve(
+			obsContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		// In isolated build: IsIsland is stored but RendersAsIsland() is false (no parent)
-		var isolatedNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
+		var isolatedNav = new DocumentationSetNavigation<IDocumentationFile>(
+			obsDocset,
+			obsContext,
+			GenericDocumentationFileFactory.Instance
+		);
 		isolatedNav.IsIsland.Should().BeTrue();
 		isolatedNav.RendersAsIsland().Should().BeFalse("no parent yet in isolated build");
 
@@ -131,8 +152,7 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
-		var obsNode = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
+		var obsNode = navigation.NavigationItems.ElementAt(0).Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
 		obsNode.RendersAsIsland().Should().BeTrue("SiteNavigation gave it a parent");
 	}
 
@@ -145,15 +165,18 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 	{
 		// Set up: content-set has island: true, navigation.yml does NOT — node should still be island
 		// language=yaml
-		var siteNavNoIsland = """
+		var siteNavNoIsland =
+			"""
 		                      toc:
 		                        - toc: observability://
 		                          path_prefix: observability
 		                      """;
 
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		fileSystem.AddFile("/checkouts/current/observability/docs/docset.yml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"/checkouts/current/observability/docs/docset.yml",
+			new MockFileData(
+				"""
 			project: observability
 			island: true
 			toc:
@@ -168,17 +191,27 @@ public class IslandSiteNavigationTests(ITestOutputHelper output)
 			      - file: logs.md
 			      - file: metrics.md
 			      - file: traces.md
-			"""));
+			"""
+			)
+		);
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
-		var obsDocset = DocumentationSetFile.LoadAndResolve(obsContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
+		var obsDocset = DocumentationSetFile.LoadAndResolve(
+			obsContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 		var obsNav = new DocumentationSetNavigation<IDocumentationFile>(obsDocset, obsContext, GenericDocumentationFileFactory.Instance);
 		var documentationSets = new List<IDocumentationSetNavigation> { obsNav };
 		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var navigation = new SiteNavigation(SiteNavigationFile.Deserialize(siteNavNoIsland), siteContext, documentationSets, sitePrefix: null);
+		var navigation = new SiteNavigation(
+			SiteNavigationFile.Deserialize(siteNavNoIsland),
+			siteContext,
+			documentationSets,
+			sitePrefix: null
+		);
 
-		var obsNode = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
+		var obsNode = navigation.NavigationItems.ElementAt(0).Should().BeOfType<DocumentationSetNavigation<IDocumentationFile>>().Subject;
 		// Content-set declared island: true; navigation.yml didn't; still an island (OR semantics)
 		obsNode.IsIsland.Should().BeTrue("content-set set island: true; navigation.yml can't remove it");
 		obsNode.RendersAsIsland().Should().BeTrue();

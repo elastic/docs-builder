@@ -23,16 +23,15 @@ namespace Elastic.Documentation.Api.Tests;
 public class AskAiGatewayStreamingTests
 {
 	private static IConfiguration CreateTestConfiguration(Dictionary<string, string?> values) =>
-		new ConfigurationBuilder()
-			.AddInMemoryCollection(values)
-			.Build();
+		new ConfigurationBuilder().AddInMemoryCollection(values).Build();
 
 	[Fact]
 	public async Task AgentBuilderGatewayDoesNotDisposeHttpResponsePrematurely()
 	{
 		// Arrange
 		var mockHandler = new MockHttpMessageHandler();
-		var sseResponse = """
+		var sseResponse =
+			"""
 data: {"type":"conversationStart","id":"test","conversation_id":"test"}
 
 data: {"type":"messageChunk","id":"m1","content":"Hello"}
@@ -85,7 +84,8 @@ data: {"type":"conversationEnd","id":"test"}
 	{
 		// Arrange
 		var mockHandler = new MockHttpMessageHandler();
-		var sseResponse = """
+		var sseResponse =
+			"""
 data: {"type":"conversationStart","id":"test","conversation_id":"test"}
 
 data: {"type":"messageChunk","id":"m1","content":"A"}
@@ -139,7 +139,8 @@ data: {"type":"conversationEnd","id":"test"}
 	{
 		// Arrange
 		var mockHandler = new MockHttpMessageHandler();
-		var sseResponse = """
+		var sseResponse =
+			"""
 data: {"type":"conversationStart","id":"test","conversation_id":"test"}
 
 data: {"type":"reasoning","content":"thinking..."}
@@ -155,8 +156,9 @@ data: {"type":"conversationEnd","id":"test"}
 
 		using var httpClient = new HttpClient(mockHandler);
 		var mockTokenProvider = A.Fake<IGcpIdTokenProvider>();
-		A.CallTo(() => mockTokenProvider.GenerateIdTokenAsync(A<string>._, A<string>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("mock-gcp-token"));
+		A.CallTo(() => mockTokenProvider.GenerateIdTokenAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(
+			Task.FromResult("mock-gcp-token")
+		);
 
 		var options = new LlmGatewayOptions(CreateTestConfiguration(new Dictionary<string, string?>
 		{
@@ -197,7 +199,8 @@ data: {"type":"conversationEnd","id":"test"}
 	{
 		// Arrange
 		var mockHandler = new MockHttpMessageHandler();
-		var sseResponse = """
+		var sseResponse =
+			"""
 data: {"type":"conversationStart","id":"test","conversation_id":"test"}
 
 data: {"type":"messageChunk","id":"m","content":"1"}
@@ -215,8 +218,9 @@ data: {"type":"conversationEnd","id":"test"}
 
 		using var httpClient = new HttpClient(mockHandler);
 		var mockTokenProvider = A.Fake<IGcpIdTokenProvider>();
-		A.CallTo(() => mockTokenProvider.GenerateIdTokenAsync(A<string>._, A<string>._, A<CancellationToken>._))
-			.Returns(Task.FromResult("mock-token"));
+		A.CallTo(() => mockTokenProvider.GenerateIdTokenAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(
+			Task.FromResult("mock-token")
+		);
 
 		var options = new LlmGatewayOptions(CreateTestConfiguration(new Dictionary<string, string?>
 		{
@@ -307,10 +311,8 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
 		};
 	}
 
-	public void SetErrorResponse(HttpStatusCode statusCode, string errorMessage) => _responseToReturn = new HttpResponseMessage(statusCode)
-	{
-		Content = new StringContent(errorMessage)
-	};
+	public void SetErrorResponse(HttpStatusCode statusCode, string errorMessage) =>
+		_responseToReturn = new HttpResponseMessage(statusCode) { Content = new StringContent(errorMessage) };
 
 	protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 	{

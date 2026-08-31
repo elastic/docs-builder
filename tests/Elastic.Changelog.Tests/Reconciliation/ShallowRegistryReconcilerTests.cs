@@ -21,7 +21,12 @@ public class ShallowRegistryReconcilerTests
 
 	public ShallowRegistryReconcilerTests() =>
 		_reconciler = new ShallowRegistryReconciler(
-			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
+			NullLoggerFactory.Instance,
+			_s3.Client,
+			PublicBucket,
+			retryBaseDelay: TimeSpan.Zero,
+			metrics: _metrics
+		);
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;
 
@@ -159,8 +164,15 @@ public class ShallowRegistryReconcilerTests
 		await _reconciler.ReconcileAsync(ChangelogScopeKind.Bundle, [BundleScope("elasticsearch")], Ctx);
 
 		Map(BundleMapKey).Keys.Should().BeEquivalentTo("elasticsearch", "kibana");
-		_s3.Puts.Should().ContainSingle().Which.IfMatch.Trim('"').Should().Be(corruptETag,
-			"the conditional write must replace exactly the corrupt map that was read");
+		_s3
+			.Puts
+			.Should()
+			.ContainSingle()
+			.Which
+			.IfMatch
+			.Trim('"')
+			.Should()
+			.Be(corruptETag, "the conditional write must replace exactly the corrupt map that was read");
 	}
 
 	[Fact]
@@ -208,8 +220,7 @@ public class ShallowRegistryReconcilerTests
 	[Fact]
 	public async Task Reconcile_MismatchedScopeKind_IsRejected()
 	{
-		var act = async () => await _reconciler.ReconcileAsync(
-			ChangelogScopeKind.Bundle, [PoolScope("elastic", "repo", "main")], Ctx);
+		var act = async () => await _reconciler.ReconcileAsync(ChangelogScopeKind.Bundle, [PoolScope("elastic", "repo", "main")], Ctx);
 
 		_ = await act.Should().ThrowAsync<ArgumentException>();
 	}

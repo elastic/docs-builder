@@ -34,7 +34,5 @@ public record SearchResponse<TDocument> where TDocument : SearchDocumentBase
 	/// </summary>
 	public bool IsValidResponse { get; init; }
 
-	public int PageCount => PageSize > 0
-		? (int)Math.Ceiling((double)TotalResults / PageSize)
-		: 0;
+	public int PageCount => PageSize > 0 ? (int)Math.Ceiling((double)TotalResults / PageSize) : 0;
 }

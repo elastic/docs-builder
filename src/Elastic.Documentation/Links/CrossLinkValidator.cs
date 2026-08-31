@@ -15,9 +15,16 @@ public static class CrossLinkValidator
 	/// URI schemes that are excluded from being treated as cross-repository links.
 	/// These are standard web/protocol schemes that should not be processed as crosslinks.
 	/// </summary>
-	private static readonly ImmutableHashSet<string> ExcludedSchemes =
-		ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
-			"http", "https", "ftp", "file", "tel", "jdbc", "mailto");
+	private static readonly ImmutableHashSet<string> ExcludedSchemes = ImmutableHashSet.Create(
+		StringComparer.OrdinalIgnoreCase,
+		"http",
+		"https",
+		"ftp",
+		"file",
+		"tel",
+		"jdbc",
+		"mailto"
+	);
 
 	/// <summary>
 	/// Validates that a URI string is a valid cross-repository link.
@@ -43,7 +50,8 @@ public static class CrossLinkValidator
 
 		if (ExcludedSchemes.Contains(uri.Scheme))
 		{
-			errorMessage = $"Cross-link URI '{uriString}' cannot use standard web/protocol schemes ({string.Join(", ", ExcludedSchemes)}). Use cross-repository schemes like 'docs-content://', 'kibana://', etc.";
+			errorMessage =
+				$"Cross-link URI '{uriString}' cannot use standard web/protocol schemes ({string.Join(", ", ExcludedSchemes)}). Use cross-repository schemes like 'docs-content://', 'kibana://', etc.";
 			return false;
 		}
 
@@ -57,10 +65,7 @@ public static class CrossLinkValidator
 	/// <param name="uri">The URI to check</param>
 	/// <returns>True if this should be treated as a crosslink</returns>
 	public static bool IsCrossLink(Uri? uri) =>
-		uri != null
-		&& !ExcludedSchemes.Contains(uri.Scheme)
-		&& !uri.IsFile
-		&& !string.IsNullOrEmpty(uri.Scheme);
+		uri != null && !ExcludedSchemes.Contains(uri.Scheme) && !uri.IsFile && !string.IsNullOrEmpty(uri.Scheme);
 
 	/// <summary>
 	/// Gets the list of excluded URI schemes for reference

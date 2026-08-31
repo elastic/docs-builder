@@ -14,17 +14,22 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPrivateLinkBugTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogPrivateLinkBugTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:dropdowns:
 		:description-visibility: keep-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -39,7 +44,9 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 		  description: This API will be removed in a future version.
 		  impact: Users must update their integration.
 		  action: Follow the migration guide.
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void DoesNotRenderIncompleteForMoreInformationSentence()
@@ -74,17 +81,22 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMixedLinkBugTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMixedLinkBugTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:dropdowns:
 		:description-visibility: keep-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -100,7 +112,9 @@ public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 		  issues:
 		  - "# PRIVATE: https://github.com/elastic/cloud/issues/789"
 		  - "654321"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void RendersForMoreInformationWithOnlyVisibleLinks()
@@ -125,17 +139,22 @@ public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogNoLinksTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogNoLinksTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogNoLinksTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:dropdowns:
 		:description-visibility: keep-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -146,7 +165,9 @@ public class ChangelogNoLinksTests : DirectiveTest<ChangelogBlock>
 		  - product: elasticsearch
 		    target: 9.3.0
 		  description: This has no PR or issue references.
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void DoesNotRenderForMoreInformationSection()

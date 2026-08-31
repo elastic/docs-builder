@@ -27,7 +27,8 @@ internal sealed class SearchResourceValidator(DistributedTransport transport, IL
 		{
 			throw new InvalidOperationException(
 				$"Synonym set '{setName}' not found on {transport}. " +
-				$"Run docs-builder indexing for this environment first to publish the required synonym set.");
+					$"Run docs-builder indexing for this environment first to publish the required synonym set."
+			);
 		}
 		logger.LogInformation("Synonym set '{SetName}' validated", setName);
 	}
@@ -43,13 +44,15 @@ internal sealed class SearchResourceValidator(DistributedTransport transport, IL
 				// log a warning rather than hard-failing.
 				logger.LogWarning(
 					"Query ruleset '{RulesetName}' not found — query rules will not apply. " +
-					"Run docs-builder indexing for this environment to publish query rules.",
-					rulesetName);
+						"Run docs-builder indexing for this environment to publish query rules.",
+					rulesetName
+				);
 				return;
 			}
 
 			throw new InvalidOperationException(
-				$"Failed to check query ruleset '{rulesetName}': {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
+				$"Failed to check query ruleset '{rulesetName}': {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}"
+			);
 		}
 		logger.LogInformation("Query ruleset '{RulesetName}' validated", rulesetName);
 	}

@@ -11,5 +11,4 @@ public class LinkCardViewModel : HubDirectiveViewModel
 
 	/// <summary>Rendered as a titled link column inside an {explore} accordion.</summary>
 	public bool IsColumn { get; init; }
-
 }

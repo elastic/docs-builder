@@ -41,15 +41,7 @@ internal static class EmfMetricsEmitter
 			Aws = new EmfEnvelope
 			{
 				Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-				CloudWatchMetrics =
-				[
-					new EmfMetricDirective
-					{
-						Namespace = Namespace,
-						Dimensions = [[]],
-						Metrics = MetricDefinitions
-					}
-				]
+				CloudWatchMetrics = [new EmfMetricDirective { Namespace = Namespace, Dimensions = [[]], Metrics = MetricDefinitions }]
 			},
 			ObjectReconciles = metrics.ObjectReconciles,
 			ObjectReconcileRetries = metrics.ObjectReconcileRetries,

@@ -3,6 +3,9 @@
 You can use `docs-builder changelog` commands to create data files ("changelogs") for each notable change in your GitHub repository.
 These files are ultimately used to generate release documentation.
 
+Every changelog is the same YAML schema.
+However, some fields are required or optional depending on the context.
+
 This page describes how to create these files both from the [command line](#command-line) and from [GitHub actions](#github-actions).
 
 ## Before you begin
@@ -12,41 +15,58 @@ Refer to [](/data/release-notes/configure.md).
 
 ## Create changelog files from command line [command-line]
 
-These steps describe how to use the [changelog add](/cli/changelog/add.md) command.
+These steps describe how to use the [changelog add](/cli/changelog/add.md) and [changelog note](/cli/changelog/note.md) commands to create changelog YAML files.
 If you already have automated release notes for GitHub releases, you can use the [changelog gh-release](/cli/changelog/gh-release.md) command instead.
 
 1. If you're accessing private repositories or creating a large number of changelogs, log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token. Refer to [Authorization](/data/release-notes/configure.md#authorization).
 
-1. Run the `changelog add` command in your GitHub repo's root directory.
-   For example:
+1. Run the `changelog add` or `changelog note` command in your GitHub repo's root directory.
 
-    ```sh
-    docs-builder changelog add \
-    --title "Improve SAML error handling by adding metadata" \
-    --type enhancement \
-    --products "elasticsearch 9.2.8, cloud-serverless 2026-02-02"
-    ```
+   - Create a changelog that references a GitHub pull request:
 
-    Title, type, and products are the minimal details required for each changelog file.
+     ```sh
+     docs-builder changelog add \
+     --prs https://github.com/elastic/elasticsearch/pull/137598
+     ```
+
+     The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), just a number, or a path to a file containing newline-delimited PR URLs. Multiple PRs can be provided comma-separated. One changelog is created for each PR.
+
+     When you specify `--prs` or `--issues`, the command tries to fetch information from GitHub.
+     It derives the title from the pull request or issue title, extracts linked references, and derives the areas, products, and type from labels (if mappings are defined in the configuration file).
+     To control what information is extracted, refer to the [extract](/data/release-notes/configure-ref.md#extract) and [pivot](/data/release-notes/configure-ref.md#pivot) sections of the changelog configuration file.
+
+     :::{note}
+     This type of changelog does not contain `products[].versions`.
+     If you specify `--products` with a version or date, the `changelog add` command returns an error.
+
+     Release bundles are created from PR lists or GitHub tags thus `prs` is sufficient to map these changelogs to releases.
+     :::
+
+   - Create a changelog that does **not** reference a GitHub pull request:
+
+     ```sh
+     docs-builder changelog note \
+     --title "Alerts aren't generated for rules with alert flapping off and an alert delay higher than 1" \
+     --type known-issue \
+     --products "cloud-serverless 2025-10-25" \
+     --action 'Set the alert delay value to 1 or turn on "Alert flapping detection".'
+     ```
+
+     :::{note}
+     This type of changelog requires `products[].versions`.
+     If you specify `--products` without a version or date, the `changelog note` command returns an error.
+
+     These files don't have `prs` and thus don't appear in a release's PR list.
+     The `products[].versions` are used to add these files to release bundles automatically.
+     :::
+
+     Title, type, and products (including version or date) are the minimal details required when you are not deriving details from a PR.
 
     :::{tip}
-    Any special characters (such as backquotes) must be preceded with a backslash escape character (`\`).
+    Any command strings that contain special characters (such as backquotes) must be preceded with a backslash escape character (`\`).
     :::
 
-    Alternatively, pull the information from GitHub:
-
-    ```sh
-    docs-builder changelog add \
-    --prs https://github.com/elastic/elasticsearch/pull/137598
-    ```
-
-    The `--prs` value can be a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), just a number, or a path to a file containing newline-delimited PR URLs. Multiple PRs can be provided comma-separated. One changelog is created for each PR.
-
-    When you specify `--prs` or `--issues`, the command tries to fetch information from GitHub.
-    It derives the title from the pull request or issue title, extracts linked references, and derives the areas, products, and type from labels (if mappings are defined in the configuration file).
-    To control what information is extracted, refer to the [extract](/data/release-notes/configure-ref.md#extract) and [pivot](/data/release-notes/configure-ref.md#pivot) sections of the changelog configuration file.
-
-    For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/add.md).
+    For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/add.md) and [](/cli/changelog/note.md).
 
 1. [Review the output file](#review).
 
@@ -150,7 +170,7 @@ EOF
 
 # Use the file with --prs
 docs-builder changelog add --prs prs.txt \
-  --products "elasticsearch 9.2.0 ga"
+  --products "elasticsearch ga"
 ```
 
 In this example, the command creates one changelog for each pull request in the list.
@@ -165,8 +185,8 @@ docs-builder changelog add --release-version v1.34.0
 ```
 
 This command creates one changelog file per PR found in the `v1.34.0` GitHub release notes.
-The product, target version, and lifecycle in each changelog are inferred automatically from the release tag and the repository name.
-For example, a tag of `v1.34.0` in the `apm-agent-dotnet` repo creates changelogs with `product: apm-agent-dotnet`, `target: 1.34.0`, and `lifecycle: ga`.
+The product ID and lifecycle in each file can be inferred from the repository name and configuration.
+The files do not include a version field; which product release they belong to is determined by the origin branch.
 
 :::{note}
 `--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
@@ -189,7 +209,6 @@ Example changelog for a release highlight:
 type: feature
 products:
 - product: elasticsearch
-  target: 9.4.0
   lifecycle: ga
 title: ES|QL Views support
 description: 'ES|QL now supports Views: virtual indices whose fields are produced by an ES|QL query. A view is referenced inside a FROM clause exactly like a regular index....'

@@ -16,14 +16,13 @@ namespace Elastic.Markdown.Extensions.Listing;
 /// </summary>
 public record ListingIndexFile : IO.MarkdownFile
 {
-	public ListingIndexFile(
-		IFileInfo sourceFile,
-		IDirectoryInfo rootPath,
-		MarkdownParser parser,
-		BuildContext build
-	) : base(sourceFile, rootPath, parser, build)
-	{
-	}
+	public ListingIndexFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build) : base(
+			sourceFile,
+			rootPath,
+			parser,
+			build
+		)
+	{ }
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
@@ -60,8 +59,6 @@ public record ListingIndexFile : IO.MarkdownFile
 	{
 		// "detection-rules" → "Detection Rules", "rfcs" → "Rfcs"
 		var words = name.Replace('_', '-').Split('-');
-		return string.Join(" ", words.Select(w => w.Length > 0
-			? char.ToUpperInvariant(w[0]) + w[1..]
-			: w));
+		return string.Join(" ", words.Select(w => w.Length > 0 ? char.ToUpperInvariant(w[0]) + w[1..] : w));
 	}
 }

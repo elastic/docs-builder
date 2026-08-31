@@ -19,14 +19,11 @@ internal static class ContentTierClassifier
 	{
 		// Editorial overviews and flagship product pages.
 		"concept" or "product" => ContentTiers.Primary,
-
 		// Marketing, legal, and low-signal pages — demoted.
 		"marketing" or "legal" or "download" or "press" or "pricing" => ContentTiers.Peripheral,
-
 		// Useful but secondary content.
-		"webinar" or "event" or "customer-story" or "demo" or "about"
-			or "training" or "resource" or "industry" or "partner" => ContentTiers.Supplementary,
-
+		"webinar" or "event" or "customer-story" or "demo" or "about" or "training" or "resource" or "industry" or "partner" =>
+			ContentTiers.Supplementary,
 		// Blog, labs sub-sections, and anything unrecognised default to the neutral tier.
 		_ => ContentTiers.Reference,
 	};

@@ -6,8 +6,9 @@ using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class SubstitutionInlineCodeTest(ITestOutputHelper output) : InlineTest(output,
-"""
+public class SubstitutionInlineCodeTest(ITestOutputHelper output) : InlineTest(
+	output,
+	"""
 ---
 sub:
   version: "8.15.0"

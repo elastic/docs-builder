@@ -15,7 +15,7 @@ internal static class HtmlMetaExtractor
 {
 	private static readonly HashSet<string> BlockElements =
 	[
-with(StringComparer.OrdinalIgnoreCase),
+		with(StringComparer.OrdinalIgnoreCase),
 		"p",
 		"div",
 		"h1",
@@ -137,23 +137,16 @@ with(StringComparer.OrdinalIgnoreCase),
 	public static string? GetAuthor(IHtmlDocument document) =>
 		GetMetaContent(document, "article:author") ?? GetMetaContent(document, "author");
 
-	public static string? GetOgImage(IHtmlDocument document) =>
-		GetMetaContent(document, "og:image");
+	public static string? GetOgImage(IHtmlDocument document) => GetMetaContent(document, "og:image");
 
-	public static string? GetTwitterImage(IHtmlDocument document) =>
-		GetMetaContent(document, "twitter:image");
+	public static string? GetTwitterImage(IHtmlDocument document) => GetMetaContent(document, "twitter:image");
 
-	public static string? GetTwitterCard(IHtmlDocument document) =>
-		GetMetaContent(document, "twitter:card");
+	public static string? GetTwitterCard(IHtmlDocument document) => GetMetaContent(document, "twitter:card");
 
 	public static string[] ExtractHeadings(IElement container)
 	{
 		var headings = container.QuerySelectorAll("h1, h2, h3, h4, h5, h6");
-		return headings
-			.Select(h => h.TextContent.Trim())
-			.Where(text => !string.IsNullOrWhiteSpace(text))
-			.Distinct()
-			.ToArray();
+		return headings.Select(h => h.TextContent.Trim()).Where(text => !string.IsNullOrWhiteSpace(text)).Distinct().ToArray();
 	}
 
 	public static string ExtractTextContent(IElement container)
@@ -241,18 +234,14 @@ with(StringComparer.OrdinalIgnoreCase),
 	/// </summary>
 	public static string CreateAbstract(string textContent, string? description, int maxLength = 400)
 	{
-		var lead = textContent.Length > maxLength
-			? textContent[..maxLength] + "..."
-			: textContent;
+		var lead = textContent.Length > maxLength ? textContent[..maxLength] + "..." : textContent;
 
 		return string.IsNullOrWhiteSpace(description) ? lead : $"{description} {lead}";
 	}
 
 	/// <summary>Title-cases a URL slug, e.g. "google-cloud" -> "Google Cloud".</summary>
 	public static string TitleCaseSlug(string slug) =>
-		string.Join(' ', slug
-			.Split('-', StringSplitOptions.RemoveEmptyEntries)
-			.Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
+		string.Join(' ', slug.Split('-', StringSplitOptions.RemoveEmptyEntries).Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 
 	/// <summary>
 	/// Scans a listing page's article cards for <c>&lt;time datetime&gt;</c> elements and returns

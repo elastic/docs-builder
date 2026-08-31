@@ -27,14 +27,13 @@ public class AdaptiveCrawler(
 		GC.SuppressFinalize(this);
 	}
 
-	public IAsyncEnumerable<CrawlResult> CrawlAsync(
-		IEnumerable<SitemapEntry> urls,
-		CancellationToken ctx = default) =>
+	public IAsyncEnumerable<CrawlResult> CrawlAsync(IEnumerable<SitemapEntry> urls, CancellationToken ctx = default) =>
 		CrawlAsync(urls.Select(u => new CrawlDecision(u, CrawlReason.New)), ctx);
 
 	public async IAsyncEnumerable<CrawlResult> CrawlAsync(
 		IEnumerable<CrawlDecision> decisions,
-		[EnumeratorCancellation] CancellationToken ctx = default)
+		[EnumeratorCancellation] CancellationToken ctx = default
+	)
 	{
 		var decisionList = decisions.ToList();
 		if (decisionList.Count == 0)

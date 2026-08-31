@@ -35,9 +35,7 @@ namespace Elastic.Codex.Building;
 /// <summary>
 /// Service for building all documentation sets in a codex.
 /// </summary>
-public class CodexBuildService(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext) : IService
+public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext configurationContext) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexBuildService>();
 
@@ -51,7 +49,8 @@ public class CodexBuildService(
 		CodexCloneResult cloneResult,
 		ScopedFileSystem fileSystem,
 		Cancel ctx,
-		IReadOnlySet<Exporter>? exporters = null)
+		IReadOnlySet<Exporter>? exporters = null
+	)
 	{
 		var outputDir = context.OutputDirectory;
 		if (outputDir.Exists)
@@ -62,8 +61,7 @@ public class CodexBuildService(
 
 		outputDir.Create();
 
-		_logger.LogInformation("Building {Count} documentation sets to {Directory}",
-			cloneResult.Checkouts.Count, outputDir.FullName);
+		_logger.LogInformation("Building {Count} documentation sets to {Directory}", cloneResult.Checkouts.Count, outputDir.FullName);
 
 		var documentationSets = new Dictionary<string, IDocumentationSetNavigation>();
 		var buildContexts = new List<CodexDocumentationSetBuildContext>();
@@ -87,7 +85,8 @@ public class CodexBuildService(
 			context.Configuration,
 			cloneResult.DocumentationSetReferences,
 			new CodexDocumentationContext(context),
-			documentationSets);
+			documentationSets
+		);
 
 		// Phase 3: Build each documentation set
 		// When exporters are specified (e.g., Elasticsearch), create a single shared exporter
@@ -108,7 +107,13 @@ public class CodexBuildService(
 		{
 			var buildResult = await BuildDocumentationSet(context, buildContext, sharedExporters, ctx);
 			if (buildResult is { Success: true } && buildResult.Redirects.Count > 0)
-				CollectRedirects(redirects, buildResult.Redirects, buildContext.Checkout.Reference.ResolvedRepoName, buildContext.DocumentationSet.CrossLinkResolver, context);
+				CollectRedirects(
+					redirects,
+					buildResult.Redirects,
+					buildContext.Checkout.Reference.ResolvedRepoName,
+					buildContext.DocumentationSet.CrossLinkResolver,
+					context
+				);
 		}
 
 		if (effectiveExporters.Contains(Exporter.Redirects) && redirects.Count > 0)
@@ -141,7 +146,8 @@ public class CodexBuildService(
 		CodexCheckout checkout,
 		ScopedFileSystem fileSystem,
 		ILinkIndexReader codexLinkIndexReader,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		_logger.LogInformation("Loading documentation set: {Name}", checkout.Reference.Name);
 
@@ -157,9 +163,7 @@ public class CodexBuildService(
 				: fileSystem.Path.Join(context.OutputDirectory.FullName, sitePrefix, "r", repoName);
 
 			// Build URL path prefix: /r/{repoName} or /{sitePrefix}/r/{repoName}
-			var pathPrefix = string.IsNullOrEmpty(sitePrefix)
-				? $"/r/{repoName}"
-				: $"/{sitePrefix}/r/{repoName}";
+			var pathPrefix = string.IsNullOrEmpty(sitePrefix) ? $"/r/{repoName}" : $"/{sitePrefix}/r/{repoName}";
 
 			// Create git checkout information
 			var git = new GitCheckoutInformation
@@ -175,10 +179,8 @@ public class CodexBuildService(
 			var siteRootPath = string.IsNullOrEmpty(sitePrefix) ? "/" : $"/{sitePrefix.Trim('/')}/";
 
 			// Parse canonical base URL from config for frontmatter URLs, canonical links, and report-issue
-			var canonicalBaseUrl = !string.IsNullOrWhiteSpace(context.Configuration.CanonicalBaseUrl) &&
-				Uri.TryCreate(context.Configuration.CanonicalBaseUrl, UriKind.Absolute, out var parsed)
-				? parsed
-				: null;
+			var canonicalBaseUrl = !string.IsNullOrWhiteSpace(context.Configuration.CanonicalBaseUrl)
+				&& Uri.TryCreate(context.Configuration.CanonicalBaseUrl, UriKind.Absolute, out var parsed) ? parsed : null;
 
 			// Repository clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
 			// discovers .git inside that ceiling (#3115). Using DocsDirectory alone would cap the ceiling
@@ -186,12 +188,10 @@ public class CodexBuildService(
 			// The docset file itself is passed explicitly so build reuses the docset clone discovery already
 			// selected (which may prefer a non-default path such as `docs-dev/`), rather than rediscovering
 			// one from the repository root and always landing on `docs/`.
-			var docFs = DocumentationFileSystem.Resolve(checkout.RepositoryDirectory, new DocumentationScopeOptions
-			{
-				Output = outputPath,
-				Git = git,
-				ConfigurationFile = checkout.DocsetFile.FullName,
-			});
+			var docFs = DocumentationFileSystem.Resolve(
+				checkout.RepositoryDirectory,
+				new DocumentationScopeOptions { Output = outputPath, Git = git, ConfigurationFile = checkout.DocsetFile.FullName, }
+			);
 			var buildContext = new BuildContext(context.Collector, docFs, configurationContext)
 			{
 				UrlPathPrefix = pathPrefix,
@@ -210,7 +210,8 @@ public class CodexBuildService(
 				var fetcher = new DocSetConfigurationCrossLinkFetcher(
 					logFactory,
 					buildContext.Configuration,
-					codexLinkIndexReader: buildContext.Configuration.Registry != DocSetRegistry.Public ? codexLinkIndexReader : null);
+					codexLinkIndexReader: buildContext.Configuration.Registry != DocSetRegistry.Public ? codexLinkIndexReader : null
+				);
 				var crossLinks = await fetcher.FetchCrossLinks(ctx);
 				if (crossLinks.CodexRepositories is not null)
 					codexRepos.UnionWith(crossLinks.CodexRepositories);
@@ -234,8 +235,10 @@ public class CodexBuildService(
 		}
 		catch (Exception ex)
 		{
-			context.Collector.EmitError(context.ConfigurationPath,
-				$"Failed to load documentation set '{checkout.Reference.Name}': {ex.Message}");
+			context.Collector.EmitError(
+				context.ConfigurationPath,
+				$"Failed to load documentation set '{checkout.Reference.Name}': {ex.Message}"
+			);
 			_logger.LogError(ex, "Failed to load documentation set {Name}", checkout.Reference.Name);
 			return null;
 		}
@@ -245,7 +248,8 @@ public class CodexBuildService(
 		CodexContext context,
 		CodexDocumentationSetBuildContext buildContext,
 		IMarkdownExporter[]? sharedExporters,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		_logger.LogInformation("Building documentation set: {Name}", buildContext.Checkout.Reference.Name);
 
@@ -268,7 +272,8 @@ public class CodexBuildService(
 				logFactory,
 				documentationSet,
 				markdownExporters: allExporters,
-				pageViewFactory: new CodexPageViewFactory(context.Configuration.Title, codexBreadcrumbs));
+				pageViewFactory: new CodexPageViewFactory(context.Configuration.Title, codexBreadcrumbs)
+			);
 
 			var result = await generator.GenerateAll(ctx);
 
@@ -285,8 +290,10 @@ public class CodexBuildService(
 		}
 		catch (Exception ex)
 		{
-			context.Collector.EmitError(context.ConfigurationPath,
-				$"Failed to build documentation set '{buildContext.Checkout.Reference.Name}': {ex.Message}");
+			context.Collector.EmitError(
+				context.ConfigurationPath,
+				$"Failed to build documentation set '{buildContext.Checkout.Reference.Name}': {ex.Message}"
+			);
 			_logger.LogError(ex, "Failed to build documentation set {Name}", buildContext.Checkout.Reference.Name);
 			return new BuildDocumentationSetResult(false, new Dictionary<string, LinkRedirect>());
 		}
@@ -306,7 +313,8 @@ public class CodexBuildService(
 		// ExportOptions.Default is a shared static HashSet -- copy before mutating, never touch it in place.
 		var withoutLlm = new HashSet<Exporter>(exporters);
 		_ = withoutLlm.Remove(Exporter.LLMText);
-		return withoutLlm.CreateMarkdownExporters(logFactory, docContext)
+		return withoutLlm
+			.CreateMarkdownExporters(logFactory, docContext)
 			.Append(new LlmMarkdownExporter(writeFileSystem: context.WriteFileSystem))
 			.ToArray();
 	}
@@ -316,7 +324,8 @@ public class CodexBuildService(
 		IReadOnlyDictionary<string, LinkRedirect> redirects,
 		string repository,
 		ICrossLinkResolver linkResolver,
-		CodexContext context)
+		CodexContext context
+	)
 	{
 		if (redirects.Count == 0)
 			return;
@@ -337,30 +346,37 @@ public class CodexBuildService(
 		{
 			Uri? uri;
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
+
 			{
 				_ = linkResolver.TryResolve(
-					specificErrorMessage => context.Collector.EmitError(context.ConfigurationPath.FullName, $"An error occurred while resolving cross-link {path}", specificErrorMessage),
+					specificErrorMessage => context.Collector.EmitError(
+						context.ConfigurationPath.FullName,
+						$"An error occurred while resolving cross-link {path}",
+						specificErrorMessage
+					),
 					new Uri(path),
-					out uri);
+					out uri
+				);
 			}
 			else // Relative links
+
 			{
-				uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{path}"),
-					CrossLinkResolver.ToTargetUrlPath(path));
+				uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{path}"), CrossLinkResolver.ToTargetUrlPath(path));
 			}
 
-			return uri is null
-				? string.Empty
-				: uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
+			return uri is null ? string.Empty : uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
 		}
 	}
 
 	private async Task OutputRedirectsAsync(CodexContext context, Dictionary<string, string> redirects, Cancel ctx)
 	{
-		var uniqueRedirects = redirects
-			.Where(x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-			.ToDictionary();
-		var redirectsFile = context.WriteFileSystem.FileInfo.New(context.WriteFileSystem.Path.Join(context.OutputDirectory.FullName, "redirects.json"));
+		var uniqueRedirects = redirects.Where(
+			x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+		).ToDictionary();
+		var redirectsFile = context
+			.WriteFileSystem
+			.FileInfo
+			.New(context.WriteFileSystem.Path.Join(context.OutputDirectory.FullName, "redirects.json"));
 		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", uniqueRedirects.Count, redirectsFile.FullName);
 
 		var redirectsJson = JsonSerializer.Serialize(uniqueRedirects, SourceGenerationContext.Default.DictionaryStringString);
@@ -369,7 +385,8 @@ public class CodexBuildService(
 
 	private static IReadOnlyList<CodexBreadcrumb> ResolveCodexBreadcrumbs(
 		CodexContext context,
-		CodexDocumentationSetBuildContext buildContext)
+		CodexDocumentationSetBuildContext buildContext
+	)
 	{
 		var reference = buildContext.Checkout.Reference;
 		var sitePrefix = context.Configuration.SitePrefix?.Trim('/') ?? "";
@@ -386,21 +403,24 @@ public class CodexBuildService(
 		var groupUrl = string.IsNullOrEmpty(sitePrefix) ? $"/g/{groupId}" : $"/{sitePrefix}/g/{groupId}";
 		var groupDef = context.Configuration.Groups.FirstOrDefault(g => g.Id == groupId);
 		var groupTitle = groupDef?.Name ?? groupId;
-		return [new CodexBreadcrumb("Home", homeUrl), new CodexBreadcrumb(groupTitle, groupUrl), new CodexBreadcrumb(docSetTitle, docSetUrl)];
+		return [
+			new CodexBreadcrumb("Home", homeUrl),
+			new CodexBreadcrumb(groupTitle, groupUrl),
+			new CodexBreadcrumb(docSetTitle, docSetUrl)
+		];
 	}
 
 	private async Task<CodexGenerator> GenerateCodexPages(
 		CodexContext context,
 		BuildContext docSetBuildContext,
 		CodexNavigation codexNavigation,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		_logger.LogInformation("Generating codex pages");
 
 		// Pre-compute codex site root for HTMX
-		var siteRootPath = string.IsNullOrEmpty(context.Configuration.SitePrefix)
-			? "/"
-			: $"/{context.Configuration.SitePrefix.Trim('/')}/";
+		var siteRootPath = string.IsNullOrEmpty(context.Configuration.SitePrefix) ? "/" : $"/{context.Configuration.SitePrefix.Trim('/')}/";
 
 		// Create a codex-specific build context using the doc set's context as a base
 		// but with codex-specific URL prefix
@@ -428,7 +448,8 @@ public class CodexBuildService(
 public record CodexBuildResult(
 	CodexNavigation Navigation,
 	IReadOnlyList<DocumentationSet> DocumentationSets,
-	CodexGenerator? CodexGenerator = null);
+	CodexGenerator? CodexGenerator = null
+);
 
 /// <summary>
 /// Result of building a documentation set, including redirects for aggregation in the codex build.
@@ -440,10 +461,7 @@ public record BuildDocumentationSetResult(bool Success, IReadOnlyDictionary<stri
 /// <summary>
 /// Build context for a single documentation set within the codex.
 /// </summary>
-public record CodexDocumentationSetBuildContext(
-	CodexCheckout Checkout,
-	BuildContext BuildContext,
-	DocumentationSet DocumentationSet);
+public record CodexDocumentationSetBuildContext(CodexCheckout Checkout, BuildContext BuildContext, DocumentationSet DocumentationSet);
 
 /// <summary>
 /// Documentation context adapter for codex navigation creation.
@@ -466,6 +484,5 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public BuildType BuildType => BuildType.Codex;
 
 	/// <inheritdoc />
-	public void EmitError(string message) =>
-		codexContext.Collector.EmitError(codexContext.ConfigurationPath, message);
+	public void EmitError(string message) => codexContext.Collector.EmitError(codexContext.ConfigurationPath, message);
 }

@@ -85,8 +85,7 @@ internal sealed class LabsCommands(
 )
 {
 	private static bool IsInteractive() =>
-		string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) &&
-		AnsiConsole.Profile.Capabilities.Interactive;
+		string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) && AnsiConsole.Profile.Capabilities.Interactive;
 
 	/// <summary>
 	/// Discover labs URLs from sitemaps, crawl HTML, and bulk-ingest into Elasticsearch.
@@ -155,7 +154,8 @@ internal sealed class LabsCommands(
 				sitemapParser,
 				LabsSiteCrawlPlanner.LabsSitemapUrls,
 				new Progress<(int completed, string currentSitemap)>(_ => { }),
-				ct);
+				ct
+			);
 		}
 
 		var allUrls = discovery.Urls;
@@ -163,11 +163,9 @@ internal sealed class LabsCommands(
 		foreach (var (sitemapUrl, rawUrlCount) in discovery.PerSitemap)
 		{
 			var label = LabsSiteCrawlPlanner.SitemapDisplayLabel(sitemapUrl);
-			AnsiConsole.MarkupLine(
-				$"  [dim]{Markup.Escape(label)}[/]  [white]{rawUrlCount:N0}[/] [dim]URLs (from sitemap)[/]");
+			AnsiConsole.MarkupLine($"  [dim]{Markup.Escape(label)}[/]  [white]{rawUrlCount:N0}[/] [dim]URLs (from sitemap)[/]");
 		}
-		AnsiConsole.MarkupLine(
-			$"[green]✓[/] [white]{allUrls.Count:N0}[/] [dim]unique URLs[/] [dim](cross-sitemap duplicates merged)[/]");
+		AnsiConsole.MarkupLine($"[green]✓[/] [white]{allUrls.Count:N0}[/] [dim]unique URLs[/] [dim](cross-sitemap duplicates merged)[/]");
 		if (allUrls.Count == 0)
 			return;
 
@@ -183,13 +181,14 @@ internal sealed class LabsCommands(
 		var cache = force
 			? [with(StringComparer.OrdinalIgnoreCase)]
 			: !await crawlCache.IndexExistsAsync(indexAlias, ct)
-			? [with(StringComparer.OrdinalIgnoreCase)]
-			: await crawlCache.LoadCacheAsync(indexAlias, progress: null, ct);
+				? [with(StringComparer.OrdinalIgnoreCase)]
+				: await crawlCache.LoadCacheAsync(indexAlias, progress: null, ct);
 
 		var plan = LabsSiteCrawlPlanner.BuildCrawlPlan(filtered, cache, unchanged, fair, maxPages, loggerFactory);
 
 		AnsiConsole.MarkupLine(
-			$"[dim]new {plan.Stats.NewUrls:N0} | unchanged {plan.Stats.UnchangedUrls:N0} | verify {plan.Stats.PossiblyChangedUrls:N0} | crawl ops {plan.UrlsToCrawl.Count:N0}[/]");
+			$"[dim]new {plan.Stats.NewUrls:N0} | unchanged {plan.Stats.UnchangedUrls:N0} | verify {plan.Stats.PossiblyChangedUrls:N0} | crawl ops {plan.UrlsToCrawl.Count:N0}[/]"
+		);
 
 		if (dryRun)
 		{
@@ -201,20 +200,15 @@ internal sealed class LabsCommands(
 		LabsDocumentExporter? exporter = null;
 		try
 		{
-			exporter = new LabsDocumentExporter(
-				loggerFactory,
-				cfg,
-				transport,
-				buildType,
-				env,
-				enableAiEnrichment: !noAi);
+			exporter = new LabsDocumentExporter(loggerFactory, cfg, transport, buildType, env, enableAiEnrichment: !noAi);
 
 			if (!noAi)
 				exporter.ConfigurePostSyncAiBatch(options.MaxAiDocs, options.MaxAiTime);
 
 			if (IsInteractive())
 			{
-				await AnsiConsole.Status()
+				await AnsiConsole
+					.Status()
 					.AutoRefresh(true)
 					.Spinner(Spinner.Known.Dots)
 					.StartAsync("[aqua]Bootstrapping indices...[/]", async _ => await exporter.StartAsync(ct));
@@ -231,7 +225,8 @@ internal sealed class LabsCommands(
 				crawler,
 				new LabsHtmlExtractor(loggerFactory.CreateLogger<LabsHtmlExtractor>()),
 				exporter,
-				loggerFactory.CreateLogger<LabsCrawlLoop>());
+				loggerFactory.CreateLogger<LabsCrawlLoop>()
+			);
 
 			var done = 0;
 			var total = decisions.Count;
@@ -276,16 +271,14 @@ internal sealed class LabsCommands(
 
 			if (IsInteractive() && total > 0)
 			{
-				await AnsiConsole.Progress()
-					.Columns(
-						new SpinnerColumn(),
-						new TaskDescriptionColumn(),
-						new ProgressBarColumn(),
-						new PercentageColumn())
+				await AnsiConsole
+					.Progress()
+					.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 					.StartAsync(async pc =>
 					{
 						var t = pc.AddTask("[aqua]Crawl[/]", maxValue: Math.Max(1, total));
 						t.MaxValue = total;
+
 						void ProgressBump()
 						{
 							done++;
@@ -300,23 +293,25 @@ internal sealed class LabsCommands(
 			else
 			{
 				void SimpleBump() => done++;
+
 				WireCrawlHandlers(SimpleBump);
 				await loop.RunAsync(decisions, ct);
 			}
 
 			AnsiConsole.WriteLine();
-			AnsiConsole.MarkupLine(
-				$"[green]✓[/] Crawl phase [white]{done:N0}[/][dim]/[/][white]{total:N0}[/] [dim]URLs handled[/]");
+			AnsiConsole.MarkupLine($"[green]✓[/] Crawl phase [white]{done:N0}[/][dim]/[/][white]{total:N0}[/] [dim]URLs handled[/]");
 			WriteCrawlOutcomeSummary(crawlOutcomes);
 			if (done != total)
 			{
 				AnsiConsole.MarkupLine(
-					$"[yellow]! [/][dim]Handled count ({done}) != crawl ops ({total}). Cancelled, or fewer HTTP results than tasks — check logs.[/]");
+					$"[yellow]! [/][dim]Handled count ({done}) != crawl ops ({total}). Cancelled, or fewer HTTP results than tasks — check logs.[/]"
+				);
 			}
 
 			if (IsInteractive())
 			{
-				await AnsiConsole.Status()
+				await AnsiConsole
+					.Status()
 					.AutoRefresh(true)
 					.Spinner(Spinner.Known.Dots)
 					.StartAsync("[aqua]Finalizing…[/]", async ctx =>
@@ -399,7 +394,8 @@ internal sealed class LabsCommands(
 				enableAiEnrichment: true
 			);
 
-			await AnsiConsole.Status()
+			await AnsiConsole
+				.Status()
 				.AutoRefresh(true)
 				.Spinner(Spinner.Known.Dots)
 				.StartAsync("[aqua]Bootstrapping Elasticsearch indices...[/]", async _ =>
@@ -421,7 +417,8 @@ internal sealed class LabsCommands(
 				exporter.AiEnrichmentEnabled,
 				(max, token) => exporter.RunAiEnrichmentAsync(max, token),
 				maxAiDocs,
-				effectiveToken);
+				effectiveToken
+			);
 			AiEnrichmentConsole.DisplaySummary(aiResult, maxAiTime, maxAiDocs);
 		}
 		catch (OperationCanceledException) when (deadline.TimedOut)
@@ -456,9 +453,13 @@ internal sealed class LabsCommands(
 		static string Dim0Or(string whenPositive, int n) => n == 0 ? "[dim]0[/]" : whenPositive;
 
 		static string CountIndexed(int n) => Dim0Or($"[green]{n:N0}[/]", n);
+
 		static string CountNotModified(int n) => Dim0Or($"[grey]{n:N0}[/]", n);
+
 		static string CountExtractSkipped(int n) => Dim0Or($"[yellow]{n:N0}[/]", n);
+
 		static string CountYellow(int n) => Dim0Or($"[yellow]{n:N0}[/]", n);
+
 		static string CountRed(int n) => Dim0Or($"[red]{n:N0}[/]", n);
 
 		var table = new Table()
@@ -476,8 +477,7 @@ internal sealed class LabsCommands(
 		_ = table.AddRow(new Markup("Index error"), new Markup(CountRed(c.IndexingFailed)));
 		_ = table.AddRow(new Markup("Fatal"), new Markup(CountRed(c.FatalCrawlErrors)));
 
-		var total = c.Indexed + c.NotModified + c.ExtractSkipped + c.CrawlFailed + c.Unavailable +
-			c.IndexingFailed + c.FatalCrawlErrors;
+		var total = c.Indexed + c.NotModified + c.ExtractSkipped + c.CrawlFailed + c.Unavailable + c.IndexingFailed + c.FatalCrawlErrors;
 		_ = table.AddRow(new Markup("[bold]Total[/]"), new Markup($"[bold]{total:N0}[/]"));
 
 		AnsiConsole.Write(table);
@@ -487,14 +487,11 @@ internal sealed class LabsCommands(
 	private async Task<LabsSiteCrawlPlanner.LabsSitemapDiscoveryResult> DiscoverLabsSitemapsWithProgressAsync(CancellationToken ct)
 	{
 		LabsSiteCrawlPlanner.LabsSitemapDiscoveryResult? result = null;
-		await AnsiConsole.Progress()
+		await AnsiConsole
+			.Progress()
 			.AutoRefresh(true)
 			.AutoClear(false)
-			.Columns(
-				new SpinnerColumn(),
-				new TaskDescriptionColumn(),
-				new ProgressBarColumn(),
-				new PercentageColumn())
+			.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 			.StartAsync(async pc =>
 			{
 				var task = pc.AddTask("[aqua]Labs sitemaps[/]", maxValue: LabsSiteCrawlPlanner.LabsSitemapUrls.Length);
@@ -506,7 +503,8 @@ internal sealed class LabsCommands(
 						task.Description = $"[aqua]{Markup.Escape(v.currentSitemap)}[/]";
 						task.Value = v.completed;
 					}),
-					ct);
+					ct
+				);
 			});
 		return result ?? throw new InvalidOperationException("Labs sitemap discovery did not return a result.");
 	}
@@ -514,8 +512,9 @@ internal sealed class LabsCommands(
 	private static HashSet<string> ParseLanguageFilter(string? languages) =>
 		string.IsNullOrWhiteSpace(languages)
 			? []
-			: languages.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			: languages.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(
+				StringComparer.OrdinalIgnoreCase
+			);
 
 	private ElasticsearchEndpoint ResolveEndpoint(Uri? endpoint, string? apiKey)
 	{

@@ -94,17 +94,17 @@ public record CodexDocumentationSetReference
 		var origin = ResolvedOrigin;
 
 		// If origin is already a full URL, return it as-is
-		if (origin.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-			origin.StartsWith("git@", StringComparison.OrdinalIgnoreCase))
+		if (
+			origin.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+			|| origin.StartsWith("git@", StringComparison.OrdinalIgnoreCase)
+		)
 			return origin;
 
 		// Otherwise, construct the URL from the short form (e.g., "elastic/repo-name")
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
 		{
 			var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-			return !string.IsNullOrEmpty(token)
-				? $"https://oauth2:{token}@github.com/{origin}.git"
-				: $"https://github.com/{origin}.git";
+			return !string.IsNullOrEmpty(token) ? $"https://oauth2:{token}@github.com/{origin}.git" : $"https://github.com/{origin}.git";
 		}
 
 		return $"git@github.com:{origin}.git";

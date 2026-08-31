@@ -24,7 +24,10 @@ public class StepViewModel : DirectiveViewModel
 		public static StepCrossNavigationLookupProvider Instance { get; } = new();
 
 		/// <inheritdoc />
-		public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; } = new Dictionary<int, INavigationItem>().ToFrozenDictionary();
+		public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder
+		{
+			get;
+		} = new Dictionary<int, INavigationItem>().ToFrozenDictionary();
 
 		/// <inheritdoc />
 		public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; } = [];

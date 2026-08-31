@@ -16,7 +16,9 @@ namespace Elastic.Documentation.FileSystems;
 /// recursive fallback enumerates downward. Nothing about the docset scan needs a parent directory.
 /// </para>
 /// </summary>
-internal sealed class DocsetScanFileSystem(IDirectoryInfo path, IFileSystem? inner = null)
-	: ScopedFileSystem(inner ?? new FileSystem(), new ScopedFileSystemOptions([path.FullName]))
+internal sealed class DocsetScanFileSystem(IDirectoryInfo path, IFileSystem? inner = null) : ScopedFileSystem(
+	inner ?? new FileSystem(),
+	new ScopedFileSystemOptions([path.FullName])
+)
 {
 }

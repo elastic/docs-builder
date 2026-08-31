@@ -25,13 +25,18 @@ public static class TestHelpers
 		ProductsConfiguration? productsConfiguration = null
 	)
 	{
-		configurationFileProvider ??= new ConfigurationFileProvider(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem), skipPrivateRepositories: true);
+		configurationFileProvider ??= new ConfigurationFileProvider(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(fileSystem),
+			skipPrivateRepositories: true
+		);
 		versionsConfiguration ??= new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Stack, new VersioningSystem
+					VersioningSystemId.Stack,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
 						Current = new SemVersion(8, 0, 0),
@@ -45,7 +50,8 @@ public static class TestHelpers
 			var products = new Dictionary<string, Product>
 			{
 				{
-					"elasticsearch", new Product
+					"elasticsearch",
+					new Product
 					{
 						Id = "elasticsearch",
 						DisplayName = "Elasticsearch",
@@ -63,10 +69,7 @@ public static class TestHelpers
 		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
-			Endpoints = new DocumentationEndpoints
-			{
-				Elasticsearch = ElasticsearchEndpoint.Default,
-			},
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = configurationFileProvider,
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,

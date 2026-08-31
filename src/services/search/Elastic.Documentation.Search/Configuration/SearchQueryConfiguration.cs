@@ -11,8 +11,7 @@ namespace Elastic.Documentation.Search;
 /// </summary>
 public sealed record SearchQueryConfiguration
 {
-	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; init; } =
-		new Dictionary<string, string[]>();
+	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; init; } = new Dictionary<string, string[]>();
 
 	public IReadOnlyCollection<string> DiminishTerms { get; init; } = [];
 

@@ -7,8 +7,7 @@ using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.Myst.Directives.Tabs;
 
-public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class TabSetBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "tab-set";
 
@@ -29,8 +28,7 @@ public class TabSetBlock(DirectiveBlockParser parser, ParserContext context)
 	}
 }
 
-public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context), IBlockTitle
+public class TabItemBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context), IBlockTitle
 {
 	public override string Directive => "tab-item";
 
@@ -57,5 +55,4 @@ public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
 		SyncKey = Prop("sync");
 		Selected = PropBool("selected");
 	}
-
 }

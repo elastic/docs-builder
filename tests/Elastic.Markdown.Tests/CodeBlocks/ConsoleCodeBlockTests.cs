@@ -12,8 +12,7 @@ namespace Elastic.Markdown.Tests.CodeBlocks;
 public abstract class ConsoleCodeBlockTests(
 	ITestOutputHelper output,
 	[LanguageInjection("markdown")] string markdown
-)
-	: BlockTest<EnhancedCodeBlock>(output, markdown)
+) : BlockTest<EnhancedCodeBlock>(output, markdown)
 {
 	[Fact]
 	public void ParsesConsoleCodeBlock() => Block.Should().NotBeNull();
@@ -22,8 +21,9 @@ public abstract class ConsoleCodeBlockTests(
 	public void SetsLanguage() => Block!.Language.Should().Be("json");
 }
 
-public class SingleConsoleApiCallTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class SingleConsoleApiCallTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 GET /mydocuments/_search
 {
@@ -55,8 +55,9 @@ GET /mydocuments/_search
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class MultipleConsoleApiCallsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class MultipleConsoleApiCallsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 GET /mydocuments/_search
 {
@@ -105,8 +106,9 @@ POST /mydocuments/_doc
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithDifferentHttpVerbsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class ConsoleWithDifferentHttpVerbsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 GET /api/users
 {
@@ -138,8 +140,9 @@ DELETE /api/users/123
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithCalloutsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class ConsoleWithCalloutsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 GET /mydocuments/_search
 {
@@ -171,8 +174,9 @@ POST /mydocuments/_doc
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithEmptyLinesTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class ConsoleWithEmptyLinesTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 GET /api/test
 {
@@ -199,8 +203,9 @@ POST /api/test
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithOnlyHeadersTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class ConsoleWithOnlyHeadersTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 GET /api/health
 POST /api/status
@@ -224,8 +229,9 @@ DELETE /api/cleanup
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithCalloutsOnHttpVerbsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class ConsoleWithCalloutsOnHttpVerbsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 GET /api/users <1>
 {
@@ -281,8 +287,9 @@ POST /api/users <2>
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithCalloutsInJsonContentTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class ConsoleWithCalloutsInJsonContentTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 PUT my-index-000001
 {
@@ -346,8 +353,9 @@ GET my-index-000001/_mapping <3>
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithHtmlCharsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(output,
-"""
+public class ConsoleWithHtmlCharsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
+	output,
+	"""
 ```console
 POST /auth/login
 {
@@ -420,4 +428,3 @@ POST /auth/login
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
-

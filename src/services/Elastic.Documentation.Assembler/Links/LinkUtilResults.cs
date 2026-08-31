@@ -32,7 +32,14 @@ public sealed record PageInfo(string Path, string[]? Anchors, bool Hidden);
 /// <summary>
 /// Result of getting repository links.
 /// </summary>
-public sealed record RepositoryLinksResult(string Repository, OriginInfo Origin, string? UrlPathPrefix, int PageCount, int CrossLinkCount, List<PageInfo> Pages);
+public sealed record RepositoryLinksResult(
+	string Repository,
+	OriginInfo Origin,
+	string? UrlPathPrefix,
+	int PageCount,
+	int CrossLinkCount,
+	List<PageInfo> Pages
+);
 
 /// <summary>
 /// Information about a cross-link between repositories.
@@ -53,4 +60,3 @@ public sealed record BrokenLinkInfo(string FromRepository, string Link, List<str
 /// Result of validating cross-links.
 /// </summary>
 public sealed record ValidateCrossLinksResult(string Repository, int ValidLinks, int BrokenLinks, List<BrokenLinkInfo> Broken);
-

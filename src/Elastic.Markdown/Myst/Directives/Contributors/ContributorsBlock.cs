@@ -29,14 +29,7 @@ public class ContributorEntry
 }
 
 /// <summary>Resolved contributor ready for rendering.</summary>
-public record Contributor(
-	string? GitHub,
-	string Name,
-	string? Title,
-	string? Location,
-	string AvatarUrl,
-	string? ProfileUrl
-);
+public record Contributor(string? GitHub, string Name, string? Title, string? Location, string AvatarUrl, string? ProfileUrl);
 
 /// <summary>
 /// A backtick-fenced directive that renders a grid of contributor cards from YAML content.
@@ -54,8 +47,7 @@ public record Contributor(
 ///   location: Bucharest, Romania
 /// ```
 /// </example>
-public class ContributorsBlock(BlockParser parser, ParserContext context)
-	: EnhancedCodeBlock(parser, context)
+public class ContributorsBlock(BlockParser parser, ParserContext context) : EnhancedCodeBlock(parser, context)
 {
 	/// <summary>Resolved contributor entries ready for rendering.</summary>
 	public IReadOnlyList<Contributor> Contributors => _contributors;
@@ -74,18 +66,9 @@ public class ContributorsBlock(BlockParser parser, ParserContext context)
 			}
 
 			var avatarUrl = ResolveAvatarUrl(parserContext, entry.GitHub, entry.Image);
-			var profileUrl = !string.IsNullOrWhiteSpace(entry.GitHub)
-				? $"https://github.com/{entry.GitHub}"
-				: null;
+			var profileUrl = !string.IsNullOrWhiteSpace(entry.GitHub) ? $"https://github.com/{entry.GitHub}" : null;
 
-			_contributors.Add(new Contributor(
-				entry.GitHub,
-				entry.Name,
-				entry.Title,
-				entry.Location,
-				avatarUrl,
-				profileUrl
-			));
+			_contributors.Add(new Contributor(entry.GitHub, entry.Name, entry.Title, entry.Location, avatarUrl, profileUrl));
 		}
 
 		if (_contributors.Count == 0)

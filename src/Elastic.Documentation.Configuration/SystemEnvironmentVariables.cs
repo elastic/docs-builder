@@ -17,12 +17,10 @@ public class SystemEnvironmentVariables : IEnvironmentVariables
 	public static readonly SystemEnvironmentVariables Instance = new();
 
 	/// <inheritdoc />
-	public string? GetEnvironmentVariable(string name) =>
-		Environment.GetEnvironmentVariable(name);
+	public string? GetEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name);
 
 	/// <inheritdoc />
-	public bool IsRunningOnCI =>
-		!string.IsNullOrEmpty(GetEnvironmentVariable("GITHUB_ACTIONS"));
+	public bool IsRunningOnCI => !string.IsNullOrEmpty(GetEnvironmentVariable("GITHUB_ACTIONS"));
 
 	/// <inheritdoc />
 	public string ApiPrefix => GetEnvironmentVariable("DOCS_API_PREFIX") ?? "/docs/_api";
@@ -32,8 +30,8 @@ public class SystemEnvironmentVariables : IEnvironmentVariables
 
 	/// <inheritdoc />
 	public bool McpAuthEnabled =>
-		string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "true", StringComparison.OrdinalIgnoreCase) ||
-		string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
+		string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "true", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(GetEnvironmentVariable("MCP_AUTH_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
 
 	/// <inheritdoc />
 	public string? McpJwtPublicKey => GetEnvironmentVariable("MCP_JWT_PUBLIC_KEY");
@@ -49,5 +47,4 @@ public class SystemEnvironmentVariables : IEnvironmentVariables
 
 	/// <inheritdoc />
 	public string McpServerProfile => GetEnvironmentVariable("MCP_SERVER_PROFILE") ?? "public";
-
 }

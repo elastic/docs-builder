@@ -19,11 +19,7 @@ public class FileFilterLoader(IFileSystem fileSystem)
 	/// <param name="baseDirectory">
 	/// Optional directory used to resolve basename-only or relative paths that are not found from the current directory.
 	/// </param>
-	public async Task<FileFilterResult> LoadFilesAsync(
-		IDiagnosticsCollector collector,
-		string[]? files,
-		string? baseDirectory,
-		Cancel ctx)
+	public async Task<FileFilterResult> LoadFilesAsync(IDiagnosticsCollector collector, string[]? files, string? baseDirectory, Cancel ctx)
 	{
 		var resolved = new List<string>();
 
@@ -52,7 +48,10 @@ public class FileFilterLoader(IFileSystem fileSystem)
 
 			if (!IsYamlExtension(path))
 			{
-				collector.EmitError(path, $"--files values must be changelog YAML paths (.yaml/.yml) or a newline-delimited path list file. Found: {value}");
+				collector.EmitError(
+					path,
+					$"--files values must be changelog YAML paths (.yaml/.yml) or a newline-delimited path list file. Found: {value}"
+				);
 				return new FileFilterResult { IsValid = false, FilePaths = resolved };
 			}
 
@@ -74,10 +73,7 @@ public class FileFilterLoader(IFileSystem fileSystem)
 	/// existence, because the entries may exist only in S3 — or a newline-delimited path-list file
 	/// (which must exist locally to be read).
 	/// </summary>
-	public async Task<FileFilterResult> LoadFileNamesAsync(
-		IDiagnosticsCollector collector,
-		string[]? files,
-		Cancel ctx)
+	public async Task<FileFilterResult> LoadFileNamesAsync(IDiagnosticsCollector collector, string[]? files, Cancel ctx)
 	{
 		var names = new List<string>();
 
@@ -99,7 +95,10 @@ public class FileFilterLoader(IFileSystem fileSystem)
 
 			if (LooksLikeHttpUrl(value) || !IsYamlExtension(value))
 			{
-				collector.EmitError(value, $"--files values must be changelog YAML paths (.yaml/.yml) or a newline-delimited path list file. Found: {rawValue}");
+				collector.EmitError(
+					value,
+					$"--files values must be changelog YAML paths (.yaml/.yml) or a newline-delimited path list file. Found: {rawValue}"
+				);
 				return new FileFilterResult { IsValid = false, FilePaths = names };
 			}
 
@@ -124,7 +123,8 @@ public class FileFilterLoader(IFileSystem fileSystem)
 		string listFilePath,
 		string? baseDirectory,
 		List<string> resolved,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var lines = await ReadListLinesAsync(collector, listFilePath, ctx);
 		if (lines == null)
@@ -152,11 +152,7 @@ public class FileFilterLoader(IFileSystem fileSystem)
 	/// Reads a newline-delimited path list and appends the entry file names to <paramref name="names"/>,
 	/// without requiring the listed paths to exist locally (CDN-pool matching).
 	/// </summary>
-	private async Task<bool> ReadPathListNamesAsync(
-		IDiagnosticsCollector collector,
-		string listFilePath,
-		List<string> names,
-		Cancel ctx)
+	private async Task<bool> ReadPathListNamesAsync(IDiagnosticsCollector collector, string listFilePath, List<string> names, Cancel ctx)
 	{
 		var lines = await ReadListLinesAsync(collector, listFilePath, ctx);
 		if (lines == null)
@@ -195,19 +191,13 @@ public class FileFilterLoader(IFileSystem fileSystem)
 	{
 		if (LooksLikeHttpUrl(line))
 		{
-			collector.EmitError(
-				listFilePath,
-				$"Path list file must contain changelog YAML paths (.yaml/.yml), not URLs. Found: {line}"
-			);
+			collector.EmitError(listFilePath, $"Path list file must contain changelog YAML paths (.yaml/.yml), not URLs. Found: {line}");
 			return false;
 		}
 
 		if (!IsYamlExtension(line))
 		{
-			collector.EmitError(
-				listFilePath,
-				$"Path list file must contain changelog YAML paths (.yaml/.yml). Found: {line}"
-			);
+			collector.EmitError(listFilePath, $"Path list file must contain changelog YAML paths (.yaml/.yml). Found: {line}");
 			return false;
 		}
 
@@ -261,21 +251,19 @@ public class FileFilterLoader(IFileSystem fileSystem)
 		collector.EmitError(
 			file,
 			$"File does not exist. Current directory: {currentDir}. " +
-			$"Tip: Repeat {optionName} for each file, or use comma-separated values (e.g., {optionName} \"file1.yaml,file2.yaml\"). " +
-			"Paths support tilde (~) expansion and can be relative or absolute."
+				$"Tip: Repeat {optionName} for each file, or use comma-separated values (e.g., {optionName} \"file1.yaml,file2.yaml\"). " +
+				"Paths support tilde (~) expansion and can be relative or absolute."
 		);
 	}
 
 	internal static bool IsYamlExtension(string path)
 	{
 		var ext = Path.GetExtension(path);
-		return ext.Equals(".yaml", StringComparison.OrdinalIgnoreCase)
-			|| ext.Equals(".yml", StringComparison.OrdinalIgnoreCase);
+		return ext.Equals(".yaml", StringComparison.OrdinalIgnoreCase) || ext.Equals(".yml", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static bool LooksLikeHttpUrl(string value) =>
-		value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-		|| value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+		value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>Result of loading file-path filter values.</summary>

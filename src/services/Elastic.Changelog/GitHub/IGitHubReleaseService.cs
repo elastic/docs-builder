@@ -79,11 +79,7 @@ public interface IGitHubReleaseService
 	/// <param name="version">Version tag or "latest" (null defaults to latest)</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>Release information or null if fetch fails</returns>
-	Task<GitHubReleaseInfo?> FetchReleaseAsync(
-		string owner,
-		string repo,
-		string? version,
-		CancellationToken ctx = default);
+	Task<GitHubReleaseInfo?> FetchReleaseAsync(string owner, string repo, string? version, CancellationToken ctx = default);
 
 	/// <summary>
 	/// Fetches the most recent releases from GitHub, newest first
@@ -93,11 +89,7 @@ public interface IGitHubReleaseService
 	/// <param name="count">Maximum number of releases to fetch</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>The releases, or an empty list if the fetch fails</returns>
-	Task<IReadOnlyList<GitHubReleaseInfo>> FetchReleasesAsync(
-		string owner,
-		string repo,
-		int count,
-		CancellationToken ctx = default);
+	Task<IReadOnlyList<GitHubReleaseInfo>> FetchReleasesAsync(string owner, string repo, int count, CancellationToken ctx = default);
 
 	/// <summary>
 	/// Downloads a release asset's content as text

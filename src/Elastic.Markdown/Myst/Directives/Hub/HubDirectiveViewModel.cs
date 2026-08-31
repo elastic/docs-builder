@@ -42,8 +42,7 @@ public abstract class HubDirectiveViewModel : DirectiveViewModel
 		return new HtmlString(attributes.ToString());
 	}
 
-	private static bool IsExternal(string? url) =>
-		url is not null && url.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+	private static bool IsExternal(string? url) => url is not null && url.StartsWith("http", StringComparison.OrdinalIgnoreCase);
 
 	private static bool IsAnchor(string? url) => url is ['#', ..];
 

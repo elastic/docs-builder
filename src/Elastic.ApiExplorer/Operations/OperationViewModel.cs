@@ -31,7 +31,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (RequiredAuthItems is { Count: > 0 })
 			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
 
-		if (!string.IsNullOrWhiteSpace(operation.Description))
+		if (!string.IsNullOrWhiteSpace(Page.DescriptionMarkdown))
 			tocItems.Add(new ApiTocItem("Description", "description"));
 
 		if (Page.QueryParameters.Count > 0)
@@ -51,6 +51,9 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 
 		if (Page.ShowResponseExamples)
 			tocItems.Add(new ApiTocItem("Response Examples", "response-examples"));
+
+		foreach (var section in Page.PostSections)
+			tocItems.Add(new ApiTocItem(section.Heading, section.Anchor));
 
 		return tocItems;
 	}

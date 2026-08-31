@@ -11,7 +11,4 @@ public enum CrawlReason
 	PossiblyChanged
 }
 
-public record CrawlDecision(
-	SitemapEntry Entry,
-	CrawlReason Reason,
-	CachedDocInfo? Cached = null);
+public record CrawlDecision(SitemapEntry Entry, CrawlReason Reason, CachedDocInfo? Cached = null);

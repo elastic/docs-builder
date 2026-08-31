@@ -4,9 +4,4 @@
 
 namespace Elastic.SiteSearch.Cli.LabsCrawl;
 
-public record CachedDocInfo(
-	string Url,
-	string Hash,
-	DateTimeOffset LastUpdated,
-	string? HttpEtag,
-	DateTimeOffset? HttpLastModified);
+public record CachedDocInfo(string Url, string Hash, DateTimeOffset LastUpdated, string? HttpEtag, DateTimeOffset? HttpLastModified);

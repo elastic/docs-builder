@@ -49,9 +49,11 @@ internal sealed class ContentTypeEntry
 		if (item.Data is not { } data)
 			return;
 
-		if (!data.TryGetProperty("url", out var urlProp)
+		if (
+			!data.TryGetProperty("url", out var urlProp)
 			|| urlProp.ValueKind != JsonValueKind.String
-			|| string.IsNullOrWhiteSpace(urlProp.GetString()))
+			|| string.IsNullOrWhiteSpace(urlProp.GetString())
+		)
 			return;
 
 		WithUrl++;

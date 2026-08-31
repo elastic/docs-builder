@@ -27,9 +27,7 @@ public class YamlLenientListConverter : IYamlTypeConverter
 			if (string.IsNullOrEmpty(scalar.Value) || scalar.Value == "~")
 				return new YamlLenientList(null);
 
-			var items = scalar.Value
-				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-				.ToList();
+			var items = scalar.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
 			return new YamlLenientList(items.Count > 0 ? items : null);
 		}

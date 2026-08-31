@@ -12,20 +12,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Configuration;
 
-public class ConfigurationCloneService(
-	ILoggerFactory logFactory,
-	AssemblyConfiguration assemblyConfiguration,
-	IFileSystem fs
-) : IService
+public class ConfigurationCloneService(ILoggerFactory logFactory, AssemblyConfiguration assemblyConfiguration, IFileSystem fs) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ConfigurationCloneService>();
 
-	public async Task<bool> InitConfigurationToApplicationData(
-		IDiagnosticsCollector collector,
-		string? gitRef,
-		bool saveLocal,
-		Cancel ctx
-	)
+	public async Task<bool> InitConfigurationToApplicationData(IDiagnosticsCollector collector, string? gitRef, bool saveLocal, Cancel ctx)
 	{
 		var checkoutFolder = fs.DirectoryInfo.New(ConfigurationFileProvider.AppDataConfigurationDirectory).Parent;
 		if (saveLocal)
@@ -46,17 +37,18 @@ public class ConfigurationCloneService(
 
 		// relies on the embedded configuration, but we don't expect this to change
 		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"];
-		repository = repository with
-		{
-			SparsePaths = ["config"]
-		};
+		repository = repository with { SparsePaths = ["config"] };
 		var gitReference = gitRef;
 		if (string.IsNullOrEmpty(gitReference))
 			gitReference = "main";
 
 		_logger.LogInformation("Cloning configuration ({GitReference})", gitReference);
 		var checkout = cloner.CloneRef(repository, gitReference, appendRepositoryName: false);
-		_logger.LogInformation("Cloned configuration ({GitReference}) to {ConfigurationFolder}", checkout.HeadReference, checkout.Directory.FullName);
+		_logger.LogInformation(
+			"Cloned configuration ({GitReference}) to {ConfigurationFolder}",
+			checkout.HeadReference,
+			checkout.Directory.FullName
+		);
 
 		if (gitRef is not null && !checkout.HeadReference.StartsWith(gitRef, StringComparison.OrdinalIgnoreCase))
 		{

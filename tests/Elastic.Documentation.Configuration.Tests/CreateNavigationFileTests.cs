@@ -13,7 +13,12 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class CreateNavigationFileTests
 {
 	private static ConfigurationFileProvider CreateProvider(MockFileSystem fileSystem) =>
-		new(NullLoggerFactory.Instance, new ConfigurationFileSystem(fileSystem), skipPrivateRepositories: true, ConfigurationSource.Embedded);
+		new(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(fileSystem),
+			skipPrivateRepositories: true,
+			ConfigurationSource.Embedded
+		);
 
 	private static AssemblyConfiguration CreateConfig(params string[] privateRepoNames)
 	{
@@ -29,7 +34,8 @@ public class CreateNavigationFileTests
 		var provider = CreateProvider(fileSystem);
 
 		// language=yaml
-		var navYaml = """
+		var navYaml =
+			"""
 		              toc:
 		                - toc: docs-content://getting-started
 		                  path_prefix: getting-started
@@ -62,7 +68,8 @@ public class CreateNavigationFileTests
 		var provider = CreateProvider(fileSystem);
 
 		// language=yaml
-		var navYaml = """
+		var navYaml =
+			"""
 		              toc:
 		                - toc: docs-content://top
 		                  path_prefix: top
@@ -98,7 +105,8 @@ public class CreateNavigationFileTests
 		var provider = CreateProvider(fileSystem);
 
 		// language=yaml
-		var navYaml = """
+		var navYaml =
+			"""
 		              toc:
 		                - toc: docs-content://top
 		                  path_prefix: top
@@ -129,7 +137,8 @@ public class CreateNavigationFileTests
 		var provider = CreateProvider(fileSystem);
 
 		// language=yaml
-		var navYaml = """
+		var navYaml =
+			"""
 		              toc:
 		                - toc: docs-content://top
 		                  path_prefix: top
@@ -159,7 +168,8 @@ public class CreateNavigationFileTests
 		var provider = CreateProvider(fileSystem);
 
 		// language=yaml
-		var navYaml = """
+		var navYaml =
+			"""
 		              toc:
 		                - toc: public-repo://reference
 		                  path_prefix: reference
@@ -191,7 +201,8 @@ public class CreateNavigationFileTests
 		var provider = CreateProvider(fileSystem);
 
 		// language=yaml
-		var navYaml = """
+		var navYaml =
+			"""
 		              toc:
 		                - toc: public-repo://reference
 		                  path_prefix: reference

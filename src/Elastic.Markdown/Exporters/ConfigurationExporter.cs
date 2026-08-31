@@ -13,7 +13,6 @@ public class ConfigurationExporter(
 	ILoggerFactory logFactory,
 	ConfigurationFileProvider configurationFileProvider,
 	IDocumentationContext context
-
 ) : IMarkdownExporter
 {
 	private readonly ILogger<ConfigurationExporter> _logger = logFactory.CreateLogger<ConfigurationExporter>();

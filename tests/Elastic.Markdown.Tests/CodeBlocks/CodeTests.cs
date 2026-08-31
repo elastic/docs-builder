@@ -8,9 +8,9 @@ using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
-public abstract class CodeBlockTests(ITestOutputHelper output, string directive, string? language = null)
-	: BlockTest<EnhancedCodeBlock>(output,
-$$"""
+public abstract class CodeBlockTests(ITestOutputHelper output, string directive, string? language = null) : BlockTest<EnhancedCodeBlock>(
+	output,
+	$$"""
 ```{{directive}} {{language}}
 var x = 1;
 ```
@@ -45,4 +45,3 @@ public class RawMarkdownCodeBlockTests(ITestOutputHelper output) : CodeBlockTest
 	[Fact]
 	public void SetsLanguage() => Block!.Language.Should().Be("javascript");
 }
-

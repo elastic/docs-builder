@@ -11,150 +11,112 @@ We do not use Aspire to generate production deployment scripts since [this is no
 
 ## Run all services locally
 
-You may need to install the Aspire workload first. We also recommend installing the aspire plugin 
-
-* [For Rider](https://plugins.jetbrains.com/plugin/23289--net-aspire)
+We're on **Aspire 13.5.3** — the latest standalone CLI release. No workload install, no `dotnet workload restore`. One command brings up the full stack:
 
 ```bash
-sudo dotnet workload install aspire
+dotnet aspire run
 ```
 
-Aspire is just another CLI program so can be run like all the other tools
+The Aspire CLI ships as a local dotnet tool pinned in `dotnet-tools.json`. Restore it once per clone alongside the other repo tools:
 
 ```bash
-dotnet run --project aspire
+dotnet tool restore
 ```
 
 This will automatically:
 
-* clone all repositories according to `config/assembler.yml` using `docs-builder assembler clone`
-* do a full site build of all repositories using `docs-builder assembler build`
-* Serve a copy of the fully assembled documentation using `docs-builder serve-static`.
+* reuse already-cloned repositories (default) or clone them if absent — via `docs-builder assembler clone --assume-cloned`
+* build the unified site, skipping if the code/config/content stamp is unchanged — via `docs-builder assembler build`
+* serve the fully assembled documentation via `docs-builder assembler serve`
 
 This should start a management UI over at: https://localhost:17166. This UI exposes all logs, traces, and metrics for each service
 
 ![management-ui.png](management-ui.png)
 
-### Run without authorization tokens
+### Default behaviour
 
-If you do not have access to clone to private repositories you can use `--skip-private-repositories`
+Private repositories are **skipped by default** — `docs-builder`'s own docs are injected into `navigation.yml` in their place. This lets you validate the assembler without production credentials. Existing checkouts are **reused by default** (no fresh clone on every run). Build output is **skipped when unchanged** (MVID stamp matches code/config/content).
 
-```bash
-dotnet run --project aspire -- --skip-private-repositories
-```
-
-This will automagically scrub the private repositories from assembler.yml and navigation.yml.
-
-Our integration tests, for instance, use this to run tests on CI tokenless. When specifying this option locally we automatically inject `docs-builder`'s own docs into the `navigation.yml`. This allows us to test changes to documentation sets and their effect on assembler during PR's
-
-## Elasticsearch Instance
-
-By default, we assume local [dotnet user secrets](#user-secrets) have been set to communicate to an external Elasticsearch instance.
-
-However, you can start a local Elasticsearch instance using 
+To change these defaults:
 
 ```bash
-dotnet run --project aspire -- --start-elasticsearch
+dotnet aspire run -- --no-skip-private-repositories  # include private repos (requires auth tokens)
+dotnet aspire run -- --no-assume-cloned              # force a fresh clone
+dotnet aspire run -- --no-assume-build               # force a full rebuild even if stamp matches
 ```
 
-This will run a local Elasticsearch docker image and expose that to Aspire service discovery instead.
+Our integration tests use these defaults to run tokenless on CI.
 
-### Elasticsearch indexing
+## Elasticsearch
 
-Furthermore, it makes the following indexers available in the Aspire UI
+All Elasticsearch connectivity targets **Elastic Cloud with EIS** (Elastic Inference Service). There is no local Elasticsearch container option — the index layout, inference endpoints, and semantic search configuration all require a Cloud deployment and cannot be replicated locally.
 
-* Plain Elasticsearch, index elasticsearch documents.
-* Semantic Elasticsearch, same but with semantic fields.
-
-These have to be run manually and can be run multiple times.
-
-## User secrets
-
-We use dotnet user secrets to provide parameters to aspire. These are all optional but needed if you want
-the AI prompts and external Elasticsearch searches to work.
-
-NOTE: using `--start-elasticsearch` the url and random password are automatically wired.
-
-```bash
-dotnet user-secrets --project aspire list
-```
-
-Should have these secrets
-
-> Parameters:LlmGatewayUrl = https://****
-> Parameters:LlmGatewayServiceAccountPath = <PATH_TO_GCP_SERVICE_CREDENTIALS_FILE>
-> Parameters:ElasticsearchUrl = https://*.elastic.cloud:443
-> Parameters:ElasticsearchApiKey = ****
-
-To set them:
-  
-```bash
-dotnet user-secrets --project aspire set Parameters:ElasticsearchApiKey <VALUE>
-```
-
-Do note `dotnet user-secrets` should only be used on local development machines and not on CI.
-
-The store id is `docs-builder`. If you set up secrets before the rename from the old GUID id,
-migrate your existing store:
-
-```bash
-mv ~/.microsoft/usersecrets/72f50f33-6fb9-4d08-bff3-39568fe370b3 ~/.microsoft/usersecrets/docs-builder
-```
-
-(On Windows: `%APPDATA%\Microsoft\UserSecrets\`.)
+Configure your Cloud endpoint via `dotnet aspire secret set` — see [Aspire CLI reference](#aspire-cli-reference) below.
 
 ## Integration Tests
 
-The `Elastic.Assembler.IntegrationTests` project includes integration tests for various components, including the search functionality.
+The `Elastic.Documentation.IntegrationTests` project includes integration tests that boot the full Aspire stack (clone → build → serve → api → mcp) and run liveness and smoke assertions against it.
 
-### Search Integration Tests
-
-The search integration tests (`Search/SearchIntegrationTests.cs`) verify that the ElasticsearchGateway correctly processes queries through the `/docs/_api/v1/search` endpoint.
-
-**Optimized Indexing**: The test base class (`SearchTestBase`) intelligently checks if the remote Elasticsearch instance already contains up-to-date indexed data. If the index exists with sufficient documents and a valid template, indexing is automatically skipped to improve test performance. Otherwise, the Elasticsearch indexer runs before the tests execute.
-
-#### Prerequisites
-
-The tests require a valid Elasticsearch instance. Choose one of these options:
-
-1. **External Elasticsearch** - Set up user secrets:
-   ```bash
-   dotnet user-secrets --project aspire set Parameters:ElasticsearchUrl <YOUR_ELASTICSEARCH_URL>
-   dotnet user-secrets --project aspire set Parameters:ElasticsearchApiKey <YOUR_API_KEY>
-   ```
-
-2. **Local Elasticsearch** - The `--start-elasticsearch` flag will be automatically handled by the test fixture:
-   ```bash
-   # Tests will use the configured Elasticsearch (local or remote)
-   dotnet test tests-integration/Elastic.Assembler.IntegrationTests --filter "FullyQualifiedName~SearchIntegrationTests"
-   ```
-
-#### Running the Tests
+### Running
 
 ```bash
-# Run all integration tests
-dotnet test tests-integration/Elastic.Assembler.IntegrationTests
-
-# Run only search integration tests
-dotnet test tests-integration/Elastic.Assembler.IntegrationTests --filter "FullyQualifiedName~SearchIntegrationTests"
+dotnet test tests-integration/Elastic.Documentation.IntegrationTests
 ```
 
-#### Test Execution Flow
+The tests use the default flags — `--skip-private-repositories` and `--assume-cloned` locally,
+plus the MVID-based `--assume-build` on local (disabled automatically on CI). They require the
+`ElasticsearchUrl` and `ElasticsearchApiKey` user secrets to be set for the API and MCP smoke assertions.
 
-1. The test fixture starts all Aspire resources (clone, build, serve, API)
-2. **Intelligent indexing check**: The test queries the remote Elasticsearch to check:
-   - If the semantic index template exists and has a valid version
-   - If the index contains sufficient documents (> 100)
-   - If both conditions are met, indexing is **skipped** for faster test execution
-3. If indexing is needed, the Elasticsearch indexer runs automatically in test mode (up to 10 minutes timeout)
-4. Search queries are executed against the indexed data
-5. Results are validated against expected URLs
+### Detached mode
 
-**Notes**:
-- The search tests use data-driven theory tests that verify expected search results
-- Tests may initially fail if:
-  - The Elasticsearch index is empty or not populated correctly
-  - The expected URLs don't match the actual indexed content
-  - Network connectivity issues with Elasticsearch
-- **Performance optimization**: Subsequent test runs against the same Elasticsearch instance are significantly faster because indexing is skipped when data is already up-to-date
-- The base class `SearchTestBase` can be extended for additional search-related tests, providing consistent initialization and intelligent indexing behavior
+Use `dotnet aspire start` to launch the stack in the background:
+
+```bash
+dotnet aspire start    # uses all defaults (skip private, reuse clones, stamp-based build skip)
+dotnet aspire ps       # list running stacks
+dotnet aspire stop     # shut down
+```
+
+## Aspire CLI reference
+
+The `dotnet aspire` command is the primary interface for the local stack. Key commands:
+
+### Running the stack
+
+```bash
+dotnet aspire run      # start interactively (blocks; Ctrl-C stops all services)
+dotnet aspire start    # start in the background (detached)
+dotnet aspire ps       # list running stacks and their dashboard URLs
+dotnet aspire stop     # stop the background stack
+```
+
+### Managing secrets
+
+Secrets are stored in the dotnet user-secrets store under the ID `docs-builder`. The Aspire CLI manages them directly — no need to open `secrets.json` by hand.
+
+List all configured secrets:
+
+```bash
+dotnet aspire secret list
+```
+
+Set a secret:
+
+```bash
+dotnet aspire secret set <KEY> <VALUE>
+```
+
+For example:
+
+```bash
+dotnet aspire secret set ElasticsearchUrl    https://<your-cluster>.elastic.cloud:443
+dotnet aspire secret set ElasticsearchApiKey <your-api-key>
+dotnet aspire secret set LlmGatewayUrl       https://<llm-gateway-url>
+dotnet aspire secret set LlmGatewayServiceAccountPath /path/to/service-account.json
+```
+
+Remove a secret:
+
+```bash
+dotnet aspire secret remove <KEY>
+```

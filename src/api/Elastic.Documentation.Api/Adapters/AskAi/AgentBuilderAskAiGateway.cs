@@ -12,7 +12,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Adapters.AskAi;
 
-public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kibanaOptions, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiService
+public class AgentBuilderAskAiGateway(
+	HttpClient httpClient,
+	KibanaOptions kibanaOptions,
+	ILogger<AgentBuilderAskAiGateway> logger
+) : IAskAiService
 {
 	/// <summary>
 	/// Model name used by Agent Builder (from AgentId)
@@ -27,16 +31,15 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kiban
 	{
 		// Agent Builder returns the conversation ID in the stream via conversation_id_set event
 		// We don't generate IDs - Agent Builder handles that in the stream
-		var agentBuilderPayload = new AgentBuilderPayload(
-			askAiRequest.Message,
-			"docs-agent",
-			askAiRequest.ConversationId?.ToString());
+		var agentBuilderPayload = new AgentBuilderPayload(askAiRequest.Message, "docs-agent", askAiRequest.ConversationId?.ToString());
 		var requestBody = JsonSerializer.Serialize(agentBuilderPayload, AgentBuilderContext.Default.AgentBuilderPayload);
 
-		logger.LogInformation("Sending to Agent Builder with conversation_id: \"{ConversationId}\"", askAiRequest.ConversationId?.ToString() ?? "(null - first request)");
+		logger.LogInformation(
+			"Sending to Agent Builder with conversation_id: \"{ConversationId}\"",
+			askAiRequest.ConversationId?.ToString() ?? "(null - first request)"
+		);
 
-		using var request = new HttpRequestMessage(HttpMethod.Post,
-			$"{kibanaOptions.Url}/api/agent_builder/converse/async");
+		using var request = new HttpRequestMessage(HttpMethod.Post, $"{kibanaOptions.Url}/api/agent_builder/converse/async");
 		request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 		request.Headers.Add("kbn-xsrf", "true");
 		request.Headers.Authorization = new AuthenticationHeaderValue("ApiKey", kibanaOptions.ApiKey);
@@ -54,7 +57,10 @@ public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kiban
 
 		// Log response details for debugging
 		logger.LogInformation("Response Content-Type: {ContentType}", response.Content.Headers.ContentType?.ToString());
-		logger.LogInformation("Response Content-Length: {ContentLength}", response.Content.Headers.ContentLength?.ToString(CultureInfo.InvariantCulture));
+		logger.LogInformation(
+			"Response Content-Length: {ContentLength}",
+			response.Content.Headers.ContentLength?.ToString(CultureInfo.InvariantCulture)
+		);
 
 		// Agent Builder already returns SSE format, just return the stream directly
 		// The conversation ID will be extracted from the stream by the transformer

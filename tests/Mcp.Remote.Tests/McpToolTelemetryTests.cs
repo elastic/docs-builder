@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
-using AwesomeAssertions;
 
 namespace Mcp.Remote.Tests;
 
@@ -17,9 +17,11 @@ public class McpToolTelemetryTests
 	{
 		var template = "find_{scope}related_{resource}";
 		var profile = McpServerProfile.Resolve(SystemEnvironmentVariables.Instance.McpServerProfile);
-		var expected = template
-			.Replace("{resource}", profile.ResourceNoun, StringComparison.Ordinal)
-			.Replace("{scope}", profile.ScopePrefix, StringComparison.Ordinal);
+		var expected = template.Replace("{resource}", profile.ResourceNoun, StringComparison.Ordinal).Replace(
+			"{scope}",
+			profile.ScopePrefix,
+			StringComparison.Ordinal
+		);
 
 		var resolved = McpToolTelemetry.ResolveToolName(template);
 
@@ -33,12 +35,10 @@ public class McpToolTelemetryTests
 		using var activity = McpToolTelemetry.StartActivity("test_tool");
 		activity.Should().NotBeNull();
 
-		var metadata = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
-		{
-			["query"] = "cluster setup",
-			["pageNumber"] = 2,
-			["topic"] = "observability"
-		});
+		var metadata = McpToolTelemetry.SetPayloadMetadata(
+			activity,
+			new Dictionary<string, object?> { ["query"] = "cluster setup", ["pageNumber"] = 2, ["topic"] = "observability" }
+		);
 
 		metadata.ArgCount.Should().Be(3);
 		metadata.ArgKeys.Should().Be("pageNumber,query,topic");

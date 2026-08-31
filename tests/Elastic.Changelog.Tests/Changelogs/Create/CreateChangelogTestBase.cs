@@ -26,6 +26,5 @@ public abstract class CreateChangelogTestBase(ITestOutputHelper output) : Change
 		return configPath;
 	}
 
-	protected string CreateOutputDirectory() =>
-		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+	protected string CreateOutputDirectory() => FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 }

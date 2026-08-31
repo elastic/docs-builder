@@ -83,6 +83,7 @@ public sealed record BundledEntryDto
 	public string? Pr { get; set; }
 	public List<string>? Prs { get; set; }
 	public List<string>? Issues { get; set; }
+	public string? Link { get; set; }
 }
 
 /// <summary>

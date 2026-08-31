@@ -43,20 +43,23 @@ internal sealed class ContentSourceCommands(
 	/// <param name="repository">Repository slug to match (e.g. <c>elastic/elasticsearch</c>).</param>
 	/// <param name="branchOrTag">Branch name or version tag to test against.</param>
 	[NoOptionsInjection]
-	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, CancellationToken ct = default)
+	public async Task<int> Match(
+		[Argument] string? repository = null,
+		[Argument] string? branchOrTag = null,
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var service = new RepositoryBuildMatchingService(logFactory, configuration, configurationContext, githubActionsService, fs);
-		serviceInvoker.AddCommand(service, (repository, branchOrTag),
-			static async (s, collector, state, ctx) =>
-			{
-				// ShouldBuild emits GitHub Actions outputs to drive conditional CI steps;
-				// exit code is always 0 — the bool result is communicated via those outputs, not the process exit.
-				_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag, ctx);
-				return true;
-			});
+		serviceInvoker.AddCommand(service, (repository, branchOrTag), static async (s, collector, state, ctx) =>
+		{
+			// ShouldBuild emits GitHub Actions outputs to drive conditional CI steps;
+			// exit code is always 0 — the bool result is communicated via those outputs, not the process exit.
+			_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag, ctx);
+			return true;
+		});
 
 		return await serviceInvoker.InvokeAsync(ct);
 	}

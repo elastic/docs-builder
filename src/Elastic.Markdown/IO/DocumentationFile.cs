@@ -34,14 +34,24 @@ public abstract record DocumentationFile
 	public IFileInfo SourceFile { get; }
 }
 
-public record ImageFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository, string MimeType = "image/png")
-	: DocumentationFile(SourceFile, RootPath, Repository);
+public record ImageFile(
+	IFileInfo SourceFile,
+	IDirectoryInfo RootPath,
+	string Repository,
+	string MimeType = "image/png"
+) : DocumentationFile(SourceFile, RootPath, Repository);
 
-public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository)
-	: DocumentationFile(SourceFile, RootPath, Repository);
+public record ExcludedFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository) : DocumentationFile(
+	SourceFile,
+	RootPath,
+	Repository
+);
 
-public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository)
-	: DocumentationFile(SourceFile, RootPath, Repository)
+public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string Repository) : DocumentationFile(
+	SourceFile,
+	RootPath,
+	Repository
+)
 {
 	private SnippetAnchors? Anchors { get; set; }
 	private bool _parsed;
@@ -62,7 +72,15 @@ public record SnippetFile(IFileInfo SourceFile, IDirectoryInfo RootPath, string 
 		}
 
 		var document = parser.MinimalParseAsync(SourceFile, default).GetAwaiter().GetResult();
-		var toc = MarkdownFile.GetAnchors(collector, documentationFileLookup, parser, frontMatter, document, new Dictionary<string, string>(), out var anchors);
+		var toc = MarkdownFile.GetAnchors(
+			collector,
+			documentationFileLookup,
+			parser,
+			frontMatter,
+			document,
+			new Dictionary<string, string>(),
+			out var anchors
+		);
 		Anchors = new SnippetAnchors(anchors, toc);
 		_parsed = true;
 		return Anchors;

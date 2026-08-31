@@ -24,9 +24,7 @@ public static class OpenApiExtensionReader
 {
 	/// <summary>Reads a string-valued extension; null when absent or not a string.</summary>
 	public static string? TryGetString(IDictionary<string, IOpenApiExtension>? extensions, string key) =>
-		extensions?.TryGetValue(key, out var value) == true && value is JsonNodeExtension json
-			? json.Node.GetValue<string>()
-			: null;
+		extensions?.TryGetValue(key, out var value) == true && value is JsonNodeExtension json ? json.Node.GetValue<string>() : null;
 
 	/// <summary>The <c>x-namespace</c> and <c>x-api-name</c> pair used to group operations into endpoints.</summary>
 	public static (string? Namespace, string? ApiName) GetNamespaceAndApiName(OpenApiOperation operation) =>
@@ -35,9 +33,10 @@ public static class OpenApiExtensionReader
 	/// <summary>Whether the operation is marked <c>x-beta: true</c>.</summary>
 	public static bool IsBeta(OpenApiOperation operation) =>
 		operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true
-		&& betaValue is JsonNodeExtension betaExtension
-		&& betaExtension.Node is JsonValue betaJsonValue
-		&& betaJsonValue.TryGetValue<bool>(out var betaFlag) && betaFlag;
+			&& betaValue is JsonNodeExtension betaExtension
+			&& betaExtension.Node is JsonValue betaJsonValue
+			&& betaJsonValue.TryGetValue<bool>(out var betaFlag)
+			&& betaFlag;
 
 	/// <summary>Parses the document-level <c>x-tagGroups</c> extension; null when absent or empty.</summary>
 	public static XTagGroups? ParseXTagGroups(OpenApiDocument openApiDocument)
@@ -127,9 +126,11 @@ public static class OpenApiExtensionReader
 	/// </summary>
 	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation)
 	{
-		if (operation.Extensions?.TryGetValue("x-codeSamples", out var ext) != true
+		if (
+			operation.Extensions?.TryGetValue("x-codeSamples", out var ext) != true
 			|| ext is not JsonNodeExtension jsonExt
-			|| jsonExt.Node is not JsonArray samplesArray)
+			|| jsonExt.Node is not JsonArray samplesArray
+		)
 			return [];
 
 		var samples = new List<CodeSample>();

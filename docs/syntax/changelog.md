@@ -221,6 +221,16 @@ The CDN base URL is build configuration, not authored per page: it defaults to t
 
 Bundles are fetched **once at build startup** for every declared product, not per directive. If a declared product's registry cannot be fetched the build fails; an individual bundle that is missing from the CDN is skipped with a warning. For the full design — including the manifest format and infrastructure — see [Changelog bundle registry and CDN delivery](/development/changelog-bundle-registry.md).
 
+##### Unreleased-version visibility [unreleased-version-visibility]
+
+Prestage products commit and upload their release bundles **before** release day, so the CDN can hold bundles for versions that are not yet released. CDN-mode rendering filters those out based on the build's content source:
+
+- On **production** (the `current` content source), a bundle whose target version is newer than the product's current release in `versions.yml` is hidden (with a hint diagnostic).
+- On **staging** (the `next` content source), staged bundles remain visible, enabling pre-release review.
+- Local and isolated builds render everything.
+
+The `versions.yml` bump on release day automatically makes staged bundles visible on production. Products without a semver versioning system (date-based targets such as `cloud-serverless`) are never filtered.
+
 ##### Declaring CDN-backed products [declaring-cdn-backed-products]
 
 List each CDN-sourced product under `release_notes` in `docset.yml`. Every entry must reference a product ID from `products.yml` that participates in the release notes system:
@@ -421,7 +431,7 @@ This prevents silent data loss where changelog entries would be quietly omitted 
 
 To fix this, re-create the bundle with `docs-builder changelog bundle` so every entry is embedded.
 
-`bundle-amend --remove` only applies when the source changelog file is still available (for example, to drop an entry from the effective bundle before you delete the file with `changelog remove`).
+`bundle-amend --remove` excludes an entry from the effective bundle. When the changelog exists on the CDN (or still on disk), the command matches it by file name and checksum. Use `--force` to match by file name only when the checksum differs or no YAML can be sourced.
 
 ## Example
 

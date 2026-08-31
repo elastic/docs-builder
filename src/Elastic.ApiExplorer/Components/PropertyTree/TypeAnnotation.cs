@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 /// <summary>

@@ -22,8 +22,7 @@ public static partial class ContentHash
 	/// Collapses all whitespace runs to a single space, trims, then hashes.
 	/// Ensures that whitespace-only changes do not produce a different hash.
 	/// </summary>
-	public static string CreateNormalized(string content) =>
-		Create(WhitespaceRuns().Replace(content.Trim(), " "));
+	public static string CreateNormalized(string content) => Create(WhitespaceRuns().Replace(content.Trim(), " "));
 
 	[GeneratedRegex(@"\s+")]
 	private static partial Regex WhitespaceRuns();

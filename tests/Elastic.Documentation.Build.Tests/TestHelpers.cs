@@ -27,14 +27,16 @@ public static class TestHelpers
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
 		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null)
+		ProductsConfiguration? productsConfiguration = null
+	)
 	{
 		versionsConfiguration ??= new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Stack, new VersioningSystem
+					VersioningSystemId.Stack,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
 						Current = new SemVersion(8, 0, 0),
@@ -49,7 +51,8 @@ public static class TestHelpers
 			var products = new Dictionary<string, Product>
 			{
 				{
-					"elasticsearch", new Product
+					"elasticsearch",
+					new Product
 					{
 						Id = "elasticsearch",
 						DisplayName = "Elasticsearch",
@@ -68,10 +71,7 @@ public static class TestHelpers
 		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
-			Endpoints = new DocumentationEndpoints
-			{
-				Elasticsearch = ElasticsearchEndpoint.Default,
-			},
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem(fileSystem)),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
@@ -90,7 +90,8 @@ public sealed class ScopedTempDirectory : IDisposable
 	public ScopedTempDirectory(IFileSystem fileSystem, string prefix)
 	{
 		Directory = fileSystem.DirectoryInfo.New(
-			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-temp", $"{prefix}-{Guid.NewGuid():N}"));
+			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-temp", $"{prefix}-{Guid.NewGuid():N}")
+		);
 		Directory.Create();
 	}
 
@@ -157,6 +158,11 @@ public class TestLogger(ITestOutputHelper? output) : ILogger
 {
 	public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 	public bool IsEnabled(LogLevel logLevel) => true;
-	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-		output?.WriteLine($"[{logLevel}] {formatter(state, exception)}");
+	public void Log<TState>(
+		LogLevel logLevel,
+		EventId eventId,
+		TState state,
+		Exception? exception,
+		Func<TState, Exception?, string> formatter
+	) => output?.WriteLine($"[{logLevel}] {formatter(state, exception)}");
 }

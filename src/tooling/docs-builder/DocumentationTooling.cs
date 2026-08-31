@@ -26,7 +26,8 @@ public static class DocumentationTooling
 {
 	public static TBuilder AddDocumentationToolingDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
 	{
-		_ = builder.Services
+		_ = builder
+			.Services
 			.AddGitHubActionsCore()
 			.AddSingleton<IEnvironmentVariables>(SystemEnvironmentVariables.Instance)
 			.AddSingleton<DiagnosticsChannel>()

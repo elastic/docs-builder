@@ -267,9 +267,7 @@ public record ServerlessProjectApplicability
 	/// <c>serverless: ga</c> expands to Elasticsearch, Observability, Security, and Vector Database.
 	/// </summary>
 	public AppliesCollection? AllProjects =>
-		Elasticsearch == Observability && Observability == Security && Security == VectorDatabase
-			? Elasticsearch
-			: null;
+		Elasticsearch == Observability && Observability == Security && Security == VectorDatabase ? Elasticsearch : null;
 
 	public static ServerlessProjectApplicability All { get; } = new()
 	{

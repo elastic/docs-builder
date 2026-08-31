@@ -68,6 +68,16 @@ narrowed reconciliation to the bundle tree):
   exclusively by the scrubber Lambda's `BundleRegistryReconciler`. This is the manifest the
   `{changelog}` directive and external CDN consumers enumerate, and the subject of the rest of
   this page.
+- **Amend-notes sidecars** — `bundle/{product}/{parent}.amend-notes.yaml`, also **public bucket
+  only**, authored by the scrubber Lambda's `NoteAmendReconciler`. When a note is uploaded after
+  its release bundle has already shipped, the reconciler generates one aggregate sidecar per
+  published bundle that lists all such late notes. The Lambda rebuilds it from current state on
+  every reconcile, so redelivered events never produce duplicate amends. The `.amend-notes` suffix
+  is **reserved** — do not create files with that suffix manually; see
+  [](/cli/changelog/bundle-amend.md).
+- **Notes index** — `changelog/{org}/{repo}/notes-{version}.json`, one per version, **public
+  bucket only**, produced by the scrubber Lambda's `NotesIndexReconciler`. See
+  [Notes-index format](#notes-index-format) below.
 - **Changelog-entry index** — `changelog/{org}/{repo}/{branch}/registry.json`, a **legacy
   client-authored pass-through**: the current `changelog upload` never writes one, but manifests
   written by older CLI versions are still mirrored verbatim from the private bucket, because
@@ -109,6 +119,35 @@ registry 404 means "unpublished" and is a fail-fast error for declared consumers
 for a product that was declared under `release_notes` but never published — the signal to
 remove the declaration), while a manifest with an empty `bundles` list would read as a valid
 zero-bundle state. The reconciler deliberately restores the former.
+
+## Notes-index format [notes-index-format]
+
+For each release version that has at least one note, the scrubber Lambda writes a notes index at
+`changelog/{org}/{repo}/notes-{version}.json`. Its schema (`schema_version: 1`):
+
+```json
+{
+  "schema_version": 1,
+  "notes": [
+    { "path": "main/note-esql-oom.yml", "bundle_seq": 2 },
+    { "path": "main/note-cve-2026-1234.yml", "bundle_seq": 1 }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `schema_version` | Schema version. Currently `1`. |
+| `notes[].path` | Pool-relative path of the note within `changelog/{org}/{repo}/`. The leading segment before the first `/` is the branch. |
+| `notes[].bundle_seq` | Derived reporting field: `0` = no bundle published for this version yet, `1` = note shipped in the original bundle, `2` = note carried by the Lambda-generated `.amend-notes` sidecar. |
+
+`bundle_seq` is derived — it is never authored and never a latch. The Lambda recomputes it on every
+reconcile by comparing the notes index against the set of entries in the published bundle and its
+amend sidecars.
+
+A 404 on a notes index means "no notes published for this version". An empty `notes` array never
+appears — the index is deleted rather than emptied, following the same
+[absent ≠ empty](#absent-empty) rule as the bundle registry.
 
 ## Shallow per-tree change maps [shallow-maps]
 

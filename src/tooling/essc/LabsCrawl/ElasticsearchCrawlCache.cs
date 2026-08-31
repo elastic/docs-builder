@@ -8,18 +8,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.SiteSearch.Cli.LabsCrawl;
 
-public class ElasticsearchCrawlCache(
-	ILogger<ElasticsearchCrawlCache> logger,
-	DistributedTransport transport
-)
+public class ElasticsearchCrawlCache(ILogger<ElasticsearchCrawlCache> logger, DistributedTransport transport)
 {
 	private const int BatchSize = 10000;
 	private const string PitKeepAlive = "5m";
 
-	private static readonly string[] CacheSourceIncludes =
-	[
-		"path", "hash", "last_updated", "http.etag", "http.last_modified"
-	];
+	private static readonly string[] CacheSourceIncludes = ["path", "hash", "last_updated", "http.etag", "http.last_modified"];
 
 	public async Task<bool> IndexExistsAsync(string indexAlias, CancellationToken ct = default)
 	{
@@ -38,7 +32,8 @@ public class ElasticsearchCrawlCache(
 	public async Task<Dictionary<string, CachedDocInfo>> LoadCacheAsync(
 		string indexAlias,
 		IProgress<(int loaded, string? currentUrl)>? progress = null,
-		CancellationToken ct = default)
+		CancellationToken ct = default
+	)
 	{
 		var cache = new Dictionary<string, CachedDocInfo>(StringComparer.OrdinalIgnoreCase);
 
@@ -51,11 +46,12 @@ public class ElasticsearchCrawlCache(
 					Index = indexAlias,
 					Size = BatchSize,
 					KeepAlive = PitKeepAlive,
-					Sort = /*lang=json,strict*/ """{"path":"asc"}""",
+					Sort = /*lang=json,strict*/  """{"path":"asc"}""",
 					SourceIncludes = CacheSourceIncludes,
 					Slices = 1
 				},
-				CachingJsonContext.Default.Options);
+				CachingJsonContext.Default.Options
+			);
 
 			var loaded = 0;
 			await foreach (var page in search.SearchPagesAsync(ct))
@@ -70,7 +66,8 @@ public class ElasticsearchCrawlCache(
 						src.Hash ?? string.Empty,
 						src.LastUpdated ?? DateTimeOffset.MinValue,
 						src.Http?.Etag,
-						src.Http?.LastModified);
+						src.Http?.LastModified
+					);
 
 					loaded++;
 					progress?.Report((loaded, src.Path));

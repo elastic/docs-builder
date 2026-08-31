@@ -6,11 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Elastic.SiteSearch.Cli.LabsCrawl;
 
-[JsonSourceGenerationOptions(
-	WriteIndented = false,
-	PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
-	DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-)]
+[JsonSourceGenerationOptions(WriteIndented = false, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(SourceDocument))]
 internal sealed partial class CachingJsonContext : JsonSerializerContext;
 

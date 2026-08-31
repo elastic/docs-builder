@@ -32,8 +32,7 @@ public class TocItemCollectionYamlConverter : IYamlTypeConverter
 		return collection;
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
-		serializer.Invoke(value, type);
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }
 
 public class TocItemYamlConverter : IYamlTypeConverter
@@ -121,12 +120,16 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		{
 			var glob = dictionary.TryGetValue("glob", out var globObj) && globObj is string globStr ? globStr : null;
 			var extension = dictionary.TryGetValue("extension", out var extObj) && extObj is string extStr ? extStr : null;
-			var groups = dictionary.TryGetValue("groups", out var groupsObj) && groupsObj is string[] groupsArr ? (IReadOnlyCollection<string>)groupsArr : null;
+			var groups = dictionary.TryGetValue("groups", out var groupsObj) && groupsObj is string[] groupsArr
+				? (IReadOnlyCollection<string>)groupsArr
+				: null;
 			var listingVisual = ListingVisual.None;
 			if (dictionary.TryGetValue("visual", out var visualObj) && visualObj is string visualStr)
 				_ = ListingVisualExtensions.TryParse(visualStr, out listingVisual);
-			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
-				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			var island = dictionary.TryGetValue("island", out var islandObj)
+				&& islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool)
+				&& islandBool;
 			// Reuse the already-captured sort and exclude variables from the outer scope
 			var options = new ListingOptions(glob, sort, exclude, listingVisual, groups, extension, island);
 			return new ListingRef(listing, listing, children, placeholderContext, options);
@@ -138,16 +141,32 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		{
 			var supplementalFolder = dictionary.TryGetValue("folder", out var f) && f is string fStr ? fStr : null;
 			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
-			var navigationTitle = dictionary.TryGetValue("navigation_title", out var nt) && nt is string navigationTitleStr ? navigationTitleStr : null;
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var nt) && nt is string navigationTitleStr
+				? navigationTitleStr
+				: null;
 			var appliesTo = dictionary.TryGetValue("applies_to", out var at) && at is ApplicableTo a ? a : null;
-			return new CliReferenceRef(cliSchema, supplementalFolder, title, navigationTitle, cliSchema, cliSchema, placeholderContext, children, appliesTo);
+			return new CliReferenceRef(
+				cliSchema,
+				supplementalFolder,
+				title,
+				navigationTitle,
+				cliSchema,
+				cliSchema,
+				placeholderContext,
+				children,
+				appliesTo
+			);
 		}
 
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
 		// This represents a folder with a specific index file
 		// The file becomes a child of the folder (as FolderIndexFileRef), and user-specified children follow
-		if (dictionary.TryGetValue("folder", out var folderPath) && folderPath is string folder &&
-			dictionary.TryGetValue("file", out var filePath) && filePath is string file)
+		if (
+			dictionary.TryGetValue("folder", out var folderPath)
+			&& folderPath is string folder
+			&& dictionary.TryGetValue("file", out var filePath)
+			&& filePath is string file
+		)
 		{
 			// Create the index file reference (FolderIndexFileRef to mark it as the folder's index)
 			// Store ONLY the file name - the folder path will be prepended during resolution
@@ -164,24 +183,48 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			// PathRelativeToContainer will be set during resolution
 			return new FolderRef(folder, folder, folderChildren, placeholderContext, sort, exclude);
 		}
-		if (dictionary.TryGetValue("detection_rules", out var detectionRulesObj) && detectionRulesObj is string[] detectionRulesFolders &&
-			dictionary.TryGetValue("file", out var detectionRulesFilePath) && detectionRulesFilePath is string detectionRulesFile)
+		if (
+			dictionary.TryGetValue("detection_rules", out var detectionRulesObj)
+			&& detectionRulesObj is string[] detectionRulesFolders
+			&& dictionary.TryGetValue("file", out var detectionRulesFilePath)
+			&& detectionRulesFilePath is string detectionRulesFile
+		)
 		{
-			var deprecatedFile = dictionary.TryGetValue("deprecated_file", out var deprecatedFileObj) && deprecatedFileObj is string df ? df : null;
-			return new DetectionRuleOverviewRef(detectionRulesFile, detectionRulesFile, detectionRulesFolders, children, placeholderContext, deprecatedFile);
+			var deprecatedFile = dictionary.TryGetValue("deprecated_file", out var deprecatedFileObj) && deprecatedFileObj is string df
+				? df
+				: null;
+			return new DetectionRuleOverviewRef(
+				detectionRulesFile,
+				detectionRulesFile,
+				detectionRulesFolders,
+				children,
+				placeholderContext,
+				deprecatedFile
+			);
 		}
 
 		// Check for file reference (file: or hidden:)
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
 		{
-			return fileOnly == "index.md"
-				? new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext)
-				: new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
+			if (fileOnly == "index.md")
+				return new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext);
+
+			// Sugar: childless "file: subdir/index.md" → single-page folder, so it isn't silently dropped competing for the parent's index slot.
+			if (children.Count == 0 && fileOnly.EndsWith("/index.md", StringComparison.Ordinal))
+			{
+				var indexFolderPath = fileOnly[..^"/index.md".Length];
+				var indexFile = new FolderIndexFileRef("index.md", "index.md", false, [], placeholderContext);
+				return new DeepLinkedFolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext);
+			}
+
+			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
 		}
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
-			return p == "index.md" ? new IndexFileRef(p, p, true, children, placeholderContext) : new FileRef(p, p, true, children, placeholderContext);
+			return p == "index.md"
+				? new IndexFileRef(p, p, true, children, placeholderContext)
+				: new FileRef(p, p, true, children, placeholderContext);
 
 		// Check for crosslink reference
 		if (dictionary.TryGetValue("crosslink", out var crosslink) && crosslink is string crosslinkStr)
@@ -200,8 +243,10 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string source)
 		{
-			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
-				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			var island = dictionary.TryGetValue("island", out var islandObj)
+				&& islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool)
+				&& islandBool;
 			return new IsolatedTableOfContentsRef(source, source, children, placeholderContext, island);
 		}
 
@@ -220,6 +265,5 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		return [];
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
-		serializer.Invoke(value, type);
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }

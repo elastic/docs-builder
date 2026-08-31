@@ -124,20 +124,22 @@ public class GroupNavigationTests
 	private static CodexNavigation CreateMinimalCodexNavigation()
 	{
 		// Create a minimal codex navigation for testing GroupLinkLeaf
-		var config = new Documentation.Configuration.Codex.CodexConfiguration
-		{
-			Title = "Test Codex",
-			SitePrefix = "/docs"
-		};
+		var config = new Documentation.Configuration.Codex.CodexConfiguration { Title = "Test Codex", SitePrefix = "/docs" };
 
-		return new CodexNavigation(config, [], new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
+		return new CodexNavigation(
+			config,
+			[],
+			new MinimalCodexContext(),
+			new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>()
+		);
 	}
 
 	private sealed class MinimalCodexContext : ICodexDocumentationContext
 	{
 		private readonly System.IO.Abstractions.TestingHelpers.MockFileSystem _fs = new();
 		public System.IO.Abstractions.IFileInfo ConfigurationPath => _fs.FileInfo.New("/codex.yml");
-		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector => new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
+		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector =>
+			new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
 		public DocumentationWriteFileSystem WriteFileSystem => new(_fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, _fs);
 		public System.IO.Abstractions.IDirectoryInfo OutputDirectory => _fs.DirectoryInfo.New("/output");
 		public BuildType BuildType => BuildType.Codex;

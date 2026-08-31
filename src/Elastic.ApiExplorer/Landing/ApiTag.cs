@@ -19,7 +19,8 @@ public record ApiTag(
 	string Description,
 	ApiTagExternalDoc? ExternalDocs,
 	string TagUrlSegment,
-	IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
+	IReadOnlyCollection<ApiEndpoint> Endpoints
+) : IApiGroupingModel
 {
 	/// <inheritdoc />
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)

@@ -35,8 +35,6 @@ public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context)
 		if (!string.IsNullOrEmpty(separator))
 			Separator = separator;
 
-
-
 		ExtractCsvPath(context);
 	}
 

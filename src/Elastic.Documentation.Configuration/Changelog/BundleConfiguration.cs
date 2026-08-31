@@ -86,12 +86,13 @@ public record BundleProfile
 	public string? Products { get; init; }
 
 	/// <summary>
-	/// Output filename pattern.
-	/// {version} is substituted at runtime.
-	/// Examples:
-	/// - "elasticsearch-{version}.yaml"
-	/// - "serverless-{version}.yaml"
+	/// Legacy output filename pattern. No longer supported: bundle output names are derived by
+	/// convention as <c>{product}-{version}.yaml</c> from the profile's primary output product
+	/// (elastic/docs-builder#3774). Any profile setting this is a hard error at bundle time; the
+	/// field remains parseable for one release cycle so authors get an actionable error rather
+	/// than a YAML parse failure.
 	/// </summary>
+	[Obsolete("No longer supported: bundle output names are derived by convention as '{product}-{version}.yaml' from the profile's output_products. Setting 'output' is a hard error at bundle time.")]
 	public string? Output { get; init; }
 
 	/// <summary>

@@ -172,7 +172,6 @@ internal sealed class BloomFilter
 		return filter;
 	}
 
-
 	// --- Optimal Parameter Calculation ---
 
 	/// <summary>

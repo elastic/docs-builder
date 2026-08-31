@@ -25,8 +25,7 @@ public class BreakingChangesAsciidocRenderer(StringBuilder sb) : AsciidocRendere
 		foreach (var group in groupedEntries)
 		{
 			// Check if all entries in this group are hidden
-			var allEntriesHidden = group.All(entry =>
-				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+			var allEntriesHidden = group.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 			if (context.Subsections && !string.IsNullOrWhiteSpace(group.Key))
 			{

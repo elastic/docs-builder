@@ -38,15 +38,13 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 		if (bracketEnd < 0)
 			return new HtmlString(html.EnsureTrimmed());
 
-		var colgroup = "<colgroup>" +
-			string.Join("", ColumnWidths.Select(w => string.Format(CultureInfo.InvariantCulture, "<col style=\"width:{0:F2}%\">", w))) +
-			"</colgroup>";
+		var colgroup = "<colgroup>"
+			+ string.Join("", ColumnWidths.Select(w => string.Format(CultureInfo.InvariantCulture, "<col style=\"width:{0:F2}%\">", w)))
+			+ "</colgroup>";
 
 		var openingTag = html[tableIndex..bracketEnd];
 		var hasTableLayout = openingTag.Contains("table-layout", StringComparison.OrdinalIgnoreCase);
-		var newOpening = hasTableLayout
-			? openingTag + ">"
-			: AppendTableLayoutFixed(openingTag);
+		var newOpening = hasTableLayout ? openingTag + ">" : AppendTableLayoutFixed(openingTag);
 		var result = html[..tableIndex] + newOpening + colgroup + html[(bracketEnd + 1)..];
 
 		return new HtmlString(result.EnsureTrimmed());
@@ -79,7 +77,10 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 			var existingStyle = styleMatch.Groups[1].Value.TrimEnd();
 			var separator = string.IsNullOrEmpty(existingStyle) ? "" : "; ";
 			var newStyle = existingStyle + separator + "table-layout:fixed";
-			return openingTag[..styleMatch.Groups[1].Index] + newStyle + openingTag[(styleMatch.Groups[1].Index + styleMatch.Groups[1].Length)..] + ">";
+			return openingTag[..styleMatch.Groups[1].Index]
+				+ newStyle
+				+ openingTag[(styleMatch.Groups[1].Index + styleMatch.Groups[1].Length)..]
+				+ ">";
 		}
 
 		return openingTag + " style=\"table-layout:fixed\">";

@@ -21,7 +21,8 @@ internal static class CodexConfigurationLoader
 		string originalPath,
 		IDiagnosticsCollector collector,
 		out CodexConfiguration config,
-		out string environment)
+		out string environment
+	)
 	{
 		environment = string.Empty;
 		if (!TryLoadCore(configFile, originalPath, collector, out config))
@@ -29,8 +30,7 @@ internal static class CodexConfigurationLoader
 
 		if (string.IsNullOrWhiteSpace(config.Environment))
 		{
-			collector.EmitGlobalError(
-				"Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
 			return false;
 		}
 
@@ -46,14 +46,15 @@ internal static class CodexConfigurationLoader
 		IFileInfo configFile,
 		string originalPath,
 		IDiagnosticsCollector collector,
-		out CodexConfiguration config) =>
-		TryLoadCore(configFile, originalPath, collector, out config);
+		out CodexConfiguration config
+	) => TryLoadCore(configFile, originalPath, collector, out config);
 
 	private static bool TryLoadCore(
 		IFileInfo configFile,
 		string originalPath,
 		IDiagnosticsCollector collector,
-		out CodexConfiguration config)
+		out CodexConfiguration config
+	)
 	{
 		config = default!;
 		try
@@ -69,8 +70,7 @@ internal static class CodexConfigurationLoader
 		}
 		catch (Exception ex)
 		{
-			collector.EmitGlobalError(
-				$"Failed to read codex configuration '{originalPath}': {ex.Message}", ex);
+			collector.EmitGlobalError($"Failed to read codex configuration '{originalPath}': {ex.Message}", ex);
 			return false;
 		}
 	}

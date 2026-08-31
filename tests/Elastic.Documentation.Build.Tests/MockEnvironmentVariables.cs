@@ -43,12 +43,10 @@ public class MockEnvironmentVariables : IEnvironmentVariables
 	}
 
 	/// <inheritdoc />
-	public string? GetEnvironmentVariable(string name) =>
-		_variables.TryGetValue(name, out var value) ? value : null;
+	public string? GetEnvironmentVariable(string name) => _variables.TryGetValue(name, out var value) ? value : null;
 
 	/// <inheritdoc />
-	public bool IsRunningOnCI =>
-		!string.IsNullOrEmpty(GetEnvironmentVariable("GITHUB_ACTIONS"));
+	public bool IsRunningOnCI => !string.IsNullOrEmpty(GetEnvironmentVariable("GITHUB_ACTIONS"));
 
 	/// <summary>
 	/// Creates a mock environment that simulates running on CI.

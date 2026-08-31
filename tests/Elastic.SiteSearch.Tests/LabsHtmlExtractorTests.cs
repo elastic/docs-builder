@@ -17,7 +17,8 @@ public class LabsHtmlExtractorTests
 	/// boilerplate that should be stripped: CTA banner, feedback widget, share
 	/// buttons, and related-content cards.
 	/// </summary>
-	private const string SynonymsHtml = """
+	private const string SynonymsHtml =
+		"""
 		<!DOCTYPE html>
 		<html>
 		<head>
@@ -85,8 +86,14 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Url_Uses_Path_When_Absolute_Uri()
 	{
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/elasticsearch-synonyms-ui", SynonymsHtml, null, "en", "search-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/search-labs/blog/elasticsearch-synonyms-ui",
+			SynonymsHtml,
+			null,
+			"en",
+			"search-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.Path.Should().Be("/search-labs/blog/elasticsearch-synonyms-ui");
@@ -95,8 +102,14 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Url_Strips_Query_And_Fragment()
 	{
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/post?utm=foo#section", SynonymsHtml, null, "en", "search-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/search-labs/blog/post?utm=foo#section",
+			SynonymsHtml,
+			null,
+			"en",
+			"search-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.Path.Should().Be("/search-labs/blog/post");
@@ -105,8 +118,14 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Extracts_Title_And_Headings()
 	{
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/elasticsearch-synonyms-ui", SynonymsHtml, null, "en", "search-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/search-labs/blog/elasticsearch-synonyms-ui",
+			SynonymsHtml,
+			null,
+			"en",
+			"search-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("How to use the Synonyms UI");
@@ -121,8 +140,14 @@ public class LabsHtmlExtractorTests
 			<html><head></head><body><main><p>No title here</p></main></body></html>
 			""";
 
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/no-title", html, null, "en", "search-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/search-labs/blog/no-title",
+			html,
+			null,
+			"en",
+			"search-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().BeNull();
 	}
@@ -203,7 +228,8 @@ public class LabsHtmlExtractorTests
 	/// entirely from the article's own headline - e.g. "ES|QL Kibana: The ES|QL editor experience
 	/// in Kibana" (og:title) vs. "Improving the ES|QL editor experience in Kibana" (h1).
 	/// </summary>
-	private const string EsqlEditorHtml = """
+	private const string EsqlEditorHtml =
+		"""
 		<!DOCTYPE html>
 		<html>
 		<head>
@@ -224,8 +250,14 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Title_Prefers_Article_Heading_Over_Seo_Title()
 	{
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/improving-esql-editor-experience-in-kibana", EsqlEditorHtml, null, "en", "search-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/search-labs/blog/improving-esql-editor-experience-in-kibana",
+			EsqlEditorHtml,
+			null,
+			"en",
+			"search-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Improving the ES|QL editor experience in Kibana");
@@ -236,8 +268,14 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Abstract_Folds_In_Description_Without_Heading_Brackets()
 	{
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/improving-esql-editor-experience-in-kibana", EsqlEditorHtml, null, "en", "search-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/search-labs/blog/improving-esql-editor-experience-in-kibana",
+			EsqlEditorHtml,
+			null,
+			"en",
+			"search-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.Summary.Should().StartWith("With the new ES|QL language becoming GA");
@@ -248,12 +286,20 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Root_Overview_Title_Gets_No_Redundant_SearchTitle_Suffix()
 	{
-		const string html = """
+		const string html =
+			"""
 			<html><head><title>Search Labs | Elastic</title></head>
 			<body><main><h1>Search Labs</h1><p>Technical content from the team behind Elasticsearch.</p></main></body></html>
 			""";
 
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs", html, null, "en", "search-labs", TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/search-labs",
+			html,
+			null,
+			"en",
+			"search-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Search Labs");
@@ -261,7 +307,8 @@ public class LabsHtmlExtractorTests
 		doc.Navigation.TableOfContents.Should().Be(10); // depth <= 1 → 10
 	}
 
-	private const string TagListingHtml = """
+	private const string TagListingHtml =
+		"""
 		<html>
 		<head><title>google-cloud | Observability Labs | Elastic</title></head>
 		<body>
@@ -283,14 +330,24 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Tag_Listing_Gets_Clean_Title_And_Static_Description()
 	{
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/observability-labs/blog/tag/google-cloud", TagListingHtml, null, "en", "observability-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/observability-labs/blog/tag/google-cloud",
+			TagListingHtml,
+			null,
+			"en",
+			"observability-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Articles tagged with 'Google Cloud'");
-		doc.Description.Should().Be(
-			"Recent Observability Labs articles tagged google-cloud. A curated listing of Observability " +
-			"Labs blog posts, tutorials, and articles about google-cloud.");
+		doc
+			.Description
+			.Should()
+			.Be(
+				"Recent Observability Labs articles tagged google-cloud. A curated listing of Observability " +
+					"Labs blog posts, tutorials, and articles about google-cloud."
+			);
 		doc.Summary.Should().Be(doc.Description);
 		doc.Body.Should().BeEmpty();
 		doc.Headings.Should().BeEmpty();
@@ -299,8 +356,14 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Tag_Listing_Uses_Most_Recent_Article_Date_As_Published_Date()
 	{
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/observability-labs/blog/tag/google-cloud", TagListingHtml, null, "en", "observability-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/observability-labs/blog/tag/google-cloud",
+			TagListingHtml,
+			null,
+			"en",
+			"observability-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.PublishedDate.Should().Be(DateTimeOffset.Parse("2025-08-15T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
@@ -309,8 +372,14 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Tag_Listing_NavigationTableOfContents_Is_Not_Penalized_By_Missing_Headings()
 	{
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/observability-labs/blog/tag/google-cloud", TagListingHtml, null, "en", "observability-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/observability-labs/blog/tag/google-cloud",
+			TagListingHtml,
+			null,
+			"en",
+			"observability-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		// 4 URL tokens (observability-labs, blog, tag, google-cloud) → depth > 1 → 100
@@ -320,21 +389,32 @@ public class LabsHtmlExtractorTests
 	[Fact]
 	public async Task Author_Listing_Gets_Clean_Title_And_Static_Description()
 	{
-		const string html = """
+		const string html =
+			"""
 			<html>
 			<head><title>Elastic Security Labs | Security Labs | Elastic</title></head>
 			<body><main><h1>Elastic Security Labs</h1></main></body>
 			</html>
 			""";
 
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/security-labs/author/elastic-security-labs", html, null, "en", "security-labs"
-, TestContext.Current.CancellationToken);
+		var doc = await _extractor.ExtractAsync(
+			"https://www.elastic.co/security-labs/author/elastic-security-labs",
+			html,
+			null,
+			"en",
+			"security-labs",
+			TestContext.Current.CancellationToken
+		);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Articles written by Elastic Security Labs");
-		doc.Description.Should().Be(
-			"Articles written by Elastic Security Labs for Security Labs. A listing of Security Labs " +
-			"blog posts, tutorials, and articles authored by Elastic Security Labs.");
+		doc
+			.Description
+			.Should()
+			.Be(
+				"Articles written by Elastic Security Labs for Security Labs. A listing of Security Labs " +
+					"blog posts, tutorials, and articles authored by Elastic Security Labs."
+			);
 		doc.Body.Should().BeEmpty();
 	}
 

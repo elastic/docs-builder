@@ -17,8 +17,6 @@ public class VersionLifecycleInferenceTests
 	[InlineData("9.2.0-rc.1", "ga")]
 	[InlineData("2026-07-21", "ga")]
 	[InlineData("2025-06-01", "ga")]
-	public void InferLifecycle_InfersCorrectly(string version, string expected)
-	{
+	public void InferLifecycle_InfersCorrectly(string version, string expected) =>
 		VersionLifecycleInference.InferLifecycle(version).Should().Be(expected);
-	}
 }

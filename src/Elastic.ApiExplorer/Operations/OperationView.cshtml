@@ -92,17 +92,17 @@
 						}
 					</a>
 				</dt>
-				<dd>@Model.RenderMarkdown(path.Description)</dd>
+				<dd>@path.DescriptionHtml</dd>
 			</div>
 		}
 		</dl>
 	}
 
-	@if (!string.IsNullOrWhiteSpace(operation.Description))
+	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown))
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Description", "description", Model.Operation.Route)))
 		<p>
-			@(Model.RenderMarkdown(operation.Description))
+			@(Model.RenderMarkdown(pageModel.DescriptionMarkdown))
 		</p>
 		@if (pageModel.ExternalDocs is not null)
 		{
@@ -159,7 +159,7 @@
 							}
 						</a>
 					</dt>
-					<dd>@Model.RenderMarkdown(qs.Description)</dd>
+					<dd>@qp.DescriptionHtml</dd>
 					@if (qp.Type is not null)
 					{
 						@(await RenderPartialAsync<_ValidationConstraints, IReadOnlyList<ConstraintDisplay>>(qp.Constraints))
@@ -326,6 +326,11 @@
 	@if (pageModel.ShowResponseExamples)
 	{
 		@(await RenderPartialAsync<_ExamplesSection, ExamplesSection>(new ExamplesSection(new SectionHeader("Response Examples", "response-examples", Model.Operation.Route), pageModel.ResponseExamples)))
+	}
+	@foreach (var extra in pageModel.PostSections)
+	{
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(extra.Heading, extra.Anchor, Model.Operation.Route)))
+		<div>@extra.BodyHtml</div>
 	}
 	@if (pageModel.ExamplesAnchor != null)
 	{

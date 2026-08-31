@@ -8,8 +8,7 @@ using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Documentation.Builder.Diagnostics.LiveMode;
 
-public class LiveModeDiagnosticsCollector(ILoggerFactory logFactory)
-	: DiagnosticsCollector([new Log(logFactory.CreateLogger<Log>())])
+public class LiveModeDiagnosticsCollector(ILoggerFactory logFactory) : DiagnosticsCollector([new Log(logFactory.CreateLogger<Log>())])
 {
 	protected override void HandleItem(Diagnostic diagnostic) { }
 

@@ -31,9 +31,7 @@ public sealed class AiEnrichmentDeadline : IDisposable
 	public static AiEnrichmentDeadline Create(TimeSpan? maxWallClock, CancellationToken ct)
 	{
 		var timeoutCts = maxWallClock is { } d ? new CancellationTokenSource(d) : null;
-		var linkedCts = timeoutCts is not null
-			? CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token)
-			: null;
+		var linkedCts = timeoutCts is not null ? CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token) : null;
 		return new AiEnrichmentDeadline(timeoutCts, linkedCts, linkedCts?.Token ?? ct);
 	}
 

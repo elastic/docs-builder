@@ -77,7 +77,11 @@ public class OkfMarkdownExporterTests
 	[Fact]
 	public void RewriteLinkUrl_ExternalAbsoluteUrl_ReturnsUnchanged()
 	{
-		var rewritten = OkfMarkdownExporter.RewriteLinkUrl("https://example.com/page", urlPathPrefix: "", canonicalBaseUrl: new Uri("https://www.elastic.co"));
+		var rewritten = OkfMarkdownExporter.RewriteLinkUrl(
+			"https://example.com/page",
+			urlPathPrefix: "",
+			canonicalBaseUrl: new Uri("https://www.elastic.co")
+		);
 
 		rewritten.Should().Be("https://example.com/page");
 	}
@@ -114,7 +118,8 @@ public class OkfMarkdownExporterTests
 		var rewritten = OkfMarkdownExporter.RewriteLinkUrl(
 			"https://www.elastic.co/docs/deploy-manage/deploy#about-orchestration",
 			urlPathPrefix: "/docs",
-			canonicalBaseUrl: new Uri("https://www.elastic.co"));
+			canonicalBaseUrl: new Uri("https://www.elastic.co")
+		);
 
 		rewritten.Should().Be("/deploy-manage/deploy.md#about-orchestration");
 	}
@@ -127,7 +132,8 @@ public class OkfMarkdownExporterTests
 		var rewritten = OkfMarkdownExporter.RewriteLinkUrl(
 			"https://www.elastic.co/docs/api/some-endpoint",
 			urlPathPrefix: "/docs",
-			canonicalBaseUrl: new Uri("https://www.elastic.co"));
+			canonicalBaseUrl: new Uri("https://www.elastic.co")
+		);
 
 		rewritten.Should().Be("https://www.elastic.co/docs/api/some-endpoint");
 	}
@@ -138,7 +144,8 @@ public class OkfMarkdownExporterTests
 		var rewritten = OkfMarkdownExporter.RewriteLinkUrl(
 			"/docs/api/some-endpoint#section",
 			urlPathPrefix: "/docs",
-			canonicalBaseUrl: new Uri("https://www.elastic.co"));
+			canonicalBaseUrl: new Uri("https://www.elastic.co")
+		);
 
 		rewritten.Should().Be("https://www.elastic.co/docs/api/some-endpoint#section");
 	}
@@ -164,7 +171,8 @@ public class OkfMarkdownExporterTests
 		var rewritten = OkfMarkdownExporter.RewriteLinkUrl(
 			"https://github.com/elastic/docs-builder",
 			urlPathPrefix: "/docs",
-			canonicalBaseUrl: new Uri("https://www.elastic.co"));
+			canonicalBaseUrl: new Uri("https://www.elastic.co")
+		);
 
 		rewritten.Should().Be("https://github.com/elastic/docs-builder");
 	}
@@ -185,24 +193,16 @@ public class OkfMarkdownExporterTests
 	}
 
 	[Fact]
-	public void GetDirectory_NestedPath_ReturnsParentDirectory()
-	{
+	public void GetDirectory_NestedPath_ReturnsParentDirectory() =>
 		OkfMarkdownExporter.GetDirectory("reference/foo/bar.md").Should().Be("reference/foo");
-	}
 
 	[Fact]
-	public void GetDirectory_TopLevelFile_ReturnsEmptyString()
-	{
-		OkfMarkdownExporter.GetDirectory("overview.md").Should().Be(string.Empty);
-	}
+	public void GetDirectory_TopLevelFile_ReturnsEmptyString() => OkfMarkdownExporter.GetDirectory("overview.md").Should().Be(string.Empty);
 
 	[Fact]
 	public void RenderIndexContent_RootDirectory_DeclaresOkfVersionAndNoOtherFrontmatter()
 	{
-		var content = OkfMarkdownExporter.RenderIndexContent(
-			directory: "",
-			concepts: [],
-			subdirectories: []);
+		var content = OkfMarkdownExporter.RenderIndexContent(directory: "", concepts: [], subdirectories: []);
 
 		content.Should().StartWith("---\nokf_version: \"0.1\"\n---");
 	}
@@ -210,10 +210,7 @@ public class OkfMarkdownExporterTests
 	[Fact]
 	public void RenderIndexContent_NonRootDirectory_HasNoFrontmatter()
 	{
-		var content = OkfMarkdownExporter.RenderIndexContent(
-			directory: "reference",
-			concepts: [],
-			subdirectories: []);
+		var content = OkfMarkdownExporter.RenderIndexContent(directory: "reference", concepts: [], subdirectories: []);
 
 		content.Should().NotContain("---");
 		content.Should().NotContain("okf_version");
@@ -229,10 +226,7 @@ public class OkfMarkdownExporterTests
 			new("reference/foo.md", "Foo", "Foo description"),
 		};
 
-		var content = OkfMarkdownExporter.RenderIndexContent(
-			directory: "reference",
-			concepts: concepts,
-			subdirectories: ["reference/foo"]);
+		var content = OkfMarkdownExporter.RenderIndexContent(directory: "reference", concepts: concepts, subdirectories: ["reference/foo"]);
 
 		content.Should().Contain("# Documents");
 		content.Should().Contain("* [Bar](bar.md) - Bar description");
@@ -244,10 +238,7 @@ public class OkfMarkdownExporterTests
 	[Fact]
 	public void RenderIndexContent_SubdirectoryWithoutSiblingLandingPage_OmitsDescriptionSuffix()
 	{
-		var content = OkfMarkdownExporter.RenderIndexContent(
-			directory: "reference",
-			concepts: [],
-			subdirectories: ["reference/foo"]);
+		var content = OkfMarkdownExporter.RenderIndexContent(directory: "reference", concepts: [], subdirectories: ["reference/foo"]);
 
 		content.Should().Contain("* [foo](foo/)");
 		content.Should().NotContain("* [foo](foo/) -");

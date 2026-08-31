@@ -16,8 +16,7 @@ public class ParserTests
 	/// content direct doc.Children; `= Title` (Level 0) creates a Level-0 SectionNode wrapper.
 	/// </summary>
 	private static AsciidocDocument Parse(string content, Dictionary<string, string>? attrs = null) =>
-		new AsciidocParser(new AsciidocParserOptions { Attributes = attrs ?? [] })
-			.Parse(content, "");
+		new AsciidocParser(new AsciidocParserOptions { Attributes = attrs ?? [] }).Parse(content, "");
 
 	/// <summary>Recursively finds the first node of type T in the document tree.</summary>
 	private static T? FindFirst<T>(IEnumerable<IAsciidocNode> nodes) where T : class
@@ -27,17 +26,28 @@ public class ParserTests
 			if (node is T found)
 				return found;
 			if (node is SectionNode s)
-			{ var r = FindFirst<T>(s.Children); if (r is not null) return r; }
+			{
+				var r = FindFirst<T>(s.Children);
+				if (r is not null)
+					return r;
+			}
 			if (node is OpenBlockNode o)
-			{ var r = FindFirst<T>(o.Children); if (r is not null) return r; }
+			{
+				var r = FindFirst<T>(o.Children);
+				if (r is not null)
+					return r;
+			}
 			if (node is AdmonitionNode a)
-			{ var r = FindFirst<T>(a.Children); if (r is not null) return r; }
+			{
+				var r = FindFirst<T>(a.Children);
+				if (r is not null)
+					return r;
+			}
 		}
 		return null;
 	}
 
-	private static T? FindFirst<T>(AsciidocDocument doc) where T : class =>
-		FindFirst<T>(doc.Children);
+	private static T? FindFirst<T>(AsciidocDocument doc) where T : class => FindFirst<T>(doc.Children);
 
 	// ── Step 1: -- open blocks ────────────────────────────────────────────────
 
@@ -115,11 +125,7 @@ public class ParserTests
 	[Fact]
 	public void AttributeResolution_SeedAttributes_AreAvailable()
 	{
-		var attrs = new Dictionary<string, string>
-		{
-			["branch"] = "8.19",
-			["docs-root"] = "/work/docs-repo"
-		};
+		var attrs = new Dictionary<string, string> { ["branch"] = "8.19", ["docs-root"] = "/work/docs-repo" };
 		var content = "Branch is {branch}\n";
 		var parser = new AsciidocParser(new AsciidocParserOptions { Attributes = attrs });
 		var doc = parser.Parse(content, "");
@@ -167,11 +173,17 @@ public class ParserTests
 		// All three lines should be inside the admonition's paragraph
 		var para = admonition.Children.OfType<ParagraphNode>().FirstOrDefault();
 		para.Should().NotBeNull();
-		var allText = string.Join("", para.Inlines.Select(i => i switch
-		{
-			TextInline t => t.Text,
-			_ => ""
-		}));
+		var allText = string.Join(
+			"",
+			para.Inlines.Select(
+				i =>
+					i switch
+					{
+						TextInline t => t.Text,
+						_ => ""
+					}
+			)
+		);
 		allText.Should().Contain("First line");
 		allText.Should().Contain("Second line");
 		allText.Should().Contain("Third line");
@@ -196,15 +208,9 @@ public class ParserTests
 	[Fact]
 	public void IncludeDirective_InsideDelimitedBlock_IsResolvedWhenFileExists()
 	{
-		var files = new Dictionary<string, string>
-		{
-			["/base/inner.adoc"] = "included content"
-		};
+		var files = new Dictionary<string, string> { ["/base/inner.adoc"] = "included content" };
 		var content = "[NOTE]\n====\ninclude::inner.adoc[]\n====\n";
-		var parser = new AsciidocParser(new AsciidocParserOptions
-		{
-			FileReader = path => files.TryGetValue(path, out var c) ? c : null
-		});
+		var parser = new AsciidocParser(new AsciidocParserOptions { FileReader = path => files.TryGetValue(path, out var c) ? c : null });
 		var doc = parser.Parse(content, "/base");
 		var admonition = doc.Children.OfType<AdmonitionNode>().FirstOrDefault();
 		admonition.Should().NotBeNull();
@@ -218,7 +224,8 @@ public class ParserTests
 		// The === subsections become top-level doc.Children (not nested under a SectionNode).
 		// ProcessInclude uses a different loop that does NOT promote == to doc.Title — it creates
 		// a SectionNode — so included files behave correctly during chunking.
-		const string source = """
+		const string source =
+			"""
 			== The search API
 
 			Some intro text.
@@ -254,7 +261,8 @@ public class ParserTests
 	[Fact]
 	public void ChunkLevel2_keeps_level3_within_level2_page()
 	{
-		const string source = """
+		const string source =
+			"""
             = Book Title
 
             [[search-your-data]]
@@ -299,12 +307,14 @@ public class ParserTests
 		// - search-api.adoc includes sort-results.adoc (=== level, still chunk boundary)
 		var files = new Dictionary<string, string>
 		{
-			["/base/index.adoc"] = """
+			["/base/index.adoc"] =
+				"""
 				= Elasticsearch Guide
 
 				include::search-your-data.adoc[]
 				""",
-			["/base/search-your-data.adoc"] = """
+			["/base/search-your-data.adoc"] =
+				"""
 				[[search-with-elasticsearch]]
 				= Search your data
 
@@ -317,7 +327,8 @@ public class ParserTests
 
 				include::search-api.adoc[]
 				""",
-			["/base/search-api.adoc"] = """
+			["/base/search-api.adoc"] =
+				"""
 				[[search-your-data-api]]
 				== The search API
 
@@ -330,7 +341,8 @@ public class ParserTests
 
 				include::sort-results.adoc[]
 				""",
-			["/base/sort-results.adoc"] = """
+			["/base/sort-results.adoc"] =
+				"""
 				[[sort-results]]
 				=== Sort search results
 
@@ -338,10 +350,7 @@ public class ParserTests
 				""",
 		};
 
-		var parser = new AsciidocParser(new AsciidocParserOptions
-		{
-			FileReader = path => files.TryGetValue(path, out var c) ? c : null
-		});
+		var parser = new AsciidocParser(new AsciidocParserOptions { FileReader = path => files.TryGetValue(path, out var c) ? c : null });
 		var doc = parser.Parse(files["/base/index.adoc"], "/base");
 		var emitter = new MarkdownEmitter(new MarkdownEmitterOptions { BookPrefix = "test", Version = "1.0" });
 		var pages = PageChunker.Chunk(doc, chunkLevel: 1, emitter);
@@ -358,14 +367,14 @@ public class ParserTests
 		slugs.Should().Contain("search-with-elasticsearch");
 		var searchYourData = allPages.First(p => p.Slug == "search-with-elasticsearch");
 		searchYourData.MarkdownContent.Should().Contain("Intro paragraph");
-		searchYourData.MarkdownContent.Should().Contain("Run a search");        // inline section stays
-		searchYourData.MarkdownContent.Should().NotContain("The search API");   // NOT merged into this page
+		searchYourData.MarkdownContent.Should().Contain("Run a search"); // inline section stays
+		searchYourData.MarkdownContent.Should().NotContain("The search API"); // NOT merged into this page
 
 		// == The search API → child page of search-with-elasticsearch (nested include)
 		slugs.Should().Contain("search-your-data-api");
 		var theSearchApi = allPages.First(p => p.Slug == "search-your-data-api");
 		theSearchApi.MarkdownContent.Should().Contain("API intro");
-		theSearchApi.MarkdownContent.Should().Contain("API Run a search");      // inline stays
+		theSearchApi.MarkdownContent.Should().Contain("API Run a search"); // inline stays
 		theSearchApi.MarkdownContent.Should().NotContain("Sort search results"); // NOT merged
 
 		// === Sort search results → child page of search-your-data-api (nested include)

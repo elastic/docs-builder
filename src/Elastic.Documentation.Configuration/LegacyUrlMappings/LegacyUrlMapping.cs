@@ -10,6 +10,7 @@ public record LegacyUrlMappingConfiguration
 {
 	public required IReadOnlyCollection<LegacyUrlMapping> Mappings { get; init; }
 }
+
 public record LegacyUrlMapping
 {
 	public required string BaseUrl { get; init; }

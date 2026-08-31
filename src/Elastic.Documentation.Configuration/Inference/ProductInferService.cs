@@ -10,9 +10,7 @@ namespace Elastic.Documentation.Configuration.Inference;
 /// <summary>
 /// Service for inferring products from repository names and git context.
 /// </summary>
-public class ProductInferService(
-	ProductsConfiguration productsConfiguration,
-	GitCheckoutInformation? gitCheckout = null)
+public class ProductInferService(ProductsConfiguration productsConfiguration, GitCheckoutInformation? gitCheckout = null)
 {
 	/// <summary>
 	/// Infers a product from repository name.
@@ -34,9 +32,7 @@ public class ProductInferService(
 	/// Returns null if not available (no filesystem fallback).
 	/// </summary>
 	public string? GetRepositoryName() =>
-		gitCheckout is not null && gitCheckout != GitCheckoutInformation.Unavailable
-			? gitCheckout.RepositoryName
-			: null;
+		gitCheckout is not null && gitCheckout != GitCheckoutInformation.Unavailable ? gitCheckout.RepositoryName : null;
 
 	/// <summary>
 	/// Convenience method: infers product from current git repository.

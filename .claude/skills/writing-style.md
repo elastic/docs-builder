@@ -1,0 +1,120 @@
+# Writing style for commits, PRs, and issues
+
+Every commit message, PR body, and issue filed in this repo follows these rules.
+Skills that write those artifacts read this file first.
+
+---
+
+## Governing principles (ISO 24495-1)
+
+- **Relevant** — write for a reviewer who has not seen the branch. Cut whatever the diff already states plainly.
+- **Findable** — the first sentence states the outcome. A newcomer reads it and knows whether the change concerns them.
+- **Understandable** — plain words, short sentences, no assumed context.
+- **Usable** — after reading, the reviewer can evaluate, revert, or reproduce.
+
+---
+
+## Sentence mechanics (ASD-STE100, adapted)
+
+*The ASD-STE100 sentence rules apply here. Its ~900-word approved vocabulary does not — it rejects `assembler`, `idempotent`, and `reconciliation` and its clipped imperative register produces mechanical prose. Take the mechanics, drop the dictionary.*
+
+- Active voice. Name the actor. "A retry clears the lock", not "The lock is cleared on retry".
+- One idea per sentence. Around 25 words maximum.
+- Six sentences maximum per paragraph.
+- Present tense for how the code behaves now; past tense only for what it used to do.
+- No noun cluster longer than three words. "shallow clone lock collision guard" → "a guard against lock collisions in shallow clones".
+- One term per concept, every time. Do not alternate *job* / *step* / *task* for the same thing.
+- Keep articles: "The assembler runs", not "Assembler runs".
+- One subordinate clause per sentence. No em-dash pile-ups.
+
+---
+
+## Fenced blocks for anything runnable
+
+A command, a config snippet, a YAML fragment, an error message, or a stack trace goes in a fenced code block with a language tag — not inline, however short.
+
+Inline backticks *name* a thing. A fenced block holds something the reader runs, pastes, or reads as output.
+
+- `--no-delete` inline (naming the flag)
+- Command in a block:
+  ```bash
+  docs-builder assembler deploy update-redirects --no-delete preview
+  ```
+
+Test names go in `#` comments inside the block next to the command that runs them, not in prose beside it:
+
+```bash
+dotnet test tests/Elastic.Changelog.Tests/
+# BundleChangelogs_WithPrsFilter_MatchesFilenameDigitsWhenYamlPrsEmpty — scrubbed-entry case
+```
+
+---
+
+## Backticks, used liberally
+
+Every identifier gets backticks, every time, including repeat mentions. This covers:
+
+- Types, methods, properties, fields: `IGitRepository.Fetch`, `GitLocks.ClearStale`
+- CLI commands and flags: `docs-builder`, `--no-delete`, `--prs`
+- Env vars: `ASSEMBLER_PREVIEW_PATH_PREFIX`
+- File and directory paths: `ci.yml`, `src/services/Elastic.Changelog/`
+- YAML keys (with trailing colon): `output:`, `prs:`
+- Config values, labels, package names, branch names, exit codes
+
+Prose that names a symbol bare is wrong even when it reads fine:
+
+| Wrong | Right |
+|---|---|
+| IGitRepository.Fetch returned void | `IGitRepository.Fetch` returned `void` |
+| pass --no-delete | pass `--no-delete` |
+| the synthetics job in ci.yml | the `synthetics` job in `ci.yml` |
+
+Do **not** backtick prose nouns that merely share a name with code — the assembler, the scrubber, a profile — unless you mean the literal identifier.
+
+---
+
+## Anti-mechanical rules for "What" sections
+
+`## What` uses `####` subheadings, not bullet points. Each subheading names the thing that changed (a file, a command, a concept). The prose under it states what changed and why it matters — two to four sentences, same plain-language rules as everywhere else.
+
+Lead with the behaviour change; name the symbol second when the reviewer needs it to find the code.
+
+| Wrong | Right |
+|---|---|
+| `` `GitLocks.ClearStale` sweeps `*.lock` files before each retry `` | A retry clears stale `*.lock` files under `.git/` before it runs |
+| `` **`IsolatedBuildService.Build`**: captures the `GenerateAll` result `` | The build result is captured and `redirects.json` is written to the output directory |
+
+**Banned openers** for the prose paragraph:
+- "Added", "Updated", "Changed", "Refactored", "Modified"
+- Any sentence that starts with a file path or a symbol name
+- Any paragraph that only restates the subheading
+
+**Three to five `####` sections in a "What".** More than five is a signal the change should be split.
+
+---
+
+## Before/after examples from merged PRs
+
+These are the rules in action. If a new rule does not survive this test, the rule is wrong.
+
+**#3951 — `## What`, first bullet:**
+
+> ❌ `GitLocks.ClearStale(IFileSystem, ...)` sweeps `*.lock` files under `.git/` before each retry. Called only from the retry path — never before attempt 1, where a lock could belong to a concurrent process.
+
+> ✅ A retry clears stale `*.lock` files under `.git/` before it runs. The first attempt is never affected — a lock there can belong to a live process.
+
+**#3941 — opening of `## Why`:**
+
+> ❌ [#3911](https://github.com/elastic/docs-builder/pull/3911) tried to fix stale CDN pool listings by bringing back `changelog/{org}/{repo}/{branch}/registry.json`. That approach was rejected…
+
+> ✅ Scrubbing strips `prs:` from the public copies of private-repo entries. `--prs` joined only on that YAML field, so those entries dropped out of the bundle with no error.
+
+The history of a rejected PR is not the problem this PR solves. Lead with the problem.
+
+**#3856 — label:**
+
+> ❌ `feature`
+
+> ✅ `breaking`
+
+`output:` was removed from `changelog.yml` profiles — an existing config stops working. The `Configuration` surface plus a removal is the trigger: reconsider `breaking`. See [`surfaces.md`](surfaces.md).

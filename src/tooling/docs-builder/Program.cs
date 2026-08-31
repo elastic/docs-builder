@@ -21,7 +21,8 @@ using Nullean.Argh.Hosting;
 await ArghApp.TryArghIntrinsicCommand(args);
 
 var argh = GlobalCliOptions.TryParseArgh(args, out var cliOptions);
-var builder = Host.CreateApplicationBuilder()
+var builder = Host
+	.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));

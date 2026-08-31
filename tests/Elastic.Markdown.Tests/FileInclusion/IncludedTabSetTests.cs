@@ -13,8 +13,9 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 /// Tests that when the same snippet containing tab-set is included multiple times,
 /// each include generates unique IDs to avoid HTML ID collisions.
 /// </summary>
-public class IncludedTabSetTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+public class IncludedTabSetTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
+	output,
+	"""
 :::{include} _snippets/tab-set.md
 :::
 
@@ -29,7 +30,7 @@ Some content between includes.
 	{
 		// language=markdown
 		var snippet =
-"""
+			"""
 ::::{tab-set}
 :::{tab-item} First
 Content for first tab
@@ -63,8 +64,9 @@ Content for second tab
 /// <summary>
 /// Tests that a snippet with multiple tab-sets generates unique IDs for each one.
 /// </summary>
-public class IncludedMultipleTabSetTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+public class IncludedMultipleTabSetTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
+	output,
+	"""
 :::{include} _snippets/multi-tab-set.md
 :::
 """
@@ -74,7 +76,7 @@ public class IncludedMultipleTabSetTests(ITestOutputHelper output) : DirectiveTe
 	{
 		// language=markdown
 		var snippet =
-"""
+			"""
 ::::{tab-set}
 :::{tab-item} First
 First tab set

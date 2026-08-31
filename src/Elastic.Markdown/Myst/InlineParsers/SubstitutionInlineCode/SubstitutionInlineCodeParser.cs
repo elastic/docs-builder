@@ -82,7 +82,12 @@ public partial class SubstitutionInlineCodeParser : RoleParser<SubstitutionInlin
 				{
 					if (mutationStrings.Length >= 10)
 					{
-						processor.EmitError(line + 1, column + match.Index, match.Length, $"Substitution key {{{key}}} defines too many mutations, none will be applied");
+						processor.EmitError(
+							line + 1,
+							column + match.Index,
+							match.Length,
+							$"Substitution key {{{key}}} defines too many mutations, none will be applied"
+						);
 						replacement = value; // Use original value without mutations
 					}
 					else
@@ -94,7 +99,12 @@ public partial class SubstitutionInlineCodeParser : RoleParser<SubstitutionInlin
 							if (SubstitutionMutationExtensions.TryParse(trimmedMutation, out var mutation, true, true))
 								mutations.Add(mutation);
 							else
-								processor.EmitError(line + 1, column + match.Index, match.Length, $"Mutation '{trimmedMutation}' on {{{key}}} is undefined");
+								processor.EmitError(
+									line + 1,
+									column + match.Index,
+									match.Length,
+									$"Mutation '{trimmedMutation}' on {{{key}}} is undefined"
+								);
 						}
 
 						if (mutations.Count > 0)
@@ -107,7 +117,13 @@ public partial class SubstitutionInlineCodeParser : RoleParser<SubstitutionInlin
 			else
 			{
 				// We temporarily diagnose variable spaces as hints. We used to not read this at all.
-				processor.Emit(key.Contains(' ') ? Severity.Hint : Severity.Error, line + 1, column + match.Index, match.Length, $"Substitution key {{{key}}} is undefined");
+				processor.Emit(
+					key.Contains(' ') ? Severity.Hint : Severity.Error,
+					line + 1,
+					column + match.Index,
+					match.Length,
+					$"Substitution key {{{key}}} is undefined"
+				);
 			}
 		}
 

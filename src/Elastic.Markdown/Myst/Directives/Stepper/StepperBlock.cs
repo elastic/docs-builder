@@ -56,7 +56,7 @@ public class StepperBlock(DirectiveBlockParser parser, ParserContext context) : 
 				Column = heading.Column,
 				Length = heading.Level,
 				Message = $"Heading level h{heading.Level} inside a step renders at the same or higher level as the step itself (h{stepLevel}). " +
-						  $"It has been adjusted to h{adjusted} — write it as '{hashes}' to avoid this hint."
+					$"It has been adjusted to h{adjusted} — write it as '{hashes}' to avoid this hint."
 			});
 			heading.Level = adjusted;
 		}

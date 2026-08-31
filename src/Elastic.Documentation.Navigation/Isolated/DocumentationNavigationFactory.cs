@@ -31,14 +31,18 @@ public static class DocumentationNavigationFactory
 	/// <summary>
 	/// Creates a file navigation leaf from a documentation file model.
 	/// </summary>
-	public static ILeafNavigationItem<TModel> CreateFileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNavigationArgs args)
-		where TModel : IDocumentationFile =>
-		new FileNavigationLeaf<TModel>(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
+	public static ILeafNavigationItem<TModel> CreateFileNavigationLeaf<TModel>(
+		TModel model,
+		IFileInfo fileInfo,
+		FileNavigationArgs args
+	) where TModel : IDocumentationFile => new FileNavigationLeaf<TModel>(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
 
 	/// <summary>
 	/// Creates a virtual file navigation node from a documentation file model.
 	/// </summary>
-	public static VirtualFileNavigation<TModel> CreateVirtualFileNavigation<TModel>(TModel model, IFileInfo fileInfo, VirtualFileNavigationArgs args)
-		where TModel : IDocumentationFile =>
-		new(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
+	public static VirtualFileNavigation<TModel> CreateVirtualFileNavigation<TModel>(
+		TModel model,
+		IFileInfo fileInfo,
+		VirtualFileNavigationArgs args
+	) where TModel : IDocumentationFile => new(model, fileInfo, args) { NavigationIndex = args.NavigationIndex };
 }

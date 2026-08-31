@@ -6,8 +6,9 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
-"""
+public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
+	output,
+	"""
 ![Elasticsearch](/_static/img/observability.png)
 """
 )
@@ -18,13 +19,12 @@ public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>"""
-		);
+		Html.ShouldContainHtml("""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""");
 }
 
-public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
-"""
+public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
+	output,
+	"""
 ![Elasticsearch](_static/img/observability.png)
 """
 )
@@ -35,14 +35,13 @@ public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<Link
 	[Fact]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>"""
-		);
+		Html.ShouldContainHtml("""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""");
 }
 
 // Test image sizing with space before =
-public class InlineImageWithSizingSpaceBeforeTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
-"""
+public class InlineImageWithSizingSpaceBeforeTest(ITestOutputHelper output) : InlineTest<LinkInline>(
+	output,
+	"""
 ![Elasticsearch](/_static/img/observability.png " =50%")
 """
 )
@@ -59,8 +58,9 @@ public class InlineImageWithSizingSpaceBeforeTest(ITestOutputHelper output) : In
 }
 
 // Test image sizing without space before =
-public class InlineImageWithSizingNoSpaceBeforeTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
-"""
+public class InlineImageWithSizingNoSpaceBeforeTest(ITestOutputHelper output) : InlineTest<LinkInline>(
+	output,
+	"""
 ![Elasticsearch](/_static/img/observability.png "=50%")
 """
 )
@@ -77,8 +77,9 @@ public class InlineImageWithSizingNoSpaceBeforeTest(ITestOutputHelper output) : 
 }
 
 // Test image sizing with pixels
-public class InlineImageWithPixelSizingTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
-"""
+public class InlineImageWithPixelSizingTest(ITestOutputHelper output) : InlineTest<LinkInline>(
+	output,
+	"""
 ![Elasticsearch](/_static/img/observability.png "=250x330")
 """
 )
@@ -95,8 +96,9 @@ public class InlineImageWithPixelSizingTest(ITestOutputHelper output) : InlineTe
 }
 
 // Test image sizing with title and sizing — explicit title in markdown is ignored; alt text is always used as title
-public class InlineImageWithTitleAndSizingTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
-"""
+public class InlineImageWithTitleAndSizingTest(ITestOutputHelper output) : InlineTest<LinkInline>(
+	output,
+	"""
 ![Elasticsearch](/_static/img/observability.png "My Title =50%")
 """
 )
@@ -113,8 +115,9 @@ public class InlineImageWithTitleAndSizingTest(ITestOutputHelper output) : Inlin
 }
 
 // Test image sizing with width only
-public class InlineImageWithWidthOnlyTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
-"""
+public class InlineImageWithWidthOnlyTest(ITestOutputHelper output) : InlineTest<LinkInline>(
+	output,
+	"""
 ![Elasticsearch](/_static/img/observability.png "=250")
 """
 )

@@ -34,7 +34,8 @@ public static partial class LinkAllowlistSanitizer
 		string defaultOwner,
 		string? defaultBundleRepo,
 		out Bundle sanitized,
-		out bool changesApplied)
+		out bool changesApplied
+	)
 	{
 		sanitized = bundle;
 		changesApplied = false;
@@ -46,25 +47,11 @@ public static partial class LinkAllowlistSanitizer
 
 		foreach (var entry in bundle.Entries)
 		{
-			var prs = ApplyToReferenceList(
-				collector,
-				entry.Prs,
-				ownerDefault,
-				defaultBundleRepo,
-				allow,
-				"PR",
-				ref anyRewritten);
+			var prs = ApplyToReferenceList(collector, entry.Prs, ownerDefault, defaultBundleRepo, allow, "PR", ref anyRewritten);
 			if (prs == null && entry.Prs is not null)
 				return false;
 
-			var issues = ApplyToReferenceList(
-				collector,
-				entry.Issues,
-				ownerDefault,
-				defaultBundleRepo,
-				allow,
-				"issue",
-				ref anyRewritten);
+			var issues = ApplyToReferenceList(collector, entry.Issues, ownerDefault, defaultBundleRepo, allow, "issue", ref anyRewritten);
 			if (issues == null && entry.Issues is not null)
 				return false;
 
@@ -83,7 +70,8 @@ public static partial class LinkAllowlistSanitizer
 	public static void EmitAssemblerDiagnostics(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<string> linkAllowRepos,
-		AssemblyConfiguration? assembly)
+		AssemblyConfiguration? assembly
+	)
 	{
 		if (assembly == null || linkAllowRepos.Count == 0)
 			return;
@@ -100,7 +88,8 @@ public static partial class LinkAllowlistSanitizer
 			{
 				collector.EmitWarning(
 					string.Empty,
-					$"bundle.link_allow_repos entry '{entry}' is not listed in assembler.yml references (informational).");
+					$"bundle.link_allow_repos entry '{entry}' is not listed in assembler.yml references (informational)."
+				);
 				continue;
 			}
 
@@ -108,7 +97,8 @@ public static partial class LinkAllowlistSanitizer
 			{
 				collector.EmitWarning(
 					string.Empty,
-					$"bundle.link_allow_repos entry '{entry}' is marked private in assembler.yml; verify that published links are intended.");
+					$"bundle.link_allow_repos entry '{entry}' is marked private in assembler.yml; verify that published links are intended."
+				);
 			}
 		}
 	}
@@ -149,7 +139,8 @@ public static partial class LinkAllowlistSanitizer
 		string defaultOwner,
 		string? defaultRepo,
 		out BundledEntry sanitized,
-		out bool changesApplied)
+		out bool changesApplied
+	)
 	{
 		sanitized = entry;
 		changesApplied = false;
@@ -158,25 +149,11 @@ public static partial class LinkAllowlistSanitizer
 		var ownerDefault = string.IsNullOrWhiteSpace(defaultOwner) ? "elastic" : defaultOwner;
 		var anyRewritten = false;
 
-		var prs = FilterReferenceList(
-			collector,
-			entry.Prs,
-			ownerDefault,
-			defaultRepo,
-			allow,
-			"PR",
-			ref anyRewritten);
+		var prs = FilterReferenceList(collector, entry.Prs, ownerDefault, defaultRepo, allow, "PR", ref anyRewritten);
 		if (prs == null && entry.Prs is not null)
 			return false;
 
-		var issues = FilterReferenceList(
-			collector,
-			entry.Issues,
-			ownerDefault,
-			defaultRepo,
-			allow,
-			"issue",
-			ref anyRewritten);
+		var issues = FilterReferenceList(collector, entry.Issues, ownerDefault, defaultRepo, allow, "issue", ref anyRewritten);
 		if (issues == null && entry.Issues is not null)
 			return false;
 
@@ -184,14 +161,7 @@ public static partial class LinkAllowlistSanitizer
 		var impact = ScrubText(entry.Impact, allow, ref anyRewritten);
 		var action = ScrubText(entry.Action, allow, ref anyRewritten);
 
-		sanitized = entry with
-		{
-			Prs = prs,
-			Issues = issues,
-			Description = description,
-			Impact = impact,
-			Action = action
-		};
+		sanitized = entry with { Prs = prs, Issues = issues, Description = description, Impact = impact, Action = action };
 		changesApplied = anyRewritten;
 		return true;
 	}
@@ -249,7 +219,8 @@ public static partial class LinkAllowlistSanitizer
 		string defaultOwner,
 		string? defaultBundleRepo,
 		out Bundle sanitized,
-		out bool changesApplied)
+		out bool changesApplied
+	)
 	{
 		sanitized = bundle;
 		changesApplied = false;
@@ -259,8 +230,17 @@ public static partial class LinkAllowlistSanitizer
 
 		foreach (var entry in bundle.Entries)
 		{
-			if (!TryApplyChangelogEntry(collector, entry, allowRepos, defaultOwner, defaultBundleRepo,
-				out var scrubbed, out var entryChanged))
+			if (
+				!TryApplyChangelogEntry(
+					collector,
+					entry,
+					allowRepos,
+					defaultOwner,
+					defaultBundleRepo,
+					out var scrubbed,
+					out var entryChanged
+				)
+			)
 				return false;
 
 			if (entryChanged)
@@ -310,7 +290,8 @@ public static partial class LinkAllowlistSanitizer
 
 		if (violations.Count > 0)
 			throw new InvalidOperationException(
-				$"Post-serialize validation failed: {violations.Count} private reference(s) found in public output: {string.Join(", ", violations)}");
+				$"Post-serialize validation failed: {violations.Count} private reference(s) found in public output: {string.Join(", ", violations)}"
+			);
 	}
 
 	/// <summary>
@@ -329,7 +310,8 @@ public static partial class LinkAllowlistSanitizer
 		string? defaultBundleRepo,
 		HashSet<string> allow,
 		string referenceKind,
-		ref bool anyDropped)
+		ref bool anyDropped
+	)
 	{
 		if (refs is null)
 			return null;
@@ -352,7 +334,15 @@ public static partial class LinkAllowlistSanitizer
 				if (string.IsNullOrWhiteSpace(underlyingRef))
 					continue;
 
-				if (!ChangelogTextUtilities.TryGetGitHubRepo(underlyingRef, defaultOwner, defaultBundleRepo ?? string.Empty, out var sOwner, out var sRepo))
+				if (
+					!ChangelogTextUtilities.TryGetGitHubRepo(
+						underlyingRef,
+						defaultOwner,
+						defaultBundleRepo ?? string.Empty,
+						out var sOwner,
+						out var sRepo
+					)
+				)
 					continue;
 
 				if (allow.Contains($"{sOwner}/{sRepo}"))
@@ -379,14 +369,16 @@ public static partial class LinkAllowlistSanitizer
 					list.Add(r);
 					collector.EmitWarning(
 						string.Empty,
-						$"Bare {referenceKind} reference '{r}' has no embedded owner/repo and no default repo was supplied; keeping as-is for downstream rendering to resolve.");
+						$"Bare {referenceKind} reference '{r}' has no embedded owner/repo and no default repo was supplied; keeping as-is for downstream rendering to resolve."
+					);
 					continue;
 				}
 
 				collector.EmitError(
 					string.Empty,
 					$"Link allowlist filtering could not parse {referenceKind} reference '{r}'. " +
-					"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set.");
+						"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set."
+				);
 				return null;
 			}
 
@@ -399,7 +391,8 @@ public static partial class LinkAllowlistSanitizer
 				anyDropped = true;
 				collector.EmitWarning(
 					string.Empty,
-					$"PR/issue reference '{r}' targets repository '{owner}/{repo}', which is not in the allowlist. It was removed from public output.");
+					$"PR/issue reference '{r}' targets repository '{owner}/{repo}', which is not in the allowlist. It was removed from public output."
+				);
 			}
 		}
 
@@ -428,7 +421,8 @@ public static partial class LinkAllowlistSanitizer
 		string? defaultBundleRepo,
 		HashSet<string> allow,
 		string referenceKind,
-		ref bool anyRewritten)
+		ref bool anyRewritten
+	)
 	{
 		if (refs is null)
 			return null;
@@ -472,7 +466,8 @@ public static partial class LinkAllowlistSanitizer
 		string? defaultBundleRepo,
 		HashSet<string> allow,
 		string referenceKind,
-		ref bool anyRewritten)
+		ref bool anyRewritten
+	)
 	{
 		var underlyingRef = sentinelRef.Substring(SentinelPrefix.Length).Trim();
 
@@ -481,16 +476,26 @@ public static partial class LinkAllowlistSanitizer
 			collector.EmitError(
 				string.Empty,
 				$"Invalid {referenceKind} sentinel '{sentinelRef}': no underlying reference found. " +
-				"Sentinels must have the format '# PRIVATE: <reference>'.");
+					"Sentinels must have the format '# PRIVATE: <reference>'."
+			);
 			return null;
 		}
 
-		if (!ChangelogTextUtilities.TryGetGitHubRepo(underlyingRef, defaultOwner, defaultBundleRepo ?? string.Empty, out var owner, out var repo))
+		if (
+			!ChangelogTextUtilities.TryGetGitHubRepo(
+				underlyingRef,
+				defaultOwner,
+				defaultBundleRepo ?? string.Empty,
+				out var owner,
+				out var repo
+			)
+		)
 		{
 			collector.EmitError(
 				string.Empty,
 				$"Invalid {referenceKind} sentinel '{sentinelRef}': underlying reference '{underlyingRef}' could not be parsed. " +
-				"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set.");
+					"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set."
+			);
 			return null;
 		}
 
@@ -513,14 +518,16 @@ public static partial class LinkAllowlistSanitizer
 		string? defaultBundleRepo,
 		HashSet<string> allow,
 		string referenceKind,
-		ref bool anyRewritten)
+		ref bool anyRewritten
+	)
 	{
 		if (!ChangelogTextUtilities.TryGetGitHubRepo(r, defaultOwner, defaultBundleRepo ?? string.Empty, out var owner, out var repo))
 		{
 			collector.EmitError(
 				string.Empty,
 				$"Link allowlist filtering could not parse {referenceKind} reference '{r}'. " +
-				"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set.");
+					"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set."
+			);
 			return null;
 		}
 
@@ -532,7 +539,8 @@ public static partial class LinkAllowlistSanitizer
 		collector.EmitWarning(
 			string.Empty,
 			$"PR/issue reference '{r}' targets repository '{fullName}', which is not in bundle.link_allow_repos. " +
-			"It was rewritten to a '# PRIVATE:' sentinel.");
+				"It was rewritten to a '# PRIVATE:' sentinel."
+		);
 		return $"{SentinelPrefix} {r}";
 	}
 
@@ -553,19 +561,17 @@ public static partial class LinkAllowlistSanitizer
 		return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo);
 	}
 
-	private static bool TryFindReferenceRepository(
-		string owner,
-		string repo,
-		AssemblyConfiguration assembly,
-		out Repository? repository)
+	private static bool TryFindReferenceRepository(string owner, string repo, AssemblyConfiguration assembly, out Repository? repository)
 	{
 		var fullName = $"{owner}/{repo}";
 		var isElasticOwner = string.Equals(owner, "elastic", StringComparison.OrdinalIgnoreCase);
 
 		foreach (var kvp in assembly.ReferenceRepositories)
 		{
-			if (string.Equals(kvp.Key, fullName, StringComparison.OrdinalIgnoreCase) ||
-				(isElasticOwner && string.Equals(kvp.Key, repo, StringComparison.OrdinalIgnoreCase)))
+			if (
+				string.Equals(kvp.Key, fullName, StringComparison.OrdinalIgnoreCase)
+				|| (isElasticOwner && string.Equals(kvp.Key, repo, StringComparison.OrdinalIgnoreCase))
+			)
 			{
 				repository = kvp.Value;
 				return true;

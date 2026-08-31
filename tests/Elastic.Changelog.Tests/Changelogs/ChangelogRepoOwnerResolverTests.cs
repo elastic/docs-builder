@@ -44,8 +44,7 @@ public class ChangelogRepoOwnerResolverTests
 		ChangelogRepoOwnerResolver.NormalizeRepo("acme-corp/widget").Should().Be("widget");
 
 	[Fact]
-	public void NormalizeRepo_BareRepo_ReturnsUnchanged() =>
-		ChangelogRepoOwnerResolver.NormalizeRepo("widget").Should().Be("widget");
+	public void NormalizeRepo_BareRepo_ReturnsUnchanged() => ChangelogRepoOwnerResolver.NormalizeRepo("widget").Should().Be("widget");
 
 	[Fact]
 	public void NormalizeRepo_NullOrEmpty_ReturnsUnchanged()

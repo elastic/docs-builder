@@ -19,10 +19,14 @@ namespace Elastic.Documentation.Api;
 [EnumExtensions]
 public enum AppEnv
 {
-	[Display(Name = "dev")] Dev,
-	[Display(Name = "staging")] Staging,
-	[Display(Name = "edge")] Edge,
-	[Display(Name = "prod")] Prod
+	[Display(Name = "dev")]
+	Dev,
+	[Display(Name = "staging")]
+	Staging,
+	[Display(Name = "edge")]
+	Edge,
+	[Display(Name = "prod")]
+	Prod
 }
 
 public class AppEnvironment
@@ -46,11 +50,13 @@ public static class ServicesExtension
 		else
 		{
 			var logger = GetLogger(services);
-			logger?.LogWarning("Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
+			logger?.LogWarning(
+				"Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev",
+				appEnvironment
+			);
 			AddElasticDocsApiServices(services, AppEnv.Dev);
 		}
 	}
-
 
 	private static void AddElasticDocsApiServices(this IServiceCollection services, AppEnv appEnv)
 	{
@@ -168,7 +174,9 @@ public static class ServicesExtension
 			// Register factory as interface implementation
 			_ = services.AddScoped<IAskAiService, AskAiGatewayFactory>();
 			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
-			logger?.LogInformation("Service and transformer factories registered successfully - provider switchable via X-AI-Provider header");
+			logger?.LogInformation(
+				"Service and transformer factories registered successfully - provider switchable via X-AI-Provider header"
+			);
 
 			// Register message feedback service (singleton for connection reuse)
 			_ = services.AddSingleton<IAskAiMessageFeedbackService, ElasticsearchAskAiMessageFeedbackGateway>();
@@ -190,5 +198,4 @@ public static class ServicesExtension
 		_ = services.AddSearchServices();
 		logger?.LogInformation("Full search service registered with hybrid RRF support");
 	}
-
 }

@@ -50,8 +50,7 @@ public class Utf8TextNormalizationTests
 	public void StripLeadingUtf8Bom_StringWithTwoConsecutiveLeadingBoms_RemovesBothBoms()
 	{
 		const string content = "type: feature\ntitle: Test changelog entry";
-		var input = Utf8TextNormalization.Utf8BomChar.ToString() +
-					Utf8TextNormalization.Utf8BomChar + content;
+		var input = Utf8TextNormalization.Utf8BomChar.ToString() + Utf8TextNormalization.Utf8BomChar + content;
 
 		var result = Utf8TextNormalization.StripLeadingUtf8Bom(input);
 
@@ -62,9 +61,10 @@ public class Utf8TextNormalizationTests
 	public void StripLeadingUtf8Bom_StringWithThreeConsecutiveLeadingBoms_RemovesAllBoms()
 	{
 		const string content = "type: feature\ntitle: Test changelog entry";
-		var input = Utf8TextNormalization.Utf8BomChar.ToString() +
-					Utf8TextNormalization.Utf8BomChar +
-					Utf8TextNormalization.Utf8BomChar + content;
+		var input = Utf8TextNormalization.Utf8BomChar.ToString()
+			+ Utf8TextNormalization.Utf8BomChar
+			+ Utf8TextNormalization.Utf8BomChar
+			+ content;
 
 		var result = Utf8TextNormalization.StripLeadingUtf8Bom(input);
 
@@ -74,8 +74,7 @@ public class Utf8TextNormalizationTests
 	[Fact]
 	public void StripLeadingUtf8Bom_StringOnlyBoms_ReturnsEmpty()
 	{
-		var input = Utf8TextNormalization.Utf8BomChar.ToString() +
-					Utf8TextNormalization.Utf8BomChar;
+		var input = Utf8TextNormalization.Utf8BomChar.ToString() + Utf8TextNormalization.Utf8BomChar;
 
 		var result = Utf8TextNormalization.StripLeadingUtf8Bom(input);
 
@@ -163,14 +162,8 @@ public class Utf8TextNormalizationTests
 	}
 
 	[Fact]
-	public void Utf8BomChar_MatchesExpectedValue()
-	{
-		Utf8TextNormalization.Utf8BomChar.Should().Be('\uFEFF');
-	}
+	public void Utf8BomChar_MatchesExpectedValue() => Utf8TextNormalization.Utf8BomChar.Should().Be('\uFEFF');
 
 	[Fact]
-	public void Utf8BomBytes_MatchesExpectedSequence()
-	{
-		Utf8TextNormalization.Utf8BomBytes.Should().Equal([0xEF, 0xBB, 0xBF]);
-	}
+	public void Utf8BomBytes_MatchesExpectedSequence() => Utf8TextNormalization.Utf8BomBytes.Should().Equal([0xEF, 0xBB, 0xBF]);
 }

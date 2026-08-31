@@ -26,7 +26,8 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		// Act
 		var resultJson = await searchTools.SemanticSearch(
 			"elasticsearch getting started",
-			cancellationToken: TestContext.Current.CancellationToken);
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -36,7 +37,10 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		if (response!.Results.Count == 0)
 			await LogIndexCount(clientAccessor, TestContext.Current.CancellationToken);
 
-		response.Results.Should().NotBeEmpty($"Search for 'elasticsearch getting started' should return results (index: {clientAccessor.SearchIndex})");
+		response
+			.Results
+			.Should()
+			.NotBeEmpty($"Search for 'elasticsearch getting started' should return results (index: {clientAccessor.SearchIndex})");
 		response.TotalHits.Should().BeGreaterThan(0);
 		Output.WriteLine($"Total hits: {response.TotalHits}");
 		Output.WriteLine($"Results returned: {response.Results.Count}");
@@ -56,7 +60,8 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		var resultJson = await searchTools.SemanticSearch(
 			"getting started",
 			productFilter: "elasticsearch",
-			cancellationToken: TestContext.Current.CancellationToken);
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -84,7 +89,8 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		var resultJson = await searchTools.FindRelatedDocs(
 			"data streams",
 			limit: 5,
-			cancellationToken: TestContext.Current.CancellationToken);
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -94,7 +100,10 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		if (response!.RelatedDocs.Count == 0)
 			await LogIndexCount(clientAccessor!, TestContext.Current.CancellationToken);
 
-		response.RelatedDocs.Should().NotBeEmpty($"Finding related docs for 'data streams' should return results (index: {clientAccessor!.SearchIndex})");
+		response
+			.RelatedDocs
+			.Should()
+			.NotBeEmpty($"Finding related docs for 'data streams' should return results (index: {clientAccessor!.SearchIndex})");
 		response.Count.Should().BeGreaterThan(0);
 		Output.WriteLine($"Related docs count: {response.Count}");
 	}

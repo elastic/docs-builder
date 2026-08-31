@@ -12,8 +12,11 @@ namespace Elastic.Codex.Sourcing;
 /// <summary>
 /// Git repository operations optimized for shallow clones.
 /// </summary>
-public class CodexGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector collector, IDirectoryInfo workingDirectory)
-	: ExternalCommandExecutor(collector, workingDirectory, Environment.GetEnvironmentVariable("CI") is null or "" ? null : TimeSpan.FromMinutes(10))
+public class CodexGitRepository(
+	ILoggerFactory logFactory,
+	IDiagnosticsCollector collector,
+	IDirectoryInfo workingDirectory
+) : ExternalCommandExecutor(collector, workingDirectory)
 {
 	/// <inheritdoc />
 	protected override ILogger Logger { get; } = logFactory.CreateLogger<CodexGitRepository>();
@@ -21,8 +24,26 @@ public class CodexGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector
 	private static readonly Dictionary<string, string> EnvironmentVars = new()
 	{
 		// Disable git editor prompts
-		{ "GIT_EDITOR", "true" }
+		{
+			"GIT_EDITOR",
+			"true"
+		}
 	};
+
+	// Network-bound fetch operations retry up to 3 times with exponential back-off.
+	// The default CI timeout is shared with the assembler path (10 min per attempt).
+	private static readonly RetryPolicy NetworkRetry = new(
+		MaxAttempts: 3,
+		BaseDelay: TimeSpan.FromSeconds(5),
+		AttemptTimeout: GitTimeouts.CiDefault
+	);
+
+	protected override void OnBeforeRetry() =>
+		GitLocks.ClearStale(
+			WorkingDirectory.FileSystem,
+			WorkingDirectory.FullName,
+			f => Logger.LogWarning("Removed stale git lock file {LockFile}", f)
+		);
 
 	public string GetCurrentCommit() => Capture("git", "rev-parse", "HEAD");
 
@@ -33,14 +54,24 @@ public class CodexGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector
 	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));
 
 	public void Fetch(string reference) =>
-		ExecIn(EnvironmentVars, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
+		_ = ExecInWithRetry(
+			EnvironmentVars,
+			NetworkRetry,
+			"git",
+			"fetch",
+			"--no-tags",
+			"--prune",
+			"--no-recurse-submodules",
+			"--depth",
+			"1",
+			"origin",
+			reference
+		);
 
 	public void EnableSparseCheckout(string[] folders) =>
 		ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);
 
-	public void Checkout(string reference) =>
-		ExecIn(EnvironmentVars, "git", "checkout", "--force", reference);
+	public void Checkout(string reference) => ExecIn(EnvironmentVars, "git", "checkout", "--force", reference);
 
-	public void GitAddOrigin(string origin) =>
-		ExecIn(EnvironmentVars, "git", "remote", "add", "origin", origin);
+	public void GitAddOrigin(string origin) => ExecIn(EnvironmentVars, "git", "remote", "add", "origin", origin);
 }
