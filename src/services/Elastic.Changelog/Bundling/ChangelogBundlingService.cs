@@ -158,6 +158,13 @@ public record BundlePlanResult
 	/// filters). Consumed by the bundle-PR action to poll for and download the scrubbed copy.
 	/// </summary>
 	public string? CdnUrl { get; init; }
+
+	/// <summary>
+	/// Resolved release mode: <c>gh-release</c> when <c>bundle.profiles</c> is absent in the config
+	/// (the action should run <c>changelog gh-release</c>); <c>bundle</c> for profile-based bundling.
+	/// Null in legacy plan calls that do not query the config for mode resolution.
+	/// </summary>
+	public string? Mode { get; init; }
 }
 
 /// <summary>

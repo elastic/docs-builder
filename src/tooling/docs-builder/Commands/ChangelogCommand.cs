@@ -985,6 +985,39 @@ internal sealed partial class ChangelogCommands(
 
 			if (specifiedFilters.Count == 0)
 			{
+				// --plan with no filters and no profile: auto-resolve the release mode from the config.
+				// If the config has no profiles → gh-release mode; otherwise the caller must name a profile.
+				if (plan)
+				{
+					var bundleConfigLoader = new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem);
+					var bundleConfig = await bundleConfigLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+
+					var profiles = bundleConfig?.Bundle?.Profiles;
+					if (profiles is { Count: > 0 })
+					{
+						var profileNames = string.Join(", ", profiles.Keys);
+						collector.EmitError(
+							string.Empty,
+							$"--plan without a profile: the config has {profiles.Count} profile(s) ({profileNames}). " +
+								"Pass the profile name as the first argument (e.g. 'bundle my-profile 9.2.0 --plan')."
+						);
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+
+					// No profiles → gh-release mode. Resolve the output path the same way gh-release would.
+					var ghReleaseOutput = bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory;
+
+					await githubActionsService.SetOutputAsync("mode", "gh-release");
+					await githubActionsService.SetOutputAsync("needs_network", "true");
+					await githubActionsService.SetOutputAsync("needs_github_token", "true");
+					if (ghReleaseOutput != null)
+						await githubActionsService.SetOutputAsync("output_path", ghReleaseOutput);
+					return 0;
+				}
+
 				collector.EmitError(
 					string.Empty,
 					"At least one filter option must be specified: --all, --input-products, --prs, --issues, --report, --files, --start-git-ref/--end-git-ref, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')"
@@ -1120,6 +1153,7 @@ internal sealed partial class ChangelogCommands(
 			if (planResult == null)
 				return 1;
 
+			await githubActionsService.SetOutputAsync("mode", planResult.Mode ?? "bundle");
 			await githubActionsService.SetOutputAsync("needs_network", planResult.NeedsNetwork ? "true" : "false");
 			await githubActionsService.SetOutputAsync("needs_github_token", planResult.NeedsGithubToken ? "true" : "false");
 			if (planResult.OutputPath != null)
@@ -1549,13 +1583,15 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		// --output CLI > bundle.directory config > ./changelogs (service default)
+		// --output CLI > bundle.output_directory > bundle.directory > ./changelogs (service default)
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
 			collector,
 			config?.FullName,
 			ctx
 		);
-		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output)
+			? output
+			: (bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory);
 
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
@@ -1691,6 +1727,7 @@ internal sealed partial class ChangelogCommands(
 		bool titleChanged = false,
 		bool bodyChanged = false,
 		bool stripTitlePrefix = false,
+		bool requireChangelogFile = false,
 		string botName = "github-actions[bot]",
 		CancellationToken ct = default
 	)
@@ -1722,11 +1759,51 @@ internal sealed partial class ChangelogCommands(
 			TitleChanged = titleChanged,
 			BodyChanged = bodyChanged,
 			StripTitlePrefix = stripTitlePrefix,
+			RequireChangelogFile = requireChangelogFile,
 			BotName = botName
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.EvaluatePr(collector, state, ctx));
 
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI) Validate PR labels against the changelog config without writing any files or calling the GitHub API.</summary>
+	/// <remarks>
+	/// A lightweight label-only gate intended for the <c>pull_request</c> event. Resolves
+	/// <c>pivot.types</c>, <c>pivot.products</c>, and <c>rules.create</c> skip labels against the PR's
+	/// label set and exits non-zero on <c>no-label</c>. Does not perform title resolution, bot-loop
+	/// detection, or changelog-file lookup — use <see cref="EvaluatePr"/> when those are needed.
+	///
+	/// <para>
+	/// Outputs: <c>status</c> (ok | no-label | skipped), <c>type</c>, <c>products</c>,
+	/// <c>label-table</c> (shown on failure), <c>product-label-table</c> (shown on product failure),
+	/// <c>skip-labels</c>.
+	/// </para>
+	/// </remarks>
+	/// <param name="config">Path to the changelog.yml configuration file.</param>
+	/// <param name="prLabels">Comma-separated list of PR labels (use <c>${{ join(github.event.pull_request.labels.*.name, ',') }}</c> in actions).</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> ValidateLabels(
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		string prLabels,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
+		var service = new ChangelogLabelValidationService(logFactory, configurationContext, githubActionsService, fileSystem);
+
+		var args = new ValidateLabelsArguments
+		{
+			Config = config.FullName,
+			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		};
+
+		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateLabels(collector, state, ctx));
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
@@ -1924,9 +2001,23 @@ internal sealed partial class ChangelogCommands(
 	)
 	{
 		var ctx = ct;
-		if (!Enum.TryParse<ArtifactType>(artifactType, ignoreCase: true, out var parsedArtifactType))
+
+		// Accept a comma-separated list of artifact types (e.g. "changelog,amend")
+		var artifactTypeList = artifactType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var parsedArtifactTypes = new List<ArtifactType>(artifactTypeList.Length);
+		foreach (var typeStr in artifactTypeList)
 		{
-			collector.EmitError(string.Empty, $"Invalid artifact type '{artifactType}'. Valid values: changelog, bundle");
+			if (!Enum.TryParse<ArtifactType>(typeStr, ignoreCase: true, out var parsed))
+			{
+				collector.EmitError(string.Empty, $"Invalid artifact type '{typeStr}'. Valid values: changelog, bundle, amend");
+				return 1;
+			}
+			parsedArtifactTypes.Add(parsed);
+		}
+
+		if (parsedArtifactTypes.Count == 0)
+		{
+			collector.EmitError(string.Empty, "--artifact-type must not be empty");
 			return 1;
 		}
 
@@ -1959,19 +2050,25 @@ internal sealed partial class ChangelogCommands(
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, _fileSystem, configurationContext);
-		var args = new ChangelogUploadArguments
+
+		// Run one upload per requested artifact type; all failures are collected
+		foreach (var parsedArtifactType in parsedArtifactTypes)
 		{
-			ArtifactType = parsedArtifactType,
-			Target = parsedTarget,
-			S3BucketName = s3BucketName,
-			Config = resolvedConfig,
-			Directory = resolvedDirectory,
-			Repo = resolvedRepo,
-			Owner = resolvedOwner,
-			Branch = resolvedBranch,
-			SkipEtagCheck = skipEtagCheck
-		};
-		serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
+			var args = new ChangelogUploadArguments
+			{
+				ArtifactType = parsedArtifactType,
+				Target = parsedTarget,
+				S3BucketName = s3BucketName,
+				Config = resolvedConfig,
+				Directory = resolvedDirectory,
+				Repo = resolvedRepo,
+				Owner = resolvedOwner,
+				Branch = resolvedBranch,
+				SkipEtagCheck = skipEtagCheck
+			};
+			serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
+		}
+
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 

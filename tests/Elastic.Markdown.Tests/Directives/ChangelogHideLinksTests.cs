@@ -131,6 +131,15 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 		Block!.PrivateRepositories.Should().NotBeNull();
 
 	[Fact]
+	public void LoadPrivateRepositories_IncludesSkipTruePrivateRepos()
+	{
+		// kibana-team is marked private: true, skip: true in the embedded assembler.yml.
+		// skip: true means "does not publish docs", not "is public". LoadPrivateRepositories
+		// must include it so that its links are hidden at render time.
+		Block!.PrivateRepositories.Should().Contain("kibana-team");
+	}
+
+	[Fact]
 	public void RendersPrLinksForPublicRepo()
 	{
 		// elasticsearch is a public repo, so PR link should be visible in the output
