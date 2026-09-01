@@ -13,7 +13,7 @@ namespace Elastic.Changelog.Evaluation;
 /// <list type="bullet">
 ///   <item><c>post-success-comment.js</c> → <see cref="RenderEntryCommitted"/></item>
 ///   <item><c>post-comment-only.js</c>     → <see cref="RenderCommentOnly"/></item>
-///   <item><c>post-failure-comment.js</c>  → <see cref="RenderCannotGenerate"/></item>
+///   <item><c>post-failure-comment.js</c>  → <see cref="RenderLabelsNeeded"/></item>
 /// </list>
 /// </para>
 /// <para>
@@ -106,14 +106,15 @@ internal static class ChangelogCommentRenderer
 
 	/// <summary>
 	/// Renders the Step 1 (label gate) comment body: tells the author which labels are required
-	/// before a changelog entry can be generated. Tone is "labels not set yet", not "generation
-	/// failed" — the author just hasn't told us what type of change this is.
+	/// so the PR's release-notes status can be determined. Tone is "labels not set yet", not
+	/// "generation failed" — the author just hasn't told us what type of change this is.
 	/// <para>
-	/// Step 2 (changelog file invalid) and Step 3 (full require-changelog-file failure) will use
-	/// separate render methods added when those workflow paths are built.
+	/// Step 2 (changelog file invalid — <c>evaluate-pr</c>, <see cref="ValidationGate.File"/>)
+	/// and Step 3 (full require-changelog-file failure) will use separate render methods added
+	/// when those workflow paths are built.
 	/// </para>
 	/// </summary>
-	internal static string RenderCannotGenerate(string? labelTable, string? productLabelTable, string? skipLabels, string? configFile)
+	internal static string RenderLabelsNeeded(string? labelTable, string? productLabelTable, string? skipLabels, string? configFile)
 	{
 		var configFileCode = WrapInlineCode(string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile);
 

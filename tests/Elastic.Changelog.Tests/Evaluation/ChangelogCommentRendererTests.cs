@@ -64,27 +64,27 @@ public class ChangelogCommentRendererTests
 	}
 
 	[Fact]
-	public void RenderCannotGenerate_TypeMissing_ContainsTypeLabelHeadline()
+	public void RenderLabelsNeeded_TypeMissing_ContainsTypeLabelHeadline()
 	{
-		var body = ChangelogCommentRenderer.RenderCannotGenerate("| type:feature | feature |", null, null, null);
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded("| type:feature | feature |", null, null, null);
 
 		body.Should().Contain("Changelog label needed");
 		body.Should().Contain("type:feature");
 	}
 
 	[Fact]
-	public void RenderCannotGenerate_ProductMissing_ContainsProductLabelHeadline()
+	public void RenderLabelsNeeded_ProductMissing_ContainsProductLabelHeadline()
 	{
-		var body = ChangelogCommentRenderer.RenderCannotGenerate(null, "| @Product:ECH | cloud |", null, null);
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(null, "| @Product:ECH | cloud |", null, null);
 
 		body.Should().Contain("Product label needed");
 		body.Should().Contain("@Product:ECH");
 	}
 
 	[Fact]
-	public void RenderCannotGenerate_BothMissing_ContainsBothTables()
+	public void RenderLabelsNeeded_BothMissing_ContainsBothTables()
 	{
-		var body = ChangelogCommentRenderer.RenderCannotGenerate("| type:feature | feature |", "| @Product:ECH | cloud |", null, null);
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded("| type:feature | feature |", "| @Product:ECH | cloud |", null, null);
 
 		body.Should().Contain("Changelog labels needed");
 		body.Should().Contain("type:feature");
@@ -120,7 +120,7 @@ public class ChangelogCommentRendererTests
 	[Theory]
 	[InlineData("entry-committed")]
 	[InlineData("comment-only")]
-	[InlineData("cannot-generate")]
+	[InlineData("labels-needed")]
 	[InlineData("resolved")]
 	public void AllBodies_StartWithTitle(string variant)
 	{
@@ -128,7 +128,7 @@ public class ChangelogCommentRendererTests
 		{
 			"entry-committed" => ChangelogCommentRenderer.RenderEntryCommitted("owner", "repo", "main", "file.yaml"),
 			"comment-only" => ChangelogCommentRenderer.RenderCommentOnly(null, "type: feature", "42.yaml", false, false),
-			"cannot-generate" => ChangelogCommentRenderer.RenderCannotGenerate("| label | type |", null, null, null),
+			"labels-needed" => ChangelogCommentRenderer.RenderLabelsNeeded("| label | type |", null, null, null),
 			"resolved" => ChangelogCommentRenderer.RenderResolved(),
 			_ => throw new InvalidOperationException()
 		};

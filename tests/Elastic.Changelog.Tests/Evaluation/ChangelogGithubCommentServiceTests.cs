@@ -119,7 +119,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 	}
 
 	[Fact]
-	public async Task PostComment_NoLabel_RendersCannotGenerateBody()
+	public async Task PostComment_NoLabel_RendersLabelsNeededBody()
 	{
 		await WriteMetadata(BaseMetadata(status: "no-label") with
 		{

@@ -108,11 +108,12 @@ public class ChangelogGithubCommentService(
 			);
 		}
 
-		// No label: cannot-generate body with label tables.
-		if (isNoLabel)
+		// Step 1 (label gate): labels are missing — tell the author which ones to add.
+		// Dispatches on Gate when present; falls back to status for artifacts written before Gate was added.
+		if (isNoLabel && metadata.Gate is null or ValidationGate.Labels)
 		{
-			_logger.LogInformation("Rendering cannot-generate body for PR #{PrNumber}", metadata.PrNumber);
-			return ChangelogCommentRenderer.RenderCannotGenerate(
+			_logger.LogInformation("Rendering labels-needed body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderLabelsNeeded(
 				metadata.LabelTable,
 				metadata.ProductLabelTable,
 				metadata.SkipLabels,

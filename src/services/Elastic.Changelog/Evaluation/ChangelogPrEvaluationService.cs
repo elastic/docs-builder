@@ -257,6 +257,7 @@ public class ChangelogPrEvaluationService(
 
 		var metadata = new GithubDecisionMetadata
 		{
+			Gate = ValidationGate.File,
 			PrNumber = input.PrNumber,
 			HeadRef = input.HeadRef,
 			HeadSha = input.HeadSha,
