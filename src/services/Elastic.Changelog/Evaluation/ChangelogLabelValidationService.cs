@@ -41,6 +41,7 @@ public class ChangelogLabelValidationService(
 	public async Task<bool> ValidateLabels(IDiagnosticsCollector collector, ValidateLabelsArguments input, Cancel ctx)
 	{
 		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx) ?? ChangelogConfiguration.Default;
+		var defaultBranch = config.Bundle?.Branch ?? "main";
 
 		// Label-based skip check: all products blocked → skipped
 		var skipLabels = ChangelogPrEvaluationService.CollectExcludeLabels(config.Rules?.Create);
@@ -67,7 +68,12 @@ public class ChangelogLabelValidationService(
 		{
 			_logger.LogInformation("Multiple type labels found on PR: {Labels}", ambiguousTypeLabels);
 			collector.EmitError(string.Empty, $"Multiple type labels found: {ambiguousTypeLabels}. Remove all but one.");
-			await Finish("no-label", ambiguousTypeLabels: ambiguousTypeLabels, skipLabels: skipLabels);
+			await Finish(
+				"no-label",
+				ambiguousTypeLabels: ambiguousTypeLabels,
+				skipLabels: skipLabels,
+				labelKeys: ChangelogPrEvaluationService.BuildLabelKeys(config.LabelToType)
+			);
 			return false;
 		}
 
@@ -99,7 +105,14 @@ public class ChangelogLabelValidationService(
 				"No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label."
 			);
 			var labelTable = ChangelogPrEvaluationService.BuildLabelTable(config.LabelToType);
-			await Finish("no-label", labelTable: labelTable, productLabelTable: productLabelTable, skipLabels: skipLabels);
+			var labelKeys = ChangelogPrEvaluationService.BuildLabelKeys(config.LabelToType);
+			await Finish(
+				"no-label",
+				labelTable: labelTable,
+				labelKeys: labelKeys,
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels
+			);
 			return false;
 		}
 
@@ -123,6 +136,7 @@ public class ChangelogLabelValidationService(
 			string? type = null,
 			string? products = null,
 			string? labelTable = null,
+			string? labelKeys = null,
 			string? productLabelTable = null,
 			string? skipLabels = null,
 			string? ambiguousTypeLabels = null
@@ -143,11 +157,12 @@ public class ChangelogLabelValidationService(
 					CanCommit = input.CanCommit,
 					MaintainerCanModify = input.MaintainerCanModify,
 					HeadRepo = input.HeadRepo,
-					LabelTable = labelTable,
+					LabelTable = labelKeys ?? labelTable,
 					ProductLabelTable = productLabelTable,
 					SkipLabels = skipLabels,
 					ConfigFile = input.ConfigFile,
-					AmbiguousTypeLabels = ambiguousTypeLabels
+					AmbiguousTypeLabels = ambiguousTypeLabels,
+					DefaultBranch = defaultBranch
 				};
 				await _metadataWriter.WriteAsync(metadata, ctx);
 			}

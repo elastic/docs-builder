@@ -50,7 +50,7 @@ public class ChangelogGithubCommentService(
 		var owner = input.Owner;
 		var repo = input.Repo;
 
-		var body = SelectBody(metadata, input.MetadataDir);
+		var body = SelectBody(metadata, input.MetadataDir, owner, repo);
 		if (body is null)
 		{
 			if (IsSuccess(metadata.Status) || IsSkipped(metadata.Status))
@@ -74,7 +74,7 @@ public class ChangelogGithubCommentService(
 		return true;
 	}
 
-	private string? SelectBody(GithubDecisionMetadata metadata, string metadataDir)
+	private string? SelectBody(GithubDecisionMetadata metadata, string metadataDir, string owner, string repo)
 	{
 		// Committed: entry-committed body with blob + edit links.
 		if (metadata.CommitOutcome == CommitOutcome.Committed && !string.IsNullOrWhiteSpace(metadata.CommittedFile))
@@ -129,7 +129,10 @@ public class ChangelogGithubCommentService(
 				metadata.ProductLabelTable,
 				metadata.SkipLabels,
 				metadata.ConfigFile,
-				metadata.AmbiguousTypeLabels
+				metadata.AmbiguousTypeLabels,
+				owner,
+				repo,
+				metadata.DefaultBranch
 			);
 		}
 

@@ -119,10 +119,16 @@ internal static class ChangelogCommentRenderer
 		string? productLabelTable,
 		string? skipLabels,
 		string? configFile,
-		string? ambiguousTypeLabels = null
+		string? ambiguousTypeLabels = null,
+		string? owner = null,
+		string? repo = null,
+		string? defaultBranch = null
 	)
 	{
-		var configFileCode = WrapInlineCode(string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile);
+		var configFileName = string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile;
+		var configRef = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
+			? $"[{configFileName}](https://github.com/{owner}/{repo}/blob/{defaultBranch ?? "main"}/{configFileName})"
+			: WrapInlineCode(configFileName);
 
 		var hasAmbiguousType = !string.IsNullOrWhiteSpace(ambiguousTypeLabels);
 		var hasTypeIssue = !string.IsNullOrWhiteSpace(labelTable);
@@ -147,9 +153,14 @@ internal static class ChangelogCommentRenderer
 			sections.Add($"\n🔖 Conflicting type labels found: {string.Join(", ", conflicting)}. Keep only one.");
 		}
 		else if (hasTypeIssue)
-			sections.Add(string.Join("\n", "", "🔖 Add one of these **type** labels to your PR:", "", labelTable));
+		{
+			var inlineLabels = labelTable!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(
+				WrapInlineCode
+			);
+			sections.Add($"\n🔖 Add one of these type labels to your PR: {string.Join(", ", inlineLabels)}");
+		}
 		else if (!hasProductIssue)
-			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configFileCode}.");
+			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configRef}.");
 
 		if (hasProductIssue)
 			sections.Add(string.Join("\n", "", "📦 Add one or more **product** labels to your PR:", "", productLabelTable));
@@ -165,14 +176,14 @@ internal static class ChangelogCommentRenderer
 		else
 		{
 			skipSection = $"\n⏭️ No exclude labels are configured. To allow excluding PRs from release notes, "
-				+ $"add a label to {WrapInlineCode("rules.create.exclude")} in {configFileCode}.";
+				+ $"add a label to {WrapInlineCode("rules.create.exclude")} in {configRef}.";
 		}
 
 		var allParts = new List<string> { Title, "", headline };
 		allParts.AddRange(sections);
 		allParts.Add(skipSection);
 		allParts.Add("");
-		allParts.Add($"📄 See {configFileCode} for the full changelog configuration.");
+		allParts.Add($"📄 See {configRef} for the full changelog configuration.");
 
 		return Truncate(string.Join("\n", allParts));
 	}
