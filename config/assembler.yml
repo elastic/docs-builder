@@ -23,7 +23,6 @@ environments:
     feature_flags:
       WEBSITE_SEARCH: true
       ASSEMBLER_API_EXPLORER: true
-      NAVIGATION_PREVIEW: true
     website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
   edge:
     uri: https://d34ipnu52o64md.cloudfront.net
