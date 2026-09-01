@@ -32,10 +32,29 @@ public record GithubDecisionMetadata
 	public string? ChangelogDir { get; init; }
 	public string? ChangelogFilename { get; init; }
 	public CreateRules? CreateRules { get; init; }
+	/// <summary>Which validation gate wrote this record. Null for artifacts written before this field was added.</summary>
+	public ValidationGate? Gate { get; init; }
 	/// <summary>Outcome of the changelog commit step, written by <c>changelog github-decision</c> after apply.</summary>
 	public CommitOutcome? CommitOutcome { get; init; }
 	/// <summary>Repo-relative path to the committed changelog file, when <see cref="CommitOutcome"/> is <c>Committed</c>.</summary>
 	public string? CommittedFile { get; init; }
+}
+
+/// <summary>
+/// Which validation gate wrote the metadata, used by the comment renderer to select the
+/// stage-appropriate body.
+/// <list type="bullet">
+///   <item><see cref="Labels"/> — written by <c>validate-labels</c> (Step 1: label gate).</item>
+///   <item><see cref="File"/> — written by <c>evaluate-pr</c> (Step 2: changelog file gate).</item>
+/// </list>
+/// Nullable on the record so artifacts without this field still deserialize.
+/// </summary>
+public enum ValidationGate
+{
+	/// <summary>Written by <c>validate-labels</c>. Only label presence is checked.</summary>
+	Labels,
+	/// <summary>Written by <c>evaluate-pr</c>. The changelog file is also evaluated.</summary>
+	File,
 }
 
 /// <summary>Outcome of the apply job's changelog commit step.</summary>
@@ -51,6 +70,7 @@ public enum CommitOutcome
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(GithubDecisionMetadata))]
+[JsonSerializable(typeof(ValidationGate))]
 [JsonSerializable(typeof(CommitOutcome))]
 [JsonSerializable(typeof(CreateRules))]
 [JsonSerializable(typeof(FieldMode))]

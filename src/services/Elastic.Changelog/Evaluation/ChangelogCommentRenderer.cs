@@ -13,7 +13,7 @@ namespace Elastic.Changelog.Evaluation;
 /// <list type="bullet">
 ///   <item><c>post-success-comment.js</c> → <see cref="RenderEntryCommitted"/></item>
 ///   <item><c>post-comment-only.js</c>     → <see cref="RenderCommentOnly"/></item>
-///   <item><c>post-failure-comment.js</c>  → <see cref="RenderCannotGenerate"/></item>
+///   <item><c>post-failure-comment.js</c>  → <see cref="RenderLabelsNeeded"/></item>
 /// </list>
 /// </para>
 /// <para>
@@ -105,10 +105,16 @@ internal static class ChangelogCommentRenderer
 	}
 
 	/// <summary>
-	/// Renders the "cannot generate" body: the error headline plus optional label tables and skip-label
-	/// guidance, ported from <c>post-failure-comment.js</c>.
+	/// Renders the Step 1 (label gate) comment body: tells the author which labels are required
+	/// so the PR's release-notes status can be determined. Tone is "labels not set yet", not
+	/// "generation failed" — the author just hasn't told us what type of change this is.
+	/// <para>
+	/// Step 2 (changelog file invalid — <c>evaluate-pr</c>, <see cref="ValidationGate.File"/>)
+	/// and Step 3 (full require-changelog-file failure) will use separate render methods added
+	/// when those workflow paths are built.
+	/// </para>
 	/// </summary>
-	internal static string RenderCannotGenerate(string? labelTable, string? productLabelTable, string? skipLabels, string? configFile)
+	internal static string RenderLabelsNeeded(string? labelTable, string? productLabelTable, string? skipLabels, string? configFile)
 	{
 		var configFileCode = WrapInlineCode(string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile);
 
@@ -116,10 +122,10 @@ internal static class ChangelogCommentRenderer
 		var hasProductIssue = !string.IsNullOrWhiteSpace(productLabelTable);
 
 		var headline = hasTypeIssue && hasProductIssue
-			? "⚠️ **Cannot generate changelog:** required type and product labels are missing on this PR."
+			? "🏷️ **Changelog labels needed** — add type and product labels so we can determine this PR's release-notes status."
 			: hasProductIssue
-				? "⚠️ **Cannot generate changelog:** no matching product label found on this PR."
-				: "⚠️ **Cannot generate changelog:** no matching type label found on this PR.";
+				? "🏷️ **Product label needed** — add a product label so we can determine this PR's release-notes status."
+				: "🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.";
 
 		var sections = new List<string>();
 
@@ -137,11 +143,11 @@ internal static class ChangelogCommentRenderer
 			var formatted = skipLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(
 				WrapInlineCode
 			);
-			skipSection = $"\n⏭️ To skip changelog generation, add one of these labels: {string.Join(", ", formatted)}";
+			skipSection = $"\n⏭️ To exclude this PR from release notes, add one of these labels: {string.Join(", ", formatted)}";
 		}
 		else
 		{
-			skipSection = $"\n⏭️ No skip labels are configured. To allow skipping changelog generation, "
+			skipSection = $"\n⏭️ No exclude labels are configured. To allow excluding PRs from release notes, "
 				+ $"add a label to {WrapInlineCode("rules.create.exclude")} in {configFileCode}.";
 		}
 
@@ -155,10 +161,10 @@ internal static class ChangelogCommentRenderer
 	}
 
 	/// <summary>
-	/// Renders the "resolved" body posted when a previously-failing PR is now valid, to avoid leaving
-	/// a stale failure comment.
+	/// Renders the "resolved" body posted when a previously-failing PR now has the required labels,
+	/// clearing the stale Step 1 comment and confirming what happens next.
 	/// </summary>
-	internal static string RenderResolved() => string.Join("\n", Title, "", "✅ Changelog labels validated successfully.");
+	internal static string RenderResolved() => string.Join("\n", Title, "", "✅ **Changelog label set** — release-notes status confirmed.");
 
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)

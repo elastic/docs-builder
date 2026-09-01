@@ -119,7 +119,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 	}
 
 	[Fact]
-	public async Task PostComment_NoLabel_RendersCannotGenerateBody()
+	public async Task PostComment_NoLabel_RendersLabelsNeededBody()
 	{
 		await WriteMetadata(BaseMetadata(status: "no-label") with
 		{
@@ -138,7 +138,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 				A<string>._,
 				A<string>._,
 				A<int>._,
-				A<string>.That.Contains("Cannot generate changelog"),
+				A<string>.That.Contains("Changelog label needed"),
 				A<CancellationToken>._
 			)
 		).MustHaveHappenedOnceExactly();

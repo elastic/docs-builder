@@ -118,6 +118,7 @@ public class ChangelogLabelValidationService(
 			{
 				var metadata = new GithubDecisionMetadata
 				{
+					Gate = ValidationGate.Labels,
 					PrNumber = input.PrNumber,
 					HeadRef = input.HeadRef,
 					HeadSha = input.HeadSha,
