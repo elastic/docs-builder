@@ -45,6 +45,8 @@ applies_to:
 ---
 ```
 
+API Explorer pages use the same `title`, `description`, `url`, and `products` keys. They also set `type: api` and `resource` (the same URI as `url`) so an OKF consumer can read the file as a concept.
+
 ## Content negotiation
 
 Web servers (like the one serving elastic.co/docs) can use the co-located `.md` files to implement content negotiation:

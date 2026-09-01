@@ -84,11 +84,20 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			.File
 			.ReadAllTextAsync(Path.Join(outputRoot, "api.md"), TestContext.Current.CancellationToken);
 
-		landing.Should().StartWith("# Fixture API");
+		landing.Should().StartWith("---");
+		landing.Should().Contain("type: api");
+		landing.Should().Contain("title: Fixture API");
+		landing.Should().Contain("url: /api/doc/elasticsearch");
+		landing.Should().Contain("resource: /api/doc/elasticsearch");
+		landing.Should().Contain("  - elasticsearch");
+		landing.Should().NotContain("applies_to:");
+		landing.Should().Contain("# Fixture API");
 		landing.Should().Contain("Search APIs");
 		landing.Should().NotContain("<!DOCTYPE");
 		landing.Should().NotContain("<html");
 
+		operation.Should().Contain("type: api");
+		operation.Should().Contain("title: Run a search");
 		operation.Should().Contain("# Run a search");
 		operation.Should().Contain("`POST`");
 		operation.Should().Contain("`/{index}/_search`");
@@ -97,6 +106,9 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		operation.Should().NotContain("<!DOCTYPE");
 		operation.Should().NotContain("<html");
 
+		catalog.Should().Contain("type: api");
+		catalog.Should().Contain("title: API Explorer");
+		catalog.Should().Contain("description: API products in this documentation set.");
 		catalog.Should().Contain("# API Explorer");
 		catalog.Should().Contain("Fixture API");
 		catalog.Should().Contain("`elasticsearch`");
@@ -160,9 +172,15 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 
 		var markdown = await item.RenderCommonMarkAsync(renderContext, TestContext.Current.CancellationToken);
 
-		markdown.Should().Contain("# Kibana spaces");
-		markdown.Should().Contain("Spaces enable you to organize");
-		markdown.Should().NotContain("<!DOCTYPE");
+		var wrapped = ApiMarkdownFrontMatter.Wrap(markdown!, item, renderContext, item);
+
+		wrapped.Should().StartWith("---");
+		wrapped.Should().Contain("type: api");
+		wrapped.Should().Contain("title: Kibana spaces");
+		wrapped.Should().NotContain("navigation_title:");
+		wrapped.Should().Contain("description: Spaces enable you to organize");
+		wrapped.Should().Contain("# Kibana spaces");
+		wrapped.Should().NotContain("<!DOCTYPE");
 	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)

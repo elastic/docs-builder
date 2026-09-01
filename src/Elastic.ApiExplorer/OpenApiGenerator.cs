@@ -296,7 +296,8 @@ public class OpenApiGenerator(
 			ApiExplorerLog = _logger,
 			VersionSwitcherItems = generation.VersionSwitcherItems,
 			OperationSupplemental = operations,
-			TagSupplemental = tags
+			TagSupplemental = tags,
+			Product = generation.ApiConfig?.Product
 		};
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
@@ -379,6 +380,8 @@ public class OpenApiGenerator(
 		var markdown = await page.RenderCommonMarkAsync(renderContext, ctx).ConfigureAwait(false);
 		if (string.IsNullOrEmpty(markdown))
 			return;
+
+		markdown = ApiMarkdownFrontMatter.Wrap(markdown, current, renderContext, page);
 
 		var markdownFile = _writeFileSystem.FileInfo.New(
 			Path.Join(context.OutputDirectory.FullName, ApiOutputPaths.RelativeMarkdownFile(current.Url, context.UrlPathPrefix))
