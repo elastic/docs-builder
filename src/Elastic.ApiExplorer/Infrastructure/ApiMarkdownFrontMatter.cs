@@ -5,6 +5,7 @@
 using System.Text;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Navigation;
 
@@ -33,32 +34,12 @@ internal static class ApiMarkdownFrontMatter
 		return markdown.ToString();
 	}
 
-	public static string StripLeadingFrontMatter(string markdown)
-	{
-		if (!markdown.StartsWith("---", StringComparison.Ordinal))
-			return markdown;
-
-		var end = markdown.IndexOf("\n---", 3, StringComparison.Ordinal);
-		if (end < 0)
-			return markdown;
-
-		var after = end + 4;
-		if (after < markdown.Length && markdown[after] == '\r')
-			after++;
-		if (after < markdown.Length && markdown[after] == '\n')
-			after++;
-		return markdown[after..];
-	}
+	public static string StripLeadingFrontMatter(string markdown) => ApiSupplementalDoc.ExtractFrontMatter(markdown).Content;
 
 	internal static ApiPageFrontMatter Collect(string body, INavigationItem current, ApiRenderContext context, IApiModel page)
 	{
 		var title = Heading(body) ?? current.NavigationTitle;
-		return new(
-			title,
-			ResolveDescription(page, context) ?? FirstParagraph(body),
-			CanonicalUrl(context, current),
-			context.Product?.DisplayName
-		);
+		return new(title, ResolveDescription(page, context, body), CanonicalUrl(context, current), context.Product?.DisplayName);
 	}
 
 	private static void WriteYaml(StringBuilder markdown, ApiPageFrontMatter meta)
@@ -71,22 +52,15 @@ internal static class ApiMarkdownFrontMatter
 
 		_ = markdown.AppendLine($"url: {meta.Url}");
 		_ = markdown.AppendLine($"resource: {meta.Url}");
-		WriteList(markdown, "products", ProductItems(meta.Product));
+		if (!string.IsNullOrWhiteSpace(meta.Product))
+		{
+			_ = markdown.AppendLine("products:");
+			_ = markdown.AppendLine($"  - {meta.Product}");
+		}
+
 		_ = markdown.AppendLine("---");
 		_ = markdown.AppendLine();
 	}
-
-	private static void WriteList(StringBuilder markdown, string key, IReadOnlyList<string> items)
-	{
-		if (items.Count == 0)
-			return;
-
-		_ = markdown.AppendLine($"{key}:");
-		foreach (var item in items)
-			_ = markdown.AppendLine($"  - {item}");
-	}
-
-	private static IReadOnlyList<string> ProductItems(string? product) => string.IsNullOrWhiteSpace(product) ? [] : [product];
 
 	private static string CanonicalUrl(ApiRenderContext context, INavigationItem current)
 	{
@@ -97,7 +71,7 @@ internal static class ApiMarkdownFrontMatter
 		return context.BuildContext.CanonicalBaseUrl is { } baseUrl ? new Uri(baseUrl, path).ToString().TrimEnd('/') : path;
 	}
 
-	private static string? ResolveDescription(IApiModel page, ApiRenderContext context)
+	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body)
 	{
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		return page switch
@@ -107,6 +81,7 @@ internal static class ApiMarkdownFrontMatter
 			ApiTag tag => FirstLine(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
 			ApiOperation operation => FirstLine(ApiMarkdown.Prepare(OperationDescription(operation, context), apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
+			SimpleMarkdownNavigationItem => FirstParagraph(body),
 			_ => null
 		};
 	}
@@ -158,9 +133,6 @@ internal static class ApiMarkdownFrontMatter
 				continue;
 			}
 
-			if (buffer.Length == 0 && IsSkippableLead(line))
-				continue;
-
 			if (buffer.Length > 0)
 				_ = buffer.Append(' ');
 			_ = buffer.Append(line.Trim());
@@ -168,14 +140,6 @@ internal static class ApiMarkdownFrontMatter
 
 		return buffer.Length == 0 ? null : buffer.ToString();
 	}
-
-	private static bool IsSkippableLead(string line) =>
-		line.StartsWith("- ", StringComparison.Ordinal)
-			|| line.StartsWith("* ", StringComparison.Ordinal)
-			|| line.StartsWith('`')
-			|| line.StartsWith("Availability:", StringComparison.Ordinal)
-			|| line.Equals("deprecated", StringComparison.OrdinalIgnoreCase)
-			|| line.Equals("Beta", StringComparison.Ordinal);
 
 	private static string? FirstLine(string? text)
 	{
