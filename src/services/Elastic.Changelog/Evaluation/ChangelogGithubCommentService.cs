@@ -53,11 +53,12 @@ public class ChangelogGithubCommentService(
 		var body = SelectBody(metadata, input.MetadataDir);
 		if (body is null)
 		{
-			if (IsSuccess(metadata.Status))
+			if (IsSuccess(metadata.Status) || IsSkipped(metadata.Status))
 			{
 				_logger.LogInformation(
-					"Labels validated for PR #{PrNumber} — deleting stale failure comment if present",
-					metadata.PrNumber
+					"PR #{PrNumber} is {Status} — deleting stale failure comment if present",
+					metadata.PrNumber,
+					metadata.Status
 				);
 				_ = await commentService.DeleteStickyCommentAsync(owner, repo, metadata.PrNumber, ctx);
 			}
@@ -68,17 +69,7 @@ public class ChangelogGithubCommentService(
 
 		var nodeId = await commentService.UpsertStickyCommentAsync(owner, repo, metadata.PrNumber, body, ctx);
 		if (nodeId is null)
-		{
 			_logger.LogWarning("Comment post did not succeed for PR #{PrNumber} — continuing", metadata.PrNumber);
-			return true;
-		}
-
-		// Minimize skipped comments so they are hidden (collapsed as 'resolved') on GitHub.
-		// Unminimize everything else so a previously-hidden comment resurfaces when the author
-		// removes the skip label and the PR goes back to needing labels.
-		_ = IsSkipped(metadata.Status)
-			? await commentService.MinimizeCommentAsync(nodeId, ctx)
-			: await commentService.UnminimizeCommentAsync(nodeId, ctx);
 
 		return true;
 	}
@@ -141,17 +132,7 @@ public class ChangelogGithubCommentService(
 			);
 		}
 
-		// Success with no staged file: signal to delete the sticky comment (no body needed).
-		if (isSuccess)
-			return null;
-
-		// Skipped: clear any stale failure comment.
-		if (IsSkipped(metadata.Status))
-		{
-			_logger.LogInformation("Rendering skipped body for PR #{PrNumber}", metadata.PrNumber);
-			return ChangelogCommentRenderer.RenderSkipped();
-		}
-
+		// Success or skipped: signal to delete the sticky comment (no body needed).
 		return null;
 	}
 
