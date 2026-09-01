@@ -56,7 +56,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		var result = await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -80,7 +82,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -103,7 +107,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -129,7 +135,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -152,7 +160,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -188,10 +198,42 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(false);
+		).Returns((string?)null);
 
 		var result = await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
 		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task PostComment_Skipped_MinimizesComment()
+	{
+		await WriteMetadata(BaseMetadata(status: "skipped"));
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).Returns((string?)"IC_skipped_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(() => commentSvc.MinimizeCommentAsync("IC_skipped_node_id", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task PostComment_NoLabel_UnminimizesComment()
+	{
+		await WriteMetadata(BaseMetadata(status: "no-label") with { LabelTable = "| type:feature | feature |" });
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).Returns((string?)"IC_nolabel_node_id");
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync("IC_nolabel_node_id", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 }

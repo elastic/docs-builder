@@ -56,9 +56,19 @@ public class ChangelogGithubCommentService(
 			return true;
 		}
 
-		var posted = await commentService.UpsertStickyCommentAsync(owner, repo, metadata.PrNumber, body, ctx);
-		if (!posted)
+		var nodeId = await commentService.UpsertStickyCommentAsync(owner, repo, metadata.PrNumber, body, ctx);
+		if (nodeId is null)
+		{
 			_logger.LogWarning("Comment post did not succeed for PR #{PrNumber} — continuing", metadata.PrNumber);
+			return true;
+		}
+
+		// Minimize skipped comments so they are hidden (collapsed as 'resolved') on GitHub.
+		// Unminimize everything else so a previously-hidden comment resurfaces when the author
+		// removes the skip label and the PR goes back to needing labels.
+		_ = IsSkipped(metadata.Status)
+			? await commentService.MinimizeCommentAsync(nodeId, ctx)
+			: await commentService.UnminimizeCommentAsync(nodeId, ctx);
 
 		return true;
 	}

@@ -25,7 +25,7 @@ namespace Elastic.Changelog.GitHub;
 /// </para>
 /// <para>
 /// Failure policy: a transient error (rate-limit, 403, network blip) logs a warning and returns
-/// <c>false</c> without calling <c>EmitError</c>. Never let a comment failure flip the verdict.
+/// <c>null</c> without calling <c>EmitError</c>. Never let a comment failure flip the verdict.
 /// </para>
 /// </summary>
 public partial class GitHubCommentService(ILoggerFactory loggerFactory, GitHubApiTransport? transport = null) : IGitHubCommentService
@@ -47,32 +47,33 @@ public partial class GitHubCommentService(ILoggerFactory loggerFactory, GitHubAp
 	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
 	/// <inheritdoc />
-	public async Task<bool> UpsertStickyCommentAsync(string owner, string repo, int prNumber, string body, Cancel ctx = default)
+	public async Task<string?> UpsertStickyCommentAsync(string owner, string repo, int prNumber, string body, Cancel ctx = default)
 	{
 		var markedBody = body.TrimEnd() + "\n" + HtmlMarker;
 
 		try
 		{
-			var existingId = await FindExistingCommentIdAsync(owner, repo, prNumber, ctx);
+			var existing = await FindExistingCommentAsync(owner, repo, prNumber, ctx);
 
-			if (existingId.HasValue)
+			if (existing.HasValue)
 			{
-				var updateUrl = $"https://api.github.com/repos/{owner}/{repo}/issues/comments/{existingId.Value}";
+				var updateUrl = $"https://api.github.com/repos/{owner}/{repo}/issues/comments/{existing.Value.Id}";
 				var updatePayload = JsonSerializer.Serialize(new CommentBody { Body = markedBody }, CommentJsonContext.Default.CommentBody);
 				using var updateResponse = await _transport.PatchAsync(updateUrl, updatePayload, ctx);
 				if (!updateResponse.IsSuccessStatusCode)
 				{
 					_logger.LogWarning(
 						"Failed to update comment {CommentId} on PR #{PrNumber}: {Status}",
-						existingId.Value,
+						existing.Value.Id,
 						prNumber,
 						(int)updateResponse.StatusCode
 					);
-					return false;
+					return null;
 				}
 
-				_logger.LogInformation("Updated changelog comment {CommentId} on PR #{PrNumber}", existingId.Value, prNumber);
-				return true;
+				var nodeId = await ParseNodeIdAsync(updateResponse, ctx);
+				_logger.LogInformation("Updated changelog comment {CommentId} on PR #{PrNumber}", existing.Value.Id, prNumber);
+				return nodeId ?? existing.Value.NodeId;
 			}
 
 			var createUrl = $"https://api.github.com/repos/{owner}/{repo}/issues/{prNumber}/comments";
@@ -85,34 +86,85 @@ public partial class GitHubCommentService(ILoggerFactory loggerFactory, GitHubAp
 					prNumber,
 					(int)createResponse.StatusCode
 				);
-				return false;
+				return null;
 			}
 
+			var createdNodeId = await ParseNodeIdAsync(createResponse, ctx);
 			_logger.LogInformation("Created changelog comment on PR #{PrNumber}", prNumber);
-			return true;
+			return createdNodeId;
 		}
 		catch (HttpRequestException ex)
 		{
 			_logger.LogWarning(ex, "HTTP error posting changelog comment on PR #{PrNumber}", prNumber);
-			return false;
+			return null;
 		}
 		catch (TaskCanceledException)
 		{
 			_logger.LogWarning("Timeout posting changelog comment on PR #{PrNumber}", prNumber);
-			return false;
+			return null;
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
 		{
 			_logger.LogWarning(ex, "Unexpected error posting changelog comment on PR #{PrNumber}", prNumber);
+			return null;
+		}
+	}
+
+	/// <inheritdoc />
+	public async Task<bool> MinimizeCommentAsync(string nodeId, Cancel ctx = default)
+	{
+		// minimizeComment is a GraphQL-only mutation; no REST equivalent exists.
+		var query =
+			$"mutation {{ minimizeComment(input: {{subjectId: \"{nodeId}\", classifier: RESOLVED}}) {{ minimizedComment {{ isMinimized }} }} }}";
+		var payload = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommentJsonContext.Default.GraphQlRequest);
+		try
+		{
+			using var response = await _transport.PostGraphQlAsync(payload, ctx);
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogWarning("Failed to minimize comment {NodeId}: {Status}", nodeId, (int)response.StatusCode);
+				return false;
+			}
+
+			_logger.LogInformation("Minimized comment {NodeId}", nodeId);
+			return true;
+		}
+		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
+		{
+			_logger.LogWarning(ex, "Unexpected error minimizing comment {NodeId}", nodeId);
+			return false;
+		}
+	}
+
+	/// <inheritdoc />
+	public async Task<bool> UnminimizeCommentAsync(string nodeId, Cancel ctx = default)
+	{
+		var query = $"mutation {{ unminimizeComment(input: {{subjectId: \"{nodeId}\"}}) {{ unMinimizedComment {{ isMinimized }} }} }}";
+		var payload = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommentJsonContext.Default.GraphQlRequest);
+		try
+		{
+			using var response = await _transport.PostGraphQlAsync(payload, ctx);
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogWarning("Failed to unminimize comment {NodeId}: {Status}", nodeId, (int)response.StatusCode);
+				return false;
+			}
+
+			_logger.LogInformation("Unminimized comment {NodeId}", nodeId);
+			return true;
+		}
+		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
+		{
+			_logger.LogWarning(ex, "Unexpected error unminimizing comment {NodeId}", nodeId);
 			return false;
 		}
 	}
 
 	/// <summary>
-	/// Paginates through all PR comments and returns the ID of the first comment that matches
-	/// either the HTML marker or the legacy title prefix; <c>null</c> when none is found.
+	/// Paginates through all PR comments and returns the ID and node_id of the first comment that
+	/// matches either the HTML marker or the legacy title prefix; <c>null</c> when none is found.
 	/// </summary>
-	private async Task<long?> FindExistingCommentIdAsync(string owner, string repo, int prNumber, Cancel ctx)
+	private async Task<(long Id, string NodeId)?> FindExistingCommentAsync(string owner, string repo, int prNumber, Cancel ctx)
 	{
 		var page = 1;
 		const int perPage = 100;
@@ -149,7 +201,7 @@ public partial class GitHubCommentService(ILoggerFactory loggerFactory, GitHubAp
 					commentBody.Contains(HtmlMarker, StringComparison.Ordinal)
 					|| commentBody.StartsWith(LegacyTitlePrefix, StringComparison.Ordinal)
 				)
-					return comment.Id;
+					return (comment.Id, comment.NodeId ?? string.Empty);
 			}
 
 			// GitHub omits the Link header or returns fewer than perPage items on the last page.
@@ -160,9 +212,27 @@ public partial class GitHubCommentService(ILoggerFactory loggerFactory, GitHubAp
 		}
 	}
 
+	private async Task<string?> ParseNodeIdAsync(HttpResponseMessage response, Cancel ctx)
+	{
+		try
+		{
+			var json = await response.Content.ReadAsStringAsync(ctx);
+			var item = JsonSerializer.Deserialize(json, CommentJsonContext.Default.CommentItem);
+			return string.IsNullOrEmpty(item?.NodeId) ? null : item.NodeId;
+		}
+		catch (JsonException)
+		{
+			return null;
+		}
+	}
+
 	private sealed class CommentItem
 	{
 		public long Id { get; set; }
+
+		[JsonPropertyName("node_id")]
+		public string? NodeId { get; set; }
+
 		public string? Body { get; set; }
 		public CommentUser? User { get; set; }
 	}
@@ -178,9 +248,16 @@ public partial class GitHubCommentService(ILoggerFactory loggerFactory, GitHubAp
 		public string Body { get; set; } = string.Empty;
 	}
 
+	private sealed class GraphQlRequest
+	{
+		[JsonPropertyName("query")]
+		public string Query { get; set; } = string.Empty;
+	}
+
 	[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
 	[JsonSerializable(typeof(CommentItem))]
 	[JsonSerializable(typeof(List<CommentItem>))]
 	[JsonSerializable(typeof(CommentBody))]
+	[JsonSerializable(typeof(GraphQlRequest))]
 	private sealed partial class CommentJsonContext : JsonSerializerContext;
 }
