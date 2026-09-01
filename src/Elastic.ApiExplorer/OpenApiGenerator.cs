@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -362,14 +361,31 @@ public class OpenApiGenerator(
 		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);
+
+		if (page is IApiModel apiPage)
+			await WriteCommonMark(current, apiPage, renderContext, ctx).ConfigureAwait(false);
+
 		return outputFile;
 
 		IFileInfo OutputFile(INavigationItem currentNavigation)
 		{
-			const string indexHtml = "index.html";
-			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{context.UrlPathPrefix}", string.Empty);
-			var fileInfo = _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, fileName.Trim('/')));
-			return fileInfo;
+			var fileName = ApiOutputPaths.RelativeHtmlFile(currentNavigation.Url, context.UrlPathPrefix);
+			return _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, fileName));
 		}
+	}
+
+	private async Task WriteCommonMark(INavigationItem current, IApiModel page, ApiRenderContext renderContext, Cancel ctx)
+	{
+		var markdown = await page.RenderCommonMarkAsync(renderContext, ctx).ConfigureAwait(false);
+		if (string.IsNullOrEmpty(markdown))
+			return;
+
+		var markdownFile = _writeFileSystem.FileInfo.New(
+			Path.Join(context.OutputDirectory.FullName, ApiOutputPaths.RelativeMarkdownFile(current.Url, context.UrlPathPrefix))
+		);
+		if (!markdownFile.Directory!.Exists)
+			markdownFile.Directory.Create();
+
+		await _writeFileSystem.File.WriteAllTextAsync(markdownFile.FullName, markdown, ctx).ConfigureAwait(false);
 	}
 }

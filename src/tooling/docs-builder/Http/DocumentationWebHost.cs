@@ -12,6 +12,7 @@ using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Http;
 #if DEBUG
 using Elastic.Documentation.Api;
 #endif
@@ -175,11 +176,19 @@ public class DocumentationWebHost
 			(ReloadableGeneratorState holder, Cancel ctx) => ServeDocumentationFile(holder, "index", _writeFileSystem, ctx)
 		);
 
-		_ = _webApplication.MapGet("/api/", (ReloadableGeneratorState holder, Cancel ctx) => ServeApiFile(holder, "", ctx));
+		_ = _webApplication.MapGet(
+			"/api.md",
+			(ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, "api.md", http, ctx)
+		);
+
+		_ = _webApplication.MapGet(
+			"/api/",
+			(ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, "", http, ctx)
+		);
 
 		_ = _webApplication.MapGet(
 			"/api/{**slug}",
-			(string slug, ReloadableGeneratorState holder, Cancel ctx) => ServeApiFile(holder, slug, ctx)
+			(string slug, ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, slug, http, ctx)
 		);
 
 #if DEBUG
@@ -272,7 +281,7 @@ public class DocumentationWebHost
 		await response.Body.FlushAsync(ct);
 	}
 
-	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
+	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, HttpContext http, Cancel ctx)
 	{
 		try
 		{
@@ -293,18 +302,25 @@ public class DocumentationWebHost
 		}
 
 		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
-		var path = Path.GetFullPath(Path.Join(apiRoot, slug.Trim('/'), "index.html"));
-		if (!path.StartsWith(apiRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+		var outputRoot = Path.GetFullPath(holder.ApiPath.Parent!.FullName);
+		var trimmed = slug.Trim('/');
+		var wantsMarkdown = trimmed.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			|| MarkdownAccept.PrefersMarkdown(http.Request.Headers.Accept);
+		var path = wantsMarkdown
+			? ApiMarkdownRequest.ResolveFile(apiRoot, trimmed)
+			: Path.GetFullPath(Path.Join(apiRoot, trimmed, "index.html"));
+		if (!path.StartsWith(outputRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
 			return Results.NotFound();
-		var info = _writeFileSystem.FileInfo.New(path);
-		if (info.Exists)
-		{
-			//TODO STREAM
-			var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
-			return LiveReloadHtml(contents, Encoding.UTF8, 200);
-		}
 
-		return Results.NotFound();
+		var info = _writeFileSystem.FileInfo.New(path);
+		if (!info.Exists)
+			return Results.NotFound();
+
+		var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
+		if (wantsMarkdown)
+			return Results.Content(contents, "text/markdown; charset=utf-8");
+
+		return LiveReloadHtml(contents, Encoding.UTF8, 200);
 	}
 
 	private static async Task<IResult> ServeDocumentationFile(
