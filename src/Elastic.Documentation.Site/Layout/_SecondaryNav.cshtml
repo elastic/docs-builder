@@ -122,7 +122,7 @@
 				@if (Model.ShowVersionDropdown)
 				{
 					<div class="secondary-nav-actions">
-						<version-dropdown id="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+						<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 							<div class="h-8">@*height of dropdown button*@</div>
 						</version-dropdown>
 					</div>
@@ -132,7 +132,7 @@
 		else
 		{
 			@* Built-in links: flag on but no section: entries defined. *@
-			<div class="secondary-nav-bar">
+			<div class="secondary-nav-bar secondary-nav-bar--desktop">
 				<a href="@docsHomeUrl"
 				   class="secondary-nav-home"
 				   preload="mousedown">Docs</a>
@@ -171,7 +171,7 @@
 				@if (Model.ShowVersionDropdown)
 				{
 					<div class="secondary-nav-actions">
-						<version-dropdown id="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+						<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 							<div class="h-8">@*height of dropdown button*@</div>
 						</version-dropdown>
 					</div>

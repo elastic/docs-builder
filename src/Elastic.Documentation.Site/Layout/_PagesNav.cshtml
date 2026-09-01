@@ -69,7 +69,7 @@
 				{
 					<div class="mt-4 font-sans">
 						<div class="mb-2 text-xs font-bold uppercase tracking-wide text-grey-70">Version</div>
-						<version-dropdown all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+						<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 							<div class="h-8">@*height of dropdown button*@</div>
 						</version-dropdown>
 					</div>
