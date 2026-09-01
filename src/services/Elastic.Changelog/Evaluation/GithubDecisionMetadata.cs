@@ -28,7 +28,11 @@ public record GithubDecisionMetadata
 	public string? LabelTable { get; init; }
 	public string? ProductLabelTable { get; init; }
 	public string? SkipLabels { get; init; }
+	/// <summary>Comma-separated list of type labels that all matched when only one is allowed.</summary>
+	public string? AmbiguousTypeLabels { get; init; }
 	public string? ConfigFile { get; init; }
+	/// <summary>Default branch for building config file links (e.g. "main"). Defaults to "main" when null.</summary>
+	public string? DefaultBranch { get; init; }
 	public string? ChangelogDir { get; init; }
 	public string? ChangelogFilename { get; init; }
 	public CreateRules? CreateRules { get; init; }

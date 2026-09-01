@@ -13,6 +13,12 @@ internal static class ChangelogTableRenderers
 	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType) =>
 		BuildMappingTable(labelToType, "Label", "Type");
 
+	/// <summary>
+	/// Returns a comma-separated list of label keys for inline rendering in PR comments.
+	/// </summary>
+	internal static string BuildLabelKeys(IReadOnlyDictionary<string, string>? labelToType) =>
+		labelToType is { Count: > 0 } ? string.Join(",", labelToType.Keys) : "";
+
 	internal static string BuildProductLabelTable(IReadOnlyDictionary<string, string>? labelToProducts) =>
 		BuildMappingTable(labelToProducts, "Label", "Product");
 

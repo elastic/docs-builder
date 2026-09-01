@@ -45,6 +45,7 @@ public class ChangelogPrEvaluationService(
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx) ?? ChangelogConfiguration.Default;
 		var changelogDir = config.Bundle?.Directory ?? "docs/changelog";
+		var defaultBranch = config.Bundle?.Branch ?? "main";
 
 		// Commit bot loop detection
 		if (input.EventAction == "synchronize")
@@ -112,10 +113,33 @@ public class ChangelogPrEvaluationService(
 			return false;
 		}
 
-		// Resolve type
+		// Resolve type — detect multiple matching labels before picking one
 		string? resolvedType = null;
+		string? ambiguousTypeLabels = null;
 		if (config.LabelToType is { Count: > 0 })
-			resolvedType = PrInfoProcessor.MapLabelsToType(input.PrLabels, config.LabelToType);
+		{
+			var matching = PrInfoProcessor.MatchingTypeLabels(input.PrLabels, config.LabelToType);
+			if (matching.Count > 1)
+				ambiguousTypeLabels = string.Join(",", matching);
+			else
+				resolvedType = matching.Count == 1 ? config.LabelToType[matching[0]] : null;
+		}
+
+		if (ambiguousTypeLabels != null)
+		{
+			_logger.LogInformation("Multiple type labels found on PR: {Labels}", ambiguousTypeLabels);
+			collector.EmitError(string.Empty, $"Multiple type labels found: {ambiguousTypeLabels}. Remove all but one.");
+			_ = await SetOutputs(PrEvaluationResult.NoLabel, skipLabels: skipLabels);
+			await WriteDecisionMetadataAsync(
+				input,
+				"no-label",
+				ambiguousTypeLabels: ambiguousTypeLabels,
+				skipLabels: skipLabels,
+				defaultBranch: defaultBranch,
+				ctx: ctx
+			);
+			return false;
+		}
 
 		// Resolve products from labels
 		string? resolvedProducts = null;
@@ -162,9 +186,10 @@ public class ChangelogPrEvaluationService(
 			await WriteDecisionMetadataAsync(
 				input,
 				"no-label",
-				labelTable: noTypeLabelTable,
+				labelTable: BuildLabelKeys(config.LabelToType),
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels,
+				defaultBranch: defaultBranch,
 				ctx: ctx
 			);
 			return false;
@@ -188,7 +213,14 @@ public class ChangelogPrEvaluationService(
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels
 			);
-			await WriteDecisionMetadataAsync(input, "no-label", productLabelTable: productLabelTable, skipLabels: skipLabels, ctx: ctx);
+			await WriteDecisionMetadataAsync(
+				input,
+				"no-label",
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels,
+				defaultBranch: defaultBranch,
+				ctx: ctx
+			);
 			return false;
 		}
 
@@ -219,6 +251,7 @@ public class ChangelogPrEvaluationService(
 			changelogDir: changelogDir,
 			changelogFilename: existingFilename,
 			skipLabels: skipLabels,
+			defaultBranch: defaultBranch,
 			ctx: ctx
 		);
 		return await SetOutputs(
@@ -249,7 +282,9 @@ public class ChangelogPrEvaluationService(
 		string? productLabelTable = null,
 		string? skipLabels = null,
 		string? changelogDir = null,
-		string? changelogFilename = null
+		string? changelogFilename = null,
+		string? ambiguousTypeLabels = null,
+		string? defaultBranch = null
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -270,7 +305,9 @@ public class ChangelogPrEvaluationService(
 			ProductLabelTable = productLabelTable,
 			SkipLabels = skipLabels,
 			ChangelogDir = changelogDir,
-			ChangelogFilename = changelogFilename
+			ChangelogFilename = changelogFilename,
+			AmbiguousTypeLabels = ambiguousTypeLabels,
+			DefaultBranch = defaultBranch
 		};
 		await _metadataWriter.WriteAsync(metadata, ctx);
 	}
@@ -401,6 +438,9 @@ public class ChangelogPrEvaluationService(
 
 	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType) =>
 		ChangelogTableRenderers.BuildLabelTable(labelToType);
+
+	internal static string BuildLabelKeys(IReadOnlyDictionary<string, string>? labelToType) =>
+		ChangelogTableRenderers.BuildLabelKeys(labelToType);
 
 	internal static string BuildProductLabelTable(IReadOnlyDictionary<string, string>? labelToProducts) =>
 		ChangelogTableRenderers.BuildProductLabelTable(labelToProducts);

@@ -19,11 +19,17 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 
-	private static HttpResponseMessage Created() => new(HttpStatusCode.Created);
-	private static HttpResponseMessage Ok() => new(HttpStatusCode.OK);
+	private static HttpResponseMessage Created(string nodeId = "IC_test_node_id") =>
+		new(HttpStatusCode.Created)
+		{
+			Content = new StringContent($"{{\"id\":1,\"node_id\":\"{nodeId}\"}}", Encoding.UTF8, "application/json")
+		};
 
-	private static string CommentListJson(long id, string body, string login = "github-actions[bot]") =>
-		$"[{{\"id\":{id},\"body\":{JsonSerializer.Serialize(body)},\"user\":{{\"login\":\"{login}\"}}}}]";
+	private static HttpResponseMessage Ok(string nodeId = "IC_test_node_id") =>
+		new(HttpStatusCode.OK) { Content = new StringContent($"{{\"id\":1,\"node_id\":\"{nodeId}\"}}", Encoding.UTF8, "application/json") };
+
+	private static string CommentListJson(long id, string body, string login = "github-actions[bot]", string nodeId = "IC_test_node_id") =>
+		$"[{{\"id\":{id},\"node_id\":\"{nodeId}\",\"body\":{JsonSerializer.Serialize(body)},\"user\":{{\"login\":\"{login}\"}}}}]";
 
 	private GitHubCommentService Service(StubHandler handler) =>
 		new(new TestLoggerFactory(output), new GitHubApiTransport(handler, "test-token"));
@@ -40,7 +46,7 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "### 📋 Changelog\n\nHello");
 
-		result.Should().BeTrue();
+		result.Should().NotBeNull();
 		requests.Should().ContainSingle(r => r.method == "POST" && r.path.Contains($"/issues/{PrNumber}/comments"));
 	}
 
@@ -60,7 +66,7 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "### 📋 Changelog\nNew");
 
-		result.Should().BeTrue();
+		result.Should().NotBeNull();
 		requests.Should().ContainSingle(r => r.method == "PATCH" && r.path.Contains($"/issues/comments/{existingId}"));
 		requests.Should().NotContain(r => r.method == "POST");
 	}
@@ -81,7 +87,7 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "### 📋 Changelog\nNew");
 
-		result.Should().BeTrue();
+		result.Should().NotBeNull();
 		requests.Should().ContainSingle(r => r.method == "PATCH" && r.path.Contains($"/issues/comments/{existingId}"));
 	}
 
@@ -109,18 +115,18 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "### 📋 Changelog\nNew");
 
-		result.Should().BeTrue();
+		result.Should().NotBeNull();
 		requests.Should().ContainSingle(r => r.method == "PATCH" && r.path.Contains($"/issues/comments/{existingId}"));
 	}
 
 	[Fact]
-	public async Task UpsertStickyComment_ApiReturns403_ReturnsFalseDoesNotThrow()
+	public async Task UpsertStickyComment_ApiReturns403_ReturnsNullDoesNotThrow()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "body");
 
-		result.Should().BeFalse();
+		result.Should().BeNull();
 	}
 
 	[Fact]

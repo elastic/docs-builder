@@ -56,7 +56,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		var result = await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -80,7 +82,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -103,7 +107,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -129,7 +135,9 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
 
 		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
@@ -145,26 +153,21 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 	}
 
 	[Fact]
-	public async Task PostComment_SuccessWithNoYaml_RendersResolvedBody()
+	public async Task PostComment_SuccessWithNoYaml_DeletesStickyComment()
 	{
 		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: true));
-		// no yaml file in MetadataDir
+		// no yaml file in MetadataDir — labels validated, comment should be deleted not updated
 		var commentSvc = A.Fake<IGitHubCommentService>();
-		A.CallTo(
-			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(true);
+		A.CallTo(() => commentSvc.DeleteStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<CancellationToken>._)).Returns(true);
 
 		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
 		A.CallTo(
-			() => commentSvc.UpsertStickyCommentAsync(
-				A<string>._,
-				A<string>._,
-				A<int>._,
-				A<string>.That.Contains("✅"),
-				A<CancellationToken>._
-			)
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
 		).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
 	}
 
 	[Fact]
@@ -188,10 +191,27 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		var commentSvc = A.Fake<IGitHubCommentService>();
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
-		).Returns(false);
+		).Returns((string?)null);
 
 		var result = await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
 
 		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task PostComment_Skipped_DeletesStickyComment()
+	{
+		await WriteMetadata(BaseMetadata(status: "skipped"));
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(() => commentSvc.DeleteStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<CancellationToken>._)).Returns(true);
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
 	}
 }

@@ -66,10 +66,37 @@ public class ChangelogCommentRendererTests
 	[Fact]
 	public void RenderLabelsNeeded_TypeMissing_ContainsTypeLabelHeadline()
 	{
-		var body = ChangelogCommentRenderer.RenderLabelsNeeded("| type:feature | feature |", null, null, null);
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded("type:bug,type:feature", null, null, null);
 
 		body.Should().Contain("Changelog label needed");
 		body.Should().Contain("type:feature");
+		body.Should().Contain("type:bug");
+	}
+
+	[Fact]
+	public void RenderLabelsNeeded_TypeMissing_RendersInlineLabels()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded("type:bug,type:feature", null, null, null);
+
+		body.Should().Contain("`type:bug`");
+		body.Should().Contain("`type:feature`");
+		body.Should().NotContain("| Label |");
+	}
+
+	[Fact]
+	public void RenderLabelsNeeded_WithOwnerRepo_RendersConfigFileLink()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			"type:bug",
+			null,
+			null,
+			"docs/changelog.yml",
+			owner: "elastic",
+			repo: "docs",
+			defaultBranch: "main"
+		);
+
+		body.Should().Contain("[docs/changelog.yml](https://github.com/elastic/docs/blob/main/docs/changelog.yml)");
 	}
 
 	[Fact]
@@ -82,9 +109,19 @@ public class ChangelogCommentRendererTests
 	}
 
 	[Fact]
+	public void RenderLabelsNeeded_AmbiguousTypeLabels_ContainsMultipleTypeHeadline()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(null, null, null, null, ambiguousTypeLabels: "type:bug,type:feature");
+
+		body.Should().Contain("Multiple type labels set");
+		body.Should().Contain("type:bug");
+		body.Should().Contain("type:feature");
+	}
+
+	[Fact]
 	public void RenderLabelsNeeded_BothMissing_ContainsBothTables()
 	{
-		var body = ChangelogCommentRenderer.RenderLabelsNeeded("| type:feature | feature |", "| @Product:ECH | cloud |", null, null);
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded("type:bug,type:feature", "| @Product:ECH | cloud |", null, null);
 
 		body.Should().Contain("Changelog labels needed");
 		body.Should().Contain("type:feature");
@@ -128,7 +165,7 @@ public class ChangelogCommentRendererTests
 		{
 			"entry-committed" => ChangelogCommentRenderer.RenderEntryCommitted("owner", "repo", "main", "file.yaml"),
 			"comment-only" => ChangelogCommentRenderer.RenderCommentOnly(null, "type: feature", "42.yaml", false, false),
-			"labels-needed" => ChangelogCommentRenderer.RenderLabelsNeeded("| label | type |", null, null, null),
+			"labels-needed" => ChangelogCommentRenderer.RenderLabelsNeeded("type:bug,type:feature", null, null, null),
 			"resolved" => ChangelogCommentRenderer.RenderResolved(),
 			_ => throw new InvalidOperationException()
 		};

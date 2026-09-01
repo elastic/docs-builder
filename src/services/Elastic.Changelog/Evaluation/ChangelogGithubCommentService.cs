@@ -18,8 +18,9 @@ namespace Elastic.Changelog.Evaluation;
 ///   <item><term><c>CommitOutcome == Committed</c></term><description>Entry-committed body with blob + edit links.</description></item>
 ///   <item><term><c>CommitOutcome == Failed</c></term><description>Comment-only body, commit-failed variant.</description></item>
 ///   <item><term>Status success and <c>!CanCommit</c></term><description>Comment-only body (fork / comment-only strategy).</description></item>
-///   <item><term>Status no-label</term><description>Cannot-generate body with label tables.</description></item>
-///   <item><term>Status success, no staged file</term><description>Resolved body (clears a stale failure comment).</description></item>
+///   <item><term>Status no-label</term><description>Labels-needed body with label tables.</description></item>
+///   <item><term>Status skipped</term><description>Skipped body (hidden as 'resolved') to clear stale failure comment.</description></item>
+///   <item><term>Status success, no staged file</term><description>Deletes the sticky comment — no need to litter once labels are validated.</description></item>
 /// </list>
 /// </summary>
 public class ChangelogGithubCommentService(
@@ -49,21 +50,31 @@ public class ChangelogGithubCommentService(
 		var owner = input.Owner;
 		var repo = input.Repo;
 
-		var body = SelectBody(metadata, input.MetadataDir);
+		var body = SelectBody(metadata, input.MetadataDir, owner, repo);
 		if (body is null)
 		{
-			_logger.LogInformation("No comment body selected for PR #{PrNumber} — nothing to post", metadata.PrNumber);
+			if (IsSuccess(metadata.Status) || IsSkipped(metadata.Status))
+			{
+				_logger.LogInformation(
+					"PR #{PrNumber} is {Status} — deleting stale failure comment if present",
+					metadata.PrNumber,
+					metadata.Status
+				);
+				_ = await commentService.DeleteStickyCommentAsync(owner, repo, metadata.PrNumber, ctx);
+			}
+			else
+				_logger.LogInformation("No comment body selected for PR #{PrNumber} — nothing to post", metadata.PrNumber);
 			return true;
 		}
 
-		var posted = await commentService.UpsertStickyCommentAsync(owner, repo, metadata.PrNumber, body, ctx);
-		if (!posted)
+		var nodeId = await commentService.UpsertStickyCommentAsync(owner, repo, metadata.PrNumber, body, ctx);
+		if (nodeId is null)
 			_logger.LogWarning("Comment post did not succeed for PR #{PrNumber} — continuing", metadata.PrNumber);
 
 		return true;
 	}
 
-	private string? SelectBody(GithubDecisionMetadata metadata, string metadataDir)
+	private string? SelectBody(GithubDecisionMetadata metadata, string metadataDir, string owner, string repo)
 	{
 		// Committed: entry-committed body with blob + edit links.
 		if (metadata.CommitOutcome == CommitOutcome.Committed && !string.IsNullOrWhiteSpace(metadata.CommittedFile))
@@ -117,17 +128,15 @@ public class ChangelogGithubCommentService(
 				metadata.LabelTable,
 				metadata.ProductLabelTable,
 				metadata.SkipLabels,
-				metadata.ConfigFile
+				metadata.ConfigFile,
+				metadata.AmbiguousTypeLabels,
+				owner,
+				repo,
+				metadata.DefaultBranch
 			);
 		}
 
-		// Success with no staged file: post resolved body to clear a stale failure comment.
-		if (isSuccess)
-		{
-			_logger.LogInformation("Rendering resolved body for PR #{PrNumber}", metadata.PrNumber);
-			return ChangelogCommentRenderer.RenderResolved();
-		}
-
+		// Success or skipped: signal to delete the sticky comment (no body needed).
 		return null;
 	}
 
@@ -161,6 +170,7 @@ public class ChangelogGithubCommentService(
 			|| string.Equals(status, "ok", StringComparison.OrdinalIgnoreCase);
 
 	private static bool IsNoLabel(string status) => string.Equals(status, "no-label", StringComparison.OrdinalIgnoreCase);
+	private static bool IsSkipped(string status) => string.Equals(status, "skipped", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>Arguments for the hidden <c>changelog github-comment</c> command.</summary>

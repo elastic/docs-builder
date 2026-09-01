@@ -114,25 +114,53 @@ internal static class ChangelogCommentRenderer
 	/// when those workflow paths are built.
 	/// </para>
 	/// </summary>
-	internal static string RenderLabelsNeeded(string? labelTable, string? productLabelTable, string? skipLabels, string? configFile)
+	internal static string RenderLabelsNeeded(
+		string? labelTable,
+		string? productLabelTable,
+		string? skipLabels,
+		string? configFile,
+		string? ambiguousTypeLabels = null,
+		string? owner = null,
+		string? repo = null,
+		string? defaultBranch = null
+	)
 	{
-		var configFileCode = WrapInlineCode(string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile);
+		var configFileName = string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile;
+		var configRef = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
+			? $"[{configFileName}](https://github.com/{owner}/{repo}/blob/{defaultBranch ?? "main"}/{configFileName})"
+			: WrapInlineCode(configFileName);
 
+		var hasAmbiguousType = !string.IsNullOrWhiteSpace(ambiguousTypeLabels);
 		var hasTypeIssue = !string.IsNullOrWhiteSpace(labelTable);
 		var hasProductIssue = !string.IsNullOrWhiteSpace(productLabelTable);
 
-		var headline = hasTypeIssue && hasProductIssue
-			? "🏷️ **Changelog labels needed** — add type and product labels so we can determine this PR's release-notes status."
-			: hasProductIssue
-				? "🏷️ **Product label needed** — add a product label so we can determine this PR's release-notes status."
-				: "🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.";
+		var headline = hasAmbiguousType
+			? "🏷️ **Multiple type labels set** — a PR can only have one type. Remove all but one."
+			: hasTypeIssue && hasProductIssue
+				? "🏷️ **Changelog labels needed** — add type and product labels so we can determine this PR's release-notes status."
+				: hasProductIssue
+					? "🏷️ **Product label needed** — add a product label so we can determine this PR's release-notes status."
+					: "🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.";
 
 		var sections = new List<string>();
 
-		if (hasTypeIssue)
-			sections.Add(string.Join("\n", "", "🔖 Add one of these **type** labels to your PR:", "", labelTable));
+		if (hasAmbiguousType)
+		{
+			var conflicting = ambiguousTypeLabels!.Split(
+				',',
+				StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+			).Select(WrapInlineCode);
+			sections.Add($"\n🔖 Conflicting type labels found: {string.Join(", ", conflicting)}. Keep only one.");
+		}
+		else if (hasTypeIssue)
+		{
+			var inlineLabels = labelTable!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(
+				WrapInlineCode
+			);
+			sections.Add($"\n🔖 Add one of these type labels to your PR: {string.Join(", ", inlineLabels)}");
+		}
 		else if (!hasProductIssue)
-			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configFileCode}.");
+			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configRef}.");
 
 		if (hasProductIssue)
 			sections.Add(string.Join("\n", "", "📦 Add one or more **product** labels to your PR:", "", productLabelTable));
@@ -148,23 +176,30 @@ internal static class ChangelogCommentRenderer
 		else
 		{
 			skipSection = $"\n⏭️ No exclude labels are configured. To allow excluding PRs from release notes, "
-				+ $"add a label to {WrapInlineCode("rules.create.exclude")} in {configFileCode}.";
+				+ $"add a label to {WrapInlineCode("rules.create.exclude")} in {configRef}.";
 		}
 
 		var allParts = new List<string> { Title, "", headline };
 		allParts.AddRange(sections);
 		allParts.Add(skipSection);
 		allParts.Add("");
-		allParts.Add($"📄 See {configFileCode} for the full changelog configuration.");
+		allParts.Add($"📄 See {configRef} for the full changelog configuration.");
 
 		return Truncate(string.Join("\n", allParts));
 	}
 
 	/// <summary>
 	/// Renders the "resolved" body posted when a previously-failing PR now has the required labels,
-	/// clearing the stale Step 1 comment and confirming what happens next.
+	/// clearing the stale Step 1 comment and confirming the release-notes status is determined.
 	/// </summary>
 	internal static string RenderResolved() => string.Join("\n", Title, "", "✅ **Changelog label set** — release-notes status confirmed.");
+
+	/// <summary>
+	/// Renders the "skipped" body posted when a PR carries a <c>changelog:skip</c> label,
+	/// clearing any stale failure comment left from before the skip label was added.
+	/// </summary>
+	internal static string RenderSkipped() =>
+		string.Join("\n", Title, "", "⏭️ **Excluded from release notes** — this PR will not appear in the changelog.");
 
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)

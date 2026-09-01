@@ -14,8 +14,26 @@ public interface IGitHubCommentService
 	/// otherwise a new comment is created.
 	/// </summary>
 	/// <returns>
-	/// <c>true</c> on success or when the API responds with a transient non-fatal error;
-	/// <c>false</c> only when the operation is definitively known to have failed.
+	/// The comment's GraphQL <c>node_id</c> on success; <c>null</c> when the operation failed.
 	/// </returns>
-	Task<bool> UpsertStickyCommentAsync(string owner, string repo, int prNumber, string body, Cancel ctx = default);
+	Task<string?> UpsertStickyCommentAsync(string owner, string repo, int prNumber, string body, Cancel ctx = default);
+
+	/// <summary>
+	/// Deletes the sticky changelog comment on the given pull request if one exists.
+	/// Returns <c>true</c> when no comment was found (nothing to delete) or when deletion succeeded;
+	/// <c>false</c> only on a definitive API failure.
+	/// </summary>
+	Task<bool> DeleteStickyCommentAsync(string owner, string repo, int prNumber, Cancel ctx = default);
+
+	/// <summary>
+	/// Minimizes (hides) the given comment on GitHub using the <c>RESOLVED</c> classifier.
+	/// Failures are logged as warnings and do not affect the command exit code.
+	/// </summary>
+	Task<bool> MinimizeCommentAsync(string nodeId, Cancel ctx = default);
+
+	/// <summary>
+	/// Un-minimizes (reveals) the given comment on GitHub so it is visible to the author again.
+	/// Failures are logged as warnings and do not affect the command exit code.
+	/// </summary>
+	Task<bool> UnminimizeCommentAsync(string nodeId, Cancel ctx = default);
 }
