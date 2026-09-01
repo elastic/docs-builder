@@ -218,6 +218,8 @@ public partial record OperationPageModel
 				.Where(p => p.In == ParameterLocation.Query)
 				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
+			DescriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
+			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = requestSchema is not null
 				? builder.BuildPropertyList(

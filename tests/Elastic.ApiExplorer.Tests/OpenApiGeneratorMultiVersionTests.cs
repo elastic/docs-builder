@@ -106,8 +106,11 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
-		var documents =
-			(await generator.ResolveDocumentsForProduct("elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken));
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			ApiConfig(product),
+			TestContext.Current.CancellationToken
+		)).Documents;
 
 		documents.Should().HaveCount(3);
 		documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["main", "9", "8"]);
@@ -145,7 +148,11 @@ public class OpenApiGeneratorMultiVersionTests
 			repository: "elastic/serverless-api-specification"
 		);
 
-		var documents = (await generator.ResolveDocumentsForProduct("cloud-serverless", apiConfig, TestContext.Current.CancellationToken));
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"cloud-serverless",
+			apiConfig,
+			TestContext.Current.CancellationToken
+		)).Documents;
 
 		documents.Should().ContainSingle();
 		documents[0].Version.Moniker.Should().Be("main");
@@ -169,12 +176,11 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
-		var documents =
-			(await generator.ResolveDocumentsForProduct(
-				"elasticsearch",
-				ApiConfig(product, localFile),
-				TestContext.Current.CancellationToken
-			));
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			ApiConfig(product, localFile),
+			TestContext.Current.CancellationToken
+		)).Documents;
 
 		documents.Should().HaveCount(3);
 		documents.Should().ContainSingle(d => d.Version.Moniker == "main" && d.Document == localDocument);
@@ -222,7 +228,8 @@ public class OpenApiGeneratorMultiVersionTests
 			TestContext.Current.CancellationToken
 		);
 
-		resolved.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
+		resolved.Documents.Select(d => d.Version.Moniker).Should().BeEquivalentTo(["9", "8"]);
+		resolved.UnmatchedBaseFilesMoniker.Should().BeNull();
 	}
 
 	[Fact]

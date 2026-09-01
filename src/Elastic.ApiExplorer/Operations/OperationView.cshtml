@@ -81,10 +81,10 @@
 	@{
 		var prerequisites = Model.Prerequisites;
 	}
-	@if (!string.IsNullOrWhiteSpace(operation.Description))
+	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown))
 	{
-		<div class="api-operation-description">
-			@(Model.RenderMarkdown(operation.Description))
+		<div class="api-operation-description" id="description">
+			@(Model.RenderMarkdown(pageModel.DescriptionMarkdown))
 			@if (pageModel.ExternalDocs is not null)
 			{
 				<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
@@ -185,7 +185,7 @@
 							}
 						</a>
 					</dt>
-					<dd>@Model.RenderMarkdown(qs.Description)</dd>
+					<dd>@Model.RenderMarkdown(qp.Description)</dd>
 					@if (qp.Type is not null)
 					{
 						@(await RenderPartialAsync<_ValidationConstraints, IReadOnlyList<ConstraintDisplay>>(qp.Constraints))
@@ -221,7 +221,7 @@
 	}
 	@if (operation.RequestBody is not null)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Request", "request-body", pageModel.RequestContentType)))
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Request", "request-body", ContentTypeBadge: pageModel.RequestContentType)))
 		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
@@ -360,5 +360,10 @@
 				</div>
 			}
 		</div>
+	}
+	@foreach (var extra in pageModel.PostSections)
+	{
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(extra.Heading, extra.Anchor)))
+		<div>@extra.BodyHtml</div>
 	}
 </section>

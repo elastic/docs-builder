@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
@@ -30,7 +31,8 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
 		OpenApiDocument openApiDocument,
-		ResolvedApiConfiguration? apiConfig = null
+		ResolvedApiConfiguration? apiConfig = null,
+		int? versionMajor = null
 	)
 	{
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix);
@@ -115,7 +117,13 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
 				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
-				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, classificationNavigationItem, tagNavigationItems);
+				CreateTagNavigationItems(
+					apiUrlSuffix,
+					classification,
+					classificationNavigationItem,
+					classificationNavigationItem,
+					tagNavigationItems
+				);
 				topLevelNavigationItems.Add(classificationNavigationItem);
 				// if there is only a single tag item will be added directly to the classificationNavigationItem, otherwise they will be added to the tagNavigationItems
 				if (classificationNavigationItem.NavigationItems.Count == 0)
@@ -136,6 +144,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		{
 			foreach (var childFile in apiConfig.Children)
 			{
+				if (ApiSupplementalName.TryParseVersionSuffix(childFile.Name, out _, out var fileMajor) && fileMajor != versionMajor)
+					continue;
+
 				var childNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, childFile, rootNavigation, rootNavigation, markdownSlugs);
 				finalNavigationItems.Add(childNavItem);
 			}
