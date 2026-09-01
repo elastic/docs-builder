@@ -4,10 +4,10 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <aside class="sidebar md:block w-full lg:max-w-65 order-1 lg:order-2">
 	<nav id="toc-nav" class="sidebar-nav lg:h-full flex lg:block items-center justify-start md:justify-start gap-4 simple-scrollbar">
-		@if (Model.ShowVersionDropdown && Model.BuildType != BuildType.Assembler)
+		@if (Model.ShowVersionDropdown && !Model.Features.NavigationPreviewEnabled)
 		{
-			<div class="hidden md:block">
-				<version-dropdown all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+			<div class="mt-4">
+				<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 					<div class="h-8">@*height of dropdown button*@</div>
 				</version-dropdown>
 			</div>

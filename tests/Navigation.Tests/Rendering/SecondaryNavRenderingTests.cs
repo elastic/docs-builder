@@ -103,6 +103,7 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 
 		html.Should().Contain(">Version<");
 		html.Should().Contain("<version-dropdown");
+		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
 		html.Should().Contain("all-versions-url=\"/docs/versions/\"");
 		html.Should().Contain("8.19");
 		html.Should().Contain("items='[]'");
@@ -140,6 +141,7 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 
 		html.Should().Contain("secondary-nav-actions");
 		html.Should().Contain("<version-dropdown");
+		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
 		html.Should().Contain("all-versions-url=\"/docs/versions/\"");
 		html.Should().Contain("8.19");
 		html
@@ -155,6 +157,17 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 
 		html.Should().Contain("secondary-nav-actions");
 		html.Should().Contain("<version-dropdown");
+		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
+		html.Should().Contain("secondary-nav-bar secondary-nav-bar--desktop");
+	}
+
+	[Fact]
+	public async Task VersionDropdownDoesNotRenderOnTheLegacyBar()
+	{
+		var html = await Render(TopNav, currentUrl: "/docs/", showVersionDropdown: true, navigationPreviewEnabled: false);
+
+		html.Should().NotContain("<version-dropdown");
+		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
 	}
 
 	[Fact]
