@@ -105,8 +105,13 @@ internal static class ChangelogCommentRenderer
 	}
 
 	/// <summary>
-	/// Renders the "cannot generate" body: the error headline plus optional label tables and skip-label
-	/// guidance, ported from <c>post-failure-comment.js</c>.
+	/// Renders the Step 1 (label gate) comment body: tells the author which labels are required
+	/// before a changelog entry can be generated. Tone is "labels not set yet", not "generation
+	/// failed" — the author just hasn't told us what type of change this is.
+	/// <para>
+	/// Step 2 (changelog file invalid) and Step 3 (full require-changelog-file failure) will use
+	/// separate render methods added when those workflow paths are built.
+	/// </para>
 	/// </summary>
 	internal static string RenderCannotGenerate(string? labelTable, string? productLabelTable, string? skipLabels, string? configFile)
 	{
@@ -116,10 +121,10 @@ internal static class ChangelogCommentRenderer
 		var hasProductIssue = !string.IsNullOrWhiteSpace(productLabelTable);
 
 		var headline = hasTypeIssue && hasProductIssue
-			? "⚠️ **Cannot generate changelog:** required type and product labels are missing on this PR."
+			? "🏷️ **Changelog labels needed** — add type and product labels to this PR to enable changelog generation."
 			: hasProductIssue
-				? "⚠️ **Cannot generate changelog:** no matching product label found on this PR."
-				: "⚠️ **Cannot generate changelog:** no matching type label found on this PR.";
+				? "🏷️ **Product label needed** — add a product label to this PR to enable changelog generation."
+				: "🏷️ **Changelog label needed** — add a type label to this PR to enable changelog generation.";
 
 		var sections = new List<string>();
 
@@ -155,10 +160,11 @@ internal static class ChangelogCommentRenderer
 	}
 
 	/// <summary>
-	/// Renders the "resolved" body posted when a previously-failing PR is now valid, to avoid leaving
-	/// a stale failure comment.
+	/// Renders the "resolved" body posted when a previously-failing PR now has the required labels,
+	/// clearing the stale Step 1 comment and confirming what happens next.
 	/// </summary>
-	internal static string RenderResolved() => string.Join("\n", Title, "", "✅ Changelog labels validated successfully.");
+	internal static string RenderResolved() =>
+		string.Join("\n", Title, "", "✅ **Changelog label set** — an entry will be generated on merge.");
 
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)

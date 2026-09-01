@@ -68,7 +68,7 @@ public class ChangelogCommentRendererTests
 	{
 		var body = ChangelogCommentRenderer.RenderCannotGenerate("| type:feature | feature |", null, null, null);
 
-		body.Should().Contain("no matching type label");
+		body.Should().Contain("Changelog label needed");
 		body.Should().Contain("type:feature");
 	}
 
@@ -77,7 +77,7 @@ public class ChangelogCommentRendererTests
 	{
 		var body = ChangelogCommentRenderer.RenderCannotGenerate(null, "| @Product:ECH | cloud |", null, null);
 
-		body.Should().Contain("no matching product label");
+		body.Should().Contain("Product label needed");
 		body.Should().Contain("@Product:ECH");
 	}
 
@@ -86,7 +86,7 @@ public class ChangelogCommentRendererTests
 	{
 		var body = ChangelogCommentRenderer.RenderCannotGenerate("| type:feature | feature |", "| @Product:ECH | cloud |", null, null);
 
-		body.Should().Contain("type and product labels are missing");
+		body.Should().Contain("Changelog labels needed");
 		body.Should().Contain("type:feature");
 		body.Should().Contain("@Product:ECH");
 	}

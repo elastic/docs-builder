@@ -138,7 +138,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 				A<string>._,
 				A<string>._,
 				A<int>._,
-				A<string>.That.Contains("Cannot generate changelog"),
+				A<string>.That.Contains("Changelog label needed"),
 				A<CancellationToken>._
 			)
 		).MustHaveHappenedOnceExactly();
