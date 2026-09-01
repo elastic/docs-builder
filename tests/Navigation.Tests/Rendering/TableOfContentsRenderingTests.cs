@@ -16,6 +16,7 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown;
 using Elastic.Markdown.Layout;
+using RazorSlices;
 
 namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
@@ -28,6 +29,8 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 
 		html.Should().Contain("<version-dropdown");
 		html.Should().Contain("id=\"docs-version-dropdown\"");
+		html.Should().Contain("<div class=\"mt-4\">");
+		html.Should().NotContain("hidden md:block");
 	}
 
 	[Fact]

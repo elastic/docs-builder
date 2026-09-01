@@ -6,7 +6,7 @@
 	<nav id="toc-nav" class="sidebar-nav lg:h-full flex lg:block items-center justify-start md:justify-start gap-4 simple-scrollbar">
 		@if (Model.ShowVersionDropdown && !Model.Features.NavigationPreviewEnabled)
 		{
-			<div class="mt-4 hidden md:block">
+			<div class="mt-4">
 				<version-dropdown id="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 					<div class="h-8">@*height of dropdown button*@</div>
 				</version-dropdown>

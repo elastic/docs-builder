@@ -42,6 +42,8 @@ journey('version dropdown', ({ page, params }) => {
         const button = picker.locator('button')
         await button.click()
         await expect(button).toHaveAttribute('aria-expanded', 'true')
-        await expect(page.getByText('Current', { exact: false })).toBeVisible()
+        await expect(
+            picker.getByText('Current', { exact: false })
+        ).toBeVisible()
     })
 })
