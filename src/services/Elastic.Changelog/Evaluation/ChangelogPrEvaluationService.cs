@@ -8,6 +8,7 @@ using Actions.Core.Services;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Utilities;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
@@ -24,12 +25,14 @@ public class ChangelogPrEvaluationService(
 	IConfigurationContext configurationContext,
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
-	IRunnerTempFileSystem fileSystem
+	IRunnerTempFileSystem fileSystem,
+	IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrEvaluationService>();
 	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly GithubDecisionMetadataWriter _metadataWriter = new(logFactory, fileSystem);
 
 	public async Task<bool> EvaluatePr(IDiagnosticsCollector collector, EvaluatePrArguments input, Cancel ctx)
 	{
@@ -147,13 +150,22 @@ public class ChangelogPrEvaluationService(
 				string.Empty,
 				"No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label."
 			);
+			var noTypeLabelTable = BuildLabelTable(config.LabelToType);
 			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel,
 				title,
 				resolvedDescription: description,
-				labelTable: BuildLabelTable(config.LabelToType),
+				labelTable: noTypeLabelTable,
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels
+			);
+			await WriteDecisionMetadataAsync(
+				input,
+				"no-label",
+				labelTable: noTypeLabelTable,
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels,
+				ctx: ctx
 			);
 			return false;
 		}
@@ -176,6 +188,7 @@ public class ChangelogPrEvaluationService(
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels
 			);
+			await WriteDecisionMetadataAsync(input, "no-label", productLabelTable: productLabelTable, skipLabels: skipLabels, ctx: ctx);
 			return false;
 		}
 
@@ -200,6 +213,14 @@ public class ChangelogPrEvaluationService(
 			resolvedProducts,
 			existingFilename
 		);
+		await WriteDecisionMetadataAsync(
+			input,
+			ProceedStatus,
+			changelogDir: changelogDir,
+			changelogFilename: existingFilename,
+			skipLabels: skipLabels,
+			ctx: ctx
+		);
 		return await SetOutputs(
 			PrEvaluationResult.Success,
 			title,
@@ -214,6 +235,44 @@ public class ChangelogPrEvaluationService(
 
 	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
 	internal const string ProceedStatus = "proceed";
+
+	/// <summary>
+	/// Writes <see cref="GithubDecisionMetadata"/> when running on CI.
+	/// No-ops when <c>GITHUB_ACTIONS</c> is unset or <c>PrNumber</c> is zero (local runs).
+	/// Failures are logged as warnings; they never affect the command exit code.
+	/// </summary>
+	private async Task WriteDecisionMetadataAsync(
+		EvaluatePrArguments input,
+		string status,
+		Cancel ctx,
+		string? labelTable = null,
+		string? productLabelTable = null,
+		string? skipLabels = null,
+		string? changelogDir = null,
+		string? changelogFilename = null
+	)
+	{
+		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
+			return;
+
+		var metadata = new GithubDecisionMetadata
+		{
+			PrNumber = input.PrNumber,
+			HeadRef = input.HeadRef,
+			HeadSha = input.HeadSha,
+			Status = status,
+			IsFork = input.IsFork,
+			CanCommit = input.CanCommit,
+			MaintainerCanModify = input.MaintainerCanModify,
+			HeadRepo = input.HeadRepo,
+			LabelTable = labelTable,
+			ProductLabelTable = productLabelTable,
+			SkipLabels = skipLabels,
+			ChangelogDir = changelogDir,
+			ChangelogFilename = changelogFilename
+		};
+		await _metadataWriter.WriteAsync(metadata, ctx);
+	}
 
 	private async Task<bool> SetOutputs(
 		PrEvaluationResult status,
@@ -340,20 +399,11 @@ public class ChangelogPrEvaluationService(
 			|| content.Contains($"- '{prNumber}'", StringComparison.Ordinal);
 
 	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType) =>
-		BuildMappingTable(labelToType, "Label", "Type");
+		ChangelogTableRenderers.BuildLabelTable(labelToType);
 
 	internal static string BuildProductLabelTable(IReadOnlyDictionary<string, string>? labelToProducts) =>
-		BuildMappingTable(labelToProducts, "Label", "Product");
+		ChangelogTableRenderers.BuildProductLabelTable(labelToProducts);
 
-	internal static string BuildMappingTable(IReadOnlyDictionary<string, string>? mapping, string keyHeader, string valueHeader)
-	{
-		if (mapping is not { Count: > 0 })
-			return "";
-
-		var lines = new List<string> { $"| {keyHeader} | {valueHeader} |", "| --- | --- |" };
-		foreach (var (key, value) in mapping)
-			lines.Add($"| `{key}` | {value} |");
-
-		return string.Join("\n", lines);
-	}
+	internal static string BuildMappingTable(IReadOnlyDictionary<string, string>? mapping, string keyHeader, string valueHeader) =>
+		ChangelogTableRenderers.BuildMappingTable(mapping, keyHeader, valueHeader);
 }

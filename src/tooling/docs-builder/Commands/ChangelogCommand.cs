@@ -1729,6 +1729,10 @@ internal sealed partial class ChangelogCommands(
 		bool stripTitlePrefix = false,
 		bool requireChangelogFile = false,
 		string botName = "github-actions[bot]",
+		bool isFork = false,
+		bool canCommit = false,
+		bool maintainerCanModify = false,
+		string? headRepo = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1737,7 +1741,14 @@ internal sealed partial class ChangelogCommands(
 
 		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
-		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService, fileSystem);
+		var service = new ChangelogPrEvaluationService(
+			logFactory,
+			configurationContext,
+			prService,
+			githubActionsService,
+			fileSystem,
+			environmentVariables
+		);
 
 		var prBodyFile = environmentVariables.GetEnvironmentVariable("PR_BODY_FILE");
 		var prBody = !string.IsNullOrWhiteSpace(prBodyFile)
@@ -1760,7 +1771,11 @@ internal sealed partial class ChangelogCommands(
 			BodyChanged = bodyChanged,
 			StripTitlePrefix = stripTitlePrefix,
 			RequireChangelogFile = requireChangelogFile,
-			BotName = botName
+			BotName = botName,
+			IsFork = isFork,
+			CanCommit = canCommit,
+			MaintainerCanModify = maintainerCanModify,
+			HeadRepo = headRepo
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.EvaluatePr(collector, state, ctx));
@@ -1783,11 +1798,25 @@ internal sealed partial class ChangelogCommands(
 	/// </remarks>
 	/// <param name="config">Path to the changelog.yml configuration file.</param>
 	/// <param name="prLabels">Comma-separated list of PR labels (use <c>${{ join(github.event.pull_request.labels.*.name, ',') }}</c> in actions).</param>
+	/// <param name="prNumber">PR number — required for decision metadata written when running on CI.</param>
+	/// <param name="headRef">PR head branch ref — written to decision metadata when on CI.</param>
+	/// <param name="headSha">PR head commit SHA — written to decision metadata when on CI.</param>
+	/// <param name="isFork">Whether the PR is from a fork.</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing.</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits.</param>
+	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
 	/// <param name="ct">Cancellation token</param>
 	[NoOptionsInjection]
 	public async Task<int> ValidateLabels(
 		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string prLabels,
+		int prNumber = 0,
+		string headRef = "",
+		string headSha = "",
+		bool isFork = false,
+		bool canCommit = false,
+		bool maintainerCanModify = false,
+		string? headRepo = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1795,12 +1824,26 @@ internal sealed partial class ChangelogCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
-		var service = new ChangelogLabelValidationService(logFactory, configurationContext, githubActionsService, fileSystem);
+		var service = new ChangelogLabelValidationService(
+			logFactory,
+			configurationContext,
+			githubActionsService,
+			fileSystem,
+			environmentVariables
+		);
 
 		var args = new ValidateLabelsArguments
 		{
 			Config = config.FullName,
-			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+			PrNumber = prNumber,
+			HeadRef = headRef,
+			HeadSha = headSha,
+			IsFork = isFork,
+			CanCommit = canCommit,
+			MaintainerCanModify = maintainerCanModify,
+			HeadRepo = headRepo,
+			ConfigFile = config.FullName
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateLabels(collector, state, ctx));
@@ -1916,6 +1959,75 @@ internal sealed partial class ChangelogCommands(
 			args,
 			static async (s, collector, state, ctx) => await s.EvaluateArtifact(collector, state, ctx)
 		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI, hidden) Record commit outcome into the decision metadata file.</summary>
+	/// <remarks>
+	/// Reads <c>metadata.json</c>, amends it with the commit step result, and writes it back.
+	/// Run by <c>submit/apply</c> after the git-push step so the downstream
+	/// <c>changelog github-comment</c> command knows which body to render.
+	/// </remarks>
+	/// <param name="metadata">Path to the decision metadata.json file</param>
+	/// <param name="commitOutcome">Outcome of the changelog commit step</param>
+	/// <param name="committedFile">Repo-relative path to the committed file (when <paramref name="commitOutcome"/> is Committed)</param>
+	[Hidden]
+	[NoOptionsInjection]
+	public async Task<int> GithubDecision(
+		string metadata,
+		CommitOutcome commitOutcome,
+		string? committedFile = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fs = RunnerTempFileSystem.ForEvaluateArtifact(metadata);
+		var service = new ChangelogGithubDecisionService(logFactory, fs);
+
+		var args = new GithubDecisionArguments { MetadataPath = metadata, CommitOutcome = commitOutcome, CommittedFile = committedFile };
+
+		serviceInvoker.AddCommand(service, args, static async (s, _, state, ctx) => await s.RecordDecision(state, ctx));
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI, hidden) Post or update the sticky changelog comment on the PR.</summary>
+	/// <remarks>
+	/// Reads the decision metadata and renders the appropriate body based on the validation status
+	/// and commit outcome. Owner and repo are resolved from the <c>GITHUB_REPOSITORY</c> environment
+	/// variable (always set by GitHub Actions). This command is only meaningful under
+	/// <c>GITHUB_ACTIONS</c> and must only be invoked from a job with <c>pull-requests: write</c>.
+	/// </remarks>
+	/// <param name="metadata">Path to the decision metadata.json file</param>
+	[Hidden]
+	[NoOptionsInjection]
+	public async Task<int> GithubComment(string metadata, CancellationToken ct = default)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		// Parse owner/repo from GITHUB_REPOSITORY ("owner/repo").
+		var githubRepository = environmentVariables.GetEnvironmentVariable("GITHUB_REPOSITORY") ?? "";
+		var repoParts = githubRepository.Split('/', 2);
+		var owner = repoParts.Length == 2 ? repoParts[0] : githubRepository;
+		var repo = repoParts.Length == 2 ? repoParts[1] : githubRepository;
+
+		var fs = RunnerTempFileSystem.ForEvaluateArtifact(metadata);
+		IGitHubCommentService commentSvc = new GitHubCommentService(logFactory);
+		var service = new ChangelogGithubCommentService(logFactory, commentSvc, fs);
+
+		var args = new GithubCommentArguments
+		{
+			MetadataPath = metadata,
+			MetadataDir = Path.GetDirectoryName(metadata) ?? ".",
+			Owner = owner,
+			Repo = repo
+		};
+
+		serviceInvoker.AddCommand(service, args, static async (s, _, state, ctx) => await s.PostComment(state, ctx));
 
 		return await serviceInvoker.InvokeAsync(ctx);
 	}

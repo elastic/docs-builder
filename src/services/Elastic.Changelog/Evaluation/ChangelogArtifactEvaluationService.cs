@@ -29,14 +29,11 @@ public class ChangelogArtifactEvaluationService(
 
 	public async Task<bool> EvaluateArtifact(IDiagnosticsCollector collector, EvaluateArtifactArguments input, Cancel ctx)
 	{
-		ChangelogArtifactMetadata? metadata;
+		GithubDecisionMetadata? metadata;
 		try
 		{
 			var artifactMetadataJson = await _fileSystem.File.ReadAllTextAsync(input.MetadataPath, ctx);
-			metadata = JsonSerializer.Deserialize(
-				artifactMetadataJson,
-				ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata
-			);
+			metadata = JsonSerializer.Deserialize(artifactMetadataJson, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 		}
 		catch (FileNotFoundException)
 		{

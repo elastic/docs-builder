@@ -8,6 +8,8 @@ Validate that a pull request's labels contain a recognised changelog type label,
 
 Exits non-zero when `status` is `no-label`. All other statuses (`ok`, `skipped`) exit zero.
 
+When running under GitHub Actions (the `GITHUB_ACTIONS` environment variable is set) and `--pr-number` is provided, the command writes a decision metadata file to `.artifacts/changelog-decision/metadata.json`. This file is picked up by the downstream `changelog github-comment` command to post or update the sticky PR comment.
+
 ## GitHub Actions outputs
 
 | Output | Description |
@@ -19,10 +21,17 @@ Exits non-zero when `status` is `no-label`. All other statuses (`ok`, `skipped`)
 | `product-label-table` | Markdown table of configured label-to-product mappings (when `no-label` due to missing product) |
 | `skip-labels` | Comma-separated list of configured skip labels (from `rules.create` exclude rules) |
 
+## Decision metadata
+
+When `--pr-number` is supplied and the command runs under GitHub Actions, it writes `.artifacts/changelog-decision/metadata.json` relative to the checkout root. The file contains the PR number, head ref/SHA, validation status, and label tables. A consumer workflow uploads this file as the `changelog-decision` artifact and a `workflow_run` job picks it up to call `changelog github-comment`.
+
 ## Examples
 
 ```sh
 docs-builder changelog validate-labels \
   --config docs/changelog.yml \
-  --pr-labels "enhancement,Team:Core"
+  --pr-labels "enhancement,Team:Core" \
+  --pr-number 42 \
+  --head-ref feature-branch \
+  --head-sha abc123
 ```

@@ -5,6 +5,7 @@
 using Actions.Core.Services;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Utilities;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
@@ -23,15 +24,19 @@ public class ChangelogLabelValidationService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	ICoreService coreService,
-	IRunnerTempFileSystem fileSystem
+	IRunnerTempFileSystem fileSystem,
+	IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogLabelValidationService>();
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly GithubDecisionMetadataWriter _metadataWriter = new(logFactory, fileSystem);
 
 	/// <summary>
 	/// Validates that the PR's labels contain a recognised type label, optionally with product labels.
 	/// Exits non-zero only on <c>no-label</c>; all other paths (skipped, ok) return zero.
+	/// When running on CI (<c>GITHUB_ACTIONS</c> is set), writes a <see cref="GithubDecisionMetadata"/>
+	/// file for the downstream <c>changelog github-comment</c> command to pick up.
 	/// </summary>
 	public async Task<bool> ValidateLabels(IDiagnosticsCollector collector, ValidateLabelsArguments input, Cancel ctx)
 	{
@@ -42,7 +47,8 @@ public class ChangelogLabelValidationService(
 		if (PrInfoProcessor.AreAllProductsBlocked(input.PrLabels, config.Rules?.Create))
 		{
 			_logger.LogInformation("All products blocked by label rules; skipping");
-			return await SetOutputs("skipped", skipLabels: skipLabels);
+			await Finish("skipped", skipLabels: skipLabels);
+			return true;
 		}
 
 		// Resolve type
@@ -77,12 +83,8 @@ public class ChangelogLabelValidationService(
 				string.Empty,
 				"No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label."
 			);
-			_ = await SetOutputs(
-				"no-label",
-				labelTable: ChangelogPrEvaluationService.BuildLabelTable(config.LabelToType),
-				productLabelTable: productLabelTable,
-				skipLabels: skipLabels
-			);
+			var labelTable = ChangelogPrEvaluationService.BuildLabelTable(config.LabelToType);
+			await Finish("no-label", labelTable: labelTable, productLabelTable: productLabelTable, skipLabels: skipLabels);
 			return false;
 		}
 
@@ -93,12 +95,45 @@ public class ChangelogLabelValidationService(
 				string.Empty,
 				"No matching product label found on this PR. Add a label from your changelog.yml pivot.products."
 			);
-			_ = await SetOutputs("no-label", productLabelTable: productLabelTable, skipLabels: skipLabels);
+			await Finish("no-label", productLabelTable: productLabelTable, skipLabels: skipLabels);
 			return false;
 		}
 
 		_logger.LogInformation("Label validation complete: type={Type}, products={Products}", resolvedType, resolvedProducts);
-		return await SetOutputs("ok", type: resolvedType, products: resolvedProducts, skipLabels: skipLabels);
+		await Finish("ok", type: resolvedType, products: resolvedProducts, skipLabels: skipLabels);
+		return true;
+
+		async Task Finish(
+			string status,
+			string? type = null,
+			string? products = null,
+			string? labelTable = null,
+			string? productLabelTable = null,
+			string? skipLabels = null
+		)
+		{
+			_ = await SetOutputs(status, type, products, labelTable, productLabelTable, skipLabels);
+
+			if (env?.IsRunningOnCI == true && input.PrNumber > 0)
+			{
+				var metadata = new GithubDecisionMetadata
+				{
+					PrNumber = input.PrNumber,
+					HeadRef = input.HeadRef,
+					HeadSha = input.HeadSha,
+					Status = status,
+					IsFork = input.IsFork,
+					CanCommit = input.CanCommit,
+					MaintainerCanModify = input.MaintainerCanModify,
+					HeadRepo = input.HeadRepo,
+					LabelTable = labelTable,
+					ProductLabelTable = productLabelTable,
+					SkipLabels = skipLabels,
+					ConfigFile = input.ConfigFile
+				};
+				await _metadataWriter.WriteAsync(metadata, ctx);
+			}
+		}
 	}
 
 	private async Task<bool> SetOutputs(
