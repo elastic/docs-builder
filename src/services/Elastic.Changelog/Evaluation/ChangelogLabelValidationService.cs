@@ -51,10 +51,25 @@ public class ChangelogLabelValidationService(
 			return true;
 		}
 
-		// Resolve type
+		// Resolve type — detect multiple matching labels before picking one
 		string? resolvedType = null;
+		string? ambiguousTypeLabels = null;
 		if (config.LabelToType is { Count: > 0 })
-			resolvedType = PrInfoProcessor.MapLabelsToType(input.PrLabels, config.LabelToType);
+		{
+			var matching = PrInfoProcessor.MatchingTypeLabels(input.PrLabels, config.LabelToType);
+			if (matching.Count > 1)
+				ambiguousTypeLabels = string.Join(",", matching);
+			else
+				resolvedType = matching.Count == 1 ? config.LabelToType[matching[0]] : null;
+		}
+
+		if (ambiguousTypeLabels != null)
+		{
+			_logger.LogInformation("Multiple type labels found on PR: {Labels}", ambiguousTypeLabels);
+			collector.EmitError(string.Empty, $"Multiple type labels found: {ambiguousTypeLabels}. Remove all but one.");
+			await Finish("no-label", ambiguousTypeLabels: ambiguousTypeLabels, skipLabels: skipLabels);
+			return false;
+		}
 
 		// Resolve products
 		string? resolvedProducts = null;
@@ -109,10 +124,11 @@ public class ChangelogLabelValidationService(
 			string? products = null,
 			string? labelTable = null,
 			string? productLabelTable = null,
-			string? skipLabels = null
+			string? skipLabels = null,
+			string? ambiguousTypeLabels = null
 		)
 		{
-			_ = await SetOutputs(status, type, products, labelTable, productLabelTable, skipLabels);
+			_ = await SetOutputs(status, type, products, labelTable, productLabelTable, skipLabels, ambiguousTypeLabels);
 
 			if (env?.IsRunningOnCI == true && input.PrNumber > 0)
 			{
@@ -130,7 +146,8 @@ public class ChangelogLabelValidationService(
 					LabelTable = labelTable,
 					ProductLabelTable = productLabelTable,
 					SkipLabels = skipLabels,
-					ConfigFile = input.ConfigFile
+					ConfigFile = input.ConfigFile,
+					AmbiguousTypeLabels = ambiguousTypeLabels
 				};
 				await _metadataWriter.WriteAsync(metadata, ctx);
 			}
@@ -143,7 +160,8 @@ public class ChangelogLabelValidationService(
 		string? products = null,
 		string? labelTable = null,
 		string? productLabelTable = null,
-		string? skipLabels = null
+		string? skipLabels = null,
+		string? ambiguousTypeLabels = null
 	)
 	{
 		await coreService.SetOutputAsync("status", status);
@@ -163,6 +181,11 @@ public class ChangelogLabelValidationService(
 			);
 		if (skipLabels != null)
 			await coreService.SetOutputAsync("skip-labels", OutputSanitizer.SanitizeForOutput(skipLabels, OutputSanitizer.LabelsMaxLength));
+		if (ambiguousTypeLabels != null)
+			await coreService.SetOutputAsync(
+				"ambiguous-type-labels",
+				OutputSanitizer.SanitizeForOutput(ambiguousTypeLabels, OutputSanitizer.LabelsMaxLength)
+			);
 		return true;
 	}
 }

@@ -114,22 +114,39 @@ internal static class ChangelogCommentRenderer
 	/// when those workflow paths are built.
 	/// </para>
 	/// </summary>
-	internal static string RenderLabelsNeeded(string? labelTable, string? productLabelTable, string? skipLabels, string? configFile)
+	internal static string RenderLabelsNeeded(
+		string? labelTable,
+		string? productLabelTable,
+		string? skipLabels,
+		string? configFile,
+		string? ambiguousTypeLabels = null
+	)
 	{
 		var configFileCode = WrapInlineCode(string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile);
 
+		var hasAmbiguousType = !string.IsNullOrWhiteSpace(ambiguousTypeLabels);
 		var hasTypeIssue = !string.IsNullOrWhiteSpace(labelTable);
 		var hasProductIssue = !string.IsNullOrWhiteSpace(productLabelTable);
 
-		var headline = hasTypeIssue && hasProductIssue
-			? "🏷️ **Changelog labels needed** — add type and product labels so we can determine this PR's release-notes status."
-			: hasProductIssue
-				? "🏷️ **Product label needed** — add a product label so we can determine this PR's release-notes status."
-				: "🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.";
+		var headline = hasAmbiguousType
+			? "🏷️ **Multiple type labels set** — a PR can only have one type. Remove all but one."
+			: hasTypeIssue && hasProductIssue
+				? "🏷️ **Changelog labels needed** — add type and product labels so we can determine this PR's release-notes status."
+				: hasProductIssue
+					? "🏷️ **Product label needed** — add a product label so we can determine this PR's release-notes status."
+					: "🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.";
 
 		var sections = new List<string>();
 
-		if (hasTypeIssue)
+		if (hasAmbiguousType)
+		{
+			var conflicting = ambiguousTypeLabels!.Split(
+				',',
+				StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+			).Select(WrapInlineCode);
+			sections.Add($"\n🔖 Conflicting type labels found: {string.Join(", ", conflicting)}. Keep only one.");
+		}
+		else if (hasTypeIssue)
 			sections.Add(string.Join("\n", "", "🔖 Add one of these **type** labels to your PR:", "", labelTable));
 		else if (!hasProductIssue)
 			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configFileCode}.");

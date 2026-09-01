@@ -112,10 +112,26 @@ public class ChangelogPrEvaluationService(
 			return false;
 		}
 
-		// Resolve type
+		// Resolve type — detect multiple matching labels before picking one
 		string? resolvedType = null;
+		string? ambiguousTypeLabels = null;
 		if (config.LabelToType is { Count: > 0 })
-			resolvedType = PrInfoProcessor.MapLabelsToType(input.PrLabels, config.LabelToType);
+		{
+			var matching = PrInfoProcessor.MatchingTypeLabels(input.PrLabels, config.LabelToType);
+			if (matching.Count > 1)
+				ambiguousTypeLabels = string.Join(",", matching);
+			else
+				resolvedType = matching.Count == 1 ? config.LabelToType[matching[0]] : null;
+		}
+
+		if (ambiguousTypeLabels != null)
+		{
+			_logger.LogInformation("Multiple type labels found on PR: {Labels}", ambiguousTypeLabels);
+			collector.EmitError(string.Empty, $"Multiple type labels found: {ambiguousTypeLabels}. Remove all but one.");
+			_ = await SetOutputs(PrEvaluationResult.NoLabel, skipLabels: skipLabels);
+			await WriteDecisionMetadataAsync(input, "no-label", ambiguousTypeLabels: ambiguousTypeLabels, skipLabels: skipLabels, ctx: ctx);
+			return false;
+		}
 
 		// Resolve products from labels
 		string? resolvedProducts = null;
@@ -249,7 +265,8 @@ public class ChangelogPrEvaluationService(
 		string? productLabelTable = null,
 		string? skipLabels = null,
 		string? changelogDir = null,
-		string? changelogFilename = null
+		string? changelogFilename = null,
+		string? ambiguousTypeLabels = null
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -270,7 +287,8 @@ public class ChangelogPrEvaluationService(
 			ProductLabelTable = productLabelTable,
 			SkipLabels = skipLabels,
 			ChangelogDir = changelogDir,
-			ChangelogFilename = changelogFilename
+			ChangelogFilename = changelogFilename,
+			AmbiguousTypeLabels = ambiguousTypeLabels
 		};
 		await _metadataWriter.WriteAsync(metadata, ctx);
 	}

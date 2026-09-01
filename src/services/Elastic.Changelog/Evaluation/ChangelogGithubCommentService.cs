@@ -128,7 +128,8 @@ public class ChangelogGithubCommentService(
 				metadata.LabelTable,
 				metadata.ProductLabelTable,
 				metadata.SkipLabels,
-				metadata.ConfigFile
+				metadata.ConfigFile,
+				metadata.AmbiguousTypeLabels
 			);
 		}
 

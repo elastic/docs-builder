@@ -82,6 +82,16 @@ public class ChangelogCommentRendererTests
 	}
 
 	[Fact]
+	public void RenderLabelsNeeded_AmbiguousTypeLabels_ContainsMultipleTypeHeadline()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(null, null, null, null, ambiguousTypeLabels: "type:bug,type:feature");
+
+		body.Should().Contain("Multiple type labels set");
+		body.Should().Contain("type:bug");
+		body.Should().Contain("type:feature");
+	}
+
+	[Fact]
 	public void RenderLabelsNeeded_BothMissing_ContainsBothTables()
 	{
 		var body = ChangelogCommentRenderer.RenderLabelsNeeded("| type:feature | feature |", "| @Product:ECH | cloud |", null, null);
