@@ -164,7 +164,7 @@ versioning_systems:
     current: 9.5.0
   elasticsearch-client-python:
     base: 9.0
-    current: 9.5.0
+    current: 9.5.1
   elasticsearch-client-ruby:
     base: 9.0
     current: 9.5.0
