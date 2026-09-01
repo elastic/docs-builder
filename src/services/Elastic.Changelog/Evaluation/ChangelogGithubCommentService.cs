@@ -128,6 +128,13 @@ public class ChangelogGithubCommentService(
 			return ChangelogCommentRenderer.RenderResolved();
 		}
 
+		// Skipped: clear any stale failure comment.
+		if (IsSkipped(metadata.Status))
+		{
+			_logger.LogInformation("Rendering skipped body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderSkipped();
+		}
+
 		return null;
 	}
 
@@ -161,6 +168,7 @@ public class ChangelogGithubCommentService(
 			|| string.Equals(status, "ok", StringComparison.OrdinalIgnoreCase);
 
 	private static bool IsNoLabel(string status) => string.Equals(status, "no-label", StringComparison.OrdinalIgnoreCase);
+	private static bool IsSkipped(string status) => string.Equals(status, "skipped", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>Arguments for the hidden <c>changelog github-comment</c> command.</summary>

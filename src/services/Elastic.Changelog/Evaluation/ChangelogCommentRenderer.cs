@@ -162,9 +162,16 @@ internal static class ChangelogCommentRenderer
 
 	/// <summary>
 	/// Renders the "resolved" body posted when a previously-failing PR now has the required labels,
-	/// clearing the stale Step 1 comment and confirming what happens next.
+	/// clearing the stale Step 1 comment and confirming the release-notes status is determined.
 	/// </summary>
 	internal static string RenderResolved() => string.Join("\n", Title, "", "✅ **Changelog label set** — release-notes status confirmed.");
+
+	/// <summary>
+	/// Renders the "skipped" body posted when a PR carries a <c>changelog:skip</c> label,
+	/// clearing any stale failure comment left from before the skip label was added.
+	/// </summary>
+	internal static string RenderSkipped() =>
+		string.Join("\n", Title, "", "⏭️ **Excluded from release notes** — this PR will not appear in the changelog.");
 
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)
