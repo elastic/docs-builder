@@ -121,10 +121,10 @@ internal static class ChangelogCommentRenderer
 		var hasProductIssue = !string.IsNullOrWhiteSpace(productLabelTable);
 
 		var headline = hasTypeIssue && hasProductIssue
-			? "🏷️ **Changelog labels needed** — add type and product labels to this PR to enable changelog generation."
+			? "🏷️ **Changelog labels needed** — add type and product labels so we can determine this PR's release-notes status."
 			: hasProductIssue
-				? "🏷️ **Product label needed** — add a product label to this PR to enable changelog generation."
-				: "🏷️ **Changelog label needed** — add a type label to this PR to enable changelog generation.";
+				? "🏷️ **Product label needed** — add a product label so we can determine this PR's release-notes status."
+				: "🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.";
 
 		var sections = new List<string>();
 
@@ -142,11 +142,11 @@ internal static class ChangelogCommentRenderer
 			var formatted = skipLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(
 				WrapInlineCode
 			);
-			skipSection = $"\n⏭️ To skip changelog generation, add one of these labels: {string.Join(", ", formatted)}";
+			skipSection = $"\n⏭️ To exclude this PR from release notes, add one of these labels: {string.Join(", ", formatted)}";
 		}
 		else
 		{
-			skipSection = $"\n⏭️ No skip labels are configured. To allow skipping changelog generation, "
+			skipSection = $"\n⏭️ No exclude labels are configured. To allow excluding PRs from release notes, "
 				+ $"add a label to {WrapInlineCode("rules.create.exclude")} in {configFileCode}.";
 		}
 
@@ -163,8 +163,7 @@ internal static class ChangelogCommentRenderer
 	/// Renders the "resolved" body posted when a previously-failing PR now has the required labels,
 	/// clearing the stale Step 1 comment and confirming what happens next.
 	/// </summary>
-	internal static string RenderResolved() =>
-		string.Join("\n", Title, "", "✅ **Changelog label set** — an entry will be generated on merge.");
+	internal static string RenderResolved() => string.Join("\n", Title, "", "✅ **Changelog label set** — release-notes status confirmed.");
 
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)
