@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj"/>
     <ProjectReference Include="..\..\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Documentation.Site\Elastic.Documentation.Site.csproj"/>
+    <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj"/>
     <ProjectReference Include="..\..\src\Elastic.Documentation\Elastic.Documentation.csproj"/>
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
   </ItemGroup>
