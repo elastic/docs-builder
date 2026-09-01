@@ -122,7 +122,7 @@
 				@if (Model.ShowVersionDropdown)
 				{
 					<div class="secondary-nav-actions">
-						<version-dropdown all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+						<version-dropdown id="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 							<div class="h-8">@*height of dropdown button*@</div>
 						</version-dropdown>
 					</div>
@@ -171,7 +171,7 @@
 				@if (Model.ShowVersionDropdown)
 				{
 					<div class="secondary-nav-actions">
-						<version-dropdown all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+						<version-dropdown id="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 							<div class="h-8">@*height of dropdown button*@</div>
 						</version-dropdown>
 					</div>
