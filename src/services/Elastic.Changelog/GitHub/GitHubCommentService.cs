@@ -174,6 +174,7 @@ public partial class GitHubCommentService(ILoggerFactory loggerFactory, GitHubAp
 
 	private sealed class CommentBody
 	{
+		[JsonPropertyName("body")]
 		public string Body { get; set; } = string.Empty;
 	}
 

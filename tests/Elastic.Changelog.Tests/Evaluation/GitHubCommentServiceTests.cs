@@ -143,6 +143,25 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 		postedBody!.Should().Contain("Changelog").And.Contain("Content");
 	}
 
+	[Fact]
+	public async Task UpsertStickyComment_PostedJson_UsesLowercaseBodyKey()
+	{
+		// GitHub's API requires lowercase "body" — PascalCase "Body" triggers HTTP 422.
+		string? postedJson = null;
+		var handler = new StubHandler(req =>
+		{
+			if (req.Method.Method == "GET")
+				return Json("[]");
+			postedJson = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+			return Created();
+		});
+
+		await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "hello");
+
+		postedJson.Should().NotBeNull();
+		postedJson!.Should().Contain("\"body\"").And.NotContain("\"Body\"");
+	}
+
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
 	{
 		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => responder(request);
