@@ -19,6 +19,13 @@ public interface IGitHubCommentService
 	Task<string?> UpsertStickyCommentAsync(string owner, string repo, int prNumber, string body, Cancel ctx = default);
 
 	/// <summary>
+	/// Deletes the sticky changelog comment on the given pull request if one exists.
+	/// Returns <c>true</c> when no comment was found (nothing to delete) or when deletion succeeded;
+	/// <c>false</c> only on a definitive API failure.
+	/// </summary>
+	Task<bool> DeleteStickyCommentAsync(string owner, string repo, int prNumber, Cancel ctx = default);
+
+	/// <summary>
 	/// Minimizes (hides) the given comment on GitHub using the <c>RESOLVED</c> classifier.
 	/// Failures are logged as warnings and do not affect the command exit code.
 	/// </summary>

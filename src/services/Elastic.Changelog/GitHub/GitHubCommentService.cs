@@ -160,6 +160,38 @@ public partial class GitHubCommentService(ILoggerFactory loggerFactory, GitHubAp
 		}
 	}
 
+	/// <inheritdoc />
+	public async Task<bool> DeleteStickyCommentAsync(string owner, string repo, int prNumber, Cancel ctx = default)
+	{
+		try
+		{
+			var existing = await FindExistingCommentAsync(owner, repo, prNumber, ctx);
+			if (!existing.HasValue)
+				return true;
+
+			var deleteUrl = $"https://api.github.com/repos/{owner}/{repo}/issues/comments/{existing.Value.Id}";
+			using var response = await _transport.DeleteAsync(deleteUrl, ctx);
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogWarning(
+					"Failed to delete comment {CommentId} on PR #{PrNumber}: {Status}",
+					existing.Value.Id,
+					prNumber,
+					(int)response.StatusCode
+				);
+				return false;
+			}
+
+			_logger.LogInformation("Deleted changelog comment {CommentId} on PR #{PrNumber}", existing.Value.Id, prNumber);
+			return true;
+		}
+		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
+		{
+			_logger.LogWarning(ex, "Unexpected error deleting changelog comment on PR #{PrNumber}", prNumber);
+			return false;
+		}
+	}
+
 	/// <summary>
 	/// Paginates through all PR comments and returns the ID and node_id of the first comment that
 	/// matches either the HTML marker or the legacy title prefix; <c>null</c> when none is found.

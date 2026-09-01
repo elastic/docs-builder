@@ -18,8 +18,9 @@ namespace Elastic.Changelog.Evaluation;
 ///   <item><term><c>CommitOutcome == Committed</c></term><description>Entry-committed body with blob + edit links.</description></item>
 ///   <item><term><c>CommitOutcome == Failed</c></term><description>Comment-only body, commit-failed variant.</description></item>
 ///   <item><term>Status success and <c>!CanCommit</c></term><description>Comment-only body (fork / comment-only strategy).</description></item>
-///   <item><term>Status no-label</term><description>Cannot-generate body with label tables.</description></item>
-///   <item><term>Status success, no staged file</term><description>Resolved body (clears a stale failure comment).</description></item>
+///   <item><term>Status no-label</term><description>Labels-needed body with label tables.</description></item>
+///   <item><term>Status skipped</term><description>Skipped body (hidden as 'resolved') to clear stale failure comment.</description></item>
+///   <item><term>Status success, no staged file</term><description>Deletes the sticky comment — no need to litter once labels are validated.</description></item>
 /// </list>
 /// </summary>
 public class ChangelogGithubCommentService(
@@ -52,7 +53,16 @@ public class ChangelogGithubCommentService(
 		var body = SelectBody(metadata, input.MetadataDir);
 		if (body is null)
 		{
-			_logger.LogInformation("No comment body selected for PR #{PrNumber} — nothing to post", metadata.PrNumber);
+			if (IsSuccess(metadata.Status))
+			{
+				_logger.LogInformation(
+					"Labels validated for PR #{PrNumber} — deleting stale failure comment if present",
+					metadata.PrNumber
+				);
+				_ = await commentService.DeleteStickyCommentAsync(owner, repo, metadata.PrNumber, ctx);
+			}
+			else
+				_logger.LogInformation("No comment body selected for PR #{PrNumber} — nothing to post", metadata.PrNumber);
 			return true;
 		}
 
@@ -131,12 +141,9 @@ public class ChangelogGithubCommentService(
 			);
 		}
 
-		// Success with no staged file: post resolved body to clear a stale failure comment.
+		// Success with no staged file: signal to delete the sticky comment (no body needed).
 		if (isSuccess)
-		{
-			_logger.LogInformation("Rendering resolved body for PR #{PrNumber}", metadata.PrNumber);
-			return ChangelogCommentRenderer.RenderResolved();
-		}
+			return null;
 
 		// Skipped: clear any stale failure comment.
 		if (IsSkipped(metadata.Status))

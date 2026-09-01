@@ -104,6 +104,18 @@ public sealed class GitHubApiTransport : IDisposable
 	}
 
 	/// <summary>
+	/// Issues an authenticated DELETE against a GitHub REST API endpoint.
+	/// The caller owns the response and its status-code policy.
+	/// </summary>
+	public async Task<HttpResponseMessage> DeleteAsync(string url, Cancel ctx = default)
+	{
+		using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+		AttachAuthorization(request);
+		return await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>
 	/// Posts a JSON body to the GitHub GraphQL endpoint. The GraphQL API rejects anonymous
 	/// requests, so callers should verify <see cref="ResolveToken"/> before building queries.
 	/// </summary>
