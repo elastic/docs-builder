@@ -6,6 +6,8 @@ This command is intended for CI automation. It is used internally by the changel
 
 Evaluate a pull request for changelog generation eligibility. Performs pre-flight checks (body-only edit, bot loop detection, manual edit detection), loads the changelog configuration, checks label-based creation rules, resolves the PR title and type, and sets GitHub Actions outputs for downstream steps.
 
+When running under GitHub Actions (the `GITHUB_ACTIONS` environment variable is set), the command writes a decision metadata file to `.artifacts/changelog-decision/metadata.json`. This file is picked up by the downstream `changelog github-comment` command to post or update the sticky PR comment. Pass `--is-fork`, `--can-commit`, and `--maintainer-can-modify` so the comment command can select the correct comment body for fork and comment-only PR strategies.
+
 ## GitHub Actions outputs
 
 | Output | Description |

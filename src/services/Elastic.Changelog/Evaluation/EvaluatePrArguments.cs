@@ -29,4 +29,10 @@ public record EvaluatePrArguments
 	/// without editing <c>changelog.yml</c>.
 	/// </summary>
 	public bool RequireChangelogFile { get; init; }
+
+	// Additional PR context for GithubDecisionMetadata — optional, populated when known.
+	public bool IsFork { get; init; }
+	public bool CanCommit { get; init; }
+	public bool MaintainerCanModify { get; init; }
+	public string? HeadRepo { get; init; }
 }

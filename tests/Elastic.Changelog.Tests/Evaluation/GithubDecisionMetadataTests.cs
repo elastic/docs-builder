@@ -10,12 +10,12 @@ using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class ChangelogArtifactMetadataTests
+public class GithubDecisionMetadataTests
 {
 	[Fact]
 	public void SerializationRoundTrip_WithAllFields_PreservesValues()
 	{
-		var metadata = new ChangelogArtifactMetadata
+		var metadata = new GithubDecisionMetadata
 		{
 			PrNumber = 42,
 			HeadRef = "feature/test",
@@ -30,6 +30,8 @@ public class ChangelogArtifactMetadataTests
 			SkipLabels = "changelog:skip,skip-ci",
 			ConfigFile = "changelog.yml",
 			ChangelogDir = "changelogs",
+			CommitOutcome = CommitOutcome.Committed,
+			CommittedFile = "changelogs/1234.yaml",
 			CreateRules = new CreateRules
 			{
 				Labels = ["changelog:skip", "no-changelog"],
@@ -42,8 +44,8 @@ public class ChangelogArtifactMetadataTests
 			}
 		};
 
-		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
-		var deserialized = JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+		var deserialized = JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 
 		deserialized.Should().NotBeNull();
 		deserialized.PrNumber.Should().Be(42);
@@ -59,6 +61,8 @@ public class ChangelogArtifactMetadataTests
 		deserialized.SkipLabels.Should().Be("changelog:skip,skip-ci");
 		deserialized.ConfigFile.Should().Be("changelog.yml");
 		deserialized.ChangelogDir.Should().Be("changelogs");
+		deserialized.CommitOutcome.Should().Be(CommitOutcome.Committed);
+		deserialized.CommittedFile.Should().Be("changelogs/1234.yaml");
 		deserialized.CreateRules.Should().NotBeNull();
 		deserialized.CreateRules.Labels.Should().BeEquivalentTo(["changelog:skip", "no-changelog"]);
 		deserialized.CreateRules.Mode.Should().Be(FieldMode.Exclude);
@@ -69,7 +73,7 @@ public class ChangelogArtifactMetadataTests
 	[Fact]
 	public void SerializationRoundTrip_WithNullOptionalFields_PreservesNulls()
 	{
-		var metadata = new ChangelogArtifactMetadata
+		var metadata = new GithubDecisionMetadata
 		{
 			PrNumber = 1,
 			HeadRef = "main",
@@ -80,8 +84,8 @@ public class ChangelogArtifactMetadataTests
 			MaintainerCanModify = false
 		};
 
-		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
-		var deserialized = JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+		var deserialized = JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 
 		deserialized.Should().NotBeNull();
 		deserialized.PrNumber.Should().Be(1);
@@ -93,13 +97,15 @@ public class ChangelogArtifactMetadataTests
 		deserialized.SkipLabels.Should().BeNull();
 		deserialized.ConfigFile.Should().BeNull();
 		deserialized.ChangelogDir.Should().BeNull();
+		deserialized.CommitOutcome.Should().BeNull();
+		deserialized.CommittedFile.Should().BeNull();
 		deserialized.CreateRules.Should().BeNull();
 	}
 
 	[Fact]
 	public void Serialization_UsesSnakeCasePropertyNames()
 	{
-		var metadata = new ChangelogArtifactMetadata
+		var metadata = new GithubDecisionMetadata
 		{
 			PrNumber = 99,
 			HeadRef = "fix/bug",
@@ -109,10 +115,12 @@ public class ChangelogArtifactMetadataTests
 			CanCommit = false,
 			MaintainerCanModify = true,
 			HeadRepo = "user/repo",
-			ChangelogDir = "changelogs"
+			ChangelogDir = "changelogs",
+			CommitOutcome = CommitOutcome.Failed,
+			CommittedFile = "changelogs/99.yaml"
 		};
 
-		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 
 		json.Should().Contain("\"pr_number\"");
 		json.Should().Contain("\"head_ref\"");
@@ -122,6 +130,8 @@ public class ChangelogArtifactMetadataTests
 		json.Should().Contain("\"maintainer_can_modify\"");
 		json.Should().Contain("\"head_repo\"");
 		json.Should().Contain("\"changelog_dir\"");
+		json.Should().Contain("\"commit_outcome\"");
+		json.Should().Contain("\"committed_file\"");
 		json.Should().NotContain("\"PrNumber\"");
 		json.Should().NotContain("\"IsFork\"");
 		json.Should().NotContain("\"CanCommit\"");
@@ -130,7 +140,7 @@ public class ChangelogArtifactMetadataTests
 	[Fact]
 	public void Serialization_EnumsUseStringValues()
 	{
-		var metadata = new ChangelogArtifactMetadata
+		var metadata = new GithubDecisionMetadata
 		{
 			PrNumber = 1,
 			HeadRef = "main",
@@ -139,12 +149,40 @@ public class ChangelogArtifactMetadataTests
 			IsFork = false,
 			CanCommit = true,
 			MaintainerCanModify = false,
+			CommitOutcome = CommitOutcome.Committed,
 			CreateRules = new CreateRules { Labels = ["skip"], Mode = FieldMode.Include, Match = MatchMode.All }
 		};
 
-		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 
 		json.Should().Contain("\"Include\"");
 		json.Should().Contain("\"All\"");
+		json.Should().Contain("\"Committed\"");
+	}
+
+	[Fact]
+	public void Deserialization_OldMetadataWithoutCommitOutcomeFields_Succeeds()
+	{
+		// Verify wire-safety: a metadata.json written before the CommitOutcome/CommittedFile
+		// fields were added still deserializes cleanly (fields default to null).
+		const string legacyJson =
+			"""
+			{
+			  "pr_number": 7,
+			  "head_ref": "fix/typo",
+			  "head_sha": "cafebabe",
+			  "status": "proceed",
+			  "is_fork": false,
+			  "can_commit": true,
+			  "maintainer_can_modify": false
+			}
+			""";
+
+		var deserialized = JsonSerializer.Deserialize(legacyJson, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+
+		deserialized.Should().NotBeNull();
+		deserialized.PrNumber.Should().Be(7);
+		deserialized.CommitOutcome.Should().BeNull();
+		deserialized.CommittedFile.Should().BeNull();
 	}
 }

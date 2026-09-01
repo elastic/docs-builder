@@ -78,6 +78,32 @@ public sealed class GitHubApiTransport : IDisposable
 	}
 
 	/// <summary>
+	/// Issues an authenticated POST against a GitHub REST API endpoint with a JSON body.
+	/// The caller owns the response and its status-code policy.
+	/// </summary>
+	public async Task<HttpResponseMessage> PostAsync(string url, string jsonBody, Cancel ctx = default)
+	{
+		using var request = new HttpRequestMessage(HttpMethod.Post, url);
+		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+		request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+		AttachAuthorization(request);
+		return await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>
+	/// Issues an authenticated PATCH against a GitHub REST API endpoint with a JSON body.
+	/// The caller owns the response and its status-code policy.
+	/// </summary>
+	public async Task<HttpResponseMessage> PatchAsync(string url, string jsonBody, Cancel ctx = default)
+	{
+		using var request = new HttpRequestMessage(HttpMethod.Patch, url);
+		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+		request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+		AttachAuthorization(request);
+		return await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>
 	/// Posts a JSON body to the GitHub GraphQL endpoint. The GraphQL API rejects anonymous
 	/// requests, so callers should verify <see cref="ResolveToken"/> before building queries.
 	/// </summary>
