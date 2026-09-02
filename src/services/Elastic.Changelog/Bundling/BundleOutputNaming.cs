@@ -106,6 +106,45 @@ public static class BundleOutputNaming
 	}
 
 	/// <summary>
+	/// Validates <paramref name="bundleRepo"/> against the authoring repository derived from
+	/// <c>GITHUB_REPOSITORY</c> and the git remote. Emits nothing when <paramref name="bundleRepo"/>
+	/// is unset (the target state). Emits an informational hint when it matches, and a hard error when
+	/// it points at a different repository (which would silently repoint the S3 pool).
+	/// </summary>
+	public static void ValidateBundleRepo(IDiagnosticsCollector collector, IFileSystem fileSystem, string? configPath, string? bundleRepo)
+	{
+		if (string.IsNullOrWhiteSpace(bundleRepo))
+			return;
+
+		var normalizedBundleRepo = ChangelogRepoOwnerResolver.NormalizeRepo(bundleRepo);
+
+		// Derive the authoritative repo WITHOUT the bundle.repo value itself.
+		var githubRepository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+		var trueRepo = ChangelogRepoOwnerResolver.NormalizeRepo(githubRepository) ?? TryGitOriginRepo(fileSystem, configPath);
+
+		if (string.IsNullOrWhiteSpace(trueRepo))
+			return; // can't validate without an authoritative source — skip silently
+
+		if (string.Equals(normalizedBundleRepo, trueRepo, StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitWarning(
+				string.Empty,
+				$"bundle.repo '{bundleRepo}' is redundant — it matches the derived repository '{trueRepo}'. " +
+					"Remove it from changelog.yml; the repository is now derived automatically."
+			);
+		}
+		else
+		{
+			collector.EmitError(
+				string.Empty,
+				$"bundle.repo '{bundleRepo}' does not match the repository running this command ('{trueRepo}'). " +
+					"This would silently repoint the S3 upload pool and GitHub API calls to a different repository. " +
+					"Remove bundle.repo from changelog.yml to derive it automatically."
+			);
+		}
+	}
+
+	/// <summary>
 	/// Resolves the authoring repository for any changelog command. Precedence:
 	/// explicit value(s), <c>GITHUB_REPOSITORY</c> env var, git <c>origin</c>.
 	/// </summary>
