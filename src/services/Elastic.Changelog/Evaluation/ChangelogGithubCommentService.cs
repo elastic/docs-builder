@@ -106,7 +106,8 @@ public class ChangelogGithubCommentService(
 		var isNoLabel = IsNoLabel(metadata.Status);
 
 		// Success but cannot commit (fork or comment-only strategy): comment-only informational body.
-		if (isSuccess && !metadata.CanCommit)
+		// The Entries gate never stages a YAML file, so CanCommit is irrelevant there.
+		if (isSuccess && !metadata.CanCommit && metadata.Gate is not ValidationGate.Entries)
 		{
 			_logger.LogInformation("Rendering comment-only/no-commit body for PR #{PrNumber}", metadata.PrNumber);
 			var (yamlContent, yamlFilename) = ReadStagedYaml(metadataDir);
