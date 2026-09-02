@@ -92,7 +92,7 @@ In body Markdown, name only the keys that apply to the content. In settings YAML
 
 | Key | What it means here | Write |
 |---|---|---|
-| `stack` | Lifecycle and version of the setting | `ga`, `preview 9.2`, or a history such as `preview 9.0-9.2, ga 9.3+`. No version means all versions. |
+| `stack` | The setting's lifecycle and versions it's available in | `ga`, `preview 9.2`, or a history such as `preview 9.0-9.2, ga 9.3+`. Omit the version if the setting was added before 9.0. |
 | `ech`, `ece`, `eck`, `self` | Supported on that deployment, or not | Always list all four. `ga` if supported. `unavailable` if not. Never a version. Never `preview`, `experimental`, `deprecated`, or `removed`. |
 | `serverless` | Supported on serverless, or not | Always list it. `ga` if supported. `unavailable` if not. Never a version. |
 
