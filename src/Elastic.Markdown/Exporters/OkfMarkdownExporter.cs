@@ -9,6 +9,7 @@ using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Components;
@@ -135,19 +136,35 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	}
 
 	/// <summary>
-	/// Derives the OKF <c>type</c> from the page's top-level navigation section (the first URL path
-	/// segment after any configured <see cref="Elastic.Documentation.Configuration.BuildContext.UrlPathPrefix"/>),
-	/// e.g. <c>/reference/query-languages/eql</c> -> <c>reference</c>.
+	/// Derives the OKF <c>type</c> — a query dimension for <c>okf search --type</c> — from the page's top-level
+	/// navigation section: the first URL path segment after any configured
+	/// <see cref="Elastic.Documentation.Configuration.BuildContext.UrlPathPrefix"/>, e.g.
+	/// <c>/reference/query-languages/eql</c> -> <c>reference</c>. A page sitting at the bundle root has no section
+	/// above it, so its single segment names the page itself rather than a section and would make every root-level
+	/// page its own singleton type; those fall back to <c>documentation</c>, matching the bundle root's own index.
+	/// <paramref name="isSectionLandingPage"/> keeps a section's landing page (<c>/reference</c>, one segment but
+	/// backed by a <c>reference/</c> directory) typed as its section.
 	/// </summary>
-	internal static string DeriveType(string navigationUrl, string? urlPathPrefix)
+	internal static string DeriveType(string navigationUrl, string? urlPathPrefix, bool isSectionLandingPage)
 	{
 		var prefix = urlPathPrefix ?? string.Empty;
 		var url = navigationUrl;
 		if (prefix.Length > 0 && url.StartsWith(prefix, StringComparison.Ordinal))
 			url = url[prefix.Length..];
 		var segments = url.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		return segments.Length > 0 ? segments[0] : "documentation";
+		if (segments.Length == 0 || (segments.Length == 1 && !isSectionLandingPage))
+			return "documentation";
+		return segments[0];
 	}
+
+	/// <summary>
+	/// True when the page is a navigation node's index, i.e. a section landing page with a sibling <c>{folder}/</c>
+	/// directory in the bundle. <c>GetNavigationFor</c> resolves an index page to its node rather than to a leaf
+	/// (see <c>ListSubPagesBlock</c>), the only signal separating <c>/reference</c> from a root-level page like
+	/// <c>/colon</c> — the two are indistinguishable by URL shape.
+	/// </summary>
+	internal static bool IsSectionLandingPage(INavigationItem navigationItem) =>
+		navigationItem is INodeNavigationItem<INavigationModel, INavigationItem>;
 
 	/// <summary>
 	/// Rewrites an already-resolved link URL to its bundle-relative form via <see cref="ComputeBundlePath"/>.
@@ -213,7 +230,7 @@ public class OkfMarkdownExporter : IMarkdownExporter
 
 		var sourceFile = context.SourceFile;
 		var frontMatter = new ConceptFrontMatter(
-			DeriveType(context.NavigationItem.Url, context.BuildContext.UrlPathPrefix),
+			DeriveType(context.NavigationItem.Url, context.BuildContext.UrlPathPrefix, IsSectionLandingPage(context.NavigationItem)),
 			sourceFile.Title,
 			sourceFile.YamlFrontMatter?.NavigationTitle,
 			GetDescription(context),
