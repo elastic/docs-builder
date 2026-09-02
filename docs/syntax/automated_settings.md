@@ -94,9 +94,15 @@ In settings YAML, list every deployment key so that line is complete and the `:d
 |---|---|---|
 | `stack` | The setting's lifecycle and versions it's available in | `ga`, `preview 9.2`, or a history such as `preview 9.0-9.2, ga 9.3+`. Omit the version if the setting was added before 9.0. |
 | `ech`, `ece`, `eck`, `self` | Supported on that deployment, or not | Always list all four. `ga` if supported. `unavailable` if not. Never a version. Never `preview`, `experimental`, `deprecated`, or `removed`. |
-| `serverless` | Supported on serverless, or not | Always list it. `ga` if supported. `unavailable` if not. Never a version. |
+| `serverless` | Supported on serverless, or not | Always list it. `ga` if every serverless project supports it. `unavailable` if none do. Never a version. Never `preview`, `experimental`, `deprecated`, or `removed`. |
 
 `ga` on a deployment key is a support flag. It does not mean the setting is generally available. If `stack` is `preview` and the setting exists on Elastic Cloud Hosted, write `ech: ga`.
+
+If availability differs by serverless project, nest `elasticsearch`, `observability`, and `security` under `serverless`. Those keys are support flags too. Write `ga` or `unavailable`. Never write a version. Never write `preview`, `experimental`, `deprecated`, or `removed`.
+
+List all three project keys. Do not mix a scalar `serverless:` with project keys.
+
+Existing settings YAML sometimes lists those project keys as siblings of `stack`. That form still parses. Prefer the nested `serverless:` map for new entries.
 
 `unavailable` is not rendered as a badge. It hides the setting from `:deployment:`. Omitting a deployment key also hides it from that filter. Still write `unavailable` so the Supported on line is complete.
 
@@ -138,6 +144,21 @@ applies_to:
   eck: unavailable
   self: ga
   serverless: unavailable
+```
+
+Observability serverless only:
+
+```yaml
+applies_to:
+  stack: ga 9.2
+  ech: ga
+  ece: ga
+  eck: ga
+  self: ga
+  serverless:
+    observability: ga
+    elasticsearch: unavailable
+    security: unavailable
 ```
 
 ### Example
