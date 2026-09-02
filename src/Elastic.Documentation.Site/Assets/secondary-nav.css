@@ -158,6 +158,7 @@
 			line-height: 20px;
 			text-decoration: none;
 			white-space: nowrap;
+			transition: color 0.08s ease;
 		}
 
 		/* 32px matches .secondary-nav-item__content (6+20+6), not the 56px bar. */
@@ -203,7 +204,9 @@
 			align-items: stretch;
 			height: 100%;
 			color: #516381;
-			transition: color 0.12s ease;
+			transition:
+				color 0.08s ease,
+				font-weight 0.08s ease;
 		}
 
 		.secondary-nav-item__hit {
@@ -228,24 +231,12 @@
 			padding: 6px 12px;
 			border-radius: 8px;
 			transition:
-				background-color 0.12s ease,
-				color 0.12s ease;
+				background-color 0.08s ease,
+				color 0.08s ease;
 		}
 
 		.secondary-nav-item__content--dropdown {
 			gap: 6px;
-		}
-
-		.secondary-nav-item:not(.secondary-nav-item--active):hover,
-		.secondary-nav-item:not(.secondary-nav-item--active):focus-within {
-			color: #1d2a3e;
-		}
-
-		.secondary-nav-item:not(.secondary-nav-item--active):hover
-			.secondary-nav-item__content,
-		.secondary-nav-item:not(.secondary-nav-item--active):focus-within
-			.secondary-nav-item__content {
-			background-color: #f6f9fc;
 		}
 
 		.secondary-nav-item--active {
@@ -254,6 +245,14 @@
 			color: #0b64dd;
 			font-weight: 600;
 			box-shadow: inset 0 -2px 0 #0b64dd;
+		}
+
+		.secondary-nav-item:hover {
+			color: #1d2a3e;
+		}
+
+		.secondary-nav-item:hover .secondary-nav-item__content {
+			background-color: #f6f9fc;
 		}
 
 		.secondary-nav-item__hit:focus-visible {
