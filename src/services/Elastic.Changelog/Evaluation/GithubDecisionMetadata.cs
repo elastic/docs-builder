@@ -72,6 +72,8 @@ public enum ValidationGate
 	File,
 	/// <summary>Written by <c>validate-entries</c>. The content of changelog entry files is validated.</summary>
 	Entries,
+	/// <summary>Written by <c>validate-entries</c> pre-flight. The repository is not registered in <c>products.yml</c>.</summary>
+	Onboarding,
 }
 
 /// <summary>Outcome of the apply job's changelog commit step.</summary>

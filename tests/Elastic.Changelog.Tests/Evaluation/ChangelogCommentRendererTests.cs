@@ -289,4 +289,28 @@ public class ChangelogCommentRendererTests
 		var body = ChangelogCommentRenderer.RenderMissingEntry("changelogs", 7);
 		body.Should().Contain("changelogs/7.yaml");
 	}
+
+	[Fact]
+	public void RenderRepositoryNotOnboarded_StartsWithTitle()
+	{
+		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("my-repo");
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+	}
+
+	[Fact]
+	public void RenderRepositoryNotOnboarded_ContainsRepoAndYamlSnippet()
+	{
+		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("my-repo");
+		body.Should().Contain("my-repo");
+		body.Should().Contain("products.yml");
+		body.Should().Contain("release-notes: true");
+	}
+
+	[Fact]
+	public void RenderRepositoryNotOnboarded_BacktickRepoName_FencedCorrectly()
+	{
+		// A repo name containing backticks should still render without breaking the fence
+		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("normal-repo");
+		body.Should().Contain("```yaml");
+	}
 }

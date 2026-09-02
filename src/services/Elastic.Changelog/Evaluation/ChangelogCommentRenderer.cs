@@ -258,6 +258,40 @@ internal static class ChangelogCommentRenderer
 		);
 	}
 
+	/// <summary>
+	/// Renders the "repository not onboarded" body: actionable error with copy-pasteable
+	/// <c>products.yml</c> snippet so the repository owner can self-serve registration.
+	/// </summary>
+	internal static string RenderRepositoryNotOnboarded(string repo)
+	{
+		var safeRepo = WrapInlineCode(repo);
+		var snippet =
+			$"""
+			  {repo}:
+			    display: '<human-readable name>'
+			    repository: '{repo}'
+			    features:
+			      release-notes: true
+			""";
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"⚠️ **Repository {safeRepo} is not registered in `products.yml`** — the changelog pipeline cannot run until it is.",
+				"",
+				"Add a product entry to `config/products.yml` in `elastic/docs-builder` and wait for the next release:",
+				"",
+				WrapCodeFence(snippet, "yaml"),
+				"",
+				"See [`docs/documentation/catalog/products.md`](https://github.com/elastic/docs-builder/blob/main/docs/documentation/catalog/products.md) for the full product configuration reference.",
+				"",
+				"> **Note:** `config/products.yml` is embedded in the `docs-builder` binary. The change takes effect on the next `docs-builder` release, typically picked up by `release-notes.yml` workflows within a day."
+			)
+		);
+	}
+
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)
 	// ──────────────────────────────────────────────────────────────────────────────────────────

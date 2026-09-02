@@ -120,6 +120,13 @@ public class ChangelogGithubCommentService(
 			);
 		}
 
+		// Pre-flight (onboarding gate): repository not registered in products.yml.
+		if (metadata.Gate == ValidationGate.Onboarding)
+		{
+			_logger.LogInformation("Rendering repository-not-onboarded body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderRepositoryNotOnboarded(repo);
+		}
+
 		// Step 2 (entry gate): changelog entry file content has validation errors.
 		if (metadata.Gate == ValidationGate.Entries && metadata.EntryFindings is { Count: > 0 })
 		{

@@ -42,6 +42,32 @@ public class ChangelogEntryValidationService(
 		var changelogDir = config.Bundle?.Directory ?? "docs/changelog";
 		var defaultBranch = config.Bundle?.Branch ?? "main";
 
+		// ── Onboarding pre-flight ──────────────────────────────────────────────────────────────
+		// Fail fast when the repository is not registered in products.yml — file discovery is
+		// pointless if the pipeline cannot run regardless of what the PR contains.
+		var matchedProducts = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(input.Repo);
+		if (matchedProducts.Count == 0)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Repository '{input.Repo}' is not registered in products.yml. " +
+					"Add a product entry to config/products.yml in elastic/docs-builder before running this check."
+			);
+			await WriteMetadataAsync(input, "onboarding-required", null, defaultBranch, ctx, ValidationGate.Onboarding);
+			return false;
+		}
+
+		if (matchedProducts.All(p => !p.Features.ParticipatesInReleaseNotes))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Repository '{input.Repo}' is registered in products.yml but all matching products have release notes disabled. " +
+					"Set 'features.release-notes: on-release' on at least one product to enable the changelog pipeline."
+			);
+			await WriteMetadataAsync(input, "onboarding-required", null, defaultBranch, ctx, ValidationGate.Onboarding);
+			return false;
+		}
+
 		// ── Resolve label-derived type ─────────────────────────────────────────────────────────
 		ChangelogEntryType? labelDerivedType = null;
 		if (config.LabelToType is { Count: > 0 })
@@ -225,7 +251,8 @@ public class ChangelogEntryValidationService(
 		string status,
 		List<EntryFileFinding>? findings,
 		string defaultBranch,
-		Cancel ctx
+		Cancel ctx,
+		ValidationGate gate = ValidationGate.Entries
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -237,7 +264,7 @@ public class ChangelogEntryValidationService(
 
 		var metadata = new GithubDecisionMetadata
 		{
-			Gate = ValidationGate.Entries,
+			Gate = gate,
 			PrNumber = input.PrNumber,
 			HeadRef = input.HeadRef,
 			HeadSha = input.HeadSha,

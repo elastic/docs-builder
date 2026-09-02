@@ -257,6 +257,30 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 		).MustHaveHappenedOnceExactly();
 	}
 
+	// ── Gate.Onboarding dispatch ──────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task PostComment_OnboardingGate_RendersRepositoryNotOnboardedBody()
+	{
+		await WriteMetadata(BaseMetadata(status: "onboarding-required") with { Gate = ValidationGate.Onboarding });
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).Returns((string?)"IC_test_node_id");
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				A<string>._,
+				A<string>._,
+				A<int>._,
+				A<string>.That.Contains("products.yml"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
 	// ── Gate.File + missing-entry dispatch ────────────────────────────────────────────────────────
 
 	[Fact]
