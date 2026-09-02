@@ -15,14 +15,12 @@ internal static class McpToolResults
 	/// Wraps a success payload (already serialized to JSON) in a <see cref="CallToolResult"/>.
 	/// Equivalent to returning a plain <c>string</c> from a tool, but typed explicitly.
 	/// </summary>
-	public static CallToolResult Ok(string json) =>
-		new() { Content = [new TextContentBlock { Text = json }] };
+	public static CallToolResult Ok(string json) => new() { Content = [new TextContentBlock { Text = json }] };
 
 	/// <summary>
 	/// Returns a <see cref="CallToolResult"/> with <see cref="CallToolResult.IsError"/> set so
 	/// the MCP client and model know the tool call failed. HTTP response remains 200 per
 	/// MCP/JSON-RPC spec.
 	/// </summary>
-	public static CallToolResult Error(string json) =>
-		new() { IsError = true, Content = [new TextContentBlock { Text = json }] };
+	public static CallToolResult Error(string json) => new() { IsError = true, Content = [new TextContentBlock { Text = json }] };
 }

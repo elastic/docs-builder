@@ -91,11 +91,7 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var result = await searchTools.FindRelatedDocs(
-			"data streams",
-			limit: 5,
-			cancellationToken: TestContext.Current.CancellationToken
-		);
+		var result = await searchTools.FindRelatedDocs("data streams", limit: 5, cancellationToken: TestContext.Current.CancellationToken);
 
 		// Assert
 		result.IsError.Should().BeFalse("FindRelatedDocs should not return an error result");

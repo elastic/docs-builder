@@ -156,8 +156,7 @@ public class McpToolTelemetryTests
 		activity.StatusDescription.Should().Be("cancelled");
 	}
 
-	private static ActivityListener CreateListener() =>
-		CreateListenerForSources(McpToolTelemetry.McpToolSourceName);
+	private static ActivityListener CreateListener() => CreateListenerForSources(McpToolTelemetry.McpToolSourceName);
 
 	private static ActivityListener CreateListenerForSources(params string[] sourceNames)
 	{
