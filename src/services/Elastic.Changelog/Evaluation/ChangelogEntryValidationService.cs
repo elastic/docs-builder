@@ -100,12 +100,17 @@ public class ChangelogEntryValidationService(
 		if (availableProducts is { Count: > 0 })
 			knownProducts = new HashSet<string>(availableProducts.Keys.Select(k => k.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
 
-		// ── Parse and run field-level rules ───────────────────────────────────────────────────
+		// ── Parse files, validate filenames, run field-level rules ───────────────────────────
 		var allFindings = new List<EntryFileFinding>();
 		var entriesByFile = new Dictionary<string, ChangelogEntryDto?>(StringComparer.OrdinalIgnoreCase);
-
+		var filenamePrNumbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		foreach (var relPath in filesToValidate)
 		{
+			// Filename validation (must be <digits>[-<name>].yaml)
+			allFindings.AddRange(ChangelogEntryValidator.ValidateFilename(relPath));
+			if (ChangelogEntryValidator.TryParseFilenameAsPrNumber(relPath, out var fnPrNum))
+				filenamePrNumbers[relPath] = fnPrNum;
+
 			var fullPath = fileSystem.Path.GetFullPath(relPath);
 			if (!fileSystem.File.Exists(fullPath))
 			{
@@ -122,7 +127,8 @@ public class ChangelogEntryValidationService(
 				dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
 				if (dto is not null)
 				{
-					var findings = ChangelogEntryValidator.Validate(relPath, dto, config, labelDerivedType, knownProducts);
+					var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
+					var findings = ChangelogEntryValidator.Validate(relPath, dto, config, labelDerivedType, knownProducts, fnNum);
 					allFindings.AddRange(findings);
 				}
 			}
@@ -134,62 +140,21 @@ public class ChangelogEntryValidationService(
 			entriesByFile[relPath] = dto;
 		}
 
-		// ── Collect own-repo PR numbers for existence check ───────────────────────────────────
-		var ownRepoNumbers = new HashSet<int>();
-		var prToFiles = new Dictionary<int, List<string>>();
-		foreach (var (relPath, dto) in entriesByFile)
-		{
-			if (dto is null)
-				continue;
-			foreach (var prRef in ChangelogEntryValidator.CollectPrRefs(dto))
-			{
-				var (_, parsedRepo, parsedNum) = ParsePrRef(prRef, input.Owner, input.Repo);
-				if (parsedNum is null)
-					continue;
-				if (string.Equals(parsedRepo, input.Repo, StringComparison.OrdinalIgnoreCase))
-				{
-					_ = ownRepoNumbers.Add(parsedNum.Value);
-					if (!prToFiles.TryGetValue(parsedNum.Value, out var fileList))
-						prToFiles[parsedNum.Value] = fileList = [];
-					fileList.Add(relPath);
-				}
-			}
-		}
-
-		// ── Duplicate PR number detection ─────────────────────────────────────────────────────
-		foreach (var (prNum, files) in prToFiles)
-		{
-			if (files.Count > 1)
-				allFindings.Add(
-					new EntryFileFinding(
-						files[0],
-						FindingSeverity.Error,
-						$"PR #{prNum} is claimed by multiple files: {string.Join(", ", files)}"
-					)
-				);
-		}
+		// ── Collect own-repo PR numbers for existence check (from filenames) ──────────────────
+		var ownRepoNumbers = new HashSet<int>(filenamePrNumbers.Values);
 
 		// ── Batch PR existence check ───────────────────────────────────────────────────────────
 		var existenceResults = ownRepoNumbers.Count > 0
 			? await gitHubPrService.CheckPullRequestsExistAsync(input.Owner, input.Repo, [.. ownRepoNumbers], ctx)
 			: new Dictionary<int, bool>();
 
-		var linkAllowRepos = config.Bundle?.LinkAllowRepos;
-
-		// ── PR reference validation ───────────────────────────────────────────────────────────
-		foreach (var (relPath, dto) in entriesByFile)
+		// ── Filename PR existence check ───────────────────────────────────────────────────────
+		foreach (var (relPath, prNum) in filenamePrNumbers)
 		{
-			if (dto is null)
-				continue;
-			var prRefFindings = ChangelogEntryValidator.ValidatePrReferences(
-				relPath,
-				dto,
-				input.Owner,
-				input.Repo,
-				existenceResults,
-				linkAllowRepos
-			);
-			allFindings.AddRange(prRefFindings);
+			if (existenceResults.TryGetValue(prNum, out var exists) && !exists)
+				allFindings.Add(
+					new EntryFileFinding(relPath, FindingSeverity.Error, $"PR #{prNum} does not exist in {input.Owner}/{input.Repo}")
+				);
 		}
 
 		// ── Presence check ────────────────────────────────────────────────────────────────────
@@ -287,42 +252,5 @@ public class ChangelogEntryValidationService(
 		};
 
 		await _metadataWriter.WriteAsync(metadata, ctx);
-	}
-
-	private static (string? owner, string? repo, int? number) ParsePrRef(string prRef, string defaultOwner, string defaultRepo)
-	{
-		if (
-			prRef.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
-			|| prRef.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
-		)
-		{
-			var uri = new Uri(prRef);
-			var segments = uri.Segments;
-			if (segments.Length >= 5 && segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase))
-			{
-				var owner = segments[1].TrimEnd('/');
-				var repo = segments[2].TrimEnd('/');
-				if (int.TryParse(segments[4].TrimEnd('/'), out var num))
-					return (owner, repo, num);
-			}
-			return (null, null, null);
-		}
-
-		var hashIdx = prRef.LastIndexOf('#');
-		if (hashIdx > 0 && hashIdx < prRef.Length - 1)
-		{
-			var repoPart = prRef[..hashIdx];
-			if (int.TryParse(prRef[(hashIdx + 1)..], out var num))
-			{
-				var parts = repoPart.Split('/');
-				if (parts.Length == 2)
-					return (parts[0], parts[1], num);
-			}
-		}
-
-		if (int.TryParse(prRef, out var bareNum))
-			return (defaultOwner, defaultRepo, bareNum);
-
-		return (null, null, null);
 	}
 }
