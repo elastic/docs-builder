@@ -144,7 +144,6 @@ let private runTests (testSuite: TestSuite) _ =
         run "dotnet" (
             ["test"; "-c"; "release"; "--no-restore"; "--no-build"; "--logger"; "GitHubActions"]
             @ testFilter
-            @ ["--"; "RunConfiguration.CollectSourceInformation=true"]
         )
     }
     
