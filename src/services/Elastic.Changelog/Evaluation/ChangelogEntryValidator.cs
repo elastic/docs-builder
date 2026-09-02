@@ -46,7 +46,8 @@ public static class ChangelogEntryValidator
 		ChangelogEntryDto entry,
 		ChangelogConfiguration config,
 		ChangelogEntryType? labelDerivedType,
-		IReadOnlySet<string>? knownProducts
+		IReadOnlySet<string>? knownProducts,
+		int? filenamePrNumber = null
 	)
 	{
 		var findings = new List<EntryFileFinding>();
@@ -191,6 +192,24 @@ public static class ChangelogEntryValidator
 				findings.Add(Warning(filePath, "subtype is only expected on breaking-change entries"));
 		}
 
+		// ── pr: field (optional) ─────────────────────────────────────────────────────────────────
+		// If pr: is supplied it must match the PR number encoded in the filename.
+		if (!string.IsNullOrWhiteSpace(entry.Pr) && filenamePrNumber.HasValue)
+		{
+			var rawPr = entry.Pr.Trim().TrimStart('#');
+			if (int.TryParse(rawPr, out var declaredPr))
+			{
+				if (declaredPr != filenamePrNumber.Value)
+					findings.Add(
+						Error(filePath, $"pr: {declaredPr} does not match the PR number in the filename ({filenamePrNumber.Value})")
+					);
+			}
+			else
+			{
+				findings.Add(Error(filePath, $"pr: '{entry.Pr}' could not be parsed as a PR number"));
+			}
+		}
+
 		// ── Areas ────────────────────────────────────────────────────────────────────────────────
 		if (config.Areas is { Count: > 0 } && entry.Areas is { Count: > 0 })
 		{
@@ -205,117 +224,33 @@ public static class ChangelogEntryValidator
 	}
 
 	/// <summary>
-	/// Validates PR references in <paramref name="entry"/>, checking existence for own-repo refs.
+	/// Validates the filename convention: must be <c>&lt;digits&gt;[-&lt;name&gt;].yaml|yml</c>.
 	/// </summary>
-	/// <param name="filePath">Repo-relative path used in finding messages.</param>
-	/// <param name="entry">The deserialized DTO.</param>
-	/// <param name="defaultOwner">Owner used for normalization (the configured bundle owner).</param>
-	/// <param name="defaultRepo">Repo used to identify own-repo refs.</param>
-	/// <param name="existenceResults">Number → exists, for own-repo PRs. Missing keys mean "unknown".</param>
-	/// <param name="linkAllowRepos">Repos allowed for foreign-repo refs (from bundle.link_allow_repos).</param>
-	public static IReadOnlyList<EntryFileFinding> ValidatePrReferences(
-		string filePath,
-		ChangelogEntryDto entry,
-		string defaultOwner,
-		string defaultRepo,
-		IReadOnlyDictionary<int, bool> existenceResults,
-		IReadOnlyList<string>? linkAllowRepos = null
-	)
+	public static IReadOnlyList<EntryFileFinding> ValidateFilename(string filePath)
 	{
-		var findings = new List<EntryFileFinding>();
-		var refs = CollectPrRefs(entry);
-
-		foreach (var prRef in refs)
-		{
-			var (parsedOwner, parsedRepo, parsedNumber) = ParsePrRef(prRef, defaultOwner, defaultRepo);
-			if (parsedNumber is null)
-			{
-				findings.Add(Error(filePath, $"PR reference '{prRef}' could not be parsed as a valid PR URL or number"));
-				continue;
-			}
-
-			var isOwnRepo = string.Equals(parsedRepo, defaultRepo, StringComparison.OrdinalIgnoreCase);
-			if (isOwnRepo)
-			{
-				if (existenceResults.TryGetValue(parsedNumber.Value, out var exists) && !exists)
-					findings.Add(Error(filePath, $"PR #{parsedNumber.Value} does not exist in {parsedOwner}/{parsedRepo}"));
-				// If not in existenceResults, it's "unknown" — warn-and-omit, not an error
-			}
-			else
-			{
-				// Foreign repo: warn if not on the allowlist
-				var foreignRepo = $"{parsedOwner}/{parsedRepo}";
-				if (linkAllowRepos is { Count: > 0 })
-				{
-					var allowed = linkAllowRepos.Any(
-						r => r.Contains('/')
-							? r.Equals(foreignRepo, StringComparison.OrdinalIgnoreCase)
-							: r.Equals(parsedRepo, StringComparison.OrdinalIgnoreCase)
-					);
-					if (!allowed)
-						findings.Add(
-							Warning(
-								filePath,
-								$"PR reference to '{foreignRepo}' is outside bundle.link_allow_repos; it will be scrubbed when published"
-							)
-						);
-				}
-			}
-		}
-
-		return findings;
+		var filename = Path.GetFileName(filePath);
+		if (!TryParseFilenameAsPrNumber(filePath, out _))
+			return [Error(filePath, $"filename '{filename}' must start with a PR number (e.g. 14-my-feature.yaml or 14.yaml)")];
+		return [];
 	}
 
-	/// <summary>Collect all PR reference strings from <c>pr:</c> and <c>prs:</c>.</summary>
-	public static IReadOnlyList<string> CollectPrRefs(ChangelogEntryDto entry)
+	/// <summary>
+	/// Tries to parse the leading PR number from a changelog entry filename.
+	/// Valid formats: <c>&lt;digits&gt;.yaml</c>, <c>&lt;digits&gt;-&lt;name&gt;.yaml</c>.
+	/// </summary>
+	public static bool TryParseFilenameAsPrNumber(string filePath, out int prNumber)
 	{
-		var refs = new List<string>();
-		if (!string.IsNullOrWhiteSpace(entry.Pr))
-			refs.Add(entry.Pr.Trim());
-		if (entry.Prs is { Count: > 0 })
-			refs.AddRange(entry.Prs.Select(p => p.Trim()).Where(p => !string.IsNullOrWhiteSpace(p)));
-		return refs;
-	}
-
-	/// <summary>Parses a PR ref into (owner, repo, number). Returns nulls on failure.</summary>
-	private static (string? owner, string? repo, int? number) ParsePrRef(string prRef, string defaultOwner, string defaultRepo)
-	{
-		// Full URL: https://github.com/owner/repo/pull/123
-		if (
-			prRef.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
-			|| prRef.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
-		)
-		{
-			var uri = new Uri(prRef);
-			var segments = uri.Segments;
-			if (segments.Length >= 5 && segments[3].Equals("pull/", StringComparison.OrdinalIgnoreCase))
-			{
-				var owner = segments[1].TrimEnd('/');
-				var repo = segments[2].TrimEnd('/');
-				if (int.TryParse(segments[4].TrimEnd('/'), out var num))
-					return (owner, repo, num);
-			}
-			return (null, null, null);
-		}
-
-		// Short: owner/repo#123
-		var hashIdx = prRef.LastIndexOf('#');
-		if (hashIdx > 0 && hashIdx < prRef.Length - 1)
-		{
-			var repoPart = prRef[..hashIdx];
-			if (int.TryParse(prRef[(hashIdx + 1)..], out var num))
-			{
-				var parts = repoPart.Split('/');
-				if (parts.Length == 2)
-					return (parts[0], parts[1], num);
-			}
-		}
-
-		// Bare number
-		if (int.TryParse(prRef, out var bareNum))
-			return (defaultOwner, defaultRepo, bareNum);
-
-		return (null, null, null);
+		prNumber = 0;
+		var stem = Path.GetFileNameWithoutExtension(filePath);
+		if (string.IsNullOrEmpty(stem))
+			return false;
+		var i = 0;
+		while (i < stem.Length && char.IsDigit(stem[i]))
+			i++;
+		// Must start with digits, followed by end-of-stem or a dash separator
+		if (i == 0 || (i < stem.Length && stem[i] != '-'))
+			return false;
+		return int.TryParse(stem[..i], out prNumber) && prNumber > 0;
 	}
 
 	private static EntryFileFinding Error(string file, string message) => new(file, FindingSeverity.Error, message);
