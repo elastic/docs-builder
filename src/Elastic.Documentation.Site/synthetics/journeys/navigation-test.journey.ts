@@ -119,8 +119,8 @@ journey('navigation test', ({ page, params }) => {
             page.getByRole('heading', { name: 'Deployment options' })
         ).toBeVisible()
 
-        // Same-group navigation: no reload. The sidebar is part of #main-container
-        // and is swapped, so expand/collapse is not preserved across the click.
+        // Same-group navigation: no reload. The sidebar is hx-preserve'd, so
+        // expand/collapse stays; only the article swap is visible.
         const state = await page.evaluate(() => {
             const navTree = document.querySelector('[id^="nav-tree"]')
             return {

@@ -29,18 +29,62 @@ function findNavScrollButtons(scrollEl: HTMLElement) {
     return { upBtn, downBtn }
 }
 
+function setDatasetFlag(el: HTMLElement, key: string, on: boolean) {
+    const next = on ? 'true' : 'false'
+    if (el.dataset[key] !== next) {
+        el.dataset[key] = next
+    }
+}
+
 function updateNavScrollFades(scrollEl: HTMLElement) {
     const { canScrollUp, canScrollDown } = getNavScrollOverflow(scrollEl)
-    scrollEl.dataset.navFadeTop = canScrollUp ? 'true' : 'false'
-    scrollEl.dataset.navFadeBottom = canScrollDown ? 'true' : 'false'
+    setDatasetFlag(scrollEl, 'navFadeTop', canScrollUp)
+    setDatasetFlag(scrollEl, 'navFadeBottom', canScrollDown)
 
     const { upBtn, downBtn } = findNavScrollButtons(scrollEl)
     if (upBtn) {
-        upBtn.dataset.visible = canScrollUp ? 'true' : 'false'
+        setDatasetFlag(upBtn, 'visible', canScrollUp)
     }
     if (downBtn) {
-        downBtn.dataset.visible = canScrollDown ? 'true' : 'false'
+        setDatasetFlag(downBtn, 'visible', canScrollDown)
     }
+}
+
+export function applyNavWheelDelta(
+    scrollTop: number,
+    scrollHeight: number,
+    clientHeight: number,
+    deltaY: number
+) {
+    const max = Math.max(0, scrollHeight - clientHeight)
+    return Math.max(0, Math.min(max, scrollTop + deltaY))
+}
+
+export function navWheelDeltaY(event: WheelEvent, pageSize: number) {
+    if (event.deltaMode === 1) {
+        return event.deltaY * 16
+    }
+    if (event.deltaMode === 2) {
+        return event.deltaY * pageSize
+    }
+    return event.deltaY
+}
+
+function onNavWheel(event: WheelEvent, scrollEl: HTMLElement) {
+    if (event.ctrlKey || event.defaultPrevented) {
+        return
+    }
+    const max = scrollEl.scrollHeight - scrollEl.clientHeight
+    if (max <= 1) {
+        return
+    }
+    event.preventDefault()
+    scrollEl.scrollTop = applyNavWheelDelta(
+        scrollEl.scrollTop,
+        scrollEl.scrollHeight,
+        scrollEl.clientHeight,
+        navWheelDeltaY(event, scrollEl.clientHeight)
+    )
 }
 
 function scrollNavByPage(scrollEl: HTMLElement, direction: 'up' | 'down') {
@@ -49,6 +93,18 @@ function scrollNavByPage(scrollEl: HTMLElement, direction: 'up' | 'down') {
         top: direction === 'up' ? -delta : delta,
         behavior: 'smooth',
     })
+}
+
+function bindScrollButton(
+    btn: HTMLButtonElement | null,
+    scrollEl: HTMLElement,
+    direction: 'up' | 'down'
+) {
+    if (!btn || btn.dataset.navScrollBound === 'true') {
+        return
+    }
+    btn.dataset.navScrollBound = 'true'
+    btn.addEventListener('click', () => scrollNavByPage(scrollEl, direction))
 }
 
 function findSiteFooter(): HTMLElement | null {
@@ -92,7 +148,10 @@ function updatePagesNavAsideViewportHeight(aside: HTMLElement) {
     }
 
     const height = Math.max(0, Math.round(bottom - top))
-    aside.style.setProperty('--pages-nav-aside-height', `${height}px`)
+    const next = `${height}px`
+    if (aside.style.getPropertyValue('--pages-nav-aside-height') !== next) {
+        aside.style.setProperty('--pages-nav-aside-height', next)
+    }
 }
 
 function refreshNavScrollViewport() {
@@ -142,21 +201,18 @@ export function initPagesNavScroll(nav: HTMLElement) {
             () => updateNavScrollFades(scrollEl),
             { passive: true }
         )
+        const menu =
+            scrollEl.closest<HTMLElement>('.pages-nav-v2__menu') ?? scrollEl
+        menu.addEventListener(
+            'wheel',
+            (event: WheelEvent) => onNavWheel(event, scrollEl),
+            { passive: false }
+        )
         shell?.addEventListener('change', refreshNavScrollViewport)
 
         const { upBtn, downBtn } = findNavScrollButtons(scrollEl)
-        if (upBtn && upBtn.dataset.navScrollBound !== 'true') {
-            upBtn.dataset.navScrollBound = 'true'
-            upBtn.addEventListener('click', () =>
-                scrollNavByPage(scrollEl, 'up')
-            )
-        }
-        if (downBtn && downBtn.dataset.navScrollBound !== 'true') {
-            downBtn.dataset.navScrollBound = 'true'
-            downBtn.addEventListener('click', () =>
-                scrollNavByPage(scrollEl, 'down')
-            )
-        }
+        bindScrollButton(upBtn, scrollEl, 'up')
+        bindScrollButton(downBtn, scrollEl, 'down')
 
         const content = scrollEl.querySelector('.pages-nav-v2__content')
         if (content) {
