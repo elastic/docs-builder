@@ -43,7 +43,7 @@ public record GithubDecisionMetadata
 	/// <summary>Repo-relative path to the committed changelog file, when <see cref="CommitOutcome"/> is <c>Committed</c>.</summary>
 	public string? CommittedFile { get; init; }
 	/// <summary>Findings from the entry-file validation gate. Non-null and non-empty when <see cref="Gate"/> is <see cref="ValidationGate.Entries"/> and validation failed.</summary>
-	public IReadOnlyList<EntryFinding>? EntryFindings { get; init; }
+	public List<EntryFinding>? EntryFindings { get; init; }
 }
 
 /// <summary>A single finding from the changelog entry file validation gate.</summary>
