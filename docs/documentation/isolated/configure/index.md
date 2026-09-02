@@ -71,8 +71,8 @@ Constraints:
 
 - Single markdown files only — there is no folder or glob equivalent.
 - The source must resolve outside the documentation set root; inside it, use a plain `file:` entry.
-- The source must stay inside the repository checkout.
-- The `file:` position must be free — no file of that name on disk, and no other entry sourcing it.
+- The source must stay inside the repository checkout, and neither it nor any directory on the way to it may be a symlink.
+- The `file:` position must resolve inside the documentation set root and be free — no file of that name on disk, no page generated there by an extension, and no other entry sourcing it.
 
 On the assembled documentation site, repositories are cloned with a partial checkout of `docs` only. A source outside that path needs the repository's `sparse_paths` or `checkout_strategy` widened in [`config/assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml).
 

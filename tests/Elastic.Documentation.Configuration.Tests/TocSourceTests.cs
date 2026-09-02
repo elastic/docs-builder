@@ -27,7 +27,12 @@ internal sealed class RecordingDiagnosticsCollector() : DiagnosticsCollector([])
 /// <summary>Covers the <c>source:</c> key, which points a TOC entry at content outside the documentation set root.</summary>
 public class TocSourceTests
 {
-	private static DocumentationSetFile LoadAndResolve(
+	/// <summary>
+	/// Resolution is pure path arithmetic over the supplied filesystem, so assertions have to compute their
+	/// expected paths from that same filesystem — on Windows a mock rooted on <c>C:</c> does not match a real
+	/// <see cref="Path.GetFullPath(string)"/> anchored on the drive the tests run from.
+	/// </summary>
+	private static (DocumentationSetFile Result, MockFileSystem FileSystem) LoadAndResolve(
 		RecordingDiagnosticsCollector collector,
 		string docsetYaml,
 		params (string path, string content)[] additionalFiles
@@ -39,7 +44,8 @@ public class TocSourceTests
 			fileSystem.AddFile(path, new MockFileData(content));
 
 		var docsetPath = fileSystem.FileInfo.New("/repo/docs/docset.yml");
-		return DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/repo"));
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/repo"));
+		return (result, fileSystem);
 	}
 
 	[Fact]
@@ -75,13 +81,13 @@ public class TocSourceTests
 			""";
 
 		var collector = new RecordingDiagnosticsCollector();
-		var result = LoadAndResolve(collector, yaml);
+		var (result, fileSystem) = LoadAndResolve(collector, yaml);
 
 		collector.Errors.Should().Be(0);
 		var fileRef = result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Subject;
 		fileRef.PathRelativeToDocumentationSet.Should().Be("feedback.md", "'file:' stays the virtual, docset-relative path");
 		fileRef.Source.Should().Be("../packages/kbn-ui/feedback/feedback.md");
-		fileRef.SourceFullPath.Should().Be(Path.GetFullPath("/repo/packages/kbn-ui/feedback/feedback.md"));
+		fileRef.SourceFullPath.Should().Be(fileSystem.Path.GetFullPath("/repo/packages/kbn-ui/feedback/feedback.md"));
 		result.ExternallySourcedFiles.Should().ContainSingle().Which.Should().BeSameAs(fileRef);
 	}
 
@@ -98,7 +104,7 @@ public class TocSourceTests
 			""";
 
 		var collector = new RecordingDiagnosticsCollector();
-		var result = LoadAndResolve(
+		var (result, fileSystem) = LoadAndResolve(
 			collector,
 			yaml,
 			("/repo/docs/guides/toc.yml",
@@ -115,7 +121,7 @@ public class TocSourceTests
 		var toc = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
 		var fileRef = toc.Children.ElementAt(1).Should().BeOfType<FileRef>().Subject;
 		fileRef.PathRelativeToDocumentationSet.Should().Be("guides/feedback.md", "the virtual path still carries the toc folder");
-		fileRef.SourceFullPath.Should().Be(Path.GetFullPath("/repo/packages/kbn-ui/feedback.md"));
+		fileRef.SourceFullPath.Should().Be(fileSystem.Path.GetFullPath("/repo/packages/kbn-ui/feedback.md"));
 	}
 
 	[Fact]
@@ -133,13 +139,13 @@ public class TocSourceTests
 			""";
 
 		var collector = new RecordingDiagnosticsCollector();
-		var result = LoadAndResolve(collector, yaml);
+		var (result, fileSystem) = LoadAndResolve(collector, yaml);
 
 		collector.Errors.Should().Be(0);
 		var folder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
 		var indexRef = folder.Children.ElementAt(0).Should().BeOfType<FolderIndexFileRef>().Subject;
 		indexRef.PathRelativeToDocumentationSet.Should().Be("feedback/index.md");
-		indexRef.SourceFullPath.Should().Be(Path.GetFullPath("/repo/packages/kbn-ui/feedback/readme.md"));
+		indexRef.SourceFullPath.Should().Be(fileSystem.Path.GetFullPath("/repo/packages/kbn-ui/feedback/readme.md"));
 	}
 
 	[Fact]
@@ -156,12 +162,12 @@ public class TocSourceTests
 			""";
 
 		var collector = new RecordingDiagnosticsCollector();
-		var result = LoadAndResolve(collector, yaml);
+		var (result, fileSystem) = LoadAndResolve(collector, yaml);
 
 		collector.Errors.Should().Be(0);
 		var fileRef = result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Subject;
 		fileRef.Hidden.Should().BeTrue();
-		fileRef.SourceFullPath.Should().Be(Path.GetFullPath("/repo/packages/kbn-ui/internals.md"));
+		fileRef.SourceFullPath.Should().Be(fileSystem.Path.GetFullPath("/repo/packages/kbn-ui/internals.md"));
 	}
 
 	[Fact]
@@ -178,7 +184,7 @@ public class TocSourceTests
 			""";
 
 		var collector = new RecordingDiagnosticsCollector();
-		var result = LoadAndResolve(collector, yaml);
+		var (result, _) = LoadAndResolve(collector, yaml);
 
 		collector.Errors.Should().Be(1);
 		collector.Diagnostics.Should().Contain(d => d.Message.Contains("use 'file: reference/feedback.md' instead"));
@@ -199,7 +205,7 @@ public class TocSourceTests
 			""";
 
 		var collector = new RecordingDiagnosticsCollector();
-		var result = LoadAndResolve(collector, yaml);
+		var (result, _) = LoadAndResolve(collector, yaml);
 
 		collector.Errors.Should().Be(1);
 		collector.Diagnostics.Should().Contain(d => d.Message.Contains("must point to a markdown file"));
@@ -217,7 +223,7 @@ public class TocSourceTests
 			""";
 
 		var collector = new RecordingDiagnosticsCollector();
-		var result = LoadAndResolve(collector, yaml);
+		var (result, _) = LoadAndResolve(collector, yaml);
 
 		var fileRef = result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
 		fileRef.Source.Should().BeNull();

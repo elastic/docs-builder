@@ -125,6 +125,10 @@ public class DocumentationSet : INavigationTraversable
 		if (Context.BuildType != BuildType.Isolated || Configuration.Registry == DocSetRegistry.Public)
 			return;
 
+		// A root index declared with `source:` has no file at <docset>/index.md, so accept the registered position too.
+		if (Files.ContainsKey(new FilePath("index.md", SourceDirectory)))
+			return;
+
 		var indexFile = Context.ReadFileSystem.FileInfo.New(Path.Join(SourceDirectory.FullName, "index.md"));
 
 		if (!indexFile.Exists)

@@ -34,11 +34,21 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	private BuildContext Build { get; } = build;
 	public IParserResolvers Resolvers { get; } = resolvers;
 
+	/// <summary>Pipeline plus the validation behaviour that goes with it, so the two cannot be mixed at a call site.</summary>
+	private readonly record struct ParseMode(MarkdownPipeline Pipeline, bool SkipValidation)
+	{
+		/// <summary>The full pipeline. Validates links and cross-links.</summary>
+		public static ParseMode Full => new(MarkdownParser.Pipeline, SkipValidation: false);
+
+		/// <summary>Front matter, anchors and directives only. Validation is deferred to the full pass.</summary>
+		public static ParseMode Minimal => new(MarkdownParser.MinimalPipeline, SkipValidation: true);
+	}
+
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx) =>
-		ParseFromFile(path, path, matter, Pipeline, false, ctx);
+		ParseFromFile((path, path), matter, ParseMode.Full, ctx);
 
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) =>
-		ParseFromFile(path, path, null, MinimalPipeline, true, ctx);
+		ParseFromFile((path, path), null, ParseMode.Minimal, ctx);
 
 	/// <summary>
 	/// Parses <paramref name="contentFile"/> as though it lived at <paramref name="path"/>. Pages sourced from outside
@@ -46,21 +56,20 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	/// diagnostics keep pointing at the file that was actually read.
 	/// </summary>
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, IFileInfo contentFile, YamlFrontMatter? matter, Cancel ctx) =>
-		ParseFromFile(path, contentFile, matter, Pipeline, false, ctx);
+		ParseFromFile((path, contentFile), matter, ParseMode.Full, ctx);
 
 	/// <inheritdoc cref="ParseAsync(IFileInfo,IFileInfo,YamlFrontMatter,Cancel)"/>
 	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, IFileInfo contentFile, Cancel ctx) =>
-		ParseFromFile(path, contentFile, null, MinimalPipeline, true, ctx);
+		ParseFromFile((path, contentFile), null, ParseMode.Minimal, ctx);
 
 	private Task<MarkdownDocument> ParseFromFile(
-		IFileInfo path,
-		IFileInfo contentFile,
+		(IFileInfo Path, IFileInfo ContentFile) file,
 		YamlFrontMatter? matter,
-		MarkdownPipeline pipeline,
-		bool skip,
+		ParseMode mode,
 		Cancel ctx
 	)
 	{
+		var (path, contentFile) = file;
 		var state = new ParserState(Build)
 		{
 			MarkdownSourcePath = path,
@@ -71,10 +80,10 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			CrossLinkResolver = Resolvers.CrossLinkResolver,
 			ReleaseNotesResolver = Resolvers.ReleaseNotesResolver,
 			NavigationTraversable = Resolvers.NavigationTraversable,
-			SkipValidation = skip
+			SkipValidation = mode.SkipValidation
 		};
 		var context = new ParserContext(state);
-		return ParseAsync(contentFile, context, pipeline, ctx);
+		return ParseAsync(contentFile, context, mode.Pipeline, ctx);
 	}
 
 	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>

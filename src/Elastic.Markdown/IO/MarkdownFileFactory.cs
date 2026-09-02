@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
@@ -54,14 +55,18 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 
 		var files = ScanDocumentationFiles(context, context.DocumentationSourceDirectory);
 		var additionalSources = enabledExtensions.SelectMany(extension => extension.ScanDocumentationFiles(DefaultFileHandling)).ToArray();
-		var externallySourced = ScanExternallySourcedFiles(context);
 
-		Files = files
+		var discovered = files
 			.Concat(additionalSources)
-			.Concat(externallySourced)
 			.Where(t => t.Item2 is not ExcludedFile)
-			.ToDictionary(kv => new FilePath(kv.Item1, context.DocumentationSourceDirectory), kv => kv.Item2)
-			.ToFrozenDictionary();
+			.ToDictionary(kv => new FilePath(kv.Item1, context.DocumentationSourceDirectory), kv => kv.Item2);
+
+		// Externally sourced pages are registered last so they can be checked against every position already taken —
+		// by the scan, by an extension, or by an earlier `source:` entry.
+		foreach (var (path, file) in ScanExternallySourcedFiles(context, discovered.Keys.ToHashSet()))
+			discovered[path] = file;
+
+		Files = discovered.ToFrozenDictionary();
 	}
 
 	public FrozenDictionary<FilePath, DocumentationFile> Files { get; }
@@ -138,16 +143,41 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 	/// <summary>
 	/// Registers the pages a TOC entry sourced from outside the documentation set root with <c>source:</c>. They are
 	/// keyed under their virtual <c>file:</c> path — the same path navigation resolves against — while reading from
-	/// their real location on disk.
+	/// their real location on disk. <paramref name="takenPositions"/> is every position already registered, so a
+	/// sourced page cannot displace one.
 	/// </summary>
-	private (IFileInfo, DocumentationFile)[] ScanExternallySourcedFiles(BuildContext context)
+	private (FilePath, DocumentationFile)[] ScanExternallySourcedFiles(BuildContext context, HashSet<FilePath> takenPositions)
 	{
+		var sourceDirectory = context.DocumentationSourceDirectory;
 		var checkoutDirectory = context.DocumentationCheckoutDirectory;
-		var registered = new List<(IFileInfo, DocumentationFile)>();
-		var claimedVirtualPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var registered = new List<(FilePath, DocumentationFile)>();
 
 		foreach (var fileRef in context.ConfigurationYaml.ExternallySourcedFiles)
 		{
+			var virtualRelativePath = fileRef.PathRelativeToDocumentationSet.OptionalWindowsReplace();
+
+			// `file:` is not itself checked for containment, so a virtual path can still carry `../`. Registering one
+			// would push those segments through URL generation and write HTML outside the output directory.
+			var virtualFile = context.ReadFileSystem.NewFileInfo(sourceDirectory.FullName, virtualRelativePath);
+			if (!IDirectoryInfoExtensions.IsPathWithin(virtualFile.FullName, sourceDirectory.FullName))
+			{
+				context.Collector.EmitError(
+					fileRef.Context,
+					$"'file: {fileRef.PathRelativeToDocumentationSet}' resolves outside the documentation set root."
+				);
+				continue;
+			}
+
+			var position = new FilePath(virtualFile, sourceDirectory);
+			if (!takenPositions.Add(position))
+			{
+				context.Collector.EmitError(
+					fileRef.Context,
+					$"'file: {fileRef.PathRelativeToDocumentationSet}' is already taken, so it cannot also be sourced from '{fileRef.Source}'."
+				);
+				continue;
+			}
+
 			// Checked before allocating the IFileInfo: reads are scoped to the checkout, so an out-of-scope
 			// source would throw out of the filesystem rather than surface as a diagnostic.
 			if (!IDirectoryInfoExtensions.IsPathWithin(fileRef.SourceFullPath!, checkoutDirectory.FullName))
@@ -166,22 +196,15 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 				continue;
 			}
 
-			var virtualRelativePath = fileRef.PathRelativeToDocumentationSet.OptionalWindowsReplace();
-			var file = new ExternallySourcedMarkdownFile(sourceFile, virtualRelativePath, _markdownParser, context);
-
-			// Two files claiming one position would collide in the Files lookup, so refuse the second.
-			var occupant = file.VirtualFile.Exists ? "already exists on disk" : null;
-			occupant ??= claimedVirtualPaths.Add(virtualRelativePath) ? null : "is already sourced by another entry";
-			if (occupant is not null)
+			// The containment check above is lexical. A symlink anywhere on the path can still resolve outside the
+			// checkout, which is why the ordinary scan skips symlinks and control files are rejected outright.
+			if (SymlinkValidator.ValidateFileAccess(sourceFile, checkoutDirectory) is { } violation)
 			{
-				context.Collector.EmitError(
-					fileRef.Context,
-					$"'file: {fileRef.PathRelativeToDocumentationSet}' {occupant}, so it cannot also be sourced from '{fileRef.Source}'."
-				);
+				context.Collector.EmitError(fileRef.Context, $"'source: {fileRef.Source}' is not readable. {violation}");
 				continue;
 			}
 
-			registered.Add((file.VirtualFile, file));
+			registered.Add((position, new ExternallySourcedMarkdownFile(sourceFile, virtualRelativePath, _markdownParser, context)));
 		}
 
 		return [.. registered];

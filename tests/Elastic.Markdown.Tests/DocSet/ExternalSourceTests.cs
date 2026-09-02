@@ -38,10 +38,11 @@ public class ExternalSourceTests(ITestOutputHelper output)
 	private (DocumentationSet Set, TestDiagnosticsCollector Collector, MockFileSystem FileSystem) Build(
 		string docsetYaml,
 		params (string path, string content)[] files
-	)
+	) => BuildFrom(CreateFileSystem(docsetYaml, files));
+
+	private (DocumentationSet Set, TestDiagnosticsCollector Collector, MockFileSystem FileSystem) BuildFrom(MockFileSystem fileSystem)
 	{
 		var logger = new TestLoggerFactory(output);
-		var fileSystem = CreateFileSystem(docsetYaml, files);
 		var collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
@@ -162,7 +163,7 @@ public class ExternalSourceTests(ITestOutputHelper output)
 		collector
 			.Diagnostics
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("'file: feedback.md' already exists on disk"));
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("'file: feedback.md' is already taken"));
 	}
 
 	[Fact]
@@ -190,7 +191,95 @@ public class ExternalSourceTests(ITestOutputHelper output)
 		collector
 			.Diagnostics
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("is already sourced by another entry"));
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("'file: feedback.md' is already taken"));
+	}
+
+	[Fact]
+	public void VirtualPathEscapingTheDocsetRoot_EmitsError()
+	{
+		var docsetYaml =
+			//language=yaml
+			"""
+			project: test
+			toc:
+			- file: index.md
+			- file: ../escaped.md
+			  source: ../packages/kbn-ui/feedback.md
+			""";
+
+		var (set, collector, _) = Build(docsetYaml, ("docs/index.md", "# Home"), ("packages/kbn-ui/feedback.md", "# Feedback"));
+
+		collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("resolves outside the documentation set root"));
+		set.MarkdownFiles.Should().NotContain(f => f.RelativePath.Contains("escaped.md"));
+	}
+
+	[Fact]
+	public void ExternalSourceClaimingAnExtensionGeneratedPosition_EmitsErrorRatherThanThrowing()
+	{
+		// The listing extension registers a synthetic index page that exists nowhere on disk, so only a check
+		// against the already-registered positions catches the clash.
+		var docsetYaml =
+			//language=yaml
+			"""
+			project: test
+			toc:
+			- file: index.md
+			- listing: guides
+			  glob: '**/*.md'
+			- hidden: guides/index.md
+			  source: ../packages/kbn-ui/overview.md
+			""";
+
+		var (set, collector, _) = Build(
+			docsetYaml,
+			("docs/index.md", "# Home"),
+			("docs/guides/quickstart.md", "# Quickstart"),
+			("packages/kbn-ui/overview.md", "# Overview")
+		);
+
+		set.Should().NotBeNull("a duplicate position must be diagnosed, not thrown out of the file lookup");
+		collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("'file: guides/index.md' is already taken"));
+	}
+
+	[Fact]
+	public void SourcedRootIndex_SatisfiesTheNonPublicIndexRequirement()
+	{
+		var docsetYaml =
+			//language=yaml
+			"""
+			project: test
+			registry: internal
+			toc:
+			- file: index.md
+			  source: ../packages/kbn-ui/readme.md
+			""";
+
+		var (_, collector, _) = Build(docsetYaml, ("packages/kbn-ui/readme.md", "# Home"));
+
+		collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Error && d.Message.Contains("require a root index.md"));
+	}
+
+	[Fact]
+	public void SymlinkedExternalSource_EmitsError()
+	{
+		// The checkout-boundary check is lexical, so a symlink inside the checkout passes it while resolving out.
+		var fileSystem = CreateFileSystem(DocsetYaml, ("docs/index.md", "# Home"));
+		var outside = Path.Join(Paths.WorkingDirectoryRoot.Parent!.FullName, "outside-the-repo", "feedback.md");
+		fileSystem.AddFile(outside, new MockFileData("# Smuggled"));
+		var linkPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "packages", "kbn-ui", "feedback", "feedback.md");
+		_ = fileSystem.Directory.CreateDirectory(Path.GetDirectoryName(linkPath)!);
+		fileSystem.File.CreateSymbolicLink(linkPath, outside);
+
+		var (set, collector, _) = BuildFrom(fileSystem);
+
+		collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("symlink"));
+		set.MarkdownFiles.Should().NotContain(f => f.RelativePath.EndsWith("feedback.md"));
 	}
 
 	[Fact]

@@ -29,9 +29,9 @@ public record ExternallySourcedMarkdownFile : MarkdownFile
 	/// <summary>The page's position inside the documentation set. Never exists on disk.</summary>
 	public IFileInfo VirtualFile { get; }
 
-	protected override async Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx) =>
-		await MarkdownParser.MinimalParseAsync(VirtualFile, SourceFile, ctx);
+	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx) =>
+		MarkdownParser.MinimalParseAsync(VirtualFile, SourceFile, ctx);
 
-	protected override async Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx) =>
-		await MarkdownParser.ParseAsync(VirtualFile, SourceFile, YamlFrontMatter, ctx);
+	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx) =>
+		MarkdownParser.ParseAsync(VirtualFile, SourceFile, YamlFrontMatter, ctx);
 }
