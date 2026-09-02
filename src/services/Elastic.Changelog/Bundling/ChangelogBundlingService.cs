@@ -674,20 +674,25 @@ public partial class ChangelogBundlingService(
 			// For all other profile types, infer it from the base version string.
 			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
 
-			// Bundle output names follow the standardized {product}-{version}.yaml convention (B2 —
-			// elastic/docs-builder#3774), derived from the profile's primary output product and the
-			// version argument. When either is unavailable (e.g. a report/list invocation without a
-			// version) the default changelog-bundle.yaml naming applies downstream.
+			// Bundle output names follow {repo}-{product}-{version}.yaml when an authoring repo
+			// resolves (B2 — elastic/docs-builder#3774). When product or version is unavailable
+			// (e.g. a report/list invocation without a version) changelog-bundle.yaml applies downstream.
 			var primaryProduct = ResolvePrimaryProduct(profile, input);
 			if (!string.IsNullOrWhiteSpace(primaryProduct) && filterResult.Version != "unknown")
 			{
-				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
-				// → bundle.directory → CWD
-				var outputDir = config.Bundle.OutputDirectory
-					?? input.OutputDirectory
-					?? config.Bundle.Directory
-					?? _fileSystem.Directory.GetCurrentDirectory();
-				outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{filterResult.Version}.yaml").OptionalWindowsReplace();
+				var fileName = BundleOutputNaming.ResolveFileName(
+					collector,
+					_fileSystem,
+					new BundleOutputNameRequest(
+						primaryProduct,
+						filterResult.Version,
+						input.Repo,
+						profile.Repo,
+						config.Bundle.Repo,
+						input.Config
+					)
+				);
+				outputPath = JoinProfileOutputPath(config.Bundle.OutputDirectory, input.OutputDirectory, config.Bundle.Directory, fileName);
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -1119,9 +1124,9 @@ public partial class ChangelogBundlingService(
 		)
 			needsNetwork = true;
 
-		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults: the
-		// standardized {product}-{version}.yaml convention when the profile's primary product and a
-		// plain version argument resolve, else the changelog-bundle.yaml default.
+		// Resolve output path — mirrors ProcessProfile + ApplyConfigDefaults: the
+		// {repo}-{product}-{version}.yaml convention when the profile's primary product and a
+		// plain version argument resolve, else changelog-bundle.yaml.
 		var outputPath = input.Output;
 		if (
 			string.IsNullOrWhiteSpace(outputPath)
@@ -1140,13 +1145,12 @@ public partial class ChangelogBundlingService(
 			var planVersion = string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
 				? ChangelogTextUtilities.ExtractBaseVersion(input.ProfileArgument)
 				: input.ProfileArgument;
-			// Same precedence as ProcessProfile: config.Bundle.OutputDirectory > input.OutputDirectory
-			// (programmatic override, e.g. a CI-provided --output-directory) > config.Bundle.Directory > cwd.
-			var outputDir = config?.Bundle?.OutputDirectory
-				?? input.OutputDirectory
-				?? config?.Bundle?.Directory
-				?? _fileSystem.Directory.GetCurrentDirectory();
-			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{planVersion}.yaml").OptionalWindowsReplace();
+			var fileName = BundleOutputNaming.ResolveFileName(
+				collector,
+				_fileSystem,
+				new BundleOutputNameRequest(primaryProduct, planVersion, input.Repo, profileDef.Repo, config?.Bundle?.Repo, input.Config)
+			);
+			outputPath = JoinProfileOutputPath(config?.Bundle?.OutputDirectory, input.OutputDirectory, config?.Bundle?.Directory, fileName);
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
 			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
@@ -1183,7 +1187,7 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// The first concrete (non-wildcard) product that scopes the bundle, used for the conventional
-	/// <c>{product}-{version}.yaml</c> name and the bundle's CDN URL.
+	/// file name and the bundle's CDN URL.
 	/// From the profile <c>output_products</c>/<c>products</c> pattern, else the first explicit product argument.
 	/// </summary>
 	private static string? ResolvePrimaryProduct(BundleProfile? profileDef, BundleChangelogsArguments input)
@@ -1205,6 +1209,21 @@ public partial class ChangelogBundlingService(
 		return null;
 	}
 
+	/// <summary>
+	/// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
+	/// → bundle.directory → CWD.
+	/// </summary>
+	private string JoinProfileOutputPath(
+		string? configOutputDirectory,
+		string? inputOutputDirectory,
+		string? configDirectory,
+		string fileName
+	)
+	{
+		var outputDir = configOutputDirectory ?? inputOutputDirectory ?? configDirectory ?? _fileSystem.Directory.GetCurrentDirectory();
+		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
+	}
+
 	/// <summary>The first concrete product id from a profile's <c>output_products</c>/<c>products</c> pattern.</summary>
 	private static string? ResolvePrimaryProductFromProfile(BundleProfile profileDef)
 	{
@@ -1218,10 +1237,10 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// B2 (elastic/docs-builder#3774): bundle output names are standardized by convention as
-	/// <c>{product}-{version}.yaml</c>. Any profile still setting an explicit <c>output</c> pattern
-	/// is a hard error, and two profiles sharing the same primary output product would collide on
-	/// the same conventional target for any given version, so that is rejected as well.
+	/// B2 (elastic/docs-builder#3774): bundle output names are standardized as
+	/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves. Any profile still setting an
+	/// explicit <c>output</c> pattern is a hard error, and two profiles sharing the same primary
+	/// output product would collide on the same conventional target, so that is rejected as well.
 	/// </summary>
 	private static bool ValidateProfileOutputs(IDiagnosticsCollector collector, ChangelogConfiguration? config)
 	{
@@ -1238,7 +1257,7 @@ public partial class ChangelogBundlingService(
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
-					"as '{product}-{version}.yaml' from the profile's output_products."
+					$"as '{BundleOutputNaming.PrefixedConvention}' from the profile's output_products and authoring repo."
 			);
 			valid = false;
 		}
@@ -1254,8 +1273,8 @@ public partial class ChangelogBundlingService(
 			var names = string.Join("', '", group.Select(p => p.Name).Order(StringComparer.Ordinal));
 			collector.EmitError(
 				string.Empty,
-				$"Profiles '{names}' all resolve to the same '{group.Key}-{{version}}.yaml' bundle target for any given version. " +
-					"Bundle names are derived by convention from the profile's primary output product, so each profile must target a distinct product."
+				$"Profiles '{names}' all resolve to the same '{{repo}}-{group.Key}-{{version}}.yaml' bundle target for any given version. " +
+					"Bundle names are derived by convention from the authoring repo and the profile's primary output product, so each profile must target a distinct product."
 			);
 			valid = false;
 		}

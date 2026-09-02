@@ -84,7 +84,7 @@ bundle:
 
 1. The directory that contains changelog files.
 2. The directory that contains changelog bundles.
-3. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle. The first product also determines the bundle's file name, which is derived by convention as `{product}-{version}.yaml` under `output_directory`.
+3. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle. The authoring repo (`bundle.repo` here) and the first product also determine the bundle's file name, which is derived by convention as `{repo}-{product}-{version}.yaml` under `output_directory`.
 
 ### Bundle by GitHub releases [profile-gh-release]
 
@@ -126,7 +126,7 @@ bundle:
 ```
 
 1. The authoring repository whose commit range is resolved and whose entry pool is consulted.
-2. Also applied to entries synthesized from PR metadata when the PR's labels map to no product. The bundle is named `{product}-{version}.yaml` by convention.
+2. Also applied to entries synthesized from PR metadata when the PR's labels map to no product. The bundle is named `{repo}-{product}-{version}.yaml` by convention (here `my-service-cloud-serverless-2026-08-13.yaml`).
 
 ```sh
 docs-builder changelog bundle serverless-release 2026-08-13 \
@@ -171,7 +171,7 @@ bundle:
 
 1. This profile collects all changelogs from the `directory`.
 2. This profile collects any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. The date pattern matches files that declare `products[].versions` (or a legacy `target`), typically files created with `changelog note`. It does not match PR-linked changelogs that omit `versions`.
-3. This profile collects any changelogs that have `product: kibana`, `lifecycle: ga`, and the version specified in the command. Like the date pattern, a concrete version only matches files that declare `products[].versions` (or a legacy `target`). No two profiles may target the same primary product — they would collide on the same conventional `{product}-{version}.yaml` bundle name.
+3. This profile collects any changelogs that have `product: kibana`, `lifecycle: ga`, and the version specified in the command. Like the date pattern, a concrete version only matches files that declare `products[].versions` (or a legacy `target`). No two profiles may target the same primary product — they would collide on the same conventional `{repo}-{product}-{version}.yaml` bundle name.
 4. In this case, the lifecycle is inferred from the version specified in the command. For example, if the version is `9.2.0-beta.1` the lifecycle is `beta`. ISO date arguments (for example, `2026-07-21`) derive `ga`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference). A concrete `{version}` in `products` has the same `versions`/`target` matching rule as the previous examples.
 
 For date-based and semver profiles, lifecycle is controlled only in the profile YAML: omit it from the pattern, use `{lifecycle}` to derive it, or hardcode `ga`, `beta`, or `preview`. Non-`ga` date-based releases are exceptional and should hardcode the lifecycle.
