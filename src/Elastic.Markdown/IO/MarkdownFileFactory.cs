@@ -54,9 +54,11 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 
 		var files = ScanDocumentationFiles(context, context.DocumentationSourceDirectory);
 		var additionalSources = enabledExtensions.SelectMany(extension => extension.ScanDocumentationFiles(DefaultFileHandling)).ToArray();
+		var externallySourced = ScanExternallySourcedFiles(context);
 
 		Files = files
 			.Concat(additionalSources)
+			.Concat(externallySourced)
 			.Where(t => t.Item2 is not ExcludedFile)
 			.ToDictionary(kv => new FilePath(kv.Item1, context.DocumentationSourceDirectory), kv => kv.Item2)
 			.ToFrozenDictionary();
@@ -131,6 +133,58 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 						}
 				)
 		];
+	}
+
+	/// <summary>
+	/// Registers the pages a TOC entry sourced from outside the documentation set root with <c>source:</c>. They are
+	/// keyed under their virtual <c>file:</c> path — the same path navigation resolves against — while reading from
+	/// their real location on disk.
+	/// </summary>
+	private (IFileInfo, DocumentationFile)[] ScanExternallySourcedFiles(BuildContext context)
+	{
+		var checkoutDirectory = context.DocumentationCheckoutDirectory;
+		var registered = new List<(IFileInfo, DocumentationFile)>();
+		var claimedVirtualPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var fileRef in context.ConfigurationYaml.ExternallySourcedFiles)
+		{
+			// Checked before allocating the IFileInfo: reads are scoped to the checkout, so an out-of-scope
+			// source would throw out of the filesystem rather than surface as a diagnostic.
+			if (!IDirectoryInfoExtensions.IsPathWithin(fileRef.SourceFullPath!, checkoutDirectory.FullName))
+			{
+				context.Collector.EmitError(
+					fileRef.Context,
+					$"'source: {fileRef.Source}' resolves outside the repository checkout '{checkoutDirectory.FullName}'."
+				);
+				continue;
+			}
+
+			var sourceFile = context.ReadFileSystem.FileInfo.New(fileRef.SourceFullPath!);
+			if (!sourceFile.Exists)
+			{
+				context.Collector.EmitError(fileRef.Context, $"'source: {fileRef.Source}' does not exist.");
+				continue;
+			}
+
+			var virtualRelativePath = fileRef.PathRelativeToDocumentationSet.OptionalWindowsReplace();
+			var file = new ExternallySourcedMarkdownFile(sourceFile, virtualRelativePath, _markdownParser, context);
+
+			// Two files claiming one position would collide in the Files lookup, so refuse the second.
+			var occupant = file.VirtualFile.Exists ? "already exists on disk" : null;
+			occupant ??= claimedVirtualPaths.Add(virtualRelativePath) ? null : "is already sourced by another entry";
+			if (occupant is not null)
+			{
+				context.Collector.EmitError(
+					fileRef.Context,
+					$"'file: {fileRef.PathRelativeToDocumentationSet}' {occupant}, so it cannot also be sourced from '{fileRef.Source}'."
+				);
+				continue;
+			}
+
+			registered.Add((file.VirtualFile, file));
+		}
+
+		return [.. registered];
 	}
 
 	private DocumentationFile CreateImageFile(

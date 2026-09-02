@@ -120,6 +120,20 @@ public static class IDirectoryInfoExtensions
 		fs.DirectoryInfo.New(path).IsSubPathOf(fs.DirectoryInfo.New(parent));
 
 	/// <summary>
+	/// Whether <paramref name="path"/> resolves inside <paramref name="root"/>, by path arithmetic alone.
+	/// Both must already be absolute. Unlike <see cref="IsSubPath"/> this allocates no <see cref="IDirectoryInfo"/>,
+	/// so it can be asked about paths a <c>ScopedFileSystem</c> would refuse to construct.
+	/// </summary>
+	public static bool IsPathWithin(string path, string root)
+	{
+		var relative = Path.GetRelativePath(root, path);
+		return !Path.IsPathRooted(relative)
+			&& relative != ".."
+			&& !relative.StartsWith($"..{Path.DirectorySeparatorChar}", Ordinal)
+			&& !relative.StartsWith($"..{Path.AltDirectorySeparatorChar}", Ordinal);
+	}
+
+	/// <summary>
 	/// Adds <paramref name="candidate"/> to <paramref name="roots"/> for a <c>ScopedFileSystemOptions</c>
 	/// root list, collapsing overlaps instead of just skipping them.
 	/// <para>

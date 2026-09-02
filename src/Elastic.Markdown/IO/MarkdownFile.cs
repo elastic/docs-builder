@@ -32,13 +32,15 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	private readonly IReadOnlyDictionary<string, string> _globalSubstitutions;
 
-	public MarkdownFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build) : base(
-			sourceFile,
-			rootPath,
-			build.Git.RepositoryName
-		)
+	public MarkdownFile(
+		IFileInfo sourceFile,
+		IDirectoryInfo rootPath,
+		MarkdownParser parser,
+		BuildContext build,
+		string? virtualRelativePath = null
+	) : base(sourceFile, rootPath, build.Git.RepositoryName, virtualRelativePath)
 	{
-		FileName = sourceFile.Name;
+		FileName = Path.GetFileName(RelativePath);
 		FilePath = sourceFile.FullName;
 
 		UrlPathPrefix = build.UrlPathPrefix;
@@ -98,7 +100,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	private readonly HashSet<string> _anchors = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlySet<string> Anchors => _anchors;
 
+	/// <summary>Absolute path of the file on disk — what diagnostics point at.</summary>
 	public string FilePath { get; }
+
+	/// <summary>File name at the page's position in the documentation set, which an externally sourced page may rename.</summary>
 	public string FileName { get; }
 	public string? SourcePath => RelativePath;
 

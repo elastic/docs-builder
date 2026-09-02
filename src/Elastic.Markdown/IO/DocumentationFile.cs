@@ -12,17 +12,25 @@ namespace Elastic.Markdown.IO;
 
 public abstract record DocumentationFile
 {
-	protected DocumentationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, string repository)
+	protected DocumentationFile(IFileInfo sourceFile, IDirectoryInfo rootPath, string repository, string? virtualRelativePath = null)
 	{
 		RootPath = rootPath;
 		Repository = repository;
 		SourceFile = sourceFile;
-		RelativePath = Path.GetRelativePath(RootPath.FullName, SourceFile.FullName);
-		RelativeFolder = Path.GetRelativePath(RootPath.FullName, SourceFile.Directory!.FullName);
+		RelativePath = virtualRelativePath ?? Path.GetRelativePath(RootPath.FullName, SourceFile.FullName);
+		RelativeFolder = virtualRelativePath is null
+			? Path.GetRelativePath(RootPath.FullName, SourceFile.Directory!.FullName)
+			: Path.GetDirectoryName(virtualRelativePath) is { Length: > 0 } folder ? folder : ".";
 		CrossLink = $"{Repository}://{RelativePath.Replace('\\', '/')}";
 	}
 
 	public IDirectoryInfo RootPath { get; }
+
+	/// <summary>
+	/// Position inside the documentation set — what drives URL, output path and link reference. Equals
+	/// <see cref="SourceFile"/> relative to <see cref="RootPath"/> unless the page was sourced from outside the
+	/// root via <c>source:</c>, in which case it is the virtual <c>file:</c> path the author declared.
+	/// </summary>
 	public string RelativePath { get; }
 	public string RelativeFolder { get; }
 	public string CrossLink { get; }

@@ -135,6 +135,21 @@ Each child becomes its own subsection; none is consumed as the parent's index pa
 
 If the entry declares its own `children`, it keeps the virtual grouping behavior instead.
 
+### Content stored outside the documentation set
+
+Add `source:` to read a page from elsewhere in the repository while keeping its place in the documentation set. This lets a page live next to the code it documents without moving the docset root:
+
+```yaml
+toc:
+  - file: index.md
+  - file: feedback.md
+    source: ../packages/kbn-ui/feedback/feedback.md
+```
+
+`file:` remains the page's docset-relative position and drives the URL (`/feedback`), the navigation entry and the link reference other repositories resolve against. `source:` is resolved relative to the directory holding the `docset.yml` or `toc.yml` that declares the entry, and only determines which file is read.
+
+Single markdown files only, and the source must resolve outside the documentation set root but inside the repository checkout. See the [`source` reference](./configure/index.md#source) for the full set of rules.
+
 ### Nested toc reference
 
 Include a dedicated `toc.yml` for large sections:

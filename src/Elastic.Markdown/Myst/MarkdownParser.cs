@@ -35,15 +35,36 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public IParserResolvers Resolvers { get; } = resolvers;
 
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx) =>
-		ParseFromFile(path, matter, Pipeline, false, ctx);
+		ParseFromFile(path, path, matter, Pipeline, false, ctx);
 
-	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) => ParseFromFile(path, null, MinimalPipeline, true, ctx);
+	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) =>
+		ParseFromFile(path, path, null, MinimalPipeline, true, ctx);
 
-	private Task<MarkdownDocument> ParseFromFile(IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, bool skip, Cancel ctx)
+	/// <summary>
+	/// Parses <paramref name="contentFile"/> as though it lived at <paramref name="path"/>. Pages sourced from outside
+	/// the documentation set root anchor their links, includes and document lookups on their virtual position, while
+	/// diagnostics keep pointing at the file that was actually read.
+	/// </summary>
+	public Task<MarkdownDocument> ParseAsync(IFileInfo path, IFileInfo contentFile, YamlFrontMatter? matter, Cancel ctx) =>
+		ParseFromFile(path, contentFile, matter, Pipeline, false, ctx);
+
+	/// <inheritdoc cref="ParseAsync(IFileInfo,IFileInfo,YamlFrontMatter,Cancel)"/>
+	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, IFileInfo contentFile, Cancel ctx) =>
+		ParseFromFile(path, contentFile, null, MinimalPipeline, true, ctx);
+
+	private Task<MarkdownDocument> ParseFromFile(
+		IFileInfo path,
+		IFileInfo contentFile,
+		YamlFrontMatter? matter,
+		MarkdownPipeline pipeline,
+		bool skip,
+		Cancel ctx
+	)
 	{
 		var state = new ParserState(Build)
 		{
 			MarkdownSourcePath = path,
+			OriginalSourcePath = ReferenceEquals(path, contentFile) ? null : contentFile,
 			YamlFrontMatter = matter,
 			TryFindDocument = Resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = Resolvers.TryFindDocumentByRelativePath,
@@ -53,7 +74,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			SkipValidation = skip
 		};
 		var context = new ParserContext(state);
-		return ParseAsync(path, context, pipeline, ctx);
+		return ParseAsync(contentFile, context, pipeline, ctx);
 	}
 
 	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>

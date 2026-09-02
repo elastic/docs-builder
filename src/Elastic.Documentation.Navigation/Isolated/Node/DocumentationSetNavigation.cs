@@ -188,13 +188,21 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 	/// <summary>
 	/// Creates the documentation file from the factory, emitting an error if creation fails.
 	/// </summary>
-	private TModel? CreateDocumentationFile(IFileInfo fileInfo, IFileSystem fileSystem, IDocumentationSetContext context)
+	private TModel? CreateDocumentationFile(
+		IFileInfo fileInfo,
+		IFileSystem fileSystem,
+		IDocumentationSetContext context,
+		string? contentSource = null
+	)
 	{
 		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, fileInfo.FullName);
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fileSystem);
 		if (documentationFile == null)
 		{
-			var reason = fileInfo.Exists ? "the file exists but is not a valid Markdown document" : "the file does not exist on disk";
+			// An externally sourced entry never has a file at its virtual path, so report the source instead.
+			var reason = contentSource is not null
+				? $"its 'source: {contentSource}' could not be registered"
+				: fileInfo.Exists ? "the file exists but is not a valid Markdown document" : "the file does not exist on disk";
 			context.EmitError(context.ConfigurationPath, $"Table of contents references '{relativePath}' but {reason}.");
 		}
 
@@ -244,7 +252,7 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 			DetectionRuleRef ruleRef => ruleRef.FileInfo,
 			_ => ResolveFileInfo(context, fullPath)
 		};
-		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
+		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fileRef.Source);
 		if (documentationFile == null)
 			return null;
 

@@ -97,12 +97,10 @@ public class HtmlWriter(
 		string? editUrl = null;
 		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable)
 		{
+			// Anchored on the file actually read, not its position in the set: an externally sourced page
+			// (`source:` in the TOC) lives elsewhere in the repository than its virtual RelativePath.
 			var checkoutDirectory = DocumentationSet.Context.DocumentationCheckoutDirectory;
-			var relativeSourcePath = Path.GetRelativePath(
-				checkoutDirectory.FullName,
-				DocumentationSet.Context.DocumentationSourceDirectory.FullName
-			);
-			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
+			var path = Path.GetRelativePath(checkoutDirectory.FullName, markdown.SourceFile.FullName).Replace('\\', '/');
 			editUrl = $"https://github.com/{gitHubRepo}/edit/{branch}/{path}";
 		}
 

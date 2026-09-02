@@ -114,6 +114,11 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Capture exclude list for folder auto-discovery
 		var exclude = dictionary.TryGetValue("exclude", out var excludeObj) && excludeObj is string[] excludeArr ? excludeArr : null;
 
+		// Capture the off-root content location; resolution happens in DocumentationSetFile.ResolveFileRef
+		var contentSource = dictionary.TryGetValue("source", out var sourceObj) && sourceObj is string sourceStr && sourceStr.Length > 0
+			? sourceStr
+			: null;
+
 		// Check for listing (listing: <folder>) — a glob-driven auto-discovered nav entry with generated index.
 		// Must come before folder: and file: so those keys can still appear on the entry as children context.
 		if (dictionary.TryGetValue("listing", out var listingPath) && listingPath is string listing)
@@ -172,7 +177,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			// Store ONLY the file name - the folder path will be prepended during resolution
 			// This allows validation to check if the file itself has deep paths
 			// PathRelativeToContainer will be set during resolution
-			var indexFile = new FolderIndexFileRef(file, file, false, [], placeholderContext);
+			var indexFile = new FolderIndexFileRef(file, file, false, [], placeholderContext) { Source = contentSource };
 
 			// Create a list with the index file first, followed by user-specified children
 			var folderChildren = new List<ITableOfContentsItem> { indexFile };
@@ -208,23 +213,23 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
 		{
 			if (fileOnly == "index.md")
-				return new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext);
+				return new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext) { Source = contentSource };
 
 			// Sugar: childless "file: subdir/index.md" → single-page folder, so it isn't silently dropped competing for the parent's index slot.
 			if (children.Count == 0 && fileOnly.EndsWith("/index.md", StringComparison.Ordinal))
 			{
 				var indexFolderPath = fileOnly[..^"/index.md".Length];
-				var indexFile = new FolderIndexFileRef("index.md", "index.md", false, [], placeholderContext);
+				var indexFile = new FolderIndexFileRef("index.md", "index.md", false, [], placeholderContext) { Source = contentSource };
 				return new DeepLinkedFolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext);
 			}
 
-			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
+			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext) { Source = contentSource };
 		}
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
 			return p == "index.md"
-				? new IndexFileRef(p, p, true, children, placeholderContext)
-				: new FileRef(p, p, true, children, placeholderContext);
+				? new IndexFileRef(p, p, true, children, placeholderContext) { Source = contentSource }
+				: new FileRef(p, p, true, children, placeholderContext) { Source = contentSource };
 
 		// Check for crosslink reference
 		if (dictionary.TryGetValue("crosslink", out var crosslink) && crosslink is string crosslinkStr)

@@ -44,6 +44,36 @@ A `file` can include `children` to create a virtual grouping. Children must be s
     - file: configuration.md
 ```
 
+#### `source`
+
+Reads the page's content from somewhere else in the repository, so documentation can live next to the code it describes:
+
+```yaml
+toc:
+  - file: index.md
+  - file: feedback.md
+    source: ../packages/kbn-ui/feedback/feedback.md
+```
+
+`file:` stays the page's position in the documentation set — it drives the URL, the navigation entry, the output path and the cross-repository link reference. `source:` is only where the content is read from, resolved relative to the directory holding the `docset.yml` or `toc.yml` that declares the entry.
+
+Relative links, images and includes inside a sourced page resolve from its `file:` position, not from where the file sits on disk.
+
+Also works on a `hidden:` entry, and on the `folder:` + `file:` form:
+
+```yaml
+- folder: feedback
+  file: index.md
+  source: ../packages/kbn-ui/feedback/readme.md
+```
+
+Constraints:
+
+- Single markdown files only — there is no folder or glob equivalent.
+- The source must resolve outside the documentation set root; inside it, use a plain `file:` entry.
+- The source must stay inside the repository checkout.
+- The `file:` position must be free — no file of that name on disk, and no other entry sourcing it.
+
 ### `folder:`
 
 Groups pages under a directory. Without `children`, all markdown files in the folder are included automatically:

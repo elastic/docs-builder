@@ -124,7 +124,19 @@ public record FileRef(
 	bool Hidden,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context
-) : ITableOfContentsItem;
+) : ITableOfContentsItem
+{
+	/// <summary>
+	/// Raw <c>source:</c> value — where this page's content lives on disk, relative to the directory holding the
+	/// declaring <c>docset.yml</c>/<c>toc.yml</c>. <see cref="ITableOfContentsItem.PathRelativeToDocumentationSet"/>
+	/// stays the virtual position that drives URL, navigation and link reference, so a page can be authored next to
+	/// the code it documents without a <c>../</c> escaping into generated URLs or output paths.
+	/// </summary>
+	public string? Source { get; init; }
+
+	/// <summary>Absolute, normalized <see cref="Source"/>. Set during <c>LoadAndResolve</c>; never touches the filesystem.</summary>
+	public string? SourceFullPath { get; init; }
+}
 
 public record IndexFileRef(
 	string PathRelativeToDocumentationSet,

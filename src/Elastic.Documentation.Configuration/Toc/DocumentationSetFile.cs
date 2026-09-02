@@ -150,6 +150,13 @@ public class DocumentationSetFile : TableOfContentsFile
 	public HashSet<string> FolderExcludedFiles { get; private set; } = [];
 
 	/// <summary>
+	/// Entries that declared a <c>source:</c> outside the documentation set root. The file scan never sees these,
+	/// so they have to be registered from the table of contents itself.
+	/// </summary>
+	[YamlIgnore]
+	public IReadOnlyCollection<FileRef> ExternallySourcedFiles { get; private set; } = [];
+
+	/// <summary>
 	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
@@ -178,6 +185,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		);
 		// Collect excluded paths so they can be skipped during file processing (not just navigation)
 		docSet.FolderExcludedFiles = CollectFolderExcludedFiles(docSet.TableOfContents);
+		docSet.ExternallySourcedFiles = CollectExternallySourcedFiles(docSet.TableOfContents);
 		return docSet;
 	}
 
@@ -402,6 +410,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			? fileRef.PathRelativeToDocumentationSet
 			: $"{parentPath}/{fileRef.PathRelativeToDocumentationSet}";
 
+		var sourceFullPath = ResolveSourceFullPath(collector, fileRef, baseDirectory, fileSystem, context);
+
 		// Special validation for FolderIndexFileRef (folder+file combination)
 		// Validate BEFORE early return so we catch cases with no children
 		if (fileRef is FolderIndexFileRef)
@@ -454,14 +464,16 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Calculate PathRelativeToContainer: the file path relative to its container
 		var pathRelativeToContainer = string.IsNullOrEmpty(containerPath) ? fullPath : fullPath.Substring(containerPath.Length + 1);
 
+		// `with` keeps the concrete ref type (index, folder index) and every off-path key such as `source:`
 		if (fileRef.Children.Count == 0)
 		{
-			// Preserve specific types even when there are no children
-			return fileRef switch
+			return fileRef with
 			{
-				FolderIndexFileRef => new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context),
-				IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context),
-				_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context)
+				PathRelativeToDocumentationSet = fullPath,
+				PathRelativeToContainer = pathRelativeToContainer,
+				Children = [],
+				Context = context,
+				SourceFullPath = sourceFullPath
 			};
 		}
 
@@ -519,13 +531,55 @@ public class DocumentationSetFile : TableOfContentsFile
 			suppressDiagnostics
 		);
 
-		// Preserve the specific type when creating the resolved reference
-		return fileRef switch
+		return fileRef with
 		{
-			FolderIndexFileRef => new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context),
-			IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context),
-			_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context)
+			PathRelativeToDocumentationSet = fullPath,
+			PathRelativeToContainer = pathRelativeToContainer,
+			Children = resolvedChildren,
+			Context = context,
+			SourceFullPath = sourceFullPath
 		};
+	}
+
+	/// <summary>
+	/// Turns a <c>source:</c> value into an absolute path, anchored on the directory of the declaring YAML file.
+	/// Pure path arithmetic — the source must stay outside the documentation set root (inside it the ordinary
+	/// file scan already owns the page) and existence is verified later, when the file is registered.
+	/// </summary>
+	private static string? ResolveSourceFullPath(
+		IDiagnosticsCollector collector,
+		FileRef fileRef,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string context
+	)
+	{
+		if (fileRef.Source is not { Length: > 0 } source)
+			return null;
+
+		var contextDirectory = fileSystem.Path.GetDirectoryName(context);
+		var fullPath = fileSystem.Path.GetFullPath(
+			source,
+			string.IsNullOrEmpty(contextDirectory) ? baseDirectory.FullName : contextDirectory
+		);
+
+		if (fileSystem.Path.GetExtension(fullPath) != ".md")
+		{
+			collector.EmitError(context, $"'source: {source}' must point to a markdown file.");
+			return null;
+		}
+
+		if (IDirectoryInfoExtensions.IsPathWithin(fullPath, baseDirectory.FullName))
+		{
+			var relativeToRoot = fileSystem.Path.GetRelativePath(baseDirectory.FullName, fullPath).Replace('\\', '/');
+			collector.EmitError(
+				context,
+				$"'source: {source}' resolves inside the documentation set root, use 'file: {relativeToRoot}' instead."
+			);
+			return null;
+		}
+
+		return fullPath;
 	}
 
 	/// <summary>
@@ -875,6 +929,34 @@ public class DocumentationSetFile : TableOfContentsFile
 				};
 				if (children is { Count: > 0 })
 					CollectExcluded(children, result);
+			}
+		}
+	}
+
+	private static IReadOnlyCollection<FileRef> CollectExternallySourcedFiles(IReadOnlyCollection<ITableOfContentsItem> items)
+	{
+		var sourced = new List<FileRef>();
+		Collect(items, sourced);
+		return sourced;
+
+		static void Collect(IReadOnlyCollection<ITableOfContentsItem> items, List<FileRef> result)
+		{
+			foreach (var item in items)
+			{
+				if (item is FileRef { SourceFullPath: not null } fileRef)
+					result.Add(fileRef);
+
+				var children = item switch
+				{
+					FolderRef f => f.Children,
+					FileRef f => f.Children,
+					IsolatedTableOfContentsRef t => t.Children,
+					ListingRef l => l.Children,
+					ListingGroupRef g => g.Children,
+					_ => null
+				};
+				if (children is { Count: > 0 })
+					Collect(children, result);
 			}
 		}
 	}
