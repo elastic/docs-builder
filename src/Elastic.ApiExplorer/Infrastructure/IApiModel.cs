@@ -9,6 +9,12 @@ using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-public interface IApiModel : INavigationModel, IPageRenderer<ApiRenderContext>;
+public interface IApiModel : INavigationModel, IPageRenderer<ApiRenderContext>
+{
+	/// <summary>
+	/// Readable CommonMark for this page, or <see langword="null"/> when the model has no page.
+	/// </summary>
+	Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => Task.FromResult<string?>(null);
+}
 
 public interface IApiGroupingModel : IApiModel;

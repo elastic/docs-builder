@@ -49,6 +49,7 @@ public partial class ApiPagesNavRenderingTests
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
+			MarkdownUrl = "/api/doc/elasticsearch/v9.md",
 			VersionSwitcherItems =
 			[
 				new("Latest", "/api/doc/elasticsearch/", Selected: false),

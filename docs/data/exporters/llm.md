@@ -6,6 +6,8 @@ navigation_title: LLM Markdown
 
 The LLM Markdown exporter produces an optimized CommonMark version of every documentation page alongside the standard HTML output. This is **enabled by default** — every HTML page gets a corresponding `.md` file that web servers can serve through content negotiation.
 
+API Explorer pages use the same co-located file rule. The generator writes CommonMark next to each API HTML page. Preview and static hosts serve that file when the request path ends with `.md` or when `Accept` prefers `text/markdown`.
+
 ## How it works
 
 When a request arrives with an `Accept: text/markdown` header (or appends `.md` to a URL path), the web server returns the LLM-optimized Markdown instead of HTML. This is how [elastic.co/docs](https://www.elastic.co/docs/) serves documentation to AI agents — they receive clean, token-efficient Markdown rather than raw HTML, significantly reducing context window usage.
@@ -42,6 +44,8 @@ applies_to:
   - "Elastic Cloud Hosted: Available since 8.0"
 ---
 ```
+
+API Explorer pages use the same `title`, `description`, `url`, and `products` keys. They also set `type: api` and `resource` (the same URI as `url`) so an OKF consumer can read the file as a concept.
 
 ## Content negotiation
 

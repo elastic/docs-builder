@@ -141,19 +141,23 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 
 	private bool HasActualProperties(IOpenApiSchema? schema) => _analyzer.GetSchemaProperties(schema)?.Count > 0;
 
-	private HtmlString RenderDescription(string name, string? specDescription, PropertyTreeScope scope)
+	private (HtmlString Html, string? Markdown) RenderDescription(string name, string? specDescription, PropertyTreeScope scope)
 	{
 		// ponytail: match property Name only. Nested paths if authors need them.
 		var description = scope.IsRequest
 			&& scope.DescriptionOverrides is { Count: > 0 }
 			&& scope.DescriptionOverrides.TryGetValue(name, out var overrideText) ? overrideText : specDescription;
-		return string.IsNullOrWhiteSpace(description) ? HtmlString.Empty : options.RenderMarkdown(description);
+		if (string.IsNullOrWhiteSpace(description))
+			return (HtmlString.Empty, null);
+
+		return (options.RenderMarkdown(description), description);
 	}
 
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
 		var (_, propSchema, typeInfo, _, _, _, isRecursive) = row;
 		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
+		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, propSchema.Description, scope);
 
 		return new ApiProperty
 		{
@@ -166,7 +170,8 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			IsRecursive = isRecursive,
 			IsRequest = scope.IsRequest,
 			Type = BuildAnnotation(typeInfo, HasActualProperties(propSchema)),
-			DescriptionHtml = RenderDescription(row.Name, propSchema.Description, scope),
+			DescriptionHtml = descriptionHtml,
+			DescriptionMarkdown = descriptionMarkdown,
 			ShowDeprecatedBadge = options.ShowDeprecated && propSchema.Deprecated,
 			Availability = options.ShowVersionInfo ? AvailabilityBadgeHelper.FromSchema(propSchema, options.VersionsConfiguration) : null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),

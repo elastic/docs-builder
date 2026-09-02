@@ -26,6 +26,15 @@ public class ApiLanding : IApiGroupingModel
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
+		Task.FromResult<string?>(
+			LandingCommonMark.Product(
+				context.Model.Info,
+				ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot),
+				context.CurrentNavigation.NavigationRoot.Url
+			)
+		);
 }
 
 public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>

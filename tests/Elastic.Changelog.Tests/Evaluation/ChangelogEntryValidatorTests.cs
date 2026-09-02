@@ -252,91 +252,76 @@ public class ChangelogEntryValidatorTests
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
-	// PR reference collection
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
+	// Filename validation
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
-	public void CollectPrRefs_BareNumber_ReturnsSingleRef()
+	[Theory]
+	[InlineData("docs/changelog/42.yaml")]
+	[InlineData("docs/changelog/42.yml")]
+	[InlineData("docs/changelog/42-my-feature.yaml")]
+	[InlineData("docs/changelog/1234-fix-something-long.yaml")]
+	public void ValidateFilename_ValidConvention_NoFindings(string filePath)
 	{
-		var entry = ParseYaml("pr: 42\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
-		var refs = ChangelogEntryValidator.CollectPrRefs(entry);
-		refs.Should().ContainSingle().Which.Should().Be("42");
-	}
-
-	[Fact]
-	public void CollectPrRefs_PrsList_ReturnsAll()
-	{
-		var entry = ParseYaml("prs:\n  - 1\n  - 2\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
-		var refs = ChangelogEntryValidator.CollectPrRefs(entry);
-		refs.Should().HaveCount(2).And.Contain("1").And.Contain("2");
-	}
-
-	// ─────────────────────────────────────────────────────────────────────────────────────────────
-	// PR existence validation
-	// ─────────────────────────────────────────────────────────────────────────────────────────────
-
-	[Fact]
-	public void ValidatePrReferences_ExistingOwnRepoPr_NoError()
-	{
-		var entry = ParseYaml("pr: 42\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
-		var findings = ChangelogEntryValidator.ValidatePrReferences(
-			"docs/changelog/42.yaml",
-			entry,
-			"elastic",
-			"my-repo",
-			new Dictionary<int, bool> { [42] = true }
-		);
+		var findings = ChangelogEntryValidator.ValidateFilename(filePath);
 		findings.Should().BeEmpty();
 	}
 
+	[Theory]
+	[InlineData("docs/changelog/my-feature.yaml")]
+	[InlineData("docs/changelog/changelog.yaml")]
+	[InlineData("docs/changelog/fix42.yaml")]
+	public void ValidateFilename_InvalidConvention_ProducesError(string filePath)
+	{
+		var findings = ChangelogEntryValidator.ValidateFilename(filePath);
+		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("must start with a PR number"));
+	}
+
+	[Theory]
+	[InlineData("docs/changelog/42.yaml", 42)]
+	[InlineData("docs/changelog/100-feature.yaml", 100)]
+	[InlineData("docs/changelog/9999-x.yml", 9999)]
+	public void TryParseFilenameAsPrNumber_ValidFilename_ReturnsNumber(string filePath, int expected)
+	{
+		ChangelogEntryValidator.TryParseFilenameAsPrNumber(filePath, out var prNumber).Should().BeTrue();
+		prNumber.Should().Be(expected);
+	}
+
+	[Theory]
+	[InlineData("docs/changelog/feature.yaml")]
+	[InlineData("docs/changelog/changelog.yml")]
+	public void TryParseFilenameAsPrNumber_InvalidFilename_ReturnsFalse(string filePath) =>
+		ChangelogEntryValidator.TryParseFilenameAsPrNumber(filePath, out _).Should().BeFalse();
+
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
+	// pr: field cross-check against filename
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
+
 	[Fact]
-	public void ValidatePrReferences_NonExistentOwnRepoPr_ProducesError()
+	public void Validate_PrFieldMatchesFilename_NoError()
+	{
+		var entry = ParseYaml("pr: 42\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
+		var findings = ChangelogEntryValidator.Validate("docs/changelog/42.yaml", entry, Config, null, null, filenamePrNumber: 42);
+		findings.Should().NotContain(f => f.Message.Contains("does not match"));
+	}
+
+	[Fact]
+	public void Validate_PrFieldMismatchesFilename_ProducesError()
 	{
 		var entry = ParseYaml("pr: 99\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
-		var findings = ChangelogEntryValidator.ValidatePrReferences(
-			"docs/changelog/42.yaml",
-			entry,
-			"elastic",
-			"my-repo",
-			new Dictionary<int, bool> { [99] = false }
-		);
-		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("does not exist"));
-	}
-
-	[Fact]
-	public void ValidatePrReferences_ForeignRepoNotAllowed_ProducesWarning()
-	{
-		var entry = ParseYaml(
-			"pr: https://github.com/other-org/other-repo/pull/5\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch"
-		);
-		var findings = ChangelogEntryValidator.ValidatePrReferences(
-			"docs/changelog/42.yaml",
-			entry,
-			"elastic",
-			"my-repo",
-			new Dictionary<int, bool>(),
-			linkAllowRepos: ["elastic/other-repo"]
-		);
-		// other-org/other-repo is not in the allowlist
+		var findings = ChangelogEntryValidator.Validate("docs/changelog/42.yaml", entry, Config, null, null, filenamePrNumber: 42);
 		findings.Should().ContainSingle(
-			f => f.Severity == FindingSeverity.Warning && f.Message.Contains("outside bundle.link_allow_repos")
+			f => f.Severity == FindingSeverity.Error && f.Message.Contains("does not match") && f.Message.Contains(
+				"99"
+			) && f.Message.Contains("42")
 		);
 	}
 
 	[Fact]
-	public void ValidatePrReferences_ForeignRepoAllowed_NoWarning()
+	public void Validate_PrFieldAbsent_NoFilenameError()
 	{
-		var entry = ParseYaml(
-			"pr: https://github.com/elastic/other-repo/pull/5\ntype: feature\ntitle: Test\nproducts:\n  - product: elasticsearch"
-		);
-		var findings = ChangelogEntryValidator.ValidatePrReferences(
-			"docs/changelog/42.yaml",
-			entry,
-			"elastic",
-			"my-repo",
-			new Dictionary<int, bool>(),
-			linkAllowRepos: ["elastic/other-repo"]
-		);
-		findings.Should().NotContain(f => f.Message.Contains("outside bundle.link_allow_repos"));
+		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
+		var findings = ChangelogEntryValidator.Validate("docs/changelog/42.yaml", entry, Config, null, null, filenamePrNumber: 42);
+		findings.Should().NotContain(f => f.Message.Contains("does not match"));
 	}
 }

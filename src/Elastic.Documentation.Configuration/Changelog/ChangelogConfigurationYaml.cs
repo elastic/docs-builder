@@ -350,6 +350,11 @@ internal sealed record BundleProfileYaml
 	public string? Output { get; set; }
 
 	/// <summary>
+	/// Profile-specific output directory. Replaces <c>bundle.output_directory</c> for this profile.
+	/// </summary>
+	public string? OutputDirectory { get; set; }
+
+	/// <summary>
 	/// Output products pattern. Overrides the products array derived from matched changelogs.
 	/// Supports {version} and {lifecycle} placeholders.
 	/// </summary>

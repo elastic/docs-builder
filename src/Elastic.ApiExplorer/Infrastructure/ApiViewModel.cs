@@ -23,6 +23,7 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
+	public required string MarkdownUrl { get; init; }
 }
 
 public abstract class ApiViewModel(ApiRenderContext context)
@@ -84,6 +85,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
+			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",
