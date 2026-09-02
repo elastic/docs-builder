@@ -146,6 +146,15 @@ journey('navigation test', ({ page, params }) => {
         )
         await expect(page).toHaveTitle(/Elastic Cloud/)
 
+        // Same Guides tree on both pages. Collapsed folders are detached, so
+        // wait for initNav to mark the new current path (that also reattaches
+        // the deploy-manage ancestors) before inspecting the live tree.
+        await expect(
+            page.locator(
+                '#pages-nav a.sidebar-link.current[href*="/deploy-manage/"]'
+            )
+        ).toBeVisible()
+
         // Cross-group navigation: still no reload. htmx preserves identical
         // trees by id, so only require a fresh node when the tree id changes.
         const state = await page.evaluate(() => {
@@ -154,13 +163,9 @@ journey('navigation test', ({ page, params }) => {
                 noReload: window['__synthNoReload'] === true,
                 treeId: navTree?.id,
                 treeIsNewNode: navTree?.['__synthOriginal'] === undefined,
-                treeShowsNewGroup:
-                    navTree?.querySelector('a[href*="/deploy-manage/"]') !==
-                    null,
             }
         })
         expect(state.noReload).toBe(true)
-        expect(state.treeShowsNewGroup).toBe(true)
         if (state.treeId !== treeIdBefore)
             expect(state.treeIsNewNode).toBe(true)
     })
