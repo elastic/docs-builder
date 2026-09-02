@@ -4,7 +4,7 @@
 
 namespace Elastic.Changelog.Evaluation;
 
-/// <summary>Arguments for the <c>changelog validate-entries</c> command.</summary>
+/// <summary>Arguments for the <c>changelog validate</c> command.</summary>
 public record ValidateEntriesArguments
 {
 	public required string ConfigFile { get; init; }
@@ -14,6 +14,8 @@ public record ValidateEntriesArguments
 	public required string[] PrLabels { get; init; }
 	/// <summary>Explicit file list; bypasses API discovery when non-null. Null means discover via GitHub API.</summary>
 	public string[]? Files { get; init; }
+	/// <summary>When true, also fails if no changelog entry file references this PR (file presence check).</summary>
+	public bool RequireChangelogFile { get; init; }
 
 	// PR context — written to decision metadata when running on CI.
 	public string HeadRef { get; init; } = "";

@@ -1855,12 +1855,13 @@ internal sealed partial class ChangelogCommands(
 	/// Checks YAML validity, required fields, config-value membership, PR existence, and entry hygiene.
 	/// Exits non-zero on any error-level finding; warnings do not block.
 	/// </summary>
-	/// <param name="config">Path to the changelog configuration file (docs/changelog.yml).</param>
-	/// <param name="owner">GitHub repository owner.</param>
-	/// <param name="repo">GitHub repository name.</param>
-	/// <param name="prNumber">Pull request number.</param>
-	/// <param name="prLabels">Comma-separated list of PR labels (use <c>${{ join(github.event.pull_request.labels.*.name, ',') }}</c> in actions).</param>
-	/// <param name="files">Optional explicit file list; bypasses GitHub API discovery. Useful for local runs.</param>
+	/// <param name="prNumber">Pull request number to validate.</param>
+	/// <param name="config">Path to the changelog configuration file. Defaults to <c>docs/changelog.yml</c>.</param>
+	/// <param name="owner">GitHub repository owner. Defaults to the owner inferred from the git remote origin.</param>
+	/// <param name="repo">GitHub repository name. Defaults to the repo inferred from the git remote origin.</param>
+	/// <param name="prLabels">Comma-separated list of PR labels. When supplied, validates that <c>type:</c> matches the label-derived type (use <c>${{ join(github.event.pull_request.labels.*.name, ',') }}</c> in Actions).</param>
+	/// <param name="files">Explicit file list; bypasses GitHub API discovery. Useful for local runs without a token.</param>
+	/// <param name="require">Also fail when no changelog entry file references this PR number.</param>
 	/// <param name="headRef">PR head branch ref — written to decision metadata when on CI.</param>
 	/// <param name="headSha">PR head commit SHA — written to decision metadata when on CI.</param>
 	/// <param name="isFork">Whether the PR is from a fork.</param>
@@ -1869,13 +1870,14 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
 	/// <param name="ct">Cancellation token.</param>
 	[NoOptionsInjection]
-	public async Task<int> ValidateEntries(
-		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
-		string owner,
-		string repo,
-		int prNumber,
-		string prLabels,
+	public async Task<int> Validate(
+		[Argument] int prNumber,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		string? owner = null,
+		string? repo = null,
+		string? prLabels = null,
 		string[]? files = null,
+		bool require = false,
 		string headRef = "",
 		string headSha = "",
 		bool isFork = false,
@@ -1888,18 +1890,32 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
+		// Resolve owner/repo: CLI flag > git remote origin
+		var cwd = Directory.GetCurrentDirectory();
+		var repoRoot = Paths.FindGitRoot(_fileSystem.DirectoryInfo.New(cwd))?.FullName ?? cwd;
+		string? gitOwner = null;
+		string? gitRepo = null;
+		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
+			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
+		var resolvedOwner = owner ?? gitOwner ?? "";
+		var resolvedRepo = repo ?? gitRepo ?? "";
+
+		// Resolve config: CLI flag > docs/changelog.yml
+		var configPath = config?.FullName ?? _fileSystem.Path.Join(repoRoot, "docs", "changelog.yml");
+
 		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogEntryValidationService(logFactory, configurationContext, prService, fileSystem, environmentVariables);
 
 		var args = new ValidateEntriesArguments
 		{
-			ConfigFile = config.FullName,
-			Owner = owner,
-			Repo = repo,
+			ConfigFile = configPath,
+			Owner = resolvedOwner,
+			Repo = resolvedRepo,
 			PrNumber = prNumber,
-			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+			PrLabels = prLabels?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [],
 			Files = files,
+			RequireChangelogFile = require,
 			HeadRef = headRef,
 			HeadSha = headSha,
 			IsFork = isFork,

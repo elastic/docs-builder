@@ -5055,18 +5055,31 @@
           "path": [
             "changelog"
           ],
-          "name": "validate-entries",
+          "name": "validate",
           "summary": "(CI and local) Validate changelog entry files that a PR added or modified. Checks YAML validity, required fields, config-value membership, PR existence, and entry hygiene. Exits non-zero on any error-level finding; warnings do not block.",
-          "usage": "docs-builder changelog validate-entries --config \u003Cfile\u003E --owner \u003Cstring\u003E --repo \u003Cstring\u003E --pr-number \u003Cint\u003E --pr-labels \u003Cstring\u003E [options]",
+          "usage": "docs-builder changelog validate \u003Cpr-number\u003E [options]",
           "examples": [],
           "parameters": [
+            {
+              "role": "positional",
+              "name": "pr-number",
+              "type": "integer",
+              "required": true,
+              "summary": "Pull request number to validate."
+            },
             {
               "role": "flag",
               "name": "config",
               "type": "string",
-              "required": true,
-              "summary": "Path to the changelog configuration file (docs/changelog.yml).",
+              "required": false,
+              "summary": "Path to the changelog configuration file. Defaults to docs/changelog.yml.",
               "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
                 {
                   "kind": "fileExtensions",
                   "values": [
@@ -5080,38 +5093,39 @@
               "role": "flag",
               "name": "owner",
               "type": "string",
-              "required": true,
-              "summary": "GitHub repository owner."
+              "required": false,
+              "summary": "GitHub repository owner. Defaults to the owner inferred from the git remote origin."
             },
             {
               "role": "flag",
               "name": "repo",
               "type": "string",
-              "required": true,
-              "summary": "GitHub repository name."
-            },
-            {
-              "role": "flag",
-              "name": "pr-number",
-              "type": "integer",
-              "required": true,
-              "summary": "Pull request number."
+              "required": false,
+              "summary": "GitHub repository name. Defaults to the repo inferred from the git remote origin."
             },
             {
               "role": "flag",
               "name": "pr-labels",
               "type": "string",
-              "required": true,
-              "summary": "Comma-separated list of PR labels (use ${{ join(github.event.pull_request.labels.*.name, \u0027,\u0027) }} in actions)."
+              "required": false,
+              "summary": "Comma-separated list of PR labels. When supplied, validates that type: matches the label-derived type (use ${{ join(github.event.pull_request.labels.*.name, \u0027,\u0027) }} in Actions)."
             },
             {
               "role": "flag",
               "name": "files",
               "type": "array",
               "required": false,
-              "summary": "Optional explicit file list; bypasses GitHub API discovery. Useful for local runs.",
+              "summary": "Explicit file list; bypasses GitHub API discovery. Useful for local runs without a token.",
               "repeatable": true,
               "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "require",
+              "type": "boolean",
+              "required": false,
+              "summary": "Also fail when no changelog entry file references this PR number.",
+              "defaultValue": "false"
             },
             {
               "role": "flag",
