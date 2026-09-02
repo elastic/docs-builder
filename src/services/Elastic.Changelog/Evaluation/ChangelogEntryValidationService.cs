@@ -77,6 +77,17 @@ public class ChangelogEntryValidationService(
 		if (filesToValidate.Count == 0)
 		{
 			_logger.LogInformation("No changelog entry files to validate for PR #{PrNumber}", input.PrNumber);
+			if (input.RequireChangelogFile)
+			{
+				var expectedPath = $"{changelogDir}/{input.PrNumber}.yaml";
+				collector.EmitError(
+					string.Empty,
+					$"No changelog entry file found for PR #{input.PrNumber}. " +
+						$"Add one at {expectedPath}, or run 'docs-builder changelog pr' to generate it."
+				);
+				await WriteMetadataAsync(input, "missing-entry", null, defaultBranch, ctx);
+				return false;
+			}
 			await WriteMetadataAsync(input, "ok", null, defaultBranch, ctx);
 			return true;
 		}
@@ -179,6 +190,20 @@ public class ChangelogEntryValidationService(
 				linkAllowRepos
 			);
 			allFindings.AddRange(prRefFindings);
+		}
+
+		// ── Presence check ────────────────────────────────────────────────────────────────────
+		if (input.RequireChangelogFile && !ownRepoNumbers.Contains(input.PrNumber))
+		{
+			var expectedPath = $"{changelogDir}/{input.PrNumber}.yaml";
+			allFindings.Add(
+				new EntryFileFinding(
+					string.Empty,
+					FindingSeverity.Error,
+					$"No changelog entry file references PR #{input.PrNumber}. " +
+						$"Add one at {expectedPath}, or run 'docs-builder changelog pr' to generate it."
+				)
+			);
 		}
 
 		// ── Write metadata and return ─────────────────────────────────────────────────────────

@@ -1869,13 +1869,14 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
 	/// <param name="ct">Cancellation token.</param>
 	[NoOptionsInjection]
-	public async Task<int> ValidateEntries(
+	public async Task<int> Validate(
 		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string owner,
 		string repo,
 		int prNumber,
 		string prLabels,
 		string[]? files = null,
+		bool requireChangelogFile = false,
 		string headRef = "",
 		string headSha = "",
 		bool isFork = false,
@@ -1900,6 +1901,7 @@ internal sealed partial class ChangelogCommands(
 			PrNumber = prNumber,
 			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
 			Files = files,
+			RequireChangelogFile = requireChangelogFile,
 			HeadRef = headRef,
 			HeadSha = headSha,
 			IsFork = isFork,
