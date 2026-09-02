@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Extensions;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -47,6 +48,14 @@ public static partial class ApiMarkdown
 		return OperationLinkPattern().Replace(rewritten, match => $"]({baseUrl}operation/{match.Groups[1].Value})");
 	}
 
+	internal static string CanonicalizeLinks(string markdown, Uri? canonicalBaseUrl) =>
+		LinkDestinationPattern().Replace(markdown, match =>
+		{
+			var url = match.Groups["url"].Value;
+			var absolute = UrlPath.MakeAbsolute(canonicalBaseUrl, url);
+			return match.Groups["prefix"].Value + absolute;
+		});
+
 	private static IFileInfo CreateVirtualSource(ApiRenderContext context)
 	{
 		var relativePath = context.CurrentNavigation.Url.TrimStart('/').TrimEnd('/');
@@ -62,6 +71,9 @@ public static partial class ApiMarkdown
 
 	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)")]
 	private static partial Regex OperationLinkPattern();
+
+	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)")]
+	private static partial Regex LinkDestinationPattern();
 
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]

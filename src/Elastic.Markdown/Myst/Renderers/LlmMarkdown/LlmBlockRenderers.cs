@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
@@ -80,25 +81,7 @@ public static class LlmRenderingHelpers
 	/// <summary>
 	/// Converts relative URLs to absolute URLs for LLM consumption
 	/// </summary>
-	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url)
-	{
-		if (
-			string.IsNullOrEmpty(url)
-			|| baseUri == null
-			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
-			|| !Uri.IsWellFormedUriString(url, UriKind.Relative)
-		)
-			return url;
-		try
-		{
-			var absoluteUri = new Uri(baseUri, url);
-			return absoluteUri.ToString();
-		}
-		catch
-		{
-			return url;
-		}
-	}
+	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url) => UrlPath.MakeAbsolute(baseUri, url);
 
 	/// <summary>
 	/// Renders a markdown table from a list of rows (each row is a list of cell values).

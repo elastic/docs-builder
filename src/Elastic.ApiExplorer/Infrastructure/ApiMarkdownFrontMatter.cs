@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -21,6 +22,7 @@ internal static class ApiMarkdownFrontMatter
 	public static string Wrap(string body, INavigationItem current, ApiRenderContext context, IApiModel page)
 	{
 		var content = StripLeadingFrontMatter(body).TrimStart();
+		content = ApiMarkdown.CanonicalizeLinks(content, context.BuildContext.CanonicalBaseUrl);
 		return Write(content, Collect(content, current, context, page));
 	}
 
@@ -62,14 +64,8 @@ internal static class ApiMarkdownFrontMatter
 		_ = markdown.AppendLine();
 	}
 
-	private static string CanonicalUrl(ApiRenderContext context, INavigationItem current)
-	{
-		var path = current.Url.TrimEnd('/');
-		if (path.Length == 0)
-			path = "/";
-
-		return context.BuildContext.CanonicalBaseUrl is { } baseUrl ? new Uri(baseUrl, path).ToString().TrimEnd('/') : path;
-	}
+	private static string CanonicalUrl(ApiRenderContext context, INavigationItem current) =>
+		UrlPath.MakeAbsolute(context.BuildContext.CanonicalBaseUrl, current.Url.TrimEnd('/'))?.TrimEnd('/') ?? current.Url.TrimEnd('/');
 
 	private static string? ResolveDescription(IApiModel page, ApiRenderContext context, string body)
 	{
