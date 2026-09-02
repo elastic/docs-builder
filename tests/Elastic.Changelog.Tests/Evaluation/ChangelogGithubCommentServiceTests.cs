@@ -214,4 +214,70 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
 		).MustNotHaveHappened();
 	}
+
+	// ── Gate.Entries dispatch ──────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task PostComment_EntriesGateWithFindings_RendersEntriesInvalidBody()
+	{
+		await WriteMetadata(BaseMetadata(status: "entries-invalid") with
+		{
+			Gate = ValidationGate.Entries,
+			EntryFindings = [new EntryFinding { File = "docs/changelog/42.yaml", Severity = "Error", Message = "title is required" }]
+		});
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).Returns((string?)"IC_test_node_id");
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				A<string>._,
+				A<string>._,
+				A<int>._,
+				A<string>.That.Contains("validation failed"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task PostComment_EntriesGateNoFindings_DeletesStickyComment()
+	{
+		await WriteMetadata(BaseMetadata(status: "ok", canCommit: true) with { Gate = ValidationGate.Entries, EntryFindings = null });
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(() => commentSvc.DeleteStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<CancellationToken>._)).Returns(true);
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	// ── Gate.File + missing-entry dispatch ────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task PostComment_FileGateMissingEntry_RendersMissingEntryBody()
+	{
+		await WriteMetadata(BaseMetadata(status: "missing-entry") with { Gate = ValidationGate.File, ChangelogDir = "docs/changelog" });
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).Returns((string?)"IC_test_node_id");
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				A<string>._,
+				A<string>._,
+				A<int>._,
+				A<string>.That.Contains("entry file required"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
 }

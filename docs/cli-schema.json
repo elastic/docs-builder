@@ -5055,6 +5055,152 @@
           "path": [
             "changelog"
           ],
+          "name": "validate-entries",
+          "summary": "(CI and local) Validate changelog entry files that a PR added or modified. Checks YAML validity, required fields, config-value membership, PR existence, and entry hygiene. Exits non-zero on any error-level finding; warnings do not block.",
+          "usage": "docs-builder changelog validate-entries --config \u003Cfile\u003E --owner \u003Cstring\u003E --repo \u003Cstring\u003E --pr-number \u003Cint\u003E --pr-labels \u003Cstring\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": true,
+              "summary": "Path to the changelog configuration file (docs/changelog.yml).",
+              "validations": [
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": true,
+              "summary": "GitHub repository owner."
+            },
+            {
+              "role": "flag",
+              "name": "repo",
+              "type": "string",
+              "required": true,
+              "summary": "GitHub repository name."
+            },
+            {
+              "role": "flag",
+              "name": "pr-number",
+              "type": "integer",
+              "required": true,
+              "summary": "Pull request number."
+            },
+            {
+              "role": "flag",
+              "name": "pr-labels",
+              "type": "string",
+              "required": true,
+              "summary": "Comma-separated list of PR labels (use ${{ join(github.event.pull_request.labels.*.name, \u0027,\u0027) }} in actions)."
+            },
+            {
+              "role": "flag",
+              "name": "files",
+              "type": "array",
+              "required": false,
+              "summary": "Optional explicit file list; bypasses GitHub API discovery. Useful for local runs.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "head-ref",
+              "type": "string",
+              "required": false,
+              "summary": "PR head branch ref \u2014 written to decision metadata when on CI."
+            },
+            {
+              "role": "flag",
+              "name": "head-sha",
+              "type": "string",
+              "required": false,
+              "summary": "PR head commit SHA \u2014 written to decision metadata when on CI."
+            },
+            {
+              "role": "flag",
+              "name": "is-fork",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the PR is from a fork.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "can-commit",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the commit strategy allows committing.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "maintainer-can-modify",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the fork PR allows maintainer edits.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "head-repo",
+              "type": "string",
+              "required": false,
+              "summary": "Fork repository full name (owner/repo)."
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
           "name": "validate-labels",
           "summary": "(CI) Validate PR labels against the changelog config without writing any files or calling the GitHub API.",
           "notes": "A lightweight label-only gate intended for the pull_request event. Resolves\npivot.types, pivot.products, and rules.create skip labels against the PR\u0027s\nlabel set and exits non-zero on no-label. Does not perform title resolution, bot-loop\ndetection, or changelog-file lookup \u2014 use EvaluatePr when those are needed.\n\n\nOutputs: status (ok | no-label | skipped), type, products,\nlabel-table (shown on failure), product-label-table (shown on product failure),\nskip-labels.",

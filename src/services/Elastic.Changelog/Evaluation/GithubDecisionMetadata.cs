@@ -42,6 +42,16 @@ public record GithubDecisionMetadata
 	public CommitOutcome? CommitOutcome { get; init; }
 	/// <summary>Repo-relative path to the committed changelog file, when <see cref="CommitOutcome"/> is <c>Committed</c>.</summary>
 	public string? CommittedFile { get; init; }
+	/// <summary>Findings from the entry-file validation gate. Non-null and non-empty when <see cref="Gate"/> is <see cref="ValidationGate.Entries"/> and validation failed.</summary>
+	public IReadOnlyList<EntryFinding>? EntryFindings { get; init; }
+}
+
+/// <summary>A single finding from the changelog entry file validation gate.</summary>
+public record EntryFinding
+{
+	public required string File { get; init; }
+	public required string Severity { get; init; }
+	public required string Message { get; init; }
 }
 
 /// <summary>
@@ -50,6 +60,7 @@ public record GithubDecisionMetadata
 /// <list type="bullet">
 ///   <item><see cref="Labels"/> — written by <c>validate-labels</c> (Step 1: label gate).</item>
 ///   <item><see cref="File"/> — written by <c>evaluate-pr</c> (Step 2: changelog file gate).</item>
+///   <item><see cref="Entries"/> — written by <c>validate-entries</c> (Step 2: entry-file content gate).</item>
 /// </list>
 /// Nullable on the record so artifacts without this field still deserialize.
 /// </summary>
@@ -57,8 +68,10 @@ public enum ValidationGate
 {
 	/// <summary>Written by <c>validate-labels</c>. Only label presence is checked.</summary>
 	Labels,
-	/// <summary>Written by <c>evaluate-pr</c>. The changelog file is also evaluated.</summary>
+	/// <summary>Written by <c>evaluate-pr</c>. The changelog file presence is evaluated.</summary>
 	File,
+	/// <summary>Written by <c>validate-entries</c>. The content of changelog entry files is validated.</summary>
+	Entries,
 }
 
 /// <summary>Outcome of the apply job's changelog commit step.</summary>
@@ -79,4 +92,6 @@ public enum CommitOutcome
 [JsonSerializable(typeof(CreateRules))]
 [JsonSerializable(typeof(FieldMode))]
 [JsonSerializable(typeof(MatchMode))]
+[JsonSerializable(typeof(EntryFinding))]
+[JsonSerializable(typeof(List<EntryFinding>))]
 public sealed partial class GithubDecisionMetadataJsonContext : JsonSerializerContext;

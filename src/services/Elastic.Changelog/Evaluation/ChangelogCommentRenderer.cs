@@ -205,6 +205,59 @@ internal static class ChangelogCommentRenderer
 	internal static string RenderSkipped() =>
 		string.Join("\n", Title, "", "⏭️ **Excluded from release notes** — this PR will not appear in the changelog.");
 
+	/// <summary>
+	/// Renders the Step 2 (entry gate) body: one section per file listing errors first, then
+	/// warnings, each finding as a bullet. Files link to their GitHub blob URLs.
+	/// </summary>
+	internal static string RenderEntriesInvalid(IReadOnlyList<EntryFinding> findings, string? owner, string? repo, string? defaultBranch)
+	{
+		var branch = defaultBranch ?? "main";
+		var parts = new List<string> { Title, "", "📋 **Changelog entry file validation failed** — fix the issues below and push again." };
+
+		// Group by file, errors before warnings within each group
+		var byFile = findings.GroupBy(f => f.File).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+		foreach (var group in byFile)
+		{
+			var filePath = group.Key;
+			var fileRef = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
+				? $"[{WrapInlineCode(filePath)}](https://github.com/{owner}/{repo}/blob/{branch}/{Uri.EscapeDataString(filePath)})"
+				: WrapInlineCode(filePath);
+
+			parts.Add("");
+			parts.Add($"**{fileRef}**");
+
+			foreach (var finding in group.OrderBy(f => f.Severity))
+			{
+				var icon = finding.Severity == "Error" ? "❌" : "⚠️";
+				parts.Add($"- {icon} {finding.Message}");
+			}
+		}
+
+		return Truncate(string.Join("\n", parts));
+	}
+
+	/// <summary>
+	/// Renders the Step 2 (file gate) body: informs the author that no changelog entry file
+	/// was found for their PR and suggests the expected file path.
+	/// </summary>
+	internal static string RenderMissingEntry(string? changelogDir, int prNumber)
+	{
+		var dir = changelogDir ?? "docs/changelog";
+		var expectedPath = $"{dir}/{prNumber}.yaml";
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"📋 **Changelog entry file required** — no entry file was found for PR #{prNumber}.",
+				"",
+				$"Add {WrapInlineCode(expectedPath)} to the PR branch, or disable the {WrapInlineCode("require-changelog-file")} gate in your {WrapInlineCode("release-notes.yml")} workflow."
+			)
+		);
+	}
+
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)
 	// ──────────────────────────────────────────────────────────────────────────────────────────
