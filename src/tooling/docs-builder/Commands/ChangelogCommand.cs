@@ -1850,6 +1850,68 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
+	/// <summary>
+	/// (CI and local) Validate changelog entry files that a PR added or modified.
+	/// Checks YAML validity, required fields, config-value membership, PR existence, and entry hygiene.
+	/// Exits non-zero on any error-level finding; warnings do not block.
+	/// </summary>
+	/// <param name="config">Path to the changelog configuration file (docs/changelog.yml).</param>
+	/// <param name="owner">GitHub repository owner.</param>
+	/// <param name="repo">GitHub repository name.</param>
+	/// <param name="prNumber">Pull request number.</param>
+	/// <param name="prLabels">Comma-separated list of PR labels (use <c>${{ join(github.event.pull_request.labels.*.name, ',') }}</c> in actions).</param>
+	/// <param name="files">Optional explicit file list; bypasses GitHub API discovery. Useful for local runs.</param>
+	/// <param name="headRef">PR head branch ref — written to decision metadata when on CI.</param>
+	/// <param name="headSha">PR head commit SHA — written to decision metadata when on CI.</param>
+	/// <param name="isFork">Whether the PR is from a fork.</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing.</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits.</param>
+	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
+	/// <param name="ct">Cancellation token.</param>
+	[NoOptionsInjection]
+	public async Task<int> ValidateEntries(
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		string owner,
+		string repo,
+		int prNumber,
+		string prLabels,
+		string[]? files = null,
+		string headRef = "",
+		string headSha = "",
+		bool isFork = false,
+		bool canCommit = false,
+		bool maintainerCanModify = false,
+		string? headRepo = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
+		IGitHubPrService prService = new GitHubPrService(logFactory);
+		var service = new ChangelogEntryValidationService(logFactory, configurationContext, prService, fileSystem, environmentVariables);
+
+		var args = new ValidateEntriesArguments
+		{
+			ConfigFile = config.FullName,
+			Owner = owner,
+			Repo = repo,
+			PrNumber = prNumber,
+			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+			Files = files,
+			HeadRef = headRef,
+			HeadSha = headSha,
+			IsFork = isFork,
+			CanCommit = canCommit,
+			MaintainerCanModify = maintainerCanModify,
+			HeadRepo = headRepo
+		};
+
+		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateEntries(collector, state, ctx));
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
 	/// <summary>(CI) Package changelog artifact for cross-workflow transfer.</summary>
 	/// <remarks>
 	/// Resolves final status from evaluate-pr + changelog add outcomes, copies generated YAML,

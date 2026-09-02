@@ -119,6 +119,20 @@ public class ChangelogGithubCommentService(
 			);
 		}
 
+		// Step 2 (entry gate): changelog entry file content has validation errors.
+		if (metadata.Gate == ValidationGate.Entries && metadata.EntryFindings is { Count: > 0 })
+		{
+			_logger.LogInformation("Rendering entries-invalid body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderEntriesInvalid(metadata.EntryFindings, owner, repo, metadata.DefaultBranch);
+		}
+
+		// Step 2 (file gate): changelog file missing (require-changelog-file failure).
+		if (metadata.Gate == ValidationGate.File && string.Equals(metadata.Status, "missing-entry", StringComparison.OrdinalIgnoreCase))
+		{
+			_logger.LogInformation("Rendering missing-entry body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderMissingEntry(metadata.ChangelogDir, metadata.PrNumber);
+		}
+
 		// Step 1 (label gate): labels are missing — tell the author which ones to add.
 		// Dispatches on Gate when present; falls back to status for artifacts written before Gate was added.
 		if (isNoLabel && metadata.Gate is null or ValidationGate.Labels)

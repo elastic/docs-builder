@@ -182,4 +182,111 @@ public class ChangelogCommentRendererTests
 		body.Length.Should().BeLessThanOrEqualTo(65_536);
 		body.Should().Contain("truncated");
 	}
+
+	// ──────────────────────────────────────────────────────────────────────────────────────────────
+	// RenderEntriesInvalid
+	// ──────────────────────────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public void RenderEntriesInvalid_StartsWithTitle()
+	{
+		var findings = new List<EntryFinding>
+		{
+			new() { File = "docs/changelog/42.yaml", Severity = "Error", Message = "title is required" }
+		};
+		var body = ChangelogCommentRenderer.RenderEntriesInvalid(findings, null, null, null);
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+	}
+
+	[Fact]
+	public void RenderEntriesInvalid_ContainsHeadline()
+	{
+		var findings = new List<EntryFinding>
+		{
+			new() { File = "docs/changelog/42.yaml", Severity = "Error", Message = "title is required" }
+		};
+		var body = ChangelogCommentRenderer.RenderEntriesInvalid(findings, null, null, null);
+		body.Should().Contain("validation failed");
+	}
+
+	[Fact]
+	public void RenderEntriesInvalid_ErrorFinding_ContainsRedCross()
+	{
+		var findings = new List<EntryFinding>
+		{
+			new() { File = "docs/changelog/42.yaml", Severity = "Error", Message = "title is required" }
+		};
+		var body = ChangelogCommentRenderer.RenderEntriesInvalid(findings, null, null, null);
+		body.Should().Contain("❌");
+		body.Should().Contain("title is required");
+	}
+
+	[Fact]
+	public void RenderEntriesInvalid_WarningFinding_ContainsWarningIcon()
+	{
+		var findings = new List<EntryFinding>
+		{
+			new() { File = "docs/changelog/42.yaml", Severity = "Warning", Message = "title exceeds 80 characters" }
+		};
+		var body = ChangelogCommentRenderer.RenderEntriesInvalid(findings, null, null, null);
+		body.Should().Contain("⚠️");
+		body.Should().Contain("title exceeds 80 characters");
+	}
+
+	[Fact]
+	public void RenderEntriesInvalid_WithOwnerRepo_RendersFileLink()
+	{
+		var findings = new List<EntryFinding>
+		{
+			new() { File = "docs/changelog/42.yaml", Severity = "Error", Message = "title is required" }
+		};
+		var body = ChangelogCommentRenderer.RenderEntriesInvalid(findings, "elastic", "my-repo", "main");
+		body.Should().Contain("https://github.com/elastic/my-repo/blob/main/");
+	}
+
+	[Fact]
+	public void RenderEntriesInvalid_MultipleFindingsSameFile_GroupedUnderFile()
+	{
+		var findings = new List<EntryFinding>
+		{
+			new() { File = "docs/changelog/42.yaml", Severity = "Error", Message = "title is required" },
+			new() { File = "docs/changelog/42.yaml", Severity = "Warning", Message = "description too long" }
+		};
+		var body = ChangelogCommentRenderer.RenderEntriesInvalid(findings, null, null, null);
+		// File should appear only once as a header
+		body.Split("42.yaml").Length.Should().Be(2);
+	}
+
+	// ──────────────────────────────────────────────────────────────────────────────────────────────
+	// RenderMissingEntry
+	// ──────────────────────────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public void RenderMissingEntry_StartsWithTitle()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry(null, 42);
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+	}
+
+	[Fact]
+	public void RenderMissingEntry_ContainsPrNumber()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 99);
+		body.Should().Contain("#99");
+		body.Should().Contain("99.yaml");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_DefaultDir_UsesDefaultPath()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry(null, 7);
+		body.Should().Contain("docs/changelog/7.yaml");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_CustomDir_UsesCustomPath()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("changelogs", 7);
+		body.Should().Contain("changelogs/7.yaml");
+	}
 }
