@@ -482,8 +482,10 @@ public static partial class ProfileFilterResolver
 		}
 
 		// Resolve repo and owner: profile-level overrides bundle-level defaults
+#pragma warning disable CS0618
 		var repo = profile.Repo ?? config?.Bundle?.Repo;
 		var owner = profile.Owner ?? config?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 
 		if (string.IsNullOrWhiteSpace(repo))
 		{

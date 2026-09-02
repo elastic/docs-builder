@@ -341,8 +341,11 @@ internal sealed partial class ChangelogCommands(
 			config?.FullName,
 			ctx
 		);
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 
 		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
@@ -619,8 +622,11 @@ internal sealed partial class ChangelogCommands(
 			config?.FullName,
 			ctx
 		);
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
 		var extractReleaseNotes = noExtractReleaseNotes ? false : (bool?)null;
@@ -860,8 +866,11 @@ internal sealed partial class ChangelogCommands(
 					configurationContext,
 					_fileSystem
 				).LoadChangelogConfiguration(collector, config?.FullName, ctx);
+#pragma warning disable CS0618
+				BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 				var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 				var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 
 				if (string.IsNullOrWhiteSpace(resolvedRepo))
 				{
@@ -1303,8 +1312,11 @@ internal sealed partial class ChangelogCommands(
 				configurationContext,
 				_fileSystem
 			).LoadChangelogConfiguration(collector, config?.FullName, ctx);
+#pragma warning disable CS0618
+			BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 
 			if (string.IsNullOrWhiteSpace(resolvedRepo))
 			{
@@ -1597,8 +1609,15 @@ internal sealed partial class ChangelogCommands(
 			? output
 			: (bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory);
 
+		// Validate bundle.repo if set — mismatch with running repo is a hard error.
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
+#pragma warning restore CS0618
+
 		// Repo precedence: positional arg > bundle.repo > GITHUB_REPOSITORY env var > git remote origin
+#pragma warning disable CS0618
 		var resolvedRepo = BundleOutputNaming.ResolveRepo(_fileSystem, config?.FullName, repo, bundleConfig?.Bundle?.Repo);
+#pragma warning restore CS0618
 		if (string.IsNullOrWhiteSpace(resolvedRepo))
 		{
 			collector.EmitError(
@@ -2433,9 +2452,11 @@ internal sealed partial class ChangelogCommands(
 		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
 			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
 
+#pragma warning disable CS0618
 		var explicitRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : bundleConfig?.Bundle?.Repo;
 		var resolvedRepo = explicitRepo ?? gitRepo;
 		var resolvedOwner = ChangelogRepoOwnerResolver.ResolveOwner(ownerCli ?? bundleConfig?.Bundle?.Owner, explicitRepo, gitOwner);
+#pragma warning restore CS0618
 
 		// The producer branch is the branch being published: --branch, else the current checkout's branch.
 		// bundle.branch is intentionally not consulted here — it selects which pool to read when bundling.

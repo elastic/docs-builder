@@ -244,14 +244,40 @@ public class ChangelogCreationService(
 		}
 
 		// Second, try inference from the --repo argument (or bundle.repo from config)
-		var product = repoName != null ? _productInferService.InferProductFromRepository(repoName) : null;
-		if (product == null)
+		if (repoName == null)
 		{
-			_logger.LogDebug("Could not infer product from repository");
+			_logger.LogDebug("Could not infer product: no repo name available");
 			return null;
 		}
 
-		_logger.LogInformation("Inferred product '{ProductId}' from repository", product.Id);
+		var candidates = _productInferService.InferProductsFromRepository(repoName);
+		if (candidates.Count == 0)
+		{
+			_logger.LogDebug("Could not infer product from repository '{Repo}'", repoName);
+			return null;
+		}
+
+		// When the repo maps to multiple products (e.g., elastic/cloud → cloud-hosted/cloud-serverless/cloud-enterprise),
+		// intersect with products.available to narrow to one. If still ambiguous, don't infer — ask the user.
+		if (candidates.Count > 1 && productsConfig?.Available is { Count: > 0 })
+		{
+			var available = productsConfig.Available.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			candidates = candidates.Where(p => available.Contains(p.Id)).ToList();
+		}
+
+		if (candidates.Count != 1)
+		{
+			_logger.LogDebug(
+				"Ambiguous product inference for '{Repo}': {Count} candidates ({Ids}) — specify --products explicitly",
+				repoName,
+				candidates.Count,
+				string.Join(", ", candidates.Select(p => p.Id))
+			);
+			return null;
+		}
+
+		var product = candidates[0];
+		_logger.LogInformation("Inferred product '{ProductId}' from repository '{Repo}'", product.Id, repoName);
 		return [new ProductArgument { Product = product.Id, Lifecycle = "ga" }];
 	}
 
