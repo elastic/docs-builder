@@ -22,14 +22,25 @@ public static partial class ApiMarkdown
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
 
-		var escaped = MustachePattern().Replace(markdown, match => $"`{match.Value}`");
-		var rewritten = RewriteIntraApiLinks(escaped, context.CurrentNavigation.NavigationRoot.Url);
+		var rewritten = Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url);
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
 		return new HtmlString(html);
 	}
 
-	private static string RewriteIntraApiLinks(string markdown, string apiBaseUrl)
+	/// <summary>
+	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.
+	/// </summary>
+	public static string Prepare(string? markdown, string apiBaseUrl)
+	{
+		if (string.IsNullOrEmpty(markdown))
+			return string.Empty;
+
+		var escaped = MustachePattern().Replace(markdown, match => $"`{match.Value}`");
+		return RewriteIntraApiLinks(escaped, apiBaseUrl);
+	}
+
+	internal static string RewriteIntraApiLinks(string markdown, string apiBaseUrl)
 	{
 		var baseUrl = apiBaseUrl.TrimEnd('/') + "/";
 		var rewritten = GroupLinkPattern().Replace(markdown, match => $"]({baseUrl}group/{match.Groups[1].Value})");

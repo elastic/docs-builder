@@ -133,6 +133,7 @@ public record ApiProperty
 
 	/// <summary>Markdown-rendered description; empty when the schema has none.</summary>
 	public required HtmlString DescriptionHtml { get; init; }
+	public required string? DescriptionMarkdown { get; init; }
 	public bool HasDescription => DescriptionHtml.Value is { Length: > 0 };
 
 	public required bool ShowDeprecatedBadge { get; init; }

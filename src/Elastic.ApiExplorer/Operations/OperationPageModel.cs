@@ -15,7 +15,13 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Operations;
 
 /// <summary>A request/response example with its markdown description prerendered.</summary>
-public record ExampleDisplay(string Title, HtmlString? DescriptionHtml, string? JsonValue, string? ExternalValue);
+public record ExampleDisplay(
+	string Title,
+	HtmlString? DescriptionHtml,
+	string? JsonValue,
+	string? ExternalValue,
+	string? DescriptionMarkdown
+);
 
 /// <summary>Model for the <c>_ExamplesSection</c> partial.</summary>
 public record ExamplesSection(SectionHeader Header, IReadOnlyList<ExampleDisplay> Examples);
@@ -31,6 +37,7 @@ public record ApiQueryParameter
 	public required IReadOnlyList<string> EnumValues { get; init; }
 	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
 	public required HtmlString DescriptionHtml { get; init; }
+	public required string? DescriptionMarkdown { get; init; }
 }
 
 /// <summary>A path parameter with its effective description precomputed.</summary>
@@ -38,6 +45,7 @@ public record ApiPathParameter
 {
 	public required IOpenApiParameter Parameter { get; init; }
 	public required HtmlString DescriptionHtml { get; init; }
+	public required string? DescriptionMarkdown { get; init; }
 
 	public string? Name => Parameter.Name;
 	public bool? Deprecated => Parameter.Deprecated;
@@ -148,16 +156,16 @@ public record OperationPageModel
 			Overloads = ResolveOverloads(context),
 			PathParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Path)
-				.Select(
-					p => new ApiPathParameter
+				.Select(p =>
+				{
+					var description = supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description;
+					return new ApiPathParameter
 					{
 						Parameter = p,
-						DescriptionHtml = ApiMarkdown.Render(
-							context,
-							supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description
-						)
-					}
-				)
+						DescriptionHtml = ApiMarkdown.Render(context, description),
+						DescriptionMarkdown = description
+					};
+				})
 				.ToArray(),
 			QueryParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Query)
@@ -194,7 +202,8 @@ public record OperationPageModel
 					string.IsNullOrEmpty(e.Value?.Summary) ? e.Key : e.Value.Summary,
 					string.IsNullOrEmpty(e.Value?.Description) ? null : renderMarkdown(e.Value.Description),
 					e.Value?.Value?.ToString(),
-					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue
+					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue,
+					string.IsNullOrEmpty(e.Value?.Description) ? null : e.Value.Description
 				)
 			).ToArray();
 
@@ -217,6 +226,7 @@ public record OperationPageModel
 	)
 	{
 		var schema = parameter.Schema;
+		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
 		return new ApiQueryParameter
 		{
 			Parameter = parameter,
@@ -226,10 +236,8 @@ public record OperationPageModel
 			UnionOptions = CollectUnionOptionNames(schema, analyzer)
 				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
 				.ToArray(),
-			DescriptionHtml = ApiMarkdown.Render(
-				context,
-				supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description
-			)
+			DescriptionHtml = ApiMarkdown.Render(context, description),
+			DescriptionMarkdown = description
 		};
 	}
 
