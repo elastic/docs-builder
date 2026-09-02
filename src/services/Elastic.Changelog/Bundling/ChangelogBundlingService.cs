@@ -1163,7 +1163,7 @@ public partial class ChangelogBundlingService(
 				collector,
 				_fileSystem,
 #pragma warning disable CS0618
-				new BundleOutputNameRequest(
+			new BundleOutputNameRequest(
 					primaryProduct,
 					planVersion,
 					input.Repo,
