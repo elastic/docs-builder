@@ -221,7 +221,7 @@ internal static class ChangelogCommentRenderer
 		{
 			var filePath = group.Key;
 			var fileRef = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
-				? $"[{WrapInlineCode(filePath)}](https://github.com/{owner}/{repo}/blob/{branch}/{Uri.EscapeDataString(filePath)})"
+				? $"[{WrapInlineCode(filePath)}](https://github.com/{owner}/{repo}/blob/{branch}/{string.Join("/", filePath.Split('/').Select(Uri.EscapeDataString))})"
 				: WrapInlineCode(filePath);
 
 			parts.Add("");
