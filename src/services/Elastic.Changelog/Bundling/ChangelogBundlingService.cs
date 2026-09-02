@@ -56,6 +56,12 @@ public record BundleChangelogsArguments
 	public string? Repo { get; init; }
 
 	/// <summary>
+	/// GitHub release tag from CLI <c>--release-version</c>, used only for option-mode default
+	/// file naming when product targets are not set. Filter PRs are already expanded by the CLI.
+	/// </summary>
+	public string? ReleaseVersion { get; init; }
+
+	/// <summary>
 	/// Branch whose CDN changelog pool (<c>changelog/{org}/{repo}/{branch}/…</c>) entries are sourced from.
 	/// null = use config <c>bundle.branch</c>, then the default branch (<c>main</c>).
 	/// </summary>
@@ -364,8 +370,7 @@ public partial class ChangelogBundlingService(
 			// Directory is resolved by ApplyConfigDefaults (never null at this point)
 			var directory = input.Directory!;
 
-			// Determine output path
-			var outputPath = input.Output ?? _fileSystem.Path.Join(directory, "changelog-bundle.yaml");
+			var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
 			// Build filter criteria
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
@@ -936,7 +941,7 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		var directory = input.Directory!;
-		var outputPath = input.Output ?? _fileSystem.Path.Join(directory, "changelog-bundle.yaml");
+		var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
 		var candidates = sourcing.UseCdn
 			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, ctx)
@@ -1020,10 +1025,9 @@ public partial class ChangelogBundlingService(
 		if (config?.Bundle == null)
 			return input with { Directory = directory, LinkAllowRepos = null };
 
-		// Apply output default when --output not specified: use bundle.output_directory if set
+		// File name is resolved later in ResolveResolvedOutputPath so option-mode can use the
+		// conventional {repo}-{product}-{version}.yaml name. Keep a directory --output as-is.
 		var output = input.Output;
-		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
-			output = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
 
 		// Apply repo/owner/branch: CLI takes precedence; fall back to bundle-level config defaults.
 		var repo = input.Repo ?? config.Bundle.Repo;
@@ -1124,12 +1128,11 @@ public partial class ChangelogBundlingService(
 		)
 			needsNetwork = true;
 
-		// Resolve output path — mirrors ProcessProfile + ApplyConfigDefaults: the
-		// {repo}-{product}-{version}.yaml convention when the profile's primary product and a
-		// plain version argument resolve, else changelog-bundle.yaml.
-		var outputPath = input.Output;
+		// Resolve output path — mirrors ProcessProfile (profile convention) and
+		// ResolveResolvedOutputPath (option-mode convention or changelog-bundle.yaml).
+		string? outputPath;
 		if (
-			string.IsNullOrWhiteSpace(outputPath)
+			!BundleOutputNaming.IsYamlFilePath(input.Output)
 			&& profileDef != null
 			&& !string.IsNullOrWhiteSpace(input.ProfileArgument)
 			&& PlanVersionArgumentRegex().IsMatch(input.ProfileArgument)
@@ -1152,8 +1155,8 @@ public partial class ChangelogBundlingService(
 			);
 			outputPath = JoinProfileOutputPath(config?.Bundle?.OutputDirectory, input.OutputDirectory, config?.Bundle?.Directory, fileName);
 		}
-		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
-			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
+		else
+			outputPath = ResolveResolvedOutputPath(collector, input, config);
 
 		return new BundlePlanResult
 		{
@@ -1207,6 +1210,42 @@ public partial class ChangelogBundlingService(
 		}
 
 		return null;
+	}
+
+	/// <summary>
+	/// Explicit <c>.yml</c>/<c>.yaml</c> <c>--output</c> wins. A directory <c>--output</c> (or
+	/// omitted) joins the conventional name, or <see cref="BundleOutputNaming.FallbackFileName"/>
+	/// when product/version cannot be resolved. Profile mode that already missed convention keeps
+	/// the fallback name without a second product/version warning.
+	/// </summary>
+	private string ResolveResolvedOutputPath(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		ChangelogConfiguration? config
+	)
+	{
+		if (BundleOutputNaming.IsYamlFilePath(input.Output))
+			return input.Output!.OptionalWindowsReplace();
+
+		var outputDir = !string.IsNullOrWhiteSpace(input.Output)
+			? input.Output
+			: config?.Bundle?.OutputDirectory
+				?? input.OutputDirectory
+				?? input.Directory
+				?? config?.Bundle?.Directory
+				?? _fileSystem.Directory.GetCurrentDirectory();
+
+		if (!string.IsNullOrWhiteSpace(input.Profile))
+			return _fileSystem.Path.Join(outputDir, BundleOutputNaming.FallbackFileName).OptionalWindowsReplace();
+
+		var product = ResolvePrimaryProduct(null, input) ?? "";
+		var version = BundleOutputNaming.ResolveVersion(input.OutputProducts, input.InputProducts, input.ReleaseVersion) ?? "";
+		var fileName = BundleOutputNaming.ResolveFileNameOrFallback(
+			collector,
+			_fileSystem,
+			new BundleOutputNameRequest(product, version, input.Repo, null, config?.Bundle?.Repo, input.Config)
+		);
+		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
 	}
 
 	/// <summary>
