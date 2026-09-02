@@ -212,41 +212,112 @@ public class OkfMarkdownExporter : IMarkdownExporter
 		});
 
 		var sourceFile = context.SourceFile;
-		var frontMatter = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		var frontMatter = new ConceptFrontMatter(
+			DeriveType(context.NavigationItem.Url, context.BuildContext.UrlPathPrefix),
+			sourceFile.Title,
+			sourceFile.YamlFrontMatter?.NavigationTitle,
+			GetDescription(context),
+			GetResourceUrl(context),
+			GetTags(context)
+		);
+
+		var content = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 		try
 		{
-			_ = frontMatter.AppendLine("---");
-			_ = frontMatter.AppendLine($"type: {DeriveType(context.NavigationItem.Url, context.BuildContext.UrlPathPrefix)}");
-			_ = frontMatter.AppendLine($"title: {sourceFile.Title}");
-			if (!string.IsNullOrEmpty(sourceFile.YamlFrontMatter?.NavigationTitle))
-				_ = frontMatter.AppendLine($"navigation_title: {sourceFile.YamlFrontMatter.NavigationTitle}");
-			_ = frontMatter.AppendLine($"description: {GetDescription(context)}");
-			_ = frontMatter.AppendLine($"resource: {GetResourceUrl(context)}");
-
-			var tags = GetTags(context);
-			if (tags.Count > 0)
-			{
-				_ = frontMatter.AppendLine("tags:");
-				foreach (var tag in tags)
-					_ = frontMatter.AppendLine($"  - {tag}");
-			}
-			_ = frontMatter.AppendLine("---");
-			_ = frontMatter.AppendLine();
-			_ = frontMatter.AppendLine($"# {sourceFile.Title}");
-			_ = frontMatter.Append(body);
+			_ = content.Append(RenderFrontMatter(frontMatter));
+			_ = content.AppendLine();
+			_ = content.AppendLine($"# {sourceFile.Title}");
+			_ = content.Append(body);
 			// AppendLine uses Environment.NewLine — normalize so bundle content is identical regardless of the OS the build runs on.
-			return frontMatter.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
+			return content.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
 		}
 		finally
 		{
-			DocumentationObjectPoolProvider.StringBuilderPool.Return(frontMatter);
+			DocumentationObjectPoolProvider.StringBuilderPool.Return(content);
+		}
+	}
+
+	internal static string RenderFrontMatter(ConceptFrontMatter frontMatter)
+	{
+		var sb = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		try
+		{
+			_ = sb.AppendLine("---");
+			_ = sb.AppendLine($"type: {YamlScalar(frontMatter.Type)}");
+			_ = sb.AppendLine($"title: {YamlScalar(frontMatter.Title)}");
+			if (!string.IsNullOrEmpty(frontMatter.NavigationTitle))
+				_ = sb.AppendLine($"navigation_title: {YamlScalar(frontMatter.NavigationTitle)}");
+			_ = sb.AppendLine($"description: {YamlScalar(frontMatter.Description)}");
+			_ = sb.AppendLine($"resource: {YamlScalar(frontMatter.Resource)}");
+
+			if (frontMatter.Tags.Count > 0)
+			{
+				_ = sb.AppendLine("tags:");
+				foreach (var tag in frontMatter.Tags)
+					_ = sb.AppendLine($"  - {YamlScalar(tag)}");
+			}
+			_ = sb.AppendLine("---");
+			// AppendLine uses Environment.NewLine — normalize so bundle content is identical regardless of the OS the build runs on.
+			return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
+		}
+		finally
+		{
+			DocumentationObjectPoolProvider.StringBuilderPool.Return(sb);
+		}
+	}
+
+	/// <summary>
+	/// Renders a value as a double-quoted YAML scalar. Every value in this frontmatter derives from page prose, so a
+	/// plain scalar is never safe: a description containing <c>": "</c> makes the concept file unparseable, while a tag
+	/// like <c>Elastic Stack: Available</c> parses — as a mapping rather than a string. Quoting also keeps values that
+	/// YAML would otherwise retype (<c>true</c>, <c>1.2</c>) or reject for a leading indicator character.
+	/// </summary>
+	internal static string YamlScalar(string? value)
+	{
+		if (string.IsNullOrEmpty(value))
+			return "\"\"";
+
+		var sb = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		try
+		{
+			_ = sb.Append('"');
+			foreach (var c in value)
+			{
+				_ = c switch
+				{
+					'\\' => sb.Append("\\\\"),
+					'"' => sb.Append("\\\""),
+					'\n' => sb.Append("\\n"),
+					'\r' => sb.Append("\\r"),
+					'\t' => sb.Append("\\t"),
+					// char.IsControl covers only U+0000-U+001F and U+007F-U+009F, all representable as \xNN.
+					_ when char.IsControl(c) => sb.Append("\\x").Append(((int)c).ToString("x2")),
+					_ => sb.Append(c)
+				};
+			}
+			_ = sb.Append('"');
+			return sb.ToString();
+		}
+		finally
+		{
+			DocumentationObjectPoolProvider.StringBuilderPool.Return(sb);
 		}
 	}
 
 	private static string GetDescription(MarkdownExportFileContext context) =>
-		!string.IsNullOrEmpty(context.SourceFile.YamlFrontMatter?.Description)
-			? context.SourceFile.YamlFrontMatter.Description
-			: new DescriptionGenerator().GenerateDescription(context.Document);
+		NormalizeDescription(
+			!string.IsNullOrEmpty(context.SourceFile.YamlFrontMatter?.Description)
+				? context.SourceFile.YamlFrontMatter.Description
+				: new DescriptionGenerator().GenerateDescription(context.Document)
+		);
+
+	/// <summary>
+	/// Collapses a description to a single line: an authored <c>description: |</c> block keeps its newlines, and a
+	/// blank line among them terminates the markdown lists <see cref="RenderIndexContent"/> renders. Also drops the
+	/// trailing space <see cref="DescriptionGenerator"/> pads each block with, which a quoted scalar would preserve.
+	/// </summary>
+	internal static string NormalizeDescription(string description) =>
+		string.Join(' ', description.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
 	private static string GetResourceUrl(MarkdownExportFileContext context) =>
 		context.BuildContext.CanonicalBaseUrl is { } baseUrl
@@ -397,4 +468,13 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	}
 
 	internal sealed record ConceptEntry(string BundlePath, string Title, string Description);
+
+	internal sealed record ConceptFrontMatter(
+		string Type,
+		string Title,
+		string? NavigationTitle,
+		string Description,
+		string Resource,
+		IReadOnlyCollection<string> Tags
+	);
 }
