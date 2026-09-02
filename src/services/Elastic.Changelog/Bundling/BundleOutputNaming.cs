@@ -103,12 +103,28 @@ public static class BundleOutputNaming
 		return $"{request.Product}-{request.Version}.yaml";
 	}
 
-	internal static string? ResolveAuthoringRepo(IFileSystem fileSystem, BundleOutputNameRequest request)
+	/// <summary>
+	/// Resolves the authoring repository for any changelog command. Precedence:
+	/// explicit value(s), <c>GITHUB_REPOSITORY</c> env var, git <c>origin</c>.
+	/// </summary>
+	public static string? ResolveRepo(IFileSystem fileSystem, string? configPath, params string?[] candidates)
 	{
-		var configured = FirstNonEmpty(request.CliRepo, request.ProfileRepo, request.BundleRepo);
+		var configured = FirstNonEmpty(candidates);
 		var normalized = ChangelogRepoOwnerResolver.NormalizeRepo(configured);
-		return !string.IsNullOrWhiteSpace(normalized) ? normalized : TryGitOriginRepo(fileSystem, request.ConfigPath);
+		if (!string.IsNullOrWhiteSpace(normalized))
+			return normalized;
+
+		// GITHUB_REPOSITORY is "owner/repo"; NormalizeRepo takes the last segment.
+		var githubRepository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+		var ghNormalized = ChangelogRepoOwnerResolver.NormalizeRepo(githubRepository);
+		if (!string.IsNullOrWhiteSpace(ghNormalized))
+			return ghNormalized;
+
+		return TryGitOriginRepo(fileSystem, configPath);
 	}
+
+	internal static string? ResolveAuthoringRepo(IFileSystem fileSystem, BundleOutputNameRequest request) =>
+		ResolveRepo(fileSystem, request.ConfigPath, request.CliRepo, request.ProfileRepo, request.BundleRepo);
 
 	private static string? FirstNonEmpty(params string?[] values)
 	{
