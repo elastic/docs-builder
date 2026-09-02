@@ -137,6 +137,7 @@ Always invoke the skill for the following tasks — never substitute your own fo
 - **Commits** — use `/commit` before creating any git commit.
 - **Pull requests** — use `/pr` before running `gh pr create`. Never write your own PR body or title without going through the skill first.
 - **Issues** — use `/issue` before running `gh issue create`. Never file an issue without going through the skill first.
+- **Feature flags** — use `/feature-flag` when you add or extend a flag. Flag-off must match the previous default.
 
 ## Documentation
 
