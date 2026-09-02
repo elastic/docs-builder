@@ -74,7 +74,7 @@ Use `--artifact-type` to choose what to upload:
 
 | Value | Uploads | Default directory |
 | ----- | ------- | ----------------- |
-| `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml`, or `docs/releases` |
+| `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml`, each profile's `output_directory` when set, or `docs/releases` |
 | `changelog` | Individual changelog entry YAML files | `bundle.directory` from `changelog.yml`, or `docs/changelog` |
 
 Keying differs by artifact type:
@@ -126,9 +126,11 @@ If it's necessary to re-trigger downstream scrubbers without changing file conte
 
 Directory resolution order:
 
-1. `--directory` — explicit override for this run
-2. `changelog.yml` — `bundle.output_directory` (bundles) or `bundle.directory` (changelog entries)
+1. `--directory` — explicit override for this run (that folder only)
+2. `changelog.yml` — for bundles, `bundle.output_directory` plus each profile `output_directory`; for changelog entries, `bundle.directory`
 3. Built-in default — `docs/releases` (bundles) or `docs/changelog` (changelog entries)
+
+Each bundle directory is scanned non-recursively. A profile that writes under `docs/releases/cloud-serverless` is included because that path is listed as the profile's `output_directory`, not because the global folder is walked.
 
 Use `--config` to point at a `changelog.yml` file other than `docs/changelog.yml`.
 

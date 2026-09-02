@@ -96,6 +96,15 @@ public record BundleProfile
 	public string? Output { get; init; }
 
 	/// <summary>
+	/// Profile-specific output directory. Replaces <see cref="BundleConfiguration.OutputDirectory"/>
+	/// for this profile the same way option-mode <c>--output</c> as a directory replaces it. The
+	/// conventional <c>{repo}-{product}-{version}.yaml</c> name is joined onto this path. A
+	/// <c>.yml</c>/<c>.yaml</c> value is a hard error (use of free-form filenames is what
+	/// <see cref="Output"/> used to allow).
+	/// </summary>
+	public string? OutputDirectory { get; init; }
+
+	/// <summary>
 	/// Output products pattern. When set, overrides the products array derived from matched changelogs.
 	/// Supports {version} and {lifecycle} placeholders.
 	/// </summary>
