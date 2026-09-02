@@ -88,7 +88,7 @@ groups:
 
 The keys are the same as [Applies to](applies.md). The authoring contract is different, because each setting renders a **Supported on** line.
 
-In body Markdown, name only the keys that apply to the content. In settings YAML, list every deployment key so that line is complete and the `:deployment:` filter is explicit.
+In settings YAML, list every deployment key so that line is complete and the `:deployment:` filter is explicit.
 
 | Key | What it means here | Write |
 |---|---|---|
