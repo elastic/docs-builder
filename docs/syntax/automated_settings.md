@@ -94,13 +94,13 @@ In settings YAML, list every deployment key so that line is complete and the `:d
 |---|---|---|
 | `stack` | The setting's lifecycle and versions it's available in | `ga`, `preview 9.2`, or a history such as `preview 9.0-9.2, ga 9.3+`. Omit the version if the setting was added before 9.0. |
 | `ech`, `ece`, `eck`, `self` | Supported on that deployment, or not | Always list all four. `ga` if supported. `unavailable` if not. Never a version. Never `preview`, `experimental`, `deprecated`, or `removed`. |
-| `serverless` | Supported on serverless, or not | Always list it. `ga` if every serverless project supports it. `unavailable` if none do. Never a version. Never `preview`, `experimental`, `deprecated`, or `removed`. |
+| `serverless` | Supported on serverless, or not | Always list it. `ga` if every serverless project supports it. `unavailable` if none do. Never a version. Never `preview`, `experimental`, `deprecated`, or `removed`. If only some projects support it, nest those project keys. |
 
 `ga` on a deployment key is a support flag. It does not mean the setting is generally available. If `stack` is `preview` and the setting exists on Elastic Cloud Hosted, write `ech: ga`.
 
-If availability differs by serverless project, nest `elasticsearch`, `observability`, and `security` under `serverless`. Those keys are support flags too. Write `ga` or `unavailable`. Never write a version. Never write `preview`, `experimental`, `deprecated`, or `removed`.
+Some settings exist on only some serverless projects. This is common for Advanced Settings. When that is the case, nest those project keys under `serverless`. The keys are `elasticsearch`, `observability`, and `security`. Write `ga` on the projects that include the setting. Those keys are support flags. Never write a version. Never write `preview`, `experimental`, `deprecated`, or `removed`.
 
-List all three project keys. Do not mix a scalar `serverless:` with project keys.
+Do not mix a scalar `serverless:` with project keys.
 
 Existing settings YAML sometimes lists those project keys as siblings of `stack`. That form still parses. Prefer the nested `serverless:` map for new entries.
 
@@ -157,8 +157,6 @@ applies_to:
   self: ga
   serverless:
     observability: ga
-    elasticsearch: unavailable
-    security: unavailable
 ```
 
 ### Example
