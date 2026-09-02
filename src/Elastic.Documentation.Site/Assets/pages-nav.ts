@@ -131,6 +131,7 @@ function insertFolderPanel(folder: Element, panel: HTMLElement) {
 const FOLDER_ANIM_MS = 320
 const FOLDER_ANIM_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
 const animatingPanels = new WeakSet<HTMLElement>()
+const pendingPlayOpen = new Set<string>()
 let userFolderGesture = false
 let suppressFolderSnapUntil = 0
 
@@ -142,6 +143,38 @@ function beginUserFolderGesture(nav: HTMLElement) {
     userFolderGesture = true
     suppressFolderSnapUntil = Date.now() + FOLDER_ANIM_MS + 80
     ensureSubtreeClips(nav)
+}
+
+function queueFolderOpenAfterSwap(input: HTMLInputElement) {
+    if (input.id) {
+        pendingPlayOpen.add(input.id)
+    }
+}
+
+function flushPendingFolderOpens(nav: HTMLElement) {
+    const ids = [...pendingPlayOpen]
+    pendingPlayOpen.clear()
+    for (const id of ids) {
+        const input = findFolderInput(nav, id)
+        if (!(input instanceof HTMLInputElement)) {
+            continue
+        }
+        input.checked = true
+        const panel = attachFolderPanel(input)
+        if (!panel || animatingPanels.has(panel)) {
+            continue
+        }
+        if (
+            panel.classList.contains('nav-subtree-clip--open') &&
+            !panel.style.height
+        ) {
+            continue
+        }
+        playFolderOpen(panel)
+    }
+    if (ids.length > 0) {
+        saveNavState(nav)
+    }
 }
 
 function prefersReducedMotion() {
@@ -760,6 +793,7 @@ export function syncPagesNavFromResponse(
     canRecenterNav = true
     pinnedNavScrollTop = null
     pendingFolderReset = true
+    pendingPlayOpen.clear()
     if (current instanceof HTMLElement) {
         clearNavState(current)
     }
@@ -887,8 +921,9 @@ function ensureFolderRowClick() {
                 if (nav) {
                     beginUserFolderGesture(nav)
                 }
-                cb.checked = true
-                cb.dispatchEvent(new Event('change', { bubbles: true }))
+                // hx-preserve moves #pages-nav on swap and cancels an in-flight
+                // height transition. Open after initNav so the first expand plays.
+                queueFolderOpenAfterSwap(cb)
             }
         },
         true
@@ -1039,6 +1074,7 @@ export function initNav() {
     } else {
         settleCurrentPage(pagesNav)
     }
+    flushPendingFolderOpens(pagesNav)
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             pagesNav.classList.remove('nav-no-folder-anim')
