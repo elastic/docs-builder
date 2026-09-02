@@ -533,7 +533,8 @@ public partial class ChangelogBundlingService(
 			input.OutputProducts,
 			input.Repo,
 			input.Owner,
-			featureHidingResult.FeatureIdsToHide
+			featureHidingResult.FeatureIdsToHide,
+			configurationContext?.ProductsConfiguration
 		);
 
 		if (!buildResult.IsValid || buildResult.Data == null)
