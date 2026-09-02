@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Globalization;
+using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
@@ -135,6 +136,7 @@ public record FileRef(
 	public string? Source { get; init; }
 
 	/// <summary>Absolute, normalized <see cref="Source"/>. Set during <c>LoadAndResolve</c>; never touches the filesystem.</summary>
+	[YamlIgnore]
 	public string? SourceFullPath { get; init; }
 }
 

@@ -74,6 +74,8 @@ Constraints:
 - The source must stay inside the repository checkout.
 - The `file:` position must be free — no file of that name on disk, and no other entry sourcing it.
 
+On the assembled documentation site, repositories are cloned with a partial checkout of `docs` only. A source outside that path needs the repository's `sparse_paths` or `checkout_strategy` widened in [`config/assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml).
+
 ### `folder:`
 
 Groups pages under a directory. Without `children`, all markdown files in the folder are included automatically:
