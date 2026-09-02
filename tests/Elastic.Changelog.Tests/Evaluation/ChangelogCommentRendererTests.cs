@@ -96,7 +96,7 @@ public class ChangelogCommentRendererTests
 			defaultBranch: "main"
 		);
 
-		body.Should().Contain("[docs/changelog.yml](https://github.com/elastic/docs/blob/main/docs/changelog.yml)");
+		body.Should().Contain("[current changelog configuration](https://github.com/elastic/docs/blob/main/docs/changelog.yml)");
 	}
 
 	[Fact]

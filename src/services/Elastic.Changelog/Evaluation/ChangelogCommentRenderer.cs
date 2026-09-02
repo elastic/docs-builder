@@ -126,9 +126,10 @@ internal static class ChangelogCommentRenderer
 	)
 	{
 		var configFileName = string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile;
-		var configRef = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
-			? $"[{configFileName}](https://github.com/{owner}/{repo}/blob/{defaultBranch ?? "main"}/{configFileName})"
-			: WrapInlineCode(configFileName);
+		var configUrl = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
+			? $"https://github.com/{owner}/{repo}/blob/{defaultBranch ?? "main"}/{configFileName}"
+			: null;
+		var configRef = configUrl != null ? $"[{configFileName}]({configUrl})" : WrapInlineCode(configFileName);
 
 		var hasAmbiguousType = !string.IsNullOrWhiteSpace(ambiguousTypeLabels);
 		var hasTypeIssue = !string.IsNullOrWhiteSpace(labelTable);
@@ -183,7 +184,10 @@ internal static class ChangelogCommentRenderer
 		allParts.AddRange(sections);
 		allParts.Add(skipSection);
 		allParts.Add("");
-		allParts.Add($"📄 See {configRef} for the full changelog configuration.");
+		var configFooter = configUrl != null
+			? $"📄 Inspect the [current changelog configuration]({configUrl})."
+			: $"📄 Inspect the current changelog configuration: {configRef}.";
+		allParts.Add(configFooter);
 
 		return Truncate(string.Join("\n", allParts));
 	}
