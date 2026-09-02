@@ -13,8 +13,7 @@ namespace Elastic.Changelog.Tests.Creation;
 
 public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
-	private static CreateChangelogArguments DefaultInput() =>
-		new() { Products = [] };
+	private static CreateChangelogArguments DefaultInput() => new() { Products = [] };
 
 	private static IEnvironmentVariables FakeCIEnv(
 		string? prNumber = null,
@@ -23,7 +22,8 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		string? type = null,
 		string? owner = null,
 		string? repo = null,
-		string? products = null)
+		string? products = null
+	)
 	{
 		var env = A.Fake<IEnvironmentVariables>();
 		A.CallTo(() => env.IsRunningOnCI).Returns(true);
@@ -45,7 +45,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 	}
 
 	private ChangelogCreationService CreateServiceWithEnv(IEnvironmentVariables env) =>
-		new(LoggerFactory, ConfigurationContext, env: env);
+		new(LoggerFactory, ConfigurationContext, FileSystem, env: env);
 
 	[Fact]
 	public void EnrichFromCI_NotInCI_ReturnsUnchanged()
@@ -167,7 +167,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 	[Fact]
 	public void EnrichFromCI_NullEnv_ReturnsUnchanged()
 	{
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem);
 		var input = DefaultInput() with { Title = "original" };
 
 		var result = service.EnrichFromCI(input);
@@ -212,10 +212,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix", products: "cloud-hosted, cloud-serverless");
 		var service = CreateServiceWithEnv(env);
-		var input = DefaultInput() with
-		{
-			Products = [new ProductArgument { Product = "elasticsearch" }]
-		};
+		var input = DefaultInput() with { Products = [new ProductArgument { Product = "elasticsearch" }] };
 
 		var result = service.EnrichFromCI(input);
 

@@ -6,12 +6,14 @@ using System.Diagnostics;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.Aws;
 using Elastic.Documentation.Api.OpenTelemetry;
+using Elastic.Documentation.ServiceDefaults;
 using FakeItEasy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
@@ -38,9 +40,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 
 	private readonly string? _otlpEndpoint;
 
-	public ApiWebApplicationFactory() : this(null, null)
-	{
-	}
+	public ApiWebApplicationFactory() : this(null, null) { }
 
 	internal ApiWebApplicationFactory(Action<IServiceCollection>? configureServices, string? otlpEndpoint = null)
 	{
@@ -55,7 +55,10 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 	/// <param name="serviceReplacements">Action to configure service replacements</param>
 	/// <param name="otlpEndpoint">Optional OTLP endpoint to enable the OTLP proxy routes</param>
 	/// <returns>New factory instance with replaced services</returns>
-	public static ApiWebApplicationFactory WithMockedServices(Action<ServiceReplacementBuilder> serviceReplacements, string? otlpEndpoint = null)
+	public static ApiWebApplicationFactory WithMockedServices(
+		Action<ServiceReplacementBuilder> serviceReplacements,
+		string? otlpEndpoint = null
+	)
 	{
 		var builder = new ServiceReplacementBuilder();
 		serviceReplacements(builder);
@@ -68,8 +71,8 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 	/// <param name="configureServices">Action to configure services directly</param>
 	/// <param name="otlpEndpoint">Optional OTLP endpoint to enable the OTLP proxy routes</param>
 	/// <returns>New factory instance with custom service configuration</returns>
-	public static ApiWebApplicationFactory WithMockedServices(Action<IServiceCollection> configureServices, string? otlpEndpoint = null)
-		=> new(configureServices, otlpEndpoint);
+	public static ApiWebApplicationFactory WithMockedServices(Action<IServiceCollection> configureServices, string? otlpEndpoint = null) =>
+		new(configureServices, otlpEndpoint);
 
 	protected override void ConfigureWebHost(IWebHostBuilder builder)
 	{
@@ -88,21 +91,18 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 			var otelBuilder = services.AddOpenTelemetry();
 			_ = otelBuilder.WithTracing(tracing =>
 			{
-				_ = tracing
-					.AddDocsApiTracing() // Reuses production configuration
-					.AddInMemoryExporter(ExportedActivities);
+				_ = tracing.AddDocsApiTracing() // Reuses production configuration
+				.AddInMemoryExporter(ExportedActivities);
 			});
+			services.AddElasticDocumentationLogging(LogLevel.Information);
 			_ = otelBuilder.WithLogging(logging =>
 			{
-				_ = logging
-					.AddDocsApiLogging() // Reuses production configuration
-					.AddInMemoryExporter(ExportedLogRecords);
+				_ = logging.AddInMemoryExporter(ExportedLogRecords);
 			});
 
 			// Mock IParameterProvider to avoid AWS dependencies in all tests
 			var mockParameterProvider = A.Fake<IParameterProvider>();
-			A.CallTo(() => mockParameterProvider.GetParam(A<string>._, A<bool>._, A<Cancel>._))
-				.Returns(Task.FromResult("mock-value"));
+			A.CallTo(() => mockParameterProvider.GetParam(A<string>._, A<bool>._, A<Cancel>._)).Returns(Task.FromResult("mock-value"));
 			_ = services.AddSingleton(mockParameterProvider);
 
 			// Apply test-specific service replacements (if any)
@@ -170,11 +170,12 @@ public class ServiceReplacementBuilder
 	/// <summary>
 	/// Builds the final service configuration action.
 	/// </summary>
-	internal Action<IServiceCollection> Build() => services =>
-	{
-		foreach (var replacement in _replacements)
+	internal Action<IServiceCollection> Build() =>
+		services =>
 		{
-			replacement(services);
-		}
-	};
+			foreach (var replacement in _replacements)
+			{
+				replacement(services);
+			}
+		};
 }

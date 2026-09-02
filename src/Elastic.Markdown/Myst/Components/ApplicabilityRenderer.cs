@@ -45,7 +45,8 @@ public static class ApplicabilityRenderer
 	public static ApplicabilityRenderData RenderApplicability(
 		IReadOnlyCollection<Applicability> applicabilities,
 		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
-		VersioningSystem versioningSystem)
+		VersioningSystem versioningSystem
+	)
 	{
 		var allApplications = new AppliesCollection([.. applicabilities]);
 
@@ -70,22 +71,45 @@ public static class ApplicabilityRenderer
 			firstApplicability ??= applicability;
 
 			// If this candidate has displayable data, use it
-			if (!string.IsNullOrEmpty(candidateBadgeData.BadgeLifecycleText) ||
-				!string.IsNullOrEmpty(candidateBadgeData.Version))
+			if (!string.IsNullOrEmpty(candidateBadgeData.BadgeLifecycleText) || !string.IsNullOrEmpty(candidateBadgeData.Version))
 			{
 				badgeData = candidateBadgeData;
 				break;
 			}
 		}
 
-		// If we've exhausted all options (none had displayable data), use the first one.
-		// Only show "Planned" when the first applicability is actually future/unreleased (has a version spec that is not yet released).
-		// When the first applicability has no version (null/AllVersionsSpec), it means GA for all versions - keep badge text empty.
+		// If we've exhausted all options (none had displayable data), pick a fallback.
+		// When the highest-version applicability is future/unreleased, prefer the "previous lifecycle"
+		// (a lower-version applicability that is current or has no version) over a synthesized "Planned" badge.
 		if (badgeData is null && firstBadgeData is not null && firstApplicability is not null && versioningSystem.IsVersioned())
 		{
 			var versionSpec = firstApplicability.Version;
-			var isFutureVersion = versionSpec is not null && versionSpec != AllVersionsSpec.Instance && versionSpec.Min > versioningSystem.Current;
-			badgeData = isFutureVersion ? firstBadgeData with { BadgeLifecycleText = "Planned" } : firstBadgeData;
+			var isFutureVersion = versionSpec is not null
+				&& versionSpec != AllVersionsSpec.Instance
+				&& versionSpec.Min > versioningSystem.Current;
+
+			if (isFutureVersion)
+			{
+				var previousLifecycle = sortedApplicabilities.FirstOrDefault(
+					a => a != firstApplicability &&
+						(a.Version is null || a.Version == AllVersionsSpec.Instance || a.Version.Min <= versioningSystem.Current)
+				);
+
+				if (previousLifecycle is not null)
+					badgeData = GetBadgeData(previousLifecycle, versioningSystem, allApplications);
+				else
+				{
+					var fallbackText = firstApplicability.Lifecycle switch
+					{
+						ProductLifecycle.Deprecated => "Deprecation planned",
+						ProductLifecycle.Removed => "Removal planned",
+						_ => "Planned"
+					};
+					badgeData = firstBadgeData with { BadgeLifecycleText = fallbackText, ShowLifecycleName = false };
+				}
+			}
+			else
+				badgeData = firstBadgeData;
 		}
 
 		badgeData ??= GetBadgeData(sortedApplicabilities.First(), versioningSystem, allApplications);
@@ -110,10 +134,7 @@ public static class ApplicabilityRenderer
 	/// <summary>
 	/// Gets the badge display data for a single applicability (used internally for badge rendering decisions).
 	/// </summary>
-	private static BadgeData GetBadgeData(
-		Applicability applicability,
-		VersioningSystem versioningSystem,
-		AppliesCollection allApplications)
+	private static BadgeData GetBadgeData(Applicability applicability, VersioningSystem versioningSystem, AppliesCollection allApplications)
 	{
 		var lifecycleClass = applicability.GetLifeCycleName().ToLowerInvariant().Replace(" ", "-");
 		var badgeLifecycleText = BuildBadgeLifecycleText(applicability, versioningSystem, allApplications);
@@ -125,8 +146,10 @@ public static class ApplicabilityRenderer
 		var showVersion = !string.IsNullOrEmpty(versionDisplay);
 
 		// Special handling for Removed lifecycle - don't show + suffix
-		if (applicability is { Lifecycle: ProductLifecycle.Removed, Version.Kind: VersionSpecKind.GreaterThanOrEqual } &&
-			!string.IsNullOrEmpty(versionDisplay))
+		if (
+			applicability is { Lifecycle: ProductLifecycle.Removed, Version.Kind: VersionSpecKind.GreaterThanOrEqual }
+			&& !string.IsNullOrEmpty(versionDisplay)
+		)
 		{
 			versionDisplay = versionDisplay.TrimEnd('+');
 		}
@@ -153,21 +176,24 @@ public static class ApplicabilityRenderer
 	private static PopoverData BuildPopoverData(
 		IReadOnlyCollection<Applicability> applicabilities,
 		ApplicabilityMappings.ApplicabilityDefinition applicabilityDefinition,
-		VersioningSystem versioningSystem)
+		VersioningSystem versioningSystem
+	)
 	{
 		var productInfo = ProductDescriptions.GetProductInfo(versioningSystem.Id);
 		var productName = GetPlainProductName(applicabilityDefinition.DisplayName);
 
 		// Availability section - collect items from all applicabilities
 		// Order by version descending (most recent/future first, then going backwards)
-		var orderedApplicabilities = applicabilities
-			.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance);
+		var orderedApplicabilities = applicabilities.OrderByDescending(a => a.Version?.Min ?? ZeroVersion.Instance);
 
 		var showVersionNote = productInfo is { IncludeVersionNote: true } && versioningSystem.IsVersioned();
 
 		return new PopoverData(
 			ProductDescription: productInfo?.Description,
-			AvailabilityItems: orderedApplicabilities.Select(applicability => BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count)).OfType<PopoverAvailabilityItem>().ToArray(),
+			AvailabilityItems: orderedApplicabilities
+				.Select(applicability => BuildAvailabilityItem(applicability, versioningSystem, productName, applicabilities.Count))
+				.OfType<PopoverAvailabilityItem>()
+				.ToArray(),
 			AdditionalInfo: productInfo?.AdditionalAvailabilityInfo,
 			ShowVersionNote: showVersionNote,
 			VersionNote: showVersionNote ? ProductDescriptions.VersionNote : null
@@ -182,7 +208,8 @@ public static class ApplicabilityRenderer
 		Applicability applicability,
 		VersioningSystem versioningSystem,
 		string productName,
-		int lifecycleCount)
+		int lifecycleCount
+	)
 	{
 		var availabilityText = GenerateAvailabilityText(applicability, versioningSystem, lifecycleCount);
 
@@ -190,26 +217,16 @@ public static class ApplicabilityRenderer
 			return null;
 
 		var isReleased = IsVersionReleased(applicability, versioningSystem);
-		var lifecycleDescription = LifecycleDescriptions.GetDescriptionWithProduct(
-			applicability.Lifecycle,
-			isReleased,
-			productName
-		);
+		var lifecycleDescription = LifecycleDescriptions.GetDescriptionWithProduct(applicability.Lifecycle, isReleased, productName);
 
-		return new PopoverAvailabilityItem(
-			Text: availabilityText,
-			LifecycleDescription: lifecycleDescription
-		);
+		return new PopoverAvailabilityItem(Text: availabilityText, LifecycleDescription: lifecycleDescription);
 	}
 
 	/// <summary>
 	/// Generates the dynamic availability text based on version type, lifecycle, release status, and lifecycle count.
 	/// Returns null if the item should not be added to the availability list.
 	/// </summary>
-	private static string? GenerateAvailabilityText(
-		Applicability applicability,
-		VersioningSystem versioningSystem,
-		int lifecycleCount)
+	private static string? GenerateAvailabilityText(Applicability applicability, VersioningSystem versioningSystem, int lifecycleCount)
 	{
 		var lifecycle = applicability.Lifecycle;
 		var versionSpec = applicability.Version;
@@ -234,9 +251,7 @@ public static class ApplicabilityRenderer
 		var showMinPatch = versionSpec.ShowMinPatch;
 		var showMaxPatch = versionSpec.ShowMaxPatch;
 		var minVersion = showMinPatch ? $"{min.Major}.{min.Minor}.{min.Patch}" : $"{min.Major}.{min.Minor}";
-		var maxVersion = max is not null
-			? (showMaxPatch ? $"{max.Major}.{max.Minor}.{max.Patch}" : $"{max.Major}.{max.Minor}")
-			: null;
+		var maxVersion = max is not null ? (showMaxPatch ? $"{max.Major}.{max.Minor}.{max.Patch}" : $"{max.Major}.{max.Minor}") : null;
 		var isMinReleased = min <= versioningSystem.Current;
 		var isMaxReleased = max is not null && max <= versioningSystem.Current;
 
@@ -244,13 +259,11 @@ public static class ApplicabilityRenderer
 		{
 			// Greater than or equal (x.x+, x.x, x.x.x+, x.x.x)
 			VersionSpecKind.GreaterThanOrEqual => GenerateGteAvailabilityText(lifecycle, minVersion, isMinReleased, lifecycleCount),
-
 			// Range (x.x-y.y, x.x.x-y.y.y)
-			VersionSpecKind.Range => GenerateRangeAvailabilityText(lifecycle, minVersion, maxVersion!, isMinReleased, isMaxReleased, lifecycleCount),
-
+			VersionSpecKind.Range =>
+				GenerateRangeAvailabilityText(lifecycle, minVersion, maxVersion!, isMinReleased, isMaxReleased, lifecycleCount),
 			// Exact (=x.x, =x.x.x)
 			VersionSpecKind.Exact => GenerateExactAvailabilityText(lifecycle, minVersion, isMinReleased, lifecycleCount),
-
 			_ => null
 		};
 	}
@@ -275,6 +288,7 @@ public static class ApplicabilityRenderer
 			ProductLifecycle.Removed => "Planned for removal",
 			ProductLifecycle.Unavailable when lifecycleCount == 1 => "Unavailable",
 			_ when lifecycleCount >= 2 => null, // Do not add to availability list
+
 			_ => "Planned"
 		};
 	}
@@ -283,7 +297,13 @@ public static class ApplicabilityRenderer
 	/// Generates availability text for range version type.
 	/// </summary>
 	private static string? GenerateRangeAvailabilityText(
-		ProductLifecycle lifecycle, string minVersion, string maxVersion, bool isMinReleased, bool isMaxReleased, int lifecycleCount)
+		ProductLifecycle lifecycle,
+		string minVersion,
+		string maxVersion,
+		bool isMinReleased,
+		bool isMaxReleased,
+		int lifecycleCount
+	)
 	{
 		if (isMaxReleased)
 		{
@@ -313,6 +333,7 @@ public static class ApplicabilityRenderer
 			ProductLifecycle.Removed => "Planned for removal",
 			ProductLifecycle.Unavailable => null,
 			_ when lifecycleCount >= 2 => null, // Do not add to availability list
+
 			_ => "Planned"
 		};
 	}
@@ -339,6 +360,7 @@ public static class ApplicabilityRenderer
 			ProductLifecycle.Removed => "Planned for removal",
 			ProductLifecycle.Unavailable => null,
 			_ when lifecycleCount >= 2 => null, // Do not add to availability list
+
 			_ => "Planned"
 		};
 	}
@@ -346,8 +368,7 @@ public static class ApplicabilityRenderer
 	/// <summary>
 	/// Gets the plain product name without HTML entities for use in text substitution.
 	/// </summary>
-	private static string GetPlainProductName(string displayName) =>
-		displayName.Replace("&nbsp;", " ");
+	private static string GetPlainProductName(string displayName) => displayName.Replace("&nbsp;", " ");
 
 	/// <summary>
 	/// Determines if a version should be considered released for lifecycle description purposes
@@ -369,7 +390,8 @@ public static class ApplicabilityRenderer
 	private static string BuildBadgeLifecycleText(
 		Applicability applicability,
 		VersioningSystem versioningSystem,
-		AppliesCollection allApplications)
+		AppliesCollection allApplications
+	)
 	{
 		var badgeText = "";
 		var versionSpec = applicability.Version;
@@ -381,8 +403,8 @@ public static class ApplicabilityRenderer
 
 			// Determine if we should show "Planned" badge
 			var shouldShowPlanned = (versionSpec.Kind == VersionSpecKind.GreaterThanOrEqual && !isMinReleased)
-									|| (versionSpec.Kind == VersionSpecKind.Range && !isMaxReleased && !isMinReleased)
-									|| (versionSpec.Kind == VersionSpecKind.Exact && !isMinReleased);
+				|| (versionSpec.Kind == VersionSpecKind.Range && !isMaxReleased && !isMinReleased)
+				|| (versionSpec.Kind == VersionSpecKind.Exact && !isMinReleased);
 
 			// Check lifecycle count for "use previous lifecycle" logic
 			if (shouldShowPlanned)
@@ -435,32 +457,21 @@ public static class ApplicabilityRenderer
 				var maxReleased = max is not null && max <= versioningSystem.Current;
 
 				// Helper to format version with or without patch
-				string FormatMinVersion() => showMinPatch
-					? $"{min.Major}.{min.Minor}.{min.Patch}"
-					: $"{min.Major}.{min.Minor}";
+				string FormatMinVersion() => showMinPatch ? $"{min.Major}.{min.Minor}.{min.Patch}" : $"{min.Major}.{min.Minor}";
 
-				string FormatMaxVersion() => showMaxPatch
-					? $"{max!.Major}.{max.Minor}.{max.Patch}"
-					: $"{max!.Major}.{max.Minor}";
+				string FormatMaxVersion() => showMaxPatch ? $"{max!.Major}.{max.Minor}.{max.Patch}" : $"{max!.Major}.{max.Minor}";
 
 				return kind switch
 				{
-					VersionSpecKind.GreaterThanOrEqual => minReleased
-						? $"{FormatMinVersion()}+"
-						: string.Empty,
+					VersionSpecKind.GreaterThanOrEqual => minReleased ? $"{FormatMinVersion()}+" : string.Empty,
+					VersionSpecKind.Range =>
+						maxReleased
+							? min.Major == max!.Major && min.Minor == max.Minor && !showMinPatch && !showMaxPatch
+								? $"{min.Major}.{min.Minor}" // Same major.minor and no explicit patch, so just show the version once
 
-					VersionSpecKind.Range => maxReleased
-						? min.Major == max!.Major && min.Minor == max.Minor && !showMinPatch && !showMaxPatch
-							? $"{min.Major}.{min.Minor}" // Same major.minor and no explicit patch, so just show the version once
-							: $"{FormatMinVersion()}-{FormatMaxVersion()}"
-						: minReleased
-							? $"{FormatMinVersion()}+"
-							: string.Empty,
-
-					VersionSpecKind.Exact => minReleased
-						? FormatMinVersion()
-						: string.Empty,
-
+								: $"{FormatMinVersion()}-{FormatMaxVersion()}"
+							: minReleased ? $"{FormatMinVersion()}+" : string.Empty,
+					VersionSpecKind.Exact => minReleased ? FormatMinVersion() : string.Empty,
 					_ => string.Empty
 				};
 		}

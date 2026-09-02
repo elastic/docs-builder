@@ -2,44 +2,47 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Assembler.Links;
-using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Health;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using ModelContextProtocol;
+using OpenTelemetry;
 using OpenTelemetry.Trace;
 
 try
 {
-	var builder = WebApplication.CreateSlimBuilder(args);
-	_ = builder.AddDocumentationServiceDefaults();
-	_ = builder.AddDefaultHealthChecks();
+	var env = SystemEnvironmentVariables.Instance;
+	var profile = McpServerProfile.Resolve(env.McpServerProfile);
+
+	var builder = WebApplication
+		.CreateSlimBuilder(args)
+		.AddDocumentationServiceDefaults()
+		.HealthCheckBuilderExtensions()
+		.AddDocumentationOpenTelemetry(new OtelRegistration(profile.ServiceName)
+		{
+			Tracing =
+				(_, t) => t.WithElasticDefaults().AddSource(McpToolTelemetry.McpToolSourceName).AddProcessor(new McpSpanRenameProcessor()),
+			Metrics = (_, m) => m.WithElasticDefaults().AddMeter(McpToolTelemetry.McpMeterName)
+		});
+
 	// Readiness check: pings Elasticsearch so /health returns 503 during an ES outage.
 	// Excluded from /alive (liveness) to avoid pod crash-loops.
 	_ = builder.Services.AddHealthChecks()
 		.AddCheck<ElasticsearchHealthCheck>("elasticsearch", tags: ["ready"]);
-	_ = builder.AddEuidEnrichment();
-	_ = builder.Services.ConfigureOpenTelemetryTracerProvider(t =>
-		t.AddSource(McpToolTelemetry.McpToolSourceName));
 
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
-	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+	if (
+		string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
 		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
-		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
+		&& string.IsNullOrEmpty(builder.Configuration["URLS"])
+	)
 	{
 		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
 		{
@@ -50,29 +53,28 @@ try
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
 
-	var env = SystemEnvironmentVariables.Instance;
-	var profile = McpServerProfile.Resolve(env.McpServerProfile);
-
 	profile.RegisterAllServices(builder.Services);
 
 	// CreateSlimBuilder disables reflection-based JSON serialization.
-	// The MCP SDK's legacy SSE handler uses Results.BadRequest(string) which needs
-	// ASP.NET Core's HTTP JSON options to have type metadata for System.String.
+	// McpJsonUtilities registers System.String so the SDK's error responses can serialize.
 	_ = builder.Services.ConfigureHttpJsonOptions(options =>
 	{
 		options.SerializerOptions.TypeInfoResolverChain.Insert(0, McpJsonUtilities.DefaultOptions.TypeInfoResolver!);
 	});
 
-	// Stateless mode: no Mcp-Session-Id header is issued or expected, which avoids a known
-	// Cursor bug where it opens the SSE stream without the session header and receives 400.
-	// Stateless mode is appropriate here because all tools are pure request/response (no
-	// server-initiated push) and the server runs behind a load balancer without session affinity.
-	var mcpBuilder = builder.Services
+	// Stateless Streamable HTTP transport: each request is an independent POST / — no session
+	// affinity, no Mcp-Session-Id header, no server-initiated push (sampling/elicitation/roots).
+	// This is the correct posture for a load-balanced service whose tools are pure request/response.
+	// In SDK 1.4+, stateless and SSE are mutually exclusive; EnableLegacySse (default false)
+	// cannot be combined with Stateless = true. SSE-only clients should use the mcp-remote bridge:
+	// npx -y mcp-remote https://<host>/docs/_mcp
+	var mcpBuilder = builder
+		.Services
 		.AddMcpServer(options => options.ServerInstructions = profile.ComposeServerInstructions())
 		.WithHttpTransport(o => o.Stateless = true);
 
 	var prefixedTools = McpToolRegistration.CreatePrefixedTools(profile);
-	mcpBuilder = mcpBuilder.WithTools(prefixedTools);
+	_ = mcpBuilder.WithTools(prefixedTools);
 
 	var app = builder.Build();
 
@@ -97,7 +99,6 @@ try
 		}));
 
 	_ = app.UseMiddleware<McpBearerAuthMiddleware>();
-	_ = app.UseMiddleware<SseKeepAliveMiddleware>();
 
 	var mcpPrefix = SystemEnvironmentVariables.Instance.McpPrefix;
 	var mcp = app.MapGroup(mcpPrefix);
@@ -147,5 +148,7 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 
 // Make the Program class accessible for integration testing
 #pragma warning disable ASP0027
-public partial class Program { }
+public partial class Program
+{
+}
 #pragma warning restore ASP0027

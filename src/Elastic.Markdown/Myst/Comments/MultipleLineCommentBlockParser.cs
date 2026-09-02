@@ -23,14 +23,7 @@ public class MultipleLineCommentBlockParser : BlockParser
 		var currentLine = processor.Line;
 		if (currentLine.Match(BlockStart))
 		{
-			var block = new MultipleLineCommentBlock(this)
-			{
-				Column = processor.Column,
-				Span =
-				{
-					Start = processor.Start
-				}
-			};
+			var block = new MultipleLineCommentBlock(this) { Column = processor.Column, Span = { Start = processor.Start } };
 			processor.NewBlocks.Push(block);
 
 			// Check if the closing --> is on the same line (single-line comment)

@@ -2,47 +2,83 @@
 
 ## Prerequisites
 
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 - [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
-  - [Aspire 9.4.1](https://learn.microsoft.com/en-us/dotnet/aspire/)
-	```bash
-	dotnet workload install aspire
-	```
+
+The Aspire toolchain is bundled as a local dotnet tool — no workload install required.
+
+```bash
+dotnet tool restore
+```
 
 ## Validate the fully assembled documentation
 
 ```bash
-dotnet run --project aspire
+dotnet aspire run
 ```
 
-Will spin up all our services and clone and build all the documentation sets. 
+Will spin up all our services and clone and build all the documentation sets.
 
-```markdown
-dotnet run --project aspire -- --assume-cloned --skip-private-repositories
+By default, private repositories are skipped, existing clones are reused, and the build is skipped when code/config/content is unchanged. To opt out of any default:
+
+```bash
+dotnet aspire run -- --no-skip-private-repositories  # include private repos (requires auth tokens)
+dotnet aspire run -- --no-assume-cloned              # force a fresh clone
+dotnet aspire run -- --no-assume-build               # force a full rebuild even if stamp matches
 ```
 
-`--assume-cloned` will assume a documentation set set is already cloned if available locally.
+`--skip-private-repositories` (default) injects `docs-builder`'s own docs into the navigation
+so you can validate new features without production credentials.
 
-`--skip-private-repositories` will skip cloning private repositories. It will also inject our `docs-builder docs into the 
-navigation. This allows us to validate new features' effect on the assembly process.
-
-Our [Integration Tests](./tests-integration/Elastic.Assembler.IntegrationTests) use this exact command to validate the 
+Our [Integration Tests](./tests-integration/Elastic.Documentation.IntegrationTests) use these defaults to validate the
 assembler builds.
 
-## Continuously build all assets during development.
+> **Tip**: Install the [Aspire skills plugin](https://github.com/microsoft/aspire-skills) for day-to-day orchestration and monitoring support in Claude Code:
+> ```
+> /plugin marketplace add microsoft/aspire-skills
+> /plugin install aspire@aspire-skills
+> ```
+
+## Continuously build during development
+
+Two watch loops are available depending on what you're working on:
+
+### Single-docset watch (authoring, templates, frontend)
 
 ```shell
 ./build.sh watch
 ```
 
-This will monitor code, cshtml template files & static files and reload the application
-if any changes.
+Monitors code, Razor template files, and frontend assets for a **single documentation set**.
+Markdown files refresh via live reload without a recompile. Code or layout changes relaunch
+the server automatically. Web assets are rebuilt by `parcel watch` in the background.
 
-Web assets are reloaded through `parcel watch` and don't require a recompilation.
+### Full assembled-site watch (assembler, navigation, multi-repo)
 
-Markdown files are refreshed automatically through livereload
+```shell
+./build.sh watchall
+```
 
-Code or layout changes will relaunch the server automatically
+Runs `dotnet watch` on the Aspire AppHost. When you edit any `.cs` file the AppHost restarts,
+the assembler clone step is skipped (default-on `--assume-cloned`), and the build step
+consults the MVID stamp — if code actually changed it rebuilds; otherwise it skips in seconds.
+No live reload; the site comes back on port 4000 after each restart.
+
+## CLI reference maintenance
+
+When you add or change CLI options in `src/tooling/docs-builder/Commands/`, regenerate the checked-in schema so CI and the published CLI reference stay in sync:
+
+```bash
+dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+```
+
+Commit the updated `docs/cli-schema.json` with your code changes. CI compares the schema (ignoring the `version` field) and fails if it has drifted.
+
+The schema drives auto-generated parameter tables and usage synopses on CLI reference pages. For behavior, workflows, and examples that the schema cannot express, also update supplemental files under `docs/cli/` (see [Writing supplemental content](docs/schema-support/cli-schema/supplemental.md)).
+
+## Working on non-trivial changes
+
+Before starting implementation on anything non-trivial — a new directive, a CLI command, a change that touches more than one project — write a short plan first: a few paragraphs (in the PR description, a linked issue, or handed to an agent as a prompt) stating what's changing and an explicit definition of done. This isn't bureaucracy for its own sake: it's what lets a change be scoped to a single sitting/session instead of sprawling as the "actual" requirements get discovered mid-implementation. Trivial fixes (typos, one-line bug fixes, dependency bumps) don't need this.
 
 # Release Process
 
@@ -58,17 +94,15 @@ See the [release-drafter configuration](./.github/release-drafter.yml) for more 
 
 ## Git Hooks with Husky.Net
 
-This repository uses [Husky.Net](https://alirezanet.github.io/Husky.Net/) to automatically format and validate code before commits and pushes.
+This repository uses [Husky.Net](https://alirezanet.github.io/Husky.Net/) to automatically format and validate code before commits.
 
 ### What Gets Checked
 
 **Pre-commit hooks** (run on staged files):
+- **dotnet-lint** - Checks C# formatting with [curb](https://curb.nullean.net) (`dotnet curb check .`)
 - **prettier** - Formats TypeScript, JavaScript, CSS, and JSON files in `src/Elastic.Documentation.Site/`
 - **typescript-check** - Type checks TypeScript files with `tsc --noEmit` (only if TS files are staged)
 - **eslint** - Lints and fixes JavaScript/TypeScript files
-
-**Pre-push hooks** (run on files being pushed):
-- **dotnet-lint** - Lints C# and F# files using `./build.sh lint` (runs `dotnet format --verify-no-changes`)
 
 ### Installation
 
@@ -84,16 +118,17 @@ Then install the git hooks:
 dotnet husky install
 ```
 
-That's it! The hooks will now run automatically on every commit and push.
+That's it! The hooks will now run automatically on every commit.
+
+The pre-commit hook runs `dotnet tool restore` before curb, so a new worktree does not need a manual restore before the first commit. You still need `dotnet husky install` in that worktree so `.husky/_/husky.sh` exists.
 
 ### Usage
 
-Once installed, hooks run automatically when you commit or push:
+Once installed, hooks run automatically when you commit:
 
 ```bash
 git add .
 git commit -m "your message"  # Pre-commit hooks run here
-git push                       # Pre-push hooks run here
 ```
 
 **Note:** If hooks modify files (prettier, eslint), the commit will fail so you can review the changes. Simply stage the changes and commit again:
@@ -103,24 +138,21 @@ git add -u
 git commit -m "your message"
 ```
 
-If the **dotnet-lint** hook fails during push, you need to fix the linting errors and commit the fixes before pushing again.
+If the **dotnet-lint** hook fails, run `dotnet curb format .` to fix the formatting and commit the fixes.
 
 ### Manual Execution
 
-You can test hooks without committing or pushing:
+You can test hooks without committing:
 
 ```bash
 # Run all pre-commit tasks
 dotnet husky run --group pre-commit
 
-# Run all pre-push tasks
-dotnet husky run --group pre-push
-
 # Test individual tasks
+dotnet husky run --name dotnet-lint
 dotnet husky run --name prettier
 dotnet husky run --name typescript-check
 dotnet husky run --name eslint
-dotnet husky run --name dotnet-lint
 ```
 
 ### Configuration

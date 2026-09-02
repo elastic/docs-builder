@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
@@ -30,6 +31,8 @@ public class AssembleSources
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 
 	public PublishEnvironmentUriResolver UriResolver { get; }
+
+	public ICrossLinkResolver CrossLinkResolver { get; }
 
 	public static async Task<AssembleSources> AssembleAsync(
 		ILoggerFactory logFactory,
@@ -52,6 +55,10 @@ public class AssembleSources
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		logger.LogInformation("  AssembleAsync: FetchCrossLinks in {Elapsed:mm\\:ss\\.fff}", sw.Elapsed);
 
+		// Shared, mutable resolver: every documentation set gets the same instance now and the prefetched
+		// bundles are populated once below, after each set's docset.yml (and its `release_notes`) is parsed.
+		var releaseNotesResolver = new ReleaseNotesResolver();
+
 		var sources = new AssembleSources(
 			logFactory,
 			context,
@@ -61,8 +68,23 @@ public class AssembleSources
 			configurationContext.LegacyUrlMappings,
 			uriResolver,
 			crossLinkResolver,
+			releaseNotesResolver,
 			availableExporters
 		);
+
+		var declaredProducts = sources
+			.AssembleSets
+			.Values
+			.SelectMany(s => s.BuildContext.Configuration.ReleaseNotesProducts)
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+		if (declaredProducts.Length > 0)
+		{
+			var releaseNotesFetcher = new ReleaseNotesFetcher(logFactory, context.ReadFileSystem);
+			var fetched = await releaseNotesFetcher.FetchAsync(context.Collector, declaredProducts, ctx).ConfigureAwait(false);
+			releaseNotesResolver.Populate(fetched);
+			logger.LogInformation("  AssembleAsync: Fetched release notes for {Count} product(s)", declaredProducts.Length);
+		}
 
 		foreach (var (_, set) in sources.AssembleSets)
 		{
@@ -71,6 +93,19 @@ public class AssembleSources
 		}
 
 		return sources;
+	}
+
+	internal static AssembleSources ForTests(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets) =>
+		new(context, assembleSets);
+
+	private AssembleSources(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets)
+	{
+		AssembleContext = context;
+		AssembleSets = assembleSets;
+		NavigationTocMappings = FrozenDictionary<Uri, NavigationTocMapping>.Empty;
+		LegacyUrlMappings = context.LegacyUrlMappings;
+		UriResolver = new PublishEnvironmentUriResolver(NavigationTocMappings, context.Environment);
+		CrossLinkResolver = NoopCrossLinkResolver.Instance;
 	}
 
 	private AssembleSources(
@@ -82,16 +117,28 @@ public class AssembleSources
 		LegacyUrlMappingConfiguration legacyUrlMappings,
 		PublishEnvironmentUriResolver uriResolver,
 		ICrossLinkResolver crossLinkResolver,
+		IReleaseNotesResolver releaseNotesResolver,
 		IReadOnlySet<Exporter> availableExporters
 	)
 	{
 		NavigationTocMappings = navigationTocMappings;
 		LegacyUrlMappings = legacyUrlMappings;
 		UriResolver = uriResolver;
+		CrossLinkResolver = crossLinkResolver;
 		AssembleContext = assembleContext;
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, configurationContext, availableExporters))
+			.Select(
+				c => new AssemblerDocumentationSet(
+					logFactory,
+					assembleContext,
+					c,
+					crossLinkResolver,
+					releaseNotesResolver,
+					configurationContext,
+					availableExporters
+				)
+			)
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 	}
@@ -153,6 +200,7 @@ public class AssembleSources
 			string? parent,
 			int depth,
 			int order, //TODO Remove this parameter
+
 			Uri? topLevelSource,
 			Uri? parentSource
 		)
@@ -160,11 +208,15 @@ public class AssembleSources
 			string? repository = null;
 			string? source = null;
 			string? pathPrefix = null;
+			var isSection = false;
 			foreach (var entry in tocEntry.Children)
 			{
 				var key = ((YamlScalarNode)entry.Key).Value;
 				switch (key)
 				{
+					case "section":
+						isSection = true;
+						break;
 					case "toc":
 						source = reader.ReadString(entry);
 						if (source.AsSpan().IndexOf("://") == -1)
@@ -193,7 +245,20 @@ public class AssembleSources
 			}
 
 			if (source is null)
+			{
+				// section: entries have no source; descend into their children so the children's
+				// sources are registered in NavigationTocMappings.
+				if (isSection)
+				{
+					foreach (var entry in tocEntry.Children)
+					{
+						var key = ((YamlScalarNode)entry.Key).Value;
+						if (key == "children")
+							ReadTocBlocks(entries, reader, entry, parent, depth, topLevelSource, parentSource);
+					}
+				}
 				return;
+			}
 
 			source = source.EndsWith("://", StringComparison.OrdinalIgnoreCase) ? source : source.TrimEnd('/') + "/";
 			if (!Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
@@ -204,17 +269,16 @@ public class AssembleSources
 
 			var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
 			if (string.IsNullOrEmpty(pathPrefix))
-				reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
+				reader.EmitError(
+					$"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect",
+					tocEntry
+				);
 
 			pathPrefix ??= sourcePrefix;
 			topLevelSource ??= sourceUri;
 			parentSource ??= sourceUri;
 
-			var tocTopLevelMapping = new NavigationTocMapping
-			{
-				Source = sourceUri,
-				SourcePathPrefix = pathPrefix,
-			};
+			var tocTopLevelMapping = new NavigationTocMapping { Source = sourceUri, SourcePathPrefix = pathPrefix, };
 			entries.Add(new KeyValuePair<Uri, NavigationTocMapping>(sourceUri, tocTopLevelMapping));
 
 			foreach (var entry in tocEntry.Children)

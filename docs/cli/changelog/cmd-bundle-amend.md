@@ -1,76 +1,175 @@
 ## Description
 
-Amend a bundle with additional changelog entries.
-Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+Amend a bundle with additional or excluded changelog entries without modifying the parent bundle file.
+Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}` plus the same `.yaml` or `.yml` extension as the parent, where `{N}` is a sequence number.
+
+:::{note}
+The suffix `.amend-notes` (for example `9.3.0.amend-notes.yaml`) is reserved for use by the changelog scrubber Lambda. The Lambda generates and manages these files automatically; you must not create, edit, or delete them manually.
+:::
+
+Specify at least one of `--add` or `--remove`.
 
 To create a bundle, use [](/cli/changelog/bundle.md).
-For details and examples, go to [](/contribute/bundle-changelogs.md).
-
-## Resolve behaviour
-
-By default, the `bundle-amend` command **infers** whether to resolve entries from the original bundle.
-If the original bundle contains resolved entries (with inline `title`, `type`, and so on), the amend file will also be resolved.
-If the original bundle contains only file references, the amend file will also contain only file references.
-
-This inference ensures that amend files are portable — they contain everything needed to be understood alongside the original bundle, even when copied to another repository.
-
-You can override this behaviour:
-
-- `--resolve`: Force entries to be resolved (inline content), regardless of the original bundle.
-- `--no-resolve`: Force entries to contain only file references, regardless of the original bundle.
+For details and examples, go to [](/data/release-notes/bundle.md).
 
 ## Output
 
-Amend bundles contain only the additional entries, not a full repetition of the original bundle. For example:
+Amend bundles contain the parent bundle's `products` plus only the changes for that amend file, not a full repetition of the original bundle's entries.
+
+The parent's complete `products` (including `target`, `repo`, and `owner`) are copied into every amend file so the amend is self-contained: upload destination discovery, the registry's per-product `target`, and `:version:`-filtered CDN consumption all derive from a bundle file's own products.
+
+Like bundles, amend files embed the full changelog content of each entry: entries added with `--add` carry inline `title`, `type`, `products`, and so on, alongside a `file` block recording the source file name and checksum for provenance.
+
+Additions:
 
 ```yaml
 # 9.3.0.amend-1.yaml
+products:
+- product: elasticsearch
+  target: 9.3.0
+  repo: elasticsearch
+  owner: elastic
 entries:
 - file:
     name: late-addition.yaml
     checksum: abc123def456
+  type: bug-fix
+  title: A late addition
+  products:
+  - product: elasticsearch
+    target: 9.3.0
 ```
 
-When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
-The entries from all matching amend files are combined with the parent bundle's entries, and the result is rendered as a single release.
+Removals:
+
+```yaml
+# 9.3.0.amend-2.yaml
+products:
+- product: elasticsearch
+  target: 9.3.0
+  repo: elasticsearch
+  owner: elastic
+exclude-entries:
+- file:
+    name: 138723.yaml
+    checksum: def456abc123
+```
+
+An amend file can contain both `exclude-entries` and `entries`. Within each amend file, exclusions are applied before additions.
+
+When bundles are loaded (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles in sequence (`amend-1`, `amend-2`, …).
+The result is rendered as a single release.
 
 :::{note}
-Amend bundles do not need to include `products` or `hide-features` fields — they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
+Amend bundles created by older docs-builder versions may omit `products`; they are still accepted when loading and merge into their parent as before. `hide-features` is always inherited from the parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
 
 `rules.bundle` filtering does not apply to `changelog bundle-amend`. The command is a direct-injection escape hatch: the files you specify with `--add` are always included regardless of any product, type, or area filter configuration.
+
+`--add` and `--remove` use the same CDN-versus-local gate as [](/cli/changelog/bundle.md), except `bundle-amend` has no `--directory` or `--repo` flags: CDN by default when `bundle.repo` or the parent bundle's `repo` resolves; local disk when `--force-local` or `bundle.use_local_changelogs` is set, or when no authoring repo can be resolved. In CDN mode, only the file name is used (including CDN paths such as `/changelog/elastic/kibana/main/247279.yaml`). The GET uses the resolved authoring org/repo/branch from `changelog.yml` or the parent bundle, not the org/repo/branch segments in the path you pass. Use `--force-local` to read local changelogs from disk.
+
+The parent may be a local bundle file or a published CDN locator (`/bundle/{product}/{file}.yaml`, leading slash optional). A local parent writes `{parent}.amend-N` next to that file, using the parent's `.yaml` or `.yml` extension. A CDN parent fetches the published bundle and any existing `amend-N` sidecars, then writes only the new sidecar locally — it does not download-and-rewrite the parent, and it does not upload. `--output` (a directory, or the exact `{parent}.amend-N` name with the same extension as the parent for the next unused N) selects the write location for a CDN parent; when omitted, the command uses `bundle.output_directory` from `changelog.yml`, then the current directory. `--output` is ignored for a local parent.
+
+Locator syntax is checked before local file existence, so a relative path such as `bundle/{product}/{file}.yaml` always resolves as a CDN locator even if a local file happens to exist at that same relative path. Prefix a local path with `./` to force local resolution in that case.
 :::
 
 ## Examples
 
-### Add a single changelog to a bundle
+### Amend a published CDN bundle
+
+Pass a CDN locator as the parent. `--add` can be a CDN entry path (matched by file name) when entry sourcing uses the CDN:
+
+```sh
+docs-builder changelog bundle-amend \
+  /bundle/kibana/9.3.0.yaml \
+  --add /changelog/elastic/kibana/main/138723.yaml \
+  --output ./docs/releases
+```
+
+This writes `9.3.0.amend-1.yaml` (or the next unused N) under `./docs/releases`. Upload is a separate step; the sidecar is uploaded like any other bundle YAML:
+
+```sh
+docs-builder changelog upload \
+  --artifact-type bundle \
+  --directory ./docs/releases \
+  --target s3 \
+  --s3-bucket-name my-changelog-bundles
+```
+
+### Add a changelog from the CDN
+
+The first argument is the local parent bundle. `--add` can be a CDN path (matched by file name) when entry sourcing uses the CDN:
 
 ```sh
 docs-builder changelog bundle-amend \
   ./docs/changelog/bundles/9.3.0.yaml \
-  --add ./docs/changelog/138723.yaml
+  --add /changelog/elastic/kibana/main/138723.yaml
 ```
 
-The new bundle automatically matches the resolve style of the original bundle.
+### Add a single local changelog to a bundle
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --add ./docs/changelog/138723.yaml \
+  --force-local
+```
+
+### Remove a changelog from a bundle
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --remove /changelog/elastic/kibana/main/138723.yaml
+```
+
+The CLI computes the checksum of the sourced YAML and matches it against the effective bundle (parent plus any existing amend files).
+If the bundle contains the file with a different checksum, or no YAML can be sourced (for example a git-ref entry that exists only in the bundle), the command fails unless you pass `--force` to remove by file name only.
 
 ### Add multiple changelogs to a bundle
 
+Comma-separated list:
+
 ```sh
 docs-builder changelog bundle-amend \
   ./docs/changelog/bundles/9.3.0.yaml \
-  --add "./docs/changelog/138723.yaml,./docs/changelog/1770424335.yaml"
+  --add "./docs/changelog/138723.yaml,./docs/changelog/1770424335.yaml" \
+  --force-local
 ```
 
-### Force resolve or file-reference style
+Or repeat `--add`:
 
 ```sh
-# Force resolved (inline) entries
 docs-builder changelog bundle-amend \
   ./docs/changelog/bundles/9.3.0.yaml \
-  --add "./docs/changelog/138723.yaml" \
-  --resolve
+  --add ./docs/changelog/138723.yaml \
+  --add ./docs/changelog/1770424335.yaml \
+  --force-local
+```
 
-# Force file-only references
-docs-builder changelog bundle-amend 9.3.0.yaml \
-  --add ./docs/changelog/late-addition.yaml \
-  --no-resolve
+### Remove multiple changelogs from a bundle
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --remove "./docs/changelog/old-a.yaml,./docs/changelog/old-b.yaml" \
+  --force-local
+```
+
+### Replace an entry in one amend file
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --remove ./docs/changelog/old-entry.yaml \
+  --add ./docs/changelog/new-entry.yaml \
+  --force-local
+```
+
+### Preview without writing an amend file
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --remove /changelog/elastic/kibana/main/138723.yaml \
+  --dry-run
 ```

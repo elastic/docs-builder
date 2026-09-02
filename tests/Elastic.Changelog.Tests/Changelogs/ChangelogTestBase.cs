@@ -11,16 +11,17 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
 public abstract class ChangelogTestBase : IDisposable
 {
-	protected ScopedFileSystem FileSystem { get; }
+	protected ChangelogFileSystem FileSystem { get; }
+	protected RunnerTempFileSystem RunnerTempFileSystem { get; }
 	protected IConfigurationContext ConfigurationContext { get; }
 	protected TestDiagnosticsCollector Collector { get; }
 	protected ILoggerFactory LoggerFactory { get; }
@@ -30,7 +31,15 @@ public abstract class ChangelogTestBase : IDisposable
 	{
 		Output = output;
 		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
-		FileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFileSystem);
+		FileSystem = ChangelogFileSystem.FromWorkingDirectory(mockFileSystem);
+		RunnerTempFileSystem = new RunnerTempFileSystem(
+			mockFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: mockFileSystem
+		);
+		// ConfigurationFileProvider writes to AppData/config-runtime, which is outside ChangelogFileSystem's
+		// git-root scope by design. Use a CheckoutsFileSystem (includes AppData) for the config provider only;
+		// it wraps the same mock so both filesystems share in-memory state.
+		var configFileSystem = CheckoutsFileSystem.FromWorkingDirectory(mockFileSystem);
 		Collector = new TestDiagnosticsCollector(output);
 		LoggerFactory = new TestLoggerFactory(output);
 
@@ -39,7 +48,8 @@ public abstract class ChangelogTestBase : IDisposable
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Stack, new VersioningSystem
+					VersioningSystemId.Stack,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
 						Current = new SemVersion(9, 2, 0),
@@ -51,7 +61,8 @@ public abstract class ChangelogTestBase : IDisposable
 		var products = new Dictionary<string, Product>
 		{
 			{
-				"elasticsearch", new Product
+				"elasticsearch",
+				new Product
 				{
 					Id = "elasticsearch",
 					DisplayName = "Elasticsearch",
@@ -59,7 +70,8 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			},
 			{
-				"kibana", new Product
+				"kibana",
+				new Product
 				{
 					Id = "kibana",
 					DisplayName = "Kibana",
@@ -67,7 +79,8 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			},
 			{
-				"cloud-hosted", new Product
+				"cloud-hosted",
+				new Product
 				{
 					Id = "cloud-hosted",
 					DisplayName = "Elastic Cloud Hosted",
@@ -75,7 +88,8 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			},
 			{
-				"cloud-serverless", new Product
+				"cloud-serverless",
+				new Product
 				{
 					Id = "cloud-serverless",
 					DisplayName = "Elastic Cloud Serverless",
@@ -83,7 +97,8 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			},
 			{
-				"security", new Product
+				"security",
+				new Product
 				{
 					Id = "security",
 					DisplayName = "Elastic Security",
@@ -100,16 +115,26 @@ public abstract class ChangelogTestBase : IDisposable
 
 		ConfigurationContext = new ConfigurationContext
 		{
-			Endpoints = new DocumentationEndpoints
-			{
-				Elasticsearch = ElasticsearchEndpoint.Default,
-			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem),
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
+			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, configFileSystem),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
+	}
+
+	/// <summary>
+	/// Seeds a minimal docset.yml at the working-directory root declaring the given products under
+	/// <c>release_notes</c>. The <c>changelog bundle</c> declared-gate sources a product's entries from
+	/// the CDN only when it is declared here.
+	/// </summary>
+	protected void DeclareReleaseNotesProducts(params string[] productIds)
+	{
+		var lines = new List<string> { "release_notes:" };
+		lines.AddRange(productIds.Select(id => $"  - product: {id}"));
+		var path = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "docset.yml");
+		FileSystem.File.WriteAllText(path, string.Join("\n", lines) + "\n");
 	}
 
 	public void Dispose()
@@ -118,13 +143,30 @@ public abstract class ChangelogTestBase : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	[SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1",
-		Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
+	[SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	protected static string ComputeSha1(string content)
 	{
 		var normalized = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.NormalizeYaml(content);
 		var bytes = System.Text.Encoding.UTF8.GetBytes(normalized);
 		var hash = System.Security.Cryptography.SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
+	}
+
+	/// <summary>
+	/// Builds resolved-bundle YAML the same way <c>changelog bundle</c> does: each changelog entry
+	/// is inlined into the bundle with file provenance (name + checksum). The header YAML carries
+	/// bundle-level fields (products, description, hide_features, ...) and must not declare entries.
+	/// </summary>
+	protected static string CreateResolvedBundleContent(string bundleHeaderYaml, params (string FileName, string Changelog)[] changelogs)
+	{
+		var bundle = Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeBundle(bundleHeaderYaml);
+		var entries = changelogs.Select(
+			c =>
+				Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.DeserializeEntry(c.Changelog).ToBundledEntry() with
+				{
+					File = new Documentation.ReleaseNotes.BundledFile { Name = c.FileName, Checksum = ComputeSha1(c.Changelog) }
+				}
+		).ToList();
+		return Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.SerializeBundle(bundle with { Entries = entries });
 	}
 }

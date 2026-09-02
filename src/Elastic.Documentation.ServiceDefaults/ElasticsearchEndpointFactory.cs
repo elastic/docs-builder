@@ -10,58 +10,45 @@ namespace Elastic.Documentation.ServiceDefaults;
 /// <summary>Centralizes env-var + user-secrets reading for Elasticsearch configuration.</summary>
 public static class ElasticsearchEndpointFactory
 {
-	private const string UserSecretsId = "72f50f33-6fb9-4d08-bff3-39568fe370b3";
+	private const string UserSecretsId = "docs-builder";
 
 	/// <summary>
 	/// Creates <see cref="DocumentationEndpoints"/> from user secrets and environment variables.
 	/// Environment variables take priority over user secrets.
 	/// </summary>
-	public static DocumentationEndpoints Create(IConfiguration? appConfiguration = null, string? buildType = null, string? environment = null)
+	public static DocumentationEndpoints Create(
+		IConfiguration? appConfiguration = null,
+		string? buildType = null,
+		string? environment = null
+	)
 	{
 		var configBuilder = new ConfigurationBuilder();
 		_ = configBuilder.AddUserSecrets(UserSecretsId);
 		_ = configBuilder.AddEnvironmentVariables();
 		var config = configBuilder.Build();
 
-		var url =
-			config["DOCUMENTATION_ELASTIC_URL"]
-			?? config["Parameters:DocumentationElasticUrl"];
+		var url = config["DOCUMENTATION_ELASTIC_URL"] ?? config["Parameters:ElasticsearchUrl"];
 
-		var apiKey =
-			config["DOCUMENTATION_ELASTIC_APIKEY"]
-			?? config["Parameters:DocumentationElasticApiKey"];
+		var apiKey = config["DOCUMENTATION_ELASTIC_APIKEY"] ?? config["Parameters:ElasticsearchApiKey"];
 
-		var password =
-			config["DOCUMENTATION_ELASTIC_PASSWORD"]
-			?? config["Parameters:DocumentationElasticPassword"];
+		var password = config["DOCUMENTATION_ELASTIC_PASSWORD"] ?? config["Parameters:ElasticsearchPassword"];
 
-		var username =
-			config["DOCUMENTATION_ELASTIC_USERNAME"]
-			?? config["Parameters:DocumentationElasticUsername"]
-			?? "elastic";
+		var username = config["DOCUMENTATION_ELASTIC_USERNAME"] ?? config["Parameters:ElasticsearchUsername"] ?? "elastic";
 
 		if (string.IsNullOrEmpty(url))
 		{
-			return new DocumentationEndpoints
-			{
-				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") }
-			};
+			return new DocumentationEndpoints { Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") } };
 		}
 
-		var endpoint = new ElasticsearchEndpoint
-		{
-			Uri = new Uri(url),
-			ApiKey = apiKey,
-			Password = password,
-			Username = username
-		};
+		var endpoint = new ElasticsearchEndpoint { Uri = new Uri(url), ApiKey = apiKey, Password = password, Username = username };
 
-		environment ??= ResolveEnvironment(config, appConfiguration);
 		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
+		IEnvironmentValidator environmentValidator = buildType == "codex"
+			? new CodexEnvironmentValidator()
+			: new SiteEnvironmentValidator();
+		environment ??= environmentValidator.Resolve(appConfiguration?["ENVIRONMENT"] ?? config["ENVIRONMENT"]);
 
-		var searchIndexOverride =
-			config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"]
-			?? config["Parameters:DocumentationElasticIndexOverride"];
+		var searchIndexOverride = config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"] ?? config["Parameters:ElasticsearchIndexOverride"];
 
 		return new DocumentationEndpoints
 		{
@@ -70,25 +57,5 @@ public static class ElasticsearchEndpointFactory
 			BuildType = buildType,
 			SearchIndexOverride = !string.IsNullOrEmpty(searchIndexOverride) ? searchIndexOverride : null
 		};
-	}
-
-	/// <summary>
-	/// Resolves the environment name using this priority:
-	/// 1. <c>DOTNET_ENVIRONMENT</c> env var
-	/// 2. <c>ENVIRONMENT</c> env var
-	/// 3. Fallback: <c>"dev"</c>
-	/// </summary>
-	private static string ResolveEnvironment(IConfiguration config, IConfiguration? appConfiguration)
-	{
-		var envVar = appConfiguration?["DOTNET_ENVIRONMENT"]
-			?? appConfiguration?["ENVIRONMENT"]
-			?? config["DOTNET_ENVIRONMENT"]
-			?? config["ENVIRONMENT"];
-
-		string[] allowedEnvironements = ["dev", "prod", "staging"];
-		if (!allowedEnvironements.Contains(envVar))
-			envVar = "dev";
-
-		return !string.IsNullOrEmpty(envVar) ? envVar.ToLowerInvariant() : "dev";
 	}
 }

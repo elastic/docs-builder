@@ -73,7 +73,6 @@ public static class IDirectoryInfoExtensions
 	private static bool? CaseSensitiveOsCheck;
 	public static bool IsCaseSensitiveFileSystem
 	{
-
 		get
 		{
 			// heuristic to determine if the OS is case-sensitive
@@ -85,7 +84,6 @@ public static class IDirectoryInfoExtensions
 				var culture = CultureInfo.CurrentCulture;
 				CaseSensitiveOsCheck = !Directory.Exists(tmp.ToUpper(culture)) || !Directory.Exists(tmp.ToLower(culture));
 				return CaseSensitiveOsCheck ?? false;
-
 			}
 			catch
 			{
@@ -96,20 +94,63 @@ public static class IDirectoryInfoExtensions
 		}
 	}
 
-
 	/// Validates <paramref name="directory"/> is subdirectory of <paramref name="parentDirectory"/>
 	public static bool IsSubPathOf(this IDirectoryInfo directory, IDirectoryInfo parentDirectory)
 	{
 		var cmp = IsCaseSensitiveFileSystem ? Ordinal : OrdinalIgnoreCase;
+		// Fast reject: if directory's full path is shorter than parentDirectory's it can't be a
+		// descendant (+1 accounts for a trailing separator on one side but not the other).
+		if (directory.FullName.Length + 1 < parentDirectory.FullName.Length)
+			return false;
 		var parent = directory;
 		do
 		{
 			if (string.Equals(parent.FullName, parentDirectory.FullName, cmp))
 				return true;
 			parent = parent.Parent;
-		} while (parent != null);
+		}
+		while (parent != null);
 
 		return false;
+	}
+
+	/// <summary>Constructs <see cref="IDirectoryInfo"/> for both paths from <paramref name="fs"/>
+	/// and delegates to <see cref="IsSubPathOf(IDirectoryInfo,IDirectoryInfo)"/>.</summary>
+	public static bool IsSubPath(string path, string parent, IFileSystem fs) =>
+		fs.DirectoryInfo.New(path).IsSubPathOf(fs.DirectoryInfo.New(parent));
+
+	/// <summary>
+	/// Adds <paramref name="candidate"/> to <paramref name="roots"/> for a <c>ScopedFileSystemOptions</c>
+	/// root list, collapsing overlaps instead of just skipping them.
+	/// <para>
+	/// A naive "only add if disjoint" filter (skip <paramref name="candidate"/> whenever it nests with
+	/// an existing root either way) silently narrows the scope to whichever root was added first. That
+	/// is wrong when the existing root is the narrower one — e.g. a docset checkout cloned under AppData
+	/// (<c>AppData/checkouts/&lt;repo&gt;</c>): keeping only the checkout path would hide sibling AppData
+	/// directories like <c>config-runtime</c> that legitimate reads/writes still need. This instead keeps
+	/// whichever of the two is the outer (containing) path.
+	/// </para>
+	/// </summary>
+	public static void AddDisjointRoot(this List<string> roots, string candidate, IFileSystem fs)
+	{
+		if (string.IsNullOrEmpty(candidate))
+			return;
+
+		for (var i = 0; i < roots.Count; i++)
+		{
+			if (IsSubPath(candidate, roots[i], fs)) // candidate already covered by an existing (wider) root
+
+				return;
+			if (IsSubPath(roots[i], candidate, fs)) // candidate is wider; it supersedes the existing root
+
+			{
+				roots[i] = candidate;
+				return;
+			}
+		}
+
+		if (!roots.Contains(candidate, StringComparer.OrdinalIgnoreCase))
+			roots.Add(candidate);
 	}
 
 	/// Checks if <paramref name="directory"/> has parent directory <paramref name="parentName"/>, defaults to OrdinalIgnoreCase comparison
@@ -123,13 +164,18 @@ public static class IDirectoryInfoExtensions
 			if (string.Equals(parent.Name, parentName, comparison))
 				return true;
 			parent = parent.Parent;
-		} while (parent != null);
+		}
+		while (parent != null);
 
 		return false;
 	}
 
 	/// Gets the first  <paramref name="parentName"/>, parent of <paramref name="directory"/>
-	public static IDirectoryInfo? GetParent(this IDirectoryInfo directory, string parentName, StringComparison comparison = OrdinalIgnoreCase)
+	public static IDirectoryInfo? GetParent(
+		this IDirectoryInfo directory,
+		string parentName,
+		StringComparison comparison = OrdinalIgnoreCase
+	)
 	{
 		if (string.Equals(directory.Name, parentName, comparison))
 			return directory;
@@ -139,7 +185,8 @@ public static class IDirectoryInfoExtensions
 			if (string.Equals(parent.Name, parentName, comparison))
 				return parent;
 			parent = parent.Parent;
-		} while (parent != null);
+		}
+		while (parent != null);
 
 		return null;
 	}

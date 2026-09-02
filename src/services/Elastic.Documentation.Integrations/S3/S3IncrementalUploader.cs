@@ -10,7 +10,12 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Integrations.S3;
 
 /// <summary>Describes a file to upload: its local path and intended S3 key.</summary>
-public record UploadTarget(string LocalPath, string S3Key);
+/// <remarks>
+/// When <see cref="InlineContent"/> is non-null the object is uploaded from that string
+/// directly (skipping ETag comparison) and <see cref="LocalPath"/> is ignored. Used for
+/// machine-generated marker objects that have no on-disk counterpart.
+/// </remarks>
+public record UploadTarget(string LocalPath, string S3Key, string? InlineContent = null);
 
 /// <summary>Result of an incremental upload run.</summary>
 public record UploadResult(int Uploaded, int Skipped, int Failed);
@@ -29,7 +34,7 @@ public class S3IncrementalUploader(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<S3IncrementalUploader>();
 
-	public async Task<UploadResult> Upload(IReadOnlyList<UploadTarget> targets, Cancel ctx = default)
+	public async Task<UploadResult> Upload(IReadOnlyList<UploadTarget> targets, bool skipEtagCheck = false, Cancel ctx = default)
 	{
 		var uploaded = 0;
 		var skipped = 0;
@@ -41,14 +46,29 @@ public class S3IncrementalUploader(
 
 			try
 			{
-				var remoteEtag = await GetRemoteEtag(target.S3Key, ctx);
-				var localEtag = await etagCalculator.CalculateS3ETag(target.LocalPath, ctx);
-
-				if (remoteEtag != null && localEtag == remoteEtag)
+				if (target.InlineContent is { } inlineContent)
 				{
-					_logger.LogDebug("Skipping {S3Key} (ETag match)", target.S3Key);
-					skipped++;
+					_logger.LogInformation("Uploading inline marker → s3://{Bucket}/{S3Key}", bucketName, target.S3Key);
+					await PutInlineObject(target.S3Key, inlineContent, ctx);
+					uploaded++;
 					continue;
+				}
+
+				if (!skipEtagCheck)
+				{
+					var remoteEtag = await GetRemoteEtag(target.S3Key, ctx);
+					var localEtag = await etagCalculator.CalculateS3ETag(target.LocalPath, ctx);
+
+					if (remoteEtag != null && localEtag == remoteEtag)
+					{
+						_logger.LogDebug("Skipping {S3Key} (ETag match)", target.S3Key);
+						skipped++;
+						continue;
+					}
+				}
+				else
+				{
+					_logger.LogDebug("Uploading {S3Key} (--skip-etag-check)", target.S3Key);
 				}
 
 				_logger.LogInformation("Uploading {LocalPath} → s3://{Bucket}/{S3Key}", target.LocalPath, bucketName, target.S3Key);
@@ -69,11 +89,7 @@ public class S3IncrementalUploader(
 	{
 		try
 		{
-			var response = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
-			{
-				BucketName = bucketName,
-				Key = key
-			}, ctx);
+			var response = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = bucketName, Key = key }, ctx);
 			return response.ETag.Trim('"');
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -92,6 +108,12 @@ public class S3IncrementalUploader(
 			InputStream = stream,
 			ChecksumAlgorithm = ChecksumAlgorithm.SHA256
 		};
+		_ = await s3Client.PutObjectAsync(request, ctx);
+	}
+
+	private async Task PutInlineObject(string key, string content, Cancel ctx)
+	{
+		var request = new PutObjectRequest { BucketName = bucketName, Key = key, ContentBody = content, ContentType = "application/yaml" };
 		_ = await s3Client.PutObjectAsync(request, ctx);
 	}
 }

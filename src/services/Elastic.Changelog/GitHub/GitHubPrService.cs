@@ -13,16 +13,10 @@ namespace Elastic.Changelog.GitHub;
 /// <summary>
 /// Service for fetching pull request information from GitHub
 /// </summary>
-public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrService
+public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTransport? transport = null) : IGitHubPrService
 {
 	private readonly ILogger<GitHubPrService> _logger = loggerFactory.CreateLogger<GitHubPrService>();
-	private static readonly HttpClient HttpClient = new();
-
-	static GitHubPrService()
-	{
-		HttpClient.DefaultRequestHeaders.Add("User-Agent", "docs-builder");
-		HttpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
-	}
+	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
 	/// <summary>
 	/// Fetches pull request information from GitHub
@@ -32,7 +26,12 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 	/// <param name="repo">Optional: GitHub repository name (used when prUrl is just a number)</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>PR information or null if fetch fails</returns>
-	public async Task<GitHubPrInfo?> FetchPrInfoAsync(string prUrl, string? owner = null, string? repo = null, CancellationToken ctx = default)
+	public async Task<GitHubPrInfo?> FetchPrInfoAsync(
+		string prUrl,
+		string? owner = null,
+		string? repo = null,
+		CancellationToken ctx = default
+	)
 	{
 		try
 		{
@@ -43,18 +42,17 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 				return null;
 			}
 
-			// Add GitHub token if available (for rate limiting and private repos)
-			var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-			using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/pulls/{prNumber}");
-			if (!string.IsNullOrEmpty(githubToken))
-				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
+			var url = $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/pulls/{prNumber}";
+			_logger.LogDebug("Fetching PR info from: {ApiUrl}", url);
 
-			_logger.LogDebug("Fetching PR info from: {ApiUrl}", request.RequestUri);
-
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
-				_logger.LogWarning("Failed to fetch PR info. Status: {StatusCode}, Reason: {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
+				_logger.LogWarning(
+					"Failed to fetch PR info. Status: {StatusCode}, Reason: {ReasonPhrase}",
+					response.StatusCode,
+					response.ReasonPhrase
+				);
 				return null;
 			}
 
@@ -98,11 +96,17 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 		}
 	}
 
-	private static (string? owner, string? repo, int? prNumber) ParsePrUrl(string prUrl, string? defaultOwner = null, string? defaultRepo = null)
+	private static (string? owner, string? repo, int? prNumber) ParsePrUrl(
+		string prUrl,
+		string? defaultOwner = null,
+		string? defaultRepo = null
+	)
 	{
 		// Handle full URL: https://github.com/owner/repo/pull/123
-		if (prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			prUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			prUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+			|| prUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			var uri = new Uri(prUrl);
 			var segments = uri.Segments;
@@ -131,8 +135,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 		}
 
 		// Handle just a PR number when owner/repo are provided
-		if (int.TryParse(prUrl, out var prNumber) &&
-			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		if (int.TryParse(prUrl, out var prNumber) && !string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
 			return (defaultOwner, defaultRepo, prNumber);
 
 		return (null, null, null);
@@ -184,7 +187,12 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 	/// <summary>
 	/// Fetches issue information from GitHub
 	/// </summary>
-	public async Task<GitHubIssueInfo?> FetchIssueInfoAsync(string issueUrl, string? owner = null, string? repo = null, CancellationToken ctx = default)
+	public async Task<GitHubIssueInfo?> FetchIssueInfoAsync(
+		string issueUrl,
+		string? owner = null,
+		string? repo = null,
+		CancellationToken ctx = default
+	)
 	{
 		try
 		{
@@ -195,17 +203,17 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 				return null;
 			}
 
-			var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-			using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/issues/{issueNumber}");
-			if (!string.IsNullOrEmpty(githubToken))
-				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
+			var url = $"https://api.github.com/repos/{parsedOwner}/{parsedRepo}/issues/{issueNumber}";
+			_logger.LogDebug("Fetching issue info from: {ApiUrl}", url);
 
-			_logger.LogDebug("Fetching issue info from: {ApiUrl}", request.RequestUri);
-
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
-				_logger.LogWarning("Failed to fetch issue info. Status: {StatusCode}, Reason: {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
+				_logger.LogWarning(
+					"Failed to fetch issue info. Status: {StatusCode}, Reason: {ReasonPhrase}",
+					response.StatusCode,
+					response.ReasonPhrase
+				);
 				return null;
 			}
 
@@ -250,10 +258,10 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 	{
 		try
 		{
-			using var request = CreateRequest(HttpMethod.Get, $"https://api.github.com/repos/{owner}/{repo}/commits/{sha}");
-			_logger.LogDebug("Fetching commit author from: {ApiUrl}", request.RequestUri);
+			var url = $"https://api.github.com/repos/{owner}/{repo}/commits/{sha}";
+			_logger.LogDebug("Fetching commit author from: {ApiUrl}", url);
 
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
 				_logger.LogWarning("Failed to fetch commit info. Status: {StatusCode}", response.StatusCode);
@@ -272,15 +280,21 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 	}
 
 	/// <inheritdoc />
-	public async Task<string?> FetchLastFileCommitAuthorAsync(string owner, string repo, string filePath, string branch, CancellationToken ctx = default)
+	public async Task<string?> FetchLastFileCommitAuthorAsync(
+		string owner,
+		string repo,
+		string filePath,
+		string branch,
+		CancellationToken ctx = default
+	)
 	{
 		try
 		{
-			var url = $"https://api.github.com/repos/{owner}/{repo}/commits?path={Uri.EscapeDataString(filePath)}&sha={Uri.EscapeDataString(branch)}&per_page=1";
-			using var request = CreateRequest(HttpMethod.Get, url);
-			_logger.LogDebug("Fetching last file commit author from: {ApiUrl}", request.RequestUri);
+			var url =
+				$"https://api.github.com/repos/{owner}/{repo}/commits?path={Uri.EscapeDataString(filePath)}&sha={Uri.EscapeDataString(branch)}&per_page=1";
+			_logger.LogDebug("Fetching last file commit author from: {ApiUrl}", url);
 
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
 				_logger.LogWarning("Failed to fetch file commit history. Status: {StatusCode}", response.StatusCode);
@@ -301,19 +315,16 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 		}
 	}
 
-	private static HttpRequestMessage CreateRequest(HttpMethod method, string url)
+	private static (string? owner, string? repo, int? issueNumber) ParseIssueUrl(
+		string issueUrl,
+		string? defaultOwner = null,
+		string? defaultRepo = null
+	)
 	{
-		var request = new HttpRequestMessage(method, url);
-		var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-		if (!string.IsNullOrEmpty(githubToken))
-			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
-		return request;
-	}
-
-	private static (string? owner, string? repo, int? issueNumber) ParseIssueUrl(string issueUrl, string? defaultOwner = null, string? defaultRepo = null)
-	{
-		if (issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
-			issueUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (
+			issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+			|| issueUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase)
+		)
 		{
 			var uri = new Uri(issueUrl);
 			var segments = uri.Segments;
@@ -339,8 +350,11 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 			}
 		}
 
-		if (int.TryParse(issueUrl, out var issueNumber) &&
-			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+		if (
+			int.TryParse(issueUrl, out var issueNumber)
+			&& !string.IsNullOrWhiteSpace(defaultOwner)
+			&& !string.IsNullOrWhiteSpace(defaultRepo)
+		)
 			return (defaultOwner, defaultRepo, issueNumber);
 
 		return (null, null, null);
@@ -372,10 +386,10 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 
 		// Same-repo: #123
 		var sameRepoPattern = @"(?:fixed\s+by|pr|merge[sd]?|via)\s+#(\d+)";
-		foreach (var prNum in Enumerable
-			.Select(
-				Enumerable.Cast<Match>(Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase)),
-				match => match.Groups[1].Value))
+		foreach (var prNum in Enumerable.Select(
+			Enumerable.Cast<Match>(Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase)),
+			match => match.Groups[1].Value
+		))
 		{
 			_ = prs.Add($"https://github.com/{issueOwner}/{issueRepo}/pull/{prNum}");
 		}
@@ -446,6 +460,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 	[JsonSerializable(typeof(List<GitHubCommitListItem>))]
 	private sealed partial class GitHubPrJsonContext : JsonSerializerContext;
 
-	[GeneratedRegex(@"https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/pull/(\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/pull/(\d+)", RegexOptions.IgnoreCase
+		| RegexOptions.CultureInvariant)]
 	private static partial Regex MyRegex();
 }

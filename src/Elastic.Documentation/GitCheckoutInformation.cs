@@ -28,6 +28,10 @@ public record GitCheckoutInformation
 	[JsonPropertyName("name")]
 	public string RepositoryName { get; init; } = "unavailable";
 
+	/// <summary>Whether git checkout information was resolved (false for the <see cref="Unavailable"/> sentinel).</summary>
+	[JsonIgnore]
+	public bool IsAvailable => RepositoryName != Unavailable.RepositoryName;
+
 	/// <summary>
 	/// The full git ref from GitHub Actions (e.g. refs/pull/123/merge). Set from GITHUB_REF when running in CI.
 	/// </summary>
@@ -40,8 +44,7 @@ public record GitCheckoutInformation
 	/// to a valid GitHub <c>org/repo</c> path. Callers should skip GitHub links when null.
 	/// </summary>
 	[JsonIgnore]
-	public string? GitHubRepository =>
-		Remote is "elastic/docs-builder-unknown" ? null : ExtractGitHubOrgRepo(Remote);
+	public string? GitHubRepository => Remote is "elastic/docs-builder-unknown" ? null : ExtractGitHubOrgRepo(Remote);
 
 	/// <summary>Extracts a validated <c>org/repo</c> path from a GitHub remote URL, or returns <c>null</c>.</summary>
 	/// <remarks>

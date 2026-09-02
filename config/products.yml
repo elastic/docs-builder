@@ -60,7 +60,7 @@ products:
     display: 'Elastic Cloud Terraform Provider'
     versioning: 'cloud-terraform'
   terraform-google-edot-cf:
-    display: 'Terraform Google EDOT CF'
+    display: 'Terraform Google Elastic Cloud Forwarder'
     versioning: 'terraform-google-edot-cf'
   curator:
     display: 'Elasticsearch Curator'
@@ -69,6 +69,16 @@ products:
     repository: 'docs-builder'
     features:
       public-reference: false
+  docs-playground-release-notes-changelogs:
+    display: 'Release Notes Playground (Changelogs)'
+    features:
+      public-reference: false
+      release-notes: prestage
+  docs-playground-release-notes-tagged:
+    display: 'Release Notes Playground (Tagged)'
+    features:
+      public-reference: false
+      release-notes: on-release
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:
@@ -94,13 +104,13 @@ products:
   ecs-logging-ruby:
     display: 'ECS Logging Ruby'
   edot-cf:
-    display: 'EDOT Cloud Forwarder'
+    display: 'Elastic Cloud Forwarder'
     versioning: 'stack'
   edot-sdk:
     display: 'Elastic Distribution of OpenTelemetry SDK'
     versioning: 'all'
   edot-collector:
-    display: 'Elastic Distribution of OpenTelemetry Collector'
+    display: 'Elastic Agent'
     versioning: 'stack'
   edot-ios:
     display: 'Elastic Distribution of OpenTelemetry iOS'
@@ -127,11 +137,11 @@ products:
     display: 'Elastic Distribution of OpenTelemetry Python'
     repository: 'elastic-otel-python'
   edot-cf-aws:
-    display: 'EDOT Cloud Forwarder for AWS'
+    display: 'Elastic Cloud Forwarder for AWS'
   edot-cf-azure:
-    display: 'EDOT Cloud Forwarder for Azure'
+    display: 'Elastic Cloud Forwarder for Azure'
   edot-cf-gcp:
-    display: 'EDOT Cloud Forwarder for GCP'
+    display: 'Elastic Cloud Forwarder for GCP'
   eland:
     display: 'Eland'
     versioning: 'stack'
@@ -247,6 +257,9 @@ products:
   serverless-security:
     display: 'Elastic Security Serverless'
     versioning: 'all'
+  serverless-vector-database:
+    display: 'Elasticsearch Vector Database Serverless'
+    versioning: 'serverless'
   transport-go:
     display: 'Elastic Transport Go'
     repository: 'elastic-transport-go'

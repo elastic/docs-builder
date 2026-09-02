@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Internal.Search.Elasticsearch.Highlighting;
+using Elastic.Documentation.Search.Highlighting;
 using Xunit;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Adapters.Search;
@@ -458,10 +458,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsHighlightsBothTokenAndSynonym()
 	{
 		var text = "Kubernetes and k8s are the same thing";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["kubernetes"] = ["k8s"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["kubernetes"] = ["k8s"] };
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
 		result.Should().Be("<mark>Kubernetes</mark> and <mark>k8s</mark> are the same thing");
@@ -471,10 +468,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsHighlightsMultipleSynonyms()
 	{
 		var text = "Use Elasticsearch or ES or elastic for search";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["elasticsearch"] = ["es", "elastic"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["elasticsearch"] = ["es", "elastic"] };
 		var result = text.HighlightTokens(["elasticsearch"], synonyms);
 
 		result.Should().Be("Use <mark>Elasticsearch</mark> or <mark>ES</mark> or <mark>elastic</mark> for search");
@@ -484,10 +478,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsCaseInsensitiveLookup()
 	{
 		var text = "K8S is short for kubernetes";
-		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-		{
-			["kubernetes"] = ["k8s"]
-		};
+		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase) { ["kubernetes"] = ["k8s"] };
 		var result = text.HighlightTokens(["KUBERNETES"], synonyms);
 
 		result.Should().Be("<mark>K8S</mark> is short for <mark>kubernetes</mark>");
@@ -497,10 +488,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsTokenNotInDictionary()
 	{
 		var text = "Logstash is a pipeline tool";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["elasticsearch"] = ["es"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["elasticsearch"] = ["es"] };
 		var result = text.HighlightTokens(["logstash"], synonyms);
 
 		result.Should().Be("<mark>Logstash</mark> is a pipeline tool");
@@ -510,10 +498,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsEmptySynonymArrayIgnored()
 	{
 		var text = "Elasticsearch is powerful";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["elasticsearch"] = []
-		};
+		var synonyms = new Dictionary<string, string[]> { ["elasticsearch"] = [] };
 		var result = text.HighlightTokens(["elasticsearch"], synonyms);
 
 		result.Should().Be("<mark>Elasticsearch</mark> is powerful");
@@ -523,10 +508,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsEmptyStringsInArrayIgnored()
 	{
 		var text = "Kubernetes and k8s cluster";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["kubernetes"] = ["", "k8s", null!, ""]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["kubernetes"] = ["", "k8s", null!, ""] };
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
 		result.Should().Be("<mark>Kubernetes</mark> and <mark>k8s</mark> cluster");
@@ -551,10 +533,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsAlreadyHighlightedSynonymNotDoubleHighlighted()
 	{
 		var text = "Use <mark>k8s</mark> for Kubernetes deployments";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["kubernetes"] = ["k8s"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["kubernetes"] = ["k8s"] };
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
 		result.Should().Be("Use <mark>k8s</mark> for <mark>Kubernetes</mark> deployments");
@@ -579,10 +558,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsMultipleOccurrencesOfSynonym()
 	{
 		var text = "k8s here and k8s there but also kubernetes";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["kubernetes"] = ["k8s"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["kubernetes"] = ["k8s"] };
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
 		result.Should().Be("<mark>k8s</mark> here and <mark>k8s</mark> there but also <mark>kubernetes</mark>");
@@ -592,10 +568,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsRealWorldElasticSearchExample()
 	{
 		var text = "Configure ES cluster settings in Elasticsearch for elastic cloud";
-		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-		{
-			["elasticsearch"] = ["es", "elastic"]
-		};
+		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase) { ["elasticsearch"] = ["es", "elastic"] };
 		var result = text.HighlightTokens(["elasticsearch"], synonyms);
 
 		result.Should().Be("Configure <mark>ES</mark> cluster settings in <mark>Elasticsearch</mark> for <mark>elastic</mark> cloud");
@@ -605,10 +578,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsRealWorldMachineLearningExample()
 	{
 		var text = "ML models for machine learning in the ml node";
-		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-		{
-			["machine learning"] = ["ml"]
-		};
+		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase) { ["machine learning"] = ["ml"] };
 		var result = text.HighlightTokens(["machine learning"], synonyms);
 
 		// Note: "machine learning" as a token matches the phrase, ml is a synonym
@@ -619,10 +589,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsSynonymInsideMarkTagNotHighlighted()
 	{
 		var text = "<mark>kubernetes and k8s</mark> are popular";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["kubernetes"] = ["k8s"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["kubernetes"] = ["k8s"] };
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
 		// Both kubernetes and k8s are inside mark tag, should not be double-highlighted
@@ -633,10 +600,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsMixedHighlightedAndUnhighlightedSynonyms()
 	{
 		var text = "<mark>k8s</mark> and kubernetes cluster";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["kubernetes"] = ["k8s"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["kubernetes"] = ["k8s"] };
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
 		result.Should().Be("<mark>k8s</mark> and <mark>kubernetes</mark> cluster");
@@ -646,10 +610,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsPreservesOriginalCaseForSynonym()
 	{
 		var text = "Use K8S for your deployments";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["kubernetes"] = ["k8s"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["kubernetes"] = ["k8s"] };
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
 		// Original case "K8S" should be preserved in the highlight
@@ -660,10 +621,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsWithSpecialCharacters()
 	{
 		var text = "Use ES|QL or esql for queries";
-		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-		{
-			["esql"] = ["ES|QL"]
-		};
+		var synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase) { ["esql"] = ["ES|QL"] };
 		var result = text.HighlightTokens(["esql"], synonyms);
 
 		result.Should().Be("Use <mark>ES|QL</mark> or <mark>esql</mark> for queries");
@@ -674,10 +632,7 @@ public class StringHighlightExtensionsTests
 	{
 		// Synonym "k8s" should not match "ak8s" (middle of word) but should match "k8ss" (starts with k8s)
 		var text = "k8ss is not k8s and ak8s is wrong";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["kubernetes"] = ["k8s"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["kubernetes"] = ["k8s"] };
 		var result = text.HighlightTokens(["kubernetes"], synonyms);
 
 		// With starts-with highlighting:
@@ -691,10 +646,7 @@ public class StringHighlightExtensionsTests
 	public void SynonymsHardReplacements()
 	{
 		var text = "ES|QL is esql and not EQL";
-		var synonyms = new Dictionary<string, string[]>
-		{
-			["esql"] = ["es|ql => esql"]
-		};
+		var synonyms = new Dictionary<string, string[]> { ["esql"] = ["es|ql => esql"] };
 		var result = text.HighlightTokens(["es|ql"], synonyms);
 
 		// k8s within k8ss and ak8s will be highlighted since it's a substring match

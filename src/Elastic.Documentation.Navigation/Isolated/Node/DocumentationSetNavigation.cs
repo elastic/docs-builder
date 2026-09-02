@@ -10,24 +10,19 @@ using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
+using ListingGroupRef = Elastic.Documentation.Configuration.Toc.ListingGroupRef;
+using ListingRef = Elastic.Documentation.Configuration.Toc.ListingRef;
+using ListingVisual = Elastic.Documentation.Configuration.Toc.ListingVisual;
 
 namespace Elastic.Documentation.Navigation.Isolated.Node;
 
-public interface IDocumentationSetNavigation
+public interface IDocumentationSetNavigation : IAssignableNavigationTitle
 {
 	IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes { get; }
-
-	/// <summary>
-	/// Optional override for the navigation title. When set, this is used instead of the index page's title.
-	/// </summary>
-	string? NavigationTitleOverride { get; set; }
 }
 
 [DebuggerDisplay("{Url}")]
-public class DocumentationSetNavigation<TModel>
-	: IDocumentationSetNavigation, IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider
-
-	where TModel : class, IDocumentationFile
+public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider, IAssignableIslandNavigation where TModel : class, IDocumentationFile
 {
 	private readonly IDocumentationFileFactory<TModel> _factory;
 	private readonly ICrossLinkResolver _crossLinkResolver;
@@ -53,6 +48,7 @@ public class DocumentationSetNavigation<TModel>
 		HomeProvider = this;
 		Id = ShortId.Create(documentationSet.Project ?? "root");
 		IsUsingNavigationDropdown = documentationSet.Features.PrimaryNav ?? false;
+		IsIsland = documentationSet.Island;
 		Git = context.Git;
 		Identifier = new Uri($"{Git.RepositoryName}://");
 		_ = _tableOfContentNodes.TryAdd(Identifier, this);
@@ -62,13 +58,7 @@ public class DocumentationSetNavigation<TModel>
 		var index = -1;
 		foreach (var tocItem in documentationSet.TableOfContents)
 		{
-			var navItem = ConvertToNavigationItem(
-				tocItem,
-				index++,
-				context,
-				parent: this,
-				homeAccessor: this
-			);
+			var navItem = ConvertToNavigationItem(tocItem, index++, context, parent: this, homeAccessor: this);
 
 			if (navItem != null)
 				items.Add(navItem);
@@ -82,7 +72,10 @@ public class DocumentationSetNavigation<TModel>
 
 			// Emit error if TOC was defined but no items could be created
 			if (documentationSet.TableOfContents.Count > 0)
-				context.EmitError(context.ConfigurationPath, $"Documentation set '{setName}' ({setPath}) table of contents has items defined but none could be created");
+				context.EmitError(
+					context.ConfigurationPath,
+					$"Documentation set '{setName}' ({setPath}) table of contents has items defined but none could be created"
+				);
 			// Emit error if TOC was never defined
 			else
 				context.EmitError(context.ConfigurationPath, $"Documentation set '{setName}' ({setPath}) has no table of contents defined");
@@ -97,7 +90,6 @@ public class DocumentationSetNavigation<TModel>
 			NavigationItems = navigationItems;
 			_ = this.UpdateNavigationIndex(context);
 		}
-
 	}
 
 	/// <summary>
@@ -150,9 +142,13 @@ public class DocumentationSetNavigation<TModel>
 	public bool IsUsingNavigationDropdown { get; }
 
 	/// <inheritdoc />
+	public bool IsIsland { get; set; }
+
+	/// <inheritdoc />
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
 
-	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		SetNavigationItems(navigationItems);
 	private void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{PathPrefix}/index.md", out navigationItems);
@@ -161,23 +157,22 @@ public class DocumentationSetNavigation<TModel>
 		_ = this.UpdateNavigationIndex(_context);
 	}
 
-
 	private INavigationItem? ConvertToNavigationItem(
 		ITableOfContentsItem tocItem,
 		int index,
 		IDocumentationSetContext context,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 		INavigationHomeAccessor homeAccessor
-	) =>
-		tocItem switch
-		{
-			FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, homeAccessor),
-			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, homeAccessor),
-			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeAccessor),
-			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor),
-			CliReferenceRef cliRef => CreateCliReferenceNavigation(cliRef, index, context, parent, homeAccessor),
-			_ => null
-		};
+	) => tocItem switch
+	{
+		FileRef fileRef => CreateFileNavigation(fileRef, index, context, parent, homeAccessor),
+		CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, homeAccessor),
+		FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeAccessor),
+		IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor),
+		CliReferenceRef cliRef => CreateCliReferenceNavigation(cliRef, index, context, parent, homeAccessor),
+		ListingRef listingRef => CreateListingNavigation(listingRef, index, context, parent, homeAccessor),
+		_ => null
+	};
 
 	/// <summary>
 	/// Resolves the file info based on the file path. Since LoadAndResolve has already processed paths,
@@ -193,17 +188,15 @@ public class DocumentationSetNavigation<TModel>
 	/// <summary>
 	/// Creates the documentation file from the factory, emitting an error if creation fails.
 	/// </summary>
-	private TModel? CreateDocumentationFile(
-		IFileInfo fileInfo,
-		IFileSystem fileSystem,
-		IDocumentationSetContext context,
-		string fullPath
-	)
+	private TModel? CreateDocumentationFile(IFileInfo fileInfo, IFileSystem fileSystem, IDocumentationSetContext context)
 	{
 		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, fileInfo.FullName);
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fileSystem);
 		if (documentationFile == null)
-			context.EmitError(context.ConfigurationPath, $"File navigation '{relativePath}' could not be created. {fullPath}");
+		{
+			var reason = fileInfo.Exists ? "the file exists but is not a valid Markdown document" : "the file does not exist on disk";
+			context.EmitError(context.ConfigurationPath, $"Table of contents references '{relativePath}' but {reason}.");
+		}
 
 		return documentationFile;
 	}
@@ -217,11 +210,14 @@ public class DocumentationSetNavigation<TModel>
 			return;
 
 		// Find an item named "index" or "index.md"
-		var indexItem = children.FirstOrDefault(c =>
-			c is ILeafNavigationItem<IDocumentationFile> leaf &&
-			(leaf.Model.NavigationTitle.Equals("index", StringComparison.OrdinalIgnoreCase) ||
-			 (leaf is FileNavigationLeaf<IDocumentationFile> fileLeaf &&
-			  fileLeaf.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase))));
+		var indexItem = children.FirstOrDefault(
+			c => c is ILeafNavigationItem<IDocumentationFile> leaf &&
+				(leaf.Model.NavigationTitle.Equals("index", StringComparison.OrdinalIgnoreCase) ||
+					(leaf is FileNavigationLeaf<IDocumentationFile> fileLeaf && fileLeaf
+						.FileInfo
+						.Name
+						.Equals("index.md", StringComparison.OrdinalIgnoreCase)))
+		);
 
 		// If found and it's not already first, move it to the front
 		if (indexItem != null && children[0] != indexItem)
@@ -248,14 +244,21 @@ public class DocumentationSetNavigation<TModel>
 			DetectionRuleRef ruleRef => ruleRef.FileInfo,
 			_ => ResolveFileInfo(context, fullPath)
 		};
-		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);
+		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
 		if (documentationFile == null)
 			return null;
 
 		// Handle leaf case (no children)
 		if (fileRef.Children.Count <= 0)
 		{
-			var leafNavigationArgs = new FileNavigationArgs(fullPath, fileRef.PathRelativeToContainer, fileRef.Hidden, index, parent, homeAccessor);
+			var leafNavigationArgs = new FileNavigationArgs(
+				fullPath,
+				fileRef.PathRelativeToContainer,
+				fileRef.Hidden,
+				index,
+				parent,
+				homeAccessor
+			);
 			return DocumentationNavigationFactory.CreateFileNavigationLeaf(documentationFile, fileInfo, leafNavigationArgs);
 		}
 
@@ -268,7 +271,11 @@ public class DocumentationSetNavigation<TModel>
 			parent,
 			homeAccessor
 		);
-		var fileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(documentationFile, fileInfo, virtualFileNavigationArgs);
+		var fileNavigation = DocumentationNavigationFactory.CreateVirtualFileNavigation(
+			documentationFile,
+			fileInfo,
+			virtualFileNavigationArgs
+		);
 
 		// Process children recursively
 		var children = new List<INavigationItem>();
@@ -277,9 +284,12 @@ public class DocumentationSetNavigation<TModel>
 		foreach (var child in fileRef.Children)
 		{
 			var childNav = ConvertToNavigationItem(
-				child, childIndex++, context,
+				child,
+				childIndex++,
+				context,
 				fileNavigation,
 				homeAccessor // Depth will be set by child
+
 			);
 			if (childNav != null)
 				children.Add(childNav);
@@ -288,8 +298,7 @@ public class DocumentationSetNavigation<TModel>
 		// Validate and order children
 		if (children.Count < 1)
 		{
-			context.EmitError(context.ConfigurationPath,
-				$"File navigation '{fullPath}' has children defined but none could be created");
+			context.EmitError(context.ConfigurationPath, $"File navigation '{fullPath}' has children defined but none could be created");
 			return null;
 		}
 
@@ -307,17 +316,17 @@ public class DocumentationSetNavigation<TModel>
 	)
 	{
 		var title = crossLinkRef.Title ?? crossLinkRef.CrossLinkUri.OriginalString;
-		if (!_crossLinkResolver.TryResolve(s => _context.EmitError(_context.ConfigurationPath, s), crossLinkRef.CrossLinkUri, out var resolvedUri))
+		if (
+			!_crossLinkResolver.TryResolve(
+				s => _context.EmitError(_context.ConfigurationPath, s),
+				crossLinkRef.CrossLinkUri,
+				out var resolvedUri
+			)
+		)
 			return null;
 		var model = new CrossLinkModel(resolvedUri, title);
 
-		return new CrossLinkNavigationLeaf(
-			model,
-			resolvedUri.ToString(),
-			crossLinkRef.Hidden,
-			parent,
-			homeAccessor
-		)
+		return new CrossLinkNavigationLeaf(model, resolvedUri.ToString(), crossLinkRef.Hidden, parent, homeAccessor)
 		{
 			NavigationIndex = index
 		};
@@ -335,10 +344,7 @@ public class DocumentationSetNavigation<TModel>
 		var folderPath = folderRef.PathRelativeToDocumentationSet;
 
 		// Create folder navigation with null parent initially - we'll pass it to children but set it properly after
-		var folderNavigation = new FolderNavigation<TModel>(folderPath, parent, homeAccessor)
-		{
-			NavigationIndex = index
-		};
+		var folderNavigation = new FolderNavigation<TModel>(folderPath, parent, homeAccessor) { NavigationIndex = index };
 
 		// Process children - they can reference folderNavigation as their parent
 		var children = new List<INavigationItem>();
@@ -347,13 +353,7 @@ public class DocumentationSetNavigation<TModel>
 		// LoadAndResolve has already populated children (either from YAML or auto-discovered)
 		foreach (var child in folderRef.Children)
 		{
-			var childNav = ConvertToNavigationItem(
-				child,
-				childIndex++,
-				context,
-				folderNavigation,
-				homeAccessor
-			);
+			var childNav = ConvertToNavigationItem(child, childIndex++, context, folderNavigation, homeAccessor);
 
 			if (childNav != null)
 				children.Add(childNav);
@@ -362,7 +362,10 @@ public class DocumentationSetNavigation<TModel>
 		// Validate that we have children (LoadAndResolve should have ensured this)
 		if (children.Count == 0)
 		{
-			context.Collector.EmitError(folderRef.Context, $"Folder navigation '{folderPath}' has children defined but none could be created ({folderRef.Context}:)");
+			context.Collector.EmitError(
+				folderRef.Context,
+				$"Folder navigation '{folderPath}' has children defined but none could be created ({folderRef.Context}:)"
+			);
 			return null;
 		}
 		folderNavigation.SetNavigationItems(children);
@@ -380,9 +383,10 @@ public class DocumentationSetNavigation<TModel>
 		// tocRef.Path is now the FULL path (e.g., "guides/api" or "setup/advanced") after LoadAndResolve
 		var fullTocPath = tocRef.PathRelativeToDocumentationSet;
 
-		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-			context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, fullTocPath)
-		);
+		var tocDirectory = context
+			.ReadFileSystem
+			.DirectoryInfo
+			.New(context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, fullTocPath));
 
 		var assemblerBuild = context.BuildType == BuildType.Assembler;
 		// for assembler builds we ensure toc's create their own home provider sot that they can be re-homed easily
@@ -397,14 +401,13 @@ public class DocumentationSetNavigation<TModel>
 			tocDirectory,
 			fullTocPath,
 			parent, // Temporary null parent
+
 			isolatedHomeProvider.PathPrefix,
 			Git,
 			_tableOfContentNodes,
 			isolatedHomeProvider
 		)
-		{
-			NavigationIndex = index
-		};
+		{ NavigationIndex = index };
 
 		// Convert children - pass tocNavigation as parent and tocHomeProvider as HomeProvider (TOC creates new scope)
 		var children = new List<INavigationItem>();
@@ -415,13 +418,7 @@ public class DocumentationSetNavigation<TModel>
 
 		foreach (var child in tocRef.Children)
 		{
-			var childNav = ConvertToNavigationItem(
-				child,
-				childIndex++,
-				context,
-				tocNavigation,
-				childHomeAccessor
-			);
+			var childNav = ConvertToNavigationItem(child, childIndex++, context, tocNavigation, childHomeAccessor);
 
 			if (childNav != null)
 				children.Add(childNav);
@@ -430,13 +427,17 @@ public class DocumentationSetNavigation<TModel>
 		// Validate TOCs have children
 		if (children.Count == 0)
 		{
-			context.Collector.EmitError(tocRef.Context,
+			context.Collector.EmitError(
+				tocRef.Context,
 				tocRef.Children.Count == 0
 					? $"Table of contents navigation '{fullTocPath}' has no children defined ({tocRef.Context}:)"
-					: $"Table of contents navigation '{fullTocPath}' has children defined but none could be created ({tocRef.Context}:)");
+					: $"Table of contents navigation '{fullTocPath}' has children defined but none could be created ({tocRef.Context}:)"
+			);
 			return null;
 		}
 		tocNavigation.SetNavigationItems(children);
+		if (tocRef.Island)
+			tocNavigation.IsIsland = true;
 
 		return tocNavigation;
 	}
@@ -449,8 +450,10 @@ public class DocumentationSetNavigation<TModel>
 		INavigationHomeAccessor homeAccessor
 	)
 	{
-		var schemaFileInfo = context.ReadFileSystem.FileInfo.New(
-			context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, cliRef.SchemaPath));
+		var schemaFileInfo = context
+			.ReadFileSystem
+			.FileInfo
+			.New(context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, cliRef.SchemaPath));
 
 		CliSchema schema;
 		try
@@ -487,20 +490,47 @@ public class DocumentationSetNavigation<TModel>
 		// Shortcut alias pages first, then commands and namespaces
 		foreach (var shortcut in schema.Shortcuts ?? [])
 		{
-			var aliasNav = MakeFileLeaf(docSourceDir, virtualRoot, [shortcut.From], isNamespace: true, childIndex++, folderNavigation, homeAccessor, context);
+			var aliasNav = MakeFileLeaf(
+				docSourceDir,
+				virtualRoot,
+				[shortcut.From],
+				isNamespace: true,
+				childIndex++,
+				folderNavigation,
+				homeAccessor,
+				context
+			);
 			if (aliasNav is not null)
 				children.Add(aliasNav);
 		}
 
 		foreach (var cmd in schema.Commands)
 		{
-			var cmdNav = MakeFileLeaf(docSourceDir, virtualRoot, [cmd.Name], isNamespace: false, childIndex++, folderNavigation, homeAccessor, context);
+			var cmdNav = MakeFileLeaf(
+				docSourceDir,
+				virtualRoot,
+				[cmd.Name],
+				isNamespace: false,
+				childIndex++,
+				folderNavigation,
+				homeAccessor,
+				context
+			);
 			if (cmdNav is not null)
 				children.Add(cmdNav);
 		}
 		foreach (var ns in schema.Namespaces)
 		{
-			var nsNav = BuildNamespaceNavigation(docSourceDir, virtualRoot, ns, [ns.Segment], childIndex++, folderNavigation, homeAccessor, context);
+			var nsNav = BuildNamespaceNavigation(
+				docSourceDir,
+				virtualRoot,
+				ns,
+				[ns.Segment],
+				childIndex++,
+				folderNavigation,
+				homeAccessor,
+				context
+			);
 			if (nsNav is not null)
 				children.Add(nsNav);
 		}
@@ -534,7 +564,16 @@ public class DocumentationSetNavigation<TModel>
 		var childIndex = 0;
 
 		// Namespace index file
-		var nsIndexNav = MakeFileLeaf(docSourceDir, virtualRoot, segments, isNamespace: true, childIndex++, nsFolderNav, homeAccessor, context);
+		var nsIndexNav = MakeFileLeaf(
+			docSourceDir,
+			virtualRoot,
+			segments,
+			isNamespace: true,
+			childIndex++,
+			nsFolderNav,
+			homeAccessor,
+			context
+		);
 		if (nsIndexNav is not null)
 			children.Add(nsIndexNav);
 
@@ -542,7 +581,16 @@ public class DocumentationSetNavigation<TModel>
 		foreach (var cmd in ns.Commands ?? [])
 		{
 			var cmdSegments = segments.Append(cmd.Name).ToArray();
-			var cmdNav = MakeFileLeaf(docSourceDir, virtualRoot, cmdSegments, isNamespace: false, childIndex++, nsFolderNav, homeAccessor, context);
+			var cmdNav = MakeFileLeaf(
+				docSourceDir,
+				virtualRoot,
+				cmdSegments,
+				isNamespace: false,
+				childIndex++,
+				nsFolderNav,
+				homeAccessor,
+				context
+			);
 			if (cmdNav is not null)
 				children.Add(cmdNav);
 		}
@@ -551,7 +599,16 @@ public class DocumentationSetNavigation<TModel>
 		foreach (var subNs in ns.Namespaces ?? [])
 		{
 			var subSegments = segments.Append(subNs.Segment).ToArray();
-			var subNav = BuildNamespaceNavigation(docSourceDir, virtualRoot, subNs, subSegments, childIndex++, nsFolderNav, homeAccessor, context);
+			var subNav = BuildNamespaceNavigation(
+				docSourceDir,
+				virtualRoot,
+				subNs,
+				subSegments,
+				childIndex++,
+				nsFolderNav,
+				homeAccessor,
+				context
+			);
 			if (subNav is not null)
 				children.Add(subNav);
 		}
@@ -583,13 +640,170 @@ public class DocumentationSetNavigation<TModel>
 		var docFile = _factory.TryCreateDocumentationFile(fileInfo, context.ReadFileSystem);
 		if (docFile is null)
 		{
-			context.EmitError(context.ConfigurationPath,
-				$"CLI reference: could not create documentation file for '{syntheticPath}'");
+			context.EmitError(context.ConfigurationPath, $"CLI reference: could not create documentation file for '{syntheticPath}'");
 			return null;
 		}
 
 		var args = new FileNavigationArgs(syntheticPath, syntheticPath, false, index, parent, homeAccessor);
 		return DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args);
+	}
+
+	private INavigationItem? CreateListingNavigation(
+		ListingRef listingRef,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		INavigationHomeAccessor homeAccessor
+	)
+	{
+		var visual = listingRef.Options.Visual;
+		var listingPath = listingRef.PathRelativeToDocumentationSet;
+		var isIsland = listingRef.Options.Island;
+		if (isIsland && visual == ListingVisual.None)
+		{
+			context.Collector.EmitError(
+				listingRef.Context,
+				$"Listing '{listingPath}' sets island: true with visual: none. Set visual: groups or visual: all so the listing is reachable from the main nav."
+			);
+			return null;
+		}
+
+		// Root folder node for the listing
+		var folderNavigation = new FolderNavigation<TModel>(listingPath, parent, homeAccessor) { NavigationIndex = index };
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
+
+		foreach (var tocItem in listingRef.Children)
+		{
+			switch (tocItem)
+			{
+				case IndexFileRef indexRef:
+					{
+						// Root index page — always visible (it's the "back to" target for island nav)
+						var fileInfo = ResolveFileInfo(context, indexRef.PathRelativeToDocumentationSet);
+						var docFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
+						if (docFile is null)
+							break;
+						var args = new FileNavigationArgs(
+							indexRef.PathRelativeToDocumentationSet,
+							indexRef.PathRelativeToContainer,
+							false,
+							childIndex++,
+							folderNavigation,
+							homeAccessor
+						);
+						children.Add(DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args));
+						break;
+					}
+				case ListingGroupRef groupRef:
+					{
+						// Group node visibility depends on `visual:`.
+						// FolderNavigation.Hidden is derived from its index page's Hidden flag,
+						// so we control group node visibility by setting Hidden on the index leaf.
+						// When this listing is an island the parent nav shows it as a ≫ stub (no subtree),
+						// so group visibility only matters for the island sidebar — driven by visual: as before.
+						var groupHidden = visual is ListingVisual.None;
+						// Derive the group folder path from the first child's parent dir so URL generation works
+						var groupFolderPath = groupRef.PathRelativeToDocumentationSet + "/" + groupRef.GroupKey;
+						var groupFolderNav = new FolderNavigation<TModel>(groupFolderPath, folderNavigation, homeAccessor)
+						{
+							NavigationIndex = childIndex++
+						};
+						var groupChildren = new List<INavigationItem>();
+						var groupChildIndex = 0;
+
+						foreach (var groupItem in groupRef.Children)
+						{
+							var pathDs = groupItem switch
+							{
+								FileRef fr => fr.PathRelativeToDocumentationSet,
+								_ => groupItem.PathRelativeToDocumentationSet
+							};
+							var pathCont = groupItem switch
+							{
+								FileRef fr => fr.PathRelativeToContainer,
+								_ => groupItem.PathRelativeToContainer
+							};
+
+							// Group index page: hidden matches group-level visibility
+							// Content pages: always hidden from nav, but NOT excluded from indexing (so search still works)
+							bool pageHidden;
+							bool excludeFromIndexing;
+							if (groupItem is IndexFileRef)
+							{
+								pageHidden = groupHidden;
+								excludeFromIndexing = groupHidden; // group index excluded from indexing only when fully hidden
+							}
+							else
+							{
+								pageHidden = visual != ListingVisual.All;
+								excludeFromIndexing = false; // listing pages always indexed
+							}
+
+							var childFileInfo = ResolveFileInfo(context, pathDs);
+							var childDocFile = CreateDocumentationFile(childFileInfo, context.ReadFileSystem, context);
+							if (childDocFile is null)
+								continue;
+
+							var leafArgs = new FileNavigationArgs(
+								pathDs,
+								pathCont,
+								pageHidden,
+								groupChildIndex++,
+								groupFolderNav,
+								homeAccessor,
+								ExcludeFromIndexing: excludeFromIndexing
+							);
+							groupChildren.Add(
+								DocumentationNavigationFactory.CreateFileNavigationLeaf(childDocFile, childFileInfo, leafArgs)
+							);
+						}
+
+						if (groupChildren.Count == 0)
+							break;
+						groupFolderNav.SetNavigationItems(groupChildren);
+						children.Add(groupFolderNav);
+						break;
+					}
+				case FileRef fileRef:
+					{
+						// Ungrouped page — hidden from nav, not excluded from indexing
+						var fileInfo = ResolveFileInfo(context, fileRef.PathRelativeToDocumentationSet);
+						var docFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
+						if (docFile is null)
+							break;
+						var args = new FileNavigationArgs(
+							fileRef.PathRelativeToDocumentationSet,
+							fileRef.PathRelativeToContainer,
+							true,
+							childIndex++,
+							folderNavigation,
+							homeAccessor,
+							ExcludeFromIndexing: false
+						);
+						children.Add(DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args));
+						break;
+					}
+				default:
+					{
+						var navItem = ConvertToNavigationItem(tocItem, childIndex++, context, folderNavigation, homeAccessor);
+						if (navItem != null)
+							children.Add(navItem);
+						break;
+					}
+			}
+		}
+
+		if (children.Count == 0)
+		{
+			context.Collector.EmitError(listingRef.Context, $"Listing navigation '{listingPath}' produced no navigation items");
+			return null;
+		}
+
+		folderNavigation.SetNavigationItems(children);
+		if (isIsland)
+			folderNavigation.IsIsland = true;
+		return folderNavigation;
 	}
 
 	// Synthetic path — clean command names (no cmd- prefix) matching CliReferenceDocsBuilderExtension.SyntheticPath
@@ -605,12 +819,9 @@ public class DocumentationSetNavigation<TModel>
 		else
 		{
 			// Keep cmd- prefix only for "index" commands to avoid collision with namespace index.md pages
-			var cmdName = segments[^1].Equals("index", StringComparison.OrdinalIgnoreCase)
-				? $"cmd-{segments[^1]}"
-				: segments[^1];
+			var cmdName = segments[^1].Equals("index", StringComparison.OrdinalIgnoreCase) ? $"cmd-{segments[^1]}" : segments[^1];
 			var parentPath = segments.Length > 1 ? string.Join("/", segments[..^1]) + "/" : string.Empty;
 			return $"{virtualRoot}/{parentPath}{cmdName}.md";
 		}
 	}
-
 }

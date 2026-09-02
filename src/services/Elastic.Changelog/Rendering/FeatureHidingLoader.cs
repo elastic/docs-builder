@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Rendering;
@@ -16,47 +17,33 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 	/// Loads feature IDs to hide from the provided input values.
 	/// Values can be file paths (reads feature IDs from file, one per line) or direct feature IDs.
 	/// </summary>
-	public async Task<FeatureHidingResult> LoadFeatureIdsAsync(
-		IDiagnosticsCollector collector,
-		string[]? hideFeatures,
-		Cancel ctx)
+	public async Task<FeatureHidingResult> LoadFeatureIdsAsync(IDiagnosticsCollector collector, string[]? hideFeatures, Cancel ctx)
 	{
 		var featureIdsToHide = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 		if (hideFeatures is not { Length: > 0 })
 		{
-			return new FeatureHidingResult
-			{
-				IsValid = true,
-				FeatureIdsToHide = featureIdsToHide
-			};
+			return new FeatureHidingResult { IsValid = true, FeatureIdsToHide = featureIdsToHide };
 		}
 
 		// If there's exactly one value, check if it's a file path
 		if (hideFeatures.Length == 1)
 		{
 			var result = await ProcessSingleValueAsync(collector, hideFeatures[0], featureIdsToHide, ctx);
-			return new FeatureHidingResult
-			{
-				IsValid = result,
-				FeatureIdsToHide = featureIdsToHide
-			};
+			return new FeatureHidingResult { IsValid = result, FeatureIdsToHide = featureIdsToHide };
 		}
 
 		// Multiple values - process all values first, then check for errors
 		var result2 = await ProcessMultipleValuesAsync(collector, hideFeatures, featureIdsToHide, ctx);
-		return new FeatureHidingResult
-		{
-			IsValid = result2,
-			FeatureIdsToHide = featureIdsToHide
-		};
+		return new FeatureHidingResult { IsValid = result2, FeatureIdsToHide = featureIdsToHide };
 	}
 
 	private async Task<bool> ProcessSingleValueAsync(
 		IDiagnosticsCollector collector,
 		string singleValue,
 		HashSet<string> featureIdsToHide,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Try to normalize the path to handle ~ and relative paths
 		var normalizedValue = NormalizePath(singleValue);
@@ -76,7 +63,7 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 			collector.EmitError(
 				normalizedValue,
 				$"File does not exist: {normalizedValue}. Current directory: {currentDir}. " +
-				"Paths support tilde (~) expansion and can be relative or absolute."
+					"Paths support tilde (~) expansion and can be relative or absolute."
 			);
 			return false;
 		}
@@ -90,7 +77,8 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		IDiagnosticsCollector collector,
 		string[] values,
 		HashSet<string> featureIdsToHide,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var nonExistentFiles = new List<string>();
 
@@ -125,7 +113,7 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 				collector.EmitError(
 					filePath,
 					$"File does not exist: {filePath}. Current directory: {currentDir}. " +
-					"Paths support tilde (~) expansion and can be relative or absolute."
+						"Paths support tilde (~) expansion and can be relative or absolute."
 				);
 			}
 			return false;
@@ -134,24 +122,21 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		return true;
 	}
 
-	private async Task ReadFeatureIdsFromFileAsync(
-		string filePath,
-		HashSet<string> featureIdsToHide,
-		Cancel ctx)
+	private async Task ReadFeatureIdsFromFileAsync(string filePath, HashSet<string> featureIdsToHide, Cancel ctx)
 	{
 		var content = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
-		var featureIds = content
-			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-			.Where(f => !string.IsNullOrWhiteSpace(f));
+		var featureIds = content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(
+			f => !string.IsNullOrWhiteSpace(f)
+		);
 
 		foreach (var featureId in featureIds)
 			_ = featureIdsToHide.Add(featureId);
 	}
 
 	private bool LooksLikeFilePath(string value) =>
-		value.Contains(fileSystem.Path.DirectorySeparatorChar) ||
-		value.Contains(fileSystem.Path.AltDirectorySeparatorChar) ||
-		fileSystem.Path.HasExtension(value);
+		value.Contains(fileSystem.Path.DirectorySeparatorChar)
+			|| value.Contains(fileSystem.Path.AltDirectorySeparatorChar)
+			|| fileSystem.Path.HasExtension(value);
 
 	/// <summary>
 	/// Normalizes a file path by expanding tilde (~) to the user's home directory
@@ -162,27 +147,10 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		if (string.IsNullOrWhiteSpace(path))
 			return path;
 
-		var trimmedPath = path.Trim();
-
-		// Expand tilde to user's home directory
-		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
-		{
-			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-			var relativePath = trimmedPath[2..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-			// Ensure that an accidentally rooted path segment does not cause the home directory
-			// to be ignored by Path.Combine.
-			var fullPath = Path.IsPathRooted(relativePath)
-				? relativePath
-				: Path.Join(homeDirectory, relativePath);
-			trimmedPath = fullPath;
-		}
-		else if (trimmedPath == "~")
-		{
-			trimmedPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-		}
+		var expanded = FilterLoaderUtilities.ExpandTilde(path);
 
 		// Convert to absolute path (handles relative paths like ./file or ../file)
-		return Path.GetFullPath(trimmedPath);
+		return Path.GetFullPath(expanded);
 	}
 }
 

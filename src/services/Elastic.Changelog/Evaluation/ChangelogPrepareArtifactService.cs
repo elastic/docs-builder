@@ -10,6 +10,7 @@ using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -20,7 +21,7 @@ public class ChangelogPrepareArtifactService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	ICoreService coreService,
-	IFileSystem? fileSystem = null
+	IRunnerTempFileSystem fileSystem
 ) : IService
 {
 	/// <summary>
@@ -29,14 +30,18 @@ public class ChangelogPrepareArtifactService(
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrepareArtifactService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
+	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 
 	public async Task<bool> PrepareArtifact(IDiagnosticsCollector collector, PrepareArtifactArguments input, Cancel ctx)
 	{
 		var status = ResolveStatus(input.EvaluateStatus, input.GenerateOutcome);
-		_logger.LogInformation("Resolved artifact status: {Status} (evaluate={Evaluate}, generate={Generate})",
-			status, input.EvaluateStatus, input.GenerateOutcome);
+		_logger.LogInformation(
+			"Resolved artifact status: {Status} (evaluate={Evaluate}, generate={Generate})",
+			status,
+			input.EvaluateStatus,
+			input.GenerateOutcome
+		);
 
 		_ = _fileSystem.Directory.CreateDirectory(input.OutputDir);
 
@@ -83,7 +88,7 @@ public class ChangelogPrepareArtifactService(
 		// `bool` fields. Treating "unspecified" as `false` keeps downstream
 		// consumers (apply step) failing closed: an unrecognised or omitted
 		// CLI flag never grants commit permission.
-		var metadata = new ChangelogArtifactMetadata
+		var metadata = new GithubDecisionMetadata
 		{
 			PrNumber = input.PrNumber,
 			HeadRef = input.HeadRef,
@@ -103,7 +108,7 @@ public class ChangelogPrepareArtifactService(
 		};
 
 		var metadataPath = _fileSystem.Path.Combine(input.OutputDir, "metadata.json");
-		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 		await _fileSystem.File.WriteAllTextAsync(metadataPath, json, ctx);
 		_logger.LogInformation("Wrote artifact metadata to {Path}", metadataPath);
 

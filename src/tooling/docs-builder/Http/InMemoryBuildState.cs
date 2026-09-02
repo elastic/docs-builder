@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using Actions.Core;
@@ -14,7 +15,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Documentation.Builder.Http;
 
@@ -49,21 +49,27 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly ILoggerFactory _loggerFactory = loggerFactory;
 	private readonly IConfigurationContext _configurationContext = configurationContext;
 	private readonly ILogger<InMemoryBuildState> _logger = loggerFactory.CreateLogger<InMemoryBuildState>();
-	private readonly SemaphoreSlim _buildSemaphore = new(1, 1);
+	// Capacity-1 bounded channel: a new trigger while a build is running queues one more run;
+	// additional triggers drop the queued one (DropOldest) so only the latest matters.
+	// The build loop (RunAsync) is the sole reader and never cancels a running build on file events.
+	private readonly Channel<string> _buildChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(1)
+	{
+		FullMode = BoundedChannelFullMode.DropOldest,
+		SingleReader = true
+	});
+
 	private readonly Lock _diagnosticsLock = new();
 	private readonly List<DiagnosticDto> _diagnostics = [];
 
 	// Reuse MockFileSystem across builds to benefit from caching.
 	// Initialized lazily on first ExecuteBuildAsync so we can scope it to the source path.
-	private ScopedFileSystem? _writeFs;
+	// Exposed so the serve host can read pagefind index files written by the background build.
 	private string? _writeFsPath;
+	public IFileSystem? WriteFileSystem { get; private set; }
 
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();
 	private readonly List<Channel<BuildEvent>> _clientChannels = [];
-
-	private CancellationTokenSource? _currentBuildCts;
-	private Task? _currentBuildTask;
 
 	private int _errorCount;
 	private int _warningCount;
@@ -79,11 +85,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	/// </summary>
 	public ChannelReader<BuildEvent> Subscribe()
 	{
-		var channel = Channel.CreateUnbounded<BuildEvent>(new UnboundedChannelOptions
-		{
-			SingleReader = true,
-			SingleWriter = true
-		});
+		var channel = Channel.CreateUnbounded<BuildEvent>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
 
 		lock (_clientsLock)
 		{
@@ -112,47 +114,36 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		_logger.LogDebug("Client unsubscribed from diagnostics stream. Total clients: {Count}", _clientChannels.Count);
 	}
 
-	public async Task StartBuildAsync(string sourcePath, Cancel externalCt)
+	/// <summary>
+	/// Enqueues a validation build request. If a build is already queued but not yet started,
+	/// it is replaced by this one (DropOldest). A running build is never cancelled; instead the
+	/// new request waits in the single-slot queue and runs as soon as the current build finishes.
+	/// </summary>
+	public void ScheduleBuild(string sourcePath) => _ = _buildChannel.Writer.TryWrite(sourcePath);
+
+	/// <summary>
+	/// Runs the build loop until <paramref name="shutdownCt"/> is cancelled. Only <paramref name="shutdownCt"/>
+	/// can cancel a running build — file-edit triggers enqueue via <see cref="ScheduleBuild"/> and never
+	/// interrupt the current build.
+	/// </summary>
+	public async Task RunAsync(Cancel shutdownCt)
 	{
-		// Cancel any existing build
-		if (_currentBuildCts != null)
+		try
 		{
-			_logger.LogDebug("Cancelling previous in-memory build");
-			await _currentBuildCts.CancelAsync();
-
-			// Wait for the previous build to complete (with timeout)
-			if (_currentBuildTask != null)
-			{
-				try
-				{
-					await _currentBuildTask.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None);
-				}
-				catch (TimeoutException)
-				{
-					_logger.LogWarning("Previous build did not complete within timeout");
-				}
-				catch (OperationCanceledException)
-				{
-					// Expected
-				}
-			}
+			await foreach (var sourcePath in _buildChannel.Reader.ReadAllAsync(shutdownCt))
+				await ExecuteBuildAsync(sourcePath, shutdownCt);
 		}
-
-		// Create a new CTS linked to the external token
-		_currentBuildCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
-		var buildCt = _currentBuildCts.Token;
-
-		// Start the new build
-		_currentBuildTask = ExecuteBuildAsync(sourcePath, buildCt);
-		await _currentBuildTask;
+		catch (OperationCanceledException)
+		{
+			_logger.LogDebug("Background build loop stopped");
+		}
 	}
 
 	private async Task ExecuteBuildAsync(string sourcePath, Cancel ct)
 	{
-		await _buildSemaphore.WaitAsync(ct);
+		Status = BuildStatus.Building;
 		try
 		{
-			Status = BuildStatus.Building;
 			_ = Interlocked.Exchange(ref _errorCount, 0);
 			_ = Interlocked.Exchange(ref _warningCount, 0);
 			_ = Interlocked.Exchange(ref _hintCount, 0);
@@ -171,19 +162,22 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			// Create a diagnostics collector that streams to our channel
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
-			var readFs = FileSystemFactory.RealGitRootForPath(sourcePath);
-			if (_writeFs is null || _writeFsPath != sourcePath)
+			if (WriteFileSystem is null || _writeFsPath != sourcePath)
 			{
-				_writeFs = FileSystemFactory.InMemoryForPath(sourcePath);
+				WriteFileSystem = new MockFileSystem();
 				_writeFsPath = sourcePath;
 			}
-			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
+			var service = new IsolatedBuildService(
+				_loggerFactory,
+				_configurationContext,
+				new NullCoreService(),
+				SystemEnvironmentVariables.Instance
+			);
 
 			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
 
 			_ = await service.Build(
 				streamingCollector,
-				readFs,
 				new IsolatedBuildOptions
 				{
 					Path = new DirectoryInfo(sourcePath),
@@ -191,11 +185,14 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 					Strict = false,
 					AllowIndexing = false,
 					MetadataOnly = false,
-					Exporters = ExportOptions.Default,
+					// Validation-only: parse + emit diagnostics without LLM export, config copy,
+					// link-index, or redirect generation — none make sense for an in-memory build.
+					Exporters = ExportOptions.Validation,
 					SkipApi = true,
 					SkipCrossLinks = false
 				},
-				_writeFs, // reuse MockFileSystem across builds for caching; initialized above
+				WriteFileSystem, // reuse MockFileSystem across builds for caching; initialized above
+
 				ct
 			);
 
@@ -205,16 +202,22 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			Status = BuildStatus.Complete;
 
 			// Emit build_complete event
-			await BroadcastEventAsync(new BuildEvent(
-				"build_complete",
-				DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-				Errors: ErrorCount,
-				Warnings: WarningCount,
-				Hints: HintCount
-			));
+			await BroadcastEventAsync(
+				new BuildEvent(
+					"build_complete",
+					DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+					Errors: ErrorCount,
+					Warnings: WarningCount,
+					Hints: HintCount
+				)
+			);
 
-			_logger.LogInformation("In-memory build complete: {Errors} errors, {Warnings} warnings, {Hints} hints",
-				ErrorCount, WarningCount, HintCount);
+			_logger.LogInformation(
+				"In-memory build complete: {Errors} errors, {Warnings} warnings, {Hints} hints",
+				ErrorCount,
+				WarningCount,
+				HintCount
+			);
 		}
 		catch (OperationCanceledException)
 		{
@@ -230,17 +233,15 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			Status = BuildStatus.Complete;
 
 			// Emit build_complete with current counts even on error
-			await BroadcastEventAsync(new BuildEvent(
-				"build_complete",
-				DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-				Errors: ErrorCount,
-				Warnings: WarningCount,
-				Hints: HintCount
-			));
-		}
-		finally
-		{
-			_ = _buildSemaphore.Release();
+			await BroadcastEventAsync(
+				new BuildEvent(
+					"build_complete",
+					DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+					Errors: ErrorCount,
+					Warnings: WarningCount,
+					Hints: HintCount
+				)
+			);
 		}
 	}
 
@@ -305,30 +306,41 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		}
 	}
 
-	public BuildEvent GetCurrentState() => new(
-		"state",
-		DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-		Errors: ErrorCount,
-		Warnings: WarningCount,
-		Hints: HintCount,
-		Status: Status.ToString().ToLowerInvariant(),
-		Diagnostics: GetStoredDiagnostics()
-	);
+	/// <summary>
+	/// Completes all subscribed SSE client channels so their <c>ReadAllAsync</c> loops exit
+	/// promptly. Call from <c>IHostApplicationLifetime.ApplicationStopping</c> to unblock
+	/// in-flight SSE requests before the graceful-shutdown timeout fires.
+	/// </summary>
+	public void CompleteAllClients()
+	{
+		lock (_clientsLock)
+		{
+			foreach (var channel in _clientChannels)
+				_ = channel.Writer.TryComplete();
+			_clientChannels.Clear();
+		}
+	}
 
+	public BuildEvent GetCurrentState() =>
+		new(
+			"state",
+			DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+			Errors: ErrorCount,
+			Warnings: WarningCount,
+			Hints: HintCount,
+			Status: Status.ToString().ToLowerInvariant(),
+			Diagnostics: GetStoredDiagnostics()
+		);
 
 	public void Dispose()
 	{
-		_currentBuildCts?.Cancel();
-		_currentBuildCts?.Dispose();
-		_buildSemaphore.Dispose();
+		_ = _buildChannel.Writer.TryComplete();
 
 		// Close all client channels
 		lock (_clientsLock)
 		{
 			foreach (var channel in _clientChannels)
-			{
 				_ = channel.Writer.TryComplete();
-			}
 			_clientChannels.Clear();
 		}
 
@@ -338,8 +350,9 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	/// <summary>
 	/// A diagnostics collector that streams diagnostics to the InMemoryBuildState
 	/// </summary>
-	private sealed class StreamingDiagnosticsCollector(ILoggerFactory logFactory, InMemoryBuildState buildState)
-		: DiagnosticsCollector([new Log(logFactory.CreateLogger<Log>())])
+	private sealed class StreamingDiagnosticsCollector(ILoggerFactory logFactory, InMemoryBuildState buildState) : DiagnosticsCollector([
+		new Log(logFactory.CreateLogger<Log>())
+	])
 	{
 		public override void Write(Diagnostic diagnostic)
 		{
@@ -361,11 +374,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			buildState.StoreDiagnostic(dto);
 
 			// Emit diagnostic event to all connected clients
-			var buildEvent = new BuildEvent(
-				"diagnostic",
-				DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-				Diagnostic: dto
-			);
+			var buildEvent = new BuildEvent("diagnostic", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Diagnostic: dto);
 
 			_ = buildState.BroadcastEventAsync(buildEvent);
 		}
@@ -392,7 +401,11 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		public string[] GetMultilineInput(string name, InputOptions? options = null) => [];
 		public bool GetBoolInput(string name, InputOptions? options = null) => false;
 		public Task SetOutputAsync(string name, string value) => Task.CompletedTask;
-		public ValueTask SetOutputAsync<T>(string name, T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>? jsonTypeInfo = null) => ValueTask.CompletedTask;
+		public ValueTask SetOutputAsync<T>(
+			string name,
+			T value,
+			System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>? jsonTypeInfo = null
+		) => ValueTask.CompletedTask;
 		public ValueTask ExportVariableAsync(string name, string value) => ValueTask.CompletedTask;
 		public void SetSecret(string secret) { }
 		public ValueTask AddPathAsync(string inputPath) => ValueTask.CompletedTask;
@@ -406,7 +419,11 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		public void StartGroup(string name) { }
 		public void EndGroup() { }
 		public ValueTask<T> GroupAsync<T>(string name, Func<ValueTask<T>> action) => action();
-		public ValueTask SaveStateAsync<T>(string name, T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>? jsonTypeInfo = null) => ValueTask.CompletedTask;
+		public ValueTask SaveStateAsync<T>(
+			string name,
+			T value,
+			System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>? jsonTypeInfo = null
+		) => ValueTask.CompletedTask;
 		public string GetState(string name) => string.Empty;
 		public Summary Summary { get; } = new();
 		public bool IsDebug => false;

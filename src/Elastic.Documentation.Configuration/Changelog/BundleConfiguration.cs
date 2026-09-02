@@ -22,10 +22,12 @@ public record BundleConfiguration
 	public string? OutputDirectory { get; init; }
 
 	/// <summary>
-	/// Whether to resolve (copy contents of each changelog file into the entries array).
-	/// Defaults to true
+	/// When true, the individual changelog entries that make up a bundle are sourced from the local
+	/// <see cref="Directory"/>. When false (the default), they are fetched from the public changelog
+	/// CDN, scoped to the bundle's products. An explicit <c>--directory</c> on the CLI always forces
+	/// local sourcing regardless of this setting.
 	/// </summary>
-	public bool Resolve { get; init; } = true;
+	public bool UseLocalChangelogs { get; init; }
 
 	/// <summary>
 	/// Default bundle description used when no profile-specific description is provided.
@@ -45,9 +47,15 @@ public record BundleConfiguration
 	public string? Owner { get; init; }
 
 	/// <summary>
+	/// Branch whose CDN changelog pool (<c>changelog/{org}/{repo}/{branch}/…</c>) entries are sourced from
+	/// when bundling from the CDN. Applied to all profiles that do not specify their own. Defaults to
+	/// <c>main</c> when unset.
+	/// </summary>
+	public string? Branch { get; init; }
+
+	/// <summary>
 	/// When set (including an empty list), PR/issue references whose resolved <c>owner/repo</c> is not listed
 	/// are rewritten to <c># PRIVATE:</c> sentinels at bundle time. When absent, no link filtering is applied.
-	/// Requires <see cref="Resolve"/>.
 	/// </summary>
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
@@ -78,12 +86,13 @@ public record BundleProfile
 	public string? Products { get; init; }
 
 	/// <summary>
-	/// Output filename pattern.
-	/// {version} is substituted at runtime.
-	/// Examples:
-	/// - "elasticsearch-{version}.yaml"
-	/// - "serverless-{version}.yaml"
+	/// Legacy output filename pattern. No longer supported: bundle output names are derived by
+	/// convention as <c>{product}-{version}.yaml</c> from the profile's primary output product
+	/// (elastic/docs-builder#3774). Any profile setting this is a hard error at bundle time; the
+	/// field remains parseable for one release cycle so authors get an actionable error rather
+	/// than a YAML parse failure.
 	/// </summary>
+	[Obsolete("No longer supported: bundle output names are derived by convention as '{product}-{version}.yaml' from the profile's output_products. Setting 'output' is a hard error at bundle time.")]
 	public string? Output { get; init; }
 
 	/// <summary>
@@ -109,6 +118,12 @@ public record BundleProfile
 	/// Used for generating correct PR/issue links. Defaults to "elastic" when not specified.
 	/// </summary>
 	public string? Owner { get; init; }
+
+	/// <summary>
+	/// Branch whose CDN changelog pool entries this profile sources from. Overrides
+	/// <see cref="BundleConfiguration.Branch"/> when set.
+	/// </summary>
+	public string? Branch { get; init; }
 
 	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output.

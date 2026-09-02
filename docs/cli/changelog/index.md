@@ -3,10 +3,10 @@ The `changelog` commands manage a file-per-change workflow that produces release
 ## Typical workflow
 
 1. **Configure** — create `docs/changelog.yml` with label mappings and bundle profiles: `docs-builder changelog init`
-2. **Create** — add a changelog YAML for each notable PR: `docs-builder changelog add`
+2. **Create** — add a changelog YAML for each notable PR: `docs-builder changelog add`. For items not tied to a PR (known issues, advisories), use `docs-builder changelog note`.
 3. **Bundle** — aggregate entries for a release: `docs-builder changelog bundle`
 4. **Publish** — render the bundle to a release notes page: `docs-builder changelog render`
 
 When working in CI, `docs-builder changelog evaluate-pr` inspects an open pull request and decides whether it needs a changelog file, then sets GitHub Actions outputs so your workflow can gate on the result.
 
-See [Create release notes from changelogs](/contribute/changelog.md) for the end-to-end guide.
+See [Create release notes from changelogs](/data/release-notes/overview.md) for the end-to-end guide.

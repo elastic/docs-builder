@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // This is copied from legacy. It works, but we should rework this if we ever need to change it
-import { $$ } from 'select-dom'
+import { $$optional } from 'select-dom'
 
 const messages = {
     en: {
@@ -110,7 +110,7 @@ const addCopyButtonToCodeCells = (
     prefix: string
 ) => {
     // Add copybuttons to all of our code cells
-    const codeCells = $$(selector, baseElement)
+    const codeCells = $$optional(selector, baseElement)
     codeCells.forEach((codeCell, index) => {
         if (codeCell.id) {
             return

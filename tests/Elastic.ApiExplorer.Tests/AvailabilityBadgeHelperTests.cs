@@ -4,6 +4,8 @@
 
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
@@ -20,10 +22,8 @@ public class AvailabilityBadgeHelperTests
 	[InlineData("Technical Preview; added in 9.4.0", "preview 9.4.0")]
 	[InlineData("Generally available; added in 9.1.0", "ga 9.1.0")]
 	[InlineData("Added in 7.7.0", "ga 7.7.0")]
-	public void ProjectToLifecycleFormat_MapsXStateToLifecycleString(string xState, string expected)
-	{
+	public void ProjectToLifecycleFormat_MapsXStateToLifecycleString(string xState, string expected) =>
 		AvailabilityBadgeHelper.ProjectToLifecycleFormat(xState).Should().Be(expected);
-	}
 
 	[Fact]
 	public void FromOperation_ExperimentalXState_ProducesExperimentalBadge()

@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
@@ -25,24 +26,22 @@ public class StaticWebHost
 	public StaticWebHost(int port, string? path)
 	{
 		_contentRoot = path ?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var fs = FileSystemFactory.RealGitRootForPath(_contentRoot);
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var dir = fs.DirectoryInfo.New(_contentRoot);
 		if (!dir.Exists)
 			throw new Exception($"Can not serve empty directory: {_contentRoot}");
 		if (!dir.IsSubPathOf(fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName)))
 			throw new Exception($"Can not serve directory outside of: {Paths.WorkingDirectoryRoot.FullName}");
 
-		var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-		{
-			ContentRootPath = _contentRoot
-		});
+		var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = _contentRoot });
 
 		_ = builder.AddDocumentationServiceDefaults();
 #if DEBUG
 		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
-		_ = builder.Logging
+		_ = builder
+			.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information);
@@ -64,6 +63,10 @@ public class StaticWebHost
 			{
 				await next(context);
 			}
+			catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+			{
+				// Client disconnected or navigated away — normal, no need to log or rethrow.
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
@@ -74,20 +77,28 @@ public class StaticWebHost
 				throw; // Re-throw to let ASP.NET Core handle it
 			}
 		});
-		_ =
-			WebApplication
-				.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
-				.UseRouting();
+		_ = WebApplication
+			.UseDeveloperExceptionPage(new DeveloperExceptionPageOptions())
+			.Use(async (context, next) =>
+			{
+				context.Response.OnStarting(() =>
+				{
+					var type = context.Response.ContentType;
+					if (type?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
+						context.Response.Headers.CacheControl = "no-store";
+					return Task.CompletedTask;
+				});
+				await next();
+			})
+			.UseRouting();
 
 		_ = WebApplication.MapGet("/", ServeRootIndex);
 
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
 
-
 #if DEBUG
 		var apiV1 = WebApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
-		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(WebApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
+		apiV1.MapElasticDocsApiEndpoints();
 #endif
 
 	}
@@ -141,7 +152,6 @@ public class StaticWebHost
 			};
 			return Results.File(fileInfo.FullName, mimetype);
 		}
-
 
 		return Results.NotFound();
 	}

@@ -1,16 +1,120 @@
-@using Elastic.Documentation
 @using Elastic.Documentation.Site.Navigation
-@inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationViewModel>
+@inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationRenderModel>
 
-<div class="pb-9 pl-3 md:pl-0 font-body">
-	@{
-		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
-	} 
-	<div class="sticky top-0 z-10 bg-white">
-		@if (Model.BuildType != BuildType.Codex && Model.Branding is null)
-		{
-			<navigation-search></navigation-search>
+@if (Model.NavigationPreviewEnabled)
+{
+<div class="pages-nav-v2-shell docs-sidebar-nav font-body" data-nav-heading="@(Model.TreeHeading ?? "")">
+	<div class="pages-nav-v2__chrome shrink-0">
+		<div id="nav-dropdown">
+		@if (Model.IsUsingNavigationDropdown)
+			{
+				<div class="pages-nav-v2__dropdown">
+					<div tabindex="0" id="pages-dropdown" class="block group border border-grey-20 rounded-sm font-sans relative bg-white">
+						<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
+							<div>
+								<a
+									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
+									href="@Model.CurrentTopLevelUrl"
+									preload="mousedown">
+									@Model.CurrentTopLevelNavigationTitle
+								</a>
+							</div>
+							<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke-width="1.5"
+									stroke="currentColor"
+									class="w-4 group-open:rotate-180">
+									<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+								</svg>
+							</div>
+						</button>
+					<div class="hidden group-focus-within:block left-0 right-0 absolute top-full z-20">
+						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md"
+						preload="mouseover">
+				@foreach (var item in Model.DropdownItems)
+				{
+								<li class="block">
+									<a
+										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.IsActive ? "text-blue-elastic" : "")"
+										href="@item.Url">
+							@item.NavigationTitle
+						</a>
+					</li>
+				}
+				</ul>
+					</div>
+				</div>
+			</div>
 		}
+		</div>
+		@if (Model.BackLinks.Count > 0)
+		{
+			<div class="pages-nav-v2__back-chrome">
+				@foreach (var back in Model.BackLinks)
+				{
+					<a href="@back.Url"
+					   class="pages-nav-v2__back">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="pages-nav-v2__back-icon" aria-hidden="true">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+						</svg>
+						<span>@back.Title</span>
+					</a>
+				}
+			</div>
+		}
+		@if (Model.TreeHeading is { } treeHeading)
+		{
+			<div class="pages-nav-v2__heading">
+				<span class="pages-nav-v2__heading-text">@treeHeading</span>
+			</div>
+		}
+	</div>
+
+	<div class="pages-nav-menu pages-nav-v2__menu">
+		<div class="pages-nav-v2__scroll">
+			<div class="pages-nav-v2__content">
+	<ul class="block" id="nav-tree-@(Model.ContentHash)">
+		@if (Model.RootIndex is { } rootIndex)
+		{
+			<li class="flex group/li">
+				<a href="@rootIndex.Url" class="sidebar-link nav-link nav-v2-link"><span class="nav-v2-nav-text">@rootIndex.NavigationTitle</span></a>
+			</li>
+			<li role="separator" class="nav-v2-separator"><hr></li>
+		}
+		@await RenderPartialAsync(_TocTreeNav.Create(Model.Tree))
+	</ul>
+			</div>
+		</div>
+		<button
+			type="button"
+			class="pages-nav-v2__scroll-btn pages-nav-v2__scroll-btn--up"
+			aria-label="Scroll navigation up"
+			data-nav-scroll-dir="up"
+			data-visible="false">
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+				<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m8 5.707 5.646 5.647.708-.708L8 4.293l-6.354 6.353.708.707L8 5.708Z"/>
+			</svg>
+		</button>
+		<button
+			type="button"
+			class="pages-nav-v2__scroll-btn pages-nav-v2__scroll-btn--down"
+			aria-label="Scroll navigation down"
+			data-nav-scroll-dir="down"
+			data-visible="false">
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+				<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z"/>
+			</svg>
+		</button>
+	</div>
+</div>
+}
+else
+{
+<div class="pb-9 pl-3 md:pl-0 font-body">
+	<div class="sticky top-0 z-10 bg-white">
 		<div id="nav-dropdown">
 		@if (Model.IsUsingNavigationDropdown)
 			{
@@ -20,9 +124,9 @@
 							<div>
 								<a
 									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
-									href="@currentTopLevelItem.Url"
-									@Model.Htmx.GetNavHxAttributes(true)>
-									@currentTopLevelItem.NavigationTitle
+									href="@Model.CurrentTopLevelUrl"
+									preload="mousedown">
+									@Model.CurrentTopLevelNavigationTitle
 								</a>
 							</div>
 							<div class="flex items-center justify-center size-6 hover:bg-grey-20 rounded-sm">
@@ -39,12 +143,12 @@
 						</button>
 					<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
 						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md"
-						@Model.Htmx.GetNavHxAttributes(false, "mouseover")>
-				@foreach (var item in Model.TopLevelItems)
+						preload="mouseover">
+				@foreach (var item in Model.DropdownItems)
 				{
 								<li class="block">
 									<a
-										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.IsActive ? "text-blue-elastic" : "")"
 										href="@item.Url">
 							@item.NavigationTitle
 						</a>
@@ -55,22 +159,33 @@
 				</div>
 			</div>
 		}
-		else
-		{
-			@* index page surfaces as the first nav item via _TocTreeNav *@
-		}
 		</div>
+		@if (Model.BackLinks.Count > 0)
+		{
+			<div class="flex flex-col px-4 py-2 border-b border-grey-20">
+				@foreach (var back in Model.BackLinks)
+				{
+					<a href="@back.Url"
+					   class="flex items-center gap-2 py-1.5 text-sm font-medium text-grey-60 hover:text-blue-elastic no-underline transition-colors">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-3.5 shrink-0 opacity-70">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+						</svg>
+						<span>@back.Title</span>
+					</a>
+				}
+			</div>
+		}
 	</div>
 
-	<ul class="block px-4" id="nav-tree" @Model.Htmx.GetNavHxAttributes(true)>
-		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+	<ul class="block px-4" id="nav-tree-@(Model.ContentHash)" hx-preserve>
+		@if (Model.RootIndex is { } rootIndex)
 		{
-			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
-			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
-			Level = 0,
-			SubTree = Model.Tree,
-			RootNavigationId = Model.Tree.Id,
-			Htmx = Model.Htmx
-		}))
+			<li class="flex group/li pr-8 mt-6">
+				<a href="@rootIndex.Url" class="sidebar-link nav-link">@rootIndex.NavigationTitle</a>
+			</li>
+			<li role="separator" class="mt-4 pr-8"><hr class="border-grey-20"></li>
+		}
+		@await RenderPartialAsync(_TocTreeNavLegacy.Create(Model.Tree))
 	</ul>
 </div>
+}

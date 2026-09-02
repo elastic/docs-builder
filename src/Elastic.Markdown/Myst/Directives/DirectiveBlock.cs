@@ -46,10 +46,9 @@ public interface IBlockExtension : IBlock
 /// </remarks>
 /// <param name="parser">The parser used to create this block.</param>
 /// <param name="context"></param>
-public abstract class DirectiveBlock(
-	DirectiveBlockParser parser,
-	ParserContext context)
-	: ContainerBlock(parser), IFencedBlock, IBlockExtension
+public abstract class DirectiveBlock(DirectiveBlockParser parser, ParserContext context) : ContainerBlock(
+	parser
+), IFencedBlock, IBlockExtension
 {
 	private Dictionary<string, string>? _properties;
 	protected IReadOnlyDictionary<string, string>? Properties => _properties;
@@ -142,7 +141,6 @@ public abstract class DirectiveBlock(
 		return bool.TryParse(value, out var result) ? result : null;
 	}
 
-
 	protected string? Prop(params string[] keys)
 	{
 		if (Properties is null)
@@ -162,8 +160,7 @@ public abstract class DirectiveBlock(
 	/// with the snippet line to ensure uniqueness across multiple includes and multiple blocks.
 	/// </summary>
 	/// <returns>A unique integer index suitable for generating HTML IDs.</returns>
-	protected int GetUniqueLineIndex() =>
-		IncludeLine.HasValue ? (IncludeLine.Value * 1000) + Line : Line;
+	protected int GetUniqueLineIndex() => IncludeLine.HasValue ? (IncludeLine.Value * 1000) + Line : Line;
 
 	/// <summary>
 	/// Additional anchors that this directive will generate during rendering.

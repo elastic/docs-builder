@@ -17,11 +17,7 @@ public static class ProductDescriptions
 	/// <param name="Description">The product description shown at the top of the popover (required).</param>
 	/// <param name="AdditionalAvailabilityInfo">Additional availability information shown near the bottom of the popover (optional).</param>
 	/// <param name="IncludeVersionNote">Whether to include the version note at the bottom of the popover.</param>
-	public record ProductInfo(
-		string Description,
-		string? AdditionalAvailabilityInfo,
-		bool IncludeVersionNote
-	);
+	public record ProductInfo(string Description, string? AdditionalAvailabilityInfo, bool IncludeVersionNote);
 
 	/// <summary>
 	/// The version note text shown at the bottom of versioned product popovers.
@@ -29,8 +25,7 @@ public static class ProductDescriptions
 	public const string VersionNote =
 		"This documentation corresponds to the latest patch available for each minor version. If you're not using the latest patch, check the <a href=\"https://www.elastic.co/docs/release-notes\">release notes</a> for changes.";
 
-	public static ProductInfo? GetProductInfo(VersioningSystemId versioningSystemId) =>
-		Descriptions.GetValueOrDefault(versioningSystemId);
+	public static ProductInfo? GetProductInfo(VersioningSystemId versioningSystemId) => Descriptions.GetValueOrDefault(versioningSystemId);
 
 	private static readonly Dictionary<VersioningSystemId, ProductInfo> Descriptions = new()
 	{
@@ -40,14 +35,12 @@ public static class ProductDescriptions
 			AdditionalAvailabilityInfo: "Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.",
 			IncludeVersionNote: true
 		),
-
 		// Serverless
 		[VersioningSystemId.Serverless] = new ProductInfo(
 			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.",
 			AdditionalAvailabilityInfo: "Serverless interfaces and procedures might differ from classic Elastic Stack deployments.",
 			IncludeVersionNote: false
 		),
-
 		// Serverless Project Types
 		[VersioningSystemId.ElasticsearchProject] = new ProductInfo(
 			Description: "<strong>Elastic Cloud Serverless</strong> projects are autoscaled environments, fully managed by Elastic and available on Elastic Cloud.",
@@ -64,7 +57,6 @@ public static class ProductDescriptions
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: false
 		),
-
 		// Deployment Types
 		[VersioningSystemId.Ess] = new ProductInfo(
 			Description: "<strong>Elastic Cloud Hosted</strong> lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.",
@@ -86,7 +78,6 @@ public static class ProductDescriptions
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
-
 		// Products
 		[VersioningSystemId.Ecctl] = new ProductInfo(
 			Description: "<strong>ECCTL</strong> is the command line interface for the Elastic Cloud and Elastic Cloud Enterprise APIs.",
@@ -98,7 +89,6 @@ public static class ProductDescriptions
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
-
 		// APM Agents
 		[VersioningSystemId.ApmAgentDotnet] = new ProductInfo(
 			Description: "The <strong>Elastic APM .NET agent</strong> enables you to trace the execution of operations in your .NET applications, sending performance metrics and errors to the Elastic APM server.",
@@ -140,10 +130,9 @@ public static class ProductDescriptions
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
-
-		// EDOT Products
+		// Elastic OpenTelemetry Products
 		[VersioningSystemId.EdotCollector] = new ProductInfo(
-			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Collector</strong> retrieves traces, metrics, and logs from your infrastructure and applications, and forwards them to Elastic Observability.",
+			Description: "<strong>Elastic Agent</strong> can run in OpenTelemetry mode to retrieve traces, metrics, and logs from your infrastructure and applications, and forward them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
@@ -188,10 +177,9 @@ public static class ProductDescriptions
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotCfAws] = new ProductInfo(
-			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Cloud Forwarder</strong> allows you to collect and send your telemetry data to Elastic Observability from AWS, GCP, and Azure.",
+			Description: "The <strong>Elastic Cloud Forwarder</strong> allows you to collect and send your telemetry data to Elastic Observability from AWS, GCP, and Azure.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
 	};
 }
-

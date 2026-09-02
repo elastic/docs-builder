@@ -28,12 +28,6 @@ public static class TelemetryConstants
 	public const string StreamTransformerSourceName = "Elastic.Documentation.Api.StreamTransformer";
 
 	/// <summary>
-	/// ActivitySource name for OTLP proxy operations.
-	/// Used to trace frontend telemetry proxying.
-	/// </summary>
-	public const string OtlpProxySourceName = "Elastic.Documentation.Api.OtlpProxy";
-
-	/// <summary>
 	/// ActivitySource name for distributed cache operations.
 	/// Used to trace cache hits, misses, and performance.
 	/// </summary>

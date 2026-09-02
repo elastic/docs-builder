@@ -76,8 +76,11 @@ The following directives are available:
 - [List sub-pages](list-sub-pages.md) - List sibling pages in the current section
 - [Math](math.md) - Mathematical expressions and equations
 - [Page cards](page-card.md) - Full-width clickable navigation rows
+- [Related learning](related-learning.md) - Catalog links to training and other learning destinations
 - [Settings](automated_settings.md) - Configuration blocks
+- [Storybook](storybook.md) - Embedded Storybook stories
 - [Stepper](stepper.md) - Step-by-step content
 - [Tabs](tabs.md) - Tabbed content organization
 - [Tables](tables.md) - Data tables
 - [Version blocks](version-variables.md) - API version information
+- [Vector sizing calculator](vector-sizing-calculator.md) - Interactive dense_vector sizing estimates

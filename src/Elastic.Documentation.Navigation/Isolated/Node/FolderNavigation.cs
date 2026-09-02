@@ -11,9 +11,8 @@ namespace Elastic.Documentation.Navigation.Isolated.Node;
 public class FolderNavigation<TModel>(
 	string parentPath,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
-	INavigationHomeAccessor homeAccessor)
-	: INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation
-	where TModel : class, IDocumentationFile
+	INavigationHomeAccessor homeAccessor
+) : INodeNavigationItem<TModel, INavigationItem>, IAssignableChildrenNavigation, IAssignableIslandNavigation, IAssignableNavigationTitle where TModel : class, IDocumentationFile
 {
 	// Will be set by SetNavigationItems
 
@@ -23,13 +22,19 @@ public class FolderNavigation<TModel>(
 	public string Url => Index.Url;
 
 	/// <inheritdoc />
-	public string NavigationTitle => Index.NavigationTitle;
+	public string? NavigationTitleOverride { get; set; }
+
+	/// <inheritdoc />
+	public string NavigationTitle => NavigationTitleOverride ?? Index.NavigationTitle;
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => homeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
+
+	/// <inheritdoc />
+	public bool IsIsland { get; set; }
 
 	/// <inheritdoc />
 	public bool Hidden { get; private set; }
@@ -45,7 +50,8 @@ public class FolderNavigation<TModel>(
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
 
-	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{FolderPath}/index.md", out navigationItems);

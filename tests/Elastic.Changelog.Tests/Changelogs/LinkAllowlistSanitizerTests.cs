@@ -22,7 +22,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out var owner,
-			out var repo);
+			out var repo
+		);
 
 		ok.Should().BeTrue();
 		owner.Should().Be("elastic");
@@ -37,7 +38,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out var owner,
-			out var repo);
+			out var repo
+		);
 
 		ok.Should().BeTrue();
 		owner.Should().Be("elastic");
@@ -52,7 +54,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out _,
-			out _);
+			out _
+		);
 
 		ok.Should().BeFalse();
 	}
@@ -60,12 +63,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryGetGitHubRepo_ShortForm_NonNumericFragment_ReturnsFalse()
 	{
-		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
-			"elastic/kibana-team#abc",
-			"elastic",
-			"elasticsearch",
-			out _,
-			out _);
+		var ok = ChangelogTextUtilities.TryGetGitHubRepo("elastic/kibana-team#abc", "elastic", "elasticsearch", out _, out _);
 
 		ok.Should().BeFalse();
 	}
@@ -73,12 +71,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryGetGitHubRepo_ShortForm_TooManySlashes_ReturnsFalse()
 	{
-		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
-			"a/b/c#123",
-			"elastic",
-			"elasticsearch",
-			out _,
-			out _);
+		var ok = ChangelogTextUtilities.TryGetGitHubRepo("a/b/c#123", "elastic", "elasticsearch", out _, out _);
 
 		ok.Should().BeFalse();
 	}
@@ -86,12 +79,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryGetGitHubRepo_BareNumber_UsesDefaults()
 	{
-		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
-			"123",
-			"elastic",
-			"elasticsearch+kibana",
-			out var owner,
-			out var repo);
+		var ok = ChangelogTextUtilities.TryGetGitHubRepo("123", "elastic", "elasticsearch+kibana", out var owner, out var repo);
 
 		ok.Should().BeTrue();
 		owner.Should().Be("elastic");
@@ -129,7 +117,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out var sanitized,
-			out var changed);
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeFalse();
@@ -141,18 +130,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryApplyBundle_NullPrsAndIssues_PreservesNull_WhenUnchanged()
 	{
-		var bundle = new Bundle
-		{
-			Entries =
-			[
-				new()
-				{
-					Title = "t",
-					Prs = null,
-					Issues = null
-				}
-			]
-		};
+		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = null, Issues = null }] };
 
 		var allow = new[] { "elastic/elasticsearch" };
 		var ok = LinkAllowlistSanitizer.TryApplyBundle(
@@ -162,7 +140,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out var sanitized,
-			out var changed);
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeFalse();
@@ -173,17 +152,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryApplyBundle_NotAllowed_ReplacesWithSentinel()
 	{
-		var bundle = new Bundle
-		{
-			Entries =
-			[
-				new()
-				{
-					Title = "t",
-					Prs = ["https://github.com/elastic/secret-repo/pull/1"]
-				}
-			]
-		};
+		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["https://github.com/elastic/secret-repo/pull/1"] }] };
 
 		var allow = new[] { "elastic/elasticsearch" };
 		var ok = LinkAllowlistSanitizer.TryApplyBundle(
@@ -193,7 +162,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out var sanitized,
-			out var changed);
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -204,10 +174,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryApplyBundle_EmptyAllowlist_StripsAll()
 	{
-		var bundle = new Bundle
-		{
-			Entries = [new() { Title = "t", Prs = ["https://github.com/elastic/elasticsearch/pull/1"] }]
-		};
+		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["https://github.com/elastic/elasticsearch/pull/1"] }] };
 
 		var ok = LinkAllowlistSanitizer.TryApplyBundle(
 			Collector,
@@ -216,7 +183,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out var sanitized,
-			out var changed);
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -226,10 +194,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryApplyBundle_UnparseableRef_EmitsError()
 	{
-		var bundle = new Bundle
-		{
-			Entries = [new() { Title = "t", Prs = ["not-a-valid-ref"] }]
-		};
+		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["not-a-valid-ref"] }] };
 
 		var ok = LinkAllowlistSanitizer.TryApplyBundle(
 			Collector,
@@ -238,7 +203,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out _,
-			out _);
+			out _
+		);
 
 		ok.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
@@ -247,17 +213,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryApplyBundle_SentinelAllowed_RestoresPlainRef()
 	{
-		var bundle = new Bundle
-		{
-			Entries =
-			[
-				new()
-				{
-					Title = "t",
-					Prs = ["# PRIVATE: https://github.com/elastic/elasticsearch/pull/1"]
-				}
-			]
-		};
+		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["# PRIVATE: https://github.com/elastic/elasticsearch/pull/1"] }] };
 
 		var ok = LinkAllowlistSanitizer.TryApplyBundle(
 			Collector,
@@ -266,7 +222,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out var sanitized,
-			out var changed);
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -276,17 +233,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryApplyBundle_SentinelNotAllowed_KeepsSentinel()
 	{
-		var bundle = new Bundle
-		{
-			Entries =
-			[
-				new()
-				{
-					Title = "t",
-					Prs = ["# PRIVATE: https://github.com/elastic/other/pull/1"]
-				}
-			]
-		};
+		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["# PRIVATE: https://github.com/elastic/other/pull/1"] }] };
 
 		var ok = LinkAllowlistSanitizer.TryApplyBundle(
 			Collector,
@@ -295,7 +242,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			"elastic",
 			"elasticsearch",
 			out var sanitized,
-			out var changed);
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeFalse();
@@ -313,8 +261,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void EmitAssemblerDiagnostics_PrivateRepo_EmitsWarning()
 	{
-		var yaml =
-			"""
+		var yaml = """
 			references:
 			  elastic/foo:
 			    private: true
@@ -365,14 +312,18 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void FormatIssueLinkAsciidoc_Sentinel_ReturnsEmpty()
 	{
-		var s = ChangelogTextUtilities.FormatIssueLinkAsciidoc("# PRIVATE: https://github.com/elastic/x/issues/1", "x", hidePrivateLinks: false);
+		var s = ChangelogTextUtilities.FormatIssueLinkAsciidoc(
+			"# PRIVATE: https://github.com/elastic/x/issues/1",
+			"x",
+			hidePrivateLinks: false
+		);
 		s.Should().BeEmpty();
 	}
 
 	// --- BuildAllowReposFromAssembler ---
 
 	[Fact]
-	public void BuildAllowReposFromAssembler_SkipsPrivateAndSkipped()
+	public void BuildAllowReposFromAssembler_ExcludesOnlyPrivateRepos()
 	{
 		var yaml =
 			"""
@@ -392,14 +343,35 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		allow.Should().Contain("elastic/elasticsearch");
 		allow.Should().Contain("elastic/kibana");
 		allow.Should().NotContain("elastic/secret-team");
-		allow.Should().NotContain("elastic/old-repo");
+		allow.Should().Contain("elastic/old-repo");
+	}
+
+	[Fact]
+	public void BuildAllowReposFromAssembler_PublicSkipRepo_IsAllowed()
+	{
+		// Mirrors elastic/roadmap in assembler.yml: a public repo that publishes no docs
+		// (skip: true) but is a valid link target for changelog entries.
+		var yaml =
+			"""
+			references:
+			  roadmap:
+			    private: false
+			    skip: true
+			  kibana-team:
+			    private: true
+			    skip: true
+			""";
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
+
+		allow.Should().Contain("elastic/roadmap");
+		allow.Should().NotContain("elastic/kibana-team");
 	}
 
 	[Fact]
 	public void BuildAllowReposFromAssembler_DefaultsOwnerToElastic()
 	{
-		var yaml =
-			"""
+		var yaml = """
 			references:
 			  beats: {}
 			""";
@@ -432,8 +404,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 		var allow = new[] { "elastic/elasticsearch" };
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			entry,
+			allow,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -452,8 +430,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 		var allow = new[] { "elastic/elasticsearch" };
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			entry,
+			allow,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -473,8 +457,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 		var allow = new[] { "elastic/elasticsearch" };
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			entry,
+			allow,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -495,8 +485,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 		var allow = new[] { "elastic/elasticsearch", "elastic/kibana" };
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			entry,
+			allow,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeFalse();
@@ -520,8 +516,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 		var allow = new[] { "elastic/elasticsearch" };
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			entry,
+			allow,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeFalse();
@@ -534,21 +536,22 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	public void TryApplyChangelogEntry_BarePrNumberWithoutDefaultRepo_KeptWithWarning()
 	{
 		// The scrubber Lambda calls TryApplyChangelogEntry with defaultRepo=null because per-entry
-		// YAMLs uploaded under {product}/changelog/*.yaml carry no embedded repo context. A bare
+		// YAMLs uploaded under changelog/{org}/{repo}/{branch}/*.yaml carry no embedded repo context. A bare
 		// numeric PR ref ("155500") must be tolerated rather than failing the whole entry — the
 		// reference carries no repo identity so it cannot leak a private link, and downstream
 		// rendering supplies the owner/repo from runtime context.
-		var entry = new BundledEntry
-		{
-			Title = "Fork PR entry",
-			Prs = ["155500"],
-			Issues = null
-		};
+		var entry = new BundledEntry { Title = "Fork PR entry", Prs = ["155500"], Issues = null };
 
 		var allow = new[] { "elastic/elasticsearch" };
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", null,
-			out var sanitized, out var changed);
+			Collector,
+			entry,
+			allow,
+			"elastic",
+			null,
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeFalse();
@@ -560,17 +563,18 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void TryApplyChangelogEntry_BareIssueNumberWithoutDefaultRepo_KeptWithWarning()
 	{
-		var entry = new BundledEntry
-		{
-			Title = "Entry with bare issue",
-			Prs = null,
-			Issues = ["4274"]
-		};
+		var entry = new BundledEntry { Title = "Entry with bare issue", Prs = null, Issues = ["4274"] };
 
 		var allow = new[] { "elastic/elasticsearch" };
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", null,
-			out var sanitized, out var changed);
+			Collector,
+			entry,
+			allow,
+			"elastic",
+			null,
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeFalse();
@@ -584,17 +588,10 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Genuinely unparseable references (not bare numbers and not URL/short-form) should still
 		// fail-closed so we surface schema regressions instead of silently dropping data.
-		var entry = new BundledEntry
-		{
-			Title = "Malformed entry",
-			Prs = ["not-a-pr-ref"],
-			Issues = null
-		};
+		var entry = new BundledEntry { Title = "Malformed entry", Prs = ["not-a-pr-ref"], Issues = null };
 
 		var allow = new[] { "elastic/elasticsearch" };
-		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", "elasticsearch",
-			out _, out _);
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(Collector, entry, allow, "elastic", "elasticsearch", out _, out _);
 
 		ok.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
@@ -609,7 +606,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"See https://github.com/elastic/secret-repo/pull/42 for details",
 			AllowElasticsearch,
-			ref changed);
+			ref changed
+		);
 
 		changed.Should().BeTrue();
 		result.Should().NotContain("secret-repo");
@@ -620,10 +618,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	public void ScrubText_ReplacesPrivateShortForm()
 	{
 		var changed = false;
-		var result = LinkAllowlistSanitizer.ScrubText(
-			"Related to elastic/private-team#99",
-			AllowElasticsearch,
-			ref changed);
+		var result = LinkAllowlistSanitizer.ScrubText("Related to elastic/private-team#99", AllowElasticsearch, ref changed);
 
 		changed.Should().BeTrue();
 		result.Should().NotContain("private-team");
@@ -636,7 +631,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"Fixed in https://github.com/elastic/elasticsearch/pull/100 and elastic/kibana#50",
 			AllowElasticsearchAndKibana,
-			ref changed);
+			ref changed
+		);
 
 		changed.Should().BeFalse();
 		result.Should().Contain("https://github.com/elastic/elasticsearch/pull/100");
@@ -647,10 +643,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	public void ScrubText_NullInput_ReturnsNull()
 	{
 		var changed = false;
-		var result = LinkAllowlistSanitizer.ScrubText(
-			null,
-			AllowElasticsearch,
-			ref changed);
+		var result = LinkAllowlistSanitizer.ScrubText(null, AllowElasticsearch, ref changed);
 
 		changed.Should().BeFalse();
 		result.Should().BeNull();
@@ -660,10 +653,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	public void ScrubText_EmptyInput_ReturnsEmpty()
 	{
 		var changed = false;
-		var result = LinkAllowlistSanitizer.ScrubText(
-			"",
-			AllowElasticsearch,
-			ref changed);
+		var result = LinkAllowlistSanitizer.ScrubText("", AllowElasticsearch, ref changed);
 
 		changed.Should().BeFalse();
 		result.Should().BeEmpty();
@@ -673,10 +663,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	public void ScrubText_NoReferences_ReturnsUnchanged()
 	{
 		var changed = false;
-		var result = LinkAllowlistSanitizer.ScrubText(
-			"This is plain text with no GitHub references.",
-			AllowElasticsearch,
-			ref changed);
+		var result = LinkAllowlistSanitizer.ScrubText("This is plain text with no GitHub references.", AllowElasticsearch, ref changed);
 
 		changed.Should().BeFalse();
 		result.Should().Be("This is plain text with no GitHub references.");
@@ -689,7 +676,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"Public elastic/elasticsearch#1 and private elastic/secret#2",
 			AllowElasticsearch,
-			ref changed);
+			ref changed
+		);
 
 		changed.Should().BeTrue();
 		result.Should().Contain("elastic/elasticsearch#1");
@@ -710,13 +698,17 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 		var allow = new[] { "elastic/elasticsearch" };
 
-		LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, allow, "elastic", "elasticsearch",
-			out var firstPass, out _);
+		LinkAllowlistSanitizer.TryApplyChangelogEntry(Collector, entry, allow, "elastic", "elasticsearch", out var firstPass, out _);
 
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, firstPass, allow, "elastic", "elasticsearch",
-			out var secondPass, out var secondChanged);
+			Collector,
+			firstPass,
+			allow,
+			"elastic",
+			"elasticsearch",
+			out var secondPass,
+			out var secondChanged
+		);
 
 		ok.Should().BeTrue();
 		secondChanged.Should().BeFalse();
@@ -728,16 +720,10 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	public void ScrubText_Idempotent_SecondPassUnchanged()
 	{
 		var changed1 = false;
-		var result1 = LinkAllowlistSanitizer.ScrubText(
-			"See elastic/secret#1 for details",
-			AllowElasticsearch,
-			ref changed1);
+		var result1 = LinkAllowlistSanitizer.ScrubText("See elastic/secret#1 for details", AllowElasticsearch, ref changed1);
 
 		var changed2 = false;
-		var result2 = LinkAllowlistSanitizer.ScrubText(
-			result1,
-			AllowElasticsearch,
-			ref changed2);
+		var result2 = LinkAllowlistSanitizer.ScrubText(result1, AllowElasticsearch, ref changed2);
 
 		changed2.Should().BeFalse();
 		result2.Should().Be(result1);
@@ -750,7 +736,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"Relates to https://github.com/elastic/secret-repo/issues/99",
 			AllowElasticsearch,
-			ref changed);
+			ref changed
+		);
 
 		changed.Should().BeTrue();
 		result.Should().NotContain("secret-repo");
@@ -776,8 +763,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		};
 
 		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
-			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			bundle,
+			AllowElasticsearch,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -793,20 +786,18 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	{
 		var bundle = new Bundle
 		{
-			Entries =
-			[
-				new()
-				{
-					Title = "All private",
-					Prs = ["https://github.com/elastic/secret/pull/1"],
-					Issues = ["elastic/secret#2"]
-				}
-			]
+			Entries = [new() { Title = "All private", Prs = ["https://github.com/elastic/secret/pull/1"], Issues = ["elastic/secret#2"] }]
 		};
 
 		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
-			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
-			out var sanitized, out _);
+			Collector,
+			bundle,
+			AllowElasticsearch,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out _
+		);
 
 		ok.Should().BeTrue();
 		sanitized.Entries[0].Prs.Should().BeEmpty();
@@ -816,14 +807,17 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void ScrubBundleForPublic_NullLists_PreservesNull()
 	{
-		var bundle = new Bundle
-		{
-			Entries = [new() { Title = "No refs", Prs = null, Issues = null }]
-		};
+		var bundle = new Bundle { Entries = [new() { Title = "No refs", Prs = null, Issues = null }] };
 
 		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
-			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			bundle,
+			AllowElasticsearch,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeFalse();
@@ -844,8 +838,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		};
 
 		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
-			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
-			out var sanitized, out _);
+			Collector,
+			bundle,
+			AllowElasticsearch,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out _
+		);
 
 		ok.Should().BeTrue();
 		sanitized.Entries[0].Prs.Should().BeEmpty();
@@ -858,20 +858,18 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	{
 		var bundle = new Bundle
 		{
-			Entries =
-			[
-				new()
-				{
-					Title = "Entry",
-					Prs = ["https://github.com/elastic/secret/pull/1"],
-					Description = "See elastic/secret#2"
-				}
-			]
+			Entries = [new() { Title = "Entry", Prs = ["https://github.com/elastic/secret/pull/1"], Description = "See elastic/secret#2" }]
 		};
 
 		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
-			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
-			out var sanitized, out _);
+			Collector,
+			bundle,
+			AllowElasticsearch,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out _
+		);
 
 		ok.Should().BeTrue();
 		sanitized.Entries[0].Prs.Should().NotContain(r => r.Contains("# PRIVATE:"));
@@ -882,15 +880,17 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void ScrubBundleForPublic_ScrubsBundleDescription()
 	{
-		var bundle = new Bundle
-		{
-			Description = "Release notes referencing elastic/secret#42",
-			Entries = [new() { Title = "Entry" }]
-		};
+		var bundle = new Bundle { Description = "Release notes referencing elastic/secret#42", Entries = [new() { Title = "Entry" }] };
 
 		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
-			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			bundle,
+			AllowElasticsearch,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -902,7 +902,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	[Fact]
 	public void ValidateNoPrivateReferences_CleanYaml_DoesNotThrow()
 	{
-		var yaml = """
+		var yaml =
+			"""
 			title: Feature
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/1
@@ -923,8 +924,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			""";
 
 		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*secret-repo*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*secret-repo*");
 	}
 
 	[Fact]
@@ -935,8 +935,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			""";
 
 		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*secret-team*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*secret-team*");
 	}
 
 	[Fact]
@@ -948,8 +947,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			""";
 
 		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*PRIVATE*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*PRIVATE*");
 	}
 
 	[Fact]
@@ -974,8 +972,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var yaml = "Public https://github.com/elastic/elasticsearch/pull/1 and private https://github.com/elastic/secret/issues/2";
 
 		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*secret*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*secret*");
 	}
 
 	// --- TryApplyChangelogEntry mixed scenarios ---
@@ -986,7 +983,8 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var entry = new BundledEntry
 		{
 			Title = "Mixed refs",
-			Prs = [
+			Prs =
+			[
 				"https://github.com/elastic/elasticsearch/pull/1",
 				"https://github.com/elastic/secret-repo/pull/2",
 				"https://github.com/elastic/kibana/pull/3"
@@ -994,8 +992,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		};
 
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, AllowElasticsearchAndKibana, "elastic", "elasticsearch",
-			out var sanitized, out var changed);
+			Collector,
+			entry,
+			AllowElasticsearchAndKibana,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed
+		);
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
@@ -1019,8 +1023,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		};
 
 		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
-			Collector, entry, AllowElasticsearch, "elastic", "elasticsearch",
-			out var sanitized, out _);
+			Collector,
+			entry,
+			AllowElasticsearch,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out _
+		);
 
 		ok.Should().BeTrue();
 		sanitized.Prs.Should().BeEmpty();

@@ -10,8 +10,6 @@ environments:
     optimizely:
       enabled: false
       id: "18132920325"
-    feature_flags:
-      SEARCH_OR_ASK_AI: true
   staging:
     uri: https://staging-website.elastic.co
     path_prefix: docs
@@ -23,8 +21,9 @@ environments:
       preview: env-507
       cookies_win: x
     feature_flags:
-      SEARCH_OR_ASK_AI: true
       WEBSITE_SEARCH: true
+      ASSEMBLER_API_EXPLORER: true
+      NAVIGATION_PREVIEW: true
     website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
   edge:
     uri: https://d34ipnu52o64md.cloudfront.net
@@ -33,14 +32,26 @@ environments:
     google_tag_manager:
       enabled: false
     feature_flags:
-      SEARCH_OR_ASK_AI: true
+      NAVIGATION_PREVIEW: true
+  # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
+  # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step
+  # in navigation-test.journey.ts should be replaced with a top-nav step).
+  # 'local' exists solely so the CI synthetics job (assembler build -c local)
+  # falls back here instead of 'dev', keeping the flag-off secondary-nav path
+  # testable until the flag is retired.
+  local:
+    uri: http://localhost:4000
+    content_source: current
+    path_prefix: docs
+    feature_flags:
+      WEBSITE_SEARCH: true
   dev:
     uri: http://localhost:4000
     content_source: current
     path_prefix: docs
     feature_flags:
-      SEARCH_OR_ASK_AI: true
       WEBSITE_SEARCH: true
+      NAVIGATION_PREVIEW: true
     website_search_url: http://localhost:4078/elastic-website-search.js
   preview:
     uri: https://docs-v3-preview.elastic.dev
@@ -49,7 +60,8 @@ environments:
     google_tag_manager:
       enabled: false
     feature_flags:
-      SEARCH_OR_ASK_AI: true
+      NAVIGATION_PREVIEW: true
+      ASSEMBLER_API_EXPLORER: true
   air-gapped:
     uri: http://localhost:8080
     path_prefix: docs
@@ -60,7 +72,7 @@ environments:
 
 shared_configuration:
   stack: &stack
-    current:  9.4
+    current:  9.5
     next: main
     edge: main
 
@@ -85,6 +97,10 @@ narrative:
 #             # 'partial' --cone sparse-checkout of only the 'docs' folder with --filter=blob:none
 #   current: <git_ref>
 #   next: <git_ref>
+#   clone_timeout: <duration>
+#             # Per-attempt timeout for network git operations (fetch, pull) in CI.
+#             # Accepts a positive integer followed by 's' (seconds) or 'm' (minutes), e.g. '30s' or '15m'.
+#             # When omitted the global default of 10m applies in CI (unbounded locally).
 ###
 references:
 
@@ -103,7 +119,7 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   ecs:
-    current: 9.4 # releases do not always align with the Stack version
+    current: 9.5 # releases do not always align with the Stack version
     next: main
   ecs-dotnet:
   ecs-logging-go-logrus:
@@ -213,3 +229,10 @@ references:
     next: main
     skip: true
     sparse_paths: ["docs", "config"]
+  # Playground repos for release-notes automation (changelog link filtering; do not publish docs)
+  docs-playground-release-notes-changelogs:
+    private: true
+    skip: true
+  docs-playground-release-notes-tagged:
+    private: true
+    skip: true

@@ -11,12 +11,39 @@ namespace Elastic.Documentation.Navigation;
 
 public static class NavigationItemExtensions
 {
-	public static ILeafNavigationItem<TModel> QueryIndex<TModel>(
-		this IReadOnlyCollection<INavigationItem> items, INodeNavigationItem<INavigationModel, INavigationItem> node, string fallbackPath, out IReadOnlyCollection<INavigationItem> children
-	)
-		where TModel : class, IDocumentationFile
+	/// <summary>
+	/// Returns <c>true</c> when <paramref name="item"/> has <see cref="INavigationItem.IsIsland"/> set <em>and</em>
+	/// has a parent — the parent check suppresses island behaviour on an isolated docset root, which has no parent
+	/// but would otherwise render as an island in a single-repo serve.
+	/// </summary>
+	public static bool RendersAsIsland(this INavigationItem item) => item.IsIsland && item.Parent is not null;
+
+	/// <summary>
+	/// Walks <paramref name="item"/> and then its ancestors, returning the first node that
+	/// <see cref="RendersAsIsland"/>, or <c>null</c> if none do.
+	/// </summary>
+	public static INodeNavigationItem<INavigationModel, INavigationItem>? FindIslandRoot(this INavigationItem item)
 	{
-		var index = LookupIndex(preferVisible: true);
+		for (var current = item; current is not null; current = current.Parent)
+		{
+			if (current is INodeNavigationItem<INavigationModel, INavigationItem> node && node.RendersAsIsland())
+				return node;
+		}
+		return null;
+	}
+	public static ILeafNavigationItem<TModel> QueryIndex<TModel>(
+		this IReadOnlyCollection<INavigationItem> items,
+		INodeNavigationItem<INavigationModel, INavigationItem> node,
+		string fallbackPath,
+		out IReadOnlyCollection<INavigationItem> children
+	) where TModel : class, IDocumentationFile
+	{
+		// Path match first — works even when the index leaf is Hidden (e.g. island listing groups
+		// where the index is hidden to suppress it from the main nav tree but must still be the
+		// folder's canonical index so QueryIndex returns it correctly).
+		var index = items.OfType<ILeafNavigationItem<TModel>>().FirstOrDefault(l => l.Model.SourcePath == fallbackPath);
+
+		index ??= LookupIndex(preferVisible: true);
 		index ??= LookupIndex(preferVisible: false);
 		ArgumentNullException.ThrowIfNull(index);
 
@@ -48,16 +75,21 @@ public static class NavigationItemExtensions
 		}
 	}
 
-	public static int UpdateNavigationIndex<TModel>(this IRootNavigationItem<TModel, INavigationItem> node, IDocumentationContext context)
-		where TModel : IDocumentationFile
+	public static int UpdateNavigationIndex<TModel>(
+		this IRootNavigationItem<TModel, INavigationItem> node,
+		IDocumentationContext context
+	) where TModel : IDocumentationFile
 	{
 		var navigationIndex = -1;
 		ProcessNavigationItem(context, ref navigationIndex, node);
 		return navigationIndex;
-
 	}
 
-	private static void UpdateNavigationIndex(IReadOnlyCollection<INavigationItem> navigationItems, IDocumentationContext context, ref int navigationIndex)
+	private static void UpdateNavigationIndex(
+		IReadOnlyCollection<INavigationItem> navigationItems,
+		IDocumentationContext context,
+		ref int navigationIndex
+	)
 	{
 		foreach (var item in navigationItems)
 			ProcessNavigationItem(context, ref navigationIndex, item);
@@ -78,7 +110,10 @@ public static class NavigationItemExtensions
 				UpdateNavigationIndex(node.NavigationItems, context, ref navigationIndex);
 				break;
 			default:
-				context.EmitError(context.ConfigurationPath, $"{nameof(UpdateNavigationIndex)}: Unhandled navigation item type: {item.GetType()}");
+				context.EmitError(
+					context.ConfigurationPath,
+					$"{nameof(UpdateNavigationIndex)}: Unhandled navigation item type: {item.GetType()}"
+				);
 				break;
 		}
 	}
@@ -91,7 +126,8 @@ public static class NavigationItemExtensions
 	/// <param name="navigationDocumentationFileLookup">The ConditionalWeakTable to populate with file-to-navigation mappings</param>
 	/// <returns>A frozen dictionary mapping navigation indices to navigation items</returns>
 	public static FrozenDictionary<int, INavigationItem> BuildNavigationLookups(
-		this INavigationItem rootItem, ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup
+		this INavigationItem rootItem,
+		ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup
 	)
 	{
 		var navigationByOrder = new Dictionary<int, INavigationItem>();
@@ -105,7 +141,8 @@ public static class NavigationItemExtensions
 	private static void BuildNavigationLookupsRecursive(
 		INavigationItem item,
 		ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup,
-		Dictionary<int, INavigationItem> navigationByOrder)
+		Dictionary<int, INavigationItem> navigationByOrder
+	)
 	{
 		switch (item)
 		{
@@ -120,9 +157,14 @@ public static class NavigationItemExtensions
 				_ = navigationByOrder.TryAdd(leaf.NavigationIndex, leaf);
 				break;
 			case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationFileNode:
-				_ = navigationDocumentationFileLookup.TryAdd(documentationFileNode.Index.Model, documentationFileNode);
 				_ = navigationByOrder.TryAdd(documentationFileNode.NavigationIndex, documentationFileNode);
-				_ = navigationByOrder.TryAdd(documentationFileNode.Index.NavigationIndex, documentationFileNode.Index);
+				// Index is a null sentinel when this node's table of contents produced no items; the
+				// validation error is emitted upstream, so skip registering a missing index here.
+				if (documentationFileNode.Index is { } documentationFileIndex)
+				{
+					_ = navigationDocumentationFileLookup.TryAdd(documentationFileIndex.Model, documentationFileNode);
+					_ = navigationByOrder.TryAdd(documentationFileIndex.NavigationIndex, documentationFileIndex);
+				}
 				foreach (var child in documentationFileNode.NavigationItems)
 					BuildNavigationLookupsRecursive(child, navigationDocumentationFileLookup, navigationByOrder);
 				break;

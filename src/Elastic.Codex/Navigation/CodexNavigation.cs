@@ -26,7 +26,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		CodexConfiguration configuration,
 		IReadOnlyList<CodexDocumentationSetReference> documentationSetReferences,
 		ICodexDocumentationContext context,
-		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations)
+		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations
+	)
 	{
 		Url = string.IsNullOrEmpty(configuration.SitePrefix) ? "" : configuration.SitePrefix;
 		NavigationRoot = this;
@@ -61,7 +62,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		CodexNavigation codex,
 		ICodexDocumentationContext context,
 		IReadOnlyDictionary<string, IDocumentationSetNavigation> documentationSetNavigations,
-		CodexConfiguration configuration)
+		CodexConfiguration configuration
+	)
 	{
 		private readonly List<INavigationItem> _items = [];
 		private readonly List<CodexDocumentationSetInfo> _docSetInfos = [];
@@ -72,7 +74,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		public sealed record BuildResult(
 			IReadOnlyCollection<INavigationItem> NavigationItems,
 			Dictionary<string, GroupNavigation> Groups,
-			List<CodexDocumentationSetInfo> DocumentationSetInfos);
+			List<CodexDocumentationSetInfo> DocumentationSetInfos
+		);
 
 		public BuildResult Build(IReadOnlyList<CodexDocumentationSetReference> docSetRefs)
 		{
@@ -97,20 +100,20 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			if (docSetNav is not IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem)
 				return;
 
-			var pathPrefix = $"{codex.Url}/r/{repoName}";
 			var docSetInfo = CreateDocumentationSetInfo(docSetRef, rootNavItem, repoName);
 			_docSetInfos.Add(docSetInfo);
 
 			if (!string.IsNullOrEmpty(docSetRef.Group))
-				AttachToGroup(docSetRef, docSetNav, rootNavItem, pathPrefix, docSetInfo);
+				AttachToGroup(docSetRef, docSetNav, rootNavItem, docSetInfo.Url, docSetInfo);
 			else
-				AttachToCodexRoot(docSetNav, rootNavItem, pathPrefix);
+				AttachToCodexRoot(docSetNav, rootNavItem, docSetInfo.Url);
 		}
 
 		private CodexDocumentationSetInfo CreateDocumentationSetInfo(
 			CodexDocumentationSetReference docSetRef,
 			IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem,
-			string repoName) =>
+			string repoName
+		) =>
 			new()
 			{
 				Name = repoName,
@@ -127,7 +130,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 			IDocumentationSetNavigation docSetNav,
 			IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem,
 			string pathPrefix,
-			CodexDocumentationSetInfo docSetInfo)
+			CodexDocumentationSetInfo docSetInfo
+		)
 		{
 			var groupId = docSetRef.Group!;
 			var groupNav = GetOrCreateGroup(groupId);
@@ -174,7 +178,8 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		private void AttachToCodexRoot(
 			IDocumentationSetNavigation docSetNav,
 			IRootNavigationItem<IDocumentationFile, INavigationItem> rootNavItem,
-			string pathPrefix)
+			string pathPrefix
+		)
 		{
 			if (docSetNav is INavigationHomeAccessor homeAccessor)
 				homeAccessor.HomeProvider = new NavigationHomeProvider(pathPrefix, rootNavItem);
@@ -192,11 +197,14 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 		}
 
 		private static string FormatGroupTitle(string slug) =>
-			string.Join(" ", slug
-				.Replace('-', ' ')
-				.Replace('_', ' ')
-				.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-				.Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
+			string.Join(
+				" ",
+				slug
+					.Replace('-', ' ')
+					.Replace('_', ' ')
+					.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+					.Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant())
+			);
 	}
 
 	/// <summary>
@@ -252,14 +260,12 @@ public class CodexNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 	/// <inheritdoc />
 	public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; }
 
-	private static int CountPages(INavigationItem item) =>
-		item switch
-		{
-			INodeNavigationItem<INavigationModel, INavigationItem> node =>
-				1 + node.NavigationItems.Sum(CountPages),
-			ILeafNavigationItem<IDocumentationFile> => 1,
-			_ => 0
-		};
+	private static int CountPages(INavigationItem item) => item switch
+	{
+		INodeNavigationItem<INavigationModel, INavigationItem> node => 1 + node.NavigationItems.Sum(CountPages),
+		ILeafNavigationItem<IDocumentationFile> => 1,
+		_ => 0
+	};
 }
 
 /// <summary>

@@ -8,17 +8,21 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ChangelogTemplateSeederTests
 {
-	private const string Template =
-		"bundle:\n  resolve: true\n  # changelog-init-bundle-seed\n  # some other comment\n";
+	private const string Template = "bundle:\n  release_dates: true\n  # changelog-init-bundle-seed\n  # some other comment\n";
 
 	private const string TemplateWindows =
-		"bundle:\r\n  resolve: true\r\n  # changelog-init-bundle-seed\r\n  # some other comment\r\n";
+		"bundle:\r\n  release_dates: true\r\n  # changelog-init-bundle-seed\r\n  # some other comment\r\n";
 
 	[Fact]
 	public void ApplyBundleRepoSeed_GitOwnerAndRepo_SeedsTemplate()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: null, repoCli: null, gitOwner: "elastic", gitRepo: "kibana");
+			Template,
+			ownerCli: null,
+			repoCli: null,
+			gitOwner: "elastic",
+			gitRepo: "kibana"
+		);
 
 		result.Should().Contain("  owner: elastic\n");
 		result.Should().Contain("  repo: kibana\n");
@@ -30,7 +34,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_CliOwnerAndRepo_SeedsTemplate()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: "myorg", repoCli: "myrepo", gitOwner: null, gitRepo: null);
+			Template,
+			ownerCli: "myorg",
+			repoCli: "myrepo",
+			gitOwner: null,
+			gitRepo: null
+		);
 
 		result.Should().Contain("  owner: myorg\n");
 		result.Should().Contain("  repo: myrepo\n");
@@ -41,7 +50,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_CliOverridesGit()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: "override-owner", repoCli: "override-repo", gitOwner: "elastic", gitRepo: "kibana");
+			Template,
+			ownerCli: "override-owner",
+			repoCli: "override-repo",
+			gitOwner: "elastic",
+			gitRepo: "kibana"
+		);
 
 		result.Should().Contain("  owner: override-owner\n");
 		result.Should().Contain("  repo: override-repo\n");
@@ -52,7 +66,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_CliRepoOnly_OwnerDefaultsToElastic()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: null, repoCli: "myrepo", gitOwner: null, gitRepo: null);
+			Template,
+			ownerCli: null,
+			repoCli: "myrepo",
+			gitOwner: null,
+			gitRepo: null
+		);
 
 		result.Should().Contain("  owner: elastic\n");
 		result.Should().Contain("  repo: myrepo\n");
@@ -62,8 +81,7 @@ public class ChangelogTemplateSeederTests
 	[Fact]
 	public void ApplyBundleRepoSeed_CliOwnerOnly_NoRepo_RemovesPlaceholder()
 	{
-		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: "myorg", repoCli: null, gitOwner: null, gitRepo: null);
+		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(Template, ownerCli: "myorg", repoCli: null, gitOwner: null, gitRepo: null);
 
 		result.Should().NotContain("changelog-init-bundle-seed");
 		result.Should().NotContain("  owner:");
@@ -73,8 +91,7 @@ public class ChangelogTemplateSeederTests
 	[Fact]
 	public void ApplyBundleRepoSeed_NeitherCliNorGit_RemovesPlaceholder()
 	{
-		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: null, repoCli: null, gitOwner: null, gitRepo: null);
+		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(Template, ownerCli: null, repoCli: null, gitOwner: null, gitRepo: null);
 
 		result.Should().NotContain("changelog-init-bundle-seed");
 		result.Should().NotContain("  owner:");
@@ -86,7 +103,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_WhitespaceCliValues_TreatedAsAbsent()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: "  ", repoCli: "  ", gitOwner: "elastic", gitRepo: "kibana");
+			Template,
+			ownerCli: "  ",
+			repoCli: "  ",
+			gitOwner: "elastic",
+			gitRepo: "kibana"
+		);
 
 		result.Should().Contain("  owner: elastic\n");
 		result.Should().Contain("  repo: kibana\n");
@@ -96,7 +118,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_WindowsLineEndings_PreservesStyle()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			TemplateWindows, ownerCli: null, repoCli: null, gitOwner: "elastic", gitRepo: "kibana");
+			TemplateWindows,
+			ownerCli: null,
+			repoCli: null,
+			gitOwner: "elastic",
+			gitRepo: "kibana"
+		);
 
 		result.Should().Contain("  owner: elastic\r\n");
 		result.Should().Contain("  repo: kibana\r\n");
@@ -106,10 +133,15 @@ public class ChangelogTemplateSeederTests
 	[Fact]
 	public void ApplyBundleRepoSeed_MissingPlaceholder_ReturnsContentUnchanged()
 	{
-		var content = "bundle:\n  resolve: true\n";
+		var content = "bundle:\n  release_dates: true\n";
 
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			content, ownerCli: "elastic", repoCli: "kibana", gitOwner: null, gitRepo: null);
+			content,
+			ownerCli: "elastic",
+			repoCli: "kibana",
+			gitOwner: null,
+			gitRepo: null
+		);
 
 		result.Should().Be(content);
 	}
@@ -118,7 +150,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_ValuesNeedingYamlQuoting_AreQuoted()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: "my org", repoCli: "my:repo", gitOwner: null, gitRepo: null);
+			Template,
+			ownerCli: "my org",
+			repoCli: "my:repo",
+			gitOwner: null,
+			gitRepo: null
+		);
 
 		result.Should().Contain("  owner: \"my org\"\n");
 		result.Should().Contain("  repo: \"my:repo\"\n");
@@ -129,7 +166,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_CliRepoOverridesGitRepo_KeepsGitOwner()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: null, repoCli: "other-repo", gitOwner: "elastic", gitRepo: "kibana");
+			Template,
+			ownerCli: null,
+			repoCli: "other-repo",
+			gitOwner: "elastic",
+			gitRepo: "kibana"
+		);
 
 		result.Should().Contain("  owner: elastic\n");
 		result.Should().Contain("  repo: other-repo\n");
@@ -139,10 +181,15 @@ public class ChangelogTemplateSeederTests
 	[Fact]
 	public void ApplyBundleRepoSeed_PlaceholderAtEofWithoutNewline_Seeds()
 	{
-		var content = "bundle:\n  resolve: true\n  # changelog-init-bundle-seed";
+		var content = "bundle:\n  release_dates: true\n  # changelog-init-bundle-seed";
 
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			content, ownerCli: null, repoCli: null, gitOwner: "elastic", gitRepo: "kibana");
+			content,
+			ownerCli: null,
+			repoCli: null,
+			gitOwner: "elastic",
+			gitRepo: "kibana"
+		);
 
 		result.Should().Contain("  owner: elastic");
 		result.Should().Contain("  repo: kibana");
@@ -152,12 +199,11 @@ public class ChangelogTemplateSeederTests
 	[Fact]
 	public void ApplyBundleRepoSeed_PlaceholderAtEofWithoutNewline_RemovesWhenNoSeed()
 	{
-		var content = "bundle:\n  resolve: true\n  # changelog-init-bundle-seed";
+		var content = "bundle:\n  release_dates: true\n  # changelog-init-bundle-seed";
 
-		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			content, ownerCli: null, repoCli: null, gitOwner: null, gitRepo: null);
+		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(content, ownerCli: null, repoCli: null, gitOwner: null, gitRepo: null);
 
-		result.Should().Be("bundle:\n  resolve: true\n");
+		result.Should().Be("bundle:\n  release_dates: true\n");
 		result.Should().NotContain("changelog-init-bundle-seed");
 	}
 
@@ -165,7 +211,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_BackslashInValue_IsEscapedInYaml()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: @"path\org", repoCli: "repo", gitOwner: null, gitRepo: null);
+			Template,
+			ownerCli: @"path\org",
+			repoCli: "repo",
+			gitOwner: null,
+			gitRepo: null
+		);
 
 		result.Should().Contain(@"  owner: ""path\\org""");
 		result.Should().Contain("  repo: repo\n");
@@ -175,7 +226,12 @@ public class ChangelogTemplateSeederTests
 	public void ApplyBundleRepoSeed_ControlCharsInValue_AreEscapedInYaml()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
-			Template, ownerCli: "org\tname", repoCli: "repo", gitOwner: null, gitRepo: null);
+			Template,
+			ownerCli: "org\tname",
+			repoCli: "repo",
+			gitOwner: null,
+			gitRepo: null
+		);
 
 		result.Should().Contain(@"  owner: ""org\tname""");
 	}

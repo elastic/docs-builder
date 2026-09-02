@@ -51,7 +51,14 @@
     <Compile Include="Blocks\Lists.fs"/>
     <Compile Include="Blocks\Admonitions.fs"/>
     <Compile Include="Blocks\AgentSkill.fs"/>
+    <Compile Include="Blocks\Storybook.fs"/>
     <Compile Include="Blocks\ImageBlocks.fs" />
+    <Compile Include="Blocks\PageCards.fs" />
+    <Compile Include="Blocks\NestedDirectiveOptions.fs" />
+    <Compile Include="Blocks\Hub\Hero.fs" />
+    <Compile Include="Blocks\Hub\CardsAndExplore.fs" />
+    <Compile Include="Blocks\Hub\GetStarted.fs" />
+    <Compile Include="Blocks\Hub\WhatsNew.fs" />
     <Compile Include="Applicability\AppliesToFrontMatter.fs" />
     <Compile Include="Applicability\AppliesToDirective.fs" />
     <Compile Include="Applicability\ApplicableToComponent.fs" />

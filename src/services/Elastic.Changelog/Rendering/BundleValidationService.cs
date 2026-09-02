@@ -24,7 +24,8 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 	public async Task<BundleValidationResult> ValidateBundlesAsync(
 		IDiagnosticsCollector collector,
 		IReadOnlyCollection<BundleInput> bundles,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var bundleDataList = new List<ValidatedBundle>();
 		var seenFileNames = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
@@ -32,7 +33,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 
 		foreach (var bundleInput in bundles)
 		{
-			if (!await ValidateBundleInputAsync(collector, bundleInput, ctx))
+			if (!ValidateBundleInput(collector, bundleInput))
 				return CreateInvalidResult(bundleDataList, seenFileNames, seenPrs);
 
 			// Load bundle file
@@ -50,9 +51,6 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 				return CreateInvalidResult(bundleDataList, seenFileNames, seenPrs);
 			}
 
-			// Determine directory for resolving file references
-			var bundleDirectory = bundleInput.Directory ?? fileSystem.Path.GetDirectoryName(bundleInput.BundleFile) ?? fileSystem.Directory.GetCurrentDirectory();
-
 			// Auto-discover and merge amend files
 			var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(fileSystem, bundleInput.BundleFile);
 			if (amendFiles.Count > 0)
@@ -65,16 +63,11 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			}
 
 			// Validate all entries in this bundle
-			var result = await ValidateBundleEntriesAsync(collector, bundleInput, bundledData, bundleDirectory, seenFileNames, seenPrs, ctx);
+			var result = ValidateBundleEntries(collector, bundleInput, bundledData, seenFileNames, seenPrs);
 			if (!result)
 				return CreateInvalidResult(bundleDataList, seenFileNames, seenPrs);
 
-			bundleDataList.Add(new ValidatedBundle
-			{
-				Data = bundledData,
-				Input = bundleInput,
-				Directory = bundleDirectory
-			});
+			bundleDataList.Add(new ValidatedBundle { Data = bundledData, Input = bundleInput });
 		}
 
 		// Check for duplicate file names across bundles
@@ -93,9 +86,10 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		IDiagnosticsCollector collector,
 		Bundle mainBundle,
 		IReadOnlyList<string> amendFiles,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
-		var mergedEntries = new List<BundledEntry>(mainBundle.Entries);
+		var amendBundles = new List<Bundle>();
 
 		foreach (var amendFile in amendFiles)
 		{
@@ -103,9 +97,13 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			{
 				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
 				var amendBundle = ReleaseNotesSerialization.DeserializeBundle(amendContent);
-
-				_logger.LogInformation("Merging {Count} entries from amend file {AmendFile}", amendBundle.Entries.Count, amendFile);
-				mergedEntries.AddRange(amendBundle.Entries);
+				amendBundles.Add(amendBundle);
+				_logger.LogInformation(
+					"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+					amendFile,
+					amendBundle.Entries.Count,
+					amendBundle.ExcludeEntries.Count
+				);
 			}
 			catch (YamlException yamlEx)
 			{
@@ -114,20 +112,20 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			}
 		}
 
+		var mergedEntries = BundleAmendMerger.MergeEntries(mainBundle.Entries, amendBundles);
+
 		return new Bundle
 		{
 			Products = mainBundle.Products,
+			Description = mainBundle.Description,
+			ReleaseDate = mainBundle.ReleaseDate,
+			HideFeatures = mainBundle.HideFeatures,
 			Entries = mergedEntries
 		};
 	}
 
-	private async Task<bool> ValidateBundleInputAsync(
-		IDiagnosticsCollector collector,
-		BundleInput bundleInput,
-		Cancel ctx)
+	private bool ValidateBundleInput(IDiagnosticsCollector collector, BundleInput bundleInput)
 	{
-		_ = ctx; // Unused but kept for consistency
-
 		if (string.IsNullOrWhiteSpace(bundleInput.BundleFile))
 		{
 			collector.EmitError(string.Empty, "Bundle file path is required for each --input");
@@ -140,19 +138,19 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			return false;
 		}
 
-		return await Task.FromResult(true);
+		return true;
 	}
 
-	private async Task<bool> ValidateBundleEntriesAsync(
+	private static bool ValidateBundleEntries(
 		IDiagnosticsCollector collector,
 		BundleInput bundleInput,
 		Bundle bundledData,
-		string bundleDirectory,
 		Dictionary<string, List<string>> seenFileNames,
-		Dictionary<string, List<string>> seenPrs,
-		Cancel ctx)
+		Dictionary<string, List<string>> seenPrs
+	)
 	{
 		var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var allValid = true;
 
 		foreach (var entry in bundledData.Entries)
 		{
@@ -174,29 +172,33 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 				bundleList.Add(bundleInput.BundleFile);
 			}
 
-			// If entry has resolved data, validate it
-			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-			{
-				if (!ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
-					return false;
-			}
-			else
-			{
-				// Entry only has file reference - validate file exists
-				if (!await ValidateFileReferenceEntryAsync(collector, bundleInput.BundleFile, entry, bundleDirectory, seenPrs, ctx))
-					return false;
-			}
+			// Continue past invalid entries so every problem in the bundle is reported in one pass.
+			if (!ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
+				allValid = false;
 		}
 
-		return true;
+		return allValid;
 	}
 
 	private static bool ValidateResolvedEntry(
 		IDiagnosticsCollector collector,
 		string bundleFile,
 		BundledEntry entry,
-		Dictionary<string, List<string>> seenPrs)
+		Dictionary<string, List<string>> seenPrs
+	)
 	{
+		// Bundles are always self-contained: an entry without inline content is invalid.
+		if (string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null)
+		{
+			var entryName = !string.IsNullOrWhiteSpace(entry.File?.Name) ? entry.File.Name : entry.Title ?? "<unnamed>";
+			collector.EmitError(
+				bundleFile,
+				$"Entry '{entryName}' in bundle has no inline content: title and type are required. " +
+					"Re-create the bundle with 'changelog bundle'."
+			);
+			return false;
+		}
+
 		if (entry.Products == null || entry.Products.Count == 0)
 		{
 			collector.EmitError(bundleFile, $"Entry '{entry.Title}' in bundle is missing required field: products");
@@ -220,102 +222,21 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		return true;
 	}
 
-	private async Task<bool> ValidateFileReferenceEntryAsync(
-		IDiagnosticsCollector collector,
-		string bundleFile,
-		BundledEntry entry,
-		string bundleDirectory,
-		Dictionary<string, List<string>> seenPrs,
-		Cancel ctx)
-	{
-		if (string.IsNullOrWhiteSpace(entry.File?.Name))
-		{
-			collector.EmitError(bundleFile, "Entry in bundle is missing required field: file.name");
-			return false;
-		}
-
-		if (string.IsNullOrWhiteSpace(entry.File.Checksum))
-		{
-			collector.EmitError(bundleFile, $"Entry for file '{entry.File.Name}' in bundle is missing required field: file.checksum");
-			return false;
-		}
-
-		var filePath = fileSystem.Path.Join(bundleDirectory, entry.File.Name);
-		if (!fileSystem.File.Exists(filePath))
-		{
-			collector.EmitError(bundleFile, $"Referenced changelog file '{entry.File.Name}' does not exist at path: {filePath}");
-			return false;
-		}
-
-		// Validate the changelog file can be deserialized
-		try
-		{
-			var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
-			var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
-			if (checksum != entry.File.Checksum)
-			{
-				collector.EmitWarning(bundleFile,
-					$"Checksum mismatch for file {entry.File.Name}: the file content has changed since it was bundled. " +
-					"This can happen if the file was edited after bundling, or if the render directory " +
-					"contains a different copy of the file. To fix, re-run 'bundle' or 'bundle-amend' " +
-					"to update the checksum, or use '--resolve' when amending to embed the entry data " +
-					$"directly in the amend file. Expected {entry.File.Checksum}, got {checksum}"
-				);
-			}
-
-			// Deserialize YAML to validate structure
-			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
-			var entryData = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
-
-			// Validate required fields in changelog file
-			if (string.IsNullOrWhiteSpace(entryData.Title))
-			{
-				collector.EmitError(filePath, "Changelog file is missing required field: title");
-				return false;
-			}
-
-			// Type is an enum with a default value, so it's always valid
-
-			if (entryData.Products == null || entryData.Products.Count == 0)
-			{
-				collector.EmitError(filePath, "Changelog file is missing required field: products");
-				return false;
-			}
-
-			// Track PRs for duplicate detection
-			foreach (var pr in entryData.Prs ?? [])
-			{
-				if (string.IsNullOrWhiteSpace(pr))
-					continue;
-				var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(pr, null, null);
-				if (!seenPrs.TryGetValue(normalizedPr, out var prBundleList))
-				{
-					prBundleList = [];
-					seenPrs[normalizedPr] = prBundleList;
-				}
-				prBundleList.Add(bundleFile);
-			}
-		}
-		catch (YamlException yamlEx)
-		{
-			collector.EmitError(filePath, $"Failed to parse changelog file: {yamlEx.Message}", yamlEx);
-			return false;
-		}
-
-		return true;
-	}
-
 	private static void EmitDuplicateWarnings(
 		IDiagnosticsCollector collector,
 		Dictionary<string, List<string>> seenFileNames,
-		Dictionary<string, List<string>> seenPrs)
+		Dictionary<string, List<string>> seenPrs
+	)
 	{
 		// Check for duplicate file names across bundles
 		foreach (var (fileName, bundleFiles) in seenFileNames.Where(kvp => kvp.Value.Count > 1))
 		{
 			var uniqueBundles = bundleFiles.Distinct().ToList();
 			if (uniqueBundles.Count > 1)
-				collector.EmitWarning(string.Empty, $"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}");
+				collector.EmitWarning(
+					string.Empty,
+					$"Changelog file '{fileName}' appears in multiple bundles: {string.Join(", ", uniqueBundles)}"
+				);
 		}
 
 		// Check for duplicate PRs
@@ -330,12 +251,6 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 	private static BundleValidationResult CreateInvalidResult(
 		List<ValidatedBundle> bundles,
 		Dictionary<string, List<string>> seenFileNames,
-		Dictionary<string, List<string>> seenPrs) =>
-		new()
-		{
-			IsValid = false,
-			Bundles = bundles,
-			SeenFileNames = seenFileNames,
-			SeenPrs = seenPrs
-		};
+		Dictionary<string, List<string>> seenPrs
+	) => new() { IsValid = false, Bundles = bundles, SeenFileNames = seenFileNames, SeenPrs = seenPrs };
 }

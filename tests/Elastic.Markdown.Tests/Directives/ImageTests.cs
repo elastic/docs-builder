@@ -9,8 +9,9 @@ using Elastic.Markdown.Myst.Directives.Image;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
-"""
+public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(
+	output,
+	"""
 :::{image} img/observability.png
 :alt: Elasticsearch
 :width: 250px
@@ -19,8 +20,7 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 """
 )
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/img/observability.png", "");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/observability.png", "");
 
 	[Fact]
 	public void ParsesBlock() => Block.Should().NotBeNull();
@@ -42,8 +42,29 @@ public class ImageBlockTests(ITestOutputHelper output) : DirectiveTest<ImageBloc
 	}
 }
 
-public class FigureTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(output,
+public class AllowedExternalHostTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(
+	output,
+	"""
+:::{image} https://images.contentstack.io/v3/assets/bltefdd0b53724fa2ce/blt/example.gif
+:alt: An animated screenshot hosted on the Elastic Contentstack CDN
+:::
 """
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void AllowedHostDoesNotWarn()
+	{
+		Block!.Found.Should().BeTrue();
+		Collector.Diagnostics.Count.Should().Be(0);
+	}
+}
+
+public class FigureTests(ITestOutputHelper output) : DirectiveTest<ImageBlock>(
+	output,
+	"""
 :::{figure} https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true
 :label: myFigure
 :alt: Sunset at the beach
@@ -62,7 +83,6 @@ Relaxing at the beach 🏝 🌊 😎
 	{
 		Block!.Found.Should().BeTrue();
 
-		Collector.Diagnostics.Should().HaveCount(1)
-			.And.OnlyContain(d => d.Severity == Severity.Warning);
+		Collector.Diagnostics.Should().HaveCount(1).And.OnlyContain(d => d.Severity == Severity.Warning);
 	}
 }

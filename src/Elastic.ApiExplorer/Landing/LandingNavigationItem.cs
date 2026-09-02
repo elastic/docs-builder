@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -17,7 +20,8 @@ public class ApiLanding : IApiGroupingModel
 		var viewModel = new LandingViewModel(context)
 		{
 			Landing = this,
-			ApiInfo = context.Model.Info
+			ApiInfo = context.Model.Info,
+			OverviewRows = ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot)
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -50,25 +54,21 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	public bool IsUsingNavigationDropdown => false;
 
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
-		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}");
+		throw new NotSupportedException(
+			$"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}"
+		);
 }
 
-public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationItem> : INodeNavigationItem<TGroupingModel, TNavigationItem>
-	where TGroupingModel : IApiGroupingModel
-	where TNavigationItem : INavigationItem;
+public interface IApiGroupingNavigationItem<out TGroupingModel, out TNavigationItem> : INodeNavigationItem<TGroupingModel, TNavigationItem> where TGroupingModel : IApiGroupingModel where TNavigationItem : INavigationItem;
 
 public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>(
 	TGroupingModel groupingModel,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-)
-	: IApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
-	where TGroupingModel : IApiGroupingModel
-	where TNavigationItem : INavigationItem
-
+) : IApiGroupingNavigationItem<TGroupingModel, TNavigationItem> where TGroupingModel : IApiGroupingModel where TNavigationItem : INavigationItem
 {
 	/// <inheritdoc />
-	public string Url => NavigationItems.First().Url;
+	public virtual string Url => NavigationItems.First().Url;
 
 	/// <inheritdoc />
 	public abstract string NavigationTitle { get; }
@@ -91,15 +91,26 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 
 	//TODO ensure Index is not newed everytime
 	/// <inheritdoc />
-	public ILeafNavigationItem<TGroupingModel> Index => new ApiIndexLeafNavigation<TGroupingModel>(groupingModel, Url, NavigationTitle, rootNavigation, Parent);
+	public ILeafNavigationItem<TGroupingModel> Index =>
+		new ApiIndexLeafNavigation<TGroupingModel>(groupingModel, Url, NavigationTitle, rootNavigation, Parent);
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<TNavigationItem> NavigationItems { get; set; } = [];
 }
 
-public class ClassificationNavigationItem(ApiClassification classification, LandingNavigationItem rootNavigation, LandingNavigationItem parent)
-	: ApiGroupingNavigationItem<ApiClassification, INavigationItem>(classification, rootNavigation, parent), IRootNavigationItem<ApiClassification, INavigationItem>
+public class ClassificationNavigationItem(
+	ApiClassification classification,
+	LandingNavigationItem rootNavigation,
+	LandingNavigationItem parent
+) : ApiGroupingNavigationItem<ApiClassification, INavigationItem>(
+	classification,
+	rootNavigation,
+	parent
+), IRootNavigationItem<ApiClassification, INavigationItem>
 {
+	/// <summary>Section titles from <c>x-tagGroups</c> are not their own page; the sidebar link targets the main API overview for the product, not a tag (or the first child) page.</summary>
+	public override string Url => rootNavigation.Index.Url;
+
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = classification.Name;
 
@@ -110,12 +121,24 @@ public class ClassificationNavigationItem(ApiClassification classification, Land
 	public bool IsUsingNavigationDropdown => false;
 
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
-		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}");
+		throw new NotSupportedException(
+			$"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}"
+		);
 }
 
-public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
-	: ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
+public class TagNavigationItem(
+	ApiTag tag,
+	string? urlPathPrefix,
+	string apiUrlSuffix,
+	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+	INodeNavigationItem<INavigationModel, INavigationItem> parent
+) : ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
 {
+	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
+
+	/// <inheritdoc />
+	public override string Url => _url;
+
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = tag.DisplayName;
 
@@ -125,8 +148,11 @@ public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel
 
 public interface IEndpointOrOperationNavigationItem : INavigationItem;
 
-public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
-	: IApiGroupingNavigationItem<ApiEndpoint, OperationNavigationItem>, IEndpointOrOperationNavigationItem
+public class EndpointNavigationItem(
+	ApiEndpoint endpoint,
+	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+	INodeNavigationItem<INavigationModel, INavigationItem> parent
+) : IApiGroupingNavigationItem<ApiEndpoint, OperationNavigationItem>, IEndpointOrOperationNavigationItem
 {
 	/// <inheritdoc />
 	public string Url => NavigationItems.First().Url;
@@ -147,11 +173,16 @@ public class EndpointNavigationItem(ApiEndpoint endpoint, IRootNavigationItem<IA
 	public int NavigationIndex { get; set; }
 
 	/// <inheritdoc />
-	public string Id { get; } = ShortId.Create(nameof(EndpointNavigationItem), endpoint.Operations.First().ApiName, endpoint.Operations.First().Route);
+	public string Id { get; } = ShortId.Create(
+		nameof(EndpointNavigationItem),
+		endpoint.Operations.First().ApiName,
+		endpoint.Operations.First().Route
+	);
 
 	//TODO ensure Index is not newed everytime
 	/// <inheritdoc />
-	public ILeafNavigationItem<ApiEndpoint> Index => new ApiIndexLeafNavigation<ApiEndpoint>(endpoint, Url, NavigationTitle, rootNavigation, Parent);
+	public ILeafNavigationItem<ApiEndpoint> Index =>
+		new ApiIndexLeafNavigation<ApiEndpoint>(endpoint, Url, NavigationTitle, rootNavigation, Parent);
 
 	/// <inheritdoc />
 	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];

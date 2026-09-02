@@ -7,8 +7,7 @@ using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.PageCard;
 
-public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "page-card";
 
@@ -33,28 +32,29 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 		Title = match.Groups[1].Value;
 		var url = match.Groups[2].Value;
 
-		if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-			url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+		if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 		{
 			this.EmitError($"page-card url must be a local .md path or crosslink, not an absolute URL: {url}");
 			return;
 		}
 
-		// Resolve relative to the source file's directory (same logic as DiagnosticLinkInlineParser)
-		var includeFrom = url.StartsWith('/')
-			? context.Build.DocumentationSourceDirectory.FullName
-			: context.MarkdownSourcePath.Directory!.FullName;
+		// No file-existence check: page-card links can target generated pages, for example the
+		// CLI reference, which have no markdown file on disk.
+		var validated = DirectiveLinkValidator.ResolveWithoutFileCheck(url, this, context) ?? url;
 
+		// A cross-link resolves to a full URL and is already final. Anything else is a path that
+		// still needs normalizing against the docset root before it can become an href.
+		ResolvedUrl = Uri.IsWellFormedUriString(validated, UriKind.Absolute)
+			? validated
+			: DirectiveLinkValidator.ToHref(NormalizeToDocsetRoot(validated, context), context.Build.UrlPathPrefix) ?? validated;
+	}
+
+	private static string NormalizeToDocsetRoot(string url, ParserContext context)
+	{
+		var sourceDirectory = context.Build.DocumentationSourceDirectory.FullName;
+		var includeFrom = url.StartsWith('/') ? sourceDirectory : context.MarkdownSourcePath.Directory!.FullName;
 		var resolvedDiskPath = Path.GetFullPath(Path.Join(includeFrom, url));
-		var relativeToSource = Path.GetRelativePath(
-			context.Build.DocumentationSourceDirectory.FullName, resolvedDiskPath);
-
-		// Strip .md extension for the final href (same as normal link rendering)
-		var withoutExtension = relativeToSource.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? relativeToSource[..^3]
-			: relativeToSource;
-
-		ResolvedUrl = "/" + withoutExtension.Replace('\\', '/');
+		return "/" + Path.GetRelativePath(sourceDirectory, resolvedDiskPath).Replace('\\', '/');
 	}
 
 	[GeneratedRegex(@"^\[([^\]]+)\]\(([^)]+)\)$")]

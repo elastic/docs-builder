@@ -16,16 +16,21 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsDefaultTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDropdownsDefaultTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: breaking-change
 		:description-visibility: keep-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -50,13 +55,12 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 		  action: Remove references to the deprecated parameter.
 		  prs:
 		  - "444444"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
-	public void DefaultBehaviorDoesNotParseDropdownsOption()
-	{
-		Block!.DropdownsEnabled.Should().BeFalse();
-	}
+	public void DefaultBehaviorDoesNotParseDropdownsOption() => Block!.DropdownsEnabled.Should().BeFalse();
 
 	[Fact]
 	public void DefaultBehaviorRendersFlattened()
@@ -94,17 +98,22 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsEnabledTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDropdownsEnabledTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: breaking-change
 		:dropdowns:
 		:description-visibility: keep-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -119,13 +128,12 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 		  action: Update your code to use the new API endpoints.
 		  prs:
 		  - "333333"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
-	public void ExplicitDropdownsParsesCorrectly()
-	{
-		Block!.DropdownsEnabled.Should().BeTrue();
-	}
+	public void ExplicitDropdownsParsesCorrectly() => Block!.DropdownsEnabled.Should().BeTrue();
 
 	[Fact]
 	public void ExplicitDropdownsRendersDropdownFormat()
@@ -140,10 +148,7 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Fact]
-	public void ExplicitDropdownsIncludesDescriptionInDropdown()
-	{
-		Html.Should().Contain("API has been changed to improve performance.");
-	}
+	public void ExplicitDropdownsIncludesDescriptionInDropdown() => Html.Should().Contain("API has been changed to improve performance.");
 
 	[Fact]
 	public void ExplicitDropdownsIncludesImpactAndActionInDropdown()
@@ -158,16 +163,21 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 /// </summary>
 public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsWithHiddenDescriptionsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDropdownsWithHiddenDescriptionsTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: breaking-change
 		:description-visibility: hide-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -182,7 +192,9 @@ public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<Chang
 		  action: Update your code to use the new API endpoints.
 		  prs:
 		  - "333333"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void FlattendRenderingHidesDescriptionsButKeepsImpactAction()
@@ -205,17 +217,22 @@ public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<Chang
 /// </summary>
 public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsEnabledWithHiddenDescriptionsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDropdownsEnabledWithHiddenDescriptionsTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: breaking-change
 		:dropdowns:
 		:description-visibility: hide-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -230,7 +247,9 @@ public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTes
 		  action: Update your code to use the new API endpoints.
 		  prs:
 		  - "333333"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void DropdownRenderingHidesDescriptionsButKeepsImpactAction()
@@ -254,15 +273,20 @@ public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTes
 /// </summary>
 public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsWithDifferentTypesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDropdownsWithDifferentTypesTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -305,13 +329,15 @@ public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<Changelog
 		  action: Use new API.
 		  prs:
 		  - "444444"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void DefaultRendersMixedTypesCorrectly()
 	{
 		// Regular types should render as bulleted lists (unchanged behavior)
-		Html.Should().Contain("Feature addition.");  // Regular feature type (in <li> tags)
+		Html.Should().Contain("Feature addition."); // Regular feature type (in <li> tags)
 
 		// Separated types should render as flattened lists (new behavior) - no bold titles
 		Html.Should().Contain("Breaking API change.");
@@ -328,16 +354,21 @@ public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<Changelog
 /// </summary>
 public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsExplicitWithDifferentTypesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDropdownsExplicitWithDifferentTypesTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:dropdowns:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -370,13 +401,15 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 		  action: Use workaround.
 		  prs:
 		  - "333333"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void ExplicitDropdownsRendersMixedTypesCorrectly()
 	{
 		// Regular types should still render as bulleted lists (unchanged behavior)
-		Html.Should().Contain("Feature addition.");  // Regular feature type (in <li> tags)
+		Html.Should().Contain("Feature addition."); // Regular feature type (in <li> tags)
 
 		// Separated types should render as dropdowns (explicit :dropdowns:)
 		Html.Should().Contain("<details class=\"dropdown\">");
@@ -386,5 +419,52 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 		// Should NOT contain flattened format for separated types (check they're in dropdown, not flat list)
 		Html.Should().NotContain("<li><p>Breaking API change.");
 		Html.Should().NotContain("<li><p>Known issue with search.");
+	}
+}
+
+/// <summary>
+/// Changelog-generated dropdown titles pass through the dropdown parser, which strips inline markdown markers.
+/// </summary>
+public class ChangelogDropdownsPlainTextTitleTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDropdownsPlainTextTitleTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
+		:::{changelog}
+		:type: known-issue
+		:dropdowns:
+		:description-visibility: keep-descriptions
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: "The `ElasticAgentVersion` parameter is malformed"
+		  type: known-issue
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: The default value has a space instead of a plus sign.
+		  impact: Deployments fail.
+		  action: Update the template.
+		  prs:
+		  - "242365"
+		"""
+			)
+		);
+
+	[Fact]
+	public void ChangelogDropdownTitleStripsBackticksInHtml()
+	{
+		Html.Should().Contain("The ElasticAgentVersion parameter is malformed.");
+		Html.Should().NotContain("`ElasticAgentVersion`");
 	}
 }

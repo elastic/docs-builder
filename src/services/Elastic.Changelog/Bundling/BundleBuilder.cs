@@ -14,12 +14,12 @@ namespace Elastic.Changelog.Bundling;
 public class BundleBuilder
 {
 	/// <summary>
-	/// Builds the bundled changelog data from matched entries.
+	/// Builds the bundled changelog data from matched entries. Entry contents are always
+	/// resolved (inlined) — reference-only bundles are not a supported format.
 	/// </summary>
 	/// <param name="collector">The diagnostics collector.</param>
 	/// <param name="entries">Matched changelog files to bundle.</param>
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
-	/// <param name="resolve">Whether to resolve changelog file contents into entries.</param>
 	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
 	/// <param name="owner">Optional GitHub owner to set on products for link generation.</param>
 	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
@@ -27,26 +27,20 @@ public class BundleBuilder
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
-		bool resolve,
 		string? repo = null,
 		string? owner = null,
-		HashSet<string>? hideFeatures = null)
+		HashSet<string>? hideFeatures = null
+	)
 	{
 		// Build products list
 		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
 
 		// Build entries list
-		var bundledEntries = resolve
-			? BuildResolvedEntries(collector, entries)
-			: BuildFileOnlyEntries(entries);
+		var bundledEntries = BuildResolvedEntries(collector, entries);
 
 		if (bundledEntries == null)
 		{
-			return new BundleBuildResult
-			{
-				IsValid = false,
-				Data = null
-			};
+			return new BundleBuildResult { IsValid = false, Data = null };
 		}
 
 		var bundledData = new Bundle
@@ -56,11 +50,7 @@ public class BundleBuilder
 			Entries = bundledEntries
 		};
 
-		return new BundleBuildResult
-		{
-			IsValid = true,
-			Data = bundledData
-		};
+		return new BundleBuildResult { IsValid = true, Data = bundledData };
 	}
 
 	private static List<BundledProduct> BuildProducts(
@@ -68,7 +58,8 @@ public class BundleBuilder
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo,
-		string? owner)
+		string? owner
+	)
 	{
 		List<BundledProduct> bundledProducts;
 
@@ -78,14 +69,16 @@ public class BundleBuilder
 				.OrderBy(p => p.Product)
 				.ThenBy(p => p.Target ?? string.Empty)
 				.ThenBy(p => p.Lifecycle ?? string.Empty)
-				.Select(p => new BundledProduct
-				{
-					ProductId = p.Product ?? "",
-					Target = p.Target == "*" ? null : p.Target,
-					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
-					Repo = repo,
-					Owner = owner
-				})
+				.Select(
+					p => new BundledProduct
+					{
+						ProductId = p.Product ?? "",
+						Target = p.Target == "*" ? null : p.Target,
+						Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
+						Repo = repo,
+						Owner = owner
+					}
+				)
 				.ToList();
 		}
 		else if (entries.Count > 0)
@@ -97,7 +90,11 @@ public class BundleBuilder
 					continue;
 				foreach (var product in entry.Data.Products)
 				{
-					var version = product.Target ?? string.Empty;
+					// `Target` is obsolete; prefer the first entry of `Versions` (notes).
+					// For PR-anchored entries neither field is set → version is "".
+#pragma warning disable CS0618 // reading obsolete Target for backward compat
+					var version = (product.Versions.Count > 0 ? product.Versions[0] : null) ?? product.Target ?? string.Empty;
+#pragma warning restore CS0618
 					_ = productVersions.Add((product.ProductId, version, product.Lifecycle));
 				}
 			}
@@ -106,19 +103,23 @@ public class BundleBuilder
 				.OrderBy(pv => pv.product)
 				.ThenBy(pv => pv.version)
 				.ThenBy(pv => pv.lifecycle?.ToStringFast(true) ?? string.Empty)
-				.Select(pv => new BundledProduct(
-					pv.product,
-					string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
-					pv.lifecycle,
-					repo,
-					owner))
+				.Select(
+					pv => new BundledProduct(
+						pv.product,
+						string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+						pv.lifecycle,
+						repo,
+						owner
+					)
+				)
 				.ToList();
 		}
 		else
 			bundledProducts = [];
 
 		// Check for products with same product ID but different versions
-		var productsByProductId = bundledProducts.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
+		var productsByProductId = bundledProducts
+			.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
 			.Where(g => g.Count() > 1)
 			.ToList();
 
@@ -131,7 +132,10 @@ public class BundleBuilder
 					target = $"{target} {p.Lifecycle.Value.ToStringFast(true)}";
 				return target;
 			}).ToList();
-			collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}");
+			collector.EmitWarning(
+				string.Empty,
+				$"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}"
+			);
 		}
 
 		return bundledProducts;
@@ -142,73 +146,66 @@ public class BundleBuilder
 		if (string.IsNullOrEmpty(value))
 			return null;
 
-		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? result
-			: null;
+		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true) ? result : null;
 	}
 
-	private static List<BundledEntry>? BuildResolvedEntries(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<MatchedChangelogFile> entries)
+	private static List<BundledEntry>? BuildResolvedEntries(IDiagnosticsCollector collector, IReadOnlyList<MatchedChangelogFile> entries)
 	{
 		var resolvedEntries = new List<BundledEntry>();
+		var hasInvalidEntries = false;
 
 		foreach (var entry in entries)
 		{
-			var data = entry.Data;
-
-			// Validate required fields
-			if (string.IsNullOrWhiteSpace(data.Title))
+			if (!IsResolvedEntryValid(collector, entry))
 			{
-				collector.EmitError(entry.FilePath, "Changelog file is missing required field: title");
-				return null;
+				hasInvalidEntries = true;
+				continue;
 			}
 
-			// Validate type is not Invalid (missing or unrecognized)
-			if (data.Type == ChangelogEntryType.Invalid)
+			var bundledEntry = entry.Data.ToBundledEntry() with
 			{
-				collector.EmitError(entry.FilePath, "Changelog file is missing required field: type");
-				return null;
-			}
-
-			if (data.Products == null || data.Products.Count == 0)
-			{
-				collector.EmitError(entry.FilePath, "Changelog file is missing required field: products");
-				return null;
-			}
-
-			// Validate products have required fields
-			if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.ProductId)))
-			{
-				collector.EmitError(entry.FilePath, "Changelog file has product entry missing required field: product");
-				return null;
-			}
-
-			var bundledEntry = data.ToBundledEntry() with
-			{
-				File = new BundledFile
-				{
-					Name = entry.FileName,
-					Checksum = entry.Checksum
-				}
+				File = new BundledFile { Name = entry.FileName, Checksum = entry.Checksum }
 			};
 			resolvedEntries.Add(bundledEntry);
 		}
 
-		return resolvedEntries;
+		// Report every invalid entry in a single pass instead of aborting on the first,
+		// so a release with several broken changelogs surfaces them all at once.
+		return hasInvalidEntries ? null : resolvedEntries;
 	}
 
-	private static List<BundledEntry> BuildFileOnlyEntries(IReadOnlyList<MatchedChangelogFile> entries) =>
-		entries
-			.Select(e => new BundledEntry
-			{
-				File = new BundledFile
-				{
-					Name = e.FileName,
-					Checksum = e.Checksum
-				}
-			})
-			.ToList();
+	private static bool IsResolvedEntryValid(IDiagnosticsCollector collector, MatchedChangelogFile entry)
+	{
+		var data = entry.Data;
+
+		if (string.IsNullOrWhiteSpace(data.Title))
+		{
+			collector.EmitError(entry.FilePath, "Changelog file is missing required field: title");
+			return false;
+		}
+
+		// Validate type is not Invalid (missing or unrecognized)
+		if (data.Type == ChangelogEntryType.Invalid)
+		{
+			collector.EmitError(entry.FilePath, "Changelog file is missing required field: type");
+			return false;
+		}
+
+		if (data.Products == null || data.Products.Count == 0)
+		{
+			collector.EmitError(entry.FilePath, "Changelog file is missing required field: products");
+			return false;
+		}
+
+		// Validate products have required fields
+		if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.ProductId)))
+		{
+			collector.EmitError(entry.FilePath, "Changelog file has product entry missing required field: product");
+			return false;
+		}
+
+		return true;
+	}
 }
 
 /// <summary>

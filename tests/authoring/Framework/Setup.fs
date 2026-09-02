@@ -9,10 +9,12 @@ open System
 open System.Collections.Frozen
 open System.Collections.Generic
 open System.IO
+open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open YamlDotNet.RepresentationModel
 open Elastic.Documentation
+open Elastic.Documentation.FileSystems
 open Elastic.Documentation.Versions
 open Elastic.Documentation.Configuration
 open Elastic.Documentation.Configuration.LegacyUrlMappings
@@ -165,8 +167,15 @@ navigation_title: Stub
             // Tests supply their own minimal pages; do not replace them with production content.
             if not (fileSystem.File.Exists destPath) then
                 let sourcePath = Path.Combine(repoRoot, "docs", normalized)
+                // For testing/* paths, also check docs-tests/ (strip the testing/ prefix)
+                let altSourcePath =
+                    if rel.StartsWith("testing/") then
+                        Path.Combine(repoRoot, "docs-tests", rel.Substring("testing/".Length).Replace('/', Path.DirectorySeparatorChar))
+                    else ""
 
                 if File.Exists sourcePath then
+                    fileSystem.AddFile(destPath, MockFileData(stubMarkdown))
+                elif altSourcePath <> "" && File.Exists altSourcePath then
                     fileSystem.AddFile(destPath, MockFileData(stubMarkdown)))
 
 [<AutoOpen>]
@@ -204,7 +213,29 @@ type Setup =
     ) =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
         let redirectYaml = File.ReadAllText(Path.Combine(root.FullName, "_redirects.yml"))
-        RedirectMockTargets.copyTargetsFromRealDocsIntoMock fileSystem redirectYaml root.FullName
+        // Read the test-specific complex redirect entries from docs-tests/ and merge them
+        // into the mock's _redirects.yml. The real _redirects.yml has simple testing/* → index.md
+        // entries for CI validation; the complex entries (with anchors, many:, etc.) are needed
+        // by cross-link redirect tests. We strip the simple entries that would conflict with the
+        // complex test entries, then append the complex ones.
+        let testRedirectYaml = File.ReadAllText(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "redirects.yml"))
+        let testEntries = testRedirectYaml.Replace("redirects:\r\n", "").Replace("redirects:\n", "").Replace("'redirects/", "'testing/redirects/").Replace("\"redirects/", "\"testing/redirects/").Replace("!redirects/", "!testing/redirects/")
+        // Collect the test entry keys to remove their simple duplicates from the real redirects
+        let testKeys = testEntries.Split('\n') |> Array.choose (fun line ->
+            let trimmed = line.TrimStart()
+            if trimmed.StartsWith("'testing/") then Some(trimmed.Split(':').[0].Trim())
+            elif trimmed.StartsWith("\"testing/") then Some(trimmed.Split(':').[0].Trim())
+            else None)
+        let mutable filtered = redirectYaml
+        for key in testKeys do
+            // Remove lines like "  'testing/redirects/third-page.md': 'index.md'\n"
+            filtered <- filtered.Replace($"  {key}: 'index.md'\r\n", "").Replace($"  {key}: 'index.md'\n", "")
+        let mergedRedirectYaml = filtered.TrimEnd() + "\n" + testEntries
+        // Write both _redirects.yml and redirects.yml so the correct one is found
+        // regardless of whether the random docset name is _docset.yml or docset.yml
+        fileSystem.AddFile(Path.Combine(root.FullName, "_redirects.yml"), MockFileData(mergedRedirectYaml))
+        fileSystem.AddFile(Path.Combine(root.FullName, "redirects.yml"), MockFileData(mergedRedirectYaml))
+        RedirectMockTargets.copyTargetsFromRealDocsIntoMock fileSystem mergedRedirectYaml root.FullName
 
         let yaml = new StringWriter();
         yaml.WriteLine("cross_links:")
@@ -232,14 +263,16 @@ type Setup =
             if not shouldExclude then
                 yaml.WriteLine($" - file: {relative}");
         )
+        let docsTestsRoot = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs-tests")
         let redirectFiles = ["5th-page"; "second-page"; "third-page"; "first-page"]
         redirectFiles
         |> Seq.iter(fun file ->
             let relative = $"testing/redirects/{file}.md"
             yaml.WriteLine($" - file: {relative}")
-            let fullPath = Path.Combine(root.FullName, relative)
-            let contents = File.ReadAllText fullPath
-            fileSystem.AddFile(fullPath, MockFileData(contents))
+            let mockPath = Path.Combine(root.FullName, relative)
+            let realPath = Path.Combine(docsTestsRoot, $"redirects/{file}.md")
+            let contents = File.ReadAllText realPath
+            fileSystem.AddFile(mockPath, MockFileData(contents))
         )
 
         match globalVariables with
@@ -254,7 +287,7 @@ type Setup =
         fileSystem.AddFile(Path.Combine(root.FullName, name), MockFileData(yaml.ToString()))
 
         let redirectsName = if name.StartsWith '_' then "_redirects.yml" else "redirects.yml"
-        fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(redirectYaml))
+        fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(mergedRedirectYaml))
 
     static member Generator (files: TestFile seq) (options: SetupOptions option) : Task<GeneratorResults> =
         let options = options |> Option.defaultValue SetupOptions.Empty
@@ -436,7 +469,7 @@ type Setup =
             DisplayName = "Elastic Cloud Control ECCTL",
             VersioningSystem = versionConfig.VersioningSystems[VersioningSystemId.Ecctl]))
         
-        let configurationFileProvider = ConfigurationFileProvider(new TestLoggerFactory(), fileSystem)
+        let configurationFileProvider = ConfigurationFileProvider(new TestLoggerFactory(), ConfigurationFileSystem(fileSystem))
         let configurationContext = ConfigurationContext(
             VersionsConfiguration = versionConfig,
             ConfigurationFileProvider = configurationFileProvider,
@@ -448,9 +481,18 @@ type Setup =
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
             SearchConfiguration = SearchConfiguration(Synonyms = Array.empty<string[]>, Rules = [], DiminishTerms = [])
         )
+        // A bare .git directory (no config) anchors FindGitRoot so checkout = WorkingDirectoryRoot,
+        // which makes OutputDirectory = WorkingDirectoryRoot/.artifacts/docs/html (not docs/.artifacts).
+        // The missing config triggers IsLegacyTestWithoutGitLayout → canned data, but we override that
+        // with Git = Unavailable because authoring tests exercise rendering, not real git metadata.
+        let gitPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".git")
+        if not (fileSystem.Directory.Exists gitPath) then
+            fileSystem.Directory.CreateDirectory gitPath |> ignore
+        let invocation = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"))
+        let docFs = DocumentationFileSystem.Resolve(invocation, DocumentationScopeOptions(Inner = (fileSystem :> IFileSystem), Git = GitCheckoutInformation.Unavailable))
         let context = BuildContext(
             collector,
-            FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem),
+            docFs,
             configurationContext,
             UrlPathPrefix = (options.UrlPathPrefix |> Option.defaultValue ""),
             CanonicalBaseUrl = Uri("https://www.elastic.co/")
@@ -468,7 +510,7 @@ type Setup =
             ConversionCollector= conversionCollector
             Set = set
             Generator = generator
-            ReadFileSystem = fileSystem
+            ReadFileSystem = docFs :> IDocumentationFileSystem
             WriteFileSystem = fileSystem
         }
         context.Bootstrap()

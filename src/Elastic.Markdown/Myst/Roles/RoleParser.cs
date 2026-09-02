@@ -18,8 +18,7 @@ public abstract class RoleLeaf(string role, string content) : CodeInline(content
 	public string Role => role;
 }
 
-public abstract class RoleParser<TRole> : InlineParser
-	where TRole : RoleLeaf
+public abstract class RoleParser<TRole> : InlineParser where TRole : RoleLeaf
 {
 	protected RoleParser() => OpeningCharacters = ['{'];
 
@@ -87,7 +86,7 @@ public abstract class RoleParser<TRole> : InlineParser
 
 		// We've already skipped the opening sticks. Account for that here.
 		startPosition -= openSticks;
-		startPosition = Math.Max(startPosition, 0);
+		startPosition = System.Math.Max(startPosition, 0);
 
 		var start = processor.GetSourcePosition(startPosition, out var line, out var column);
 		var end = processor.GetSourcePosition(slice.Start);
@@ -103,8 +102,7 @@ public abstract class RoleParser<TRole> : InlineParser
 		if (processor.TrackTrivia)
 		{
 			// startPosition and slice.Start include the opening/closing sticks.
-			leaf.ContentWithTrivia =
-				new StringSlice(slice.Text, startPosition + openSticks, slice.Start - openSticks - 1);
+			leaf.ContentWithTrivia = new StringSlice(slice.Text, startPosition + openSticks, slice.Start - openSticks - 1);
 		}
 
 		processor.Inline = leaf;

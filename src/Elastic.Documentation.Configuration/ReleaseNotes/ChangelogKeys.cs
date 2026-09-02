@@ -1,0 +1,391 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
+
+namespace Elastic.Documentation.Configuration.ReleaseNotes;
+
+/// <summary>
+/// The single source of truth for the changelog artifact-root S3/CDN key layout:
+/// bundles live under <c>bundle/{product}/{file}</c>, individual changelog entries under
+/// <c>changelog/{org}/{repo}/{branch}/{file}</c>, and each grouping has a <c>registry.json</c>
+/// manifest at its root. Centralizes key construction, group extraction, and per-segment
+/// validation so the producer (<c>ChangelogUploadService</c>), the scrubber Lambda gate,
+/// the registry builder, and the CDN fetchers cannot drift apart.
+/// </summary>
+/// <remarks>
+/// Segment character classes, from strictest to loosest: org is a GitHub login
+/// (ASCII alphanumerics and hyphens), product additionally allows underscores, and
+/// repo/branch segments additionally allow dots (repos like <c>apm-agent-dotnet</c> and
+/// branches like <c>8.x</c>). Empty segments and the traversal segments <c>.</c> / <c>..</c>
+/// are always rejected. Branches are stored verbatim, so a branch's own <c>/</c> become
+/// real key segments.
+/// </remarks>
+public static class ChangelogKeys
+{
+	public const string BundlePrefix = "bundle/";
+	public const string ChangelogPrefix = "changelog/";
+	public const string RegistryFileName = "registry.json";
+
+	private const string RegistrySuffix = "/" + RegistryFileName;
+
+	/// <summary>The bundle segment kinds, used to pick the allowed character class.</summary>
+	private enum SegmentKind
+	{
+		/// <summary>Product class: ASCII alphanumerics, <c>_</c> and <c>-</c>.</summary>
+		Product,
+
+		/// <summary>GitHub login class: ASCII alphanumerics and <c>-</c> only.</summary>
+		Org,
+
+		/// <summary>Repo / branch-part class: the product class plus <c>.</c>.</summary>
+		RepoOrBranch
+	}
+
+	/// <summary>True when <paramref name="product"/> is a valid bundle product segment (<c>[a-zA-Z0-9_-]+</c>).</summary>
+	public static bool IsValidProduct([NotNullWhen(true)] string? product) => IsValidSegment(product, SegmentKind.Product);
+
+	/// <summary>True when <paramref name="org"/> is a valid GitHub owner segment (<c>[a-zA-Z0-9-]+</c>).</summary>
+	public static bool IsValidOrg([NotNullWhen(true)] string? org) => IsValidSegment(org, SegmentKind.Org);
+
+	/// <summary>True when <paramref name="repo"/> is a valid repository segment (<c>[a-zA-Z0-9._-]+</c>, not <c>.</c>/<c>..</c>).</summary>
+	public static bool IsValidRepo([NotNullWhen(true)] string? repo) => IsValidSegment(repo, SegmentKind.RepoOrBranch);
+
+	/// <summary>
+	/// True when every <c>/</c>-delimited part of <paramref name="branch"/> is a valid repo-class segment.
+	/// Branches are stored verbatim, so each part becomes a real key segment and is validated on its own.
+	/// </summary>
+	public static bool IsValidBranch([NotNullWhen(true)] string? branch)
+	{
+		if (string.IsNullOrEmpty(branch))
+			return false;
+
+		foreach (var part in branch.Split('/'))
+		{
+			if (!IsValidSegment(part, SegmentKind.RepoOrBranch))
+				return false;
+		}
+		return true;
+	}
+
+	/// <summary>
+	/// True when <paramref name="fileName"/> is a safe single path segment: non-empty, not <c>.</c>/<c>..</c>,
+	/// and free of path separators. Guards against traversal or nested keys sneaking in via a registry.
+	/// </summary>
+	public static bool IsSafeFileName([NotNullWhen(true)] string? fileName) =>
+		!string.IsNullOrWhiteSpace(fileName)
+			&& fileName is not ("." or "..")
+			&& !fileName.Contains('/', StringComparison.Ordinal)
+			&& !fileName.Contains('\\', StringComparison.Ordinal);
+
+	/// <summary>The artifact-root key of an uploaded bundle file: <c>bundle/{product}/{file}</c>.</summary>
+	public static string BundleFileKey(string product, string fileName) => $"{BundlePrefix}{product}/{fileName}";
+
+	/// <summary>The artifact-root key of an uploaded changelog entry: <c>changelog/{org}/{repo}/{branch}/{file}</c>.</summary>
+	public static string ChangelogFileKey(string org, string repo, string branch, string fileName) =>
+		$"{ChangelogPrefix}{org}/{repo}/{branch}/{fileName}";
+
+	/// <summary>The bundle-index manifest key for a product group: <c>bundle/{product}/registry.json</c>.</summary>
+	public static string BundleRegistryKey(string productGroup) => $"{BundlePrefix}{productGroup}/{RegistryFileName}";
+
+	/// <summary>The changelog-entry-index manifest key for an <c>{org}/{repo}/{branch}</c> group: <c>changelog/{group}/registry.json</c>.</summary>
+	public static string ChangelogRegistryKey(string poolGroup) => $"{ChangelogPrefix}{poolGroup}/{RegistryFileName}";
+
+	/// <summary>
+	/// The notes-index key for one release version within a repo: <c>changelog/{org}/{repo}/notes-{version}.json</c>.
+	/// Repo-level and branch-agnostic — all notes for a version, regardless of which branch they were authored on.
+	/// </summary>
+	/// <remarks>
+	/// The slug in the key is the release version (e.g. <c>9.3.0</c> or <c>2026-05-15</c>).
+	/// Previously this parameter was named <c>target</c> to match the obsolete <c>target:</c> YAML field;
+	/// it was renamed to <c>version</c> when that field was replaced by <c>versions:</c> on notes.
+	/// The key layout (<c>notes-{slug}.json</c>) is unchanged — no migration is needed.
+	/// </remarks>
+	public static string NotesIndexKey(string org, string repo, string version) => $"{ChangelogPrefix}{org}/{repo}/notes-{version}.json";
+
+	/// <summary>
+	/// The S3 prefix that covers all branches and notes indexes of one repo: <c>changelog/{org}/{repo}/</c>.
+	/// Used by the notes reconciler to list the full repo tree.
+	/// </summary>
+	public static string RepoPrefix(string org, string repo) => $"{ChangelogPrefix}{org}/{repo}/";
+
+	/// <summary>
+	/// Returns true when <paramref name="key"/> is a notes-index key of the form
+	/// <c>changelog/{org}/{repo}/notes-{target}.json</c> (exactly two group segments, then
+	/// a <c>notes-</c>-prefixed JSON file with a non-empty target slug).
+	/// </summary>
+	public static bool IsNotesIndex(string key)
+	{
+		if (!key.StartsWith(ChangelogPrefix, StringComparison.Ordinal))
+			return false;
+		if (!key.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		var rest = key.AsSpan(ChangelogPrefix.Length);
+
+		// Expect exactly {org}/{repo}/notes-{target}.json
+		var firstSlash = rest.IndexOf('/');
+		if (firstSlash <= 0)
+			return false;
+		var org = rest[..firstSlash];
+
+		var afterOrg = rest[(firstSlash + 1)..];
+		var secondSlash = afterOrg.IndexOf('/');
+		if (secondSlash <= 0)
+			return false;
+		var repo = afterOrg[..secondSlash];
+
+		var file = afterOrg[(secondSlash + 1)..];
+
+		// No further slashes — this must be a direct child of {org}/{repo}/
+		if (file.IndexOf('/') >= 0)
+			return false;
+
+		// Validate org/repo segments and require the notes- prefix with a non-empty target slug
+		if (!IsValidSegment(org, SegmentKind.Org) || !IsValidSegment(repo, SegmentKind.RepoOrBranch))
+			return false;
+
+		const string notesPrefix = "notes-";
+		if (!file.StartsWith(notesPrefix, StringComparison.Ordinal))
+			return false;
+
+		var targetSlug = file[notesPrefix.Length..^".json".Length];
+		return targetSlug.Length > 0 && IsValidSegment(targetSlug, SegmentKind.RepoOrBranch);
+	}
+
+	/// <summary>
+	/// Extracts the <c>{org}/{repo}</c> group from a <c>changelog/{org}/{repo}/notes-{target}.json</c> key.
+	/// Returns null when the key is not a valid notes-index key.
+	/// </summary>
+	public static string? ExtractNotesRepo(string key)
+	{
+		if (!IsNotesIndex(key))
+			return null;
+
+		var rest = key.AsSpan(ChangelogPrefix.Length);
+		var firstSlash = rest.IndexOf('/');
+		var afterOrg = rest[(firstSlash + 1)..];
+		var secondSlash = afterOrg.IndexOf('/');
+		return $"{rest[..firstSlash]}/{afterOrg[..secondSlash]}";
+	}
+
+	/// <summary>
+	/// Parses a CDN bundle locator into product and file name. Accepts
+	/// <c>/bundle/{product}/{file}</c> (leading slash optional) or an absolute http(s) URL whose path
+	/// contains that layout as a path segment (<c>bundle/</c> at the start of the path or after a
+	/// slash). Returns false for changelog-pool paths. Amend sidecars still parse as
+	/// locators; callers that need a parent should reject them with <c>BundleAmendMerger.IsAmendFile</c>.
+	/// </summary>
+	public static bool TryParseBundleLocator(
+		string? input,
+		[NotNullWhen(true)] out string? product,
+		[NotNullWhen(true)] out string? fileName
+	)
+	{
+		product = null;
+		fileName = null;
+		if (string.IsNullOrWhiteSpace(input))
+			return false;
+
+		var trimmed = input.Trim();
+		string key;
+		if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
+		{
+			var path = uri.AbsolutePath.TrimStart('/');
+			if (!TryGetBundlePrefixIndex(path, out var prefixAt))
+				return false;
+			key = path[prefixAt..];
+		}
+		else
+		{
+			key = trimmed.TrimStart('/');
+			if (!key.StartsWith(BundlePrefix, StringComparison.Ordinal))
+				return false;
+		}
+
+		product = ExtractBundleGroup(key);
+		if (product is null)
+			return false;
+
+		var fileStart = BundlePrefix.Length + product.Length + 1;
+		if (key.Length <= fileStart)
+			return false;
+
+		fileName = key[fileStart..];
+		if (!IsSafeFileName(fileName))
+		{
+			product = null;
+			fileName = null;
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Index of a path-segment <c>bundle/</c> in an already slash-trimmed URL path, or false when
+	/// the substring only appears inside another segment (for example <c>notbundle/</c>).
+	/// </summary>
+	private static bool TryGetBundlePrefixIndex(string path, out int prefixAt)
+	{
+		prefixAt = -1;
+		if (path.StartsWith(BundlePrefix, StringComparison.Ordinal))
+		{
+			prefixAt = 0;
+			return true;
+		}
+
+		var nested = path.IndexOf("/" + BundlePrefix, StringComparison.Ordinal);
+		if (nested < 0)
+			return false;
+
+		prefixAt = nested + 1;
+		return true;
+	}
+
+	/// <summary>
+	/// Extracts the product group from a <c>bundle/{product}/{file}</c> key, or null when
+	/// <paramref name="s3Key"/> is not a bundle key with a valid product segment ahead of the file name.
+	/// The segment is validated on extraction so an out-of-class group can never be re-composed into a
+	/// registry key or URI.
+	/// </summary>
+	public static string? ExtractBundleGroup(string s3Key)
+	{
+		if (!s3Key.StartsWith(BundlePrefix, StringComparison.Ordinal))
+			return null;
+
+		var rest = s3Key.AsSpan(BundlePrefix.Length);
+		var slash = rest.IndexOf('/');
+		if (slash <= 0)
+			return null;
+
+		var group = rest[..slash];
+		return IsValidSegment(group, SegmentKind.Product) ? group.ToString() : null;
+	}
+
+	/// <summary>
+	/// Extracts the <c>{org}/{repo}/{branch}</c> group from a <c>changelog/{org}/{repo}/{branch}/{file}</c>
+	/// key, or null when <paramref name="s3Key"/> is not a changelog key with at least three valid group
+	/// segments ahead of the file name. The branch may carry extra slashes, so the group is everything
+	/// before the final segment; each segment is validated per position (same rules as
+	/// <see cref="IsRegistry"/>) so traversal or out-of-class segments can never be re-composed into keys.
+	/// </summary>
+	public static string? ExtractChangelogGroup(string s3Key)
+	{
+		if (!s3Key.StartsWith(ChangelogPrefix, StringComparison.Ordinal))
+			return null;
+
+		var rest = s3Key.AsSpan(ChangelogPrefix.Length);
+		var lastSlash = rest.LastIndexOf('/');
+		if (lastSlash <= 0)
+			return null;
+
+		var group = rest[..lastSlash];
+		return IsValidChangelogGroup(group) ? group.ToString() : null;
+	}
+
+	/// <summary>The CDN path segments of a product's bundle pool (<c>["bundle", product]</c>), for per-segment URI escaping.</summary>
+	public static IReadOnlyList<string> BundleSegments(string product) => ["bundle", product];
+
+	/// <summary>
+	/// The CDN path segments of an org/repo/branch changelog pool — <c>changelog</c>, org, repo, then each
+	/// <c>/</c>-delimited part of the branch — so a branch's slashes stay real key separators rather than
+	/// being percent-encoded into a single segment.
+	/// </summary>
+	public static IReadOnlyList<string> PoolSegments(string org, string repo, string branch) =>
+		["changelog", org, repo, .. branch.Split('/')];
+
+	/// <summary>
+	/// Returns true when <paramref name="key"/> is a manifest of either artifact-root form
+	/// <c>bundle/{product}/registry.json</c> (exactly one product segment) or
+	/// <c>changelog/{org}/{repo}/{branch}/registry.json</c> (at least three segments, validated
+	/// per position with the same rules the producer enforces on upload).
+	/// </summary>
+	/// <remarks>
+	/// Used by the changelog scrubber Lambda to decide whether to pass an incoming
+	/// <c>*.json</c> object through to the public bucket. Anything else (a bare
+	/// <c>{x}/registry.json</c>, a changelog manifest shallower than <c>org/repo/branch</c>, or an unknown
+	/// top-level prefix) is rejected, which keeps arbitrary JSON out of the public surface.
+	/// </remarks>
+	public static bool IsRegistry(string key)
+	{
+		if (string.IsNullOrEmpty(key))
+			return false;
+
+		return IsBundleRegistry(key) || IsChangelogRegistry(key);
+	}
+
+	private static bool IsBundleRegistry(string key) =>
+		TryGetRegistryGroup(key, BundlePrefix, out var group) && group.IndexOf('/') < 0 && IsValidSegment(group, SegmentKind.Product);
+
+	private static bool IsChangelogRegistry(string key) =>
+		TryGetRegistryGroup(key, ChangelogPrefix, out var group) && IsValidChangelogGroup(group);
+
+	/// <summary>
+	/// Validates an <c>{org}/{repo}/{branch}</c> group span per position — org, then repo, then
+	/// one-or-more branch parts — requiring at least three segments overall.
+	/// </summary>
+	private static bool IsValidChangelogGroup(ReadOnlySpan<char> group)
+	{
+		var segments = 0;
+		var start = 0;
+		for (var i = 0; i <= group.Length; i++)
+		{
+			if (i != group.Length && group[i] != '/')
+				continue;
+
+			var kind = segments == 0 ? SegmentKind.Org : SegmentKind.RepoOrBranch;
+			if (!IsValidSegment(group[start..i], kind))
+				return false;
+
+			segments++;
+			start = i + 1;
+		}
+
+		return segments >= 3;
+	}
+
+	/// <summary>Slices the middle group out of a <c>{prefix}{group}/registry.json</c> key.</summary>
+	private static bool TryGetRegistryGroup(string key, string prefix, out ReadOnlySpan<char> group)
+	{
+		group = default;
+		if (!key.StartsWith(prefix, StringComparison.Ordinal) || !key.EndsWith(RegistrySuffix, StringComparison.Ordinal))
+			return false;
+
+		var middleLength = key.Length - prefix.Length - RegistrySuffix.Length;
+		if (middleLength <= 0)
+			return false;
+
+		group = key.AsSpan(prefix.Length, middleLength);
+		return true;
+	}
+
+	private static bool IsValidSegment(string? segment, SegmentKind kind) => segment is not null && IsValidSegment(segment.AsSpan(), kind);
+
+	private static bool IsValidSegment(ReadOnlySpan<char> segment, SegmentKind kind)
+	{
+		if (segment.IsEmpty || segment is "." or "..")
+			return false;
+
+		foreach (var c in segment)
+		{
+			if (!IsValidSegmentChar(c, kind))
+				return false;
+		}
+		return true;
+	}
+
+	private static bool IsValidSegmentChar(char c, SegmentKind kind)
+	{
+		if (char.IsAsciiLetterOrDigit(c) || c == '-')
+			return true;
+
+		return kind switch
+		{
+			SegmentKind.Product => c == '_',
+			SegmentKind.RepoOrBranch => c is '_' or '.',
+			_ => false
+		};
+	}
+}

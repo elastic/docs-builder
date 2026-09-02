@@ -31,19 +31,15 @@ public record AssemblyConfiguration
 
 			// If we are skipping private repositories, and we can locate the solution directory. include the local docs-content repository
 			// this allows us to test new docset features as part of the assembler build
-			if (skipPrivateRepositories
+			if (
+				skipPrivateRepositories
 				&& config.ReferenceRepositories.TryGetValue("docs-builder", out var docsContentRepository)
 				&& Paths.GetSolutionDirectory() is { } solutionDir
-			   )
+			)
 			{
 				var docsRepositoryPath = Path.Join(solutionDir.FullName, "docs");
-				config.ReferenceRepositories["docs-builder"] = docsContentRepository with
-				{
-					Skip = false,
-					Path = docsRepositoryPath
-				};
+				config.ReferenceRepositories["docs-builder"] = docsContentRepository with { Skip = false, Path = docsRepositoryPath };
 			}
-
 
 			var privateRepositories = config.ReferenceRepositories.Where(r => r.Value.Private).ToList();
 			foreach (var (name, _) in privateRepositories)
@@ -56,13 +52,21 @@ public record AssemblyConfiguration
 				env.Name = name;
 			config.Narrative = RepositoryDefaults(config.Narrative, NarrativeRepository.RepositoryName);
 
-			config.AvailableRepositories = config.ReferenceRepositories.Values
+			config.AvailableRepositories = config
+				.ReferenceRepositories
+				.Values
 				.Where(r => !r.Skip)
-				.Concat([config.Narrative]).ToDictionary(kvp => kvp.Name, kvp => kvp);
+				.Concat([config.Narrative])
+				.ToDictionary(kvp => kvp.Name, kvp => kvp);
 
-			config.PrivateRepositories = privateRepositories
-				.Where(r => !r.Value.Skip)
-				.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			config.PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			// All repos marked private: true, regardless of skip: true. Skip means "does not publish
+			// docs", not "is not private". This set is used for render-time link visibility so that
+			// entries like kibana-team (private: true, skip: true) still have their links hidden.
+			config.AllPrivateRepositoryNames = new HashSet<string>(
+				privateRepositories.Select(r => r.Key),
+				StringComparer.OrdinalIgnoreCase
+			);
 			return config;
 		}
 		catch (Exception e)
@@ -73,8 +77,7 @@ public record AssemblyConfiguration
 		}
 	}
 
-	private static TRepository RepositoryDefaults<TRepository>(TRepository r, string name)
-		where TRepository : Repository, new()
+	private static TRepository RepositoryDefaults<TRepository>(TRepository r, string name) where TRepository : Repository, new()
 	{
 		// ReSharper disable NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
 		var repository = r ?? new TRepository();
@@ -89,10 +92,7 @@ public record AssemblyConfiguration
 		// ensure we always null path if we are running in CI
 		if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")))
 		{
-			repository = repository with
-			{
-				Path = null
-			};
+			repository = repository with { Path = null };
 		}
 
 		if (string.IsNullOrEmpty(repository.Origin))
@@ -126,6 +126,13 @@ public record AssemblyConfiguration
 	[YamlIgnore]
 	public IReadOnlyDictionary<string, Repository> PrivateRepositories { get; private set; } = new Dictionary<string, Repository>();
 
+	/// All repository names marked <c>private: true</c>, regardless of <c>skip: true</c>.
+	/// <c>skip: true</c> means a repo does not publish docs, not that it is publicly visible.
+	/// Use this set for render-time link visibility rather than <see cref="PrivateRepositories"/>,
+	/// which excludes skipped repos because the cross-link fetcher has no link index for them.
+	[YamlIgnore]
+	public IReadOnlySet<string> AllPrivateRepositoryNames { get; private set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
 	[YamlMember(Alias = "environments")]
 	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
 
@@ -134,7 +141,13 @@ public record AssemblyConfiguration
 
 	/// Returns whether the <paramref name="branchOrTag"/> is configured as an integration branch or tag for the given
 	/// <paramref name="repository"/>.
-	public ContentSourceMatch Match(ILoggerFactory logFactory, string repository, string branchOrTag, Product? product, bool alreadyPublishing)
+	public ContentSourceMatch Match(
+		ILoggerFactory logFactory,
+		string repository,
+		string branchOrTag,
+		Product? product,
+		bool alreadyPublishing
+	)
 	{
 		var logger = logFactory.CreateLogger<ContentSourceMatch>();
 		var match = new ContentSourceMatch(null, null, null, false);
@@ -157,10 +170,7 @@ public record AssemblyConfiguration
 			if (isVersionBranch || branchOrTag == "main" || branchOrTag == "master")
 			{
 				logger.LogInformation("Speculatively building {Repository} since it looks like an integration branch", repository);
-				return match with
-				{
-					Speculative = true
-				};
+				return match with { Speculative = true };
 			}
 			logger.LogInformation("{Repository} on '{Branch}' does not look like it needs a speculative build", repository, branchOrTag);
 			return match;
@@ -169,32 +179,31 @@ public record AssemblyConfiguration
 		var current = r.GetBranch(ContentSource.Current);
 		var next = r.GetBranch(ContentSource.Next);
 		var edge = r.GetBranch(ContentSource.Edge);
-		logger.LogInformation("Active content-sources for {Repository}. current: {Current}, next: {Next}, edge: {Edge}' ", repository, current, next, edge);
+		var isCdWorkflow = current == next && next == edge;
+		logger.LogInformation(
+			"Active content-sources for {Repository}. current: {Current}, next: {Next}, edge: {Edge} (branching strategy: {Strategy})",
+			repository,
+			current,
+			next,
+			edge,
+			isCdWorkflow ? "cd/continuous-deployment" : "tagged-release"
+		);
 		if (current == branchOrTag)
 		{
 			logger.LogInformation("Content-Source current: {Current} matches: {Branch}", current, branchOrTag);
-			match = match with
-			{
-				Current = ContentSource.Current
-			};
+			match = match with { Current = ContentSource.Current };
 		}
 
 		if (next == branchOrTag)
 		{
 			logger.LogInformation("Content-Source next: {Next} matches: {Branch}", next, branchOrTag);
-			match = match with
-			{
-				Next = ContentSource.Next
-			};
+			match = match with { Next = ContentSource.Next };
 		}
 
 		if (edge == branchOrTag)
 		{
 			logger.LogInformation("Content-Source edge: {Edge} matches: {Branch}", edge, branchOrTag);
-			match = match with
-			{
-				Edge = ContentSource.Edge
-			};
+			match = match with { Edge = ContentSource.Edge };
 		}
 
 		// check version branches
@@ -209,18 +218,17 @@ public record AssemblyConfiguration
 				if (v >= currentVersion)
 				{
 					logger.LogInformation("Speculative build because {Branch} is gte current {Current}", branchOrTag, currentVersion);
-					match = match with
-					{
-						Speculative = true
-					};
+					match = match with { Speculative = true };
 				}
 				else if (v == previousCurrentVersion)
 				{
-					logger.LogInformation("Speculative build {Branch} is the previous minor '{ProductPreviousMinor}' of current {Current}", branchOrTag, previousCurrentVersion, currentVersion);
-					match = match with
-					{
-						Speculative = true
-					};
+					logger.LogInformation(
+						"Speculative build {Branch} is the previous minor '{ProductPreviousMinor}' of current {Current}",
+						branchOrTag,
+						previousCurrentVersion,
+						currentVersion
+					);
+					match = match with { Speculative = true };
 				}
 				else
 					logger.LogInformation("NO speculative build because {Branch} is lt {Current}", branchOrTag, currentVersion);
@@ -230,35 +238,45 @@ public record AssemblyConfiguration
 			{
 				if (!alreadyPublishing)
 				{
-					logger.LogInformation("Current is not using versioned branches and is not publishing to the registry yet, using product information to determine speculative build is needed");
+					logger.LogInformation(
+						"Current is not using versioned branches and is not publishing to the registry yet, using product information to determine speculative build is needed"
+					);
 					var productVersion = versioningSystem.Current;
 					var anchoredProductVersion = new SemVersion(productVersion.Major, productVersion.Minor, 0);
 					if (v > anchoredProductVersion)
 					{
-						logger.LogInformation("Speculative build {Branch} is gt product current '{ProductCurrent}' anchored at {ProductAnchored}", branchOrTag,
-							productVersion, anchoredProductVersion);
-						match = match with
-						{
-							Speculative = true
-						};
+						logger.LogInformation(
+							"Speculative build {Branch} is gt product current '{ProductCurrent}' anchored at {ProductAnchored}",
+							branchOrTag,
+							productVersion,
+							anchoredProductVersion
+						);
+						match = match with { Speculative = true };
 					}
 					else
-						logger.LogInformation("NO speculative build {Branch} is lte product current '{ProductCurrent}'", branchOrTag, productVersion);
+						logger.LogInformation(
+							"NO speculative build {Branch} is lte product current '{ProductCurrent}'",
+							branchOrTag,
+							productVersion
+						);
 				}
 				else
-					logger.LogInformation("NO speculative build, repository is not using version branches to publish to documentation and is already in the link registry");
+					logger.LogInformation(
+						"NO speculative build, repository is not using version branches to publish to documentation and is already in the link registry"
+					);
 			}
 			else
-				logger.LogInformation("No versioning system found for {Repository} on {Branch}, can not determine speculative build until repository is specified in docs-builder configuration", repository, branchOrTag);
+				logger.LogInformation(
+					"No versioning system found for {Repository} on {Branch}, can not determine speculative build until repository is specified in docs-builder configuration",
+					repository,
+					branchOrTag
+				);
 		}
 
 		// if we haven't matched anything yet, and the branch is 'main' or 'master' always build
 		if (match is { Current: null, Next: null, Edge: null, Speculative: false } && branchOrTag is "main" or "master")
 		{
-			return match with
-			{
-				Speculative = true
-			};
+			return match with { Speculative = true };
 		}
 
 		return match;

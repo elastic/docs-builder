@@ -4,12 +4,14 @@
 
 using System.Collections.Concurrent;
 using AwesomeAssertions;
-using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
-using Elastic.Internal.Search;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -46,11 +48,11 @@ public class OpenApiDocumentExporterTests
 		var documents = new List<(string Url, string Source)>();
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current.CancellationToken))
 		{
-			if (!string.IsNullOrEmpty(doc.Url))
+			if (!string.IsNullOrEmpty(doc.Path))
 			{
 				// Determine source from URL
-				var source = doc.Url.Contains("/elasticsearch/") ? "elasticsearch" : "kibana";
-				documents.Add((doc.Url, source));
+				var source = doc.Path.Contains("/elasticsearch/") ? "elasticsearch" : "kibana";
+				documents.Add((doc.Path, source));
 			}
 		}
 
@@ -68,46 +70,50 @@ public class OpenApiDocumentExporterTests
 		// Test each URL in parallel
 		var failures = new ConcurrentBag<(string Url, int StatusCode)>();
 
-		await Parallel.ForEachAsync(sample,
-			new ParallelOptions { MaxDegreeOfParallelism = 10, CancellationToken = TestContext.Current.CancellationToken },
-			async (url, ct) =>
+		await Parallel.ForEachAsync(sample, new ParallelOptions
+		{
+			MaxDegreeOfParallelism = 10,
+			CancellationToken = TestContext.Current.CancellationToken
+		}, async (url, ct) =>
+		{
+			var fullUrl = $"{BaseUrl}{url}";
+
+			try
 			{
-				var fullUrl = $"{BaseUrl}{url}";
+				using var request = new HttpRequestMessage(HttpMethod.Head, fullUrl);
 
-				try
+				// Mimic browser headers
+				request.Headers.Add(
+					"User-Agent",
+					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+				);
+				request.Headers.Add(
+					"Accept",
+					"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+				);
+				request.Headers.Add("Accept-Language", "en-US,en;q=0.9");
+				request.Headers.Add("Accept-Encoding", "gzip, deflate, br");
+				request.Headers.Add("DNT", "1");
+				request.Headers.Add("Connection", "keep-alive");
+				request.Headers.Add("Upgrade-Insecure-Requests", "1");
+				request.Headers.Add("Sec-Fetch-Dest", "document");
+				request.Headers.Add("Sec-Fetch-Mode", "navigate");
+				request.Headers.Add("Sec-Fetch-Site", "none");
+				request.Headers.Add("Sec-Fetch-User", "?1");
+				request.Headers.Add("Cache-Control", "max-age=0");
+
+				var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+
+				if (!response.IsSuccessStatusCode)
 				{
-					using var request = new HttpRequestMessage(HttpMethod.Head, fullUrl);
-
-					// Mimic browser headers
-					request.Headers.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-					request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
-					request.Headers.Add("Accept-Language", "en-US,en;q=0.9");
-					request.Headers.Add("Accept-Encoding", "gzip, deflate, br");
-					request.Headers.Add("DNT", "1");
-					request.Headers.Add("Connection", "keep-alive");
-					request.Headers.Add("Upgrade-Insecure-Requests", "1");
-					request.Headers.Add("Sec-Fetch-Dest", "document");
-					request.Headers.Add("Sec-Fetch-Mode", "navigate");
-					request.Headers.Add("Sec-Fetch-Site", "none");
-					request.Headers.Add("Sec-Fetch-User", "?1");
-					request.Headers.Add("Cache-Control", "max-age=0");
-
-					var response = await HttpClient.SendAsync(
-						request,
-						HttpCompletionOption.ResponseHeadersRead,
-						ct
-					);
-
-					if (!response.IsSuccessStatusCode)
-					{
-						failures.Add((url, (int)response.StatusCode));
-					}
+					failures.Add((url, (int)response.StatusCode));
 				}
-				catch
-				{
-					failures.Add((url, -1)); // Use -1 to indicate exception
-				}
-			});
+			}
+			catch
+			{
+				failures.Add((url, -1)); // Use -1 to indicate exception
+			}
+		});
 
 		// Assert all URLs returned 200
 		failures.Should().BeEmpty(

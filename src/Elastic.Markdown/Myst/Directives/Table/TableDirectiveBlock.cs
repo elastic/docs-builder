@@ -22,8 +22,16 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public IReadOnlyList<double> ColumnWidths { get; private set; } = [];
 
+	/// <summary>
+	/// When set, hovering a cell highlights its whole row and column (cross-hair highlight).
+	/// Intended for lookup-style tables with a row-heading first column and a header row.
+	/// </summary>
+	public bool Matrix { get; private set; }
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
+		Matrix = PropBool("matrix");
+
 		var widthsValue = Prop("widths")?.Trim();
 
 		if (string.IsNullOrEmpty(widthsValue) || widthsValue.Equals("auto", StringComparison.OrdinalIgnoreCase))
@@ -83,8 +91,7 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 
 		if (ColumnWidths.Count > 0 && ColumnWidths.Count != columnCount)
 		{
-			this.EmitError(
-				$"Column width count ({ColumnWidths.Count}) does not match table column count ({columnCount}).");
+			this.EmitError($"Column width count ({ColumnWidths.Count}) does not match table column count ({columnCount}).");
 			ColumnWidths = [];
 		}
 	}
@@ -110,7 +117,8 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 			if (!int.TryParse(part, out var unit) || unit < 1 || unit > 12)
 			{
 				block.EmitError(
-					$"Invalid widths value '{value}'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4).");
+					$"Invalid widths value '{value}'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4)."
+				);
 				return null;
 			}
 

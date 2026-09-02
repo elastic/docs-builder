@@ -6,6 +6,7 @@
 @import './markdown/applies-to.css';
 @import './markdown/typography.css';
 @import './markdown/list.css';
+@import './markdown/related-learning.css';
 @import './markdown/tabs.css';
 @import './markdown/applies-switch.css';
 @import './markdown/code.css';
@@ -18,18 +19,23 @@
 @import './markdown/definition-list.css';
 @import './markdown/footnotes.css';
 @import './markdown/images.css';
-@import './markdown/math.css';
 @import './markdown/mermaid.css';
 @import './markdown/image-carousel.css';
 @import './markdown/hr.css';
 @import './modal.css';
+@import './secondary-nav.css';
+@import './secondary-nav-dropdown.css';
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './markdown/button.css';
 @import './markdown/agent-skill.css';
 @import './markdown/cli-modifiers.css';
 @import './markdown/contributors.css';
+@import './markdown/storybook.css';
+@import './markdown/hub.css';
 @import './api-docs.css';
+@import './web-components/VectorSizingCalculator/vector-sizing-calculator.css';
+@import './pages-nav-figma.css';
 @import 'tippy.js/dist/tippy.css';
 
 html {
@@ -47,6 +53,8 @@ html {
 body {
 	/* This is still needed because of some usages of ch units and to maintain the previous behavior */
 	font-size: 16px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 :root {
@@ -83,7 +91,7 @@ body {
 	}
 }
 
-#toc-nav a.current {
+#toc-nav a.toc-current {
 	color: var(--color-blue-elastic);
 	&:hover {
 		color: var(--color-blue-elastic);
@@ -117,6 +125,14 @@ body {
 			transition:
 				top 0.3s ease,
 				max-height 0.3s ease;
+		}
+
+		@media (width >= 1280px) {
+			#toc-nav.sidebar-nav {
+				box-sizing: border-box;
+				padding-top: 24px;
+				padding-bottom: 24px;
+			}
 		}
 
 		.sidebar-link {
@@ -230,34 +246,6 @@ body {
 
 :is(a, button, input, textarea, summary):focus:not(:focus-visible) {
 	outline: none;
-}
-
-.htmx-indicator {
-	display: none;
-}
-.htmx-request .htmx-indicator,
-.htmx-request.htmx-indicator {
-	display: block;
-	z-index: 9999;
-}
-
-.progress {
-	animation: progress 1s infinite linear;
-}
-
-.left-right {
-	transform-origin: 0% 50%;
-}
-@keyframes progress {
-	0% {
-		transform: translateX(0) scaleX(0);
-	}
-	40% {
-		transform: translateX(0) scaleX(0.4);
-	}
-	100% {
-		transform: translateX(100%) scaleX(0.5);
-	}
 }
 
 /* Wobble animation for diagnostics button */
@@ -462,25 +450,6 @@ body {
 
 math {
 	margin-top: 1.5rem;
-}
-
-/* Adjust look and feel of the navigation-search in the landing page hero */
-#hero navigation-search {
-	& > div > .euiHorizontalRule {
-		display: none;
-	}
-
-	& > div {
-		padding-right: 0;
-	}
-
-	& .euiPopover {
-		max-inline-size: 100%;
-
-		@media screen and (min-width: 1180px) {
-			max-inline-size: 500px;
-		}
-	}
 }
 
 * {

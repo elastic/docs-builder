@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
@@ -39,13 +40,13 @@ namespace Elastic.Documentation.Configuration.Serialization;
 // Table of contents
 [YamlSerializable(typeof(DocumentationSetFile))]
 [YamlSerializable(typeof(DocumentationSetFeatures))]
+[YamlSerializable(typeof(DocumentationSetStorybook))]
 [YamlSerializable(typeof(CodexDocSetMetadata))]
+[YamlSerializable(typeof(ReleaseNotesProductReference))]
 [YamlSerializable(typeof(TableOfContentsFile))]
 [YamlSerializable(typeof(SiteNavigationFile))]
 [YamlSerializable(typeof(PhantomRegistration))]
 [YamlSerializable(typeof(ProductLink))]
-// API configuration (used in DocumentationSetFile.Api Dictionary<string, ApiConfiguration>)
-[YamlSerializable(typeof(ApiConfiguration))]
 // Search configuration
 [YamlSerializable(typeof(SearchConfigDto))]
 [YamlSerializable(typeof(QueryRuleDto))]
@@ -76,4 +77,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(BundleProfileYaml))]
 [YamlSerializable(typeof(ExtractConfigurationYaml))]
 [YamlSerializable(typeof(YamlLenientList))]
+// Related learning catalog
+[YamlSerializable(typeof(RelatedLearningConfigDto))]
+[YamlSerializable(typeof(RelatedLearningLinkDto))]
 public partial class YamlStaticContext;

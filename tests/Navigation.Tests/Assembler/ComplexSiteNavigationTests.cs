@@ -3,22 +3,80 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
 public class ComplexSiteNavigationTests(ITestOutputHelper output)
 {
 	[Fact]
+	public async Task MultipleSectionsFromSameRepository_UseContentHashesAndCacheByRoot()
+	{
+		// language=yaml
+		var siteNavYaml =
+			"""
+		                  toc:
+		                    - toc: observability://
+		                      path_prefix: /
+		                    - toc: platform://deployment-guide
+		                      path_prefix: /deployment
+		                    - toc: platform://cloud-guide
+		                      path_prefix: /cloud
+		                  """;
+		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
+		var documentationSets = new List<IDocumentationSetNavigation>();
+		foreach (var repository in new[] { "observability", "platform" })
+		{
+			var repositoryPath = $"/checkouts/current/{repository}";
+			var context = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, repositoryPath, output);
+			var docset = DocumentationSetFile.LoadAndResolve(
+				context.Collector,
+				fileSystem.FileInfo.New($"{repositoryPath}/docs/docset.yml"),
+				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+			);
+			documentationSets.Add(
+				new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance)
+			);
+		}
+
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability", output);
+		var siteNavigation = new SiteNavigation(
+			SiteNavigationFile.Deserialize(siteNavYaml),
+			siteContext,
+			documentationSets,
+			sitePrefix: null
+		);
+		var sections = siteNavigation
+			.NavigationItems
+			.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>()
+			.Where(section => section.Identifier.Scheme == "platform")
+			.ToArray();
+		sections.Should().HaveCount(2);
+
+		var writer = new GlobalNavigationHtmlWriter(NullLoggerFactory.Instance, siteNavigation, siteContext.Collector);
+		var first = await writer.RenderNavigation(sections[0], sections[0].Index, TestContext.Current.CancellationToken);
+		var second = await writer.RenderNavigation(sections[1], sections[1].Index, TestContext.Current.CancellationToken);
+		var firstAgain = await writer.RenderNavigation(sections[0], sections[0].Index, TestContext.Current.CancellationToken);
+
+		first.Id.Should().NotBe(second.Id);
+		firstAgain.Id.Should().Be(first.Id);
+		firstAgain.Html.Should().Be(first.Html);
+	}
+
+	[Fact]
 	public void ComplexNavigationWithMultipleNestedTocsAppliesPathPrefixToRootUrls()
 	{
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: observability://
 		                      path_prefix: /serverless/observability
@@ -52,7 +110,11 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 				? $"{repo.FullName}/docs/docset.yml"
 				: $"{repo.FullName}/docs/_docset.yml";
 
-			var docset = DocumentationSetFile.LoadAndResolve(context.Collector, fileSystem.FileInfo.New(docsetPath), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+			var docset = DocumentationSetFile.LoadAndResolve(
+				context.Collector,
+				fileSystem.FileInfo.New(docsetPath),
+				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+			);
 
 			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
@@ -114,7 +176,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	public void DeeplyNestedNavigationMaintainsPathPrefixThroughoutHierarchy()
 	{
 		// language=YAML - test without specifying children for nested TOCs
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: platform://
 		                      path_prefix: /docs/platform
@@ -129,8 +192,11 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
-			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{
@@ -157,15 +223,15 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Walk through the entire tree and verify every single URL starts with a path prefix
 		var allUrls = CollectAllUrls(platform.NavigationItems);
 		allUrls.Should().NotBeEmpty();
-		allUrls.Should().OnlyContain(url => url.StartsWith("/docs/platform/"),
-			"all URLs in platform should start with /docs/platform");
+		allUrls.Should().OnlyContain(url => url.StartsWith("/docs/platform/"), "all URLs in platform should start with /docs/platform");
 	}
 
 	[Fact]
 	public void FileNavigationLeafUrlsReflectPathPrefixInDeeplyNestedStructures()
 	{
 		// language=YAML - don't specify children so we can access the actual file leaves
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: platform://
 		                      path_prefix: /platform
@@ -180,8 +246,11 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
-			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{
@@ -210,13 +279,19 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		// Verify every single file leaf has the correct path prefix
 		foreach (var fileLeaf in fileLeaves)
 		{
-			fileLeaf.Url.Should().StartWith("/platform",
-				$"file '{fileLeaf.NavigationTitle}' should have URL starting with /platform but got '{fileLeaf.Url}'");
+			fileLeaf
+				.Url
+				.Should()
+				.StartWith(
+					"/platform",
+					$"file '{fileLeaf.NavigationTitle}' should have URL starting with /platform but got '{fileLeaf.Url}'"
+				);
 		}
 
 		// Verify at least one specific file to ensure we're testing real data
-		var indexFile = fileLeaves.OfType<FileNavigationLeaf<IDocumentationFile>>()
-			.FirstOrDefault(f => f.FileInfo.FullName.EndsWith(".md", StringComparison.OrdinalIgnoreCase));
+		var indexFile = fileLeaves.OfType<FileNavigationLeaf<IDocumentationFile>>().FirstOrDefault(
+			f => f.FileInfo.FullName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+		);
 		indexFile.Should().NotBeNull();
 		indexFile.Url.Should().StartWith("/platform");
 	}
@@ -225,7 +300,8 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	public void FolderNavigationWithinNestedTocsHasCorrectPathPrefix()
 	{
 		// language=YAML - don't specify children so we can access the actual folders
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: platform://
 		                      path_prefix: /platform/cloud
@@ -240,18 +316,19 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var platformContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector,
-			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var documentationSets = new List<IDocumentationSetNavigation>
 		{
 			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
 		};
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -267,17 +344,17 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 		cloudGuide.Should().BeOfType<TableOfContentsNavigation<IDocumentationFile>>();
 
 		// cloud-guide should have folders (index, aws, azure)
-		var folders = cloudGuide.NavigationItems
-			.OfType<FolderNavigation<IDocumentationFile>>()
-			.ToList();
+		var folders = cloudGuide.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().ToList();
 
 		folders.Should().NotBeEmpty("cloud-guide should contain folders");
 
 		// Verify each folder and all its contents have a correct path prefix
 		foreach (var folder in folders)
 		{
-			folder.Url.Should().StartWith("/platform/cloud",
-				$"folder '{folder.NavigationTitle}' should have URL starting with /platform/cloud");
+			folder
+				.Url
+				.Should()
+				.StartWith("/platform/cloud", $"folder '{folder.NavigationTitle}' should have URL starting with /platform/cloud");
 
 			// Verify all items within the folder
 			AssertAllUrlsStartWith(folder.NavigationItems, "/platform/cloud");
@@ -286,8 +363,13 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 			var filesInFolder = CollectAllFileLeaves(folder.NavigationItems);
 			foreach (var file in filesInFolder)
 			{
-				file.Url.Should().StartWith("/platform/cloud",
-					$"file '{file.NavigationTitle}' in folder '{folder.NavigationTitle}' should have URL starting with /platform/cloud");
+				file
+					.Url
+					.Should()
+					.StartWith(
+						"/platform/cloud",
+						$"file '{file.NavigationTitle}' in folder '{folder.NavigationTitle}' should have URL starting with /platform/cloud"
+					);
 			}
 		}
 	}
@@ -299,8 +381,13 @@ public class ComplexSiteNavigationTests(ITestOutputHelper output)
 	{
 		foreach (var item in items)
 		{
-			item.Url.Should().StartWith(expectedPrefix,
-				$"item '{item.NavigationTitle}' should have URL starting with '{expectedPrefix}' but got '{item.Url}'");
+			item
+				.Url
+				.Should()
+				.StartWith(
+					expectedPrefix,
+					$"item '{item.NavigationTitle}' should have URL starting with '{expectedPrefix}' but got '{item.Url}'"
+				);
 
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> nodeItem)
 				AssertAllUrlsStartWith(nodeItem.NavigationItems, expectedPrefix);

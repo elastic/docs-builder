@@ -57,7 +57,7 @@ jobs:
             }
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ steps.pr-details.outputs.result || github.event.pull_request.head.sha }}
           persist-credentials: false
@@ -108,11 +108,54 @@ jobs:
         env:
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
+          AWS_S3_MAX_CONCURRENT_REQUESTS: 50
+          AWS_S3_MAX_QUEUE_SIZE: 20000
         run: |
+          aws configure set default.s3.preferred_transfer_client classic
+          aws configure set default.s3.max_concurrent_requests "${AWS_S3_MAX_CONCURRENT_REQUESTS}"
+          aws configure set default.s3.max_queue_size "${AWS_S3_MAX_QUEUE_SIZE}"
+
           aws s3 sync .artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX} "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
             --paths "/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "/${ASSEMBLER_PREVIEW_PATH_PREFIX}/*"
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          cache: npm
+          cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
+          node-version-file: .nvmrc
+
+      - name: Install frontend dependencies
+        working-directory: src/Elastic.Documentation.Site
+        run: npm ci
+
+      - name: Wait for preview to be live
+        run: |
+          for i in $(seq 1 18); do
+            if curl -sf -L --max-time 15 "https://docs-v3-preview.elastic.dev/${ASSEMBLER_PREVIEW_PATH_PREFIX}" -o /dev/null; then
+              echo "Preview is live after attempt $i"
+              break
+            fi
+            echo "Attempt $i: not ready, retrying in 10s…"
+            sleep 10
+          done
+
+      - name: Run synthetics
+        id: synthetics
+        working-directory: src/Elastic.Documentation.Site
+        env:
+          DOCS_ENV: preview
+          DOCS_PREVIEW_BASE_URL: https://docs-v3-preview.elastic.dev/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
+        run: npm run synthetics:test:preview
+
+      - name: Run accessibility synthetics
+        id: synthetics-accessibility
+        working-directory: src/Elastic.Documentation.Site
+        env:
+          DOCS_ENV: preview
+          DOCS_PREVIEW_BASE_URL: https://docs-v3-preview.elastic.dev/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
+        run: npm run synthetics:test:accessibility
 
       - name: Update Deployment Status
         if: always() && steps.deployment.outputs.result
@@ -123,7 +166,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ steps.s3-upload.outcome == 'success' && 'success' || 'failure' }}",
+              state: "${{ steps.s3-upload.outcome == 'success' && steps.synthetics.outcome != 'failure' && steps.synthetics-accessibility.outcome != 'failure' && 'success' || 'failure' }}",
               environment_url: `https://docs-v3-preview.elastic.dev/${process.env.ASSEMBLER_PREVIEW_PATH_PREFIX}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })

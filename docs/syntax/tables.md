@@ -70,29 +70,82 @@ A table is an arrangement of data with rows and columns. Each row consists of ce
 
 ## Responsive Table
 
-Every table is responsive by default. The table will automatically scroll horizontally when the content is wider than the viewport.
+Every table is responsive by default. The table will automatically scroll horizontally when the content is wider than the viewport. Tables that are wider than the content column also get a fullscreen button that opens the table in a fullscreen view with a sticky header row — useful for reference matrices with many scored columns.
 
 ::::{tab-set}
 
 :::{tab-item} Output
-| Product Name | Price ($) | Stock  | Category  | Rating  | Color    | Weight (kg) | Warranty (months) |
-|--------------|-----------|--------|-----------|---------|----------|-------------|-------------------|
-| Laptop Pro   | 1299.99   | 45     | Computer  | 4.5     | Silver   | 1.8         | 24                |
-| Smart Watch  | 299.99    | 120    | Wearable  | 4.2     | Black    | 0.045       | 12                |
-| Desk Chair   | 199.50    | 78     | Furniture | 4.8     | Gray     | 12.5        | 36                |
+| Region | Revenue ($M) | YoY Growth (%) | New Customers | Churn Rate (%) | NPS Score | Retention (%) | Upsell Revenue ($M) | Overall Score |
+|--------|---------------|------------------|-----------------|------------------|-----------|-----------------|-----------------------|----------------|
+| North America   | 42.5 | 12.3 | 1450 | 4.2 | 58 | 91.2 | 6.8 | 8.4 |
+| EMEA            | 31.2 | 9.8  | 1120 | 5.1 | 52 | 88.7 | 5.2 | 7.6 |
+| APAC            | 27.8 | 15.6 | 1680 | 6.3 | 47 | 85.4 | 4.1 | 7.1 |
+| LATAM           | 14.6 | 18.2 | 980  | 7.8 | 41 | 81.9 | 2.9 | 6.3 |
+| ANZ             | 9.3  | 7.4  | 340  | 3.9 | 61 | 92.5 | 1.8 | 7.9 |
+| Nordics         | 8.1  | 6.2  | 290  | 3.1 | 64 | 93.8 | 1.5 | 8.1 |
+| Southern Europe | 11.4 | 8.9  | 510  | 5.6 | 49 | 86.1 | 2.2 | 6.9 |
+| Middle East     | 6.7  | 22.1 | 410  | 8.4 | 38 | 78.3 | 1.1 | 5.8 |
 :::
 
 :::{tab-item} Markdown
 ```markdown
-| Product Name | Price ($) | Stock  | Category  | Rating  | Color    | Weight (kg) | Warranty (months) |
-|--------------|-----------|--------|-----------|---------|----------|-------------|-------------------|
-| Laptop Pro   | 1299.99   | 45     | Computer  | 4.5     | Silver   | 1.8         | 24                |
-| Smart Watch  | 299.99    | 120    | Wearable  | 4.2     | Black    | 0.045       | 12                |
-| Desk Chair   | 199.50    | 78     | Furniture | 4.8     | Gray     | 12.5        | 36                |
-:::
+| Region | Revenue ($M) | YoY Growth (%) | New Customers | Churn Rate (%) | NPS Score | Retention (%) | Upsell Revenue ($M) | Overall Score |
+|--------|---------------|------------------|-----------------|------------------|-----------|-----------------|-----------------------|----------------|
+| North America   | 42.5 | 12.3 | 1450 | 4.2 | 58 | 91.2 | 6.8 | 8.4 |
+| EMEA            | 31.2 | 9.8  | 1120 | 5.1 | 52 | 88.7 | 5.2 | 7.6 |
+| APAC            | 27.8 | 15.6 | 1680 | 6.3 | 47 | 85.4 | 4.1 | 7.1 |
+| LATAM           | 14.6 | 18.2 | 980  | 7.8 | 41 | 81.9 | 2.9 | 6.3 |
+| ANZ             | 9.3  | 7.4  | 340  | 3.9 | 61 | 92.5 | 1.8 | 7.9 |
+| Nordics         | 8.1  | 6.2  | 290  | 3.1 | 64 | 93.8 | 1.5 | 8.1 |
+| Southern Europe | 11.4 | 8.9  | 510  | 5.6 | 49 | 86.1 | 2.2 | 6.9 |
+| Middle East     | 6.7  | 22.1 | 410  | 8.4 | 38 | 78.3 | 1.1 | 5.8 |
 ```
 
 ::::
+
+## Matrix highlight
+
+The `{table}` directive's `:matrix:` option highlights the whole row *and* column of the hovered cell. It only makes sense for lookup-style tables: a header row across the top and a row-heading first column — like the sprint velocity table below — where readers cross-reference a row label against a column label to find a value. This also applies in the fullscreen view for tables that use `:matrix:`.
+
+:::::{tab-set}
+
+::::{tab-item} Output
+:::{table}
+:matrix:
+
+| Team | Sprint 1 | Sprint 2 | Sprint 3 | Sprint 4 | Sprint 5 | Sprint 6 | Sprint 7 | Sprint 8 |
+|------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| Team Falcon | 34 | 38 | 41 | 36 | 44 | 47 | 42 | 50 |
+| Team Nimbus | 28 | 31 | 27 | 33 | 30 | 35 | 38 | 40 |
+| Team Orbit  | 45 | 42 | 48 | 51 | 47 | 53 | 55 | 58 |
+| Team Vertex | 22 | 25 | 24 | 28 | 26 | 30 | 29 | 33 |
+| Team Atlas  | 38 | 40 | 37 | 42 | 45 | 43 | 48 | 46 |
+| Team Comet  | 31 | 29 | 34 | 32 | 36 | 38 | 35 | 39 |
+| Team Pulse  | 50 | 52 | 49 | 55 | 58 | 54 | 60 | 57 |
+| Team Nova   | 19 | 22 | 21 | 25 | 23 | 27 | 26 | 29 |
+:::
+::::
+
+::::{tab-item} Markdown
+```markdown
+:::{table}
+:matrix:
+
+| Team | Sprint 1 | Sprint 2 | Sprint 3 | Sprint 4 | Sprint 5 | Sprint 6 | Sprint 7 | Sprint 8 |
+|------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| Team Falcon | 34 | 38 | 41 | 36 | 44 | 47 | 42 | 50 |
+| Team Nimbus | 28 | 31 | 27 | 33 | 30 | 35 | 38 | 40 |
+| Team Orbit  | 45 | 42 | 48 | 51 | 47 | 53 | 55 | 58 |
+| Team Vertex | 22 | 25 | 24 | 28 | 26 | 30 | 29 | 33 |
+| Team Atlas  | 38 | 40 | 37 | 42 | 45 | 43 | 48 | 46 |
+| Team Comet  | 31 | 29 | 34 | 32 | 36 | 38 | 35 | 39 |
+| Team Pulse  | 50 | 52 | 49 | 55 | 58 | 54 | 60 | 57 |
+| Team Nova   | 19 | 22 | 21 | 25 | 23 | 27 | 26 | 29 |
+:::
+```
+::::
+
+:::::
 
 ## Table directive with column widths
 

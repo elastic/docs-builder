@@ -1,26 +1,39 @@
+import { initPagesNavScroll } from './pages-nav-scroll'
 import { throttle } from 'lodash'
-import { $, $$ } from 'select-dom'
+import { $optional, $$optional } from 'select-dom'
 
 const NAV_STATE_KEY = 'nav-expanded'
 
-function isDevMode() {
-    return !!document.querySelector('diagnostics-panel')
+function expandedStorageKey(nav: ParentNode) {
+    return `${NAV_STATE_KEY}:${navSurfaceKey(nav)}`
 }
 
 function saveNavState(nav: HTMLElement) {
-    const expanded = $$('input[type="checkbox"]:checked', nav)
+    const expanded = $$optional('input[type="checkbox"]:checked', nav)
         .map((el) => el.id)
         .filter(Boolean)
-    sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify(expanded))
+    try {
+        sessionStorage.setItem(
+            expandedStorageKey(nav),
+            JSON.stringify(expanded)
+        )
+    } catch {
+        /* private mode */
+    }
 }
 
 function restoreNavState(nav: HTMLElement) {
-    const raw = sessionStorage.getItem(NAV_STATE_KEY)
+    let raw: string | null
+    try {
+        raw = sessionStorage.getItem(expandedStorageKey(nav))
+    } catch {
+        return
+    }
     if (!raw) return
     try {
         const ids: string[] = JSON.parse(raw)
         for (const id of ids) {
-            const input = $(`#${CSS.escape(id)}`, nav)
+            const input = $optional(`#${CSS.escape(id)}`, nav)
             if (input instanceof HTMLInputElement) {
                 input.checked = true
             }
@@ -41,8 +54,12 @@ function expandAllParents(navItem: HTMLElement) {
     }
 }
 
+function getNavScrollContainer(nav: HTMLElement) {
+    return nav.querySelector<HTMLElement>('.pages-nav-v2__scroll') ?? nav
+}
+
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
-    const currentNavItem = $('.current', nav)
+    const currentNavItem = $optional('.current', nav)
 
     if (!currentNavItem) {
         return
@@ -50,15 +67,17 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
 
     expandAllParents(currentNavItem)
 
-    const navRect = nav.getBoundingClientRect()
+    const scrollContainer = getNavScrollContainer(nav)
+    const navRect = scrollContainer.getBoundingClientRect()
     const currentNavItemRect = currentNavItem.getBoundingClientRect()
 
-    // Get the sticky element's height to account for content hidden under it
-    // The sticky element contains the search and dropdown, staying fixed at top when scrolling
-    const stickyElement = $('.sticky', nav)
-    const stickyHeight = stickyElement?.getBoundingClientRect().height ?? 0
+    // Sticky chrome (dropdown / back) sits above the scrollport in the Figma shell.
+    const stickyElement = $optional('.pages-nav-v2__chrome, .sticky', nav)
+    const stickyHeight =
+        scrollContainer === nav
+            ? (stickyElement?.getBoundingClientRect().height ?? 0)
+            : 0
 
-    // The effective visible top of the nav is below the sticky element
     const effectiveNavTop = navRect.top + stickyHeight
 
     // Check if the item is already fully visible in the nav container's viewport
@@ -79,10 +98,9 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const currentPositionInNav = currentNavItemRect.top - navRect.top
     const scrollOffset = currentPositionInNav - targetPosition
 
-    // Apply the scroll, clamping to valid scroll range
-    const newScrollTop = Math.max(0, nav.scrollTop + scrollOffset)
+    const newScrollTop = Math.max(0, scrollContainer.scrollTop + scrollOffset)
 
-    nav.scrollTop = newScrollTop
+    scrollContainer.scrollTop = newScrollTop
 }
 
 // Throttle with leading: false, trailing: true - only executes the last call within the window
@@ -111,50 +129,273 @@ function preventFocusLossOnLinkClick(anchor: HTMLAnchorElement) {
     })
 }
 
-export function initNav() {
-    const pagesNav = $('#pages-nav')
-    if (!pagesNav) {
+function normalizeNavPathname(pathname: string) {
+    let p: string
+    try {
+        p = new URL(pathname, window.location.href).pathname
+    } catch {
+        p = pathname
+    }
+    p = p.replace(/\/$/, '')
+    return p === '' ? '/' : p
+}
+
+function anchorMatchesPath(anchor: HTMLAnchorElement, pathnameRaw: string) {
+    const href = anchor.getAttribute('href')
+    if (!href) {
+        return false
+    }
+    try {
+        return (
+            normalizeNavPathname(
+                new URL(href, window.location.href).pathname
+            ) === normalizeNavPathname(pathnameRaw)
+        )
+    } catch {
+        return false
+    }
+}
+
+function folderCheckboxForRow(anchor: HTMLAnchorElement) {
+    return anchor.parentElement?.querySelector<HTMLInputElement>(
+        ':scope > input[type="checkbox"]'
+    )
+}
+
+function clearAncestorHighlight(nav: HTMLElement) {
+    $$optional('.nav-v2-active-ancestor', nav).forEach((el) => {
+        el.classList.remove('nav-v2-active-ancestor')
+    })
+}
+
+function applyAncestorHighlight(nav: HTMLElement) {
+    clearAncestorHighlight(nav)
+    const current = $optional('a.sidebar-link.current', nav)
+    if (!current) {
         return
     }
 
-    const dropdownActiveAnchor = $('#pages-dropdown a.pages-dropdown_active')
-    if (dropdownActiveAnchor) {
-        preventFocusLossOnLinkClick(dropdownActiveAnchor)
+    const hostLi = current.closest('li')
+    let walk: Element | null = hostLi?.parentElement ?? null
+    while (walk && walk !== nav) {
+        if (walk.matches('li.nav-folder')) {
+            const row = walk.querySelector<HTMLAnchorElement>(
+                ':scope > .nav-folder-peer > a.sidebar-link'
+            )
+            if (row && row !== current) {
+                walk.classList.add('nav-v2-active-ancestor')
+            }
+        }
+        walk = walk.parentElement
     }
+}
 
-    if (isDevMode()) {
-        restoreNavState(pagesNav)
-    }
-
-    // Remove current class from all nav items before marking new ones
-    const currentNavItems = $$('.current', pagesNav)
-    currentNavItems.forEach((el) => {
+function markCurrentPage(nav: HTMLElement) {
+    $$optional('.current', nav).forEach((el) => {
         el.classList.remove('current')
     })
 
-    // Normalize pathname by removing trailing slash to handle both URL variants
     const pathname = window.location.pathname.replace(/\/$/, '')
-
-    // When the page is a hidden nav item (e.g. an individual detection rule), the server
-    // emits docs:nav-active pointing to the nearest visible ancestor so we can highlight it.
     const navActiveMeta = document.querySelector<HTMLMetaElement>(
         'meta[name="docs:nav-active"]'
     )
     const activePathname = navActiveMeta?.content ?? pathname
 
-    const navItems = $$(
-        'a[href="' + activePathname + '"], a[href="' + activePathname + '/"]',
-        pagesNav
-    )
-    navItems.forEach((el) => {
-        el.classList.add('current')
-    })
-    scrollCurrentNaviItemIntoView(pagesNav)
-
-    if (isDevMode()) {
-        saveNavState(pagesNav)
-        for (const cb of $$('input[type="checkbox"]', pagesNav)) {
-            cb.addEventListener('change', () => saveNavState(pagesNav))
+    $$optional('a.sidebar-link[href]', nav).forEach((el) => {
+        if (
+            el instanceof HTMLAnchorElement &&
+            anchorMatchesPath(el, activePathname)
+        ) {
+            el.classList.add('current')
         }
+    })
+    applyAncestorHighlight(nav)
+}
+
+let folderRowClickBound = false
+let navStatePersistBound = false
+let lastSwapHtml = ''
+
+export function navSurfaceKey(nav: ParentNode): string {
+    const heading =
+        nav
+            .querySelector('.pages-nav-v2-shell')
+            ?.getAttribute('data-nav-heading') ??
+        nav.querySelector('.pages-nav-v2__heading-text')?.textContent?.trim() ??
+        ''
+    const treeId = (nav.querySelector('[id^="nav-tree-"]')?.id ?? '').replace(
+        /-outgoing$/,
+        ''
+    )
+    return `${treeId}::${heading}`
+}
+
+/**
+ * After a boosted swap, replace `#pages-nav` only when the island/section
+ * surface changed. Same-tree navigations keep the live nav (hx-preserve) so
+ * expanded folders do not flash closed.
+ */
+export function syncPagesNavFromResponse(
+    responseHtml: string,
+    root: ParentNode = document
+): boolean {
+    const current = root.querySelector('#pages-nav')
+    if (!current || !responseHtml) {
+        return false
     }
+    const incoming = new DOMParser()
+        .parseFromString(responseHtml, 'text/html')
+        .querySelector('#pages-nav')
+    if (!incoming) {
+        return false
+    }
+    if (navSurfaceKey(current) === navSurfaceKey(incoming)) {
+        return false
+    }
+    if (current instanceof HTMLElement) {
+        saveNavState(current)
+    }
+    const liveDocument = current.ownerDocument ?? document
+    const next = liveDocument.importNode(incoming, true)
+    current.replaceWith(next)
+    if (next instanceof HTMLElement) {
+        restoreNavState(next)
+    }
+    return true
+}
+
+function clearHtmxHistoryCache() {
+    try {
+        sessionStorage.removeItem('htmx-history-cache')
+    } catch {
+        /* private mode */
+    }
+}
+
+function responseHtmlFromSwap(event: Event): string {
+    const detail = (event as CustomEvent).detail as
+        { serverResponse?: string; xhr?: { response?: string } } | undefined
+    if (typeof detail?.serverResponse === 'string' && detail.serverResponse) {
+        return detail.serverResponse
+    }
+    if (typeof detail?.xhr?.response === 'string' && detail.xhr.response) {
+        return detail.xhr.response
+    }
+    return lastSwapHtml
+}
+
+function onBeforeSwap(event: Event) {
+    lastSwapHtml = responseHtmlFromSwap(event)
+}
+
+function onAfterSwap(event: Event) {
+    const html = responseHtmlFromSwap(event) || lastSwapHtml
+    lastSwapHtml = ''
+    if (html) {
+        syncPagesNavFromResponse(html)
+    }
+}
+
+if (typeof document !== 'undefined') {
+    clearHtmxHistoryCache()
+    document.addEventListener('htmx:beforeSwap', onBeforeSwap, true)
+    document.addEventListener('htmx:afterSwap', onAfterSwap, true)
+}
+
+/**
+ * Folder row = label + chevron as one hit target (chevron lives inside the <a>).
+ * First click on a collapsed folder expands it and navigates to its overview.
+ * Clicking the same row while it is current toggles the group closed/open.
+ */
+function ensureFolderRowClick() {
+    if (folderRowClickBound) {
+        return
+    }
+    folderRowClickBound = true
+
+    document.addEventListener(
+        'click',
+        (e: MouseEvent) => {
+            if (!(e.target instanceof Element)) {
+                return
+            }
+            if (
+                e.defaultPrevented ||
+                e.button !== 0 ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey
+            ) {
+                return
+            }
+
+            const a = e.target.closest(
+                '#pages-nav li.nav-folder > .nav-folder-peer > a.sidebar-link'
+            ) as HTMLAnchorElement | null
+            if (!a) {
+                return
+            }
+
+            const cb = folderCheckboxForRow(a)
+            if (!cb) {
+                return
+            }
+
+            if (anchorMatchesPath(a, window.location.pathname)) {
+                cb.checked = !cb.checked
+                cb.dispatchEvent(new Event('change', { bubbles: true }))
+                e.preventDefault()
+                e.stopPropagation()
+                return
+            }
+
+            if (!cb.checked) {
+                cb.checked = true
+                cb.dispatchEvent(new Event('change', { bubbles: true }))
+            }
+        },
+        true
+    )
+}
+
+function ensureNavStatePersist() {
+    if (navStatePersistBound) {
+        return
+    }
+    navStatePersistBound = true
+    document.addEventListener('change', (e: Event) => {
+        const target = e.target
+        if (
+            !(target instanceof HTMLInputElement) ||
+            target.type !== 'checkbox'
+        ) {
+            return
+        }
+        const nav = target.closest<HTMLElement>('#pages-nav')
+        if (nav) {
+            saveNavState(nav)
+        }
+    })
+}
+
+export function initNav() {
+    const pagesNav = $optional('#pages-nav')
+    if (!pagesNav) {
+        return
+    }
+
+    const dropdownActiveAnchor = $optional(
+        '#pages-dropdown a.pages-dropdown_active'
+    )
+    if (dropdownActiveAnchor) {
+        preventFocusLossOnLinkClick(dropdownActiveAnchor)
+    }
+
+    ensureFolderRowClick()
+    ensureNavStatePersist()
+    restoreNavState(pagesNav)
+    markCurrentPage(pagesNav)
+    scrollCurrentNaviItemIntoView(pagesNav)
+    initPagesNavScroll(pagesNav)
 }

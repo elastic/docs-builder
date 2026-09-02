@@ -11,7 +11,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -24,10 +24,7 @@ public class ConfigurationFileExcludeTests
 		{
 			Project = "test",
 			TableOfContents = [],
-			Exclude =
-			[
-				"reference/query-languages/esql/kibana/docs/**"
-			]
+			Exclude = ["reference/query-languages/esql/kibana/docs/**"]
 		};
 		var config = CreateConfiguration(docSet);
 
@@ -41,10 +38,7 @@ public class ConfigurationFileExcludeTests
 		{
 			Project = "test",
 			TableOfContents = [],
-			Exclude =
-			[
-				"reference/query-languages/esql/kibana/docs/**"
-			]
+			Exclude = ["reference/query-languages/esql/kibana/docs/**"]
 		};
 		var config = CreateConfiguration(docSet);
 
@@ -56,19 +50,13 @@ public class ConfigurationFileExcludeTests
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ configFilePath, new MockFileData("") }
-		}, root);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { configFilePath, new MockFileData("") } }, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-		};
+		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
@@ -83,16 +71,20 @@ public class ConfigurationFileExcludeTests
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,
-		IDirectoryInfo documentationSourceDirectory)
-		: IDocumentationSetContext
+		IDirectoryInfo documentationSourceDirectory
+	) : IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
-		public ScopedFileSystem ReadFileSystem => WriteFileSystem;
-		public ScopedFileSystem WriteFileSystem { get; } = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName);
+		public DocumentationWriteFileSystem WriteFileSystem { get; } = new DocumentationWriteFileSystem(
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: fileSystem
+		);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;
 		public IDirectoryInfo DocumentationSourceDirectory => documentationSourceDirectory;
 		public GitCheckoutInformation Git => GitCheckoutInformationFactory.Create(documentationSourceDirectory, fileSystem);
+		public IEnvironmentVariables Environment => SystemEnvironmentVariables.Instance;
 	}
 }

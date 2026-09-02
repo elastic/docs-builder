@@ -9,6 +9,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -19,35 +20,37 @@ public class VersionInferenceTests
 	/// <summary>
 	/// All ProductApplicability product names that should be mapped.
 	/// </summary>
-	private static Dictionary<string, string> ProductApplicabilityOptions => new()
-	{
-		{ nameof(ProductApplicability.Ecctl), "cloud-control-ecctl" },
-		{ nameof(ProductApplicability.Curator), "curator" },
-		{ nameof(ProductApplicability.ApmAgentAndroid), "edot-android" },
-		{ nameof(ProductApplicability.ApmAgentDotnet), "apm-agent-dotnet" },
-		{ nameof(ProductApplicability.ApmAgentGo), "apm-agent-go" },
-		{ nameof(ProductApplicability.ApmAgentIos), "edot-ios" },
-		{ nameof(ProductApplicability.ApmAgentJava), "apm-agent-java" },
-		{ nameof(ProductApplicability.ApmAgentNode), "apm-agent-node" },
-		{ nameof(ProductApplicability.ApmAgentPhp), "apm-agent-php" },
-		{ nameof(ProductApplicability.ApmAgentPython), "apm-agent-python" },
-		{ nameof(ProductApplicability.ApmAgentRuby), "apm-agent-ruby" },
-		{ nameof(ProductApplicability.ApmAgentRumJs), "apm-agent-rum-js" },
-		{ nameof(ProductApplicability.EdotIos), "edot-ios" },
-		{ nameof(ProductApplicability.EdotAndroid), "edot-android" },
-		{ nameof(ProductApplicability.EdotDotnet), "edot-dotnet" },
-		{ nameof(ProductApplicability.EdotJava), "edot-java" },
-		{ nameof(ProductApplicability.EdotNode), "edot-node" },
-		{ nameof(ProductApplicability.EdotBrowser), "edot-browser" },
-		{ nameof(ProductApplicability.EdotPhp), "edot-php" },
-		{ nameof(ProductApplicability.EdotPython), "edot-python" },
-		{ nameof(ProductApplicability.EdotCfAws), "edot-cf-aws" },
-		{ nameof(ProductApplicability.EdotCfAzure), "edot-cf-azure" },
-		{ nameof(ProductApplicability.EdotCfGcp), "edot-cf-gcp" },
-		{ nameof(ProductApplicability.EdotCollector), "edot-collector" }
-	};
+	private static Dictionary<string, string> ProductApplicabilityOptions =>
+		new()
+		{
+			{ nameof(ProductApplicability.Ecctl), "cloud-control-ecctl" },
+			{ nameof(ProductApplicability.Curator), "curator" },
+			{ nameof(ProductApplicability.ApmAgentAndroid), "edot-android" },
+			{ nameof(ProductApplicability.ApmAgentDotnet), "apm-agent-dotnet" },
+			{ nameof(ProductApplicability.ApmAgentGo), "apm-agent-go" },
+			{ nameof(ProductApplicability.ApmAgentIos), "edot-ios" },
+			{ nameof(ProductApplicability.ApmAgentJava), "apm-agent-java" },
+			{ nameof(ProductApplicability.ApmAgentNode), "apm-agent-node" },
+			{ nameof(ProductApplicability.ApmAgentPhp), "apm-agent-php" },
+			{ nameof(ProductApplicability.ApmAgentPython), "apm-agent-python" },
+			{ nameof(ProductApplicability.ApmAgentRuby), "apm-agent-ruby" },
+			{ nameof(ProductApplicability.ApmAgentRumJs), "apm-agent-rum-js" },
+			{ nameof(ProductApplicability.EdotIos), "edot-ios" },
+			{ nameof(ProductApplicability.EdotAndroid), "edot-android" },
+			{ nameof(ProductApplicability.EdotDotnet), "edot-dotnet" },
+			{ nameof(ProductApplicability.EdotJava), "edot-java" },
+			{ nameof(ProductApplicability.EdotNode), "edot-node" },
+			{ nameof(ProductApplicability.EdotBrowser), "edot-browser" },
+			{ nameof(ProductApplicability.EdotPhp), "edot-php" },
+			{ nameof(ProductApplicability.EdotPython), "edot-python" },
+			{ nameof(ProductApplicability.EdotCfAws), "edot-cf-aws" },
+			{ nameof(ProductApplicability.EdotCfAzure), "edot-cf-azure" },
+			{ nameof(ProductApplicability.EdotCfGcp), "edot-cf-gcp" },
+			{ nameof(ProductApplicability.EdotCollector), "edot-collector" }
+		};
 
-	public static TheoryData<string, string> ProductApplicabilityOptionsAsList => [.. ProductApplicabilityOptions.Select(kvp => (kvp.Key, kvp.Value))];
+	public static TheoryData<string, string> ProductApplicabilityOptionsAsList =>
+		[.. ProductApplicabilityOptions.Select(kvp => (kvp.Key, kvp.Value))];
 
 	private static VersionsConfiguration CreateVersionsConfiguration()
 	{
@@ -55,12 +58,7 @@ public class VersionInferenceTests
 
 		foreach (var id in Enum.GetValues<VersioningSystemId>())
 		{
-			versioningSystems[id] = new VersioningSystem
-			{
-				Id = id,
-				Current = new SemVersion(1, 0, 0),
-				Base = new SemVersion(1, 0, 0)
-			};
+			versioningSystems[id] = new VersioningSystem { Id = id, Current = new SemVersion(1, 0, 0), Base = new SemVersion(1, 0, 0) };
 		}
 
 		return new VersionsConfiguration { VersioningSystems = versioningSystems };
@@ -203,8 +201,13 @@ public class VersionInferenceTests
 		return applicability;
 	}
 
-	[Theory(DisplayName = "ProductApplicabilityToProductId returns correct product ID for product {0}"), MemberData(nameof(ProductApplicabilityOptionsAsList))]
-	public void InferVersionReturnsCorrectVersioningForAllProductApplicabilityProperties(string productApplicabilityEntry, string targetProductId)
+	[Theory(DisplayName = "ProductApplicabilityToProductId returns correct product ID for product {0}"), MemberData(nameof(
+		ProductApplicabilityOptionsAsList
+	))]
+	public void InferVersionReturnsCorrectVersioningForAllProductApplicabilityProperties(
+		string productApplicabilityEntry,
+		string targetProductId
+	)
 	{
 		var versionsConfiguration = CreateVersionsConfiguration();
 		var productsConfiguration = CreateProductsConfiguration(versionsConfiguration);
@@ -213,21 +216,24 @@ public class VersionInferenceTests
 		var productApplicability = CreateProductApplicabilityByName(productApplicabilityEntry);
 		var applicableTo = new ApplicableTo { ProductApplicability = productApplicability };
 
-		var result = inferrer.InferVersion(
-			repositoryName: "any-repo",
-			legacyPages: null,
-			products: null,
-			applicableTo: applicableTo);
+		var result = inferrer.InferVersion(repositoryName: "any-repo", legacyPages: null, products: null, applicableTo: applicableTo);
 
 		result.Should().NotBeNull($"Product {productApplicabilityEntry} should return a valid VersioningSystem via InferVersion");
 
 		var resultingProductId = ProductApplicabilityConversion.ProductApplicabilityToProductId(productApplicability);
-		resultingProductId.Should().NotBeNull($"Product {productApplicabilityEntry} should return a valid product ID via ProductApplicabilityToProductId");
+		resultingProductId.Should().NotBeNull(
+			$"Product {productApplicabilityEntry} should return a valid product ID via ProductApplicabilityToProductId"
+		);
 
 		if (productsConfiguration.Products.TryGetValue(resultingProductId, out var expectedProduct))
 		{
-			result.Id.Should().Be(expectedProduct.VersioningSystem!.Id,
-				$"Product {productApplicabilityEntry} should return versioning system {expectedProduct.VersioningSystem.Id} via InferVersion");
+			result
+				.Id
+				.Should()
+				.Be(
+					expectedProduct.VersioningSystem!.Id,
+					$"Product {productApplicabilityEntry} should return versioning system {expectedProduct.VersioningSystem.Id} via InferVersion"
+				);
 		}
 
 		resultingProductId.Should().Be(targetProductId, $"Product {productApplicabilityEntry} should return '{targetProductId}'");
@@ -247,10 +253,7 @@ public class VersionInferenceTests
 			VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Ece)
 		};
 
-		var legacyPages = new[]
-		{
-			new LegacyUrlMappings.LegacyPageMapping(legacyProduct, "/test/url", "8.0", true)
-		};
+		var legacyPages = new[] { new LegacyUrlMappings.LegacyPageMapping(legacyProduct, "/test/url", "8.0", true) };
 
 		var applicableTo = new ApplicableTo
 		{
@@ -261,7 +264,8 @@ public class VersionInferenceTests
 			repositoryName: "any-repo",
 			legacyPages: legacyPages,
 			products: null,
-			applicableTo: applicableTo);
+			applicableTo: applicableTo
+		);
 
 		result.Id.Should().Be(VersioningSystemId.Ece);
 	}
@@ -279,11 +283,7 @@ public class VersionInferenceTests
 			Stack = AppliesCollection.GenerallyAvailable
 		};
 
-		var result = inferrer.InferVersion(
-			repositoryName: "unknown-repo",
-			legacyPages: null,
-			products: null,
-			applicableTo: applicableTo);
+		var result = inferrer.InferVersion(repositoryName: "unknown-repo", legacyPages: null, products: null, applicableTo: applicableTo);
 
 		result.Id.Should().Be(VersioningSystemId.Curator);
 	}
@@ -301,11 +301,7 @@ public class VersionInferenceTests
 			Deployment = new DeploymentApplicability { Ece = AppliesCollection.GenerallyAvailable }
 		};
 
-		var result = inferrer.InferVersion(
-			repositoryName: "unknown-repo",
-			legacyPages: null,
-			products: null,
-			applicableTo: applicableTo);
+		var result = inferrer.InferVersion(repositoryName: "unknown-repo", legacyPages: null, products: null, applicableTo: applicableTo);
 
 		result.Id.Should().Be(VersioningSystemId.Stack);
 	}
@@ -323,11 +319,7 @@ public class VersionInferenceTests
 			Serverless = new ServerlessProjectApplicability { Elasticsearch = AppliesCollection.GenerallyAvailable }
 		};
 
-		var result = inferrer.InferVersion(
-			repositoryName: "unknown-repo",
-			legacyPages: null,
-			products: null,
-			applicableTo: applicableTo);
+		var result = inferrer.InferVersion(repositoryName: "unknown-repo", legacyPages: null, products: null, applicableTo: applicableTo);
 
 		result.Id.Should().Be(VersioningSystemId.Eck);
 	}
@@ -341,9 +333,16 @@ public class VersionInferenceTests
 
 		var testCases = new (ServerlessProjectApplicability serverless, VersioningSystemId expectedId)[]
 		{
-			(new ServerlessProjectApplicability { Elasticsearch = AppliesCollection.GenerallyAvailable }, VersioningSystemId.ElasticsearchProject),
-			(new ServerlessProjectApplicability { Observability = AppliesCollection.GenerallyAvailable }, VersioningSystemId.ObservabilityProject),
+			(new ServerlessProjectApplicability
+			{
+				Elasticsearch = AppliesCollection.GenerallyAvailable
+			}, VersioningSystemId.ElasticsearchProject),
+			(new ServerlessProjectApplicability
+			{
+				Observability = AppliesCollection.GenerallyAvailable
+			}, VersioningSystemId.ObservabilityProject),
 			(new ServerlessProjectApplicability { Security = AppliesCollection.GenerallyAvailable }, VersioningSystemId.SecurityProject),
+			(new ServerlessProjectApplicability { VectorDatabase = AppliesCollection.GenerallyAvailable }, VersioningSystemId.Serverless),
 		};
 
 		foreach (var (serverless, expectedId) in testCases)
@@ -354,7 +353,8 @@ public class VersionInferenceTests
 				repositoryName: "unknown-repo",
 				legacyPages: null,
 				products: null,
-				applicableTo: applicableTo);
+				applicableTo: applicableTo
+			);
 
 			result.Id.Should().Be(expectedId);
 		}
@@ -383,7 +383,8 @@ public class VersionInferenceTests
 				repositoryName: "unknown-repo",
 				legacyPages: null,
 				products: null,
-				applicableTo: applicableTo);
+				applicableTo: applicableTo
+			);
 
 			result.Id.Should().Be(expectedId);
 		}
@@ -396,11 +397,7 @@ public class VersionInferenceTests
 		var productsConfiguration = CreateProductsConfiguration(versionsConfiguration);
 		var inferrer = new ProductVersionInferrerService(productsConfiguration, versionsConfiguration);
 
-		var result = inferrer.InferVersion(
-			repositoryName: "curator",
-			legacyPages: null,
-			products: null,
-			applicableTo: null);
+		var result = inferrer.InferVersion(repositoryName: "curator", legacyPages: null, products: null, applicableTo: null);
 
 		result.Id.Should().Be(VersioningSystemId.Curator);
 	}
@@ -412,11 +409,7 @@ public class VersionInferenceTests
 		var productsConfiguration = CreateProductsConfiguration(versionsConfiguration);
 		var inferrer = new ProductVersionInferrerService(productsConfiguration, versionsConfiguration);
 
-		var result = inferrer.InferVersion(
-			repositoryName: "unknown-repo",
-			legacyPages: null,
-			products: null,
-			applicableTo: null);
+		var result = inferrer.InferVersion(repositoryName: "unknown-repo", legacyPages: null, products: null, applicableTo: null);
 
 		result.Id.Should().Be(VersioningSystemId.Stack);
 	}
@@ -445,8 +438,10 @@ public class VersionInferenceTests
 			Base = new SemVersion(VersioningSystem.VersionlessSentinel, 0, 0)
 		};
 
-		versioningSystem.IsVersionless.Should().BeTrue(
-			$"Versioning system {id} with version {VersioningSystem.VersionlessSentinel} should be marked as versionless");
+		versioningSystem
+			.IsVersionless
+			.Should()
+			.BeTrue($"Versioning system {id} with version {VersioningSystem.VersionlessSentinel} should be marked as versionless");
 	}
 
 	[Theory(DisplayName = "IsVersionless returns false for versioned products")]
@@ -464,16 +459,20 @@ public class VersionInferenceTests
 			Base = new SemVersion(major, 0, 0)
 		};
 
-		versioningSystem.IsVersionless.Should().BeFalse(
-			$"Versioning system {id} with version {major}.{minor}.{patch} should not be marked as versionless");
+		versioningSystem
+			.IsVersionless
+			.Should()
+			.BeFalse($"Versioning system {id} with version {major}.{minor}.{patch} should not be marked as versionless");
 	}
 
 	[Fact(DisplayName = "VersionlessSentinel constant matches versions.yml value")]
 	public void VersionlessSentinelMatchesConfigValue() =>
 		// This test ensures the sentinel value matches what's used in config/versions.yml
 		// If this test fails, update VersioningSystem.VersionlessSentinel to match versions.yml
-		VersioningSystem.VersionlessSentinel.Should().Be(99999,
-			"VersionlessSentinel should match the value used in config/versions.yml for 'all' versioning system");
+		VersioningSystem
+			.VersionlessSentinel
+			.Should()
+			.Be(99999, "VersionlessSentinel should match the value used in config/versions.yml for 'all' versioning system");
 
 	/// <summary>
 	/// These are the versioning system IDs that use the 'all' alias in versions.yml,
@@ -498,7 +497,7 @@ public class VersionInferenceTests
 		var versionsPath = fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
-		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();
 
 		// Verify all expected versionless systems are marked as versionless
@@ -506,8 +505,10 @@ public class VersionInferenceTests
 		{
 			if (versionsConfig.VersioningSystems.TryGetValue(id, out var versioningSystem))
 			{
-				versioningSystem.IsVersionless.Should().BeTrue(
-					$"Versioning system {id} uses 'all' alias in versions.yml and should be marked as versionless");
+				versioningSystem
+					.IsVersionless
+					.Should()
+					.BeTrue($"Versioning system {id} uses 'all' alias in versions.yml and should be marked as versionless");
 			}
 		}
 
@@ -516,8 +517,10 @@ public class VersionInferenceTests
 		{
 			if (!ExpectedVersionlessIds.Contains(id))
 			{
-				versioningSystem.IsVersionless.Should().BeFalse(
-					$"Versioning system {id} has version {versioningSystem.Current} and should NOT be marked as versionless");
+				versioningSystem
+					.IsVersionless
+					.Should()
+					.BeFalse($"Versioning system {id} has version {versioningSystem.Current} and should NOT be marked as versionless");
 			}
 		}
 	}
@@ -530,7 +533,7 @@ public class VersionInferenceTests
 		var versionsPath = fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
-		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();
 
 		// Count how many are versionless vs versioned
@@ -538,14 +541,25 @@ public class VersionInferenceTests
 		var versionedSystems = versionsConfig.VersioningSystems.Values.Where(v => !v.IsVersionless).ToList();
 
 		// The versionless systems should match our expected list
-		versionlessSystems.Select(v => v.Id).Should().BeEquivalentTo(ExpectedVersionlessIds,
-			"The versioning systems marked as versionless should match the expected list from versions.yml");
+		versionlessSystems
+			.Select(v => v.Id)
+			.Should()
+			.BeEquivalentTo(
+				ExpectedVersionlessIds,
+				"The versioning systems marked as versionless should match the expected list from versions.yml"
+			);
 
 		// All versioned systems should have version < 99999
 		foreach (var system in versionedSystems)
 		{
-			system.Current.Major.Should().BeLessThan(VersioningSystem.VersionlessSentinel,
-				$"Versioned system {system.Id} should have major version less than {VersioningSystem.VersionlessSentinel}");
+			system
+				.Current
+				.Major
+				.Should()
+				.BeLessThan(
+					VersioningSystem.VersionlessSentinel,
+					$"Versioned system {system.Id} should have major version less than {VersioningSystem.VersionlessSentinel}"
+				);
 		}
 	}
 }

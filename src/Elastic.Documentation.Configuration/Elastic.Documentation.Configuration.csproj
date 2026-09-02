@@ -17,6 +17,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Markdown.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Documentation.Configuration.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Nullean.Argh.Interfaces" />
@@ -32,7 +41,9 @@
     <EmbeddedResource Include="$(SolutionRoot)\config\products.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\assembler.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\navigation.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\navigation_preview.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\legacy-url-mappings.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\search.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\related-learning.yml" />
   </ItemGroup>
 </Project>

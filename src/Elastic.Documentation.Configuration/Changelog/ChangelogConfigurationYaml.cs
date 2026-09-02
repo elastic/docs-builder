@@ -223,6 +223,13 @@ internal sealed record PivotConfigurationYaml
 	public Dictionary<string, YamlLenientList?>? Products { get; set; }
 
 	/// <summary>
+	/// Feature ID definitions with labels (string or list per value).
+	/// Keys are feature-id strings (e.g., "feature:new-search-api").
+	/// Values are label strings that trigger setting that feature-id.
+	/// </summary>
+	public Dictionary<string, YamlLenientList?>? Features { get; set; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
 	public YamlLenientList? Highlight { get; set; }
@@ -276,8 +283,17 @@ internal sealed record BundleConfigurationYaml
 	public string? OutputDirectory { get; set; }
 
 	/// <summary>
-	/// Whether to resolve (copy contents) by default.
+	/// When true, source the individual changelog entries that make up a bundle from the local
+	/// <see cref="Directory"/> instead of the public CDN. Defaults to false (CDN sourcing).
 	/// </summary>
+	public bool? UseLocalChangelogs { get; set; }
+
+	/// <summary>
+	/// Deprecated and ignored. Resolved bundles are now the only format. Retained solely so existing
+	/// changelog.yml files carrying <c>bundle.resolve</c> deserialize without a hard error; a
+	/// deprecation warning is emitted when it is present. Remove it from changelog.yml.
+	/// </summary>
+	[Obsolete("bundle.resolve is deprecated and ignored; resolved bundles are the only format. This field will be removed in a future version.")]
 	public bool? Resolve { get; set; }
 
 	/// <summary>
@@ -296,12 +312,17 @@ internal sealed record BundleConfigurationYaml
 	public string? Owner { get; set; }
 
 	/// <summary>
+	/// Branch whose CDN changelog pool entries are sourced from when bundling. Defaults to <c>main</c>.
+	/// </summary>
+	public string? Branch { get; set; }
+
+	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
 	public bool? ReleaseDates { get; set; }
 
 	/// <summary>
-	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels (requires resolve).
+	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels.
 	/// </summary>
 	public YamlLenientList? LinkAllowRepos { get; set; }
 
@@ -349,6 +370,11 @@ internal sealed record BundleProfileYaml
 	/// Defaults to "elastic" when not specified.
 	/// </summary>
 	public string? Owner { get; set; }
+
+	/// <summary>
+	/// Branch whose CDN changelog pool entries this profile sources from. Overrides <c>bundle.branch</c>.
+	/// </summary>
+	public string? Branch { get; set; }
 
 	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output (string or list).
