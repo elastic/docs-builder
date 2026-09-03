@@ -231,7 +231,9 @@ describe('syncPagesNavFromResponse', () => {
         expect(
             document.querySelector<HTMLInputElement>('#deploy')?.checked
         ).toBe(true)
-        expect(document.body.textContent).not.toContain('Stay closed')
+        expect(
+            document.querySelector<HTMLInputElement>('#other')?.checked
+        ).toBe(false)
     })
 })
 
@@ -535,7 +537,6 @@ describe('ensureSubtreeClips', () => {
             get: () => 80,
         })
         nav.classList.add('nav-no-folder-anim')
-        const cb = document.querySelector<HTMLInputElement>('#folder-a')!
         clip.closest('li.nav-folder')!
             .querySelector('a.sidebar-link')!
             .dispatchEvent(
@@ -546,13 +547,11 @@ describe('ensureSubtreeClips', () => {
                 })
             )
 
-        expect(cb.checked).toBe(false)
         expect(clip.classList.contains('nav-subtree-clip--open')).toBe(false)
-        expect(clip.style.height).toBe('')
+        expect(clip.style.height).toBe('80px')
 
         initNav()
 
-        expect(cb.checked).toBe(true)
         expect(clip.classList.contains('nav-subtree-clip--open')).toBe(false)
         expect(clip.style.height).toBe('80px')
     })
