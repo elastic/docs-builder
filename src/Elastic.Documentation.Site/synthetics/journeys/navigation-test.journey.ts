@@ -192,13 +192,21 @@ journey('navigation test', ({ page, params }) => {
                 )
             ).toBeVisible()
 
+            // The hub page itself has no row in the tree, so nothing is
+            // current after back; the tree is visible and the old current
+            // marker is gone.
             await page.goBack()
             await expect(page).toHaveURL(/\/reference\/?$/)
             await expect(
-                page.locator(
-                    '#pages-nav a.sidebar-link.current[href*="/reference"]'
-                )
+                page
+                    .locator('#pages-nav a[href$="/reference/elasticsearch"]')
+                    .first()
             ).toBeVisible()
+            await expect(
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
+                )
+            ).toHaveCount(0)
         }
     )
 
