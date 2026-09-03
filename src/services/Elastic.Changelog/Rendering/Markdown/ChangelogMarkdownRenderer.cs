@@ -4,14 +4,14 @@
 
 using System.Collections.Generic;
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
 /// <summary>
 /// Coordinates rendering of all markdown changelog files.
 /// </summary>
-public class ChangelogMarkdownRenderer(ScopedFileSystem fileSystem)
+public class ChangelogMarkdownRenderer(IChangelogFileSystem fileSystem)
 {
 	/// <summary>
 	/// Renders all markdown changelog files (index, breaking changes, deprecations, known issues, highlights).
@@ -19,9 +19,7 @@ public class ChangelogMarkdownRenderer(ScopedFileSystem fileSystem)
 	public async Task RenderAsync(ChangelogRenderContext context, Cancel ctx)
 	{
 		// Check if there are any highlighted entries
-		var hasHighlights = context.EntriesByType.Values
-			.SelectMany(e => e)
-			.Any(e => e.Highlight == true);
+		var hasHighlights = context.EntriesByType.Values.SelectMany(e => e).Any(e => e.Highlight == true);
 
 		var renderers = new List<IChangelogMarkdownRenderer>
 		{

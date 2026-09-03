@@ -30,31 +30,34 @@ public static class McpToolRegistration
 			if (module.ToolType is null)
 				continue;
 
-			var methods = module.ToolType
+			var methods = module
+				.ToolType
 				.GetMethods(BindingFlags.Public | BindingFlags.Instance)
 				.Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null);
 
 			foreach (var method in methods)
 			{
 				var nameAttr = method.GetCustomAttribute<McpToolNameAttribute>()
-					?? throw new InvalidOperationException($"Method {method.DeclaringType?.Name}.{method.Name} must have [McpToolName] attribute.");
-				var toolName = nameAttr.Template
+					?? throw new InvalidOperationException(
+						$"Method {method.DeclaringType?.Name}.{method.Name} must have [McpToolName] attribute."
+					);
+				var toolName = nameAttr
+					.Template
 					.Replace("{resource}", resourceNoun, StringComparison.Ordinal)
 					.Replace("{scope}", scopePrefix, StringComparison.Ordinal);
 
 				var descAttr = method.GetCustomAttribute<DescriptionAttribute>();
 				var description = descAttr?.Description?.Replace("{docs}", docsDescription, StringComparison.Ordinal);
 
-				var options = new McpServerToolCreateOptions
-				{
-					Name = toolName,
-					Description = description
-				};
+				var options = new McpServerToolCreateOptions { Name = toolName, Description = description };
 
 				var tool = McpServerTool.Create(
 					method,
-					ctx => (ctx.Services ?? throw new InvalidOperationException("RequestContext.Services is null")).GetRequiredService(module.ToolType),
-					options);
+					ctx => (ctx.Services ?? throw new InvalidOperationException("RequestContext.Services is null")).GetRequiredService(
+						module.ToolType
+					),
+					options
+				);
 
 				tools.Add(tool);
 			}

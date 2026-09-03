@@ -18,7 +18,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 	public void FileWithNoChildrenCreatesFileNavigationLeaf()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: getting-started.md
@@ -40,7 +41,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 	public void FileWithChildrenCreatesFileNavigation()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -74,7 +76,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 	public void FileWithChildrenDeeplinksPreservesPaths()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: nest/guide.md
@@ -108,7 +111,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 	public void FileWithNestedChildrenBuildsCorrectly()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -144,7 +148,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 	public void FileNavigationUrlUpdatesWhenRootChanges()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -177,7 +182,8 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 	public void FileNavigationMixedWithFolderChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md

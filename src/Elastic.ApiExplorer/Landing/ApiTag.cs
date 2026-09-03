@@ -19,7 +19,8 @@ public record ApiTag(
 	string Description,
 	ApiTagExternalDoc? ExternalDocs,
 	string TagUrlSegment,
-	IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
+	IReadOnlyCollection<ApiEndpoint> Endpoints
+) : IApiGroupingModel
 {
 	/// <inheritdoc />
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
@@ -31,5 +32,15 @@ public record ApiTag(
 		};
 		var slice = TagLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
+	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	{
+		var viewModel = new TagLandingViewModel(context)
+		{
+			Tag = this,
+			OverviewRows = ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation)
+		};
+		return Task.FromResult<string?>(LandingCommonMark.Tag(viewModel));
 	}
 }

@@ -6,6 +6,7 @@ using Actions.Core.Services;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -29,7 +30,6 @@ internal sealed class IndexCommand(
 	/// Does not write HTML to disk. Requires a running cluster and valid credentials.
 	/// </para>
 	/// </remarks>
-
 	[RequiresAuth]
 	[CommandName("index")]
 	public async Task<int> Index(
@@ -40,11 +40,9 @@ internal sealed class IndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealGitRootForPath(path);
+		var fs = DocumentationFileSystem.Resolve(path ?? Paths.WorkingDirectoryRoot.FullName);
 		var service = new IsolatedIndexService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		serviceInvoker.AddCommand(service,
-			async (s, col, ctx) => await s.Index(col, fs, es, path, ctx)
-		);
+		serviceInvoker.AddCommand(service, async (s, col, ctx) => await s.Index(col, fs, es, path, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 }

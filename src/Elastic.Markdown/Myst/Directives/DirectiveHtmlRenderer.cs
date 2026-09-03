@@ -16,16 +16,20 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Roles;
@@ -103,6 +107,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case MathBlock mathBlock:
 				WriteMathBlock(renderer, mathBlock);
 				return;
+			case HeroBlock heroBlock:
+				WriteHero(renderer, heroBlock);
+				return;
+			case ExploreBlock exploreBlock:
+				WriteExplore(renderer, exploreBlock);
+				return;
+			case CardGroupBlock cardGroupBlock:
+				WriteCardGroup(renderer, cardGroupBlock);
+				return;
+			case LinkCardBlock linkCardBlock:
+				WriteLinkCard(renderer, linkCardBlock);
+				return;
+			case GetStartedBlock getStartedBlock:
+				WriteGetStarted(renderer, getStartedBlock);
+				return;
+			case WhatsNewBlock whatsNewBlock:
+				WriteWhatsNew(renderer, whatsNewBlock);
+				return;
+			case RelatedLearningBlock relatedLearningBlock:
+				WriteRelatedLearning(renderer, relatedLearningBlock);
+				return;
 			case PageCardBlock pageCardBlock:
 				WritePageCard(renderer, pageCardBlock);
 				return;
@@ -118,8 +143,14 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case ButtonBlock buttonBlock:
 				WriteButton(renderer, buttonBlock);
 				return;
+			case VectorSizingBlock vectorSizingBlock:
+				WriteVectorSizing(renderer, vectorSizingBlock);
+				return;
 			case ListSubPagesBlock listSubPagesBlock:
 				WriteListSubPages(renderer, listSubPagesBlock);
+				return;
+			case ListingBlock listingBlock:
+				WriteListing(renderer, listingBlock);
 				return;
 			case TableDirectiveBlock tableDirectiveBlock:
 				WriteTableDirective(renderer, tableDirectiveBlock);
@@ -170,33 +201,178 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = ImageCarouselView.Create(new ImageCarouselViewModel
 		{
 			DirectiveBlock = block,
-			Images = block.Images.Select(img => new ImageViewModel
-			{
-				DirectiveBlock = img,
-				Label = img.Label,
-				Align = img.Align ?? string.Empty,
-				Alt = img.Alt ?? string.Empty,
-				Title = img.Title,
-				Height = img.Height,
-				Width = img.Width,
-				Scale = img.Scale ?? string.Empty,
-				Screenshot = img.Screenshot,
-				Target = img.Target,
-				ImageUrl = img.ImageUrl
-			}).ToList(),
+			Images = block
+				.Images
+				.Select(
+					img => new ImageViewModel
+					{
+						DirectiveBlock = img,
+						Label = img.Label,
+						Align = img.Align ?? string.Empty,
+						Alt = img.Alt ?? string.Empty,
+						Title = img.Title,
+						Height = img.Height,
+						Width = img.Width,
+						Scale = img.Scale ?? string.Empty,
+						Screenshot = img.Screenshot,
+						Target = img.Target,
+						ImageUrl = img.ImageUrl
+					}
+				)
+				.ToList(),
 			MaxHeight = block.MaxHeight
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteHero(HtmlRenderer renderer, HeroBlock block)
+	{
+		var slice = HeroView.Create(new HeroViewModel
+		{
+			DirectiveBlock = block,
+			IconKey = block.Icon,
+			IconSvg = block.IconSvg,
+			Title = block.Title,
+			DescriptionHtml = RenderInlineMarkdown(block.Description),
+			PrimaryActionLabel = block.PrimaryActionLabel,
+			PrimaryActionUrl = block.PrimaryActionUrl,
+			SecondaryActionLabel = block.SecondaryActionLabel,
+			SecondaryActionUrl = block.SecondaryActionUrl,
+			TertiaryActionLabel = block.TertiaryActionLabel,
+			TertiaryActionUrl = block.TertiaryActionUrl,
+			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteExplore(HtmlRenderer renderer, ExploreBlock block)
+	{
+		var slice = ExploreView.Create(new ExploreViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteCardGroup(HtmlRenderer renderer, CardGroupBlock block)
+	{
+		var explore = HubExplore.FindAncestor(block);
+		var slice = CardGroupView.Create(new CardGroupViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor,
+			Variant = block.Variant,
+			IsAccordion = explore is not null,
+			IsOpen = explore is not null && HubExplore.IsFirstCardGroup(explore, block)
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteLinkCard(HtmlRenderer renderer, LinkCardBlock block)
+	{
+		var slice = LinkCardView.Create(new LinkCardViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data,
+			IconSvg = ProductIcons.Get(block.Data.Icon),
+			SitePathPrefix = block.Build.UrlPathPrefix,
+			IsColumn = HubExplore.FindAncestor(block) is not null
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteWhatsNew(HtmlRenderer renderer, WhatsNewBlock block)
+	{
+		var slice = WhatsNewView.Create(new WhatsNewViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data,
+			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteGetStarted(HtmlRenderer renderer, GetStartedBlock block)
+	{
+		var data = block.Data;
+		var steps = new List<GetStartedStepViewModel>(data.Steps.Length);
+		for (var i = 0; i < data.Steps.Length; i++)
+		{
+			var step = data.Steps[i];
+			steps.Add(new GetStartedStepViewModel
+			{
+				Number = i + 1,
+				Title = step.Title,
+				DescriptionHtml = RenderInlineMarkdown(step.Description),
+				Link = step.Link,
+				LinkLabel = step.LinkLabel,
+				Options =
+				[
+					.. step.Options.Select(
+						option => new GetStartedOptionViewModel
+						{
+							Label = option.Label,
+							DescriptionHtml = RenderInlineMarkdown(option.Description),
+							Code = option.Code,
+							Language = option.Language,
+							Url = option.Url,
+							UrlLabel = option.UrlLabel
+						}
+					)
+				]
+			});
+		}
+
+		var slice = GetStartedView.Create(new GetStartedViewModel
+		{
+			DirectiveBlock = block,
+			Title = data.Title,
+			IntroHtml = RenderInlineMarkdown(data.Intro),
+			Steps = steps,
+			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	// The hero description is a directive option, not a body block, so it never reaches
+	// the document pipeline. Render it with the default Markdig pipeline for basic inline
+	// markup. Substitutions, roles, and link validation do not apply inside this option.
+	private static string? RenderInlineMarkdown(string? source)
+	{
+		if (string.IsNullOrWhiteSpace(source))
+			return null;
+
+		var html = Markdig.Markdown.ToHtml(source).Trim();
+		const string open = "<p>";
+		const string close = "</p>";
+		if (html.StartsWith(open, StringComparison.Ordinal) && html.EndsWith(close, StringComparison.Ordinal))
+			html = html[open.Length..^close.Length];
+		return html;
+	}
+
+	private static void WriteRelatedLearning(HtmlRenderer renderer, RelatedLearningBlock block)
+	{
+		if (block.Items.Count == 0)
+			return;
+
+		var slice = RelatedLearningView.Create(new RelatedLearningViewModel
+		{
+			DirectiveBlock = block,
+			Heading = block.Heading,
+			Slug = block.Slug,
+			Items = block.Items
 		});
 		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WritePageCard(HtmlRenderer renderer, PageCardBlock block)
 	{
-		var slice = PageCardView.Create(new PageCardViewModel
-		{
-			DirectiveBlock = block,
-			Title = block.Title,
-			Url = block.ResolvedUrl
-		});
+		var slice = PageCardView.Create(new PageCardViewModel { DirectiveBlock = block, Title = block.Title, Url = block.ResolvedUrl });
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -220,11 +396,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteButtonGroup(HtmlRenderer renderer, ButtonGroupBlock block)
 	{
-		var slice = ButtonGroupView.Create(new ButtonGroupViewModel
-		{
-			DirectiveBlock = block,
-			Align = block.Align
-		});
+		var slice = ButtonGroupView.Create(new ButtonGroupViewModel { DirectiveBlock = block, Align = block.Align });
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -242,11 +414,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteListSubPages(HtmlRenderer renderer, ListSubPagesBlock block)
 	{
-		var slice = ListSubPagesView.Create(new ListSubPagesViewModel
-		{
-			DirectiveBlock = block,
-			SubPages = block.SubPages
-		});
+		var slice = ListSubPagesView.Create(new ListSubPagesViewModel { DirectiveBlock = block, SubPages = block.SubPages });
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteListing(HtmlRenderer renderer, ListingBlock block)
+	{
+		var slice = ListingView.Create(new ListingViewModel { DirectiveBlock = block, Entries = block.Entries });
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -264,9 +438,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteCliModifiers(HtmlRenderer renderer, CliModifiersBlock block)
 	{
-		if (!block.Destructive && !block.RequiresConfirmation && !block.RequiresAuth
-			&& !block.Idempotent && string.IsNullOrWhiteSpace(block.Scope)
-			&& !block.Streaming && !block.LongRunning)
+		if (
+			!block.Destructive
+			&& !block.RequiresConfirmation
+			&& !block.RequiresAuth
+			&& !block.Idempotent
+			&& string.IsNullOrWhiteSpace(block.Scope)
+			&& !block.Streaming
+			&& !block.LongRunning
+		)
 			return;
 
 		var slice = CliModifiersView.Create(new CliModifiersViewModel
@@ -328,8 +508,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteFigure(HtmlRenderer renderer, ImageBlock block)
 	{
-		var imageUrl = block.ImageUrl != null &&
-					   (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
+		var imageUrl = block.ImageUrl != null && (block.ImageUrl.StartsWith("/_static") || block.ImageUrl.StartsWith("_static"))
 			? $"{block.Build.UrlPathPrefix}/{block.ImageUrl.TrimStart('/')}"
 			: block.ImageUrl;
 		var slice = FigureView.Create(new ImageViewModel
@@ -349,8 +528,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer);
 	}
 
-	private static void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) =>
-		renderer.WriteChildren(directiveBlock);
+	private static void WriteChildren(HtmlRenderer renderer, DirectiveBlock directiveBlock) => renderer.WriteChildren(directiveBlock);
 
 	private static void WriteVersion(HtmlRenderer renderer, VersionBlock block)
 	{
@@ -428,7 +606,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		// Parse the applies_to definition to get the ApplicableTo object
 		// Use the pre-parsed AppliesTo from the block (implementing IBlockAppliesTo)
-		var appliesTo = block.AppliesTo ?? (block.AppliesToDefinition is not null ? ParseApplicableTo(block.AppliesToDefinition, block) : null);
+		var appliesTo = block.AppliesTo
+			?? (block.AppliesToDefinition is not null ? ParseApplicableTo(block.AppliesToDefinition, block) : null);
 		var slice = AppliesItemView.Create(new AppliesItemViewModel
 		{
 			DirectiveBlock = block,
@@ -494,8 +673,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 
 		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default, block.Line)
-			.GetAwaiter().GetResult();
+		var document = MarkdownParser
+			.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default, block.Line)
+			.GetAwaiter()
+			.GetResult();
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
@@ -545,7 +726,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					settingsSourceFile,
 					block.Context.YamlFrontMatter,
 					block.IncludeFrom,
-					MarkdownParser.Pipeline);
+					MarkdownParser.Pipeline
+				);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 
 				// Trim to ensure consistent whitespace
@@ -564,8 +746,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static void RenderRazorSliceRawContent<T>(RazorSlice<T> slice, HtmlRenderer renderer, DirectiveBlock obj)
-		where T : DirectiveViewModel
+	private static void RenderRazorSliceRawContent<T>(
+		RazorSlice<T> slice,
+		HtmlRenderer renderer,
+		DirectiveBlock obj
+	) where T : DirectiveViewModel
 	{
 		var html = slice.RenderAsync().GetAwaiter().GetResult();
 		var blocks = html.Split("[CONTENT]", 2, StringSplitOptions.RemoveEmptyEntries);
@@ -592,7 +777,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 					_ = renderer.Write(new string(r.DelimiterChar, r.DelimiterCount));
 					renderer.WriteChildren(r);
 				}
-
 				else
 					_ = renderer.Write($"(LeafBlock: {oo.GetType().Name}");
 			}
@@ -647,7 +831,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			value,
 			block.IncludeFrom,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline);
+			MarkdownParser.Pipeline
+		);
 
 		if (document.Count == 1 && document.FirstOrDefault() is ParagraphBlock paragraph && paragraph.Inline != null)
 			return RenderInlineMarkdown(paragraph);
@@ -690,10 +875,17 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			markdown,
 			block.CurrentFile,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline);
+			MarkdownParser.Pipeline
+		);
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
+	}
+
+	private static void WriteVectorSizing(HtmlRenderer renderer, VectorSizingBlock block)
+	{
+		var slice = VectorSizingView.Create(new VectorSizingViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)

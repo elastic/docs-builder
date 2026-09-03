@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using YamlDotNet.Serialization;
 
@@ -12,7 +13,6 @@ namespace Elastic.Markdown.Myst.FrontMatter;
 [YamlSerializable]
 public class YamlFrontMatter
 {
-
 	[YamlMember(Alias = "title")]
 	public string? Title { get; set; }
 
@@ -46,6 +46,13 @@ public class YamlFrontMatter
 	/// </summary>
 	[YamlMember(Alias = "cta")]
 	public CtaFrontMatter? Cta { get; set; }
+
+	/// <summary>
+	/// Declares which listing group this page belongs to.
+	/// Accepts both shorthand (<c>listing: group-name</c>) and full form (<c>listing: {group: group-name}</c>).
+	/// </summary>
+	[YamlMember(Alias = "listing")]
+	public ListingFrontMatter? Listing { get; set; }
 }
 
 /// <summary>

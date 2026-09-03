@@ -4,6 +4,8 @@
 
 using System.Globalization;
 using System.Text;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
@@ -22,14 +24,10 @@ public class LlmsNavigationEnhancer
 	{
 		var content = new StringBuilder();
 
-		// Get top-level navigation items (excluding hidden ones)
-		var topLevelItems = navigation.TopLevelItems.Where(item => !item.Hidden).ToArray();
+		var guideItems = navigation.TopLevelItems.Where(item => !item.Hidden).ToArray();
 
-		foreach (var topLevelItem in topLevelItems)
+		foreach (var group in guideItems)
 		{
-			if (topLevelItem is not { } group)
-				continue;
-
 			// Create H2 section for the category - use H1 title if available, fallback to navigation title
 			var categoryTitle = GetBestTitle(group);
 			_ = content.AppendLine(CultureInfo.InvariantCulture, $"## {categoryTitle}");
@@ -57,9 +55,49 @@ public class LlmsNavigationEnhancer
 		return content.ToString();
 	}
 
+	public string GenerateApiHubIndex(IReadOnlyList<ApiCatalogEntry> entries, Uri canonicalBaseUrl)
+	{
+		if (entries.Count == 0)
+			return string.Empty;
 
-	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(INodeNavigationItem<INavigationModel, INavigationItem> group) =>
-		group.NavigationItems.Where(i => !i.Hidden).ToArray();
+		var content = new StringBuilder();
+		_ = content.AppendLine("# APIs");
+		_ = content.AppendLine();
+		_ = content.AppendLine("> Landing pages for published API products.");
+		_ = content.AppendLine();
+		_ = content.AppendLine("## Products");
+		_ = content.AppendLine();
+		AppendApiProductLinks(content, entries, canonicalBaseUrl);
+		return content.ToString();
+	}
+
+	public string GenerateApiSection(IReadOnlyList<ApiCatalogEntry> entries, Uri canonicalBaseUrl)
+	{
+		if (entries.Count == 0)
+			return string.Empty;
+
+		var content = new StringBuilder();
+		_ = content.AppendLine("## APIs");
+		_ = content.AppendLine();
+		AppendApiProductLinks(content, entries, canonicalBaseUrl);
+		return content.ToString();
+	}
+
+	private static void AppendApiProductLinks(StringBuilder content, IReadOnlyList<ApiCatalogEntry> entries, Uri canonicalBaseUrl)
+	{
+		foreach (var entry in entries.OrderBy(e => e.Key, StringComparer.Ordinal))
+		{
+			var markdownUrl = ApiOutputPaths.MarkdownUrl(entry.Url);
+			var url = LlmRenderingHelpers.MakeAbsoluteUrl(canonicalBaseUrl, markdownUrl);
+			_ = content.AppendLine(CultureInfo.InvariantCulture, $"* [{entry.Title}]({url})");
+		}
+
+		_ = content.AppendLine();
+	}
+
+	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(
+		INodeNavigationItem<INavigationModel, INavigationItem> group
+	) => group.NavigationItems.Where(i => !i.Hidden).ToArray();
 
 	/// <summary>
 	/// Gets the best title for a navigation item, preferring H1 content over navigation title
@@ -67,13 +105,10 @@ public class LlmsNavigationEnhancer
 	private static string GetBestTitle(INavigationItem navigationItem) => navigationItem switch
 	{
 		// For file navigation items, prefer the H1 title from the Markdown content
-		ILeafNavigationItem<MarkdownFile> markdownNavigation =>
-			markdownNavigation.Model.Title ?? markdownNavigation.NavigationTitle,
-
+		ILeafNavigationItem<MarkdownFile> markdownNavigation => markdownNavigation.Model.Title ?? markdownNavigation.NavigationTitle,
 		// For documentation groups, try to get the full title of the index
 		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
 			markdownNodeNavigation.Index.Model.Title ?? markdownNodeNavigation.NavigationTitle,
-
 		// For other navigation item types, use the navigation title
 		_ => navigationItem.NavigationTitle
 	};
@@ -82,24 +117,21 @@ public class LlmsNavigationEnhancer
 	{
 		// Cross-repository links don't have descriptions in frontmatter
 		ILeafNavigationItem<CrossLinkModel> => null,
-
 		// For file navigation items, extract from frontmatter
-		ILeafNavigationItem<MarkdownFile> markdownNavigation =>
-			markdownNavigation.Model.YamlFrontMatter?.Description,
-
+		ILeafNavigationItem<MarkdownFile> markdownNavigation => markdownNavigation.Model.YamlFrontMatter?.Description,
 		// For documentation groups, try to get from index file
 		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
 			markdownNodeNavigation.Index.Model.YamlFrontMatter?.Description,
-
 		// we only know about MarkdownFiles for now
 		ILeafNavigationItem<IDocumentationFile> => null,
 		INodeNavigationItem<IDocumentationFile, INavigationItem> => null,
-
 		// API-related navigation items (these don't have markdown frontmatter)
 		// Check by namespace to avoid direct assembly references
 		{ } item when item.GetType().FullName?.StartsWith("Elastic.ApiExplorer.", StringComparison.Ordinal) == true => null,
-
 		// Throw exception for any unhandled navigation item types
-		_ => throw new InvalidOperationException($"{nameof(LlmsNavigationEnhancer)}.{nameof(GetDescription)}: Unhandled navigation item type: {navigationItem.GetType().FullName}")
+		_ =>
+			throw new InvalidOperationException(
+				$"{nameof(LlmsNavigationEnhancer)}.{nameof(GetDescription)}: Unhandled navigation item type: {navigationItem.GetType().FullName}"
+			)
 	};
 }

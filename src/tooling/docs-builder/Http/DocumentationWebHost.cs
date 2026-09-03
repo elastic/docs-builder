@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using Nullean.ScopedFileSystem;
 using System.Runtime.InteropServices;
@@ -11,10 +12,12 @@ using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Http;
 #if DEBUG
 using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
@@ -41,16 +44,15 @@ public class DocumentationWebHost
 
 	public InMemoryBuildState InMemoryBuildState { get; }
 
-	public DocumentationWebHost(ILoggerFactory logFactory,
+	public DocumentationWebHost(
+		ILoggerFactory logFactory,
 		string? path,
 		int port,
-		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
 		IConfigurationContext configurationContext,
-		bool isWatchBuild
+		bool isWatchBuild,
+		bool noHud = false
 	)
 	{
-		_writeFileSystem = writeFs;
 		var builder = WebApplication.CreateSlimBuilder();
 		_ = builder.AddDocumentationServiceDefaults();
 
@@ -58,7 +60,8 @@ public class DocumentationWebHost
 		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
-		_ = builder.Logging
+		_ = builder
+			.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware", LogLevel.Error)
 			.AddFilter("Microsoft.AspNetCore.Routing.EndpointMiddleware", LogLevel.Warning)
@@ -71,19 +74,23 @@ public class DocumentationWebHost
 		var hostUrl = $"http://localhost:{port}";
 
 		_hostedService = collector;
-		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
-		{
-			CanonicalBaseUrl = new Uri(hostUrl),
-		};
+		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { InnerWrite = new MockFileSystem() });
+		_writeFileSystem = docFs.Write;
+		Context = new BuildContext(collector, docFs, configurationContext) { CanonicalBaseUrl = new Uri(hostUrl), };
 
-		// Enable diagnostics panel in serve mode
-		Context.Configuration.Features.DiagnosticsPanelEnabled = true;
+		Context.Configuration.Features.DiagnosticsPanelEnabled = !noHud;
 
-		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
-		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context, isWatchBuild);
-		_ = builder.Services
+		GeneratorState = new ReloadableGeneratorState(
+			logFactory,
+			Context.DocumentationSourceDirectory,
+			Context.OutputDirectory,
+			Context,
+			isWatchBuild
+		);
+		_ = builder
+			.Services
 			.AddAotLiveReload(s =>
 			{
 				s.FolderToMonitor = Context.DocumentationSourceDirectory.FullName;
@@ -94,7 +101,14 @@ public class DocumentationWebHost
 			.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(3))
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
 			.AddSingleton(_ => InMemoryBuildState)
-			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, logFactory.CreateLogger<ReloadGeneratorService>()));
+			.AddHostedService<ReloadGeneratorService>(
+				sp => new ReloadGeneratorService(
+					GeneratorState,
+					InMemoryBuildState,
+					noHud,
+					logFactory.CreateLogger<ReloadGeneratorService>()
+				)
+			);
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();
@@ -153,23 +167,29 @@ public class DocumentationWebHost
 					throw; // Re-throw to let ASP.NET Core handle it
 				}
 			})
-			.UseStaticFiles(
-				new StaticFileOptions
-				{
-					FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
-					RequestPath = "/_static"
-				});
+			.UseStaticFiles(new StaticFileOptions { FileProvider = new EmbeddedOrPhysicalFileProvider(Context), RequestPath = "/_static" });
 
 		_ = _webApplication.UseRouting();
 
-		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeDocumentationFile(holder, "index", _writeFileSystem, ctx));
+		_ = _webApplication.MapGet(
+			"/",
+			(ReloadableGeneratorState holder, Cancel ctx) => ServeDocumentationFile(holder, "index", _writeFileSystem, ctx)
+		);
 
-		_ = _webApplication.MapGet("/api/", (ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeApiFile(holder, "", ctx));
+		_ = _webApplication.MapGet(
+			"/api.md",
+			(ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, "api.md", http, ctx)
+		);
 
-		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeApiFile(holder, slug, ctx));
+		_ = _webApplication.MapGet(
+			"/api/",
+			(ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, "", http, ctx)
+		);
+
+		_ = _webApplication.MapGet(
+			"/api/{**slug}",
+			(string slug, ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, slug, http, ctx)
+		);
 
 #if DEBUG
 		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
@@ -210,14 +230,20 @@ public class DocumentationWebHost
 		});
 
 		// Current state endpoint (non-streaming)
-		_ = _webApplication.MapGet("/_api/diagnostics/state", (InMemoryBuildState buildState) =>
-			Results.Json(buildState.GetCurrentState(), DiagnosticsJsonContext.Default.BuildEvent));
+		_ = _webApplication.MapGet(
+			"/_api/diagnostics/state",
+			(InMemoryBuildState buildState) => Results.Json(buildState.GetCurrentState(), DiagnosticsJsonContext.Default.BuildEvent)
+		);
 
-		_ = _webApplication.MapGet("/_static/pagefind/{**path}", (string path, InMemoryBuildState buildState, ReloadableGeneratorState holder) =>
-			ServePagefindFile(path, buildState, holder));
+		_ = _webApplication.MapGet(
+			"/_static/pagefind/{**path}",
+			(string path, InMemoryBuildState buildState, ReloadableGeneratorState holder) => ServePagefindFile(path, buildState, holder)
+		);
 
-		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeDocumentationFile(holder, slug, _writeFileSystem, ctx));
+		_ = _webApplication.MapGet(
+			"{**slug}",
+			(string slug, ReloadableGeneratorState holder, Cancel ctx) => ServeDocumentationFile(holder, slug, _writeFileSystem, ctx)
+		);
 	}
 
 	private static IResult ServePagefindFile(string path, InMemoryBuildState buildState, ReloadableGeneratorState holder)
@@ -255,7 +281,7 @@ public class DocumentationWebHost
 		await response.Body.FlushAsync(ct);
 	}
 
-	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
+	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, HttpContext http, Cancel ctx)
 	{
 		try
 		{
@@ -263,31 +289,58 @@ public class DocumentationWebHost
 		}
 		catch (OperationCanceledException) when (ctx.IsCancellationRequested)
 		{
-			// HTTP request was canceled - return 499 or appropriate status
-			return Results.Problem("Request canceled", statusCode: 499);
+			// Client disconnected — no ProblemDetails JSON; ApiJsonContext is AOT-only.
+			return Results.StatusCode(499);
 		}
 		catch (OperationCanceledException)
 		{
-			// API generation timed out - return 503 with retry info
-			return Results.Problem("API generation in progress, please retry", statusCode: 503);
+			return Results.Text(
+				"API generation in progress, please retry",
+				contentType: "text/plain",
+				statusCode: StatusCodes.Status503ServiceUnavailable
+			);
 		}
 
 		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
-		var path = Path.GetFullPath(Path.Join(apiRoot, slug.Trim('/'), "index.html"));
-		if (!path.StartsWith(apiRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+		var outputRoot = Path.GetFullPath(holder.ApiPath.Parent!.FullName);
+		var trimmed = slug.Trim('/');
+		var specMime = SpecMime(trimmed);
+		var wantsMarkdown = specMime is null
+			&& (trimmed.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || MarkdownAccept.PrefersMarkdown(http.Request.Headers.Accept));
+		var path = specMime is not null
+			? Path.GetFullPath(Path.Join(apiRoot, trimmed))
+			: wantsMarkdown ? ApiMarkdownRequest.ResolveFile(apiRoot, trimmed) : Path.GetFullPath(Path.Join(apiRoot, trimmed, "index.html"));
+		if (!path.StartsWith(outputRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
 			return Results.NotFound();
-		var info = _writeFileSystem.FileInfo.New(path);
-		if (info.Exists)
-		{
-			//TODO STREAM
-			var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
-			return LiveReloadHtml(contents, Encoding.UTF8, 200);
-		}
 
-		return Results.NotFound();
+		var info = _writeFileSystem.FileInfo.New(path);
+		if (!info.Exists)
+			return Results.NotFound();
+
+		var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
+		if (specMime is not null)
+			return Results.Content(contents, specMime);
+		if (wantsMarkdown)
+			return Results.Content(contents, "text/markdown; charset=utf-8");
+
+		return LiveReloadHtml(contents, Encoding.UTF8, 200);
+
+		static string? SpecMime(string slug)
+		{
+			if (slug.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+				return "application/json";
+			if (slug.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || slug.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
+				return "text/yaml";
+			return null;
+		}
 	}
 
-	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, ScopedFileSystem writeFs, Cancel ctx)
+	private static async Task<IResult> ServeDocumentationFile(
+		ReloadableGeneratorState holder,
+		string slug,
+		ScopedFileSystem writeFs,
+		Cancel ctx
+	)
 	{
 		if (slug == ".well-known/appspecific/com.chrome.devtools.json")
 			return Results.NotFound();
@@ -305,12 +358,17 @@ public class DocumentationWebHost
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		slug = slug.TrimEnd('/');
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Join(slug, "index.md") : slug;
+		// Path.GetExtension treats version segments like "8.19" as having extension ".19".
+		// Only treat the slug as a bare file path when the extension is a known document type.
+		var slugExt = Path.GetExtension(slug);
+		var hasKnownExtension =
+			slugExt is ".md" or ".html" or ".json" or ".js" or ".css" or ".svg" or ".png" or ".jpg" or ".jpeg" or ".gif" or ".ico" or ".webp";
+		var s = !hasKnownExtension ? Path.Join(slug, "index.md") : slug;
 		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
 		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))
 		{
-			s = Path.GetExtension(slug) == string.Empty ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
+			s = !hasKnownExtension ? slug + ".md" : s.Replace($"{Path.DirectorySeparatorChar}index.md", ".md");
 			fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 			if (!generator.DocumentationSet.Files.TryGetValue(fp, out documentationFile))
 			{

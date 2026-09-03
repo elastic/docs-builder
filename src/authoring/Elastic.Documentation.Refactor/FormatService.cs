@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Refactor.Formatters;
 using Elastic.Documentation.Services;
@@ -14,33 +15,23 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Refactor;
 
-public class FormatService(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
-) : IService
+public class FormatService(ILoggerFactory logFactory, IConfigurationContext configurationContext) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<FormatService>();
 
 	// List of formatters to apply - easily extensible for future formatting operations
-	private static readonly IFormatter[] Formatters =
-	[
-		new IrregularSpaceFormatter()
-		// Future formatters can be added here:
-		// new TrailingWhitespaceFormatter(),
-		// new LineEndingFormatter(),
-		// etc.
+	private static readonly IFormatter[] Formatters = [new IrregularSpaceFormatter()
+	// Future formatters can be added here:
+	// new TrailingWhitespaceFormatter(),
+	// new LineEndingFormatter(),
+	// etc.
 	];
 
-	public async Task<bool> Format(
-		IDiagnosticsCollector collector,
-		string? path,
-		bool checkOnly,
-		ScopedFileSystem fs,
-		Cancel ctx
-	)
+	public async Task<bool> Format(IDiagnosticsCollector collector, string? path, bool checkOnly, ScopedFileSystem fs, Cancel ctx)
 	{
 		// Create BuildContext to load the documentation set
-		var context = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
+		var docFs = DocumentationFileSystem.Resolve(path);
+		var context = new BuildContext(collector, docFs, configurationContext) { AvailableExporters = ExportOptions.MetadataOnly };
 		var set = new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance);
 
 		var mode = checkOnly ? "Checking" : "Formatting";
@@ -83,7 +74,10 @@ public class FormatService(
 				_logger.LogInformation("");
 
 				// Emit error to trigger exit code 1
-				collector.EmitError(string.Empty, $"{totalFilesModified} file(s) need formatting. Run 'docs-builder format --write' to apply changes.");
+				collector.EmitError(
+					string.Empty,
+					$"{totalFilesModified} file(s) need formatting. Run 'docs-builder format --write' to apply changes."
+				);
 
 				return false;
 			}

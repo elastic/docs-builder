@@ -36,7 +36,11 @@ public record DetectionRuleOverviewRef : FileRef
 		DeprecatedFile = deprecatedFile;
 	}
 
-	public static IReadOnlyCollection<ITableOfContentsItem> CreateTableOfContentItems(IReadOnlyCollection<IDirectoryInfo> sourceFolders, string context, IDirectoryInfo baseDirectory)
+	public static IReadOnlyCollection<ITableOfContentsItem> CreateTableOfContentItems(
+		IReadOnlyCollection<IDirectoryInfo> sourceFolders,
+		string context,
+		IDirectoryInfo baseDirectory
+	)
 	{
 		var tocItems = new List<ITableOfContentsItem>();
 		foreach (var detectionRuleFolder in sourceFolders)
@@ -45,11 +49,14 @@ public record DetectionRuleOverviewRef : FileRef
 			tocItems.AddRange(children);
 		}
 
-		return tocItems
-			.ToArray();
+		return tocItems.ToArray();
 	}
 
-	public static IReadOnlyCollection<ITableOfContentsItem> CreateDeprecatedTableOfContentItems(IReadOnlyCollection<IDirectoryInfo> sourceFolders, string context, IDirectoryInfo baseDirectory)
+	public static IReadOnlyCollection<ITableOfContentsItem> CreateDeprecatedTableOfContentItems(
+		IReadOnlyCollection<IDirectoryInfo> sourceFolders,
+		string context,
+		IDirectoryInfo baseDirectory
+	)
 	{
 		var tocItems = new List<ITableOfContentsItem>();
 		foreach (var detectionRuleFolder in sourceFolders)
@@ -61,7 +68,11 @@ public record DetectionRuleOverviewRef : FileRef
 		return tocItems.ToArray();
 	}
 
-	private static IReadOnlyCollection<ITableOfContentsItem> ReadDetectionRuleFolder(IDirectoryInfo directory, string context, IDirectoryInfo baseDirectory)
+	private static IReadOnlyCollection<ITableOfContentsItem> ReadDetectionRuleFolder(
+		IDirectoryInfo directory,
+		string context,
+		IDirectoryInfo baseDirectory
+	)
 	{
 		IReadOnlyCollection<ITableOfContentsItem> children = directory
 			.EnumerateFiles("*.*", SearchOption.AllDirectories)
@@ -86,7 +97,11 @@ public record DetectionRuleOverviewRef : FileRef
 		return children;
 	}
 
-	private static IReadOnlyCollection<ITableOfContentsItem> ReadDeprecatedDetectionRuleFolder(IDirectoryInfo directory, string context, IDirectoryInfo baseDirectory)
+	private static IReadOnlyCollection<ITableOfContentsItem> ReadDeprecatedDetectionRuleFolder(
+		IDirectoryInfo directory,
+		string context,
+		IDirectoryInfo baseDirectory
+	)
 	{
 		IReadOnlyCollection<ITableOfContentsItem> children = directory
 			.EnumerateFiles("*.*", SearchOption.AllDirectories)

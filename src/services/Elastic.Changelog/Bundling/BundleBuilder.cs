@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -20,30 +21,29 @@ public class BundleBuilder
 	/// <param name="collector">The diagnostics collector.</param>
 	/// <param name="entries">Matched changelog files to bundle.</param>
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
-	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
-	/// <param name="owner">Optional GitHub owner to set on products for link generation.</param>
+	/// <param name="repo">Fallback GitHub repository name when a product cannot be resolved from <paramref name="productsConfiguration"/>.</param>
+	/// <param name="owner">GitHub owner for link generation.</param>
 	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
+	/// <param name="productsConfiguration">Optional product catalogue used to resolve per-product repository names.</param>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo = null,
 		string? owner = null,
-		HashSet<string>? hideFeatures = null)
+		HashSet<string>? hideFeatures = null,
+		ProductsConfiguration? productsConfiguration = null
+	)
 	{
 		// Build products list
-		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
+		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner, productsConfiguration);
 
 		// Build entries list
 		var bundledEntries = BuildResolvedEntries(collector, entries);
 
 		if (bundledEntries == null)
 		{
-			return new BundleBuildResult
-			{
-				IsValid = false,
-				Data = null
-			};
+			return new BundleBuildResult { IsValid = false, Data = null };
 		}
 
 		var bundledData = new Bundle
@@ -53,11 +53,7 @@ public class BundleBuilder
 			Entries = bundledEntries
 		};
 
-		return new BundleBuildResult
-		{
-			IsValid = true,
-			Data = bundledData
-		};
+		return new BundleBuildResult { IsValid = true, Data = bundledData };
 	}
 
 	private static List<BundledProduct> BuildProducts(
@@ -65,7 +61,9 @@ public class BundleBuilder
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo,
-		string? owner)
+		string? owner,
+		ProductsConfiguration? productsConfiguration
+	)
 	{
 		List<BundledProduct> bundledProducts;
 
@@ -75,14 +73,16 @@ public class BundleBuilder
 				.OrderBy(p => p.Product)
 				.ThenBy(p => p.Target ?? string.Empty)
 				.ThenBy(p => p.Lifecycle ?? string.Empty)
-				.Select(p => new BundledProduct
-				{
-					ProductId = p.Product ?? "",
-					Target = p.Target == "*" ? null : p.Target,
-					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
-					Repo = repo,
-					Owner = owner
-				})
+				.Select(
+					p => new BundledProduct
+					{
+						ProductId = p.Product ?? "",
+						Target = p.Target == "*" ? null : p.Target,
+						Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
+						Repo = ResolveProductRepo(p.Product, productsConfiguration, repo),
+						Owner = owner
+					}
+				)
 				.ToList();
 		}
 		else if (entries.Count > 0)
@@ -94,7 +94,11 @@ public class BundleBuilder
 					continue;
 				foreach (var product in entry.Data.Products)
 				{
-					var version = product.Target ?? string.Empty;
+					// `Target` is obsolete; prefer the first entry of `Versions` (notes).
+					// For PR-anchored entries neither field is set → version is "".
+#pragma warning disable CS0618 // reading obsolete Target for backward compat
+					var version = (product.Versions.Count > 0 ? product.Versions[0] : null) ?? product.Target ?? string.Empty;
+#pragma warning restore CS0618
 					_ = productVersions.Add((product.ProductId, version, product.Lifecycle));
 				}
 			}
@@ -103,19 +107,23 @@ public class BundleBuilder
 				.OrderBy(pv => pv.product)
 				.ThenBy(pv => pv.version)
 				.ThenBy(pv => pv.lifecycle?.ToStringFast(true) ?? string.Empty)
-				.Select(pv => new BundledProduct(
-					pv.product,
-					string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
-					pv.lifecycle,
-					repo,
-					owner))
+				.Select(
+					pv => new BundledProduct(
+						pv.product,
+						string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
+						pv.lifecycle,
+						ResolveProductRepo(pv.product, productsConfiguration, repo),
+						owner
+					)
+				)
 				.ToList();
 		}
 		else
 			bundledProducts = [];
 
 		// Check for products with same product ID but different versions
-		var productsByProductId = bundledProducts.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
+		var productsByProductId = bundledProducts
+			.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
 			.Where(g => g.Count() > 1)
 			.ToList();
 
@@ -128,10 +136,32 @@ public class BundleBuilder
 					target = $"{target} {p.Lifecycle.Value.ToStringFast(true)}";
 				return target;
 			}).ToList();
-			collector.EmitWarning(string.Empty, $"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}");
+			collector.EmitWarning(
+				string.Empty,
+				$"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}"
+			);
 		}
 
 		return bundledProducts;
+	}
+
+	/// <summary>
+	/// Resolves the GitHub repository name for a product. Looks up the product in
+	/// <paramref name="productsConfiguration"/> and returns its <c>Repository</c> field
+	/// (which is already defaulted to the product ID when not explicitly set). Falls back
+	/// to <paramref name="bundleRepo"/> when the product is not found in the catalogue.
+	/// </summary>
+	private static string? ResolveProductRepo(string? productId, ProductsConfiguration? productsConfiguration, string? bundleRepo)
+	{
+		if (string.IsNullOrWhiteSpace(productId) || productsConfiguration == null)
+			return bundleRepo;
+
+		// product.Repository is the authoritative per-product repo when explicitly set in products.yml.
+		// When null (product created without an explicit repository: field), fall back to the bundle-level value.
+		if (productsConfiguration.Products.TryGetValue(productId, out var product))
+			return product.Repository ?? bundleRepo;
+
+		return bundleRepo;
 	}
 
 	private static Lifecycle? ParseLifecycle(string? value)
@@ -139,14 +169,10 @@ public class BundleBuilder
 		if (string.IsNullOrEmpty(value))
 			return null;
 
-		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? result
-			: null;
+		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true) ? result : null;
 	}
 
-	private static List<BundledEntry>? BuildResolvedEntries(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<MatchedChangelogFile> entries)
+	private static List<BundledEntry>? BuildResolvedEntries(IDiagnosticsCollector collector, IReadOnlyList<MatchedChangelogFile> entries)
 	{
 		var resolvedEntries = new List<BundledEntry>();
 		var hasInvalidEntries = false;
@@ -161,11 +187,7 @@ public class BundleBuilder
 
 			var bundledEntry = entry.Data.ToBundledEntry() with
 			{
-				File = new BundledFile
-				{
-					Name = entry.FileName,
-					Checksum = entry.Checksum
-				}
+				File = new BundledFile { Name = entry.FileName, Checksum = entry.Checksum }
 			};
 			resolvedEntries.Add(bundledEntry);
 		}

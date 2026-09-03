@@ -7,9 +7,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Navigation;
 
@@ -17,12 +17,12 @@ public class GlobalNavigationService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
-	ScopedFileSystem fileSystem
+	CheckoutsFileSystem fileSystem
 ) : IService
 {
 	public async Task<bool> Validate(IDiagnosticsCollector collector, Cancel ctx)
 	{
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 
 		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
@@ -40,11 +40,15 @@ public class GlobalNavigationService(
 	public async Task<bool> ValidateLocalLinkReference(IDiagnosticsCollector collector, string? file, Cancel ctx)
 	{
 		file ??= ".artifacts/docs/html/links.json";
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var repository = GitCheckoutInformationFactory.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
-						 ?? throw new Exception("Unable to determine repository name");
+		var repository = GitCheckoutInformationFactory.Create(
+			root,
+			fileSystem,
+			logFactory.CreateLogger(nameof(GitCheckoutInformation))
+		).RepositoryName
+			?? throw new Exception("Unable to determine repository name");
 
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 

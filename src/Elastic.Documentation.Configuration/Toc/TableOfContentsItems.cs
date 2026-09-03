@@ -118,21 +118,41 @@ public interface ITableOfContentsItem
 	string Context { get; }
 }
 
-public record FileRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: ITableOfContentsItem;
+public record FileRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	bool Hidden,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context
+) : ITableOfContentsItem;
 
-public record IndexFileRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context);
+public record IndexFileRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	bool Hidden,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context
+) : FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context);
 
 /// <summary>
 /// Represents a file reference created from a folder+file combination in YAML (e.g., "folder: path/to/dir, file: index.md").
 /// Children of this file should resolve relative to the folder path, not the parent TOC path.
 /// </summary>
-public record FolderIndexFileRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context);
+public record FolderIndexFileRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	bool Hidden,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context
+) : IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context);
 
-public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: ITableOfContentsItem
+public record CrossLinkRef(
+	Uri CrossLinkUri,
+	string? Title,
+	bool Hidden,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context
+) : ITableOfContentsItem
 {
 	//TODO ensure we pass these to cross-links to
 	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
@@ -144,8 +164,110 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 
 /// <param name="Sort">Raw YAML sort value, parsed and validated during resolution via <see cref="SortOrderExtensions.TryParse"/>.</param>
 /// <param name="Exclude">File names to exclude from auto-discovery (like "draft.md", "internal.md").</param>
-public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, string? Sort = null, IReadOnlyCollection<string>? Exclude = null)
-	: ITableOfContentsItem;
+public record FolderRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	string? Sort = null,
+	IReadOnlyCollection<string>? Exclude = null
+) : ITableOfContentsItem;
 
-public record IsolatedTableOfContentsRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, string? DefaultCta = null)
-	: ITableOfContentsItem;
+/// <summary>
+/// A synthetic single-page folder created from the childless "file: subdir/index.md" sugar. Its path
+/// always resolves relative to the parent, exactly like the <see cref="FileRef"/> it was expanded from
+/// -- unlike an explicit "folder: a/b" entry, it never switches to context-relative resolution just
+/// because its path contains '/'.
+/// </summary>
+public record DeepLinkedFolderRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context
+) : FolderRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Children, Context);
+
+/// <param name="Island">
+/// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
+/// <c>- toc: x</c> entry and the child <c>toc.yml</c> root (OR semantics).
+/// </param>
+public record IsolatedTableOfContentsRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	bool Island = false,
+	string? DefaultCta = null
+) : ITableOfContentsItem;
+
+/// <summary>Controls how much of the listing appears in the rendered navigation tree.</summary>
+public enum ListingVisual
+{
+	/// <summary>Only the listing root index page is visible in the nav tree (default).</summary>
+	None,
+
+	/// <summary>The listing root and one node per group (with their group index) are visible.</summary>
+	Groups,
+
+	/// <summary>Full depth — group nodes and all their pages are visible.</summary>
+	All,
+}
+
+/// <summary>Parsing helpers for <see cref="ListingVisual"/>.</summary>
+public static class ListingVisualExtensions
+{
+	/// <summary>Tries to parse a YAML visual value (none, groups, all) into a <see cref="ListingVisual"/>.</summary>
+	public static bool TryParse(string? value, out ListingVisual result)
+	{
+		var normalized = value?.ToLowerInvariant();
+		(result, var valid) = normalized switch
+		{
+			"none" => (ListingVisual.None, true),
+			"groups" => (ListingVisual.Groups, true),
+			"all" => (ListingVisual.All, true),
+			_ => (ListingVisual.None, false)
+		};
+		return valid;
+	}
+}
+
+/// <summary>Optional knobs on a <see cref="ListingRef"/> entry beyond the mandatory path.</summary>
+public record ListingOptions(
+	string? Glob = null,
+	string? Sort = null,
+	IReadOnlyCollection<string>? Exclude = null,
+	ListingVisual Visual = ListingVisual.None,
+	IReadOnlyCollection<string>? Groups = null,
+	string? Extension = null,
+	bool Island = false
+);
+
+/// <summary>
+/// A listing entry in the TOC: glob-discovers files, hides them from the nav tree
+/// (subject to <see cref="ListingOptions.Visual"/>), and generates a grouped index page.
+/// </summary>
+public record ListingRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	ListingOptions Options
+) : ITableOfContentsItem;
+
+/// <summary>
+/// A resolved group bucket inside a <see cref="ListingRef"/>. Children are the pages belonging to this group.
+/// </summary>
+public record ListingGroupRef(
+	string GroupKey,
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context
+) : ITableOfContentsItem;
+
+/// <summary>Frontmatter value for the <c>listing</c> key — both shorthand (<c>listing: group-name</c>)
+/// and full form (<c>listing: {group: group-name}</c>) parse to this.</summary>
+public class ListingFrontMatter
+{
+	/// <summary>The group key this page belongs to inside its listing.</summary>
+	public string? Group { get; set; }
+}

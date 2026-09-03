@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -39,14 +40,31 @@ internal sealed class DeployCommands(
 	[RequiresAuth]
 	[MutationScope(MutationScope.Global)]
 	[NoOptionsInjection]
-	public async Task<int> Plan(string environment, string s3BucketName, [ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null, float? deleteThreshold = null, CancellationToken ct = default)
+	public async Task<int> Plan(
+		string environment,
+		string s3BucketName,
+		[ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null,
+		float? deleteThreshold = null,
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, FileSystemFactory.RealRead, FileSystemFactory.RealWrite, null, null);
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
+		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
-		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
-			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, [], ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(context, s3BucketName, @out, deleteThreshold),
+			static async (s, collector, state, ctx) => await s.Plan(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.@out?.FullName ?? "",
+				state.deleteThreshold,
+				[],
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -60,14 +78,28 @@ internal sealed class DeployCommands(
 	[CommandIntent(Intent.Destructive)]
 	[MutationScope(MutationScope.Global)]
 	[NoOptionsInjection]
-	public async Task<int> Apply(string environment, string s3BucketName, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile, CancellationToken ct = default)
+	public async Task<int> Apply(
+		string environment,
+		string s3BucketName,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile,
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, FileSystemFactory.RealRead, FileSystemFactory.RealWrite, null, null);
+		var fs = CheckoutsFileSystem.FromWorkingDirectory();
+		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
-		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
-			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(context, s3BucketName, planFile),
+			static async (s, collector, state, ctx) => await s.Apply(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.planFile.FullName,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -76,15 +108,31 @@ internal sealed class DeployCommands(
 	/// <remarks>Run after <c>assembler build</c> produces a <c>redirects.json</c>.</remarks>
 	/// <param name="environment">Named deployment target.</param>
 	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/docs/redirects.json</c>.</param>
+	/// <param name="noDelete">
+	/// Only PUT the new entries without deleting any existing KVS keys.
+	/// Use for per-docset isolated builds that should not remove other repos' redirects.
+	/// </param>
 	[NoOptionsInjection]
-	public async Task<int> UpdateRedirects(string environment, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null, CancellationToken ct = default)
+	public async Task<int> UpdateRedirects(
+		string environment,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null,
+		bool noDelete = false,
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
-		var service = new DeployUpdateRedirectsService(logFactory, fs);
-		serviceInvoker.AddCommand(service, (environment, redirectsFile),
-			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile?.FullName, ctx: ctx)
+		var service = new DeployUpdateRedirectsService(logFactory, CheckoutsFileSystem.FromWorkingDirectory());
+		serviceInvoker.AddCommand(
+			service,
+			(environment, redirectsFile, noDelete),
+			static async (s, collector, state, ctx) => await s.UpdateRedirects(
+				collector,
+				state.environment,
+				state.redirectsFile?.FullName,
+				noDelete: state.noDelete,
+				ctx: ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

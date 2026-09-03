@@ -322,16 +322,17 @@ applies_to:
 
 ```{applies_to}
 stack: preview 9.1+
-serverless: ga
+serverless:
+  elasticsearch: preview
+  security: removed
+  observability: deprecated
+  vectordb: ga
 
 apm_agent_dotnet: ga 1.0+
 apm_agent_java: beta 1.0+
 edot_dotnet: preview 1.0+
 edot_python:
 edot_node: ga 1.0+
-elasticsearch: preview
-security: removed
-observability: deprecated
 ```
 
 ### In-text example
@@ -341,6 +342,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ut libero diam
 - {applies_to}`elasticsearch: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 - {applies_to}`observability: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 - {applies_to}`security: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+- {applies_to}`vectordb: preview` Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
 ## Structured model
 
@@ -363,6 +365,7 @@ applies_to:
     security:
     elasticsearch:
     observability:
+    vectordb:
   product:
     ecctl:
     curator:

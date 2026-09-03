@@ -5,9 +5,11 @@ import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initSecondaryNav } from './secondary-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
 import { initTabs } from './tabs'
@@ -215,6 +217,7 @@ document.addEventListener('htmx:load', function () {
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
+        ['initListing', initListing],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
@@ -235,6 +238,7 @@ function handleCtaActivation(event: MouseEvent) {
     logCtaEvent('cta_clicked', cta)
 }
 document.addEventListener('click', handleCtaActivation)
+initSecondaryNav()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
 // (right-click / context menu) also fires auxclick but isn't a real engagement.
@@ -296,10 +300,20 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     }
 })
 
-// Boosted navigations swap the whole <body>; scroll to top like a normal page load
+// Boosted navigations swap #main-container. show:none on <body> stops HTMX
+// from scrolling the container into view (that jumps the page up to the
+// horizontal tabs). Instant window reset still matches a full page load.
 document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
-    if (event.target === document.body) {
-        window.scrollTo(0, 0)
+    const target = event.target
+    if (
+        target === document.body ||
+        (target instanceof Element &&
+            (target.id === 'main-container' ||
+                target.id === 'content-container'))
+    ) {
+        if (window.scrollY !== 0) {
+            window.scrollTo(0, 0)
+        }
     }
 })
 

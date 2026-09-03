@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation;
@@ -11,16 +12,15 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
-using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
-using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
 using static System.StringComparison;
@@ -46,9 +46,8 @@ public class IsolatedBuildService(
 
 	public async Task<bool> Build(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem fileSystem,
 		IsolatedBuildOptions options,
-		ScopedFileSystem? writeFileSystem = null,
+		IFileSystem? writeFileSystem = null,
 		Cancel ctx = default
 	)
 	{
@@ -86,8 +85,13 @@ public class IsolatedBuildService(
 
 		try
 		{
-			context = new BuildContext(collector, fileSystem, writeFileSystem ?? fileSystem, configurationContext, exporters, path, output)
+			var docFs = DocumentationFileSystem.Resolve(
+				path,
+				new DocumentationScopeOptions { Output = options.Output?.FullName, InnerWrite = writeFileSystem }
+			);
+			context = new BuildContext(collector, docFs, configurationContext)
 			{
+				AvailableExporters = exporters,
 				UrlPathPrefix = pathPrefix,
 				Force = force ?? false,
 				AllowIndexing = allowIndexing ?? false,
@@ -97,20 +101,24 @@ public class IsolatedBuildService(
 		// On CI, we are running on a merge commit which may have changes against an older
 		// docs folder (this can happen on out-of-date PR's).
 		// At some point in the future we can remove this try catch
-		catch (Exception e) when (runningOnCi && e.Message.StartsWith("Can not locate docset.yml file in", OrdinalIgnoreCase))
+		catch (DocumentationPathException e) when (runningOnCi)
 		{
 			// Derive the default output from `path` so it stays within the write FS scope.
 			// Using Paths.WorkingDirectoryRoot would be wrong when --path points to a different repo.
 			var rootFolder = !string.IsNullOrWhiteSpace(path) ? path : Paths.WorkingDirectoryRoot.FullName;
-			var writeFs = writeFileSystem ?? fileSystem;
-			var outputDirectory = !string.IsNullOrWhiteSpace(output)
-				? writeFs.DirectoryInfo.New(output)
-				: writeFs.DirectoryInfo.New(Path.Join(rootFolder, ".artifacts/docs/html"));
+			var fallbackFs = writeFileSystem ?? new FileSystem();
+			var outputDirectory = fallbackFs.DirectoryInfo.New(output ?? Path.Join(rootFolder, ".artifacts/docs/html"));
 			// we temporarily do not error when pointed to a non-documentation folder.
-			_ = writeFs.Directory.CreateDirectory(outputDirectory.FullName);
+			_ = fallbackFs.Directory.CreateDirectory(outputDirectory.FullName);
 
-			_logger.LogInformation("Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {Message}",
-				e.Message);
+			// Surfaced as a warning (not swallowed at Information level) so that when the underlying
+			// cause is a real bug — not the stale-merge-commit case this catch was written for —
+			// the --git-dir remedy in e.Message actually reaches whoever is reading the failed run,
+			// rather than being buried above a later, unrelated artifact-upload failure.
+			_logger.LogWarning(
+				"Skipping build on CI: {Message} If the docs folder is not actually out of date on a stale merge commit, this indicates a real path-resolution issue.",
+				e.Message
+			);
 
 			await githubActionsService.SetOutputAsync("skip", "true");
 			return true;
@@ -128,13 +136,14 @@ public class IsolatedBuildService(
 		else
 		{
 			using var codexReader = context.Configuration.Registry != DocSetRegistry.Public
-				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
+				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem())
 				: null;
 
 			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
 				logFactory,
 				context.Configuration,
-				codexLinkIndexReader: codexReader);
+				codexLinkIndexReader: codexReader
+			);
 			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
 			IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 				? new CodexAwareUriResolver(crossLinks.CodexRepositories)
@@ -155,16 +164,23 @@ public class IsolatedBuildService(
 			context.VersionsConfiguration,
 			context.LegacyUrlMappings,
 			set.Configuration,
-			context.Git);
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context,
-			branded: context.Configuration.Branding is not null);
+			context.Git
+		);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, branded: context.Configuration.Branding is not null);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
-
-		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray(), documentInferrer: documentInferrer);
-		_ = await generator.GenerateAll(ctx);
+		var generator = new DocumentationGenerator(
+			set,
+			logFactory,
+			set,
+			null,
+			null,
+			markdownExporters.ToArray(),
+			documentInferrer: documentInferrer
+		);
+		var result = await generator.GenerateAll(ctx);
 
 		if (!skipOpenApi)
 		{
@@ -174,6 +190,9 @@ public class IsolatedBuildService(
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
+
+		if (result.Redirects.Count > 0)
+			await WriteRedirectsAsync(result.Redirects, context, ctx);
 
 		var finishTasks = markdownExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
 		_ = await Task.WhenAll(finishTasks);
@@ -185,74 +204,60 @@ public class IsolatedBuildService(
 		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
 	}
 
-	/// <summary>
-	/// Builds a pre-configured documentation set with optional injected navigation.
-	/// Used by portal builds where navigation spans multiple documentation sets.
-	/// When <paramref name="externalExporters"/> is provided, those exporters are used instead of
-	/// creating new ones, and their lifecycle (Start/Stop) is not managed by this method.
-	/// </summary>
-	public async Task<BuildDocumentationSetResult> BuildDocumentationSet(
-		DocumentationSet documentationSet,
-		INavigationTraversable? navigation = null,
-		INavigationHtmlWriter? navigationHtmlWriter = null,
-		IReadOnlySet<Exporter>? exporters = null,
-		IMarkdownExporter[]? externalExporters = null,
-		IPageViewFactory? pageViewFactory = null,
-		Cancel ctx = default)
+	private async Task WriteRedirectsAsync(IReadOnlyDictionary<string, LinkRedirect> redirects, BuildContext context, Cancel ctx)
 	{
-		var context = documentationSet.Context;
-		var manageLifecycle = externalExporters is null;
+		var pathPrefix = (context.UrlPathPrefix ?? string.Empty).TrimEnd('/');
+		var resolved = new Dictionary<string, string>();
 
-		IMarkdownExporter[] allExporters;
-		if (externalExporters is not null)
+		foreach (var (from, redirect) in redirects)
 		{
-			allExporters = externalExporters;
-		}
-		else
-		{
-			exporters ??= ExportOptions.Default;
-			context.Endpoints.BuildType = "codex";
-			allExporters = exporters.CreateMarkdownExporters(logFactory, context).ToArray();
-		}
+			string? to = null;
+			if (redirect.To is not null)
+				to = redirect.To;
+			else if (redirect.Many is { Length: > 0 })
+				to = redirect.Many.FirstOrDefault(r => r.To is not null)?.To;
 
-		if (manageLifecycle)
-		{
-			var startTasks = allExporters.Select(async e => await e.StartAsync(ctx));
-			await Task.WhenAll(startTasks);
-		}
+			if (to is null || to.Contains("://"))
+				continue;
 
-		// Use the provided navigation or fall back to the doc set's own navigation
-		var effectiveNavigation = navigation ?? documentationSet;
+			var fromUrl = ToAbsoluteUrl(from, pathPrefix);
+			var toUrl = ToAbsoluteUrl(to, pathPrefix);
 
-		var generator = new DocumentationGenerator(
-			documentationSet,
-			logFactory,
-			effectiveNavigation,
-			navigationHtmlWriter,
-			null,
-			allExporters,
-			pageViewFactory: pageViewFactory);
-
-		var result = await generator.GenerateAll(ctx);
-
-		if (manageLifecycle)
-		{
-			var finishTasks = allExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
-			_ = await Task.WhenAll(finishTasks);
-
-			var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
-			await Task.WhenAll(stopTasks);
+			if (
+				!string.IsNullOrEmpty(fromUrl)
+				&& !string.IsNullOrEmpty(toUrl)
+				&& !fromUrl.TrimEnd('/').Equals(toUrl.TrimEnd('/'), OrdinalIgnoreCase)
+			)
+			{
+				resolved[fromUrl] = toUrl;
+			}
 		}
 
-		_logger.LogInformation("Finished building documentation set {Name}", documentationSet.Context.Git.RepositoryName);
+		if (resolved.Count == 0)
+			return;
 
-		return new BuildDocumentationSetResult(context.Collector.Errors == 0, result.Redirects);
+		var redirectsFile = context.WriteFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, "redirects.json"));
+		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", resolved.Count, redirectsFile.FullName);
+
+		var json = JsonSerializer.Serialize(resolved, SourceGenerationContext.Default.DictionaryStringString);
+		await context.WriteFileSystem.File.WriteAllTextAsync(redirectsFile.FullName, json, ctx);
+	}
+
+	internal static string ToAbsoluteUrl(string path, string pathPrefix)
+	{
+		pathPrefix = pathPrefix.TrimEnd('/');
+
+		if (path.EndsWith(".md", OrdinalIgnoreCase))
+			path = path[..^3];
+
+		if (path.EndsWith("/index", OrdinalIgnoreCase))
+			path = path[..^6];
+		else if (path.Equals("index", OrdinalIgnoreCase))
+			return string.IsNullOrEmpty(pathPrefix) ? "/" : pathPrefix;
+
+		if (string.IsNullOrEmpty(path))
+			return string.IsNullOrEmpty(pathPrefix) ? "/" : pathPrefix;
+
+		return $"{pathPrefix}/{path}";
 	}
 }
-
-/// <summary>
-/// Result of building a documentation set, including redirects for aggregation in portal builds.
-/// </summary>
-/// <param name="Success">Whether the build completed without errors.</param>
-/// <param name="Redirects">Redirect mappings from the documentation set, if available.</param>
-public record BuildDocumentationSetResult(bool Success, IReadOnlyDictionary<string, LinkRedirect> Redirects);

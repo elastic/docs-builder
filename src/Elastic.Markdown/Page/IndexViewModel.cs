@@ -90,7 +90,7 @@ public class IndexViewModel
 	public string? RedirectUrl { get; init; }
 
 	/// <summary>The resolved right-gutter CTA for this page (docset.yml template, or the built-in default).</summary>
-	public required CallToAction CallToAction { get; init; }
+	public required Cta Cta { get; init; }
 }
 
 public class VersionDropDownItemViewModel
@@ -124,13 +124,18 @@ public class VersionDropDownItemViewModel
 					Name = versionGroup.Key,
 					Href = null,
 					IsDisabled = false,
-					Children = versionGroup.Value.Select(v => new VersionDropDownItemViewModel
-					{
-						Name = v,
-						Href = legacyPageMappings.First(x => x.Version == v).ToString(),
-						IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
-						Children = null
-					}).ToArray()
+					Children = versionGroup
+						.Value
+						.Select(
+							v => new VersionDropDownItemViewModel
+							{
+								Name = v,
+								Href = legacyPageMappings.First(x => x.Version == v).ToString(),
+								IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
+								Children = null
+							}
+						)
+						.ToArray()
 				});
 			}
 			else

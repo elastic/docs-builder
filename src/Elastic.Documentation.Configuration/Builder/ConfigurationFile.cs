@@ -66,8 +66,6 @@ public record ConfigurationFile
 
 	public IDirectoryInfo ScopeDirectory { get; }
 
-	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
-
 	public string? StorybookRegistry { get; }
 
 	/// <summary>
@@ -92,16 +90,16 @@ public record ConfigurationFile
 	/// </summary>
 	public BrandingConfiguration? Branding { get; private set; }
 
-	private readonly Dictionary<string, CallToAction> _ctas = new(StringComparer.OrdinalIgnoreCase) { [CallToAction.DefaultName] = CallToAction.Default };
+	private readonly Dictionary<string, Cta> _ctas = new(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
 
 	// Pages registered with a default CTA via `default_cta` on docset.yml or nested toc.yml files.
 	private readonly IReadOnlyDictionary<string, string> _tocDefaultCtas;
 
 	/// <summary>
 	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
-	/// Always contains at least the built-in <see cref="CallToAction.DefaultName"/> entry.
+	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
 	/// </summary>
-	public IReadOnlyDictionary<string, CallToAction> CallToActions => _ctas;
+	public IReadOnlyDictionary<string, Cta> Ctas => _ctas;
 
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
@@ -120,7 +118,12 @@ public record ConfigurationFile
 		return Exclude.Any(g => g.IsMatch(relativePath));
 	}
 
-	public ConfigurationFile(DocumentationSetFile docSetFile, IDocumentationSetContext context, VersionsConfiguration versionsConfig, ProductsConfiguration productsConfig)
+	public ConfigurationFile(
+		DocumentationSetFile docSetFile,
+		IDocumentationSetContext context,
+		VersionsConfiguration versionsConfig,
+		ProductsConfiguration productsConfig
+	)
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
@@ -131,7 +134,6 @@ public record ConfigurationFile
 			context.EmitWarning(context.ConfigurationPath, "No configuration file found");
 			return;
 		}
-
 
 		var redirectFile = new RedirectFile(_context);
 		Redirects = redirectFile.Redirects;
@@ -150,14 +152,17 @@ public record ConfigurationFile
 
 			// Parse registry (null/empty/"public" -> Public)
 			var registry = DocSetRegistry.Public;
-			if (!string.IsNullOrWhiteSpace(docSetFile.Registry) &&
-				DocSetRegistryExtensions.TryParse(docSetFile.Registry.Trim(), out var parsedRegistry, true))
+			if (
+				!string.IsNullOrWhiteSpace(docSetFile.Registry)
+				&& DocSetRegistryExtensions.TryParse(docSetFile.Registry.Trim(), out var parsedRegistry, true)
+			)
 				registry = parsedRegistry;
 
 			Registry = registry;
 
 			// Parse cross-link entries with optional registry prefix (e.g. public://elasticsearch)
-			CrossLinkEntries = docSetFile.CrossLinks
+			CrossLinkEntries = docSetFile
+				.CrossLinks
 				.Where(raw => !string.IsNullOrWhiteSpace(raw))
 				.Select(raw => ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context))
 				.Where(entry => entry is not null)
@@ -181,100 +186,14 @@ public record ConfigurationFile
 			// Process API configurations
 			if (docSetFile.Api.Count > 0)
 			{
-				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
 				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
 
 				foreach (var (productKey, apiSequence) in docSetFile.Api)
 				{
-					if (!apiSequence.IsValid)
-					{
-						context.EmitError(
-							context.ConfigurationPath,
-							$"API configuration for '{productKey}' is invalid. Must have at least one spec and all entries must be valid."
-						);
-						continue;
-					}
-
-					// Resolve intro markdown files
-					var introMarkdownFiles = new List<IFileInfo>();
-					foreach (var introPath in apiSequence.GetIntroMarkdownFiles())
-					{
-						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, introPath);
-						var introFile = context.ReadFileSystem.FileInfo.New(fullPath);
-						if (!introFile.Exists)
-						{
-							context.EmitWarning(
-								context.ConfigurationPath,
-								$"Intro markdown file '{introPath}' for API '{productKey}' does not exist."
-							);
-						}
-						else
-						{
-							introMarkdownFiles.Add(introFile);
-						}
-					}
-
-					// Resolve outro markdown files
-					var outroMarkdownFiles = new List<IFileInfo>();
-					foreach (var outroPath in apiSequence.GetOutroMarkdownFiles())
-					{
-						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, outroPath);
-						var outroFile = context.ReadFileSystem.FileInfo.New(fullPath);
-						if (!outroFile.Exists)
-						{
-							context.EmitWarning(
-								context.ConfigurationPath,
-								$"Outro markdown file '{outroPath}' for API '{productKey}' does not exist."
-							);
-						}
-						else
-						{
-							outroMarkdownFiles.Add(outroFile);
-						}
-					}
-
-					// Resolve specification files
-					var specFiles = new List<IFileInfo>();
-					foreach (var specPath in apiSequence.GetSpecPaths())
-					{
-						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, specPath);
-						var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
-						if (!specFile.Exists)
-						{
-							context.EmitError(
-								context.ConfigurationPath,
-								$"API specification file '{specPath}' for product '{productKey}' does not exist."
-							);
-							continue;
-						}
-						specFiles.Add(specFile);
-					}
-
-					if (specFiles.Count == 0)
-					{
-						context.EmitError(
-							context.ConfigurationPath,
-							$"No valid specification files found for API product '{productKey}'."
-						);
-						continue;
-					}
-
-					// Create resolved configuration
-					var resolvedConfig = new ResolvedApiConfiguration
-					{
-						ProductKey = productKey,
-						IntroMarkdownFiles = introMarkdownFiles,
-						SpecFiles = specFiles,
-						OutroMarkdownFiles = outroMarkdownFiles
-					};
-
-					apiConfigs[productKey] = resolvedConfig;
-
-					// For backward compatibility, populate OpenApiSpecifications with primary spec
-					specs[productKey] = resolvedConfig.PrimarySpecFile;
+					if (ResolveApiEntry(productKey, apiSequence, productsConfig, context) is { } resolvedConfig)
+						apiConfigs[productKey] = resolvedConfig;
 				}
 
-				OpenApiSpecifications = specs.Count > 0 ? specs : null;
 				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
 			}
 
@@ -295,10 +214,12 @@ public record ConfigurationFile
 			// Process products from docset - resolve ProductLinks to Product objects
 			if (docSetFile.Products.Count > 0)
 			{
-				Products = docSetFile.Products
-					.Select(link => productsConfig.Products.GetValueOrDefault(link.Id.Replace('_', '-')))
-					.Where(product => product is not null)
-					.ToHashSet()!;
+				Products =
+					docSetFile
+						.Products
+						.Select(link => productsConfig.Products.GetValueOrDefault(link.Id.Replace('_', '-')))
+						.Where(product => product is not null)
+						.ToHashSet()!;
 			}
 
 			// Process branding with validation
@@ -308,7 +229,7 @@ public record ConfigurationFile
 			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
 			foreach (var (name, definition) in docSetFile.Cta)
 			{
-				if (ValidateCallToAction(name, definition, context) is not { } cta)
+				if (ValidateCta(name, definition, context) is not { } cta)
 					continue;
 				_ctas[name] = cta;
 			}
@@ -330,10 +251,15 @@ public record ConfigurationFile
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
 			if (docSetFile.Features.DisableGithubEditLink.HasValue)
 				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
+			if (docSetFile.Features.GuideNav.HasValue)
+				_features["guide-nav"] = docSetFile.Features.GuideNav.Value;
 
 			// primary-nav requires the Elastic global navigation which is not available for white-label builds
 			if (Branding is not null && docSetFile.Features.PrimaryNav is true)
-				context.EmitError(context.ConfigurationPath, "'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation.");
+				context.EmitError(
+					context.ConfigurationPath,
+					"'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation."
+				);
 
 			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
@@ -366,28 +292,28 @@ public record ConfigurationFile
 	/// <summary>
 	/// Resolves the right-gutter CTA for a page. An explicit, known <c>cta</c> frontmatter <paramref name="id"/>
 	/// always wins. Otherwise the template registered via <c>default_cta</c> on the page's navigation file
-	/// applies, falling back to <see cref="CallToAction.DefaultName"/>.
+	/// applies, falling back to <see cref="Cta.DefaultName"/>.
 	/// </summary>
 	/// <param name="id">The page's <c>cta.id</c> frontmatter value, if any.</param>
 	/// <param name="relativePath">The page's docset-root-relative source path, used for toc default lookup.</param>
 	/// <param name="warning">Set when <paramref name="id"/> is unknown, so the caller can report it.</param>
-	public CallToAction ResolveCallToAction(string? id, string? relativePath, out string? warning)
+	public Cta ResolveCta(string? id, string? relativePath, out string? warning)
 	{
 		warning = null;
 		if (id is not null)
 		{
-			if (CallToActions.TryGetValue(id, out var selected))
+			if (Ctas.TryGetValue(id, out var selected))
 				return selected;
 			// Unknown id: warn, then resolve as if the page had no `cta` frontmatter.
-			warning = UnknownCtaWarning(id, CallToActions.Keys);
+			warning = UnknownCtaWarning(id, Ctas.Keys);
 		}
 		if (relativePath is { Length: > 0 })
 		{
 			var normalizedPath = DocumentationSetFile.NormalizeDocsetRelativePath(relativePath);
-			if (_tocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && CallToActions.TryGetValue(tocDefault, out var scoped))
+			if (_tocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && Ctas.TryGetValue(tocDefault, out var scoped))
 				return scoped;
 		}
-		return CallToActions[CallToAction.DefaultName];
+		return Ctas[Cta.DefaultName];
 	}
 
 	private static string UnknownCtaWarning(string ctaName, IEnumerable<string> knownCtaNames)
@@ -398,13 +324,13 @@ public record ConfigurationFile
 		{
 			hint = known.Count > 1
 				? $"Available: {string.Join(", ", known.Order())}."
-				: "No 'cta' templates are defined in this docset.yml yet. Add one under a top-level 'cta:' map, e.g.:\n" +
-					"cta:\n  mp:\n    button:\n      label: Get started on MP\n      url: https://example.com\n    benefits:\n      - \"Some benefit\"";
+				: "No 'cta' templates are defined in this docset.yml yet. Add one under a top-level 'cta:' map, e.g.:\n"
+					+ "cta:\n  mp:\n    button:\n      label: Get started on MP\n      url: https://example.com\n    benefits:\n      - \"Some benefit\"";
 		}
 		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml and is ignored. {hint}";
 	}
 
-	private static CallToAction? ValidateCallToAction(string name, CtaDefinition definition, IDocumentationSetContext context)
+	private static Cta? ValidateCta(string name, CtaDefinition definition, IDocumentationSetContext context)
 	{
 		if (string.IsNullOrWhiteSpace(definition.Button?.Label) || string.IsNullOrWhiteSpace(definition.Button?.Url))
 		{
@@ -412,28 +338,28 @@ public record ConfigurationFile
 			return null;
 		}
 		var url = definition.Button.Url.Trim();
-		if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri) && uri.IsAbsoluteUri &&
-			uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+		if (
+			Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri)
+			&& uri.IsAbsoluteUri
+			&& uri.Scheme != Uri.UriSchemeHttp
+			&& uri.Scheme != Uri.UriSchemeHttps
+		)
 		{
 			context.EmitError(context.ConfigurationPath, $"'cta.{name}.button.url' must use http/https or a relative URL.");
 			return null;
 		}
-		if (definition.Benefits.Count > CallToAction.MaxBenefits)
+		if (definition.Benefits.Count > Cta.MaxBenefits)
 		{
-			context.EmitError(context.ConfigurationPath, $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {CallToAction.MaxBenefits} is allowed.");
+			context.EmitError(
+				context.ConfigurationPath,
+				$"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed."
+			);
 			return null;
 		}
-		return new CallToAction
-		{
-			Name = name,
-			Label = definition.Button.Label,
-			Url = url,
-			Benefits = definition.Benefits
-		};
+		return new Cta { Name = name, Label = definition.Button.Label, Url = url, Benefits = definition.Benefits };
 	}
 
-	private static readonly HashSet<string> AllowedImageExtensions =
-		[".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico"];
+	private static readonly HashSet<string> AllowedImageExtensions = [".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico"];
 
 	private static BrandingConfiguration ValidateBranding(BrandingConfiguration branding, IDocumentationSetContext context)
 	{
@@ -452,8 +378,7 @@ public record ConfigurationFile
 	{
 		foreach (var name in candidates)
 		{
-			var f = context.ReadFileSystem.FileInfo.New(
-				Path.Join(context.DocumentationSourceDirectory.FullName, name));
+			var f = context.ReadFileSystem.FileInfo.New(Path.Join(context.DocumentationSourceDirectory.FullName, name));
 			if (f.Exists && f.LinkTarget is null)
 				return name;
 		}
@@ -468,27 +393,28 @@ public record ConfigurationFile
 		var ext = Path.GetExtension(imagePath).ToLowerInvariant();
 		if (!AllowedImageExtensions.Contains(ext))
 		{
-			context.EmitError(context.ConfigurationPath,
-				$"'{fieldName}' has unsupported extension '{ext}'. Allowed: {string.Join(", ", AllowedImageExtensions)}");
+			context.EmitError(
+				context.ConfigurationPath,
+				$"'{fieldName}' has unsupported extension '{ext}'. Allowed: {string.Join(", ", AllowedImageExtensions)}"
+			);
 			return null;
 		}
 
-		var resolved = context.ReadFileSystem.FileInfo.New(
-			Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, imagePath))
-		);
+		var resolved = context
+			.ReadFileSystem
+			.FileInfo
+			.New(Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, imagePath)));
 
 		if (!resolved.IsSubPathOf(context.DocumentationSourceDirectory))
 		{
-			context.EmitError(context.ConfigurationPath,
-				$"'{fieldName}' path '{imagePath}' escapes the documentation source directory.");
+			context.EmitError(context.ConfigurationPath, $"'{fieldName}' path '{imagePath}' escapes the documentation source directory.");
 			return null;
 		}
 
 		var symlinkError = ValidateFileAccess(resolved, context.DocumentationSourceDirectory);
 		if (symlinkError is not null)
 		{
-			context.EmitError(context.ConfigurationPath,
-				$"'{fieldName}' path '{imagePath}' is unsafe: {symlinkError}");
+			context.EmitError(context.ConfigurationPath, $"'{fieldName}' path '{imagePath}' is unsafe: {symlinkError}");
 			return null;
 		}
 
@@ -504,7 +430,8 @@ public record ConfigurationFile
 	private static string[] ParseReleaseNotesProducts(
 		IReadOnlyList<ReleaseNotesProductReference> references,
 		ProductsConfiguration productsConfig,
-		IDocumentationSetContext context)
+		IDocumentationSetContext context
+	)
 	{
 		if (references.Count == 0)
 			return [];
@@ -521,8 +448,10 @@ public record ConfigurationFile
 
 			if (!IsValidProductId(product))
 			{
-				context.EmitError(context.ConfigurationPath,
-					$"Invalid 'release_notes' product '{product}'. Product ids must match [a-zA-Z0-9_-]+.");
+				context.EmitError(
+					context.ConfigurationPath,
+					$"Invalid 'release_notes' product '{product}'. Product ids must match [a-zA-Z0-9_-]+."
+				);
 				continue;
 			}
 
@@ -530,15 +459,19 @@ public record ConfigurationFile
 			var normalized = product.Replace('_', '-');
 			if (!productsConfig.Products.TryGetValue(normalized, out var resolved))
 			{
-				context.EmitError(context.ConfigurationPath,
-					$"Unknown 'release_notes' product '{product}'. It must be a product id defined in products.yml.");
+				context.EmitError(
+					context.ConfigurationPath,
+					$"Unknown 'release_notes' product '{product}'. It must be a product id defined in products.yml."
+				);
 				continue;
 			}
 
-			if (!resolved.Features.ReleaseNotes)
+			if (!resolved.Features.ParticipatesInReleaseNotes)
 			{
-				context.EmitError(context.ConfigurationPath,
-					$"Product '{product}' declared in 'release_notes' does not participate in the release-notes system (it lacks the 'release-notes' feature in products.yml).");
+				context.EmitError(
+					context.ConfigurationPath,
+					$"Product '{product}' declared in 'release_notes' does not participate in the release-notes system (it lacks the 'release-notes' feature in products.yml)."
+				);
 				continue;
 			}
 
@@ -552,7 +485,230 @@ public record ConfigurationFile
 	private static bool IsValidProductId(string product) =>
 		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 
-	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
+	private static ResolvedApiConfiguration? ResolveApiEntry(
+		string productKey,
+		ApiProductSequence apiSequence,
+		ProductsConfiguration productsConfig,
+		IDocumentationSetContext context
+	)
+	{
+		if (apiSequence.SingleEntry is not { } entry)
+		{
+			context.EmitError(
+				context.ConfigurationPath,
+				$"API configuration for '{productKey}' must have exactly one entry, found {apiSequence.Entries.Count}."
+			);
+			return null;
+		}
+
+		if (!entry.HasProduct)
+		{
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.Line,
+				Column = entry.Column,
+				Message = $"API '{productKey}' is missing required 'product:'. It must match a product id defined in products.yml."
+			});
+			return null;
+		}
+
+		var normalizedProduct = entry.Product!.Trim().Replace('_', '-');
+		if (!productsConfig.Products.TryGetValue(normalizedProduct, out var product))
+		{
+			var hint = new Suggestion(productsConfig.Products.Keys.ToHashSet(), normalizedProduct).GetSuggestionQuestion();
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.ProductLine,
+				Column = entry.ProductColumn,
+				Message =
+					$"Unknown 'product: {entry.Product}' for API '{productKey}'. It must be a product id defined in products.yml.{(string.IsNullOrEmpty(hint) ? "" : $" {hint}")}"
+			});
+			return null;
+		}
+
+		if (!entry.HasSpec)
+		{
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.Line,
+				Column = entry.Column,
+				Message = $"API '{productKey}' is missing required 'spec:'. Its basename is required to resolve " +
+					"the remote version index, even when the file is not present locally."
+			});
+			return null;
+		}
+
+		var specFileName = Path.GetFileName(entry.Spec!.Trim());
+		if (string.IsNullOrEmpty(specFileName))
+		{
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.SpecLine ?? entry.Line,
+				Column = entry.SpecColumn ?? entry.Column,
+				Message = $"'spec: {entry.Spec}' for API '{productKey}' does not resolve to a file name."
+			});
+			return null;
+		}
+
+		var fullSpecPath = Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, entry.Spec));
+		var specFile = context.ReadFileSystem.FileInfo.New(fullSpecPath);
+		if (!specFile.IsSubPathOf(context.DocumentationSourceDirectory))
+		{
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.SpecLine ?? entry.Line,
+				Column = entry.SpecColumn ?? entry.Column,
+				Message = $"'spec: {entry.Spec}' for API '{productKey}' escapes the documentation source directory."
+			});
+			return null;
+		}
+
+		// A missing local file is expected, not an error: docsets that don't carry the spec
+		// locally resolve the current version from S3 via the version index instead.
+		IFileInfo? localSpecFile = null;
+		if (specFile.Exists)
+		{
+			var symlinkError = ValidateFileAccess(specFile, context.DocumentationSourceDirectory);
+			if (symlinkError is not null)
+			{
+				context.Collector.Write(new Diagnostic
+				{
+					Severity = Severity.Error,
+					File = context.ConfigurationPath.FullName,
+					Line = entry.SpecLine ?? entry.Line,
+					Column = entry.SpecColumn ?? entry.Column,
+					Message = $"'spec: {entry.Spec}' for API '{productKey}' is unsafe: {symlinkError}"
+				});
+				return null;
+			}
+			localSpecFile = specFile;
+		}
+
+		string? repository = null;
+		if (!string.IsNullOrWhiteSpace(entry.Repository))
+		{
+			var candidate = entry.Repository.Trim();
+			var separator = candidate.IndexOf('/');
+			var isWellFormed = separator > 0 && separator < candidate.Length - 1;
+			if (!isWellFormed)
+			{
+				context.Collector.Write(new Diagnostic
+				{
+					Severity = Severity.Error,
+					File = context.ConfigurationPath.FullName,
+					Line = entry.RepositoryLine ?? entry.Line,
+					Column = entry.RepositoryColumn ?? entry.Column,
+					Message =
+						$"'repository: {entry.Repository}' for API '{productKey}' must be in 'org/repo' form, e.g. 'elastic/elasticsearch-specification'."
+				});
+				return null;
+			}
+			repository = candidate;
+		}
+
+		var apiContentDirectory = context
+			.ReadFileSystem
+			.DirectoryInfo
+			.New(Path.Join(context.DocumentationSourceDirectory.FullName, "api", productKey));
+		var children = ResolveApiChildren(productKey, entry.Children, context, apiContentDirectory);
+
+		return new ResolvedApiConfiguration
+		{
+			ProductKey = productKey,
+			Product = product,
+			SpecFileName = specFileName,
+			LocalSpecFile = localSpecFile,
+			Repository = repository,
+			Children = children,
+			ApiContentDirectory = apiContentDirectory
+		};
+	}
+
+	/// Children resolve only under 'api/&lt;key&gt;/'; escaping paths and symlinks are rejected the
+	/// same way branding image paths are (see <see cref="ValidateBrandingImage"/>).
+	private static List<IFileInfo> ResolveApiChildren(
+		string productKey,
+		List<ApiEntryChild> children,
+		IDocumentationSetContext context,
+		IDirectoryInfo childrenDirectory
+	)
+	{
+		if (children.Count == 0)
+			return [];
+
+		var resolved = new List<IFileInfo>();
+		foreach (var child in children)
+		{
+			if (string.IsNullOrWhiteSpace(child.File))
+			{
+				context.EmitError(context.ConfigurationPath, $"A 'children' entry for API '{productKey}' is missing a 'file' value.");
+				continue;
+			}
+
+			var fullPath = Path.GetFullPath(Path.Join(childrenDirectory.FullName, child.File));
+			var childFile = context.ReadFileSystem.FileInfo.New(fullPath);
+
+			if (!childFile.IsSubPathOf(childrenDirectory))
+			{
+				context.EmitError(
+					context.ConfigurationPath,
+					$"Child page '{child.File}' for API '{productKey}' escapes 'api/{productKey}/'."
+				);
+				continue;
+			}
+
+			var symlinkError = ValidateFileAccess(childFile, childrenDirectory);
+			if (symlinkError is not null)
+			{
+				context.EmitError(context.ConfigurationPath, $"Child page '{child.File}' for API '{productKey}' is unsafe: {symlinkError}");
+				continue;
+			}
+
+			if (!childFile.Exists)
+			{
+				context.EmitError(
+					context.ConfigurationPath,
+					$"Child page '{child.File}' for API '{productKey}' does not exist under 'api/{productKey}/'."
+				);
+				continue;
+			}
+
+			if (IsTopLevelSupplementalChild(childFile, childrenDirectory))
+			{
+				context.EmitError(
+					context.ConfigurationPath,
+					$"Child page '{child.File}' for API '{productKey}' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:."
+				);
+				continue;
+			}
+
+			resolved.Add(childFile);
+		}
+
+		return resolved;
+	}
+
+	private static bool IsTopLevelSupplementalChild(IFileInfo childFile, IDirectoryInfo apiDirectory) =>
+		childFile.Directory is not null
+			&& string.Equals(childFile.Directory.FullName, apiDirectory.FullName, StringComparison.OrdinalIgnoreCase)
+			&& ResolvedApiConfiguration.IsSupplementalFileName(childFile.Name);
+
+	private static CrossLinkEntry? ParseCrossLinkEntry(
+		string raw,
+		DocSetRegistry docsetRegistry,
+		IFileInfo configPath,
+		IDocumentationContext context
+	)
 	{
 		DocSetRegistry entryRegistry;
 		string repository;
@@ -581,7 +737,10 @@ public record ConfigurationFile
 
 		if (docsetRegistry == DocSetRegistry.Public && entryRegistry != DocSetRegistry.Public)
 		{
-			context.EmitError(configPath, $"Public documentation cannot link to codex docs. Cross-link '{raw}' targets registry '{entryRegistry.ToStringFast()}'. Remove it or use a public docset.");
+			context.EmitError(
+				configPath,
+				$"Public documentation cannot link to codex docs. Cross-link '{raw}' targets registry '{entryRegistry.ToStringFast()}'. Remove it or use a public docset."
+			);
 			return null;
 		}
 

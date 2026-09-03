@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using AwesomeAssertions;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using FakeItEasy;
 using Xunit;
 
@@ -20,11 +22,19 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	private readonly IGitHubReleaseService _mockReleaseService = A.Fake<IGitHubReleaseService>();
 	private readonly IGitHubPrService _mockPrService = A.Fake<IGitHubPrService>();
 
-	private GitHubReleaseChangelogService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, _mockReleaseService, _mockPrService, FileSystem);
+	// CreateChangelogsFromRelease always probes the checked-in entry pool. Without a stub handler
+	// the default CdnChangelogEntryFetcher hits ChangelogCdn's real production base URL — offline
+	// or sandboxed test runs must never make that call, so every test here gets an all-404 handler.
+	private readonly CdnChangelogEntryFetcher _offlineEntryFetcher = new(
+		new TestLoggerFactory(output),
+		new OfflinePoolHandler(),
+		sleep: (_, _) => Task.CompletedTask
+	);
 
-	private string CreateOutputDirectory() =>
-		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+	private GitHubReleaseChangelogService CreateService() =>
+		new(LoggerFactory, ConfigurationContext, FileSystem, _mockReleaseService, _mockPrService, entryFetcher: _offlineEntryFetcher);
+
+	private string CreateOutputDirectory() => FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 	// -----------------------------------------------------------------------
 	// Validation: no PR refs in release notes
@@ -34,13 +44,14 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	public async Task ReleaseVersion_WithNoMatchingPrs_EmitsWarningAndSucceeds()
 	{
 		// Arrange
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo
-			{
-				TagName = "v9.2.0",
-				Name = "9.2.0",
-				Body = "No pull request references in these release notes."
-			});
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo
+		{
+			TagName = "v9.2.0",
+			Name = "9.2.0",
+			Body = "No pull request references in these release notes."
+		});
 
 		var service = CreateService();
 		var input = new CreateChangelogsFromReleaseArguments
@@ -56,8 +67,10 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 
 		// Assert
 		result.Should().BeTrue();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("No PR references found") && d.Severity == Documentation.Diagnostics.Severity.Warning);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("No PR references found") && d.Severity == Documentation.Diagnostics.Severity.Warning);
 	}
 
 	// -----------------------------------------------------------------------
@@ -79,11 +92,15 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 			**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
 			""";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
-		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo { Title = "PR title", Labels = [] });
+		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "PR title",
+			Labels = []
+		});
 
 		var outputDir = CreateOutputDirectory();
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -129,11 +146,15 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 			**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
 			""";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
-		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo { Title = "Add aggregation API", Labels = [] });
+		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Add aggregation API",
+			Labels = []
+		});
 
 		var outputDir = CreateOutputDirectory();
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -168,13 +189,9 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	public async Task ReleaseVersion_Latest_CallsFetchWithLatestTag()
 	{
 		// Arrange
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo
-			{
-				TagName = "v9.2.0",
-				Name = "9.2.0",
-				Body = "No PR references."
-			});
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "No PR references." });
 
 		var service = CreateService();
 		var input = new CreateChangelogsFromReleaseArguments
@@ -189,8 +206,9 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		_ = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._)
+		).MustHaveHappenedOnceExactly();
 	}
 
 	// -----------------------------------------------------------------------
@@ -201,8 +219,9 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	public async Task ReleaseVersion_FetchFailure_ReturnsError()
 	{
 		// Arrange
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync(A<string>._, A<string>._, A<string?>._, A<Cancel>._))
-			.Returns((GitHubReleaseInfo?)null);
+		A.CallTo(() => _mockReleaseService.FetchReleaseAsync(A<string>._, A<string>._, A<string?>._, A<Cancel>._)).Returns(
+			(GitHubReleaseInfo?)null
+		);
 
 		var service = CreateService();
 		var input = new CreateChangelogsFromReleaseArguments
@@ -258,16 +277,15 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 	{
 		// Arrange – simulates 'changelog add --release-version' with no --output and no bundle.directory in config.
 		// The command passes Output = null to the service; the service must default to "./changelogs".
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo
-			{
-				TagName = "v9.2.0",
-				Name = "9.2.0",
-				Body = "* Fix something by @contributor in #12345"
-			});
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "* Fix something by @contributor in #12345" });
 
-		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
-			.Returns(new GitHubPrInfo { Title = "Fix something", Labels = [] });
+		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix something",
+			Labels = []
+		});
 
 		var workDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(workDir);
@@ -281,7 +299,8 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 			{
 				Repository = "elastic/elasticsearch",
 				Version = "v9.2.0",
-				Output = null,   // no --output CLI and no bundle.directory in config
+				Output = null, // no --output CLI and no bundle.directory in config
+
 				CreateBundle = false
 			};
 
@@ -298,5 +317,15 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		{
 			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
+	}
+
+	/// <summary>Answers every checked-in entry pool probe as absent, so tests degrade to PR-metadata synthesis.</summary>
+	private sealed class OfflinePoolHandler : HttpMessageHandler
+	{
+		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
+			new(HttpStatusCode.NotFound);
+
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+			Task.FromResult(Send(request, cancellationToken));
 	}
 }

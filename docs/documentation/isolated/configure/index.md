@@ -152,10 +152,14 @@ Configures API Explorer sections from OpenAPI specifications. Only valid in `doc
 
 ```yaml
 api:
-  elasticsearch: elasticsearch-openapi.json
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
   kibana:
-    - file: kibana-intro.md
     - spec: kibana-openapi.json
+      product: kibana
+      children:
+        - file: kibana-api-overview.md
 ```
 
 See [API Explorer](/data/openapi/api-explorer.md) for full details.

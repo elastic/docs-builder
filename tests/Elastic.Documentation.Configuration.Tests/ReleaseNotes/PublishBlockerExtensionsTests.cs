@@ -116,12 +116,7 @@ public class PublishBlockerExtensionsTests
 	[Fact]
 	public void ShouldBlock_ExcludeArea_MatchAll_Blocks_WhenAllAreasMatch()
 	{
-		var blocker = new PublishBlocker
-		{
-			Areas = ["Internal", "Search"],
-			AreasMode = FieldMode.Exclude,
-			MatchAreas = MatchMode.All
-		};
+		var blocker = new PublishBlocker { Areas = ["Internal", "Search"], AreasMode = FieldMode.Exclude, MatchAreas = MatchMode.All };
 		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Internal", "Search"] };
 
 		blocker.ShouldBlock(entry).Should().BeTrue();
@@ -130,12 +125,7 @@ public class PublishBlockerExtensionsTests
 	[Fact]
 	public void ShouldBlock_ExcludeArea_MatchAll_Allows_WhenNotAllAreasMatch()
 	{
-		var blocker = new PublishBlocker
-		{
-			Areas = ["Internal"],
-			AreasMode = FieldMode.Exclude,
-			MatchAreas = MatchMode.All
-		};
+		var blocker = new PublishBlocker { Areas = ["Internal"], AreasMode = FieldMode.Exclude, MatchAreas = MatchMode.All };
 		// Entry has ["Search", "Internal"]. MatchAll means ALL entry areas must be in the exclude list.
 		// "Search" is NOT in ["Internal"], so not all match → allowed.
 		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Internal"] };
@@ -183,12 +173,7 @@ public class PublishBlockerExtensionsTests
 	[Fact]
 	public void ShouldBlock_IncludeArea_MatchAll_Blocks_WhenNotAllAreasInIncludeList()
 	{
-		var blocker = new PublishBlocker
-		{
-			Areas = ["Search"],
-			AreasMode = FieldMode.Include,
-			MatchAreas = MatchMode.All
-		};
+		var blocker = new PublishBlocker { Areas = ["Search"], AreasMode = FieldMode.Include, MatchAreas = MatchMode.All };
 		// Entry has ["Search", "Internal"]. "Internal" is NOT in include list → not all match → blocked
 		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Internal"] };
 

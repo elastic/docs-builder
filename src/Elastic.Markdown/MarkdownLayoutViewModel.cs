@@ -26,16 +26,10 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 
 	public required VersioningSystem VersioningSystem { get; init; }
 
-	public required string? VersionDropdownSerializedModel { get; init; }
-
-	public required string? CurrentVersion { get; init; }
-
-	public required string? AllVersionsUrl { get; init; }
-
 	public string? RedirectUrl { get; init; }
 
 	/// <summary>The resolved right-gutter CTA for this page (docset.yml template, or the built-in default).</summary>
-	public required CallToAction CallToAction { get; init; }
+	public required Cta Cta { get; init; }
 }
 
 public record PageTocItem

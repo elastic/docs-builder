@@ -1,0 +1,47 @@
+@using Elastic.Documentation.Site
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.HeroViewModel>
+
+<section class="hub-hero">
+	<div class="hub-hero-inner">
+		<div class="hub-hero-eyebrow">
+			<a class="hub-hero-eyebrow-link" @Model.LinkAttributes("/")>
+				<span>Browse all Elastic docs</span>
+				<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
+				</svg>
+			</a>
+		</div>
+		<div class="hub-hero-top">
+			@if (!string.IsNullOrWhiteSpace(Model.IconSvg))
+			{
+				<span class="hub-hero-icon hub-hero-icon-svg">
+					@(new HtmlString(Model.IconSvg))
+				</span>
+			}
+			else if (!string.IsNullOrWhiteSpace(Model.IconKey))
+			{
+				<span class="hub-hero-icon" aria-hidden="true">@Elastic.Markdown.Myst.Directives.Hub.ProductIcons.Initials(Model.IconKey)</span>
+			}
+			<h1>@Model.Title</h1>
+		</div>
+
+		@if (!string.IsNullOrWhiteSpace(Model.DescriptionHtml))
+		{
+			<p class="hub-hero-desc">@(new HtmlString(Model.DescriptionHtml))</p>
+		}
+
+		@if (Model.Actions.Count > 0)
+		{
+			<div class="hub-hero-actions doc-button-group">
+				@foreach (var action in Model.Actions)
+				{
+					<span class="doc-button-item doc-button-neutral">
+						<a class="hub-hero-action" @Model.LinkAttributes(action.Url)>
+							@action.Label
+						</a>
+					</span>
+				}
+			</div>
+		}
+	</div>
+</section>

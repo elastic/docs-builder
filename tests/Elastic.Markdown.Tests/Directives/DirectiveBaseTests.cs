@@ -5,27 +5,26 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using JetBrains.Annotations;
 using Markdig.Syntax;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: DirectiveTest(output, content)
-	where TDirective : DirectiveBlock
+public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : DirectiveTest(
+	output,
+	content
+) where TDirective : DirectiveBlock
 {
 	protected TDirective? Block { get; private set; }
 
 	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
-		Block = Document
-			.Descendants<TDirective>()
-			.FirstOrDefault();
+		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
 	[Fact]
@@ -48,21 +47,20 @@ public abstract class DirectiveTest : IAsyncLifetime
 		var logger = new TestLoggerFactory(output);
 
 		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
-		var documentContents = TestingFullDocument ? content :
-// language=markdown
-$"""
+		var documentContents = TestingFullDocument
+			? content
+			:
+			// language=markdown
+			$"""
  # Test Document
 
  {content}
  """;
 
-		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "docs/index.md", new MockFileData(documentContents) }
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+		FileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData> { { "docs/index.md", new MockFileData(documentContents) } },
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
@@ -70,12 +68,18 @@ $"""
 		var root = FileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/"));
 		// ReSharper disable once VirtualMemberCallInConstructor
 		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts(), extraYaml: GetDocsetExtraYaml());
-
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		var environment = GetEnvironment();
-		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext, environment);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		var context = new BuildContext(
+			Collector,
+			TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()),
+			configurationContext,
+			environment
+		)
+		{ ContentSource = GetContentSource() };
 		var linkResolver = new TestCrossLinkResolver();
 		// ReSharper disable once VirtualMemberCallInConstructor
 		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
@@ -85,6 +89,12 @@ $"""
 	}
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
+
+	/// <summary>
+	/// Override to supply an explicit <see cref="GitCheckoutInformation"/> for the build context.
+	/// Returns <see langword="null"/> by default (factory produces canned test data).
+	/// </summary>
+	protected virtual GitCheckoutInformation? GetGitCheckoutInformation() => null;
 
 	/// <summary>
 	/// Override to specify products for the docset configuration.
@@ -102,6 +112,12 @@ $"""
 
 	/// <summary>Override to inject a deterministic environment for env-dependent config (e.g. <c>storybook.registry</c>).</summary>
 	protected virtual IEnvironmentVariables? GetEnvironment() => null;
+
+	/// <summary>
+	/// Override to simulate an assembler build publishing a specific content source
+	/// (<c>current</c> = production, <c>next</c> = staging). Null (default) mimics isolated builds.
+	/// </summary>
+	protected virtual ContentSource? GetContentSource() => null;
 
 	public virtual async ValueTask InitializeAsync()
 	{
@@ -126,8 +142,11 @@ $"""
 	protected IReadOnlyList<string> ReadMermaidSvgs()
 	{
 		var outputDir = Set.Context.OutputDirectory.FullName;
-		return FileSystem.AllFiles
-			.Where(f => f.StartsWith(outputDir, StringComparison.OrdinalIgnoreCase) && f.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+		return FileSystem
+			.AllFiles
+			.Where(
+				f => f.StartsWith(outputDir, StringComparison.OrdinalIgnoreCase) && f.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+			)
 			.Select(f => FileSystem.File.ReadAllText(f))
 			.ToList();
 	}

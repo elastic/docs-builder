@@ -34,7 +34,7 @@
 						mx-auto
 						md:px-4
 			">
-				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
 					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] lg:justify-end lg:gap-4 mx-4 md:col-start-2 md:row-start-1">
 						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
@@ -55,6 +55,57 @@
 					</main>
 					@await RenderPartialAsync(_PagesNav.Create(Model))
 				</div>
+			</div>
+		</div>
+	}
+
+	@* Hub pages are composed entirely from directives and own the full content column.
+	   They drop the right-rail table of contents and the prev/next nav, but keep the
+	   pages nav so a reader can move between sibling hubs. *@
+	private async Task RenderHub()
+	{
+		<div class="relative hub-page">
+			<div class="min-h-screen
+						w-full
+						max-w-(--max-layout-width)
+						mx-auto
+						md:px-4
+			">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
+					<main id="content-container" class="min-w-0 mx-4 md:col-start-2 md:row-start-1">
+						@* Keeps the markdown-content id, which hljs, smooth-scroll and toc-nav select on,
+						   but not the class. typography.css is unlayered and hub.css sits in @@layer
+						   components, so the class would override every hub rule regardless of
+						   specificity. Hub directives bring their own typography. *@
+						<article id="markdown-content" class="hub-content min-w-0" data-pagefind-body>
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+					</main>
+					@await RenderPartialAsync(_PagesNav.Create(Model))
+				</div>
+			</div>
+		</div>
+	}
+
+	private async Task RenderLanding()
+	{
+		<div class="relative">
+			<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+			@if (!string.IsNullOrWhiteSpace(Model.NavigationHtml) || Model.TopNav is not null || Model.ShowVersionDropdown)
+			{
+				@* ReSharper disable once Html.IdNotResolved *@
+				<label role="button" class="absolute left-4 top-3 z-10 md:hidden cursor-pointer" for="pages-nav-hamburger">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+					     stroke="currentColor" class="size-6">
+						<path stroke-linecap="round" stroke-linejoin="round"
+						      d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+					</svg>
+				</label>
+			}
+			@await RenderPartialAsync(_LandingPage.Create(Model))
+			<div class="md:hidden">
+				@await RenderPartialAsync(_PagesNav.Create(Model))
 			</div>
 		</div>
 	}
@@ -79,13 +130,16 @@
 		await RenderPartialAsync(_NotFound.Create(Model));
 		break;
 	case MarkdownPageLayout.LandingPage:
-		await RenderPartialAsync(_LandingPage.Create(Model));
+		await RenderLanding();
 		break;
 	case MarkdownPageLayout.Archive:
 		await RenderPartialAsync(_Archive.Create(Model));
 		break;
 	case MarkdownPageLayout.FullSearch:
 		await RenderPartialAsync(_FullSearch.Create(Model));
+		break;
+	case MarkdownPageLayout.Hub:
+		await RenderHub();
 		break;
 	default:
 		await RenderDefault();

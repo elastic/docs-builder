@@ -11,7 +11,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -43,22 +43,27 @@ public class ConfigurationFileStorybookRegistryTests
 	public void DisallowedVariable_IsLeftLiteral_AndWarns()
 	{
 		var collector = new DiagnosticsCollector([]);
-		var config = CreateConfiguration("${AWS_SECRET_ACCESS_KEY:-fallback}", new MockEnvironment { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" }, collector);
+		var config = CreateConfiguration(
+			"${AWS_SECRET_ACCESS_KEY:-fallback}",
+			new MockEnvironment { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" },
+			collector
+		);
 
 		config.StorybookRegistry.Should().Be("${AWS_SECRET_ACCESS_KEY:-fallback}");
 		config.StorybookRegistry.Should().NotContain("super-secret");
 		collector.Warnings.Should().Be(1, "a disallowed interpolation variable must emit exactly one warning");
 	}
 
-	private static ConfigurationFile CreateConfiguration(string registry, IEnvironmentVariables environment, DiagnosticsCollector? collector = null)
+	private static ConfigurationFile CreateConfiguration(
+		string registry,
+		IEnvironmentVariables environment,
+		DiagnosticsCollector? collector = null
+	)
 	{
 		collector ??= new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ configFilePath, new MockFileData("") }
-		}, root);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { configFilePath, new MockFileData("") } }, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
@@ -86,10 +91,7 @@ public class ConfigurationFileStorybookRegistryTests
 	{
 		private readonly Dictionary<string, string?> _variables = [with(StringComparer.Ordinal)];
 
-		public string? this[string name]
-		{
-			set => _variables[name] = value;
-		}
+		public string? this[string name] { set => _variables[name] = value; }
 
 		public string? GetEnvironmentVariable(string name) => _variables.GetValueOrDefault(name);
 
@@ -101,12 +103,15 @@ public class ConfigurationFileStorybookRegistryTests
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,
 		IDirectoryInfo documentationSourceDirectory,
-		IEnvironmentVariables environment)
-		: IDocumentationSetContext
+		IEnvironmentVariables environment
+	) : IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
-		public ScopedFileSystem ReadFileSystem => WriteFileSystem;
-		public ScopedFileSystem WriteFileSystem { get; } = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName);
+		public DocumentationWriteFileSystem WriteFileSystem { get; } = new DocumentationWriteFileSystem(
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: fileSystem
+		);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

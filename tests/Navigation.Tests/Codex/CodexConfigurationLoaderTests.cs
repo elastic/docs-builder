@@ -6,7 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Codex;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -18,11 +18,9 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 		groups: []
 		""";
 
-	private static readonly string ConfigPath =
-		Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml");
+	private static readonly string ConfigPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml");
 
-	private ScopedFileSystem ScopedFs(MockFileSystem mockFs) =>
-		FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs);
+	private CheckoutsFileSystem ScopedFs(MockFileSystem mockFs) => CheckoutsFileSystem.FromWorkingDirectory(mockFs);
 
 	private TestDiagnosticsCollector Collector() => new(output);
 
@@ -61,10 +59,7 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 	[Fact]
 	public void TryLoad_ValidConfig_ReturnsTrueAndEnvironment()
 	{
-		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ ConfigPath, new MockFileData(ValidConfig) }
-		});
+		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData> { { ConfigPath, new MockFileData(ValidConfig) } });
 		var fs = ScopedFs(mockFs);
 		var configFile = fs.FileInfo.New(ConfigPath);
 		var collector = Collector();
@@ -102,10 +97,7 @@ public class CodexConfigurationLoaderTests(ITestOutputHelper output)
 		// ScopedFileInfo.Exists returns true (unguarded), but OpenText throws.
 		// TryLoad must catch that and emit a visible error instead of propagating.
 		var outsidePath = Path.Join(Path.GetTempPath(), "codex.yml");
-		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ outsidePath, new MockFileData(ValidConfig) }
-		});
+		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData> { { outsidePath, new MockFileData(ValidConfig) } });
 		// Scope the FS only to the working dir — the outsidePath is outside it
 		var fs = ScopedFs(mockFs);
 		var configFile = fs.FileInfo.New(outsidePath);

@@ -30,10 +30,16 @@ public partial class ElasticsearchMarkdownExporter
 	{
 		var semanticHash = _semanticTypeContext?.Hash ?? string.Empty;
 		var lexicalHash = _lexicalTypeContext.Hash;
-		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Path, doc.Type, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)),
+		var hash = HashedBulkUpdate.CreateHash(
+			semanticHash,
+			lexicalHash,
+			doc.Path,
+			doc.Type,
+			doc.Body ?? string.Empty,
+			string.Join(",", doc.Headings.OrderBy(h => h)),
 			doc.SearchTitle ?? string.Empty,
-			doc.Section ?? string.Empty, doc.Navigation.Depth.ToString("N0"),
+			doc.Section ?? string.Empty,
+			doc.Navigation.Depth.ToString("N0"),
 			doc.Navigation.TableOfContents.ToString("N0"),
 			doc.ContentTier,
 			_fixedSynonymsHash,
@@ -67,14 +73,13 @@ public partial class ElasticsearchMarkdownExporter
 
 		// Aligns with the existing `diminish_terms` in search.yml (plugin, glossary, curator, hadoop, integration, client).
 		static bool IsSupplementary(string? section, string url) =>
-			ContainsAny(section, "deprecat", "plugin", "glossary")
-			|| url.Contains("/docs/extend/", StringComparison.OrdinalIgnoreCase);
+			ContainsAny(section, "deprecat", "plugin", "glossary") || url.Contains("/docs/extend/", StringComparison.OrdinalIgnoreCase);
 
 		// A section's root/index page is effectively that section's overview — treat it as primary
 		// alongside pages explicitly living under a "get started"/"getting started"/"overview" section.
 		static bool IsPrimary(INavigationItem? navigationItem, string? section) =>
 			navigationItem is IRootNavigationItem<INavigationModel, INavigationItem>
-			|| ContainsAny(section, "get started", "getting started", "overview");
+				|| ContainsAny(section, "get started", "getting started", "overview");
 
 		static bool ContainsAny(string? value, params string[] fragments) =>
 			value is not null && fragments.Any(f => value.Contains(f, StringComparison.OrdinalIgnoreCase));
@@ -111,7 +116,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		// this section gets promoted in the navigation we don't want it to be promoted in the search results
 		// e.g. `Use high-contrast mode in Kibana - ( docs cloud-account high contrast`
-		if (doc.Section == "manage your cloud account and preferences")
+		if (doc.Section is "manage your cloud account and preferences" or "manage your cloud account")
 			doc.Navigation.Depth *= 2;
 
 		// API reference pages have no navigation item to classify from — treat them as plain reference content.
@@ -124,8 +129,7 @@ public partial class ElasticsearchMarkdownExporter
 			// skip doc and the section
 			var split = new[] { '/', ' ', '-', '.', '_' };
 			var urlComponents = new HashSet<string>(
-				doc.Path.Split('/', RemoveEmptyEntries).Skip(2)
-					.SelectMany(c => c.Split(split, RemoveEmptyEntries)).ToArray()
+				doc.Path.Split('/', RemoveEmptyEntries).Skip(2).SelectMany(c => c.Split(split, RemoveEmptyEntries)).ToArray()
 			);
 			var title = doc.Title;
 			//skip tokens already part of the title we don't want to influence TF/IDF
@@ -159,8 +163,13 @@ public partial class ElasticsearchMarkdownExporter
 		// input, and content hashing. docs-builder no longer feeds raw LLM-flavored Markdown into `body`.
 		var body = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
 
-		var headings = fileContext.Document.Descendants<HeadingBlock>()
-			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
+		var headings = fileContext
+			.Document
+			.Descendants<HeadingBlock>()
+			.Select(
+				h => h.GetData("header") as string ?? string.Empty
+			) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
+
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
 		var summary = !string.IsNullOrEmpty(body)
@@ -176,17 +185,18 @@ public partial class ElasticsearchMarkdownExporter
 			Path = url,
 			Title = file.Title,
 			SearchTitle = file.Title, //updated in CommonEnrichments
+
 			Body = body,
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Summary = summary,
 			Applies = appliesTo.ToAppliesTo(),
-			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
-			{
-				Title = i.NavigationTitle,
-				Path = i.Url
-			}).Reverse().ToArray(),
+			Parents = navigation
+				.GetParentsOfMarkdownFile(file)
+				.Select(i => new ParentDocument { Title = i.NavigationTitle, Path = i.Url })
+				.Reverse()
+				.ToArray(),
 			Headings = headings,
-			Hidden = fileContext.NavigationItem.Hidden
+			Hidden = fileContext.NavigationItem.ExcludeFromIndexing
 		};
 
 		// Infer product and repository metadata
@@ -200,22 +210,21 @@ public partial class ElasticsearchMarkdownExporter
 		);
 		doc.Product = inference.Product?.Id;
 		doc.RelatedProducts = inference.RelatedProducts.Count > 0
-			? inference.RelatedProducts.Select(p => new IndexedProduct
-			{
-				Id = p.Id,
-				Repository = p.Repository ?? inference.Repository
-			}).ToArray()
+			? inference
+				.RelatedProducts
+				.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
+				.ToArray()
 			: null;
 
 		var gitHubRepo = fileContext.BuildContext.Git.GitHubRepository;
 		var branch = fileContext.BuildContext.Git.Branch;
-		if (gitHubRepo is not null
-			&& fileContext.BuildContext.Git != GitCheckoutInformation.Unavailable
-			&& fileContext.BuildContext.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		if (gitHubRepo is not null && fileContext.BuildContext.Git != GitCheckoutInformation.Unavailable)
 		{
+			var checkoutDirectory = fileContext.BuildContext.DocumentationCheckoutDirectory;
 			var relativeSourcePath = Path.GetRelativePath(
 				checkoutDirectory.FullName,
-				fileContext.BuildContext.DocumentationSourceDirectory.FullName);
+				fileContext.BuildContext.DocumentationSourceDirectory.FullName
+			);
 			var path = UrlPath.Join(relativeSourcePath, file.RelativePath);
 			doc.SourceUrl = $"https://github.com/{gitHubRepo}/blob/{branch}/{path}";
 		}
@@ -250,8 +259,12 @@ public partial class ElasticsearchMarkdownExporter
 			// enrichment input, and content hashing.
 			doc.Body = PlainTextExporter.ConvertToPlainText(document, _context);
 
-			var headings = document.Descendants<HeadingBlock>()
-				.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
+			var headings = document
+				.Descendants<HeadingBlock>()
+				.Select(
+					h => h.GetData("header") as string ?? string.Empty
+				) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
+
 				.Where(text => !string.IsNullOrEmpty(text))
 				.ToArray();
 			var summary = !string.IsNullOrEmpty(doc.Body)
@@ -273,5 +286,4 @@ public partial class ElasticsearchMarkdownExporter
 		_logger.LogInformation("Finished exporting OpenAPI documentation");
 		return true;
 	}
-
 }

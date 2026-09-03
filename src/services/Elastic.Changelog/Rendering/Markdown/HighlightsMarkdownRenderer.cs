@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
-using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 
 namespace Elastic.Changelog.Rendering.Markdown;
@@ -13,7 +13,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the highlights.md changelog file
 /// </summary>
-public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class HighlightsMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "highlights.md";
@@ -22,17 +22,14 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 	public override async Task RenderAsync(ChangelogRenderContext context, Cancel ctx)
 	{
 		// Get all entries with highlight == true from all types
-		var highlights = context.EntriesByType.Values
-			.SelectMany(e => e)
-			.Where(e => e.Highlight == true)
-			.ToList();
+		var highlights = context.EntriesByType.Values.SelectMany(e => e).Where(e => e.Highlight == true).ToList();
 
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-highlights]");
 
 		// Check if all entries are hidden
-		var allEntriesHidden = highlights.Count > 0 && highlights.All(entry =>
-			ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+		var allEntriesHidden = highlights.Count > 0
+			&& highlights.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 		if (highlights.Count > 0)
 		{
@@ -42,8 +39,9 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 			foreach (var areaGroup in groupedByArea)
 			{
 				// Check if all entries in this area group are hidden
-				var allGroupEntriesHidden = areaGroup.All(entry =>
-					ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+				var allGroupEntriesHidden = areaGroup.All(
+					entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context)
+				);
 
 				if (context.Subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
 				{
@@ -89,7 +87,10 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 						}
 
 						// PR/Issue links with "For more information" pattern - indented for list continuation
-						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true));
+						RenderPrIssueLinks(
+							sb,
+							new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true)
+						);
 					}
 
 					if (shouldHide)

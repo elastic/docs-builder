@@ -35,8 +35,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -51,7 +50,8 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
-			HideDescriptions = false // Default behavior
+			HideDescriptions =
+				false // Default behavior
 		};
 
 		// Act
@@ -93,8 +93,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -109,7 +108,8 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
-			HideDescriptions = true // Hide descriptions
+			HideDescriptions =
+				true // Hide descriptions
 		};
 
 		// Act
@@ -155,8 +155,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -171,7 +170,8 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Asciidoc,
-			HideDescriptions = true // Hide descriptions
+			HideDescriptions =
+				true // Hide descriptions
 		};
 
 		// Act
@@ -219,8 +219,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -236,7 +235,8 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
 			HideDescriptions = true,
-			Dropdowns = false // Test flattened mode
+			Dropdowns =
+				false // Test flattened mode
 		};
 
 		// Act
@@ -288,8 +288,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
@@ -305,7 +304,8 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
 			HideDescriptions = true,
-			Dropdowns = true // Test dropdown mode
+			Dropdowns =
+				true // Test dropdown mode
 		};
 
 		// Act

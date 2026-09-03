@@ -5,7 +5,7 @@ By adding a file for each notable change in your GitHub repository and grouping 
 To use the `docs-builder changelog` commands in your development workflow:
 
 1. [Configure changelogs](/data/release-notes/configure.md): Create a configuration file, map labels, and define rules for creation and bundling.
-1. [Create changelogs](/data/release-notes/create.md) with the `docs-builder changelog add` command.
+1. [Create changelogs](/data/release-notes/create.md) with `docs-builder changelog add` or `docs-builder changelog note` (depending on whether there's a PR associated with the change).
    - Alternatively, if you already have automated release notes for GitHub releases, you can use the `docs-builder changelog gh-release` command to create changelog files and a bundle from your GitHub release notes. Refer to [](/cli/changelog/gh-release.md).
 1. [Bundle changelogs](/data/release-notes/bundle.md) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release. When changelogs are no longer needed in the repo, [remove changelog files](/data/release-notes/bundle.md#changelog-remove) with `docs-builder changelog remove`.
 1. [Publish release notes](/data/release-notes/publish.md): Use the `{changelog}` directive in docs or `docs-builder changelog render` to produce release documentation.

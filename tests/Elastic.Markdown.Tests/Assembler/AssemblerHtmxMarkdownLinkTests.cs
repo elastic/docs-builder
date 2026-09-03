@@ -9,13 +9,12 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
-using Nullean.ScopedFileSystem;
 using Xunit;
 
 namespace Elastic.Markdown.Tests.Assembler;
 
 /// <summary>
-/// Navigation relies on body-level hx-boost with hx-preserve islands, so markdown links must
+/// Navigation relies on hx-boost targeting #main-container, so markdown links must
 /// not carry per-link htmx attributes. Cross-links stay same-site (no target=_blank).
 /// </summary>
 public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTestBase(output, "Go to [test](kibana://index.md)")
@@ -23,8 +22,9 @@ public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTest
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
@@ -38,8 +38,7 @@ public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTest
 	}
 
 	[Fact]
-	public void CrossLink_NoTargetBlank() =>
-		Html.Should().NotContain("target=\"_blank\"");
+	public void CrossLink_NoTargetBlank() => Html.Should().NotContain("target=\"_blank\"");
 
 	[Fact]
 	public void EmitsCrossLink()
@@ -58,16 +57,16 @@ public class AssemblerHtmxInternalLinkTests(ITestOutputHelper output) : LinkTest
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
 		};
 
 	[Fact]
-	public void InternalLink_HasNoPerLinkHtmxAttributes() =>
-		Html.Should().NotContain("hx-select-oob");
+	public void InternalLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -77,8 +76,9 @@ public class AssemblerHtmxInternalLinkTests(ITestOutputHelper output) : LinkTest
 }
 
 /// <summary>Absolute path links in assembler carry no per-link htmx attributes.</summary>
-public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : LinkTestBase(output,
-"""
+public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : LinkTestBase(
+	output,
+	"""
 [Elasticsearch](/_static/img/observability.png)
 """
 )
@@ -86,8 +86,9 @@ public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : Link
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs",
 			BuildType = BuildType.Assembler
@@ -105,27 +106,25 @@ public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : Link
 }
 
 /// <summary>Reference-style internal links in assembler carry no per-link htmx attributes.</summary>
-public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTestBase(output,
-"""
+public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTestBase(output, """
 [test][test]
 
 [test]: testing/req.md
-"""
-)
+""")
 {
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
 		};
 
 	[Fact]
-	public void ReferenceLink_HasNoPerLinkHtmxAttributes() =>
-		Html.Should().NotContain("hx-select-oob");
+	public void ReferenceLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -135,36 +134,31 @@ public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTes
 }
 
 /// <summary>Empty-text cross-links in assembler carry no per-link htmx attributes (and emit error).</summary>
-public class AssemblerHtmxEmptyTextCrossLinkTests(ITestOutputHelper output) : LinkTestBase(output,
-"""
+public class AssemblerHtmxEmptyTextCrossLinkTests(ITestOutputHelper output) : LinkTestBase(output, """
 
 Go to [](kibana://index.md)
-"""
-)
+""")
 {
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
 		};
 
 	[Fact]
-	public void EmptyTextCrossLink_HasNoPerLinkHtmxAttributes() =>
-		Html.Should().NotContain("hx-select-oob");
+	public void EmptyTextCrossLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
-	public void EmptyTextCrossLink_NoTargetBlank() =>
-		Html.Should().NotContain("target=\"_blank\"");
+	public void EmptyTextCrossLink_NoTargetBlank() => Html.Should().NotContain("target=\"_blank\"");
 
 	[Fact]
 	public void HasError() =>
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("empty link text"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("empty link text"));
 
 	[Fact]
 	public void EmitsCrossLink()
@@ -175,25 +169,23 @@ Go to [](kibana://index.md)
 }
 
 /// <summary>Insert-page-title links (empty text, internal target) carry no per-link htmx attributes.</summary>
-public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output,
-"""
+public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output, """
 [](testing/req.md)
-"""
-)
+""")
 {
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
 		};
 
 	[Fact]
-	public void InsertPageTitle_HasNoPerLinkHtmxAttributes() =>
-		Html.Should().NotContain("hx-select-oob");
+	public void InsertPageTitle_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -203,8 +195,9 @@ public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkT
 }
 
 /// <summary>HTTP links in assembler get target="_blank" and no htmx attributes.</summary>
-public class AssemblerHtmxExternalLinkTests(ITestOutputHelper output) : LinkTestBase(output,
-"""
+public class AssemblerHtmxExternalLinkTests(ITestOutputHelper output) : LinkTestBase(
+	output,
+	"""
 [link to app]({{some-url-with-a-version}})
 """
 )
@@ -212,8 +205,9 @@ public class AssemblerHtmxExternalLinkTests(ITestOutputHelper output) : LinkTest
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler

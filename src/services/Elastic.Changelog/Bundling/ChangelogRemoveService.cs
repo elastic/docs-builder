@@ -8,9 +8,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -60,16 +60,16 @@ public record ChangelogRemoveArguments
 /// </summary>
 public class ChangelogRemoveService(
 	ILoggerFactory logFactory,
+	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	ScopedFileSystem? fileSystem = null,
-	IGitHubReleaseService? releaseService = null)
-	: IService
+	IGitHubReleaseService? releaseService = null
+) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRemoveService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
 
 	public async Task<bool> RemoveChangelogs(IDiagnosticsCollector collector, ChangelogRemoveArguments input, Cancel ctx)
@@ -101,16 +101,16 @@ public class ChangelogRemoveService(
 			if (!string.IsNullOrWhiteSpace(input.Profile))
 			{
 				var filterResult = await ProfileFilterResolver.ResolveAsync(
-						collector,
-						input.Profile,
-						input.ProfileArgument,
-						config,
-						_fileSystem,
-						_logger,
-						ctx,
-						input.ProfileReport,
-						_releaseService
-					);
+					collector,
+					input.Profile,
+					input.ProfileArgument,
+					config,
+					_fileSystem,
+					_logger,
+					ctx,
+					input.ProfileReport,
+					_releaseService
+				);
 
 				if (filterResult == null)
 					return false;
@@ -199,9 +199,7 @@ public class ChangelogRemoveService(
 				return false;
 			}
 
-			var filesToRemove = matchResult.Entries
-				.Select(e => e.FilePath)
-				.ToList();
+			var filesToRemove = matchResult.Entries.Select(e => e.FilePath).ToList();
 
 			if (input.DryRun)
 			{
@@ -237,8 +235,10 @@ public class ChangelogRemoveService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+#pragma warning disable CS0618
 		var repo = input.Repo ?? config?.Bundle?.Repo;
 		var owner = input.Owner ?? config?.Bundle?.Owner;
+#pragma warning restore CS0618
 
 		return input with { Directory = directory, Repo = repo, Owner = owner };
 	}
@@ -271,14 +271,19 @@ public class ChangelogRemoveService(
 
 		if (specified.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --products, --prs, --issues, or --files");
+			collector.EmitError(
+				string.Empty,
+				"At least one filter option must be specified: --all, --products, --prs, --issues, or --files"
+			);
 			return false;
 		}
 
 		if (specified.Count > 1)
 		{
-			collector.EmitError(string.Empty,
-				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specified)}. Please use only one filter option: --all, --products, --prs, --issues, or --files");
+			collector.EmitError(
+				string.Empty,
+				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specified)}. Please use only one filter option: --all, --products, --prs, --issues, or --files"
+			);
 			return false;
 		}
 
@@ -288,7 +293,8 @@ public class ChangelogRemoveService(
 	private static ChangelogFilterCriteria BuildFilterCriteria(
 		ChangelogRemoveArguments input,
 		HashSet<string> prsToMatch,
-		HashSet<string> issuesToMatch)
+		HashSet<string> issuesToMatch
+	)
 	{
 		var productFilters = new List<ProductFilter>();
 		if (input.Products is { Count: > 0 })
@@ -314,5 +320,4 @@ public class ChangelogRemoveService(
 			DefaultRepo = input.Repo
 		};
 	}
-
 }

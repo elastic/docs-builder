@@ -30,7 +30,6 @@ jobs:
       id-token: write
     uses: elastic/docs-actions/.github/workflows/changelog-bundle.yml@v1
     with:
-      mode: gh-release
       repo: docs-builder
       owner: elastic
       version: ${{ github.event.release.tag_name || inputs.version || 'latest' }}

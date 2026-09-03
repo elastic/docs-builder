@@ -15,8 +15,21 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Assembler;
 
+/// <summary>
+/// Marks the assembled site-wide navigation root, allowing layouts to discover the
+/// configured top nav without knowing the concrete assembler type.
+/// </summary>
+public interface ISiteNavigationRoot
+{
+	/// <summary>
+	/// The site-wide top navigation when the <c>navigation-preview</c> feature flag is on,
+	/// otherwise <c>null</c>. When null the layout falls back to its built-in links.
+	/// </summary>
+	TopNavRenderModel? TopNav { get; }
+}
+
 [DebuggerDisplay("{Url}")]
-public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable
+public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigationItem>, INavigationTraversable, ISiteNavigationRoot
 {
 	private readonly string? _sitePrefix;
 
@@ -24,7 +37,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		SiteNavigationFile siteNavigationFile,
 		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
-		string? sitePrefix
+		string? sitePrefix,
+		bool navigationPreviewEnabled = false
 	)
 	{
 		// Normalize sitePrefix to ensure it has a leading slash and no trailing slash
@@ -38,7 +52,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		Phantoms = siteNavigationFile.Phantoms;
 		DeclaredPhantoms = [.. siteNavigationFile.Phantoms.Select(p => new Uri(p.Source))];
 		DeclaredTableOfContents = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
-		NavigationTitle = "Elastic Docs";
+		NavigationTitle = "Docs";
 
 		_nodes = [];
 		foreach (var setNavigation in documentationSetNavigations)
@@ -71,18 +85,43 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 
 		var index = items.Count;
-		foreach (var tocRef in siteNavigationFile.TableOfContents)
-		{
-			var navItem = CreateSiteTableOfContentsNavigation(
-				tocRef,
-				index++,
-				context,
-				this,
-				null
-			);
 
-			if (navItem != null)
-				items.Add(navItem);
+		foreach (var entry in siteNavigationFile.TableOfContents)
+		{
+			if (entry is SiteSectionRef sectionRef && !sectionRef.IsExternal && sectionRef.Children.Count > 0)
+			{
+				// Section with children becomes a real tree node (island) that groups its
+				// toc roots. FindIslandRoot() and CreateBackLinks then emit the correct
+				// "← Guides" back-link on any page within those roots.
+				var sectionNav = new SectionNavigation(sectionRef.Title) { Parent = this };
+
+				var sectionChildren = new List<INavigationItem>();
+				foreach (var childRef in sectionRef.Children)
+				{
+					var childItem = CreateSiteTableOfContentsNavigation(childRef, index++, context, sectionNav, sectionNav);
+					if (childItem is not null)
+						sectionChildren.Add(childItem);
+				}
+
+				// Resolve section URL from first child once children are built.
+				var firstChildUrl = sectionChildren.OfType<IRootNavigationItem<INavigationModel, INavigationItem>>().FirstOrDefault()?.Index.Url;
+				if (firstChildUrl is not null)
+					sectionNav.Url = firstChildUrl;
+
+				((IAssignableChildrenNavigation)sectionNav).SetNavigationItems(sectionChildren);
+				PromoteSectionListingIslands(sectionNav);
+				items.Add(sectionNav);
+			}
+			else if (entry is SiteTableOfContentsRef tocRef)
+			{
+				var navItem = CreateSiteTableOfContentsNavigation(tocRef, index++, context, this, null);
+				if (navItem is not null)
+				{
+					if (navItem is IAssignableIslandNavigation assignable)
+						assignable.IsIsland = true;
+					items.Add(navItem);
+				}
+			}
 		}
 
 		var indexNavigation = items.QueryIndex<IDocumentationFile>(this, "/index.md", out var navigationItems);
@@ -104,7 +143,14 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Build positional navigation lookup tables from all navigation items in a single traversal
 		NavigationDocumentationFileLookup = [];
 		NavigationIndexedByOrder = this.BuildNavigationLookups(NavigationDocumentationFileLookup);
+
+		// Top nav is only built when the navigation-preview flag is on.
+		// Index.Url values are resolved above so SectionTopNavBuilder can read them here.
+		TopNav = navigationPreviewEnabled ? SectionTopNavBuilder.Build(this, siteNavigationFile) : null;
 	}
+
+	/// <inheritdoc cref="ISiteNavigationRoot.TopNav"/>
+	public TopNavRenderModel? TopNav { get; }
 
 	public HashSet<Uri> DeclaredPhantoms { get; }
 
@@ -185,6 +231,42 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		return normalized;
 	}
 
+	/// <summary>
+	/// Reference / Troubleshoot / Release notes: a section whose only child is a toc
+	/// listing. Mark that listing's group children as islands so the sidebar is
+	/// heading + Overview + stubs (arrow), not an ancestor folder tree.
+	/// </summary>
+	private static void PromoteSectionListingIslands(SectionNavigation section)
+	{
+		INodeNavigationItem<INavigationModel, INavigationItem>? listing = null;
+		foreach (var item in section.NavigationItems)
+		{
+			if (item.Hidden)
+				continue;
+			if (listing is not null)
+				return;
+			if (item is not INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
+				return;
+			listing = node;
+		}
+
+		if (listing is null)
+			return;
+
+		foreach (var item in listing.NavigationItems)
+		{
+			if (item.Hidden)
+				continue;
+			if (
+				item is IAssignableIslandNavigation island and INodeNavigationItem<INavigationModel, INavigationItem>
+				{
+					NavigationItems.Count: > 0
+				}
+			)
+				island.IsIsland = true;
+		}
+	}
+
 	private INavigationItem? CreateSiteTableOfContentsNavigation(
 		SiteTableOfContentsRef tocRef,
 		int index,
@@ -201,7 +283,9 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			if (tocRef.Source.Scheme != NarrativeRepository.RepositoryName)
 			{
 				context.EmitError(context.ConfigurationPath, $"path_prefix is required for TOC reference: {tocRef.Source}");
-				pathPrefix += $"bad-mapping-{tocRef.Source.Scheme}-{tocRef.Source.Host}-{tocRef.Source.AbsolutePath}".TrimEnd('/').TrimEnd('-');
+				pathPrefix += $"bad-mapping-{tocRef.Source.Scheme}-{tocRef.Source.Host}-{tocRef.Source.AbsolutePath}".TrimEnd('/').TrimEnd(
+					'-'
+				);
 				pathPrefix += "/";
 			}
 			else
@@ -222,18 +306,29 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		// Look up the node in the collected nodes
 		if (!_nodes.TryGetValue(tocRef.Source, out var node))
 		{
-			context.EmitError(context.ConfigurationPath, $"Could not find navigation node for identifier: {tocRef.Source} (from source: {tocRef.Source})");
+			context.EmitError(
+				context.ConfigurationPath,
+				$"Could not find navigation node for identifier: {tocRef.Source} (from source: {tocRef.Source})"
+			);
 			return null;
 		}
 		if (node is not INavigationHomeAccessor homeAccessor)
 		{
-			context.EmitError(context.ConfigurationPath, $"Navigation contains an node navigation that does not implement: {nameof(INavigationHomeAccessor)} (from source: {tocRef.Source})");
+			context.EmitError(
+				context.ConfigurationPath,
+				$"Navigation contains an node navigation that does not implement: {nameof(INavigationHomeAccessor)} (from source: {tocRef.Source})"
+			);
 			return null;
 		}
 
 		root ??= node;
 
 		_ = UnseenNodes.Remove(tocRef.Source);
+		if (tocRef.NavigationTitle is not null && node is IAssignableNavigationTitle titled)
+			titled.NavigationTitleOverride = tocRef.NavigationTitle;
+		// Apply assembler-level island override (OR semantics — can enable, never disable)
+		if (tocRef.Island && node is IAssignableIslandNavigation islandNode)
+			islandNode.IsIsland = true;
 		// Set the navigation index
 		node.Parent = parent;
 		node.NavigationIndex = index;
@@ -262,13 +357,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			var childIndex = 0;
 			foreach (var child in tocRef.Children)
 			{
-				var childItem = CreateSiteTableOfContentsNavigation(
-					child,
-					childIndex++,
-					context,
-					node,
-					root
-				);
+				var childItem = CreateSiteTableOfContentsNavigation(child, childIndex++, context, node, root);
 				if (childItem != null)
 					children.Add(childItem);
 			}
@@ -298,5 +387,4 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		}
 		return node;
 	}
-
 }

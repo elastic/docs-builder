@@ -5,7 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -124,22 +124,23 @@ public class GroupNavigationTests
 	private static CodexNavigation CreateMinimalCodexNavigation()
 	{
 		// Create a minimal codex navigation for testing GroupLinkLeaf
-		var config = new Documentation.Configuration.Codex.CodexConfiguration
-		{
-			Title = "Test Codex",
-			SitePrefix = "/docs"
-		};
+		var config = new Documentation.Configuration.Codex.CodexConfiguration { Title = "Test Codex", SitePrefix = "/docs" };
 
-		return new CodexNavigation(config, [], new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
+		return new CodexNavigation(
+			config,
+			[],
+			new MinimalCodexContext(),
+			new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>()
+		);
 	}
 
 	private sealed class MinimalCodexContext : ICodexDocumentationContext
 	{
 		private readonly System.IO.Abstractions.TestingHelpers.MockFileSystem _fs = new();
 		public System.IO.Abstractions.IFileInfo ConfigurationPath => _fs.FileInfo.New("/codex.yml");
-		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector => new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
-		public ScopedFileSystem ReadFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectory(_fs);
-		public ScopedFileSystem WriteFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(_fs);
+		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector =>
+			new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
+		public DocumentationWriteFileSystem WriteFileSystem => new(_fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, _fs);
 		public System.IO.Abstractions.IDirectoryInfo OutputDirectory => _fs.DirectoryInfo.New("/output");
 		public BuildType BuildType => BuildType.Codex;
 		public void EmitError(string message) { }

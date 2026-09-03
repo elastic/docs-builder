@@ -23,7 +23,8 @@ public static class NavigationExtensions
 					parents.Add(parent);
 
 				parent = parent.Parent;
-			} while (parent != null);
+			}
+			while (parent != null);
 
 			return [.. parents];
 		}
@@ -35,9 +36,10 @@ public static class NavigationExtensions
 			get
 			{
 				var parents = navigationItem.GetParents();
-				if (parents.Length <= 1)
-					return navigationItem.NavigationTitle.ToLowerInvariant();
-				return parents.Reverse().Skip(1).FirstOrDefault()?.NavigationTitle.ToLowerInvariant();
+				var meaningful = parents.Reverse().Skip(1).FirstOrDefault();
+				if (meaningful is not null)
+					return meaningful.NavigationTitle.ToLowerInvariant();
+				return navigationItem.NavigationTitle.ToLowerInvariant();
 			}
 		}
 	}
@@ -59,8 +61,8 @@ public interface INavigationTraversable
 			current = GetNext(current);
 			if (current is not null)
 				yield return current;
-
-		} while (current is not null);
+		}
+		while (current is not null);
 	}
 
 	INavigationItem? GetPrevious(IDocumentationFile current)
@@ -78,7 +80,8 @@ public interface INavigationTraversable
 			if (previous is not null && !previous.Hidden && previous.Url != currentNavigation.Url)
 				return previous;
 			index--;
-		} while (index >= 0);
+		}
+		while (index >= 0);
 
 		return null;
 	}
@@ -98,17 +101,20 @@ public interface INavigationTraversable
 			if (next is not null && !next.Hidden && next.Url != currentNavigation.Url)
 				return next;
 			index++;
-		} while (index <= NavigationIndexedByOrder.Count - 1);
+		}
+		while (index <= NavigationIndexedByOrder.Count - 1);
 
 		return null;
 	}
 
 	INavigationItem GetNavigationFor(IDocumentationFile file) =>
 		NavigationDocumentationFileLookup.TryGetValue(file, out var navigation)
-			? navigation : throw new InvalidOperationException(
+			? navigation
+			: throw new InvalidOperationException(
 				file.SourcePath is { } path
 					? $"'{file.NavigationTitle}' ({path}) is not listed in the table of contents. Add it to the toc.yml for this documentation set."
-					: $"'{file.NavigationTitle}' is not listed in the table of contents.");
+					: $"'{file.NavigationTitle}' is not listed in the table of contents."
+			);
 
 	INavigationItem[] GetParents(INavigationItem current) => current.GetParents();
 

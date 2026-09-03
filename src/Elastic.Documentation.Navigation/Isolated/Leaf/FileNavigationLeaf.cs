@@ -10,8 +10,11 @@ using Elastic.Documentation.Navigation.Assembler;
 namespace Elastic.Documentation.Navigation.Isolated.Leaf;
 
 [DebuggerDisplay("{Url}")]
-public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNavigationArgs args) : ILeafNavigationItem<TModel>
-	where TModel : IDocumentationFile
+public class FileNavigationLeaf<TModel>(
+	TModel model,
+	IFileInfo fileInfo,
+	FileNavigationArgs args
+) : ILeafNavigationItem<TModel> where TModel : IDocumentationFile
 {
 	public IFileInfo FileInfo { get; } = fileInfo;
 
@@ -29,7 +32,6 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 			if (_homeProviderCache is not null && _homeProviderCache == args.HomeAccessor.HomeProvider.Id && _urlCache is not null)
 				return _urlCache;
 
-
 			_homeProviderCache = args.HomeAccessor.HomeProvider.Id;
 
 			_urlCache = DetermineUrl();
@@ -45,12 +47,14 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 				relativePath = relativePath.OptionalWindowsReplace();
 				relativePath = Path.ChangeExtension(relativePath, "md");
 				var path = relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-					? relativePath[..^3]  // Remove last 3 characters (.md)
+					? relativePath[..^3] // Remove last 3 characters (.md)
+
 					: relativePath;
 
 				// If a path ends with /index or is just index, omit it from the URL
 				if (path.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
 					path = path[..^6]; // Remove "/index"
+
 				else if (path.Equals("index", StringComparison.OrdinalIgnoreCase))
 					return string.IsNullOrEmpty(rootUrl) ? "/" : $"{rootUrl}";
 
@@ -66,6 +70,9 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 	public bool Hidden { get; } = args.Hidden;
 
 	/// <inheritdoc />
+	public bool ExcludeFromIndexing { get; } = args.ExcludeFromIndexing ?? args.Hidden;
+
+	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => args.HomeAccessor.HomeProvider.NavigationRoot;
 
 	/// <inheritdoc />
@@ -76,5 +83,4 @@ public class FileNavigationLeaf<TModel>(TModel model, IFileInfo fileInfo, FileNa
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-
 }

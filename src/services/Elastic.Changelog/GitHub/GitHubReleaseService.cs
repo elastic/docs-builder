@@ -12,29 +12,18 @@ namespace Elastic.Changelog.GitHub;
 /// <summary>
 /// Service for fetching release information from GitHub
 /// </summary>
-public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHubReleaseService
+public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubApiTransport? transport = null) : IGitHubReleaseService
 {
 	private readonly ILogger<GitHubReleaseService> _logger = loggerFactory.CreateLogger<GitHubReleaseService>();
-	private static readonly HttpClient HttpClient = new();
-
-	static GitHubReleaseService()
-	{
-		HttpClient.DefaultRequestHeaders.Add("User-Agent", "docs-builder");
-		HttpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
-	}
+	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
 	/// <inheritdoc />
-	public async Task<GitHubReleaseInfo?> FetchReleaseAsync(
-		string owner,
-		string repo,
-		string? version,
-		CancellationToken ctx = default)
+	public async Task<GitHubReleaseInfo?> FetchReleaseAsync(string owner, string repo, string? version, CancellationToken ctx = default)
 	{
 		try
 		{
 			// Build URL: /repos/{owner}/{repo}/releases/latest or /releases/tags/{version}
-			var isLatest = string.IsNullOrWhiteSpace(version) ||
-				version.Equals("latest", StringComparison.OrdinalIgnoreCase);
+			var isLatest = string.IsNullOrWhiteSpace(version) || version.Equals("latest", StringComparison.OrdinalIgnoreCase);
 
 			var url = isLatest
 				? $"https://api.github.com/repos/{owner}/{repo}/releases/latest"
@@ -74,19 +63,22 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 		string owner,
 		string repo,
 		int count,
-		CancellationToken ctx = default)
+		CancellationToken ctx = default
+	)
 	{
 		try
 		{
 			var url = $"https://api.github.com/repos/{owner}/{repo}/releases?per_page={count}";
-			using var request = CreateRequest(url);
 			_logger.LogDebug("Fetching releases from: {ApiUrl}", url);
 
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
-				_logger.LogDebug("Failed to fetch releases. Status: {StatusCode}, Reason: {ReasonPhrase}",
-					response.StatusCode, response.ReasonPhrase);
+				_logger.LogDebug(
+					"Failed to fetch releases. Status: {StatusCode}, Reason: {ReasonPhrase}",
+					response.StatusCode,
+					response.ReasonPhrase
+				);
 				return [];
 			}
 
@@ -111,14 +103,17 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 	{
 		try
 		{
-			using var request = CreateRequest(asset.BrowserDownloadUrl);
 			_logger.LogDebug("Downloading release asset: {AssetUrl}", asset.BrowserDownloadUrl);
 
-			var response = await HttpClient.SendAsync(request, ctx);
+			using var response = await _transport.GetAsync(asset.BrowserDownloadUrl, ctx);
 			if (!response.IsSuccessStatusCode)
 			{
-				_logger.LogDebug("Failed to download asset {AssetName}. Status: {StatusCode}, Reason: {ReasonPhrase}",
-					asset.Name, response.StatusCode, response.ReasonPhrase);
+				_logger.LogDebug(
+					"Failed to download asset {AssetName}. Status: {StatusCode}, Reason: {ReasonPhrase}",
+					asset.Name,
+					response.StatusCode,
+					response.ReasonPhrase
+				);
 				return null;
 			}
 
@@ -136,26 +131,18 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 		}
 	}
 
-	private static HttpRequestMessage CreateRequest(string url)
-	{
-		// Add GitHub token if available (for rate limiting and private repos)
-		var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-		var request = new HttpRequestMessage(HttpMethod.Get, url);
-		if (!string.IsNullOrEmpty(githubToken))
-			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
-		return request;
-	}
-
 	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
 	{
-		using var request = CreateRequest(url);
 		_logger.LogDebug("Fetching release info from: {ApiUrl}", url);
 
-		var response = await HttpClient.SendAsync(request, ctx);
+		using var response = await _transport.GetAsync(url, ctx);
 		if (!response.IsSuccessStatusCode)
 		{
-			_logger.LogDebug("Failed to fetch release info. Status: {StatusCode}, Reason: {ReasonPhrase}",
-				response.StatusCode, response.ReasonPhrase);
+			_logger.LogDebug(
+				"Failed to fetch release info. Status: {StatusCode}, Reason: {ReasonPhrase}",
+				response.StatusCode,
+				response.ReasonPhrase
+			);
 			return null;
 		}
 
@@ -171,22 +158,24 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 		return ToReleaseInfo(releaseData);
 	}
 
-	private static GitHubReleaseInfo ToReleaseInfo(GitHubReleaseResponse releaseData) => new()
-	{
-		TagName = releaseData.TagName ?? string.Empty,
-		Name = releaseData.Name ?? string.Empty,
-		Body = releaseData.Body ?? string.Empty,
-		Prerelease = releaseData.Prerelease,
-		Draft = releaseData.Draft,
-		HtmlUrl = releaseData.HtmlUrl ?? string.Empty,
-		PublishedAt = releaseData.PublishedAt,
-		Assets = releaseData.Assets is { Count: > 0 }
-			? releaseData.Assets
-				.Where(a => a is { Name: not null, BrowserDownloadUrl: not null })
-				.Select(a => new GitHubReleaseAsset { Name = a.Name!, BrowserDownloadUrl = a.BrowserDownloadUrl! })
-				.ToArray()
-			: []
-	};
+	private static GitHubReleaseInfo ToReleaseInfo(GitHubReleaseResponse releaseData) =>
+		new()
+		{
+			TagName = releaseData.TagName ?? string.Empty,
+			Name = releaseData.Name ?? string.Empty,
+			Body = releaseData.Body ?? string.Empty,
+			Prerelease = releaseData.Prerelease,
+			Draft = releaseData.Draft,
+			HtmlUrl = releaseData.HtmlUrl ?? string.Empty,
+			PublishedAt = releaseData.PublishedAt,
+			Assets = releaseData.Assets is { Count: > 0 }
+				? releaseData
+					.Assets
+					.Where(a => a is { Name: not null, BrowserDownloadUrl: not null })
+					.Select(a => new GitHubReleaseAsset { Name = a.Name!, BrowserDownloadUrl = a.BrowserDownloadUrl! })
+					.ToArray()
+				: []
+		};
 
 	private sealed class GitHubReleaseAssetResponse
 	{

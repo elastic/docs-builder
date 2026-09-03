@@ -1,0 +1,113 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
+using Nullean.ScopedFileSystem;
+
+namespace Elastic.Documentation.FileSystems;
+
+/// <summary>
+/// The read scope for a single documentation set. Anchored on a resolved <c>docset.yml</c> and its
+/// checkout root. Exposes a matching <see cref="Write"/> scope derived from the same paths — so read and
+/// write cannot disagree about the checkout.
+/// <para>
+/// Construction is via <see cref="Resolve(IDirectoryInfo?, DocumentationScopeOptions?)"/> only. The constructor is private; it takes
+/// already-resolved paths so that <see cref="DocumentationPathsResolver"/> can run its bootstrap
+/// scopes before the final scope is built.
+/// </para>
+/// </summary>
+public class DocumentationFileSystem : ScopedFileSystem, IDocumentationFileSystem
+{
+	private static readonly FileSystem Physical = new();
+
+	private DocumentationFileSystem(ResolvedDocumentationPaths paths, IFileSystem inner, IFileSystem? innerWrite = null) : base(
+			inner,
+			BuildReadOptions(paths)
+		)
+	{
+		Paths = paths;
+		Write = new DocumentationWriteFileSystem(paths.CheckoutDirectory, paths.OutputDirectory, innerWrite ?? inner);
+	}
+
+	/// <summary>Everything the anchoring resolved. Read and write scopes are derived from exactly this.</summary>
+	public ResolvedDocumentationPaths Paths { get; }
+
+	/// <summary>
+	/// This instance as a read scope. Always prefer <c>.Read</c> at call sites over passing the
+	/// instance directly — a slot that wants a read scope should say so, symmetrically with <c>.Write</c>.
+	/// </summary>
+	public DocumentationFileSystem Read => this;
+
+	/// <summary>Write scope derived from the same resolved paths. Never wraps <c>this</c>.</summary>
+	public DocumentationWriteFileSystem Write { get; }
+
+	/// <summary>
+	/// Anchor on the docset under <paramref name="path"/>, derive the checkout from it, and scope to
+	/// the result. For build/serve commands where the user supplied <c>--path</c> (or nothing).
+	/// </summary>
+	/// <param name="path">
+	/// The directory to start the docset scan from. When <see langword="null"/>, the current working
+	/// directory is used.
+	/// </param>
+	/// <param name="options">
+	/// Optional tuning: output directory, explicit <c>--git-dir</c>, pre-discovered configuration file,
+	/// extra scope roots, max parents for the git walk, and the mock seam.
+	/// </param>
+	/// <exception cref="DocumentationPathException">
+	/// No docset found under <paramref name="path"/>, or no <c>.git</c> within <c>MaxParents</c> of the
+	/// anchor and no <c>--git-dir</c> override.
+	/// </exception>
+	public static DocumentationFileSystem Resolve(IDirectoryInfo? path = null, DocumentationScopeOptions? options = null)
+	{
+		var opts = options ?? new DocumentationScopeOptions();
+		var inner = opts.Inner ?? Physical;
+		var invocation = path ?? inner.DirectoryInfo.New(inner.Directory.GetCurrentDirectory());
+
+		// Docset first (scoped to the invocation path), then git from the anchor it produced.
+		// The resolver constructs its own bootstrap scopes in that order and discards them.
+		var paths = DocumentationPathsResolver.Resolve(invocation, opts, inner);
+		return new DocumentationFileSystem(paths, inner, opts.InnerWrite);
+	}
+
+	public static DocumentationFileSystem Resolve(string? path, DocumentationScopeOptions? options = null)
+	{
+		var opts = options ?? new DocumentationScopeOptions();
+		var inner = opts.Inner ?? Physical;
+		var invocation = path is not null ? inner.DirectoryInfo.New(path) : null;
+		return Resolve(invocation, opts);
+	}
+
+	private static ScopedFileSystemOptions BuildReadOptions(ResolvedDocumentationPaths paths)
+	{
+		var fs = paths.CheckoutDirectory.FileSystem;
+		var checkoutPath = paths.CheckoutDirectory.FullName;
+		var roots = new List<string> { checkoutPath };
+
+		// On CI (and for codex checkouts) the docset checkout lives inside AppData
+		// (e.g. /home/runner/.local/share/elastic/docs-builder/checkouts/current/<repo>, or
+		// AppData/codex/clone/<repo>). AddDisjointRoot keeps whichever of the two is the outer
+		// path rather than dropping AppData outright, so sibling AppData directories (e.g.
+		// config-runtime) stay in scope even when the checkout itself is nested inside AppData.
+		roots.AddDisjointRoot(Configuration.Paths.ApplicationData.FullName, fs);
+
+		foreach (var gitDir in paths.GitDirectories)
+			roots.AddDisjointRoot(gitDir, fs);
+
+		foreach (var extra in paths.ExtraRoots)
+			roots.AddDisjointRoot(extra, fs);
+
+		return new ScopedFileSystemOptions([.. roots])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{
+				".git",
+				".doc.state",
+				".pagefind-net-frontend-version"
+			}
+		};
+	}
+}

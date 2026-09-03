@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
-using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ReleaseNotes.ChangelogEntryType;
 
@@ -14,7 +14,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the deprecations.md changelog file
 /// </summary>
-public class DeprecationsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class DeprecationsMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "deprecations.md";
@@ -28,8 +28,8 @@ public class DeprecationsMarkdownRenderer(ScopedFileSystem fileSystem) : Markdow
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-{context.TitleSlug}-deprecations]");
 
 		// Check if all entries are hidden
-		var allEntriesHidden = deprecations.Count > 0 && deprecations.All(entry =>
-			ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+		var allEntriesHidden = deprecations.Count > 0
+			&& deprecations.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 		if (deprecations.Count > 0)
 		{
@@ -39,8 +39,9 @@ public class DeprecationsMarkdownRenderer(ScopedFileSystem fileSystem) : Markdow
 			foreach (var areaGroup in groupedByArea)
 			{
 				// Check if all entries in this area group are hidden
-				var allGroupEntriesHidden = areaGroup.All(entry =>
-					ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+				var allGroupEntriesHidden = areaGroup.All(
+					entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context)
+				);
 
 				if (context.Subsections && !string.IsNullOrWhiteSpace(areaGroup.Key))
 				{
@@ -70,15 +71,19 @@ public class DeprecationsMarkdownRenderer(ScopedFileSystem fileSystem) : Markdow
 						_ = sb.AppendLine();
 						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 
-						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
-							? "**Impact**<br>" + entry.Impact
-							: "% **Impact**<br>_Add a description of the impact_");
+						_ = sb.AppendLine(
+							!string.IsNullOrWhiteSpace(entry.Impact)
+								? "**Impact**<br>" + entry.Impact
+								: "% **Impact**<br>_Add a description of the impact_"
+						);
 
 						_ = sb.AppendLine();
 
-						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Action)
-							? "**Action**<br>" + entry.Action
-							: "% **Action**<br>_Add a description of the what action to take_");
+						_ = sb.AppendLine(
+							!string.IsNullOrWhiteSpace(entry.Action)
+								? "**Action**<br>" + entry.Action
+								: "% **Action**<br>_Add a description of the what action to take_"
+						);
 
 						_ = sb.AppendLine("::::");
 					}
@@ -97,7 +102,10 @@ public class DeprecationsMarkdownRenderer(ScopedFileSystem fileSystem) : Markdow
 						}
 
 						// PR/Issue links with "For more information" pattern - indented for list continuation
-						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true));
+						RenderPrIssueLinks(
+							sb,
+							new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true)
+						);
 
 						// Impact and Action sections - indented for list continuation
 						if (!string.IsNullOrWhiteSpace(entry.Impact))

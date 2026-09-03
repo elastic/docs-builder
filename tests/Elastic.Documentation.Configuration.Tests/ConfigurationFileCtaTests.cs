@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -20,7 +21,8 @@ public class ConfigurationFileCtaTests
 	[Fact]
 	public void ResolveCta_FrontmatterId_TakesPrecedenceOverTocDefault()
 	{
-		var docSet = LoadDocSet("""
+		var docSet = LoadDocSet(
+			"""
 			project: test
 			cta:
 			  observability:
@@ -39,10 +41,11 @@ public class ConfigurationFileCtaTests
 			toc:
 			  - file: get-started/quickstart.md
 			""", "solutions/observability/toc.yml"),
-			("# Quickstart", "solutions/observability/get-started/quickstart.md"));
+			("# Quickstart", "solutions/observability/get-started/quickstart.md")
+		);
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCallToAction("monitor-kubernetes", "solutions/observability/get-started/quickstart.md", out var warning);
+		var cta = config.ResolveCta("monitor-kubernetes", "solutions/observability/get-started/quickstart.md", out var warning);
 
 		cta.Name.Should().Be("monitor-kubernetes");
 		warning.Should().BeNull();
@@ -51,7 +54,8 @@ public class ConfigurationFileCtaTests
 	[Fact]
 	public void ResolveCta_NoFrontmatter_UsesTocDefault()
 	{
-		var docSet = LoadDocSet("""
+		var docSet = LoadDocSet(
+			"""
 			project: test
 			cta:
 			  observability:
@@ -66,10 +70,11 @@ public class ConfigurationFileCtaTests
 			toc:
 			  - file: apps/apm.md
 			""", "solutions/observability/toc.yml"),
-			("# APM", "solutions/observability/apps/apm.md"));
+			("# APM", "solutions/observability/apps/apm.md")
+		);
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCallToAction(null, "solutions/observability/apps/apm.md", out var warning);
+		var cta = config.ResolveCta(null, "solutions/observability/apps/apm.md", out var warning);
 
 		cta.Name.Should().Be("observability");
 		warning.Should().BeNull();
@@ -78,7 +83,8 @@ public class ConfigurationFileCtaTests
 	[Fact]
 	public void ResolveCta_NoFrontmatterAndNoTocDefault_FallsBackToDefault()
 	{
-		var docSet = LoadDocSet("""
+		var docSet = LoadDocSet(
+			"""
 			project: test
 			cta:
 			  observability:
@@ -88,19 +94,21 @@ public class ConfigurationFileCtaTests
 			toc:
 			  - file: reference/query-languages/esql.md
 			""",
-			("# ES|QL", "reference/query-languages/esql.md"));
+			("# ES|QL", "reference/query-languages/esql.md")
+		);
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCallToAction(null, "reference/query-languages/esql.md", out var warning);
+		var cta = config.ResolveCta(null, "reference/query-languages/esql.md", out var warning);
 
-		cta.Name.Should().Be(CallToAction.DefaultName);
+		cta.Name.Should().Be(Cta.DefaultName);
 		warning.Should().BeNull();
 	}
 
 	[Fact]
 	public void ResolveCta_NestedTocDefault_OverridesParentDefault()
 	{
-		var docSet = LoadDocSet("""
+		var docSet = LoadDocSet(
+			"""
 			project: test
 			cta:
 			  observability:
@@ -126,20 +134,20 @@ public class ConfigurationFileCtaTests
 			  - file: quickstart.md
 			""", "solutions/observability/get-started/toc.yml"),
 			("# APM", "solutions/observability/apps/apm.md"),
-			("# Quickstart", "solutions/observability/get-started/quickstart.md"));
+			("# Quickstart", "solutions/observability/get-started/quickstart.md")
+		);
 
 		var config = CreateConfiguration(docSet);
 
-		config.ResolveCallToAction(null, "solutions/observability/get-started/quickstart.md", out _)
-			.Name.Should().Be("monitor-kubernetes");
-		config.ResolveCallToAction(null, "solutions/observability/apps/apm.md", out _)
-			.Name.Should().Be("observability");
+		config.ResolveCta(null, "solutions/observability/get-started/quickstart.md", out _).Name.Should().Be("monitor-kubernetes");
+		config.ResolveCta(null, "solutions/observability/apps/apm.md", out _).Name.Should().Be("observability");
 	}
 
 	[Fact]
 	public void ResolveCta_UnknownFrontmatterId_WarnsAndFallsBackToTocDefault()
 	{
-		var docSet = LoadDocSet("""
+		var docSet = LoadDocSet(
+			"""
 			project: test
 			cta:
 			  observability:
@@ -154,10 +162,11 @@ public class ConfigurationFileCtaTests
 			toc:
 			  - file: apps/apm.md
 			""", "solutions/observability/toc.yml"),
-			("# APM", "solutions/observability/apps/apm.md"));
+			("# APM", "solutions/observability/apps/apm.md")
+		);
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCallToAction("does-not-exist", "solutions/observability/apps/apm.md", out var warning);
+		var cta = config.ResolveCta("does-not-exist", "solutions/observability/apps/apm.md", out var warning);
 
 		cta.Name.Should().Be("observability");
 		warning.Should().Contain("does-not-exist").And.Contain("ignored");
@@ -166,7 +175,8 @@ public class ConfigurationFileCtaTests
 	[Fact]
 	public void ResolveCta_DocsetDefaultCta_AppliesToRootLevelPages()
 	{
-		var docSet = LoadDocSet("""
+		var docSet = LoadDocSet(
+			"""
 			project: test
 			default_cta: observability
 			cta:
@@ -177,10 +187,11 @@ public class ConfigurationFileCtaTests
 			toc:
 			  - file: index.md
 			""",
-			("# Home", "index.md"));
+			("# Home", "index.md")
+		);
 
 		var config = CreateConfiguration(docSet);
-		var cta = config.ResolveCallToAction(null, "index.md", out _);
+		var cta = config.ResolveCta(null, "index.md", out _);
 
 		cta.Name.Should().Be("observability");
 	}
@@ -192,7 +203,9 @@ public class ConfigurationFileCtaTests
 		var collector = new DiagnosticsCollector([recorder]);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
-		_ = LoadDocSet(collector, """
+		_ = LoadDocSet(
+			collector,
+			"""
 			project: test
 			cta:
 			  observability:
@@ -217,20 +230,22 @@ public class ConfigurationFileCtaTests
 			toc:
 			  - file: ../shared/page.md
 			""", "section-b/toc.yml"),
-			("# Shared", "shared/page.md"));
+			("# Shared", "shared/page.md")
+		);
 
 		await collector.StopAsync(TestContext.Current.CancellationToken);
 
-		recorder.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error
-			&& d.Message.Contains("observability")
-			&& d.Message.Contains("security"));
+		recorder
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("observability") && d.Message.Contains("security"));
 	}
 
 	[Fact]
 	public async Task Constructor_UnknownTocDefaultCta_EmitsError()
 	{
-		var docSet = LoadDocSet("""
+		var docSet = LoadDocSet(
+			"""
 			project: test
 			toc:
 			  - toc: solutions/observability
@@ -240,12 +255,12 @@ public class ConfigurationFileCtaTests
 			toc:
 			  - file: apps/apm.md
 			""", "solutions/observability/toc.yml"),
-			("# APM", "solutions/observability/apps/apm.md"));
+			("# APM", "solutions/observability/apps/apm.md")
+		);
 
 		var (_, diagnostics) = await CreateConfigurationWithDiagnostics(docSet);
 
-		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error)
-			.Which.Message.Should().Contain("does-not-exist");
+		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error).Which.Message.Should().Contain("does-not-exist");
 	}
 
 	private static DocumentationSetFile LoadDocSet(string docsetYaml, params (string Content, string Path)[] files)
@@ -254,7 +269,11 @@ public class ConfigurationFileCtaTests
 		return LoadDocSet(collector, docsetYaml, files);
 	}
 
-	private static DocumentationSetFile LoadDocSet(DiagnosticsCollector collector, string docsetYaml, params (string Content, string Path)[] files)
+	private static DocumentationSetFile LoadDocSet(
+		DiagnosticsCollector collector,
+		string docsetYaml,
+		params (string Content, string Path)[] files
+	)
 	{
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>(), "/docs");
 		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
@@ -268,7 +287,12 @@ public class ConfigurationFileCtaTests
 			fileSystem.AddFile(fullPath, new MockFileData(content));
 		}
 
-		return DocumentationSetFile.LoadAndResolve(collector, docsetYaml, fileSystem.DirectoryInfo.New("/docs"), new ScopedFileSystem(fileSystem, "/docs"));
+		return DocumentationSetFile.LoadAndResolve(
+			collector,
+			docsetYaml,
+			fileSystem.DirectoryInfo.New("/docs"),
+			new ScopedFileSystem(fileSystem, "/docs")
+		);
 	}
 
 	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet)
@@ -277,7 +301,9 @@ public class ConfigurationFileCtaTests
 		return CreateConfiguration(docSet, collector);
 	}
 
-	private static async Task<(ConfigurationFile Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfigurationWithDiagnostics(DocumentationSetFile docSet)
+	private static async Task<(ConfigurationFile Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfigurationWithDiagnostics(
+		DocumentationSetFile docSet
+	)
 	{
 		var recorder = new RecordingDiagnosticsOutput();
 		var collector = new DiagnosticsCollector([recorder]);
@@ -289,19 +315,13 @@ public class ConfigurationFileCtaTests
 
 	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet, DiagnosticsCollector collector)
 	{
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "/docs/docset.yml", new MockFileData("") }
-		}, "/docs");
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { "/docs/docset.yml", new MockFileData("") } }, "/docs");
 
 		var configPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var docsDir = fileSystem.DirectoryInfo.New("/docs");
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-		};
+		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
@@ -322,13 +342,19 @@ public class ConfigurationFileCtaTests
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,
-		IDirectoryInfo documentationSourceDirectory)
-		: IDocumentationSetContext
+		IDirectoryInfo documentationSourceDirectory
+	) : IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
-		public ScopedFileSystem ReadFileSystem => WriteFileSystem;
-		public ScopedFileSystem WriteFileSystem { get; } = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
-		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New("/docs/.artifacts");
+		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(
+			documentationSourceDirectory,
+			new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configurationPath.FullName }
+		);
+		public DocumentationWriteFileSystem WriteFileSystem { get; } = new(
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: fileSystem
+		);
+		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;
 		public IDirectoryInfo DocumentationSourceDirectory => documentationSourceDirectory;

@@ -4,297 +4,220 @@ navigation_title: API Explorer
 
 # API Explorer
 
-The API Explorer renders OpenAPI specifications as interactive API documentation. When you configure it in your content set, `docs-builder` automatically generates pages for each API operation, request and response schemas, shared type definitions, and inline examples.
+The API Explorer turns an OpenAPI spec into HTML pages. If you add an `api:` entry in `docset.yml`, {{dbuild}} generates:
+
+- a product landing page
+- one tag landing page per tag
+- one operation page per operation
+- schema type pages for shared types
 
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
 :::
 
-## Configure the API Explorer
+## Get started
 
-Add the `api` key to your `docset.yml` file to enable the API Explorer. The key maps product names to OpenAPI JSON specification files.
-Paths are relative to the folder that contains `docset.yml`.
+This repository includes a working example. Follow these steps against that example.
 
-### Basic configuration
+:::::{stepper}
 
-```yaml
-api:
-  elasticsearch: elasticsearch-openapi.json
-  kibana: kibana-openapi.json
-```
+::::{step} Read the `api:` entry in `_docset.yml`
 
-Each product key produces its own section of API documentation. For example, `elasticsearch` generates pages under `/api/elasticsearch/` and `kibana` generates pages under `/api/kibana/`.
+The `api` key is valid in `docset.yml` only. Do not put it in `toc.yml`.
 
-The `api` key is only valid in `docset.yml`. You can't use it in `toc.yml` files.
-
-### Advanced configuration with intro and outro pages
-
-You can add custom Markdown content before and after the auto-generated API documentation using a sequence format:
+This repository uses `_docset.yml`. The live entry is:
 
 ```yaml
 api:
-  kibana:
-    - file: kibana-intro.md
-    - spec: kibana-openapi.json
-    - file: kibana-additional-notes.md
+  docs-builder-elasticsearch:
+    - spec: elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
 ```
 
-This configuration creates a navigation structure where:
+The map key is the URL suffix. This key produces `/api/doc/docs-builder-elasticsearch/`.
 
-1. **Intro pages** (before the first `spec`) appear at the top of the sidebar
-2. **Generated API content** (operations, tags, types) appears in the middle
-3. **Outro pages** (after the spec) appear at the bottom
+Each key takes a sequence with exactly one entry. That entry requires `spec:` and `product:`. `repository:` and `children:` are optional. See [Reference](#reference).
 
-#### Intro and outro page features:
+::::
 
-- **Full Myst support**: Intro/outro pages support the full range of Myst Markdown features including cross-links, substitutions, and directives
-- **Automatic exclusion**: No need to add intro/outro files to the `exclude:` list - they're automatically excluded from normal HTML generation
-- **URL collision detection**: Build fails if intro/outro page names conflict with reserved API Explorer segments (`types/`, `tags/`) or operation names
+::::{step} Preview the generated pages
 
-#### Multiple intro/outro pages
+If you pass `--watch`, {{dbuild}} does not generate API pages. Run serve without `--watch`:
 
-You can include multiple intro and outro pages:
-
-```yaml
-api:
-  kibana:
-    - file: introduction.md
-    - file: getting-started.md
-    - spec: kibana-openapi.json
-    - file: examples.md
-    - file: troubleshooting.md
+```bash
+docs-builder serve
 ```
 
-#### Sample intro page
+Open [http://localhost:3000/api/doc/docs-builder-elasticsearch/](http://localhost:3000/api/doc/docs-builder-elasticsearch/). {{dbuild}} generates API pages on the first `/api/` request. After that, it rebuilds them when the spec file or files under `api/<key>/` change.
 
-Here's a sample intro page (`kibana-intro.md`):
+If you only edit Markdown outside the API tree, pass `--skip-api` to `docs-builder build`.
 
-```markdown
-# Kibana APIs
+::::
 
-Welcome to the Kibana API documentation. These APIs allow you to manage Kibana programmatically.
+::::{step} Open the supplemental fixture
 
-## Before you begin
+Put operation files in `api/<key>/`. The file name is `op-` plus the spec `operationId`. Do not add a toc entry.
 
-Make sure you have:
+This repository includes `docs/api/docs-builder-elasticsearch/op-async-search-get.md`. After serve, open:
 
-- A running Kibana instance
-- Valid authentication credentials
-- Understanding of RESTful API principles
+[http://localhost:3000/api/doc/docs-builder-elasticsearch/operation/operation-async-search-get/](http://localhost:3000/api/doc/docs-builder-elasticsearch/operation/operation-async-search-get/)
+
+That file:
+
+- replaces the spec description
+- overrides the `keep_alive` and `id` parameter text
+- appends a **When to poll** section after the generated reference
+
+Heading rules, tag files, and `children:` pages are in [Writing supplemental content](./supplemental.md).
+
+::::
+
+::::{step} Override one major version
+
+If one major needs different text, add a `.vN.md` file next to the base file. This repository does not ship a `.vN.md` file. The pattern is:
+
+```text
+api/elasticsearch/
+  op-search.md
+  op-search.v8.md
 ```
 
-:::{important}
-Intro and outro Markdown files must not use a slug that would collide with the reserved API Explorer segments like `types` and `tags`.
-:::
+The unversioned `/api/doc/<key>/` tree uses the overlay of the highest numeric major that this product renders. Merge rules are in [Writing supplemental content](./supplemental.md#version-specific-files).
 
-## What you can extend (and what you can't)
+::::
 
-`file:` entries in the `api:` sequence add standalone pages to the API navigation. They are the
-only way to inject hand-written content into an API reference section:
+::::{step} Read the build error, then fix the file
 
-- **Intro pages** (before the spec) and **outro pages** (after the spec) are fully rendered
-  Markdown pages with access to all MyST directives, substitutions, and cross-links.
-- Intro/outro files are automatically excluded from normal HTML generation — you do not need to
-  add them to the `exclude:` list.
+If the file name does not match an `operationId`, the build fails. If a parameter key is not in the spec, the build also fails.
 
-**What you cannot do today:** there is no way to override or augment an individual operation,
-tag, schema, or parameter description using a local Markdown file. Every description for generated
-operations, tags, and schema types comes verbatim from the OpenAPI JSON. For per-operation and
-per-parameter enrichment see the [CLI reference](../cli-schema/index.md), which provides a
-fine-grained supplemental mechanism as a reference model for what future API augmentation could
-look like.
+```text
+API supplemental file 'op-nope.md' does not match any operationId in the latest spec
+API supplemental: Parameter 'typo' not found in operation 'async-search-get' in the latest spec
+```
 
-### Intro/outro file naming and validation
+Fix the file. Then rebuild. More messages are in [Writing supplemental content](./supplemental.md#validation-errors).
 
-A file's URL slug is derived from its filename: lowercase, with spaces and underscores replaced by
-hyphens, and the `.md` extension removed. For example, `Getting-Started.md` becomes the slug
-`getting-started`.
+::::
 
-The following slugs are reserved and cannot be used as intro/outro file names:
+:::::
 
-| Reserved slug | Reason |
+## Reference
+
+| `docset.yml` key | Required | Description |
+|---|---|---|
+| `spec:` | yes | Path to an OpenAPI file, relative to `docset.yml`. If the file exists, {{dbuild}} renders it for `main`. The basename is always used to look up the remote version index. |
+| `product:` | yes | A product id from `products.yml`. This binds the API to that product's versioning system. |
+| `repository:` | no | `org/repo` used to look up the version index. Set this when the spec is published from a different GitHub repository than the docset. |
+| `children:` | no | Extra Markdown pages under `api/<key>/`, in declared order. See [children:](./supplemental.md#children-pages). |
+
+Each product key must have exactly one sequence entry. That entry must have exactly one `spec:`. An empty sequence fails the build. A sequence with more than one entry also fails the build.
+
+### `spec:`
+
+If the file exists on disk, {{dbuild}} uses it for the `main` moniker. Older majors still come from the version index.
+
+The basename always looks up the version index. That is true when the file exists. It is also true when the file is missing. See [Remote spec resolution](#remote-spec-resolution).
+
+### `product:`
+
+If `product:` is not a known product id, the build fails. The error includes a suggestion.
+
+### `repository:`
+
+This repository sets `repository: elastic/elasticsearch-specification` because the spec is published from that repository, not from `elastic/docs-builder`.
+
+If you omit `repository:`, {{dbuild}} uses the GitHub remote of the current checkout.
+
+### `children:`
+
+`children:` adds full Markdown pages under the product root. Supplemental `op-*.md` and `tag-*.md` files are not `children:` pages. They merge into generated operation and tag pages.
+
+{{dbuild}} does not emit child files as normal docset HTML. Do not add them to `exclude:`.
+
+## Page URLs
+
+`{key}` is the `api:` map key. It is not the `product:` id.
+
+| Page | Path |
 |---|---|
-| `types` | API Explorer uses this path for schema type pages |
-| `tags` | API Explorer uses this path for tag landing pages |
+| Product root (`main`) | `/api/doc/{key}/` |
+| Released major | `/api/doc/{key}/v9/`, `/api/doc/{key}/v8/` |
+| Operation | `/api/doc/{key}/operation/operation-{operationId}/` |
+| Tag landing | `/api/doc/{key}/group/endpoint-{tagSlug}/` |
+| Schema type | `/api/doc/{key}/types/{schemaMoniker}/` |
+| Child Markdown | `/api/doc/{key}/{slug}/` |
 
-Additionally, the slug must not match any operation moniker already generated by the spec. The
-build fails with a descriptive error if either collision occurs, naming the conflicting file and
-the reserved or operation segment.
+{{dbuild}} lowercases the `operationId` in the URL. For tag slugs, it replaces spaces with hyphens and lowercases the name. Underscores stay.
 
-If the same slug is produced by two different intro/outro files in the same product, the build
-also fails with a duplicate-slug error.
+The `api:` key creates this URL tree. Do not list generated operation pages in `toc.yml`. From Markdown inside an API page, you can link with paths such as `../group/endpoint-search` and `../operation/operation-search`. {{dbuild}} rewrites those links against the current product base.
 
-### One spec per product
+## Multi-version behavior
 
-Each product key in the `api:` block must have **exactly one** `spec:` entry. The build fails
-if a product sequence contains zero or more than one spec. Multiple specs per product are not
-currently supported.
+For a versioned product, {{dbuild}} renders every resolved version:
 
-## Place your spec files
+| Index moniker | URL path | Role |
+|---|---|---|
+| `main` | `/api/doc/{key}/` | Current-major tree |
+| `9`, `8` | `/api/doc/{key}/v9/`, `/v8/` | Frozen major snapshots |
 
-OpenAPI specification files must be in JSON format and located in the same folder as your `docset.yml` (or in a subfolder of it). The path you specify in `api` is resolved relative to the `docset.yml` location.
+The numeric `9` entry is a frozen snapshot. It is not the same as `main`. The unversioned tree uses the overlay of the highest numeric major that this product renders.
 
-For example, if your content set is structured like this:
+If a local spec file exists, it overrides `main` only.
+
+A versionless product (`versioning: serverless` and similar) renders only `/api/doc/{key}/`. If more than one version is rendered, the left navigation shows a version dropdown.
+
+## Remote spec resolution
+
+If `spec:` does not resolve to a file on disk, {{dbuild}} fetches `main` from a CloudFront version index. Repositories that publish OpenAPI specs share this index.
+
+Object keys in the bucket look like this:
 
 ```
-docs/
-  docset.yml
-  elasticsearch-openapi.json
-  kibana-openapi.json
-  index.md
-  ...
+<org>/<repo>/<branch>/<spec-name>.<ext>
 ```
 
-Your `docset.yml` references the specs as follows:
+Example: `elastic/elasticsearch-specification/main/elasticsearch.json`.
 
-```yaml
-api:
-  elasticsearch: elasticsearch-openapi.json
-  kibana: kibana-openapi.json
-```
+The root manifest is `https://d29hkgsdo66d1n.cloudfront.net/index.json`. It is keyed by `org/repo`, then spec basename, then moniker (`main`, `9`, `8`). {{dbuild}} fetches that manifest once per build. It looks up `repository:` first. If `repository:` is missing, it uses the GitHub remote of the current checkout. Spec objects are fetched at `{base}/{org}/{repo}/{version}/{spec-basename}`.
+
+If there is no local spec and the index has no matching entry, the build fails. If a local spec exists, that miss is a warning. Then {{dbuild}} renders the local file.
 
 ## When the API Explorer runs
 
-The API Explorer generates documentation in two scenarios:
-
-- **`docs-builder build`**: API docs are generated as part of the standard build. Use `--skip-api` to skip generation for faster iteration on content.
-- **`docs-builder serve`**: API docs are generated on startup and regenerated automatically when spec files change.
-
-:::{note}
-API generation is skipped when running `docs-builder serve --watch`. This is a performance optimization for `dotnet watch` workflows. Run `serve` without `--watch` to include API docs in your local preview.
-:::
-
-## Link to API pages in navigation
-
-You can reference API pages in your `toc.yml` or `docset.yml` navigation using cross-link syntax:
-
-```yaml
-toc:
-  - file: index.md
-  - title: Elasticsearch API Reference
-    crosslink: elasticsearch://api/elasticsearch/
-```
-
-## What the API Explorer renders
-
-The API Explorer generates the following types of pages from your OpenAPI spec:
-
-- **Landing page**: An overview of the API grouped by tag
-- **Tag landing pages**: One page per tag that lists operations in that tag, with the tag's display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link
-- **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
-- **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
+- **`docs-builder build`.** {{dbuild}} generates API pages unless you pass `--skip-api`.
+- **`docs-builder serve`.** {{dbuild}} generates API pages on the first `/api/` request. It rebuilds them when the spec or `api/<key>/` Markdown files change. `--watch` skips API generation.
+- **Assembler builds.** {{dbuild}} generates API pages when the `assembler-api-explorer` feature flag is on. `staging` and `preview` set `ASSEMBLER_API_EXPLORER`. Production does not.
 
 ## OpenAPI extensions
 
-The API Explorer supports some OpenAPI specification extensions to enhance navigation and display:
+These spec extensions change how pages render. They live in the OpenAPI file, not in supplemental Markdown.
 
-- [x-codeSamples](#x-codesamples)
-- [x-displayName](#x-displayname)
-- [x-req-auth](#x-req-auth)
-- [x-tagGroups](#x-taggroups)
+### `x-codeSamples`
 
-For background on OpenAPI vendor extensions, refer to [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#specification-extensions).
-
-### Multi-language code examples [x-codesamples]
-
-When an OpenAPI operation includes the `x-codeSamples` extension, the API Explorer renders the code samples with a language selector tab. This lets users switch between available languages such as Console, cURL, Python, JavaScript, Ruby, PHP, and Java.
-
-The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and `source` field:
+If an operation has `x-codeSamples`, the operation page shows a **Code Examples** section. Each array item needs `lang` and `source`. Console is sorted first when present. The tab list is the `lang` values in the spec. Tabs use the `api-language` sync group, so the selected language stays across pages.
 
 ```json
 "x-codeSamples": [
   { "lang": "Console", "source": "GET /_search" },
-  { "lang": "curl", "source": "curl -X GET ..." },
-  { "lang": "Python", "source": "resp = client.search()" }
+  { "lang": "curl", "source": "curl -X GET ..." }
 ]
 ```
 
-The code samples appear in a standalone "Code Examples" section on every operation page that has the extension, regardless of HTTP method. This means GET, DELETE, and other operations without a request body also display language tabs when `x-codeSamples` are present. When multiple languages are available, they appear as tabs. The selected language persists across operations and page navigations. When only one language is available, the example renders without a tab selector.
+### `x-req-auth`
 
-Console is treated as the default language and appears first in the tab order when present.
-
-### Prerequisites [x-req-auth]
-
-Add the operation-level `x-req-auth` extension to list authentication or privilege requirements that users must satisfy before calling the API.
-The API Explorer renders these lines in a **Prerequisites** section on the operation page.
-
-`x-req-auth` is a JSON array of strings.
-Each non-empty string becomes one item in the prerequisites list (leading and trailing whitespace is trimmed).
+If an operation has `x-req-auth` as a JSON array of strings, the operation page shows a **Prerequisites** section after **Paths**. Empty strings are dropped. If the value is not an array, the section is omitted and the build may log a warning.
 
 ```json
-{
-  "get": {
-    "operationId": "get-snapshot",
-    "responses": { "200": { "description": "ok" } },
-    "x-req-auth": [
-      "Cluster privilege: `cluster:admin/snapshot`"
-    ]
-  }
-}
+"x-req-auth": [
+  "Cluster privilege: `cluster:admin/snapshot`"
+]
 ```
 
+### `x-displayName`
 
+If a tag object has `x-displayName`, navigation and tag headings use that string. URLs still use the canonical tag `name`. If two tag names slug to the same URL segment, the build fails.
 
-When prerequisites are present, **Prerequisites** also appears in the on-page table of contents (after **Paths**).
-When the extension is missing, empty, or not a JSON array, the section is omitted.
-Malformed values are skipped and the build may log a warning.
+### `x-tagGroups`
 
-### Tag labels [x-displayname]
-
-Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-display-name)) on tag objects to provide user-friendly display names in navigation and landing pages while maintaining stable URLs based on the canonical tag name.
-
-```json
-{
-  "tags": [
-    {
-      "name": "tasks",
-      "description": "The task management APIs enable you to get information about tasks currently running.",
-      "x-displayName": "Task management"
-    },
-    {
-      "name": "ml_anomaly", 
-      "description": "Machine learning anomaly detection APIs.",
-      "x-displayName": "Machine Learning Anomaly Detection"
-    }
-  ]
-}
-```
-
-**Behavior:**
-
-- When `x-displayName` is present, it's used for navigation titles, tag landing page titles, and section headings on the main API overview
-- When `x-displayName` is absent, the canonical tag `name` is used as a fallback
-- Tag landing page URLs and tag URL segments are derived from the canonical tag `name`
-
-:::{note}
-If two different canonical tag names normalize to the same tag landing page URL, the build fails with an error that names both tags and the colliding segment so the spec can be fixed.
-:::
-
-### Tag groups [x-taggroups]
-
-Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-tag-groups)) to define how tags are grouped in the API Explorer sidebar. Each group has a display `name` and a list of tag `name` values that belong to it. Group order in the array is the order of top-level sections in the navigation.
-
-```json
-{
-  "openapi": "3.0.3",
-  "info": { "title": "Example", "version": "1.0.0" },
-  "paths": {},
-  "x-tagGroups": [
-    {
-      "name": "Search & Document APIs",
-      "tags": ["search", "document", "eql", "esql", "sql"]
-    },
-    {
-      "name": "Cluster Management",
-      "tags": ["indices", "cluster", "snapshot"]
-    }
-  ]
-}
-```
-
-**Behavior:**
-
-- When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
-- In the navigation tree, a group's section title links to the **main API overview** for that product (it is not a separate page and does not point at the first tag in the group; tag landings stay under `.../tags/...` only for tags).
-- When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
-- Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
+If the document has `x-tagGroups`, the sidebar groups tags by those lists. Group order follows the array. A group title links to the product landing page. It is not its own URL. Tags that are missing from every group appear under `unknown`. The build logs a warning.

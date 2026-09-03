@@ -58,8 +58,6 @@ public class InlineAnchorParser : InlineParser
 
 		return true;
 	}
-
-
 }
 
 public class InlineAnchor : LeafInline
@@ -69,6 +67,5 @@ public class InlineAnchor : LeafInline
 
 public class InlineAnchorRenderer : HtmlObjectRenderer<InlineAnchor>
 {
-	protected override void Write(HtmlRenderer renderer, InlineAnchor obj) =>
-		renderer.Write("<a id=\"").Write(obj.Anchor).Write("\"></a>");
+	protected override void Write(HtmlRenderer renderer, InlineAnchor obj) => renderer.Write("<a id=\"").Write(obj.Anchor).Write("\"></a>");
 }

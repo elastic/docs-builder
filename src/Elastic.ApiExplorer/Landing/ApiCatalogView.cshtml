@@ -1,0 +1,19 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Landing.ApiCatalogViewModel>
+@using Elastic.ApiExplorer.Landing;
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
+@functions {
+	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+}
+<section id="elastic-docs-v3">
+	<h1>@ApiCatalog.PageTitle</h1>
+	<ul class="api-url-listing">
+		@foreach (var entry in Model.Entries.OrderBy(e => e.Key))
+		{
+			<li class="api-url-list-item">
+				<a href="@entry.Url">@entry.Title <code>@entry.Key</code></a>
+				<a href="@ApiOutputPaths.JsonUrl(entry.Url)" download>JSON</a>
+				<a href="@ApiOutputPaths.YamlUrl(entry.Url)" download>YAML</a>
+			</li>
+		}
+	</ul>
+</section>

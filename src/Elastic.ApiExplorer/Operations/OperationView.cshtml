@@ -92,17 +92,17 @@
 						}
 					</a>
 				</dt>
-				<dd>@Model.RenderMarkdown(path.Description)</dd>
+				<dd>@path.DescriptionHtml</dd>
 			</div>
 		}
 		</dl>
 	}
 
-	@if (!string.IsNullOrWhiteSpace(operation.Description))
+	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown))
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Description", "description", Model.Operation.Route)))
 		<p>
-			@(Model.RenderMarkdown(operation.Description))
+			@(Model.RenderMarkdown(pageModel.DescriptionMarkdown))
 		</p>
 		@if (pageModel.ExternalDocs is not null)
 		{
@@ -118,22 +118,15 @@
 		</a>
 	}
 
-	@if (operation.Security is { Count: > 0 })
+	@if (pageModel.AuthSchemes.Count > 0)
 	{
 		<div class="security-requirements">
 			<span class="security-label">Authorization:</span>
-			@foreach (var requirement in operation.Security)
+			@foreach (var scheme in pageModel.AuthSchemes)
 			{
-				@foreach (var scheme in requirement)
-				{
-					<span class="security-scheme">
-						<code>@scheme.Key.Name</code>
-						@if (scheme.Value is { Count: > 0 })
-						{
-							<span class="security-scopes">(@string.Join(", ", scheme.Value))</span>
-						}
-					</span>
-				}
+				<span class="security-scheme">
+					<span class="security-scheme-badge">@scheme.Label</span>
+				</span>
 			}
 		</div>
 	}
@@ -159,7 +152,7 @@
 							}
 						</a>
 					</dt>
-					<dd>@Model.RenderMarkdown(qs.Description)</dd>
+					<dd>@qp.DescriptionHtml</dd>
 					@if (qp.Type is not null)
 					{
 						@(await RenderPartialAsync<_ValidationConstraints, IReadOnlyList<ConstraintDisplay>>(qp.Constraints))
@@ -326,6 +319,11 @@
 	@if (pageModel.ShowResponseExamples)
 	{
 		@(await RenderPartialAsync<_ExamplesSection, ExamplesSection>(new ExamplesSection(new SectionHeader("Response Examples", "response-examples", Model.Operation.Route), pageModel.ResponseExamples)))
+	}
+	@foreach (var extra in pageModel.PostSections)
+	{
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(extra.Heading, extra.Anchor, Model.Operation.Route)))
+		<div>@extra.BodyHtml</div>
 	}
 	@if (pageModel.ExamplesAnchor != null)
 	{

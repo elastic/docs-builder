@@ -9,9 +9,9 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Creation;
 
@@ -37,7 +37,6 @@ public record CreateChangelogArguments
 	public string? Output { get; init; }
 	public string? Config { get; init; }
 	public bool UsePrNumber { get; init; }
-	public bool UseIssueNumber { get; init; }
 	public bool? StripTitlePrefix { get; init; }
 	/// <summary>
 	/// Whether to extract release note text from PR/issue descriptions for the entry description. null = use config default.
@@ -63,27 +62,29 @@ public record CreateChangelogArguments
 	/// unauthorized GITHUB_TOKEN would otherwise silently produce unfiltered, title-less changelogs.
 	/// </summary>
 	public bool StrictFetch { get; init; }
+
+	public bool IsNote { get; init; }
+	public string? NoteName { get; init; }
 }
 
 /// <summary>
 /// Service for creating changelog entries
 /// </summary>
 public class ChangelogCreationService(
-ILoggerFactory logFactory,
-IConfigurationContext configurationContext,
-IGitHubPrService? githubPrService = null,
-ScopedFileSystem? fileSystem = null,
-IEnvironmentVariables? env = null
+	ILoggerFactory logFactory,
+	IConfigurationContext configurationContext,
+	IChangelogFileSystem fileSystem,
+	IGitHubPrService? githubPrService = null,
+	IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
-	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? FileSystemFactory.RealWrite, logFactory.CreateLogger<ChangelogFileWriter>());
-	private readonly ProductInferService _productInferService = new(
-		configurationContext.ProductsConfiguration);
+	private readonly ChangelogFileWriter _fileWriter = new(fileSystem, logFactory.CreateLogger<ChangelogFileWriter>());
+	private readonly ProductInferService _productInferService = new(configurationContext.ProductsConfiguration);
 
 	public async Task<bool> CreateChangelog(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
 	{
@@ -105,13 +106,15 @@ IEnvironmentVariables? env = null
 
 			// When extraction is disabled (by CLI or config), discard any CI-injected description
 			// that originated from evaluate-pr's release-note extraction.
-			if (input.ExtractionDisabled
-				&& string.IsNullOrWhiteSpace(cliDescription)
-				&& !string.IsNullOrWhiteSpace(input.Description))
+			if (input.ExtractionDisabled && string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description))
 			{
 				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
 				input = input with { Description = null };
 			}
+
+			// CLI-supplied products must not carry versions; fail before any GitHub fetches.
+			if (input.Products.Count > 0 && !_validator.ValidateNoVersionTarget(collector, input))
+				return false;
 
 			// Multiple PRs: one changelog per PR (--use-pr-number uses PR number as each filename)
 			if (input.Prs != null && input.Prs.Length > 1)
@@ -147,26 +150,79 @@ IEnvironmentVariables? env = null
 		}
 	}
 
-	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config)
+	public async Task<bool> CreateNote(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
 	{
-		var usePrNumber = input.UsePrNumber;
-		var useIssueNumber = input.UseIssueNumber;
-
-		if (!usePrNumber && !useIssueNumber)
+		try
 		{
-			usePrNumber = config.Filename == FilenameStrategy.Pr;
-			useIssueNumber = config.Filename == FilenameStrategy.Issue;
-		}
+			var cliDescription = input.Description;
+			input = EnrichFromCI(input);
 
-		return input with
+			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			if (config == null)
+			{
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
+				return false;
+			}
+
+			input = ApplyConfigDefaults(input, config);
+
+			// Mirror CreateChangelog: discard CI-injected description when extraction is disabled
+			if (input.ExtractionDisabled && string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description))
+			{
+				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
+				input = input with { Description = null };
+			}
+
+			// Validate PR citation format (same rule as `add`: numeric refs require --owner/--repo)
+			if (input.Prs is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultiplePrFormat(collector, input.Prs, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidatePrFormat(collector, input.Prs?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			// Validate issue citation format
+			if (input.Issues is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultipleIssueFormat(collector, input.Issues, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidateIssueFormat(collector, input.Issues?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed: false))
+				return false;
+
+			if (!_validator.ValidateNoteProducts(collector, input))
+				return false;
+
+			if (!_validator.ValidateAgainstConfiguration(collector, input, config))
+				return false;
+
+			return await _fileWriter.WriteNoteAsync(input, config, ctx);
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error creating note: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied creating note: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
+	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config) =>
+		// Filename strategy is always Pr now; UsePrNumber is kept for backward compat but is effectively always true.
+		input with
 		{
 			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
 			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues,
 			StripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix,
-			UsePrNumber = usePrNumber,
-			UseIssueNumber = useIssueNumber
+			UsePrNumber = true
 		};
-	}
 
 	/// <summary>
 	/// Infers products from configuration defaults or repository name.
@@ -176,25 +232,52 @@ IEnvironmentVariables? env = null
 		// First, try config defaults
 		if (productsConfig?.Default is { Count: > 0 })
 		{
-			var products = productsConfig.Default.Select(d => new ProductArgument
-			{
-				Product = d.Product,
-				Lifecycle = d.Lifecycle
-			}).ToList();
-			_logger.LogInformation("Using default products from config: {Products}",
-				string.Join(", ", products.Select(p => $"{p.Product} ({p.Lifecycle})")));
+			var products = productsConfig
+				.Default
+				.Select(d => new ProductArgument { Product = d.Product, Lifecycle = d.Lifecycle })
+				.ToList();
+			_logger.LogInformation(
+				"Using default products from config: {Products}",
+				string.Join(", ", products.Select(p => $"{p.Product} ({p.Lifecycle})"))
+			);
 			return products;
 		}
 
 		// Second, try inference from the --repo argument (or bundle.repo from config)
-		var product = repoName != null ? _productInferService.InferProductFromRepository(repoName) : null;
-		if (product == null)
+		if (repoName == null)
 		{
-			_logger.LogDebug("Could not infer product from repository");
+			_logger.LogDebug("Could not infer product: no repo name available");
 			return null;
 		}
 
-		_logger.LogInformation("Inferred product '{ProductId}' from repository", product.Id);
+		var candidates = _productInferService.InferProductsFromRepository(repoName);
+		if (candidates.Count == 0)
+		{
+			_logger.LogDebug("Could not infer product from repository '{Repo}'", repoName);
+			return null;
+		}
+
+		// When the repo maps to multiple products (e.g., elastic/cloud → cloud-hosted/cloud-serverless/cloud-enterprise),
+		// intersect with products.available to narrow to one. If still ambiguous, don't infer — ask the user.
+		if (candidates.Count > 1 && productsConfig?.Available is { Count: > 0 })
+		{
+			var available = productsConfig.Available.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			candidates = candidates.Where(p => available.Contains(p.Id)).ToList();
+		}
+
+		if (candidates.Count != 1)
+		{
+			_logger.LogDebug(
+				"Ambiguous product inference for '{Repo}': {Count} candidates ({Ids}) — specify --products explicitly",
+				repoName,
+				candidates.Count,
+				string.Join(", ", candidates.Select(p => p.Id))
+			);
+			return null;
+		}
+
+		var product = candidates[0];
+		_logger.LogInformation("Inferred product '{ProductId}' from repository '{Repo}'", product.Id, repoName);
 		return [new ProductArgument { Product = product.Id, Lifecycle = "ga" }];
 	}
 
@@ -202,7 +285,8 @@ IEnvironmentVariables? env = null
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (input.Prs == null || input.Prs.Length == 0)
 			return false;
@@ -213,13 +297,20 @@ IEnvironmentVariables? env = null
 
 		var successCount = 0;
 		var skippedCount = 0;
-		var fetchFailedCount = 0;
+		var fetchFailedAndWritten = 0;
 
 		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()).Where(prTrimmed => !string.IsNullOrWhiteSpace(prTrimmed)))
 		{
 			// Check PR for blockers
 			var (shouldSkip, prInfo) = await _prProcessor.CheckPrForBlockersAsync(
-				collector, prTrimmed, input.Owner, input.Repo, input.Products, config, ctx);
+				collector,
+				prTrimmed,
+				input.Owner,
+				input.Repo,
+				input.Products,
+				config,
+				ctx
+			);
 
 			if (shouldSkip)
 			{
@@ -227,28 +318,38 @@ IEnvironmentVariables? env = null
 				continue;
 			}
 
-			// A null prInfo here means the GitHub fetch failed: this PR bypasses rules.create
-			// label filtering and is written without a derived title/type. Track it so the failure
-			// is surfaced as a single summary rather than buried among per-PR warnings.
-			if (prInfo == null)
-				fetchFailedCount++;
-
 			// Create a copy of input for this PR
 			var prInput = CreateInputForSinglePr(input, prTrimmed);
 
 			// Process this PR (treat as single PR); the loop owns fetch-failure reporting
 			var result = await CreateSingleChangelogAsync(collector, prInput, config, ctx, reportFetchFailure: false);
-			if (result)
-				successCount++;
+			if (!result)
+				continue;
+
+			successCount++;
+			// A null prInfo here means the GitHub fetch failed: this PR bypasses rules.create
+			// label filtering and is written without a derived title/type. Only count it when a
+			// file was actually written so the summary does not claim creation after a later error.
+			if (prInfo == null)
+				fetchFailedAndWritten++;
 		}
 
-		ReportBulkFetchFailures(collector, fetchFailedCount, input.Prs.Length, input.StrictFetch, "pull request");
+		ReportBulkFetchFailures(collector, fetchFailedAndWritten, input.Prs.Length, input.StrictFetch, "pull request");
 
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation("Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched", successCount, skippedCount, fetchFailedCount);
-		return successCount > 0;
+		if (successCount > 0)
+		{
+			_logger.LogInformation(
+				"Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched",
+				successCount,
+				skippedCount,
+				fetchFailedAndWritten
+			);
+		}
+
+		return successCount > 0 || skippedCount > 0;
 	}
 
 	private async Task<bool> CreateSingleChangelogAsync(
@@ -256,7 +357,8 @@ IEnvironmentVariables? env = null
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		Cancel ctx,
-		bool reportFetchFailure = true)
+		bool reportFetchFailure = true
+	)
 	{
 		// Get the PR URL if Prs is provided (for single PR processing)
 		var prUrl = input.Prs is { Length: > 0 } ? input.Prs[0] : null;
@@ -267,9 +369,7 @@ IEnvironmentVariables? env = null
 			return false;
 
 		// Fetch PR info when any derivable field is still missing (title, type, or products)
-		var needsDerivation = string.IsNullOrWhiteSpace(input.Title)
-			|| string.IsNullOrWhiteSpace(input.Type)
-			|| input.Products.Count == 0;
+		var needsDerivation = string.IsNullOrWhiteSpace(input.Title) || string.IsNullOrWhiteSpace(input.Type) || input.Products.Count == 0;
 		if (!string.IsNullOrWhiteSpace(prUrl) && needsDerivation)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
@@ -302,6 +402,10 @@ IEnvironmentVariables? env = null
 		if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
 			return false;
 
+		// Entries must not carry version targets; applicability comes from the origin branch
+		if (!_validator.ValidateNoVersionTarget(collector, input))
+			return false;
+
 		// Validate against configuration
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
 			return false;
@@ -313,14 +417,16 @@ IEnvironmentVariables? env = null
 			config,
 			string.IsNullOrWhiteSpace(input.Title),
 			string.IsNullOrWhiteSpace(input.Type),
-			ctx);
+			ctx
+		);
 	}
 
 	private async Task<bool> CreateChangelogsForMultipleIssuesAsync(
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		if (input.Issues == null || input.Issues.Length == 0)
 			return false;
@@ -330,12 +436,19 @@ IEnvironmentVariables? env = null
 
 		var successCount = 0;
 		var skippedCount = 0;
-		var fetchFailedCount = 0;
+		var fetchFailedAndWritten = 0;
 
 		foreach (var issueUrl in input.Issues.Select(i => i.Trim()).Where(i => !string.IsNullOrWhiteSpace(i)))
 		{
 			var (shouldSkip, issueInfo) = await _issueProcessor.CheckIssueForBlockersAsync(
-				collector, issueUrl, input.Owner, input.Repo, input.Products, config, ctx);
+				collector,
+				issueUrl,
+				input.Owner,
+				input.Repo,
+				input.Products,
+				config,
+				ctx
+			);
 
 			if (shouldSkip)
 			{
@@ -343,24 +456,35 @@ IEnvironmentVariables? env = null
 				continue;
 			}
 
-			// A null issueInfo means the GitHub fetch failed: the entry bypasses rules.create
-			// filtering and is written without a derived title/type. Track it for a summary report.
-			if (issueInfo == null)
-				fetchFailedCount++;
-
 			var issueInput = input with { Issues = [issueUrl] };
 			var result = await CreateSingleChangelogFromIssueAsync(collector, issueInput, config, ctx, reportFetchFailure: false);
-			if (result)
-				successCount++;
+			if (!result)
+				continue;
+
+			successCount++;
+			// A null issueInfo means the GitHub fetch failed: the entry bypasses rules.create
+			// filtering and is written without a derived title/type. Only count it when a file
+			// was actually written so the summary does not claim creation after a later error.
+			if (issueInfo == null)
+				fetchFailedAndWritten++;
 		}
 
-		ReportBulkFetchFailures(collector, fetchFailedCount, input.Issues.Length, input.StrictFetch, "issue");
+		ReportBulkFetchFailures(collector, fetchFailedAndWritten, input.Issues.Length, input.StrictFetch, "issue");
 
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation("Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched", successCount, skippedCount, fetchFailedCount);
-		return successCount > 0;
+		if (successCount > 0)
+		{
+			_logger.LogInformation(
+				"Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched",
+				successCount,
+				skippedCount,
+				fetchFailedAndWritten
+			);
+		}
+
+		return successCount > 0 || skippedCount > 0;
 	}
 
 	private async Task<bool> CreateSingleChangelogFromIssueAsync(
@@ -368,7 +492,8 @@ IEnvironmentVariables? env = null
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		Cancel ctx,
-		bool reportFetchFailure = true)
+		bool reportFetchFailure = true
+	)
 	{
 		var issueUrl = input.Issues is { Length: > 0 } ? input.Issues[0] : null;
 
@@ -399,6 +524,10 @@ IEnvironmentVariables? env = null
 		if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
 			return false;
 
+		// Entries must not carry version targets; applicability comes from the origin branch
+		if (!_validator.ValidateNoVersionTarget(collector, input))
+			return false;
+
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
 			return false;
 
@@ -408,20 +537,26 @@ IEnvironmentVariables? env = null
 			config,
 			string.IsNullOrWhiteSpace(input.Title),
 			string.IsNullOrWhiteSpace(input.Type),
-			ctx);
+			ctx
+		);
 	}
 
 	/// <summary>Emits a single aggregate diagnostic (an error under strict mode) when items could not be fetched from GitHub during bulk creation.</summary>
-	private static void ReportBulkFetchFailures(IDiagnosticsCollector collector, int fetchFailedCount, int total, bool strict, string itemKind)
+	private static void ReportBulkFetchFailures(
+		IDiagnosticsCollector collector,
+		int fetchFailedCount,
+		int total,
+		bool strict,
+		string itemKind
+	)
 	{
 		if (fetchFailedCount <= 0)
 			return;
 
-		var message =
-			$"{fetchFailedCount} of {total} {itemKind}(s) could not be fetched from GitHub. " +
-			$"Their changelogs were created without rules.create label filtering and may be missing title or type, " +
-			$"which will cause 'changelog bundle' to fail. Verify GITHUB_TOKEN is set and can access the referenced " +
-			$"repositories, then delete the generated changelog files and re-run.";
+		var message = $"{fetchFailedCount} of {total} {itemKind}(s) could not be fetched from GitHub. "
+			+ $"Their changelogs were created without rules.create label filtering and may be missing title or type, "
+			+ $"which will cause 'changelog bundle' to fail. Verify GITHUB_TOKEN is set and can access the referenced "
+			+ $"repositories, then delete the generated changelog files and re-run.";
 
 		if (strict)
 			collector.EmitError(string.Empty, message);
@@ -430,9 +565,11 @@ IEnvironmentVariables? env = null
 	}
 
 	private static void EmitStrictFetchError(IDiagnosticsCollector collector, string itemKind, string? url) =>
-		collector.EmitError(string.Empty,
+		collector.EmitError(
+			string.Empty,
 			$"Could not fetch {itemKind} '{url}' from GitHub and --strict-fetch is set. " +
-			"Verify GITHUB_TOKEN is set and can access the repository, then re-run.");
+				"Verify GITHUB_TOKEN is set and can access the repository, then re-run."
+		);
 
 	private static CreateChangelogArguments CreateInputForSinglePr(CreateChangelogArguments input, string prUrl) =>
 		input with { Prs = [prUrl] };
@@ -442,7 +579,9 @@ IEnvironmentVariables? env = null
 		{
 			Title = derived.Title != null && string.IsNullOrWhiteSpace(input.Title) ? derived.Title : input.Title,
 			Type = derived.Type != null && string.IsNullOrWhiteSpace(input.Type) ? derived.Type : input.Type,
-			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description) ? derived.Description : input.Description,
+			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description)
+				? derived.Description
+				: input.Description,
 			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas,
 			Products = derived.Products is { Count: > 0 } && input.Products.Count == 0 ? derived.Products : input.Products,
 			Highlight = derived.Highlight ?? input.Highlight,
@@ -474,13 +613,9 @@ IEnvironmentVariables? env = null
 
 		_logger.LogInformation("CI environment detected, enriching arguments from CHANGELOG_* env vars");
 
-		var enrichedPrs = input.Prs is { Length: > 0 }
-			? input.Prs
-			: !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
+		var enrichedPrs = input.Prs is { Length: > 0 } ? input.Prs : !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
 
-		var enrichedProducts = input.Products.Count > 0
-			? input.Products
-			: ProductArgument.ParseProductSpecs(ciProducts);
+		var enrichedProducts = input.Products.Count > 0 ? input.Products : ProductArgument.ParseProductSpecs(ciProducts);
 
 		var enrichedDescription = !string.IsNullOrWhiteSpace(input.Description)
 			? input.Description
