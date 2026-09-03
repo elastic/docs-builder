@@ -190,7 +190,8 @@ body {
 		@apply relative ml-4 hidden w-full;
 
 		/* revealed when the sibling .peer div contains a checked checkbox */
-		.peer:has(:checked) ~ & {
+		.peer:has(:checked) ~ &,
+		.peer:has(:checked) ~ .nav-subtree-clip > & {
 			display: block;
 		}
 
