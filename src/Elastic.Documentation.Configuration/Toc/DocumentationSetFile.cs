@@ -863,7 +863,8 @@ public class DocumentationSetFile : TableOfContentsFile
 	private static FrozenDictionary<string, string> CollectTocDefaultCtas(
 		IDiagnosticsCollector collector,
 		IReadOnlyCollection<ITableOfContentsItem> items,
-		string? inheritedDefault)
+		string? inheritedDefault
+	)
 	{
 		var defaults = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		CollectTocDefaultCtas(collector, items, inheritedDefault, defaults);
@@ -874,7 +875,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		IDiagnosticsCollector collector,
 		IReadOnlyCollection<ITableOfContentsItem> items,
 		string? inheritedDefault,
-		Dictionary<string, string> defaults)
+		Dictionary<string, string> defaults
+	)
 	{
 		foreach (var item in items)
 		{
@@ -904,17 +906,19 @@ public class DocumentationSetFile : TableOfContentsFile
 		string relativePath,
 		string? defaultCta,
 		string context,
-		Dictionary<string, string> defaults)
+		Dictionary<string, string> defaults
+	)
 	{
 		if (string.IsNullOrWhiteSpace(defaultCta))
 			return;
 
 		var normalizedPath = NormalizeDocsetRelativePath(relativePath);
-		if (defaults.TryGetValue(normalizedPath, out var existing)
-			&& !existing.Equals(defaultCta, StringComparison.OrdinalIgnoreCase))
+		if (defaults.TryGetValue(normalizedPath, out var existing) && !existing.Equals(defaultCta, StringComparison.OrdinalIgnoreCase))
 		{
-			collector.EmitError(context,
-				$"'{normalizedPath}' is registered with default CTA '{existing}' and '{defaultCta}'. Each page can only have one default CTA.");
+			collector.EmitError(
+				context,
+				$"'{normalizedPath}' is registered with default CTA '{existing}' and '{defaultCta}'. Each page can only have one default CTA."
+			);
 			return;
 		}
 

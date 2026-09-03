@@ -238,8 +238,10 @@ public record ConfigurationFile
 			{
 				if (!_ctas.ContainsKey(ctaName))
 				{
-					context.EmitError(context.ConfigurationPath,
-						$"'default_cta: {ctaName}' on page '{pagePath}' does not match any 'cta' template in docset.yml.");
+					context.EmitError(
+						context.ConfigurationPath,
+						$"'default_cta: {ctaName}' on page '{pagePath}' does not match any 'cta' template in docset.yml."
+					);
 				}
 			}
 
