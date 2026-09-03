@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics;
+using System.Text;
 using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -21,7 +22,7 @@ namespace Elastic.Documentation.Assembler.Building;
 /// </summary>
 public static class AssemblerOpenApiBuildStep
 {
-	public static async Task BuildAsync(
+	public static async Task<IReadOnlyList<ApiCatalogEntry>> BuildAsync(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
 		AssembleSources assembleSources,
@@ -37,14 +38,14 @@ public static class AssemblerOpenApiBuildStep
 		if (!features.AssemblerApiExplorerEnabled)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: assembler-api-explorer feature flag is disabled");
-			return;
+			return [];
 		}
 
 		var owners = DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
 		if (owners.Count == 0)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: no API declarations found in assembled docsets");
-			return;
+			return [];
 		}
 
 		var stopwatch = Stopwatch.StartNew();
@@ -75,6 +76,7 @@ public static class AssemblerOpenApiBuildStep
 				versionIndexClient
 			);
 			await catalogGenerator.GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
+			await WriteApiLlmsTxt(assembleContext, catalogEntries, ctx).ConfigureAwait(false);
 		}
 
 		stopwatch.Stop();
@@ -83,6 +85,17 @@ public static class AssemblerOpenApiBuildStep
 			assembleContext.OutputWithPathPrefixDirectory.FullName,
 			stopwatch.ElapsedMilliseconds
 		);
+		return catalogEntries;
+	}
+
+	private static async Task WriteApiLlmsTxt(AssembleContext assembleContext, IReadOnlyList<ApiCatalogEntry> catalogEntries, Cancel ctx)
+	{
+		var canonicalBaseUrl = new Uri(assembleContext.Environment.Uri);
+		var content = new LlmsNavigationEnhancer().GenerateApiHubIndex(catalogEntries, canonicalBaseUrl);
+		var directory = assembleContext.WriteFileSystem.Path.Join(assembleContext.OutputWithPathPrefixDirectory.FullName, "api");
+		_ = assembleContext.WriteFileSystem.Directory.CreateDirectory(directory);
+		var path = assembleContext.WriteFileSystem.Path.Join(directory, "llms.txt");
+		await assembleContext.WriteFileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, ctx).ConfigureAwait(false);
 	}
 
 	internal static IReadOnlyList<AssemblerApiOwner> DiscoverApiOwners(
