@@ -31,8 +31,8 @@ environments:
     content_source: edge
     google_tag_manager:
       enabled: false
-    feature_flags:
-      NAVIGATION_PREVIEW: true
+  #  feature_flags:
+  #    NAVIGATION_PREVIEW: true
   # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
   # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step
   # in navigation-test.journey.ts should be replaced with a top-nav step).
