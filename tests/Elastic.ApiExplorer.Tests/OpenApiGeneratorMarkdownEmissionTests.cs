@@ -150,6 +150,66 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 	}
 
 	[Fact]
+	public async Task Generate_FixtureProductLandingHtml_ContainsBaseUrlLicenseVersionAndCatalog()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-landing-html-{Guid.NewGuid():N}");
+		var context = await Generate(outputRoot, fixture.Document, TestContext.Current.CancellationToken);
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
+
+		html.Should().Contain("https://fixture.example.com");
+		html.Should().Contain("class=\"server-url\"");
+		html.Should().Contain("Base URL");
+		html.Should().Contain("Apache 2.0");
+		html.Should().Contain("1.2.3");
+		html.Should().Contain("Search APIs");
+	}
+
+	[Fact]
+	public async Task Generate_FixtureProductLandingMarkdown_ContainsBaseUrlLicenseVersionAndCatalog()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-landing-md-{Guid.NewGuid():N}");
+		var context = await Generate(outputRoot, fixture.Document, TestContext.Current.CancellationToken);
+		var markdown = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), TestContext.Current.CancellationToken);
+
+		markdown.Should().Contain("https://fixture.example.com");
+		markdown.Should().Contain("Base URL");
+		markdown.Should().Contain("Apache 2.0");
+		markdown.Should().Contain("1.2.3");
+		markdown.Should().Contain("Search APIs");
+	}
+
+	[Fact]
+	public async Task Generate_TitleOnlyDocument_OmitsEmptyInfoHeadings()
+	{
+		var document = new OpenApiDocument { Info = new OpenApiInfo { Title = "Title Only API", Version = "" }, Paths = [] };
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-landing-empty-{Guid.NewGuid():N}");
+		var context = await Generate(outputRoot, document, TestContext.Current.CancellationToken);
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
+		var markdown = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), TestContext.Current.CancellationToken);
+
+		html.Should().Contain("Title Only API");
+		html.Should().NotContain("License:");
+		html.Should().NotContain("Version:");
+		html.Should().NotContain("Base URL");
+		markdown.Should().Contain("# Title Only API");
+		markdown.Should().NotContain("License:");
+		markdown.Should().NotContain("Version:");
+		markdown.Should().NotContain("Base URL");
+	}
+
+	[Fact]
 	public async Task SimpleMarkdownPage_WritesAuthoredSource()
 	{
 		var introPath = Path.Combine(
@@ -181,6 +241,22 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		wrapped.Should().Contain("description: Spaces enable you to organize");
 		wrapped.Should().Contain("# Kibana spaces");
 		wrapped.Should().NotContain("<!DOCTYPE");
+	}
+
+	private async Task<BuildContext> Generate(string outputRoot, OpenApiDocument document, Cancel ctx)
+	{
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(document);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+		await generator.Generate(ctx);
+		return context;
 	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)

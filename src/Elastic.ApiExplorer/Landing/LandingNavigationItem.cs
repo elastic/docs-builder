@@ -17,24 +17,30 @@ public class ApiLanding : IApiGroupingModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
+		var infoNote = LandingInfoNote.From(context.Model);
 		var viewModel = new LandingViewModel(context)
 		{
 			Landing = this,
 			ApiInfo = context.Model.Info,
+			InfoNote = infoNote,
 			OverviewRows = ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot)
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
-		Task.FromResult<string?>(
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	{
+		var infoNote = LandingInfoNote.From(context.Model);
+		return Task.FromResult<string?>(
 			LandingCommonMark.Product(
 				context.Model.Info,
+				infoNote,
 				ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot),
 				context.CurrentNavigation.NavigationRoot.Url
 			)
 		);
+	}
 }
 
 public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>

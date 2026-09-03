@@ -9,10 +9,23 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Landing;
 
+public sealed record LandingInfoNote(IReadOnlyList<OpenApiServer> Servers, string? LicenseName, Uri? LicenseUrl, string? Version)
+{
+	public static LandingInfoNote From(OpenApiDocument document)
+	{
+		var info = document.Info;
+		IReadOnlyList<OpenApiServer> servers = document.Servers is { Count: > 0 } ? [.. document.Servers] : [];
+		var licenseName = string.IsNullOrEmpty(info?.License?.Name) ? null : info.License.Name;
+		var version = string.IsNullOrEmpty(info?.Version) ? null : info.Version;
+		return new(servers, licenseName, info?.License?.Url, version);
+	}
+}
+
 public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiLanding Landing { get; init; }
 	public required OpenApiInfo ApiInfo { get; init; }
+	public required LandingInfoNote InfoNote { get; init; }
 
 	/// <summary>Flattened overview table rows; built before the slice renders.</summary>
 	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
