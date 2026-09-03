@@ -127,7 +127,8 @@ public class GitHubReleaseChangelogService(
 				collector.EmitError(
 					string.Empty,
 					$"Could not find product for repository '{repo}' in products.yml. " +
-						"Ensure the repository name matches a product ID or a product has 'repository: {repo}' configured."
+						$"Add a product to config/products.yml whose ID is '{repo}', " +
+						$"or set 'repository: {repo}' on one or more existing products."
 				);
 				return false;
 			}
