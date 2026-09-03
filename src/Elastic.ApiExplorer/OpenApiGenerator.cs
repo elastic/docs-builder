@@ -232,7 +232,10 @@ public class OpenApiGenerator(
 		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName).ConfigureAwait(false);
 	}
 
-	private static readonly OpenApiDocument CatalogDocument = new() { Info = new OpenApiInfo { Title = "API Explorer", Version = "1.0" } };
+	private static readonly OpenApiDocument CatalogDocument = new()
+	{
+		Info = new OpenApiInfo { Title = ApiCatalog.PageTitle, Version = "1.0" }
+	};
 
 	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
 	{
