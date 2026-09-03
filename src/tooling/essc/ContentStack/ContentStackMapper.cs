@@ -147,6 +147,12 @@ internal static partial class ContentStackMapper
 		if (!string.IsNullOrWhiteSpace(richTextBody))
 			return richTextBody;
 
+		// Strategy 8: main_content.markdown_l10n (reports, threat_command) — plain Markdown, not the
+		// ProseMirror JSON AST from strategy 7. Security Labs authors these in Markdown directly.
+		var markdownBody = GetNestedString(data, "main_content", "markdown_l10n");
+		if (!string.IsNullOrWhiteSpace(markdownBody))
+			return RenderMarkdown(markdownBody);
+
 		return null;
 	}
 
@@ -193,6 +199,46 @@ internal static partial class ContentStackMapper
 	{
 		var rendered = RenderRichText(root);
 		return string.IsNullOrWhiteSpace(StripHtml(rendered)) ? null : rendered;
+	}
+
+	/// <summary>
+	/// Renders ContentStack's plain-Markdown <c>main_content.markdown_l10n</c> (reports, threat_command)
+	/// into the same lightweight HTML-ish string the ProseMirror rich-text strategy produces above, so it
+	/// flows through the same <see cref="StripHtml"/>/<see cref="ExtractHeadings"/> pipeline. Fenced code
+	/// blocks and images are dropped — not useful for search snippets/headings — and links keep their
+	/// visible text but drop the URL.
+	/// </summary>
+	private static string RenderMarkdown(string markdown)
+	{
+		var withoutCodeFences = MarkdownCodeFenceRegex().Replace(markdown, " ");
+
+		var sb = new StringBuilder();
+		foreach (var rawLine in withoutCodeFences.Split('\n'))
+		{
+			var line = rawLine.TrimEnd('\r');
+			var heading = MarkdownHeadingRegex().Match(line);
+			if (heading.Success)
+			{
+				var level = heading.Groups[1].Value.Length;
+				_ = sb.Append($"<h{level}>{StripMarkdownInlineSyntax(heading.Groups[2].Value)}</h{level}>");
+				continue;
+			}
+
+			_ = sb.Append(StripMarkdownInlineSyntax(line)).Append(' ');
+		}
+
+		return sb.ToString();
+	}
+
+	private static string StripMarkdownInlineSyntax(string line)
+	{
+		var text = MarkdownBlockquoteRegex().Replace(line, "");
+		text = MarkdownListBulletRegex().Replace(text, "");
+		text = MarkdownImageRegex().Replace(text, "");
+		text = MarkdownLinkRegex().Replace(text, "$1");
+		text = MarkdownInlineCodeRegex().Replace(text, "$1");
+		text = MarkdownBoldRegex().Replace(text, "$1$2");
+		return MarkdownItalicRegex().Replace(text, "$1$2");
 	}
 
 	private static string? ExtractModularBlocks(JsonElement data)
@@ -310,10 +356,23 @@ internal static partial class ContentStackMapper
 				return StripHtml(pageInfoRichDescription);
 		}
 
-		// summary_l10n (blog_v3)
+		// summary_l10n (blog_v3, reports, threat_command)
 		var summary = GetString(data, "summary_l10n");
 		if (!string.IsNullOrWhiteSpace(summary))
 			return summary;
+
+		// subheading_l10n — top-level, not nested under page_info (reports_landing, threat_command_landing)
+		var topLevelSubheading = GetString(data, "subheading_l10n");
+		if (!string.IsNullOrWhiteSpace(topLevelSubheading))
+			return topLevelSubheading;
+
+		// page_description_l10n / blog_description_l10n (security_labs_homepage, observability_labs_homepage)
+		var pageDescription = GetString(data, "page_description_l10n");
+		if (!string.IsNullOrWhiteSpace(pageDescription))
+			return pageDescription;
+		var blogDescription = GetString(data, "blog_description_l10n");
+		if (!string.IsNullOrWhiteSpace(blogDescription))
+			return blogDescription;
 
 		// SEO description fallback
 		return GetSeoString(data, "seo_description_l10n") ?? GetSeoString(data, "seo_description");
@@ -437,10 +496,15 @@ internal static partial class ContentStackMapper
 
 	internal static string GetNavigationSection(string url, string? contentTypeUid = null)
 	{
-		// Search Labs is sourced from Contentstack; classify consistently with the label
-		// LabsHtmlExtractor.GetNavigationSection assigns to the same URLs when crawled.
+		// Search/Security/Observability Labs are sourced from Contentstack. Must come before the
+		// generic "/security" and "/observability" catch-alls below, which would otherwise swallow
+		// these as substring matches.
 		if (url.Contains("/search-labs", StringComparison.OrdinalIgnoreCase))
 			return "search-labs";
+		if (url.Contains("/security-labs", StringComparison.OrdinalIgnoreCase))
+			return "security-labs";
+		if (url.Contains("/observability-labs", StringComparison.OrdinalIgnoreCase))
+			return "observability-labs";
 		if (url.Contains("/glossary", StringComparison.OrdinalIgnoreCase))
 			return "glossary";
 		if (url.Contains("/blog/", StringComparison.OrdinalIgnoreCase))
@@ -592,4 +656,31 @@ internal static partial class ContentStackMapper
 
 	[GeneratedRegex(@"<h[1-6][^>]*>(.*?)</h[1-6]>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
 	private static partial Regex HeadingRegex();
+
+	[GeneratedRegex(@"```[\s\S]*?```")]
+	private static partial Regex MarkdownCodeFenceRegex();
+
+	[GeneratedRegex(@"^(#{1,6})\s+(.+)$")]
+	private static partial Regex MarkdownHeadingRegex();
+
+	[GeneratedRegex(@"^>\s?")]
+	private static partial Regex MarkdownBlockquoteRegex();
+
+	[GeneratedRegex(@"^(\s*)([-*+]|\d+\.)\s+")]
+	private static partial Regex MarkdownListBulletRegex();
+
+	[GeneratedRegex(@"!\[[^\]]*\]\([^)]*\)")]
+	private static partial Regex MarkdownImageRegex();
+
+	[GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
+	private static partial Regex MarkdownLinkRegex();
+
+	[GeneratedRegex("`([^`]*)`")]
+	private static partial Regex MarkdownInlineCodeRegex();
+
+	[GeneratedRegex(@"\*\*([^*]+)\*\*|__([^_]+)__")]
+	private static partial Regex MarkdownBoldRegex();
+
+	[GeneratedRegex(@"\*([^*]+)\*|_([^_]+)_")]
+	private static partial Regex MarkdownItalicRegex();
 }

@@ -315,6 +315,74 @@ public class ContentStackMappingTests
 		doc.Headings.Should().BeEmpty();
 	}
 
+	/// <summary>Covers: reports, threat_command (main_content.markdown_l10n plain-Markdown body + summary_l10n description)</summary>
+	[Fact]
+	public void MarkdownBodyPage_Maps_MarkdownAsHeadingsAndPlainBody()
+	{
+		var item = LoadFixture("markdown_body.json", "threat_command");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Path.Should().Be("/security-labs/threat-command/tracking-a-novel-loader-pipedance");
+		doc.Section.Should().Be("security-labs");
+		doc.Headings.Should().BeEquivalentTo(["Key takeaways", "Analysis", "API resolution"]);
+		doc.Body.Should().Contain("PIPEDANCE is a novel loader used to stage secondary payloads");
+		// Links keep their visible text, drop the URL.
+		doc.Body.Should().Contain("process injection");
+		doc.Body.Should().NotContain("example.com/injection");
+		// Bold/inline-code markers are stripped but the wrapped text is kept.
+		doc.Body.Should().Contain("kernel32.dll");
+		doc.Body.Should().Contain("PEB");
+		doc.Body.Should().NotContain("**");
+		doc.Body.Should().NotContain("`");
+		// Fenced code blocks are dropped entirely.
+		doc.Body.Should().NotContain("walk_peb");
+		doc.Description.Should().Be("An analysis of the PIPEDANCE loader observed in recent intrusions.");
+	}
+
+	/// <summary>Covers: reports_landing, threat_command_landing (top-level subheading_l10n description, no body)</summary>
+	[Fact]
+	public void TopLevelSubheadingLandingPage_Maps_SubheadingDescription_NoBody()
+	{
+		var item = LoadFixture("top_level_subheading_landing.json", "reports_landing");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Path.Should().Be("/security-labs/reports");
+		doc.Section.Should().Be("security-labs");
+		doc.Description.Should().Be("In-depth research reports from the Elastic Security Labs team.");
+		doc.Body.Should().Be(doc.Description);
+	}
+
+	/// <summary>Covers: security_labs_homepage, observability_labs_homepage (page_description_l10n description, no body)</summary>
+	[Fact]
+	public void PropertyHomepage_Maps_PageDescription_NoBody()
+	{
+		var item = LoadFixture("property_homepage.json", "security_labs_homepage");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Path.Should().Be("/security-labs");
+		doc.Section.Should().Be("security-labs");
+		doc.Description.Should().Be("Research, tools, and insights from the Elastic Security Labs team.");
+		doc.Body.Should().Be(doc.Description);
+	}
+
+	/// <summary>blog_description_l10n is used when page_description_l10n is absent.</summary>
+	[Fact]
+	public void ToSiteDocument_PropertyHomepage_FallsBackToBlogDescription_WhenNoPageDescription()
+	{
+		var item = LoadFromJson(/*lang=json,strict*/ """
+			{ "title": "Observability Labs", "url": "/observability-labs", "locale": "en-us",
+			  "blog_description_l10n": "The latest observability research from Elastic." }
+			""", "observability_labs_homepage");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Description.Should().Be("The latest observability research from Elastic.");
+		doc.Section.Should().Be("observability-labs");
+	}
+
 	/// <summary>Empty page_info.description.content_simple_l10n must not win over the SEO fallback.</summary>
 	[Fact]
 	public void ToSiteDocument_LandingPage_WithEmptyRichDescription_FallsBackToSeo()
@@ -390,6 +458,10 @@ public class ContentStackMappingTests
 	{
 		ContentStackMapper.GetNavigationSection("/search-labs").Should().Be("search-labs");
 		ContentStackMapper.GetNavigationSection("/search-labs/blog/some-post").Should().Be("search-labs");
+		ContentStackMapper.GetNavigationSection("/security-labs").Should().Be("security-labs");
+		ContentStackMapper.GetNavigationSection("/security-labs/threat-command/some-report").Should().Be("security-labs");
+		ContentStackMapper.GetNavigationSection("/observability-labs").Should().Be("observability-labs");
+		ContentStackMapper.GetNavigationSection("/observability-labs/blog/some-post").Should().Be("observability-labs");
 		ContentStackMapper.GetNavigationSection("/glossary").Should().Be("glossary");
 		ContentStackMapper.GetNavigationSection("/blog/some-post").Should().Be("blog");
 		ContentStackMapper.GetNavigationSection("/what-is/elasticsearch").Should().Be("concept");

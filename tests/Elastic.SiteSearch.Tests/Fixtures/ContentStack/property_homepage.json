@@ -1,0 +1,29 @@
+{
+  "uid": "blt00000000000000e3",
+  "_version": 4,
+  "locale": "en-us",
+  "ACL": {},
+  "created_at": "2022-05-01T09:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2022-05-02T10:00:00.000Z",
+  "updated_by": "bltuser00000000002b",
+  "tags": [],
+  "title": "Security Labs",
+  "url": "/security-labs",
+  "page_description_l10n": "Research, tools, and insights from the Elastic Security Labs team.",
+  "blog_description_l10n": "The latest security research from Elastic.",
+  "seo": {
+    "seo_title_l10n": "Elastic Security Labs",
+    "seo_description_l10n": "Research, tools, and insights from the Elastic Security Labs team.",
+    "seo_image": null,
+    "canonical_tag": "",
+    "do_not_index": false,
+    "nofollow": false
+  },
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2022-05-02T10:05:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}

@@ -139,7 +139,15 @@ internal static class PageContentTypes
 		"tutorial",
 		"tutorial_page",
 		"tutorial_chapter",
-		"blog_v3"
+		"blog_v3",
+		"post_long_form",
+		"security_labs_homepage",
+		"reports",
+		"reports_landing",
+		"threat_command",
+		"threat_command_category",
+		"threat_command_landing",
+		"observability_labs_homepage"
 	];
 
 	/// <summary>
@@ -162,8 +170,10 @@ internal static class PageContentTypes
 		"auto_linking_settings",
 		"auto_linking_term",
 		"banner",
+		"base_single",
 		"blog_categories",
 		"blog_disclaimer",
+		"blog_sources",
 		"boilerplate",
 		"callout",
 		"card",
