@@ -111,6 +111,9 @@ public record OperationPageModel
 	/// <summary>Anchor of the first examples section; null when the page has no examples at all.</summary>
 	public required string? ExamplesAnchor { get; init; }
 
+	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
+	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
+
 	public static OperationPageModel Create(ApiOperation apiOperation, ApiRenderContext context)
 	{
 		var operation = apiOperation.Operation;
@@ -187,7 +190,8 @@ public record OperationPageModel
 			ResponseExamples = MapExamples(responseExamples, options.RenderMarkdown),
 			ShowRequestExamples = showRequestExamples,
 			ShowResponseExamples = showResponseExamples,
-			ExamplesAnchor = examplesAnchor
+			ExamplesAnchor = examplesAnchor,
+			AuthSchemes = OpenApiAuthSchemeResolver.Resolve(operation, document)
 		};
 	}
 

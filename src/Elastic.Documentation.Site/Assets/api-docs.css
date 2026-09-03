@@ -585,10 +585,10 @@
 
 .security-scheme {
 	@apply flex items-center gap-1;
+}
 
-	code {
-		@apply text-blue-elastic rounded bg-white px-1.5 py-0.5 font-mono text-xs;
-	}
+.security-scheme-badge {
+	@apply text-blue-elastic rounded bg-white px-1.5 py-0.5 text-xs font-medium;
 }
 
 .security-scopes {
