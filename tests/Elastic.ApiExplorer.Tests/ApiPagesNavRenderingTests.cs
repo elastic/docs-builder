@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.ApiExplorer.Infrastructure;
@@ -20,10 +19,10 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public partial class ApiPagesNavRenderingTests
+public class ApiPagesNavRenderingTests
 {
 	[Fact]
-	public async Task Render_MarksOnlyCurrentVersionSelected()
+	public async Task Render_DoesNotHostTheVersionSwitcher()
 	{
 		var fs = new FileSystem();
 		var context = new BuildContext(
@@ -40,7 +39,7 @@ public partial class ApiPagesNavRenderingTests
 			CurrentNavigationItem = navigationItem,
 			Previous = null,
 			Next = null,
-			NavigationHtml = string.Empty,
+			NavigationHtml = "<nav>tree</nav>",
 			UrlPathPrefix = string.Empty,
 			AllowIndexing = false,
 			CanonicalBaseUrl = null,
@@ -61,14 +60,9 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-		html.Should().NotContain("selected=\"False\"");
-		html.Should().NotContain("selected=\"True\"");
-		html.Should().Contain("<option value=\"/api/doc/elasticsearch/v9/\" selected>9.x</option>");
-
-		var selectedOptions = OptionTag().Matches(html).Count(m => m.Value.Contains(" selected", StringComparison.Ordinal));
-		selectedOptions.Should().Be(1);
+		html.Should().Contain("<nav>tree</nav>");
+		html.Should().NotContain("api-version-switcher");
+		html.Should().NotContain("<select");
+		html.Should().NotContain("<option");
 	}
-
-	[GeneratedRegex("<option[^>]*>", RegexOptions.IgnoreCase)]
-	private static partial Regex OptionTag();
 }

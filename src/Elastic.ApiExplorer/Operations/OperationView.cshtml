@@ -141,7 +141,7 @@
 						}
 					</a>
 				</dt>
-				<dd>@Model.RenderMarkdown(path.Description)</dd>
+				<dd>@path.DescriptionHtml</dd>
 			</div>
 		}
 		</dl>
@@ -185,7 +185,7 @@
 							}
 						</a>
 					</dt>
-					<dd>@Model.RenderMarkdown(qp.Description)</dd>
+					<dd>@qp.DescriptionHtml</dd>
 					@if (qp.Type is not null)
 					{
 						@(await RenderPartialAsync<_ValidationConstraints, IReadOnlyList<ConstraintDisplay>>(qp.Constraints))

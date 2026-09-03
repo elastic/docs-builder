@@ -21,8 +21,8 @@ public record ExampleDisplay(
 	HtmlString? DescriptionHtml,
 	string? JsonValue,
 	string? ExternalValue,
-	string? DescriptionMarkdown,
-	string? StatusCode = null
+	string? StatusCode = null,
+	string? DescriptionMarkdown = null
 );
 
 /// <summary>One response body example tagged with its HTTP status code for the examples rail.</summary>
@@ -90,7 +90,7 @@ public record ApiPathParameter
 
 	public string? Name => Parameter.Name;
 	public bool? Deprecated => Parameter.Deprecated;
-	public bool Required => Parameter.Required == true;
+	public bool Required => Parameter.Required;
 	public HtmlString Description => DescriptionHtml;
 }
 
@@ -218,8 +218,6 @@ public partial record OperationPageModel
 				.Where(p => p.In == ParameterLocation.Query)
 				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
-			DescriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
-			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = requestSchema is not null
 				? builder.BuildPropertyList(
@@ -521,8 +519,8 @@ public partial record OperationPageModel
 					string.IsNullOrEmpty(description) ? null : renderMarkdown(description),
 					e.Value?.Value?.ToString(),
 					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue,
-					description,
-					statusCode
+					statusCode,
+					description
 				);
 			}).ToArray();
 

@@ -1952,27 +1952,8 @@ button.example-response-tab:focus-visible {
 	line-height: 20px;
 }
 
-/* Scenario switcher: light-theme select for long example titles */
-.api-examples-scenario-select {
-	@apply w-full cursor-pointer appearance-none rounded-sm border px-3 py-2 pr-8 text-sm font-medium;
-	color: var(--color-ink, #1a1c21);
-	background-color: var(--color-white, #fff);
-	border-color: var(--color-grey-20, #d3dae6);
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23516381' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	background-repeat: no-repeat;
-	background-position: right 0.75rem center;
-	background-size: 0.75rem;
-	text-overflow: ellipsis;
-
-	&:hover {
-		border-color: var(--color-grey-30, #98a2b3);
-		background-color: var(--color-grey-10, #f5f7fa);
-	}
-
-	&:focus-visible {
-		outline: 2px solid var(--color-blue-elastic, #0b64dd);
-		outline-offset: 2px;
-	}
+#api-examples-panel .nav-select-dropdown {
+	width: 100%;
 }
 
 /* Code sample widget — same light Card/Code chrome as .example-block--response */

@@ -41,6 +41,15 @@ public sealed record NavigationDropdownItem(string NavigationTitle, string Url, 
 /// <summary>A single back-link in the island sidebar's breadcrumb trail.</summary>
 public sealed record IslandBackLink(string Title, string Url);
 
+/// <summary>One choice in a sidebar/rail <c>nav-select</c> (version switcher, examples, …).</summary>
+public sealed record NavigationSelectOption(string Label, string Value, bool Selected);
+
+/// <summary>Resolved data for <c>_NavSelect.cshtml</c>.</summary>
+public sealed record NavigationSelectModel(string Id, string AriaLabel, IReadOnlyList<NavigationSelectOption> Options, bool UseLinks = true)
+{
+	public NavigationSelectOption Current => Options.FirstOrDefault(static o => o.Selected) ?? Options[0];
+}
+
 /// <summary>
 /// Everything <c>_TocTree.cshtml</c> renders, resolved from the domain navigation up front.
 /// <see cref="ContentHash"/> identifies the tree content so same-island pages share markup.
@@ -60,6 +69,11 @@ public sealed record NavigationRenderModel
 	/// and the render root has no other island ancestors.
 	/// </summary>
 	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
+	/// <summary>
+	/// API version choices rendered in the same chrome as <see cref="BackLinks"/>.
+	/// Empty when the page is not versioned or only one version exists.
+	/// </summary>
+	public IReadOnlyList<NavigationSelectOption> VersionSwitcher { get; init; } = [];
 	/// <summary>
 	/// Root index link as the first sidebar row when primary nav is off.
 	/// Null when primary nav / global assembly already covers that role,

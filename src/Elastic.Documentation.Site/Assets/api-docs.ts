@@ -661,39 +661,52 @@ function initApiResponseStatusTabs(): void {
 }
 
 function applyApiScenario(widget: HTMLElement, scenarioId: string): void {
-    const select = widget.querySelector<HTMLSelectElement>(
-        '.api-examples-scenario-select'
-    )
-    if (select) {
-        const hasOption = Array.from(select.options).some(
-            (option) => option.value === scenarioId
+    widget
+        .querySelectorAll<HTMLElement>(
+            '.api-examples-scenario-panel[data-scenario]'
         )
-        if (hasOption) select.value = scenarioId
-    }
+        .forEach((panel) => {
+            const match = panel.dataset.scenario === scenarioId
+            panel.toggleAttribute('hidden', !match)
+        })
 
-    widget.querySelectorAll<HTMLElement>('[data-scenario]').forEach((panel) => {
-        const match = panel.dataset.scenario === scenarioId
-        panel.toggleAttribute('hidden', !match)
-    })
+    const dropdown = widget.querySelector<HTMLDetailsElement>(
+        '.nav-select-dropdown'
+    )
+    if (!dropdown) return
+
+    const options = dropdown.querySelectorAll<HTMLElement>(
+        '.nav-select-option[data-scenario]'
+    )
+    let selectedLabel = ''
+    for (const option of options) {
+        const selected = option.dataset.scenario === scenarioId
+        option.classList.toggle('nav-select-option--selected', selected)
+        option.setAttribute('aria-selected', selected ? 'true' : 'false')
+        if (selected) selectedLabel = option.textContent?.trim() ?? ''
+    }
+    const value = dropdown.querySelector('.nav-select__value')
+    if (value && selectedLabel) value.textContent = selectedLabel
+    dropdown.open = false
 }
 
 let apiScenarioSelectDelegated = false
 
 /**
- * Scenario <select> in the examples rail. Switches which example panel is visible.
+ * Scenario picker in the examples rail. Switches which example panel is visible.
  * Not persisted — scenario ids/titles differ per operation.
  */
 function initApiScenarioSelects(): void {
-    // Always register delegation once — selects may appear after HTMX navigation.
+    // Always register delegation once — pickers may appear after HTMX navigation.
     if (apiScenarioSelectDelegated) return
     apiScenarioSelectDelegated = true
-    document.addEventListener('change', (event) => {
-        const select = (event.target as HTMLElement | null)?.closest(
-            '.api-examples-scenario-select'
+    document.addEventListener('click', (event) => {
+        const option = (event.target as HTMLElement | null)?.closest(
+            '.nav-select-option[data-scenario]'
         )
-        if (!(select instanceof HTMLSelectElement)) return
-        const widget = select.closest<HTMLElement>('[data-api-scenarios]')
-        if (widget) applyApiScenario(widget, select.value)
+        if (!(option instanceof HTMLElement) || !option.dataset.scenario) return
+        const widget = option.closest<HTMLElement>('[data-api-scenarios]')
+        if (widget) applyApiScenario(widget, option.dataset.scenario)
     })
 }
 
