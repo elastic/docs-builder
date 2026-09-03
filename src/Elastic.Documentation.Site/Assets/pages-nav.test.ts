@@ -237,6 +237,70 @@ describe('syncPagesNavFromResponse', () => {
             document.querySelector<HTMLInputElement>('#other')?.checked
         ).toBe(false)
     })
+
+    it('expands the current path after an HTMX cross-tree swap on the production accordion', () => {
+        const path = window.location.pathname
+        const incoming = `
+            <nav id="pages-nav">
+                <ul id="nav-tree-deploy">
+                    <li class="nav-folder">
+                        <div class="peer nav-folder-peer">
+                            <a class="sidebar-link nav-folder-link" href="/docs/deploy-manage/deploy/">Deploy</a>
+                            <label for="deploy">
+                                <input id="deploy" type="checkbox" class="hidden">
+                            </label>
+                        </div>
+                        <ul class="nav-subtree">
+                            <li class="nav-folder">
+                                <div class="peer nav-folder-peer">
+                                    <a class="sidebar-link nav-folder-link current" href="${path}">Elastic Cloud</a>
+                                    <label for="cloud">
+                                        <input id="cloud" type="checkbox" class="hidden">
+                                    </label>
+                                </div>
+                                <ul class="nav-subtree"><li>Child page</li></ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        `
+        document.body.innerHTML = `
+            <nav id="pages-nav">
+                <ul id="nav-tree-guides">
+                    <li><a class="sidebar-link current" href="/docs/get-started/">Get started</a></li>
+                </ul>
+            </nav>
+        `
+        initNav()
+        const raf = jest
+            .spyOn(window, 'requestAnimationFrame')
+            .mockImplementation((cb) => {
+                cb(0)
+                return 0
+            })
+
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: {
+                    xhr: { response: `<html><body>${incoming}</body></html>` },
+                },
+            })
+        )
+
+        expect(
+            document.querySelector<HTMLInputElement>('#deploy')?.checked
+        ).toBe(true)
+        expect(
+            document.querySelector<HTMLInputElement>('#cloud')?.checked
+        ).toBe(true)
+        expect(
+            document
+                .querySelector('#pages-nav a.sidebar-link.current')
+                ?.textContent?.trim()
+        ).toBe('Elastic Cloud')
+        raf.mockRestore()
+    })
 })
 
 describe('markCurrentPage', () => {

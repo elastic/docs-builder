@@ -961,7 +961,11 @@ function onAfterSwap(event: Event) {
         const replaced = html ? syncPagesNavFromResponse(html) : false
         if (!replaced) {
             keepLiveNav()
+            return
         }
+        // htmx:load already ran initNav on the pre-replace tree. The new
+        // accordion has no checked attrs, so expand the current path again.
+        initNav()
     }
     if (typeof requestAnimationFrame === 'function') {
         requestAnimationFrame(apply)
