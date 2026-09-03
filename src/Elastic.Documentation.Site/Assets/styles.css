@@ -191,7 +191,7 @@ body {
 	}
 
 	.nav-subtree {
-		@apply relative ml-4 hidden w-full;
+		@apply relative ml-4 hidden;
 
 		/* revealed when the sibling .peer div contains a checked checkbox */
 		.peer:has(:checked) ~ &,
