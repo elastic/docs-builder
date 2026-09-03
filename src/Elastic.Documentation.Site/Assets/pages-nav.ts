@@ -9,9 +9,19 @@ function expandedStorageKey(nav: ParentNode) {
 }
 
 function saveNavState(nav: HTMLElement) {
-    const expanded = $$optional('input[type="checkbox"]:checked', nav)
-        .map((el) => el.id)
-        .filter(Boolean)
+    const ids = new Set<string>()
+    const collect = (root: ParentNode) => {
+        root.querySelectorAll('input[type="checkbox"]:checked').forEach(
+            (el) => {
+                if (el.id) {
+                    ids.add(el.id)
+                }
+            }
+        )
+    }
+    collect(nav)
+    detachedPanels.get(nav)?.forEach((panel) => collect(panel))
+    const expanded = [...ids]
     try {
         sessionStorage.setItem(
             expandedStorageKey(nav),
@@ -20,6 +30,24 @@ function saveNavState(nav: HTMLElement) {
     } catch {
         /* private mode */
     }
+}
+
+function findFolderInput(nav: HTMLElement, id: string) {
+    const live = $optional(`#${CSS.escape(id)}`, nav)
+    if (live instanceof HTMLInputElement) {
+        return live
+    }
+    const store = detachedPanels.get(nav)
+    if (!store) {
+        return null
+    }
+    for (const panel of store.values()) {
+        const input = panel.querySelector(`#${CSS.escape(id)}`)
+        if (input instanceof HTMLInputElement) {
+            return input
+        }
+    }
+    return null
 }
 
 function restoreNavState(nav: HTMLElement) {
@@ -33,8 +61,8 @@ function restoreNavState(nav: HTMLElement) {
     try {
         const ids: string[] = JSON.parse(raw)
         for (const id of ids) {
-            const input = $optional(`#${CSS.escape(id)}`, nav)
-            if (input instanceof HTMLInputElement) {
+            const input = findFolderInput(nav, id)
+            if (input) {
                 input.checked = true
             }
         }
@@ -43,15 +71,414 @@ function restoreNavState(nav: HTMLElement) {
     }
 }
 
-function expandAllParents(navItem: HTMLElement) {
-    let parent: HTMLLIElement | null | undefined = navItem?.closest('li')
-    while (parent) {
-        const input = parent.querySelector('input')
-        if (input instanceof HTMLInputElement) {
+function clearNavState(nav: ParentNode) {
+    try {
+        sessionStorage.removeItem(expandedStorageKey(nav))
+    } catch {
+        /* private mode */
+    }
+}
+
+export function ensureSubtreeClips(nav: HTMLElement) {
+    $$optional('li.nav-folder > ul.nav-subtree', nav).forEach((ul) => {
+        if (!(ul instanceof HTMLElement)) {
+            return
+        }
+        const clip = ul.ownerDocument.createElement('div')
+        clip.className = 'nav-subtree-clip'
+        ul.replaceWith(clip)
+        clip.append(ul)
+    })
+}
+
+const detachedPanels = new WeakMap<HTMLElement, Map<string, HTMLElement>>()
+
+function panelStore(nav: HTMLElement) {
+    let store = detachedPanels.get(nav)
+    if (!store) {
+        store = new Map()
+        detachedPanels.set(nav, store)
+    }
+    return store
+}
+
+function folderFromInput(input: HTMLInputElement) {
+    return input.closest('li.nav-folder')
+}
+
+function navFromInput(input: HTMLInputElement) {
+    return (
+        input.closest<HTMLElement>('#pages-nav') ??
+        document.querySelector<HTMLElement>('#pages-nav')
+    )
+}
+
+function connectedPanel(folder: Element) {
+    return folder.querySelector<HTMLElement>(
+        ':scope > .nav-subtree-clip, :scope > ul.nav-subtree'
+    )
+}
+
+function insertFolderPanel(folder: Element, panel: HTMLElement) {
+    const peer = folder.querySelector(':scope > .peer')
+    if (peer) {
+        peer.after(panel)
+        return
+    }
+    folder.append(panel)
+}
+
+const FOLDER_ANIM_MS = 320
+const FOLDER_ANIM_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
+const animatingPanels = new WeakSet<HTMLElement>()
+let userFolderGesture = false
+let suppressFolderSnapUntil = 0
+
+function shouldSuppressFolderSnap() {
+    return Date.now() < suppressFolderSnapUntil
+}
+
+function beginUserFolderGesture(nav: HTMLElement) {
+    userFolderGesture = true
+    suppressFolderSnapUntil = Date.now() + FOLDER_ANIM_MS + 80
+    ensureSubtreeClips(nav)
+}
+
+function prefersReducedMotion() {
+    return (
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+}
+
+function clearFolderAnim(panel: HTMLElement) {
+    if (typeof panel.getAnimations === 'function') {
+        panel.getAnimations().forEach((anim) => anim.cancel())
+    }
+    panel.style.removeProperty('height')
+    panel.style.removeProperty('transition')
+    animatingPanels.delete(panel)
+}
+
+function snapFolderOpen(panel: HTMLElement) {
+    clearFolderAnim(panel)
+    panel.classList.add('nav-subtree-clip--open')
+}
+
+function snapFolderClosed(panel: HTMLElement) {
+    clearFolderAnim(panel)
+    panel.classList.remove('nav-subtree-clip--open')
+}
+
+export function attachFolderPanel(input: HTMLInputElement) {
+    const folder = folderFromInput(input)
+    const nav = navFromInput(input)
+    if (!folder) {
+        return null
+    }
+    const live = connectedPanel(folder)
+    if (live) {
+        return live
+    }
+    const stored = (nav && panelStore(nav).get(input.id)) ?? null
+    if (!stored) {
+        return null
+    }
+    stored.classList.remove('nav-subtree-clip--open')
+    stored.style.height = '0px'
+    insertFolderPanel(folder, stored)
+    return stored
+}
+
+export function detachFolderPanel(input: HTMLInputElement) {
+    const folder = folderFromInput(input)
+    const nav = navFromInput(input)
+    const live = folder ? connectedPanel(folder) : null
+    const panel =
+        live ?? (nav && input.id ? panelStore(nav).get(input.id) : null)
+    if (!panel) {
+        return
+    }
+    if (nav && input.id) {
+        panelStore(nav).set(input.id, panel)
+    }
+    snapFolderClosed(panel)
+    panel.remove()
+}
+
+function folderPanelForSync(folder: Element, input: HTMLInputElement) {
+    const nav = navFromInput(input)
+    return (
+        connectedPanel(folder) ??
+        (nav && input.id ? panelStore(nav).get(input.id) : null) ??
+        null
+    )
+}
+
+export function syncFolderPanels(
+    root: ParentNode,
+    options?: { detachClosed?: boolean }
+) {
+    if (root instanceof HTMLElement) {
+        ensureSubtreeClips(root)
+    }
+    const detachClosed = options?.detachClosed === true
+    for (const folder of root.querySelectorAll('li.nav-folder')) {
+        const input = folder.querySelector<HTMLInputElement>(
+            ':scope > .peer input[type="checkbox"]'
+        )
+        if (!input) {
+            continue
+        }
+        const existing = folderPanelForSync(folder, input)
+        if (existing && animatingPanels.has(existing)) {
+            continue
+        }
+        if (input.checked) {
+            const panel = attachFolderPanel(input)
+            if (panel) {
+                snapFolderOpen(panel)
+            }
+        } else if (detachClosed) {
+            detachFolderPanel(input)
+        } else if (existing?.isConnected) {
+            snapFolderClosed(existing)
+        }
+    }
+}
+
+const pendingClose = new WeakMap<HTMLInputElement, number>()
+let folderCloseSeq = 0
+
+function runHeightAnim(
+    panel: HTMLElement,
+    fromPx: number,
+    toPx: number,
+    done: () => void
+) {
+    let settled = false
+    const finish = () => {
+        if (settled) {
+            return
+        }
+        settled = true
+        panel.removeEventListener('transitionend', onEnd)
+        done()
+    }
+    const onEnd = (event: TransitionEvent) => {
+        if (event.target === panel && event.propertyName === 'height') {
+            finish()
+        }
+    }
+    animatingPanels.add(panel)
+    panel.classList.remove('nav-subtree-clip--open')
+    panel.style.transition = 'none'
+    panel.style.height = `${fromPx}px`
+    void panel.offsetHeight
+    panel.style.transition = `height ${FOLDER_ANIM_MS}ms ${FOLDER_ANIM_EASE}`
+    panel.style.height = `${toPx}px`
+    panel.addEventListener('transitionend', onEnd)
+    window.setTimeout(finish, FOLDER_ANIM_MS + 80)
+}
+
+function measurePanelHeight(panel: HTMLElement) {
+    const wasOpen = panel.classList.contains('nav-subtree-clip--open')
+    const prevHeight = panel.style.height
+    const prevTransition = panel.style.transition
+    panel.style.transition = 'none'
+    panel.classList.add('nav-subtree-clip--open')
+    panel.style.height = 'auto'
+    let height = panel.getBoundingClientRect().height || panel.scrollHeight
+    if (!height) {
+        const inner = panel.querySelector<HTMLElement>(':scope > .nav-subtree')
+        if (inner) {
+            const style =
+                inner.ownerDocument.defaultView?.getComputedStyle(inner)
+            height =
+                Math.max(inner.scrollHeight, inner.offsetHeight) +
+                (style ? parseFloat(style.marginTop) || 0 : 0) +
+                (style ? parseFloat(style.marginBottom) || 0 : 0)
+        }
+    }
+    if (!wasOpen) {
+        panel.classList.remove('nav-subtree-clip--open')
+    }
+    panel.style.height = prevHeight
+    panel.style.transition = prevTransition
+    void panel.offsetHeight
+    return height
+}
+
+function playFolderOpen(panel: HTMLElement) {
+    if (!panel.classList.contains('nav-subtree-clip')) {
+        snapFolderOpen(panel)
+        return
+    }
+    if (prefersReducedMotion()) {
+        snapFolderOpen(panel)
+        return
+    }
+    animatingPanels.add(panel)
+    suppressFolderSnapUntil = Date.now() + FOLDER_ANIM_MS + 80
+    panel.classList.remove('nav-subtree-clip--open')
+    panel.style.transition = 'none'
+    panel.style.height = '0px'
+    void panel.offsetHeight
+    const to = measurePanelHeight(panel)
+    if (to === 0) {
+        snapFolderOpen(panel)
+        syncFolderPanels(panel, { detachClosed: true })
+        return
+    }
+    runHeightAnim(panel, 0, to, () => {
+        snapFolderOpen(panel)
+        syncFolderPanels(panel, { detachClosed: true })
+    })
+}
+
+function finishFolderClose(input: HTMLInputElement, token: number) {
+    if (pendingClose.get(input) !== token || input.checked) {
+        return
+    }
+    pendingClose.delete(input)
+    detachFolderPanel(input)
+}
+
+function playFolderClose(input: HTMLInputElement, nav: HTMLElement) {
+    const token = ++folderCloseSeq
+    pendingClose.set(input, token)
+    const folder = folderFromInput(input)
+    const panel = folder ? connectedPanel(folder) : null
+    if (!panel || nav.classList.contains('nav-no-folder-anim')) {
+        finishFolderClose(input, token)
+        return
+    }
+    if (prefersReducedMotion()) {
+        finishFolderClose(input, token)
+        return
+    }
+    const from = panel.offsetHeight || panel.scrollHeight
+    if (from === 0) {
+        finishFolderClose(input, token)
+        return
+    }
+    runHeightAnim(panel, from, 0, () => finishFolderClose(input, token))
+}
+
+function onFolderCheckboxChange(input: HTMLInputElement) {
+    const nav = navFromInput(input)
+    if (!nav) {
+        return
+    }
+    if (input.checked) {
+        pendingClose.delete(input)
+        const animate =
+            userFolderGesture || !nav.classList.contains('nav-no-folder-anim')
+        userFolderGesture = false
+        const panel = attachFolderPanel(input)
+        if (!panel) {
+            return
+        }
+        if (animate) {
+            playFolderOpen(panel)
+        } else {
+            snapFolderOpen(panel)
+            syncFolderPanels(panel, { detachClosed: true })
+        }
+        return
+    }
+    playFolderClose(input, nav)
+}
+
+export function collapseAllFolders(nav: HTMLElement) {
+    const uncheck = (el: Element) => {
+        if (el instanceof HTMLInputElement) {
+            el.checked = false
+        }
+    }
+    $$optional('input[type="checkbox"]:checked', nav).forEach(uncheck)
+    detachedPanels.get(nav)?.forEach((panel) => {
+        panel
+            .querySelectorAll('input[type="checkbox"]:checked')
+            .forEach(uncheck)
+    })
+    clearNavState(nav)
+    syncFolderPanels(nav, { detachClosed: true })
+}
+
+/**
+ * A collapsed folder's children live in a detached panel. Walking
+ * parentElement from a node inside that panel never reaches the live
+ * folder row, so island swaps (and same-tree jumps into a closed group)
+ * must reattach the chain before expandAllParents can open it.
+ */
+function attachDetachedAncestors(nav: HTMLElement, navItem: HTMLElement) {
+    const store = detachedPanels.get(nav)
+    if (!store || navItem.isConnected) {
+        return
+    }
+    for (let i = 0; i < store.size + 1 && !navItem.isConnected; i++) {
+        let attached = false
+        for (const [id, panel] of store) {
+            if (panel.isConnected || !panel.contains(navItem)) {
+                continue
+            }
+            const input = findFolderInput(nav, id)
+            if (!input) {
+                continue
+            }
             input.checked = true
+            const next = attachFolderPanel(input)
+            if (next) {
+                snapFolderOpen(next)
+                attached = true
+            }
+        }
+        if (!attached) {
+            break
+        }
+    }
+}
+
+function expandAllParents(navItem: HTMLElement) {
+    const nav =
+        navItem.closest<HTMLElement>('#pages-nav') ??
+        document.querySelector<HTMLElement>('#pages-nav')
+    if (nav) {
+        attachDetachedAncestors(nav, navItem)
+    }
+    let parent: HTMLLIElement | null | undefined = navItem.closest('li')
+    while (parent) {
+        const input = parent.querySelector<HTMLInputElement>(
+            ':scope > .peer input[type="checkbox"], :scope > input[type="checkbox"]'
+        )
+        if (input) {
+            input.checked = true
+            const panel = attachFolderPanel(input)
+            if (panel && !animatingPanels.has(panel)) {
+                snapFolderOpen(panel)
+            }
         }
         parent = parent.parentElement?.closest('li')
     }
+}
+
+function currentInNav(nav: HTMLElement) {
+    const live = $optional('.current', nav)
+    if (live instanceof HTMLElement) {
+        return live
+    }
+    const store = detachedPanels.get(nav)
+    if (!store) {
+        return null
+    }
+    for (const panel of store.values()) {
+        const found = panel.querySelector('.current')
+        if (found instanceof HTMLElement) {
+            return found
+        }
+    }
+    return null
 }
 
 function getNavScrollContainer(nav: HTMLElement) {
@@ -59,7 +486,7 @@ function getNavScrollContainer(nav: HTMLElement) {
 }
 
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
-    const currentNavItem = $optional('.current', nav)
+    const currentNavItem = currentInNav(nav)
 
     if (!currentNavItem) {
         return
@@ -162,19 +589,8 @@ function folderCheckboxForRow(anchor: HTMLAnchorElement) {
     )
 }
 
-function clearAncestorHighlight(nav: HTMLElement) {
-    $$optional('.nav-v2-active-ancestor', nav).forEach((el) => {
-        el.classList.remove('nav-v2-active-ancestor')
-    })
-}
-
-function applyAncestorHighlight(nav: HTMLElement) {
-    clearAncestorHighlight(nav)
-    const current = $optional('a.sidebar-link.current', nav)
-    if (!current) {
-        return
-    }
-
+function ancestorFoldersForCurrent(nav: HTMLElement, current: Element) {
+    const wanted = new Set<Element>()
     const hostLi = current.closest('li')
     let walk: Element | null = hostLi?.parentElement ?? null
     while (walk && walk !== nav) {
@@ -183,38 +599,172 @@ function applyAncestorHighlight(nav: HTMLElement) {
                 ':scope > .nav-folder-peer > a.sidebar-link'
             )
             if (row && row !== current) {
-                walk.classList.add('nav-v2-active-ancestor')
+                wanted.add(walk)
             }
         }
         walk = walk.parentElement
     }
+    return wanted
 }
 
-function markCurrentPage(nav: HTMLElement) {
-    $$optional('.current', nav).forEach((el) => {
-        el.classList.remove('current')
-    })
+function applyAncestorHighlight(nav: HTMLElement) {
+    const current = $optional('a.sidebar-link.current', nav)
+    const wanted = current
+        ? ancestorFoldersForCurrent(nav, current)
+        : new Set<Element>()
 
+    $$optional('.nav-v2-active-ancestor', nav).forEach((el) => {
+        if (!wanted.has(el)) {
+            el.classList.remove('nav-v2-active-ancestor')
+        }
+    })
+    wanted.forEach((el) => {
+        el.classList.add('nav-v2-active-ancestor')
+    })
+}
+
+export function markCurrentPage(nav: HTMLElement) {
     const pathname = window.location.pathname.replace(/\/$/, '')
     const navActiveMeta = document.querySelector<HTMLMetaElement>(
         'meta[name="docs:nav-active"]'
     )
     const activePathname = navActiveMeta?.content ?? pathname
 
-    $$optional('a.sidebar-link[href]', nav).forEach((el) => {
+    const next = new Set<Element>()
+    const consider = (el: Element) => {
         if (
             el instanceof HTMLAnchorElement &&
             anchorMatchesPath(el, activePathname)
         ) {
+            next.add(el)
+        }
+    }
+    $$optional('a.sidebar-link[href]', nav).forEach(consider)
+    detachedPanels.get(nav)?.forEach((panel) => {
+        if (panel.isConnected) {
+            return
+        }
+        panel.querySelectorAll('a.sidebar-link[href]').forEach(consider)
+    })
+
+    const removeStaleCurrent = (el: Element) => {
+        if (next.has(el)) {
+            return
+        }
+        el.classList.remove(
+            'current',
+            'nav-v2-current-ready',
+            'nav-v2-hold-hover'
+        )
+    }
+    $$optional('.current', nav).forEach(removeStaleCurrent)
+    detachedPanels.get(nav)?.forEach((panel) => {
+        if (!panel.isConnected) {
+            panel.querySelectorAll('.current').forEach(removeStaleCurrent)
+        }
+    })
+    next.forEach((el) => {
+        if (!el.classList.contains('current')) {
             el.classList.add('current')
+            el.classList.remove('nav-v2-current-ready')
+            currentColorPending = true
         }
     })
     applyAncestorHighlight(nav)
 }
 
+export const CURRENT_COLOR_DELAY_MS = 300
+export const CURRENT_COLOR_DELAY_REDUCED_MS = 150
+
+export function currentColorDelayMs() {
+    if (typeof window.matchMedia !== 'function') {
+        return CURRENT_COLOR_DELAY_MS
+    }
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? CURRENT_COLOR_DELAY_REDUCED_MS
+        : CURRENT_COLOR_DELAY_MS
+}
+
+let settleCurrentTimer = 0
+
+export function settleCurrentPage(
+    nav: HTMLElement,
+    options?: { delay?: boolean }
+) {
+    const apply = () => {
+        settleCurrentTimer = 0
+        nav.querySelectorAll('a.sidebar-link.current').forEach((el) => {
+            el.classList.add('nav-v2-current-ready')
+        })
+    }
+    if (options?.delay) {
+        window.clearTimeout(settleCurrentTimer)
+        settleCurrentTimer = window.setTimeout(apply, currentColorDelayMs())
+        return
+    }
+    if (settleCurrentTimer) {
+        return
+    }
+    apply()
+}
+
+function holdHover(el: Element) {
+    if (!(el instanceof HTMLElement)) {
+        return
+    }
+    el.classList.add('nav-v2-hold-hover')
+    const release = () => {
+        el.classList.remove('nav-v2-hold-hover')
+    }
+    el.addEventListener('pointerleave', release, { once: true })
+}
+
+function previewCurrentLink(anchor: HTMLAnchorElement) {
+    const nav = anchor.closest<HTMLElement>('#pages-nav')
+    if (!nav || anchor.classList.contains('current')) {
+        return
+    }
+    currentColorPending = true
+    nav.querySelectorAll('a.sidebar-link.current').forEach((el) => {
+        el.classList.remove(
+            'current',
+            'nav-v2-current-ready',
+            'nav-v2-hold-hover'
+        )
+    })
+    anchor.classList.add('current')
+    holdHover(anchor)
+    applyAncestorHighlight(nav)
+}
+
 let folderRowClickBound = false
+let sectionResetClickBound = false
 let navStatePersistBound = false
 let lastSwapHtml = ''
+let canRecenterNav = true
+let pinnedNavScrollTop: number | null = null
+let pendingFolderReset = false
+let navJustReplaced = false
+let currentColorPending = false
+
+export function pinPagesNavScroll(root: ParentNode = document) {
+    const nav = root.querySelector('#pages-nav')
+    if (!(nav instanceof HTMLElement)) {
+        return
+    }
+    pinnedNavScrollTop = getNavScrollContainer(nav).scrollTop
+}
+
+function restorePagesNavScroll(root: ParentNode = document) {
+    if (pinnedNavScrollTop == null) {
+        return
+    }
+    const nav = root.querySelector('#pages-nav')
+    if (!(nav instanceof HTMLElement)) {
+        return
+    }
+    getNavScrollContainer(nav).scrollTop = pinnedNavScrollTop
+}
 
 export function navSurfaceKey(nav: ParentNode): string {
     const heading =
@@ -233,7 +783,8 @@ export function navSurfaceKey(nav: ParentNode): string {
 /**
  * After a boosted swap, replace `#pages-nav` only when the island/section
  * surface changed. Same-tree navigations keep the live nav (hx-preserve) so
- * expanded folders do not flash closed.
+ * expanded folders do not flash closed. Leaving a section forgets its
+ * accordion state so coming back (Guides → Reference → Guides) starts collapsed.
  */
 export function syncPagesNavFromResponse(
     responseHtml: string,
@@ -243,23 +794,38 @@ export function syncPagesNavFromResponse(
     if (!current || !responseHtml) {
         return false
     }
+    const liveKey = navSurfaceKey(current)
+    const incomingKey = incomingNavSurfaceKey(responseHtml)
+    if (incomingKey && incomingKey === liveKey) {
+        canRecenterNav = false
+        scrollCurrentNaviItemIntoView.cancel()
+        return false
+    }
     const incoming = new DOMParser()
         .parseFromString(responseHtml, 'text/html')
         .querySelector('#pages-nav')
     if (!incoming) {
         return false
     }
-    if (navSurfaceKey(current) === navSurfaceKey(incoming)) {
+    if (liveKey === navSurfaceKey(incoming)) {
+        canRecenterNav = false
+        scrollCurrentNaviItemIntoView.cancel()
         return false
     }
+    canRecenterNav = true
+    pinnedNavScrollTop = null
+    pendingFolderReset = true
+    navJustReplaced = true
     if (current instanceof HTMLElement) {
-        saveNavState(current)
+        clearNavState(current)
     }
     const liveDocument = current.ownerDocument ?? document
     const next = liveDocument.importNode(incoming, true)
     current.replaceWith(next)
     if (next instanceof HTMLElement) {
-        restoreNavState(next)
+        next.classList.add('nav-no-folder-anim')
+        ensureSubtreeClips(next)
+        clearNavState(next)
     }
     return true
 }
@@ -272,28 +838,116 @@ function clearHtmxHistoryCache() {
     }
 }
 
+function htmlContainsPagesNav(html: string) {
+    return html.includes('id="pages-nav"') || html.includes("id='pages-nav'")
+}
+
+/** Same key as `navSurfaceKey`, from the raw response, so same-tree swaps skip DOMParser. */
+export function incomingNavSurfaceKey(html: string): string {
+    const heading = /data-nav-heading="([^"]*)"/.exec(html)?.[1] ?? ''
+    const treeId = (/id="(nav-tree-[^"]+)"/.exec(html)?.[1] ?? '').replace(
+        /-outgoing$/,
+        ''
+    )
+    if (!heading && !treeId) {
+        return ''
+    }
+    return `${treeId}::${heading}`
+}
+
+/** Docs article/hub pages put the article in `#content-container` with `md:col-start-2`. */
+export function shouldRetargetArticleSwap(
+    current: Element | null,
+    responseHtml: string
+): boolean {
+    if (
+        !(current instanceof HTMLElement) ||
+        current.id !== 'content-container' ||
+        !current.className.includes('col-start-2')
+    ) {
+        return false
+    }
+    return (
+        responseHtml.includes('id="content-container"') &&
+        responseHtml.includes('md:col-start-2')
+    )
+}
+
+function retargetArticleSwap(event: Event) {
+    const detail = (event as CustomEvent).detail as
+        | {
+              target?: EventTarget
+              selectOverride?: string
+              serverResponse?: string
+              xhr?: { response?: string }
+          }
+        | undefined
+    if (!detail) {
+        return
+    }
+    const html =
+        (typeof detail.xhr?.response === 'string' ? detail.xhr.response : '') ||
+        (typeof detail.serverResponse === 'string' ? detail.serverResponse : '')
+    const current = document.getElementById('content-container')
+    if (!shouldRetargetArticleSwap(current, html) || !current) {
+        return
+    }
+    detail.target = current
+    detail.selectOverride = '#content-container'
+}
+
 function responseHtmlFromSwap(event: Event): string {
     const detail = (event as CustomEvent).detail as
         { serverResponse?: string; xhr?: { response?: string } } | undefined
-    if (typeof detail?.serverResponse === 'string' && detail.serverResponse) {
-        return detail.serverResponse
+    const xhr =
+        typeof detail?.xhr?.response === 'string' ? detail.xhr.response : ''
+    const server =
+        typeof detail?.serverResponse === 'string' ? detail.serverResponse : ''
+    // hx-preserve can strip #pages-nav from the settled serverResponse.
+    if (xhr && htmlContainsPagesNav(xhr)) {
+        return xhr
     }
-    if (typeof detail?.xhr?.response === 'string' && detail.xhr.response) {
-        return detail.xhr.response
+    if (server && htmlContainsPagesNav(server)) {
+        return server
     }
-    return lastSwapHtml
+    return xhr || server || lastSwapHtml
 }
 
 function onBeforeSwap(event: Event) {
+    retargetArticleSwap(event)
     lastSwapHtml = responseHtmlFromSwap(event)
+    pinPagesNavScroll()
+}
+
+function keepLiveNav() {
+    canRecenterNav = false
+    scrollCurrentNaviItemIntoView.cancel()
+    restorePagesNavScroll()
 }
 
 function onAfterSwap(event: Event) {
     const html = responseHtmlFromSwap(event) || lastSwapHtml
     lastSwapHtml = ''
-    if (html) {
-        syncPagesNavFromResponse(html)
+    const current = document.querySelector('#pages-nav')
+    if (
+        current &&
+        html &&
+        incomingNavSurfaceKey(html) === navSurfaceKey(current)
+    ) {
+        keepLiveNav()
+        return
     }
+    const apply = () => {
+        const replaced = html ? syncPagesNavFromResponse(html) : false
+        if (!replaced) {
+            keepLiveNav()
+        }
+    }
+    if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(apply)
+        return
+    }
+    apply()
 }
 
 if (typeof document !== 'undefined') {
@@ -331,28 +985,120 @@ function ensureFolderRowClick() {
             }
 
             const a = e.target.closest(
-                '#pages-nav li.nav-folder > .nav-folder-peer > a.sidebar-link'
+                '#pages-nav a.sidebar-link'
             ) as HTMLAnchorElement | null
             if (!a) {
                 return
             }
 
-            const cb = folderCheckboxForRow(a)
-            if (!cb) {
-                return
-            }
+            const folderRow = a.closest('.nav-folder-peer')
+            const cb = folderRow?.parentElement?.classList.contains(
+                'nav-folder'
+            )
+                ? folderCheckboxForRow(a)
+                : null
 
             if (anchorMatchesPath(a, window.location.pathname)) {
-                cb.checked = !cb.checked
-                cb.dispatchEvent(new Event('change', { bubbles: true }))
+                if (cb) {
+                    const nav = a.closest<HTMLElement>('#pages-nav')
+                    if (nav) {
+                        beginUserFolderGesture(nav)
+                    }
+                    cb.checked = !cb.checked
+                    cb.dispatchEvent(new Event('change', { bubbles: true }))
+                }
                 e.preventDefault()
                 e.stopPropagation()
                 return
             }
 
-            if (!cb.checked) {
+            previewCurrentLink(a)
+            if (cb && !cb.checked) {
+                const nav = a.closest<HTMLElement>('#pages-nav')
+                if (nav) {
+                    beginUserFolderGesture(nav)
+                }
                 cb.checked = true
                 cb.dispatchEvent(new Event('change', { bubbles: true }))
+            }
+        },
+        true
+    )
+}
+
+const SECTION_RESET_LINK =
+    '#secondary-nav a.secondary-nav-item__hit, #secondary-nav a.secondary-nav-dropdown-link, #pages-dropdown a.pages-dropdown_active'
+
+function isSectionResetElement(el: Element | null) {
+    return Boolean(el?.closest(SECTION_RESET_LINK))
+}
+
+function pathIsSectionHome(path: string) {
+    const normalized = normalizeNavPathname(path)
+    const links = document.querySelectorAll<HTMLAnchorElement>(
+        '#secondary-nav a.secondary-nav-item__hit[href]'
+    )
+    for (const a of links) {
+        const href = a.getAttribute('href')
+        if (!href || href.startsWith('#') || /^https?:/i.test(href)) {
+            continue
+        }
+        if (normalizeNavPathname(href) === normalized) {
+            return true
+        }
+    }
+    return false
+}
+
+function requestFolderReset(root: ParentNode = document) {
+    pendingFolderReset = true
+    const nav = root.querySelector('#pages-nav')
+    if (nav instanceof HTMLElement) {
+        clearNavState(nav)
+    }
+}
+
+function ensureSectionResetClick() {
+    if (sectionResetClickBound) {
+        return
+    }
+    sectionResetClickBound = true
+    document.addEventListener(
+        'click',
+        (e: MouseEvent) => {
+            if (
+                e.button !== 0 ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey ||
+                !(e.target instanceof Element) ||
+                !isSectionResetElement(e.target)
+            ) {
+                return
+            }
+            requestFolderReset()
+        },
+        true
+    )
+    document.addEventListener(
+        'htmx:beforeRequest',
+        (event: Event) => {
+            const detail = (event as CustomEvent).detail as
+                | {
+                      boosted?: boolean
+                      elt?: EventTarget
+                      requestConfig?: { path?: string }
+                  }
+                | undefined
+            const elt = detail?.elt
+            const path = detail?.requestConfig?.path
+            if (elt instanceof Element && isSectionResetElement(elt)) {
+                requestFolderReset()
+                return
+            }
+            if (typeof path === 'string' && pathIsSectionHome(path)) {
+                requestFolderReset()
             }
         },
         true
@@ -374,6 +1120,7 @@ function ensureNavStatePersist() {
         }
         const nav = target.closest<HTMLElement>('#pages-nav')
         if (nav) {
+            onFolderCheckboxChange(target)
             saveNavState(nav)
         }
     })
@@ -393,9 +1140,52 @@ export function initNav() {
     }
 
     ensureFolderRowClick()
+    ensureSectionResetClick()
     ensureNavStatePersist()
-    restoreNavState(pagesNav)
+    ensureSubtreeClips(pagesNav)
+    const resetFolders = pendingFolderReset
+    const replacedNav = navJustReplaced
+    pendingFolderReset = false
+    navJustReplaced = false
+    // Same-tree HTMX re-runs initNav (sometimes twice). Do not kill an
+    // in-progress first-open. Only snap on first paint or island reset.
+    const holdFolderAnim = shouldSuppressFolderSnap()
+    if ((resetFolders || canRecenterNav) && !holdFolderAnim) {
+        pagesNav.classList.add('nav-no-folder-anim')
+    }
+    // A replaced tree already has the server expansion. Collapsing it
+    // and reopening the current path paints a closed sidebar first.
+    if (resetFolders && !replacedNav && !holdFolderAnim) {
+        collapseAllFolders(pagesNav)
+    } else if (!resetFolders) {
+        restoreNavState(pagesNav)
+    }
     markCurrentPage(pagesNav)
-    scrollCurrentNaviItemIntoView(pagesNav)
+    const currentNavItem = currentInNav(pagesNav)
+    if (currentNavItem && !holdFolderAnim) {
+        expandAllParents(currentNavItem)
+        applyAncestorHighlight(pagesNav)
+    }
+    if (!holdFolderAnim) {
+        syncFolderPanels(pagesNav)
+    }
+    if (currentColorPending) {
+        settleCurrentPage(pagesNav, { delay: true })
+        currentColorPending = false
+    } else {
+        settleCurrentPage(pagesNav)
+    }
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            pagesNav.classList.remove('nav-no-folder-anim')
+        })
+    })
+    if (canRecenterNav) {
+        scrollCurrentNaviItemIntoView(pagesNav)
+        canRecenterNav = false
+    } else {
+        scrollCurrentNaviItemIntoView.cancel()
+        restorePagesNavScroll()
+    }
     initPagesNavScroll(pagesNav)
 }

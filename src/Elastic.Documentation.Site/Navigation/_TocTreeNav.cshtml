@@ -49,9 +49,11 @@
 					}
 				</a>
 			</div>
-			<ul class="nav-subtree">
-				@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))
-			</ul>
+			<div class="nav-subtree-clip">
+				<ul class="nav-subtree">
+					@await RenderPartialAsync(_TocTreeNav.Create(item.NavigationItems))
+				</ul>
+			</div>
 		</li>
 	}
 }
