@@ -30,11 +30,13 @@ Contentstack content type (homepage, blog posts, blog categories, and — Securi
 sync stream before the crawler was removed.
 
 The `labs-*` indices those two properties used to be crawled into still exist and still hold
-historical/legacy data; they're not deleted by this change. They remain visible to `indices`
-commands (reindex, cleanup) as ordinary index families — see `LabsMappingContext` in
-`Elastic.Documentation.Search.Contract`. Decommissioning `labs-*` and the `"labs"` document-type
-discriminator in the shared search contract (which reaches beyond essc into the search API/frontend)
-is a separate, explicitly-scoped follow-up, not part of removing the crawler.
+historical/legacy data; they're not deleted by this change. They remain visible to `indices cleanup`
+(and other lifecycle commands) as an ordinary index family — see `LabsMappingContext` in
+`Elastic.Documentation.Search.Contract`. `indices unify` no longer reads from `labs-*`: every
+document's `path` doubles as its `_id`, so a URL still present in `labs-*` would silently overwrite
+the fresher Contentstack-sourced `site-*` copy of the same page. Decommissioning `labs-*` and the
+`"labs"` document-type discriminator in the shared search contract (which reaches beyond essc into
+the search API/frontend) is a separate, explicitly-scoped follow-up, not part of removing the crawler.
 
 ## Installation
 

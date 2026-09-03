@@ -109,9 +109,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) && AnsiConsole.Profile.Capabilities.Interactive;
 
 	/// <summary>
-	/// Incrementally reindex <c>docs-assembler.*</c>, <c>site-*</c>, and <c>labs-*</c> semantic
-	/// indices into a unified <c>website-search.semantic-{env}</c> index, then update the
-	/// <c>ws-content-{env}</c> alias.
+	/// Incrementally reindex <c>docs-assembler.*</c> and <c>site-*</c> semantic indices into a
+	/// unified <c>website-search.semantic-{env}</c> index, then update the <c>ws-content-{env}</c>
+	/// alias.
 	/// </summary>
 	/// <remarks>
 	/// On the first run (or when <c>WebsiteSearchMappingConfig</c> or any source template changes)
@@ -126,6 +126,12 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// Delete detection uses a mark-and-sweep: every doc present in the current lexical snapshot is
 	/// marked with the current batch timestamp; docs in semantic that were not marked are removed.
 	/// The <c>unify_source</c> field on each doc records which source alias it came from.
+	///
+	/// <c>labs-*</c> is deliberately excluded: it held Labs properties (Search/Security/Observability)
+	/// crawled from HTML, all of which are now sourced from Contentstack into <c>site-*</c> instead.
+	/// Every doc uses its <c>path</c> as <c>_id</c>, so a shared URL still present in <c>labs-*</c>
+	/// would overwrite the fresher <c>site-*</c> doc on whichever run reindexes it last — merging
+	/// <c>labs-*</c> here would silently regress content that Contentstack now sources correctly.
 	/// </remarks>
 	/// <param name="apiKey">Override Elasticsearch API key.</param>
 	/// <param name="endpoint">Override Elasticsearch base URL.</param>
@@ -174,11 +180,10 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 		var docsAssemblerAlias = $"docs-assembler.semantic-{env}-latest";
 		var siteAlias = SiteMappingContext.SiteDocumentSemantic.CreateContext(type: buildType, env: env).ResolveWriteAlias();
-		var labsAlias = LabsMappingContext.LabsDocumentSemantic.CreateContext(type: buildType, env: env).ResolveWriteAlias();
-		var sourceAliases = new[] { docsAssemblerAlias, siteAlias, labsAlias };
+		var sourceAliases = new[] { docsAssemblerAlias, siteAlias };
 		var pageAlias = IndicesCleanupPlanner.PageAliasName(env);
 
-		AnsiConsole.MarkupLine("[aqua bold]Indices unify[/] — [dim]docs-assembler + site + labs → website-search[/]");
+		AnsiConsole.MarkupLine("[aqua bold]Indices unify[/] — [dim]docs-assembler + site → website-search[/]");
 		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(cfg.Uri.ToString())}");
 		AnsiConsole.MarkupLine($"[dim]Environment:[/]   [white]{Markup.Escape(env)}[/]");
 		AnsiConsole.MarkupLine($"[dim]Sources:[/]       [white]{Markup.Escape(string.Join(", ", sourceAliases))}[/]");
