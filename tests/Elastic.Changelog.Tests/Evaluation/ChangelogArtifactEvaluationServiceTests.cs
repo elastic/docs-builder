@@ -130,8 +130,6 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 
 		result.Should().BeTrue();
 		VerifyOutputSet("should-commit", "true");
-		VerifyOutputSet("should-comment-success", "false");
-		VerifyOutputSet("should-comment-failure", "false");
 		VerifyOutputSet("pr-number", "42");
 		VerifyOutputSet("head-ref", "feature/test");
 		VerifyOutputSet("head-sha", "abc123");
@@ -140,7 +138,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	}
 
 	[Fact]
-	public async Task EvaluateArtifact_SuccessCannotCommit_SetsCommentSuccessFlag()
+	public async Task EvaluateArtifact_SuccessCannotCommit_SetsCommitFalse()
 	{
 		await WriteMetadata(DefaultMetadata(canCommit: false));
 		SetupPrInfo();
@@ -150,7 +148,6 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 
 		result.Should().BeTrue();
 		VerifyOutputSet("should-commit", "false");
-		VerifyOutputSet("should-comment-success", "true");
 	}
 
 	[Fact]
@@ -170,7 +167,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	}
 
 	[Fact]
-	public async Task EvaluateArtifact_ForkCannotCommit_SetsCommentSuccessFlag()
+	public async Task EvaluateArtifact_ForkCannotCommit_SetsCommitFalse()
 	{
 		var metadata = DefaultMetadata(canCommit: false) with { IsFork = true, HeadRepo = "contributor/repo", MaintainerCanModify = false };
 		await WriteMetadata(metadata);
@@ -181,12 +178,11 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 
 		result.Should().BeTrue();
 		VerifyOutputSet("should-commit", "false");
-		VerifyOutputSet("should-comment-success", "true");
 		VerifyOutputSet("is-fork", "true");
 	}
 
 	[Fact]
-	public async Task EvaluateArtifact_NoLabel_SetsCommentFailureFlag()
+	public async Task EvaluateArtifact_NoLabel_SetsCommitFalseAndForwardsLabelTables()
 	{
 		await WriteMetadata(DefaultMetadata(status: "no-label", canCommit: false) with
 		{
@@ -201,7 +197,6 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 
 		result.Should().BeTrue();
 		VerifyOutputSet("should-commit", "false");
-		VerifyOutputSet("should-comment-failure", "true");
 		VerifyOutputSet("label-table", "| Label | Type |");
 		VerifyOutputSet("product-label-table", "| Label | Product |");
 		VerifyOutputSet("skip-labels", "changelog:skip");
