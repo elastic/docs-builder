@@ -175,6 +175,10 @@ body {
 		@apply relative flex flex-wrap;
 	}
 
+	.nav-subtree-clip {
+		@apply w-full;
+	}
+
 	.nav-toggle-btn {
 		@apply hover:bg-grey-20 cursor-pointer rounded-sm p-1;
 	}
