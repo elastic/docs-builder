@@ -199,12 +199,6 @@ body {
 			display: block;
 		}
 
-		/* pages-nav.ts wraps the subtree in a clip on every page. NAVIGATION_PREVIEW
-		   CSS knows about that wrapper; flag-off prod still uses this sibling reveal. */
-		.peer:has(:checked) ~ .nav-subtree-clip > & {
-			display: block;
-		}
-
 		&::before {
 			content: '';
 			@apply bg-grey-20 absolute top-0 bottom-0 w-px;
