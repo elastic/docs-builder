@@ -107,9 +107,9 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		operation.Should().NotContain("<html");
 
 		catalog.Should().Contain("type: api");
-		catalog.Should().Contain("title: API Explorer");
+		catalog.Should().Contain("title: API catalog");
 		catalog.Should().Contain("description: API products in this documentation set.");
-		catalog.Should().Contain("# API Explorer");
+		catalog.Should().Contain("# API catalog");
 		catalog.Should().Contain("Fixture API");
 		catalog.Should().Contain("`elasticsearch`");
 	}

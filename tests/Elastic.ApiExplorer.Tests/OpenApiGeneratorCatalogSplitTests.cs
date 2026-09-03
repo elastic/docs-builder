@@ -65,7 +65,12 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		await generator.GenerateCatalog(entries, TestContext.Current.CancellationToken);
 
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeTrue();
+		var catalogPath = Path.Join(outputRoot, "api", "index.html");
+		context.WriteFileSystem.File.Exists(catalogPath).Should().BeTrue();
+		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current.CancellationToken);
+		html.Should().Contain("<h1>API catalog</h1>");
+		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch/">Elasticsearch <code>elasticsearch</code></a>""");
+		html.Should().Contain("""<a href="/docs/api/doc/kibana/">Kibana <code>kibana</code></a>""");
 	}
 
 	[Fact]
