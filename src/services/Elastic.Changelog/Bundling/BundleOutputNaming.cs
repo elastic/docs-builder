@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -16,7 +17,8 @@ public readonly record struct BundleOutputNameRequest(
 	string? CliRepo,
 	string? ProfileRepo,
 	string? BundleRepo,
-	string? ConfigPath
+	string? ConfigPath,
+	IEnvironmentVariables? Env = null
 );
 
 /// <summary>
@@ -107,7 +109,14 @@ public static class BundleOutputNaming
 	/// Resolves the authoring repository for any changelog command. Precedence:
 	/// explicit value(s), <c>GITHUB_REPOSITORY</c> env var, git <c>origin</c>.
 	/// </summary>
-	public static string? ResolveRepo(IFileSystem fileSystem, string? configPath, params string?[] candidates)
+	public static string? ResolveRepo(IFileSystem fileSystem, string? configPath, params string?[] candidates) =>
+		ResolveRepo(fileSystem, configPath, null, candidates);
+
+	/// <summary>
+	/// Resolves the authoring repository with an injectable environment for testing.
+	/// When <paramref name="env"/> is null the real <see cref="Environment.GetEnvironmentVariable"/> is used.
+	/// </summary>
+	internal static string? ResolveRepo(IFileSystem fileSystem, string? configPath, IEnvironmentVariables? env, params string?[] candidates)
 	{
 		var configured = FirstNonEmpty(candidates);
 		var normalized = ChangelogRepoOwnerResolver.NormalizeRepo(configured);
@@ -115,7 +124,9 @@ public static class BundleOutputNaming
 			return normalized;
 
 		// GITHUB_REPOSITORY is "owner/repo"; NormalizeRepo takes the last segment.
-		var githubRepository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+		var githubRepository = env != null
+			? env.GetEnvironmentVariable("GITHUB_REPOSITORY")
+			: Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
 		var ghNormalized = ChangelogRepoOwnerResolver.NormalizeRepo(githubRepository);
 		if (!string.IsNullOrWhiteSpace(ghNormalized))
 			return ghNormalized;
@@ -124,7 +135,7 @@ public static class BundleOutputNaming
 	}
 
 	internal static string? ResolveAuthoringRepo(IFileSystem fileSystem, BundleOutputNameRequest request) =>
-		ResolveRepo(fileSystem, request.ConfigPath, request.CliRepo, request.ProfileRepo, request.BundleRepo);
+		ResolveRepo(fileSystem, request.ConfigPath, request.Env, request.CliRepo, request.ProfileRepo, request.BundleRepo);
 
 	private static string? FirstNonEmpty(params string?[] values)
 	{

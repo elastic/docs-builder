@@ -183,11 +183,13 @@ public partial class ChangelogBundlingService(
 	IGitHubReleaseService? releaseService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
-	IGitHubCommitRangeService? commitRangeService = null
+	IGitHubCommitRangeService? commitRangeService = null,
+	IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
+	private readonly IEnvironmentVariables? _env = env;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
@@ -694,7 +696,8 @@ public partial class ChangelogBundlingService(
 						input.Repo,
 						profile.Repo,
 						config.Bundle.Repo,
-						input.Config
+						input.Config,
+						_env
 					)
 				);
 				outputPath = JoinProfileOutputPath(config, input, fileName);
@@ -1151,7 +1154,15 @@ public partial class ChangelogBundlingService(
 			var fileName = BundleOutputNaming.ResolveFileName(
 				collector,
 				_fileSystem,
-				new BundleOutputNameRequest(primaryProduct, planVersion, input.Repo, profileDef.Repo, config?.Bundle?.Repo, input.Config)
+				new BundleOutputNameRequest(
+					primaryProduct,
+					planVersion,
+					input.Repo,
+					profileDef.Repo,
+					config?.Bundle?.Repo,
+					input.Config,
+					_env
+				)
 			);
 			outputPath = JoinProfileOutputPath(config, input, fileName);
 		}
@@ -1243,7 +1254,7 @@ public partial class ChangelogBundlingService(
 		var fileName = BundleOutputNaming.ResolveFileNameOrFallback(
 			collector,
 			_fileSystem,
-			new BundleOutputNameRequest(product, version, input.Repo, null, config?.Bundle?.Repo, input.Config)
+			new BundleOutputNameRequest(product, version, input.Repo, null, config?.Bundle?.Repo, input.Config, _env)
 		);
 		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
 	}
