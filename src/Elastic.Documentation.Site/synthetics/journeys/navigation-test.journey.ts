@@ -181,47 +181,24 @@ journey('navigation test', ({ page, params }) => {
     step(
         'Sidebar click reaches Elasticsearch and back restores Reference',
         async () => {
-            const previewHeading = page.locator(
-                '#pages-nav .pages-nav-v2__heading-text'
-            )
-            const isPreviewNav =
-                (await page.locator('#pages-nav .pages-nav-v2-shell').count()) >
-                0
-            if (isPreviewNav)
-                await expect(previewHeading).toHaveText('Reference')
-
             await page
                 .locator('#pages-nav a[href$="/reference/elasticsearch"]')
                 .first()
                 .click()
             await expect(page).toHaveURL(/\/reference\/elasticsearch/)
-            if (isPreviewNav) {
-                await expect(previewHeading).toHaveText('Elasticsearch')
-                await expect(
-                    page.locator('#pages-nav .nav-v2-nav-text').first()
-                ).toHaveText('Overview')
-            } else {
-                await expect(
-                    page.locator(
-                        '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
-                    )
-                ).toBeVisible()
-            }
+            await expect(
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
+                )
+            ).toBeVisible()
 
             await page.goBack()
             await expect(page).toHaveURL(/\/reference\/?$/)
-            if (isPreviewNav) {
-                await expect(previewHeading).toHaveText('Reference')
-                await expect(
-                    page.locator('#pages-nav .nav-v2-nav-text').first()
-                ).toHaveText('Overview')
-            } else {
-                await expect(
-                    page.locator(
-                        '#pages-nav a.sidebar-link.current[href*="/reference"]'
-                    )
-                ).toBeVisible()
-            }
+            await expect(
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference"]'
+                )
+            ).toBeVisible()
         }
     )
 
