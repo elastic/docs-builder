@@ -439,8 +439,48 @@ export function collapseAllFolders(nav: HTMLElement) {
     syncFolderPanels(nav, { detachClosed: true })
 }
 
+/**
+ * A collapsed folder's children live in a detached panel. Walking
+ * parentElement from a node inside that panel never reaches the live
+ * folder row, so island swaps (and same-tree jumps into a closed group)
+ * must reattach the chain before expandAllParents can open it.
+ */
+function attachDetachedAncestors(nav: HTMLElement, navItem: HTMLElement) {
+    const store = detachedPanels.get(nav)
+    if (!store || navItem.isConnected) {
+        return
+    }
+    for (let i = 0; i < store.size + 1 && !navItem.isConnected; i++) {
+        let attached = false
+        for (const [id, panel] of store) {
+            if (panel.isConnected || !panel.contains(navItem)) {
+                continue
+            }
+            const input = findFolderInput(nav, id)
+            if (!input) {
+                continue
+            }
+            input.checked = true
+            const next = attachFolderPanel(input)
+            if (next) {
+                snapFolderOpen(next)
+                attached = true
+            }
+        }
+        if (!attached) {
+            break
+        }
+    }
+}
+
 function expandAllParents(navItem: HTMLElement) {
-    let parent: HTMLLIElement | null | undefined = navItem?.closest('li')
+    const nav =
+        navItem.closest<HTMLElement>('#pages-nav') ??
+        document.querySelector<HTMLElement>('#pages-nav')
+    if (nav) {
+        attachDetachedAncestors(nav, navItem)
+    }
+    let parent: HTMLLIElement | null | undefined = navItem.closest('li')
     while (parent) {
         const input = parent.querySelector<HTMLInputElement>(
             ':scope > .peer input[type="checkbox"], :scope > input[type="checkbox"]'
@@ -640,13 +680,20 @@ export function markCurrentPage(nav: HTMLElement) {
         panel.querySelectorAll('a.sidebar-link[href]').forEach(consider)
     })
 
-    $$optional('.current', nav).forEach((el) => {
-        if (!next.has(el)) {
-            el.classList.remove(
-                'current',
-                'nav-v2-current-ready',
-                'nav-v2-hold-hover'
-            )
+    const removeStaleCurrent = (el: Element) => {
+        if (next.has(el)) {
+            return
+        }
+        el.classList.remove(
+            'current',
+            'nav-v2-current-ready',
+            'nav-v2-hold-hover'
+        )
+    }
+    $$optional('.current', nav).forEach(removeStaleCurrent)
+    detachedPanels.get(nav)?.forEach((panel) => {
+        if (!panel.isConnected) {
+            panel.querySelectorAll('.current').forEach(removeStaleCurrent)
         }
     })
     next.forEach((el) => {
@@ -1064,6 +1111,7 @@ export function initNav() {
     const currentNavItem = currentInNav(pagesNav)
     if (currentNavItem && !holdFolderAnim) {
         expandAllParents(currentNavItem)
+        applyAncestorHighlight(pagesNav)
     }
     if (!holdFolderAnim) {
         syncFolderPanels(pagesNav)

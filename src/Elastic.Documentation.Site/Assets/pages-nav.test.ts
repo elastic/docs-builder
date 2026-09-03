@@ -177,6 +177,62 @@ describe('syncPagesNavFromResponse', () => {
                 ?.classList.contains('nav-subtree-clip--open')
         ).toBe(true)
     })
+
+    it('reattaches a nested current page after an island swap', () => {
+        const path = window.location.pathname
+        const incoming = `
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Deploy">
+                    <ul id="nav-tree-deploy">
+                        <li class="nav-folder">
+                            <div class="peer nav-folder-peer">
+                                <input id="deploy-manage" type="checkbox" checked>
+                                <a class="sidebar-link" href="/docs/deploy-manage/">Deploy and manage</a>
+                            </div>
+                            <ul class="nav-subtree">
+                                <li class="nav-folder">
+                                    <div class="peer nav-folder-peer">
+                                        <input id="deploy" type="checkbox" checked>
+                                        <a class="sidebar-link" href="/docs/deploy-manage/deploy/">Deploy</a>
+                                    </div>
+                                    <ul class="nav-subtree">
+                                        <li>
+                                            <a class="sidebar-link current" href="${path}">Elastic Cloud</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li class="nav-folder">
+                                    <div class="peer nav-folder-peer">
+                                        <input id="other" type="checkbox">
+                                        <a class="sidebar-link" href="/docs/other/">Other</a>
+                                    </div>
+                                    <ul class="nav-subtree"><li>Stay closed</li></ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        `
+        document.body.innerHTML = pagesNav('nav-tree-guides', 'Get started')
+        initNav()
+
+        syncPagesNavFromResponse(`<html><body>${incoming}</body></html>`)
+        initNav()
+
+        const current = document.querySelector(
+            '#pages-nav a.sidebar-link.current'
+        )
+        expect(current?.textContent?.trim()).toBe('Elastic Cloud')
+        expect(current?.isConnected).toBe(true)
+        expect(
+            document.querySelector<HTMLInputElement>('#deploy-manage')?.checked
+        ).toBe(true)
+        expect(
+            document.querySelector<HTMLInputElement>('#deploy')?.checked
+        ).toBe(true)
+        expect(document.body.textContent).not.toContain('Stay closed')
+    })
 })
 
 describe('markCurrentPage', () => {
