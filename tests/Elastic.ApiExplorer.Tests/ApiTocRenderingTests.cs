@@ -13,7 +13,6 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
-using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using RazorSlices;
 
@@ -26,20 +25,15 @@ public class ApiTocRenderingTests
 	{
 		var html = await Render([]);
 
-		html.Should().Contain("View as Markdown");
-		html.Should().Contain("href=\"/api/doc/elasticsearch/v9.md\"");
-		html.Should().Contain("target=\"_blank\"");
+		html.Should().Contain("""<a href="/api/doc/elasticsearch/v9.md" class="link text-sm" target="_blank">""");
 		html.Should().NotContain("On this page");
 	}
 
 	[Fact]
-	public async Task Render_WithTocItems_IncludesViewAsMarkdownAndHeadings()
+	public async Task Render_WithTocItems_IncludesHeadings()
 	{
-		var html = await Render([new ApiTocItem("Paths", "paths"), new ApiTocItem("Description", "description")]);
+		var html = await Render([new ApiTocItem("Paths", "paths")]);
 
-		html.Should().Contain("View as Markdown");
-		html.Should().Contain("href=\"/api/doc/elasticsearch/v9.md\"");
-		html.Should().Contain("target=\"_blank\"");
 		html.Should().Contain("On this page");
 		html.Should().Contain("href=\"#paths\"");
 		html.Should().Contain("Paths");
