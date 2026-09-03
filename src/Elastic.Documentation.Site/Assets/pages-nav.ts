@@ -794,13 +794,20 @@ export function syncPagesNavFromResponse(
     if (!current || !responseHtml) {
         return false
     }
+    const liveKey = navSurfaceKey(current)
+    const incomingKey = incomingNavSurfaceKey(responseHtml)
+    if (incomingKey && incomingKey === liveKey) {
+        canRecenterNav = false
+        scrollCurrentNaviItemIntoView.cancel()
+        return false
+    }
     const incoming = new DOMParser()
         .parseFromString(responseHtml, 'text/html')
         .querySelector('#pages-nav')
     if (!incoming) {
         return false
     }
-    if (navSurfaceKey(current) === navSurfaceKey(incoming)) {
+    if (liveKey === navSurfaceKey(incoming)) {
         canRecenterNav = false
         scrollCurrentNaviItemIntoView.cancel()
         return false
@@ -833,6 +840,19 @@ function clearHtmxHistoryCache() {
 
 function htmlContainsPagesNav(html: string) {
     return html.includes('id="pages-nav"') || html.includes("id='pages-nav'")
+}
+
+/** Same key as `navSurfaceKey`, from the raw response, so same-tree swaps skip DOMParser. */
+export function incomingNavSurfaceKey(html: string): string {
+    const heading = /data-nav-heading="([^"]*)"/.exec(html)?.[1] ?? ''
+    const treeId = (/id="(nav-tree-[^"]+)"/.exec(html)?.[1] ?? '').replace(
+        /-outgoing$/,
+        ''
+    )
+    if (!heading && !treeId) {
+        return ''
+    }
+    return `${treeId}::${heading}`
 }
 
 /** Docs article/hub pages put the article in `#content-container` with `md:col-start-2`. */
@@ -899,15 +919,35 @@ function onBeforeSwap(event: Event) {
     pinPagesNavScroll()
 }
 
+function keepLiveNav() {
+    canRecenterNav = false
+    scrollCurrentNaviItemIntoView.cancel()
+    restorePagesNavScroll()
+}
+
 function onAfterSwap(event: Event) {
     const html = responseHtmlFromSwap(event) || lastSwapHtml
     lastSwapHtml = ''
-    const replaced = html ? syncPagesNavFromResponse(html) : false
-    if (!replaced) {
-        canRecenterNav = false
-        scrollCurrentNaviItemIntoView.cancel()
-        restorePagesNavScroll()
+    const current = document.querySelector('#pages-nav')
+    if (
+        current &&
+        html &&
+        incomingNavSurfaceKey(html) === navSurfaceKey(current)
+    ) {
+        keepLiveNav()
+        return
     }
+    const apply = () => {
+        const replaced = html ? syncPagesNavFromResponse(html) : false
+        if (!replaced) {
+            keepLiveNav()
+        }
+    }
+    if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(apply)
+        return
+    }
+    apply()
 }
 
 if (typeof document !== 'undefined') {

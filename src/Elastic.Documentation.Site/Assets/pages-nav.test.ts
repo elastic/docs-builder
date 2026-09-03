@@ -6,6 +6,7 @@ import {
     markCurrentPage,
     navSurfaceKey,
     settleCurrentPage,
+    incomingNavSurfaceKey,
     pinPagesNavScroll,
     shouldRetargetArticleSwap,
     syncPagesNavFromResponse,
@@ -641,6 +642,15 @@ describe('navSurfaceKey', () => {
             'Elasticsearch'
         )
         expect(navSurfaceKey(document)).toBe('nav-tree-es::Elasticsearch')
+    })
+
+    it('matches the live key from the raw response without parsing', () => {
+        const html = pagesNav('nav-tree-guides-outgoing', 'Get started')
+        document.body.innerHTML = html
+        expect(incomingNavSurfaceKey(`<html><body>${html}</body></html>`)).toBe(
+            navSurfaceKey(document)
+        )
+        expect(incomingNavSurfaceKey('<html><body></body></html>')).toBe('')
     })
 })
 

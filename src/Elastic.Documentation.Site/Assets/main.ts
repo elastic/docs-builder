@@ -311,7 +311,9 @@ document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
             (target.id === 'main-container' ||
                 target.id === 'content-container'))
     ) {
-        window.scrollTo(0, 0)
+        if (window.scrollY !== 0) {
+            window.scrollTo(0, 0)
+        }
     }
 })
 
