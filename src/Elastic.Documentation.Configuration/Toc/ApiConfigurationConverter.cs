@@ -14,9 +14,10 @@ namespace Elastic.Documentation.Configuration.Toc;
 /// <code>
 /// api:
 ///   &lt;key&gt;:
-///     - spec: &lt;path&gt;       # optional local override
-///       product: &lt;id&gt;      # required
-///       children:            # optional
+///     - spec: &lt;filename&gt;     # required hosted index basename
+///       local_spec: &lt;path&gt;  # optional local file in the checkout
+///       product: &lt;id&gt;        # required
+///       children:              # optional
 ///         - file: getting-started.md
 /// </code>
 /// The legacy scalar ("api: key: path.json"), object ("api: key: { spec: path.json }"), and
@@ -27,11 +28,12 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 {
 	private const string ShapeGuidance = "Use the single-entry sequence form instead:\n"
 		+ "  <key>:\n"
-		+ "    - spec: <path>       # required; its basename resolves the remote version index\n"
-		+ "      product: <id>      # required, must match a products.yml entry\n"
+		+ "    - spec: <filename>     # required; basename of the hosted version-index entry\n"
+		+ "      local_spec: <path>  # optional; local file anywhere in the same git checkout\n"
+		+ "      product: <id>        # required, must match a products.yml entry\n"
 		+ "      repository: <org/repo> # optional; only needed if the spec is published from a\n"
 		+ "                              # different repo than the current checkout\n"
-		+ "      children:          # optional\n"
+		+ "      children:            # optional\n"
 		+ "        - file: getting-started.md";
 
 	public bool Accepts(Type type) => type == typeof(ApiProductSequence) || type == typeof(ApiProductEntry);
@@ -66,7 +68,7 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 			throw new YamlException(
 				parser.Current?.Start ?? Mark.Empty,
 				parser.Current?.End ?? Mark.Empty,
-				$"Each API entry must be a mapping with 'spec', 'product', and optional 'children' keys. {ShapeGuidance}"
+				$"Each API entry must be a mapping with 'spec', 'product', and optional 'local_spec' and 'children' keys. {ShapeGuidance}"
 			);
 		}
 
@@ -93,6 +95,21 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 					{
 						entry.SpecLine = (int)specStart.Value.Line;
 						entry.SpecColumn = (int)specStart.Value.Column;
+					}
+					break;
+				case "local_spec":
+					var localSpecStart = parser.Current?.Start;
+					if (parser.Current is Scalar localSpecValue)
+					{
+						entry.LocalSpec = localSpecValue.Value;
+						_ = parser.MoveNext();
+					}
+					else
+						parser.SkipThisAndNestedEvents();
+					if (localSpecStart.HasValue)
+					{
+						entry.LocalSpecLine = (int)localSpecStart.Value.Line;
+						entry.LocalSpecColumn = (int)localSpecStart.Value.Column;
 					}
 					break;
 				case "product":

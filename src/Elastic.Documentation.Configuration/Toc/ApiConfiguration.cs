@@ -25,27 +25,37 @@ public class ApiEntryChild
 /// <code>
 /// api:
 ///   &lt;key&gt;:
-///     - spec: &lt;path-or-filename&gt;
+///     - spec: &lt;filename&gt;
+///       local_spec: &lt;path&gt;
 ///       product: &lt;product-id&gt;
 ///       repository: &lt;org/repo&gt;
 ///       children:
 ///         - file: getting-started.md
 /// </code>
-/// <c>spec</c> and <c>product</c> are both required. <c>spec</c> serves two purposes at once: if a
-/// file exists at that path relative to the docset, it overrides the current version for local
-/// preview; regardless of whether it exists on disk, its basename is the <c>&lt;spec-name&gt;</c>
-/// segment looked up in the root version index. <c>repository</c> is optional and only needed when
-/// the spec-publishing repository differs from the current checkout's own GitHub remote.
+/// <c>spec</c> and <c>product</c> are both required. <c>spec</c> is the hosted version-index
+/// basename. Optional <c>local_spec</c> is a checkout-bounded file that overrides the current
+/// (<c>main</c>) version when present. If <c>local_spec</c> is omitted and a file exists at the
+/// docset-relative <c>spec</c> path, that file is still used as an implicit local override.
+/// <c>repository</c> is optional and only needed when the spec-publishing repository differs
+/// from the current checkout's own GitHub remote.
 /// </summary>
 [YamlSerializable]
 public class ApiProductEntry
 {
 	/// <summary>
-	/// Path to an OpenAPI specification file, relative to the docset. Required: its basename is
-	/// used to resolve the remote version index even when no file exists at this path locally.
+	/// Hosted OpenAPI spec identifier. Required: its basename is the <c>&lt;spec-name&gt;</c>
+	/// segment looked up in the remote version index.
 	/// </summary>
 	[YamlMember(Alias = "spec")]
 	public string? Spec { get; set; }
+
+	/// <summary>
+	/// Optional path to a local OpenAPI file, relative to the docset. May walk up into the rest
+	/// of the same git checkout. When the file exists it overrides <c>main</c>. When it is
+	/// missing the build warns and uses the hosted spec from <see cref="Spec"/>.
+	/// </summary>
+	[YamlMember(Alias = "local_spec")]
+	public string? LocalSpec { get; set; }
 
 	/// <summary>
 	/// Required product id. Must match a key in <c>products.yml</c> and binds this API to that
@@ -105,6 +115,17 @@ public class ApiProductEntry
 	public int? SpecColumn { get; set; }
 
 	/// <summary>
+	/// Source location of the <c>local_spec:</c> value specifically, when present. Used to
+	/// attribute a missing- or escaping-path diagnostic to the exact value.
+	/// </summary>
+	[YamlIgnore]
+	public int? LocalSpecLine { get; set; }
+
+	/// <summary>1-based column counterpart to <see cref="LocalSpecLine"/>.</summary>
+	[YamlIgnore]
+	public int? LocalSpecColumn { get; set; }
+
+	/// <summary>
 	/// Source location of the <c>repository:</c> value specifically, when present. Used to attribute
 	/// a malformed-repository diagnostic to the exact value rather than the whole entry.
 	/// </summary>
@@ -116,6 +137,7 @@ public class ApiProductEntry
 	public int? RepositoryColumn { get; set; }
 
 	public bool HasSpec => !string.IsNullOrWhiteSpace(Spec);
+	public bool HasLocalSpec => !string.IsNullOrWhiteSpace(LocalSpec);
 	public bool HasProduct => !string.IsNullOrWhiteSpace(Product);
 }
 
@@ -159,10 +181,10 @@ public class ResolvedApiConfiguration
 	public required string SpecFileName { get; init; }
 
 	/// <summary>
-	/// Local override for the current OpenAPI specification file, present only when a file exists
-	/// on disk at the path declared via <c>spec:</c>. Null means the current version resolves
-	/// remotely through the product's version index — this is expected, not an error, for any
-	/// docset that does not carry the spec file locally.
+	/// Local override for the current (<c>main</c>) OpenAPI specification. Set when
+	/// <c>local_spec:</c> points at an existing file, or when <c>local_spec:</c> is omitted and a
+	/// file exists at the docset-relative <c>spec:</c> path. Null means the current version
+	/// resolves remotely through the product's version index.
 	/// </summary>
 	public IFileInfo? LocalSpecFile { get; init; }
 

@@ -37,7 +37,7 @@ api:
 
 The map key is the URL suffix. This key produces `/api/doc/docs-builder-elasticsearch/`.
 
-Each key takes a sequence with exactly one entry. That entry requires `spec:` and `product:`. `repository:` and `children:` are optional. See [Reference](#reference).
+Each key takes a sequence with exactly one entry. That entry requires `spec:` and `product:`. `local_spec:`, `repository:`, and `children:` are optional. See [Reference](#reference).
 
 ::::
 
@@ -106,7 +106,8 @@ Fix the file. Then rebuild. More messages are in [Writing supplemental content](
 
 | `docset.yml` key | Required | Description |
 |---|---|---|
-| `spec:` | yes | Path to an OpenAPI file, relative to `docset.yml`. If the file exists, {{dbuild}} renders it for `main`. The basename is always used to look up the remote version index. |
+| `spec:` | yes | The hosted spec basename used to look up the remote version index, for example `elasticsearch-openapi.json`. If no `local_spec:` is set and a file with this name exists next to `docset.yml`, {{dbuild}} also uses it as an implicit local override for `main`. |
+| `local_spec:` | no | Path to a local OpenAPI file, relative to `docset.yml`, that may sit anywhere in the same git checkout. When present, {{dbuild}} renders it for `main`. |
 | `product:` | yes | A product id from `products.yml`. This binds the API to that product's versioning system. |
 | `repository:` | no | `org/repo` used to look up the version index. Set this when the spec is published from a different GitHub repository than the docset. |
 | `children:` | no | Extra Markdown pages under `api/<key>/`, in declared order. See [children:](./supplemental.md#children-pages). |
@@ -115,9 +116,26 @@ Each product key must have exactly one sequence entry. That entry must have exac
 
 ### `spec:`
 
-If the file exists on disk, {{dbuild}} uses it for the `main` moniker. Older majors still come from the version index.
+The basename always looks up the version index, whether or not a local file exists. See [Remote spec resolution](#remote-spec-resolution).
 
-The basename always looks up the version index. That is true when the file exists. It is also true when the file is missing. See [Remote spec resolution](#remote-spec-resolution).
+If you omit `local_spec:` and a file with this name exists next to `docset.yml` (or in a subfolder of it), {{dbuild}} uses that file as an implicit local override for `main`. A missing implicit file stays silent and the hosted spec is used.
+
+### `local_spec:`
+
+A path to a local OpenAPI file, relative to the folder that contains `docset.yml`. The file may sit anywhere in the same git checkout. An absolute path is allowed only when it stays under the checkout root.
+
+When the file exists, {{dbuild}} uses it for the current (`main`) version. When the file is missing, {{dbuild}} emits a warning and renders the hosted spec named in `spec:`.
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch.json
+      local_spec: ../output/openapi/elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+```
+
+Do not set `local_spec:` in a docset that never carries a local file — a missing implicit `spec:` file stays silent and uses the hosted spec.
 
 ### `product:`
 
@@ -169,7 +187,7 @@ A versionless product (`versioning: serverless` and similar) renders only `/api/
 
 ## Remote spec resolution
 
-If `spec:` does not resolve to a file on disk, {{dbuild}} fetches `main` from a CloudFront version index. Repositories that publish OpenAPI specs share this index.
+A local file is in use when `local_spec:` points at an existing file, or when `local_spec:` is omitted and a file exists at the docset-relative `spec:` path. When no local file is in use, {{dbuild}} fetches `main` from a CloudFront version index. Repositories that publish OpenAPI specs share this index.
 
 Object keys in the bucket look like this:
 

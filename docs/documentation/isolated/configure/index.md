@@ -154,6 +154,7 @@ Configures API Explorer sections from OpenAPI specifications. Only valid in `doc
 api:
   elasticsearch:
     - spec: elasticsearch-openapi.json
+      local_spec: ../output/openapi/elasticsearch.json
       product: elasticsearch
   kibana:
     - spec: kibana-openapi.json

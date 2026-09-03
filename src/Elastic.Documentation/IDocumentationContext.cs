@@ -21,6 +21,13 @@ public interface IDocumentationSetContext : IDocumentationContext
 {
 	IDocumentationFileSystem ReadFileSystem { get; }
 	IDirectoryInfo DocumentationSourceDirectory { get; }
+
+	/// <summary>
+	/// The git checkout root. Local OpenAPI paths declared via <c>local_spec:</c> must stay
+	/// under this directory.
+	/// </summary>
+	IDirectoryInfo DocumentationCheckoutDirectory { get; }
+
 	GitCheckoutInformation Git { get; }
 
 	/// <summary>Environment variables used to resolve env-dependent config values; injectable so tests are deterministic.</summary>
