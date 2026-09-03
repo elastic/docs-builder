@@ -1,0 +1,617 @@
+import {
+    clampDiskBbqOffHeapPercent,
+    DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT,
+    DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT,
+} from '../calculations'
+import {
+    formatGroupedInteger,
+    normalizeGroupedNumberInput,
+} from '../formatNumbers'
+import { parseVectorCount } from '../parseVectorCount'
+import type {
+    ElementType,
+    IndexType,
+    Quantization,
+    ValidationResult,
+} from '../types'
+import { LabelWithTip } from './LabelWithTip'
+import {
+    EuiButtonEmpty,
+    EuiCallOut,
+    EuiComboBox,
+    type EuiComboBoxOptionOption,
+    EuiFieldNumber,
+    EuiFormRow,
+    EuiLink,
+    EuiRange,
+    EuiSelect,
+    EuiSpacer,
+} from '@elastic/eui'
+import { useMemo, useState } from 'react'
+
+const VECTOR_COUNT_PRESET_VALUES = [
+    { key: '1k', value: 1_000 },
+    { key: '10k', value: 10_000 },
+    { key: '100k', value: 100_000 },
+    { key: '1m', value: 1_000_000 },
+    { key: '10m', value: 10_000_000 },
+    { key: '50m', value: 50_000_000 },
+] as const
+
+const VECTOR_COUNT_PRESETS = VECTOR_COUNT_PRESET_VALUES.map((preset) => ({
+    ...preset,
+    text: formatGroupedInteger(preset.value),
+}))
+
+const VECTOR_COMBO_OPTIONS: EuiComboBoxOptionOption<string>[] =
+    VECTOR_COUNT_PRESETS.map((p) => ({
+        label: p.text,
+        value: p.key,
+    }))
+
+const DIMENSION_PRESETS = [256, 384, 512, 768, 1024, 1536, 3072, 4096] as const
+
+const DIMENSION_COMBO_OPTIONS: EuiComboBoxOptionOption<string>[] =
+    DIMENSION_PRESETS.map((n) => ({
+        label: String(n),
+        value: String(n),
+    }))
+
+const TOOLTIPS = {
+    vectors:
+        'The total number of vectors you plan to store in this index, not the number of documents. A single document can produce several vectors, such as one embedding for each product image and one for the description.',
+    dimensions:
+        'The number of values in each vector, set by your embedding model.',
+    elementType:
+        'The numeric format used to store each value in a vector. Use float32 in most cases, since Elasticsearch quantizes float vectors by default to reduce memory.',
+    indexStructure:
+        'How vectors are indexed, which drives memory use and search speed. HNSW keeps a graph in memory for fast approximate search. Flat compares every vector for exact results, best at small scale. DiskBBQ reads compressed clusters from disk and needs far less memory than HNSW.',
+    graphConnections:
+        'How many neighbors each node connects to in the HNSW graph. Higher values improve recall, but increase memory and build time.',
+    quantization:
+        'Compresses vectors to reduce memory, at some cost to accuracy. Applies to float and bfloat16 vectors only. Available options depend on your index structure.',
+    replicas:
+        'The number of replica copies, not counting the primary. Each replica holds a full copy of the vector data, so replicas multiply storage and memory. The default is 0.',
+    vectorsPerCluster:
+        'The target number of vectors per cluster. Smaller values create more centroids in RAM and usually improve recall at the cost of performance. The default is 384.',
+    offHeapRam:
+        'The percentage of clustered vector data, called posting lists, held in off-heap RAM. Supported values are 0 to 10 percent. Lower values save memory. Higher values raise query throughput and lower latency. This estimate assumes all centroids stay in RAM, since performance drops sharply otherwise.',
+    hnswIndexStructure: 'RAM estimates include the HNSW graph.',
+    diskBbqIndexStructure: 'RAM estimates reflect off-heap cache.',
+}
+
+function presetKeyForVectorsText(vectorsText: string): string {
+    const n = parseVectorCount(vectorsText)
+    if (!vectorsText.trim() || Number.isNaN(n) || n <= 0) return 'custom'
+    const hit = VECTOR_COUNT_PRESETS.find((p) => p.value === n)
+    return hit ? hit.key : 'custom'
+}
+
+function formatVectorsTextFromInput(raw: string): string {
+    const n = parseVectorCount(raw)
+    if (!Number.isNaN(n) && n > 0) {
+        return formatGroupedInteger(n)
+    }
+    return raw.trim()
+}
+
+function vectorsTextToComboSelection(
+    vectorsText: string
+): EuiComboBoxOptionOption<string>[] {
+    const presetKey = presetKeyForVectorsText(vectorsText)
+    if (presetKey !== 'custom') {
+        const preset = VECTOR_COUNT_PRESETS.find((p) => p.key === presetKey)
+        if (preset) {
+            return [{ label: preset.text, value: preset.key }]
+        }
+    }
+    const trimmed = vectorsText.trim()
+    if (!trimmed) return []
+    return [{ label: trimmed, value: 'custom' }]
+}
+
+function dimensionPresetKey(numDimensions: number | string): string {
+    if (numDimensions === '') return 'custom'
+    const n =
+        typeof numDimensions === 'number'
+            ? numDimensions
+            : Number(numDimensions)
+    if (Number.isNaN(n)) return 'custom'
+    return DIMENSION_PRESETS.includes(n as (typeof DIMENSION_PRESETS)[number])
+        ? String(n)
+        : 'custom'
+}
+
+function parseDimensionsInput(raw: string): number | '' {
+    const trimmed = normalizeGroupedNumberInput(raw)
+    if (!trimmed) return ''
+    const n = Math.round(Number(trimmed))
+    if (Number.isNaN(n) || n <= 0) return ''
+    return Math.min(4096, Math.max(1, n))
+}
+
+function dimensionsToComboSelection(
+    numDimensions: number | string
+): EuiComboBoxOptionOption<string>[] {
+    const presetKey = dimensionPresetKey(numDimensions)
+    if (presetKey !== 'custom') {
+        return [{ label: presetKey, value: presetKey }]
+    }
+    if (numDimensions === '') return []
+    const label =
+        typeof numDimensions === 'number'
+            ? String(numDimensions)
+            : String(numDimensions).trim()
+    if (!label) return []
+    return [{ label, value: 'custom' }]
+}
+
+const ELEMENT_TYPE_OPTIONS: { value: ElementType; text: string }[] = [
+    { value: 'float', text: 'float32' },
+    { value: 'bfloat16', text: 'bfloat16' },
+    { value: 'byte', text: 'int8' },
+    { value: 'bit', text: 'bit' },
+]
+
+interface ConfigurationPanelProps {
+    vectorsText: string
+    onVectorsChange: (value: string) => void
+    numDimensions: number | string
+    onDimensionsChange: (value: number | string) => void
+    elementType: ElementType
+    onElementTypeChange: (value: ElementType) => void
+    indexType: IndexType
+    onIndexTypeChange: (value: IndexType) => void
+    indexTypeOptions: { value: string; text: string }[]
+    quantization: Quantization
+    onQuantizationChange: (value: Quantization) => void
+    quantOptions: { value: string; label: string }[]
+    replicas: number
+    onReplicasChange: (value: number) => void
+    hnswM: number
+    onHnswMChange: (value: number) => void
+    vectorsPerCluster: number
+    onVectorsPerClusterChange: (value: number) => void
+    offHeapRamPercent: number
+    onOffHeapRamPercentChange: (value: number) => void
+    validation: ValidationResult
+}
+
+export function ConfigurationPanel({
+    vectorsText,
+    onVectorsChange,
+    numDimensions,
+    onDimensionsChange,
+    elementType,
+    onElementTypeChange,
+    indexType,
+    onIndexTypeChange,
+    indexTypeOptions,
+    quantization,
+    onQuantizationChange,
+    quantOptions,
+    replicas,
+    onReplicasChange,
+    hnswM,
+    onHnswMChange,
+    vectorsPerCluster,
+    onVectorsPerClusterChange,
+    offHeapRamPercent,
+    onOffHeapRamPercentChange,
+    validation,
+}: ConfigurationPanelProps) {
+    const vectorsComboSelection = useMemo(
+        () => vectorsTextToComboSelection(vectorsText),
+        [vectorsText]
+    )
+
+    const dimensionsComboSelection = useMemo(
+        () => dimensionsToComboSelection(numDimensions),
+        [numDimensions]
+    )
+
+    const showHnswSlider = indexType === 'hnsw'
+    const showOffHeapRamSlider = indexType === 'disk_bbq'
+    const showVectorsPerCluster = indexType === 'disk_bbq'
+    const showQuantizationControl = quantOptions.length > 1
+    const [advancedOpen, setAdvancedOpen] = useState(false)
+
+    const clampHnswM = (value: number) => {
+        if (Number.isNaN(value)) return 2
+        const rounded = Math.round(value)
+        const clamped = Math.min(512, Math.max(2, rounded))
+        if (clamped % 2 === 0) return clamped
+        const down = clamped - 1
+        const up = clamped + 1
+        if (down < 2) return 2
+        if (up > 512) return 510
+        return Math.abs(value - down) <= Math.abs(up - value) ? down : up
+    }
+
+    const clampVectorsPerCluster = (value: number) => {
+        if (Number.isNaN(value)) return 384
+        return Math.min(1_000_000, Math.max(1, Math.round(value)))
+    }
+
+    const clampReplicas = (value: number) => {
+        if (Number.isNaN(value)) return 0
+        return Math.min(99, Math.max(0, Math.round(value)))
+    }
+
+    const replicaShardsFormRow = (
+        <EuiFormRow
+            fullWidth
+            label={
+                <LabelWithTip tip={TOOLTIPS.replicas}>
+                    Replica shards
+                </LabelWithTip>
+            }
+        >
+            <EuiFieldNumber
+                fullWidth
+                value={replicas}
+                min={0}
+                max={99}
+                step={1}
+                onChange={(e) =>
+                    onReplicasChange(clampReplicas(Number(e.target.value)))
+                }
+            />
+        </EuiFormRow>
+    )
+
+    return (
+        <div className="vectorSizingCalc__panel vectorSizingCalc__panel--left">
+            <div className="vectorSizingCalc__sectionTitle">Vectors</div>
+
+            <EuiFormRow
+                fullWidth
+                label={
+                    <LabelWithTip tip={TOOLTIPS.vectors}>
+                        Number of vectors
+                    </LabelWithTip>
+                }
+            >
+                <EuiComboBox
+                    fullWidth
+                    singleSelection={{ asPlainText: true }}
+                    options={VECTOR_COMBO_OPTIONS}
+                    selectedOptions={vectorsComboSelection}
+                    aria-label="Number of vectors"
+                    placeholder="e.g. 1,000,000"
+                    onChange={(selected) => {
+                        if (selected.length === 0) {
+                            onVectorsChange('')
+                            return
+                        }
+                        const option = selected[0]
+                        const preset = VECTOR_COUNT_PRESETS.find(
+                            (p) => p.key === option.value
+                        )
+                        if (preset) {
+                            onVectorsChange(formatGroupedInteger(preset.value))
+                            return
+                        }
+                        onVectorsChange(
+                            formatVectorsTextFromInput(option.label)
+                        )
+                    }}
+                    onCreateOption={(searchValue) => {
+                        onVectorsChange(formatVectorsTextFromInput(searchValue))
+                    }}
+                />
+            </EuiFormRow>
+
+            <EuiFormRow
+                fullWidth
+                className="vectorSizingCalc__row--dimensions"
+                label={
+                    <LabelWithTip tip={TOOLTIPS.dimensions}>
+                        Dimensions
+                    </LabelWithTip>
+                }
+            >
+                <EuiComboBox
+                    fullWidth
+                    singleSelection={{ asPlainText: true }}
+                    options={DIMENSION_COMBO_OPTIONS}
+                    selectedOptions={dimensionsComboSelection}
+                    aria-label="Dimensions"
+                    placeholder="e.g. 768"
+                    onChange={(selected) => {
+                        if (selected.length === 0) {
+                            onDimensionsChange('')
+                            return
+                        }
+                        const option = selected[0]
+                        const preset = DIMENSION_PRESETS.find(
+                            (n) => String(n) === option.value
+                        )
+                        if (preset !== undefined) {
+                            onDimensionsChange(preset)
+                            return
+                        }
+                        onDimensionsChange(parseDimensionsInput(option.label))
+                    }}
+                    onCreateOption={(searchValue) => {
+                        onDimensionsChange(parseDimensionsInput(searchValue))
+                    }}
+                />
+            </EuiFormRow>
+
+            <EuiSpacer size="m" />
+
+            <EuiButtonEmpty
+                className="vectorSizingCalc__sectionToggle"
+                flush="left"
+                iconType={
+                    advancedOpen ? 'chevronSingleUp' : 'chevronSingleDown'
+                }
+                iconSide="right"
+                onClick={() => setAdvancedOpen((open) => !open)}
+            >
+                {advancedOpen
+                    ? 'Hide advanced settings'
+                    : 'Show advanced settings'}
+            </EuiButtonEmpty>
+
+            {advancedOpen && (
+                <>
+                    <EuiSpacer size="l" />
+
+                    <EuiFormRow
+                        fullWidth
+                        label={
+                            <LabelWithTip tip={TOOLTIPS.elementType}>
+                                Element type
+                            </LabelWithTip>
+                        }
+                    >
+                        <EuiSelect
+                            fullWidth
+                            options={ELEMENT_TYPE_OPTIONS}
+                            value={elementType}
+                            onChange={(e) =>
+                                onElementTypeChange(
+                                    e.target.value as ElementType
+                                )
+                            }
+                        />
+                    </EuiFormRow>
+
+                    <EuiSpacer size="s" />
+
+                    <EuiFormRow
+                        fullWidth
+                        label={
+                            <LabelWithTip tip={TOOLTIPS.indexStructure}>
+                                Index structure
+                            </LabelWithTip>
+                        }
+                        helpText={
+                            indexType === 'hnsw'
+                                ? TOOLTIPS.hnswIndexStructure
+                                : indexType === 'disk_bbq'
+                                  ? TOOLTIPS.diskBbqIndexStructure
+                                  : undefined
+                        }
+                    >
+                        <EuiSelect
+                            fullWidth
+                            options={indexTypeOptions}
+                            value={indexType}
+                            onChange={(e) =>
+                                onIndexTypeChange(e.target.value as IndexType)
+                            }
+                        />
+                    </EuiFormRow>
+
+                    {showOffHeapRamSlider && (
+                        <>
+                            <EuiSpacer size="s" />
+                            <div className="vectorSizingCalc__graphConnectionsBlock">
+                                <div className="vectorSizingCalc__graphConnectionsLabel">
+                                    <LabelWithTip tip={TOOLTIPS.offHeapRam}>
+                                        Vector data cached in RAM (%)
+                                    </LabelWithTip>
+                                </div>
+                                <div className="vectorSizingCalc__graphConnectionsControlsRow">
+                                    <div className="vectorSizingCalc__graphConnectionsSlider">
+                                        <EuiRange
+                                            compressed={false}
+                                            value={offHeapRamPercent}
+                                            min={
+                                                DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT
+                                            }
+                                            max={
+                                                DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT
+                                            }
+                                            step={1}
+                                            showInput={false}
+                                            showLabels={false}
+                                            showRange
+                                            fullWidth
+                                            onChange={(e) =>
+                                                onOffHeapRamPercentChange(
+                                                    clampDiskBbqOffHeapPercent(
+                                                        Number(
+                                                            (
+                                                                e.currentTarget as HTMLInputElement
+                                                            ).value
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                            aria-label="Vector data cached in RAM (%)"
+                                        />
+                                    </div>
+                                    <div className="vectorSizingCalc__graphConnectionsValueCell">
+                                        <EuiFieldNumber
+                                            className="vectorSizingCalc__rangeNumberInput"
+                                            value={offHeapRamPercent}
+                                            min={
+                                                DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT
+                                            }
+                                            max={
+                                                DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT
+                                            }
+                                            step={1}
+                                            aria-label="Vector data cached in RAM (%)"
+                                            onChange={(e) => {
+                                                const next =
+                                                    clampDiskBbqOffHeapPercent(
+                                                        Number(e.target.value)
+                                                    )
+                                                onOffHeapRamPercentChange(next)
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {showHnswSlider && (
+                        <>
+                            <EuiSpacer size="s" />
+                            <div className="vectorSizingCalc__graphConnectionsBlock">
+                                <div className="vectorSizingCalc__graphConnectionsLabel">
+                                    <LabelWithTip
+                                        tip={TOOLTIPS.graphConnections}
+                                    >
+                                        Graph connections (m)
+                                    </LabelWithTip>
+                                </div>
+                                <div className="vectorSizingCalc__graphConnectionsControlsRow">
+                                    <div className="vectorSizingCalc__graphConnectionsSlider">
+                                        <EuiRange
+                                            compressed={false}
+                                            value={hnswM}
+                                            min={2}
+                                            max={512}
+                                            step={2}
+                                            showInput={false}
+                                            showLabels={false}
+                                            showRange
+                                            fullWidth
+                                            onChange={(e) =>
+                                                onHnswMChange(
+                                                    Number(
+                                                        (
+                                                            e.currentTarget as HTMLInputElement
+                                                        ).value
+                                                    )
+                                                )
+                                            }
+                                            aria-label="HNSW m"
+                                        />
+                                    </div>
+                                    <div className="vectorSizingCalc__graphConnectionsValueCell">
+                                        <EuiFieldNumber
+                                            className="vectorSizingCalc__rangeNumberInput"
+                                            value={hnswM}
+                                            min={2}
+                                            max={512}
+                                            step={2}
+                                            aria-label="HNSW m"
+                                            onChange={(e) =>
+                                                onHnswMChange(
+                                                    clampHnswM(
+                                                        Number(e.target.value)
+                                                    )
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {showVectorsPerCluster && (
+                        <>
+                            <EuiSpacer size="s" />
+                            <EuiFormRow
+                                fullWidth
+                                label={
+                                    <LabelWithTip
+                                        tip={TOOLTIPS.vectorsPerCluster}
+                                    >
+                                        Vectors per cluster
+                                    </LabelWithTip>
+                                }
+                            >
+                                <EuiFieldNumber
+                                    fullWidth
+                                    value={vectorsPerCluster}
+                                    min={1}
+                                    max={1_000_000}
+                                    step={1}
+                                    onChange={(e) =>
+                                        onVectorsPerClusterChange(
+                                            clampVectorsPerCluster(
+                                                Number(e.target.value)
+                                            )
+                                        )
+                                    }
+                                />
+                            </EuiFormRow>
+                        </>
+                    )}
+
+                    <EuiSpacer size="m" />
+
+                    {showQuantizationControl ? (
+                        <div className="vectorSizingCalc__fieldGrid2">
+                            <EuiFormRow
+                                fullWidth
+                                label={
+                                    <LabelWithTip tip={TOOLTIPS.quantization}>
+                                        Quantization
+                                    </LabelWithTip>
+                                }
+                            >
+                                <EuiSelect
+                                    fullWidth
+                                    options={quantOptions.map((o) => ({
+                                        value: o.value,
+                                        text: o.label,
+                                    }))}
+                                    value={quantization}
+                                    disabled={indexType === 'disk_bbq'}
+                                    onChange={(e) =>
+                                        onQuantizationChange(
+                                            e.target.value as Quantization
+                                        )
+                                    }
+                                />
+                            </EuiFormRow>
+
+                            {replicaShardsFormRow}
+                        </div>
+                    ) : (
+                        replicaShardsFormRow
+                    )}
+                </>
+            )}
+
+            {validation.warning && (
+                <>
+                    <EuiSpacer size="m" />
+                    <EuiCallOut
+                        title={validation.warning}
+                        color="danger"
+                        iconType="alert"
+                        size="s"
+                    >
+                        {validation.warningLink && (
+                            <EuiLink href={validation.warningLink}>
+                                See documentation
+                            </EuiLink>
+                        )}
+                    </EuiCallOut>
+                </>
+            )}
+        </div>
+    )
+}

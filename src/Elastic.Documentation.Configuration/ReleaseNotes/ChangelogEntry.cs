@@ -27,6 +27,21 @@ public record ChangelogEntryDto
 	[YamlMember(Alias = "feature-id", ApplyNamingConventions = false)]
 	public string? FeatureId { get; set; }
 	public bool? Highlight { get; set; }
+
+	/// <summary>
+	/// Marker reference: a bare PR number pointing to the authoritative entry in the same pool.
+	/// A marker carries <c>link:</c> and nothing else; any other field alongside it is invalid.
+	/// Written by the pipeline for non-primary PRs in a multi-PR entry; never hand-authored.
+	/// </summary>
+	public string? Link { get; set; }
+
+	/// <summary>
+	/// When true, this public-bucket object is a scrubber-written source pointer that traces back
+	/// to a canonical public key. Distinguishes source pointers from ordinary link-only PR markers
+	/// so the delete path does not spuriously follow a regular marker to its canonical target.
+	/// </summary>
+	[YamlMember(Alias = "source-redirect", ApplyNamingConventions = false)]
+	public bool? SourceRedirect { get; set; }
 }
 
 /// <summary>
@@ -36,6 +51,26 @@ public record ChangelogEntryDto
 public record ProductInfoDto
 {
 	public string? Product { get; set; }
+
+	/// <summary>
+	/// Obsolete — entries derive applicability from their origin branch; notes use <see cref="Versions"/>.
+	/// Still deserialized for backward compatibility with already-published pool objects.
+	/// </summary>
+	[Obsolete("Entries derive applicability from their origin branch; notes use Versions.")]
 	public string? Target { get; set; }
+
+	/// <summary>
+	/// The releases this note applies to (note-only field). For entries this is always null or empty.
+	/// Expressed in the YAML as a sequence:
+	/// <code>
+	/// versions: [9.3.0, 9.4.0, 9.5.0]
+	/// </code>
+	/// or as a pipe-separated string in the <c>--products</c> CLI flag:
+	/// <code>
+	/// --products 'elasticsearch 9.3.0|9.4.0|9.5.0 ga'
+	/// </code>
+	/// </summary>
+	public List<string>? Versions { get; set; }
+
 	public string? Lifecycle { get; set; }
 }

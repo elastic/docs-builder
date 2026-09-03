@@ -17,9 +17,7 @@ using Nullean.Argh.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-var isInteractive =
-	string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) &&
-	!Console.IsOutputRedirected;
+var isInteractive = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")) && !Console.IsOutputRedirected;
 
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
@@ -38,12 +36,12 @@ builder.Services.AddSingleton<ConsoleFormatter, CondensedConsoleFormatter>();
 builder.Services.AddSingleton(_ => SourcingConfiguration.CreateFromEnvironment());
 builder.Services.AddSingleton<ContentStackConfiguration>(sp => sp.GetRequiredService<SourcingConfiguration>().RequireContentStack());
 
-var csHttpClient = builder.Services
+var csHttpClient = builder
+	.Services
 	.AddHttpClient<ContentStackClient>()
-	.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-	{
-		AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-	});
+	.ConfigurePrimaryHttpMessageHandler(
+		() => new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
+	);
 
 // Rate limiter is added after the resilience pipeline so it applies on each retry attempt.
 csHttpClient.AddStandardResilienceHandler(o =>
@@ -59,9 +57,12 @@ csHttpClient.AddStandardResilienceHandler(o =>
 	// Contentstack's sync endpoint intermittently returns a transient 422 (Unprocessable Entity)
 	// under load — not handled by the default transient-status predicate — which otherwise aborts
 	// the whole sync run before FinalizeAsync. See production run 32113750025.
-	o.Retry.ShouldHandle = args => ValueTask.FromResult(
-		HttpClientResiliencePredicates.IsTransient(args.Outcome) ||
-		args.Outcome.Result?.StatusCode == HttpStatusCode.UnprocessableEntity);
+	o.Retry.ShouldHandle =
+		args => ValueTask.FromResult(
+			HttpClientResiliencePredicates.IsTransient(
+				args.Outcome
+			) || args.Outcome.Result?.StatusCode == HttpStatusCode.UnprocessableEntity
+		);
 });
 csHttpClient.AddHttpMessageHandler(() => RateLimitingHandler.CreateForContentStack());
 
@@ -71,15 +72,14 @@ builder.Services.AddSingleton<DumpSamplesCommand>();
 builder.Services.AddSingleton<FindUrlCommand>();
 builder.Services.AddSingleton<IndicesCommands>();
 
-builder.Services.AddArgh(
-	args,
-	argh =>
-	{
-		_ = argh.UseCliDescription(
-			"Elastic Site Search CLI — tooling to ingest and enrich data published on elastic.co (not the Elastic documentation site).");
-		_ = argh.MapNamespace<ContentStackCommands>("contentstack");
-		_ = argh.MapNamespace<IndicesCommands>("indices");
-	});
+builder.Services.AddArgh(args, argh =>
+{
+	_ = argh.UseCliDescription(
+		"Elastic Site Search CLI — tooling to ingest and enrich data published on elastic.co (not the Elastic documentation site)."
+	);
+	_ = argh.MapNamespace<ContentStackCommands>("contentstack");
+	_ = argh.MapNamespace<IndicesCommands>("indices");
+});
 
 using var host = builder.Build();
 await host.RunAsync().ConfigureAwait(false);

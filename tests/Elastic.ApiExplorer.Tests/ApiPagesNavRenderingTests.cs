@@ -29,7 +29,8 @@ public partial class ApiPagesNavRenderingTests
 		var context = new BuildContext(
 			new DiagnosticsCollector([]),
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(fs));
+			TestHelpers.CreateConfigurationContext(fs)
+		);
 		var navigationItem = new LandingNavigationItem("/api/doc/elasticsearch/v9/").Index;
 		var model = new ApiLayoutViewModel
 		{
@@ -48,6 +49,7 @@ public partial class ApiPagesNavRenderingTests
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
+			MarkdownUrl = "/api/doc/elasticsearch/v9.md",
 			VersionSwitcherItems =
 			[
 				new("Latest", "/api/doc/elasticsearch/", Selected: false),

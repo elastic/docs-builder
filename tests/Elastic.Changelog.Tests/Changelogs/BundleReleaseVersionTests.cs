@@ -42,7 +42,8 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_BundlesMatchingChangelogs()
 	{
 		// Arrange – two changelog files each referencing a specific PR
-		await WriteChangelog("pr-12345.yaml",
+		await WriteChangelog(
+			"pr-12345.yaml",
 			"""
 			title: Fix query parsing
 			type: bug-fix
@@ -52,9 +53,11 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/12345
-			""");
+			"""
+		);
 
-		await WriteChangelog("pr-12346.yaml",
+		await WriteChangelog(
+			"pr-12346.yaml",
 			"""
 			title: New aggregation API
 			type: feature
@@ -64,7 +67,8 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/12346
-			""");
+			"""
+		);
 
 		// Release body in GitHub Default format referencing both PRs
 		var releaseBody =
@@ -77,17 +81,13 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
 			""";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		// Act – simulate what the command does
 		var prUrls = await ResolveReleasePrUrls("elastic", "elasticsearch", "v9.2.0");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			Prs = prUrls,
-			Output = BundleOutputPath()
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, Prs = prUrls, Output = BundleOutputPath() };
 
 		var result = await _bundlingService.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
@@ -108,7 +108,8 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_ExplicitOutputProducts_SetsBundleProducts()
 	{
 		// Arrange
-		await WriteChangelog("pr-12345.yaml",
+		await WriteChangelog(
+			"pr-12345.yaml",
 			"""
 			title: Fix query parsing
 			type: bug-fix
@@ -118,17 +119,18 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/12345
-			""");
-
-		var releaseBody =
 			"""
+		);
+
+		var releaseBody = """
 			## What's Changed
 
 			* Fix query parsing by @contributor1 in #12345
 			""";
 
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
 		var prUrls = await ResolveReleasePrUrls("elastic", "elasticsearch", "v9.2.0");
 
@@ -162,16 +164,17 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_WithNoMatchingPrs_EmitsWarning()
 	{
 		// Arrange
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo
-			{
-				TagName = "v9.2.0",
-				Name = "9.2.0",
-				Body = "Release notes with no pull request references."
-			});
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "Release notes with no pull request references." });
 
 		// Act – replicate command logic: parse, detect zero refs, warn and return success
-		var release = await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken);
+		var release = await _mockReleaseService.FetchReleaseAsync(
+			"elastic",
+			"elasticsearch",
+			"v9.2.0",
+			TestContext.Current.CancellationToken
+		);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
 
 		// Assert
@@ -189,11 +192,17 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_FetchFailure_ReturnsNull()
 	{
 		// Arrange
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync(A<string>._, A<string>._, A<string?>._, A<Cancel>._))
-			.Returns((GitHubReleaseInfo?)null);
+		A.CallTo(() => _mockReleaseService.FetchReleaseAsync(A<string>._, A<string>._, A<string?>._, A<Cancel>._)).Returns(
+			(GitHubReleaseInfo?)null
+		);
 
 		// Act
-		var release = await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken);
+		var release = await _mockReleaseService.FetchReleaseAsync(
+			"elastic",
+			"elasticsearch",
+			"v9.2.0",
+			TestContext.Current.CancellationToken
+		);
 
 		// Assert – command returns error on null release
 		release.Should().BeNull();
@@ -207,20 +216,17 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	public async Task ReleaseVersion_Latest_CallsFetchWithLatestTag()
 	{
 		// Arrange
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._))
-			.Returns(new GitHubReleaseInfo
-			{
-				TagName = "v9.2.0",
-				Name = "9.2.0",
-				Body = "No PR references."
-			});
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._)
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "No PR references." });
 
 		// Act
 		_ = await _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken);
 
 		// Assert
-		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", A<Cancel>._)
+		).MustHaveHappenedOnceExactly();
 	}
 
 	// -----------------------------------------------------------------------
@@ -238,10 +244,6 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	{
 		var release = await _mockReleaseService.FetchReleaseAsync(owner, repo, version, TestContext.Current.CancellationToken);
 		var parsed = ReleaseNoteParser.Parse(release!.Body);
-		return parsed.PrReferences
-			.Select(r => $"https://github.com/{owner}/{repo}/pull/{r.PrNumber}")
-			.ToArray();
+		return parsed.PrReferences.Select(r => $"https://github.com/{owner}/{repo}/pull/{r.PrNumber}").ToArray();
 	}
-
 }
-

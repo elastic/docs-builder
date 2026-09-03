@@ -64,21 +64,41 @@ public class AssemblerBuildService(
 
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
 
-		// --assume-build is not allowed on CI: it could serve stale content from a previous/cached build
-		// CI builds must always produce fresh, reproducible output
-		if (assumeBuild.GetValueOrDefault(false) && _env.IsRunningOnCI)
-			throw new InvalidOperationException("The --assume-build flag is not allowed on CI. CI builds must always produce fresh output to ensure reproducibility and prevent stale content.");
+		// Explicit --assume-build on CI is not allowed: CI must produce fresh, reproducible output.
+		if (assumeBuild == true && _env.IsRunningOnCI)
+			throw new InvalidOperationException(
+				"The --assume-build flag is not allowed on CI. CI builds must always produce fresh output to ensure reproducibility and prevent stale content."
+			);
 
-		// Early return if --assume-build is specified and output already exists
-		if (assumeBuild.GetValueOrDefault(false))
+		// When no explicit choice is given, default to skipping locally and always building on CI.
+		var effectiveAssumeBuild = assumeBuild ?? !_env.IsRunningOnCI;
+
+		// Read checkout SHAs up front — needed both for the stamp and for the build proper.
+		// This is a cheap, network-free operation (one git rev-parse per repo).
+		_logger.LogInformation("Get all clone directory information");
+		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
+		var checkoutResult = cloner.GetAll();
+		var checkouts = checkoutResult.Checkouts.ToArray();
+
+		// Stamp-based staleness check: skip the build when code, config, and content are all unchanged.
+		if (effectiveAssumeBuild && !elasticsearchExportOnly)
 		{
-			var indexHtmlPath = Path.Join(assembleContext.OutputDirectory.FullName, "docs", "index.html");
-			if (assembleContext.OutputDirectory.Exists && fileSystem.File.Exists(indexHtmlPath))
-			{
-				_logger.LogInformation("Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.", indexHtmlPath);
+			var stampPath = Path.Join(assembleContext.OutputDirectory.FullName, AssemblerBuildStampService.StampFileName);
+			var existingStamp = await AssemblerBuildStampService.ReadAsync(stampPath, ctx);
+			var currentStamp = AssemblerBuildStampService.Compute(
+				environment,
+				checkouts,
+				configurationContext.ConfigurationFileProvider,
+				exporters
+			);
+			var (isUpToDate, reason) = AssemblerBuildStampService.IsUpToDate(existingStamp, currentStamp);
+			AssemblerBuildStampService.LogResult(_logger, isUpToDate, reason);
+			if (isUpToDate)
 				return true;
-			}
-			_logger.LogInformation("--assume-build specified but output directory does not exist or is incomplete. Proceeding with build.");
+		}
+		else if (effectiveAssumeBuild && elasticsearchExportOnly)
+		{
+			_logger.LogInformation("Elasticsearch export only — skipping stamp check");
 		}
 
 		if (assembleContext.OutputDirectory.Exists)
@@ -94,32 +114,47 @@ public class AssemblerBuildService(
 			}
 		}
 
-		_logger.LogInformation("Get all clone directory information");
-		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
-		var checkoutResult = cloner.GetAll();
-		var checkouts = checkoutResult.Checkouts.ToArray();
-
 		if (checkouts.Length == 0)
 			throw new Exception("No checkouts found");
 
 		_logger.LogInformation("Preparing all assemble sources for build");
-		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
+		var assembleSources = await AssembleSources.AssembleAsync(
+			logFactory,
+			assembleContext,
+			checkouts,
+			configurationContext,
+			exporters,
+			ctx
+		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
-		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix, navigationPreviewEnabled);
+		var navigation = new SiteNavigation(
+			siteNavigationFile,
+			assembleContext,
+			documentationSets,
+			assembleContext.Environment.PathPrefix,
+			navigationPreviewEnabled
+		);
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
+		if (
+			!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
+			|| assembleContext.Collector.Errors > 0
+		)
 			return false;
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
 		var legacyPageChecker = new LegacyPageService(logFactory);
-		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
+		var historyMapper = new PageLegacyUrlMapper(
+			legacyPageChecker,
+			assembleContext.VersionsConfiguration,
+			assembleSources.LegacyUrlMappings
+		);
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 
@@ -142,25 +177,26 @@ public class AssemblerBuildService(
 			// Build-time sitemap uses current date as placeholder for backwards compatibility.
 			// Production sitemap with correct content_last_updated dates is generated via
 			// `assembler sitemap` after ES indexing, which overwrites this file.
-			var urls = navigation.NavigationItems
-				.SelectMany(SitemapNavigationHelper.Flatten)
-				.Select(n => n.Url)
-				.Distinct();
+			var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(n => n.Url).Distinct();
 			var now = DateTimeOffset.UtcNow;
 			var entries = urls.ToDictionary(u => u, _ => now);
 
 			if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
 				collector.EmitGlobalWarning(
 					$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
-					"Consider implementing sitemap index files."
+						"Consider implementing sitemap index files."
 				);
 
-			var sitemapResult = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+			var sitemapResult = SitemapBuilder.Generate(
+				entries,
+				assembleContext.WriteFileSystem,
+				assembleContext.OutputWithPathPrefixDirectory
+			);
 
 			if (sitemapResult.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
 				collector.EmitGlobalWarning(
 					$"Sitemap file size is {sitemapResult.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
-					"Consider implementing sitemap index files."
+						"Consider implementing sitemap index files."
 				);
 		}
 
@@ -175,10 +211,36 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
-		return strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
+		var success = strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
+
+		// Write the stamp only for local dev runs (effectiveAssumeBuild=true) so the next
+		// local run can skip the build. Never write it on CI — stamps must not appear in
+		// deployed output, and CI always does a full build anyway.
+		if (success && !elasticsearchExportOnly && effectiveAssumeBuild)
+		{
+			var stampPath = Path.Join(assembleContext.OutputDirectory.FullName, AssemblerBuildStampService.StampFileName);
+			var stamp = AssemblerBuildStampService.Compute(
+				environment,
+				checkouts,
+				configurationContext.ConfigurationFileProvider,
+				exporters
+			);
+			if (stamp is not null)
+			{
+				await AssemblerBuildStampService.WriteAsync(stampPath, stamp, ctx);
+				_logger.LogInformation("Wrote build stamp to {StampPath}", stampPath);
+			}
+		}
+
+		return success;
 	}
 
-	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
+	private static async Task EnhanceLlmsTxtFile(
+		AssembleContext context,
+		SiteNavigation navigation,
+		LlmsNavigationEnhancer enhancer,
+		Cancel ctx
+	)
 	{
 		var pathPrefixedOutputFolder = context.OutputWithPathPrefixDirectory;
 		var llmsTxtPath = context.ReadFileSystem.Path.Join(pathPrefixedOutputFolder.FullName, "llms.txt");

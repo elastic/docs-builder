@@ -19,12 +19,7 @@ public class ContentStackMappingTests
 		var path = Path.Combine("Fixtures", "ContentStack", fixtureName);
 		var json = File.ReadAllText(path);
 		var data = JsonSerializer.Deserialize<JsonElement>(json);
-		return new SyncItem
-		{
-			Type = "entry_published",
-			ContentTypeUid = contentTypeUid,
-			Data = data
-		};
+		return new SyncItem { Type = "entry_published", ContentTypeUid = contentTypeUid, Data = data };
 	}
 
 	/// <summary>Covers: blog (legacy v1 with flat body_l10n)</summary>
@@ -372,10 +367,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_PropertyHomepage_FallsBackToBlogDescription_WhenNoPageDescription()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Observability Labs", "url": "/observability-labs", "locale": "en-us",
 			  "blog_description_l10n": "The latest observability research from Elastic." }
-			""", "observability_labs_homepage");
+			""",
+			"observability_labs_homepage"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -387,11 +385,14 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_LandingPage_WithEmptyRichDescription_FallsBackToSeo()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Integrations", "url": "/search-labs/integrations", "locale": "en-us",
 			  "page_info": { "description": { "content_simple_l10n": { "type": "doc", "children": [] } } },
 			  "seo": { "seo_description_l10n": "Browse Search Labs integrations." } }
-			""", "integrations_landing");
+			""",
+			"integrations_landing"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -402,11 +403,14 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_GlossaryPage_UsesPageInfoRichTextDescription_WhenNoSubheading()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Glossary", "url": "/glossary", "locale": "en-us",
 			  "page_info": { "description": { "content_simple_l10n": { "type": "doc",
 			    "children": [ { "type": "p", "children": [ { "text": "All the terms, concepts, and abbreviations." } ] } ] } } } }
-			""", "glossary");
+			""",
+			"glossary"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -506,12 +510,7 @@ public class ContentStackMappingTests
 	}
 
 	private static SyncItem LoadFromJson(string json, string contentTypeUid) =>
-		new()
-		{
-			Type = "entry_published",
-			ContentTypeUid = contentTypeUid,
-			Data = JsonSerializer.Deserialize<JsonElement>(json)
-		};
+		new() { Type = "entry_published", ContentTypeUid = contentTypeUid, Data = JsonSerializer.Deserialize<JsonElement>(json) };
 
 	/// <summary>
 	/// Root cause: ContentStack "publishes" the same entry into multiple locale variants that
@@ -527,10 +526,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_UnprefixedUrl_UnmappedNonEnglishLocale_NamespacesUnderBaseLanguageSubtag()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/support/matrix", "locale": "xx-yy",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -542,10 +544,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_MissingLocale_ResolvesToEnglish()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/support/matrix",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -557,10 +562,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_EnglishVariantLocale_ResolvesToEnglish()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/support/matrix", "locale": "en-gb",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -574,10 +582,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_PrefixedUrl_ResolvesPerPrefix_RegardlessOfLocale()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/de/support/matrix", "locale": "en-us",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();
@@ -594,10 +605,13 @@ public class ContentStackMappingTests
 	[Fact]
 	public void ToSiteDocument_NonMasterLocale_NamespacesUrlUnderSitePrefix()
 	{
-		var item = LoadFromJson(/*lang=json,strict*/ """
+		var item = LoadFromJson(/*lang=json,strict*/
+			"""
 			{ "title": "Support Matrix", "url": "/support/matrix", "locale": "es-mx",
 			  "paragraph_l10n": "Supported versions." }
-			""", "support_matrix");
+			""",
+			"support_matrix"
+		);
 		var doc = ContentStackMapper.ToSiteDocument(item);
 
 		doc.Should().NotBeNull();

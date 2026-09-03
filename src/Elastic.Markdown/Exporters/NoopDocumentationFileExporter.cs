@@ -10,8 +10,7 @@ public class NoopDocumentationFileExporter : IDocumentationFileExporter
 {
 	public string Name { get; } = nameof(NoopDocumentationFileExporter);
 
-	public ValueTask ProcessFile(ProcessingFileContext context, Cancel ctx) =>
-		ValueTask.CompletedTask;
+	public ValueTask ProcessFile(ProcessingFileContext context, Cancel ctx) => ValueTask.CompletedTask;
 
 	public Task CopyEmbeddedResource(IFileInfo outputFile, Stream resourceStream, Cancel ctx) => Task.CompletedTask;
 }

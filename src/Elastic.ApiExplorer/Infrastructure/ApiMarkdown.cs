@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Extensions;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -22,25 +23,42 @@ public static partial class ApiMarkdown
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
 
-		var escaped = MustachePattern().Replace(markdown, match => $"`{match.Value}`");
-		var rewritten = RewriteIntraApiLinks(escaped, context.CurrentNavigation.NavigationRoot.Url);
+		var rewritten = Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url);
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
 		return new HtmlString(html);
 	}
 
-	private static string RewriteIntraApiLinks(string markdown, string apiBaseUrl)
+	/// <summary>
+	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.
+	/// </summary>
+	public static string Prepare(string? markdown, string apiBaseUrl)
+	{
+		if (string.IsNullOrEmpty(markdown))
+			return string.Empty;
+
+		var escaped = MustachePattern().Replace(markdown, match => $"`{match.Value}`");
+		return RewriteIntraApiLinks(escaped, apiBaseUrl);
+	}
+
+	internal static string RewriteIntraApiLinks(string markdown, string apiBaseUrl)
 	{
 		var baseUrl = apiBaseUrl.TrimEnd('/') + "/";
 		var rewritten = GroupLinkPattern().Replace(markdown, match => $"]({baseUrl}group/{match.Groups[1].Value})");
 		return OperationLinkPattern().Replace(rewritten, match => $"]({baseUrl}operation/{match.Groups[1].Value})");
 	}
 
+	internal static string CanonicalizeLinks(string markdown, Uri? canonicalBaseUrl) =>
+		LinkDestinationPattern().Replace(markdown, match =>
+		{
+			var url = match.Groups["url"].Value;
+			var absolute = UrlPath.MakeAbsolute(canonicalBaseUrl, url);
+			return match.Groups["prefix"].Value + absolute;
+		});
+
 	private static IFileInfo CreateVirtualSource(ApiRenderContext context)
 	{
-		var relativePath = context.CurrentNavigation.Url
-			.TrimStart('/')
-			.TrimEnd('/');
+		var relativePath = context.CurrentNavigation.Url.TrimStart('/').TrimEnd('/');
 		if (string.IsNullOrEmpty(relativePath))
 			relativePath = "api";
 
@@ -53,6 +71,9 @@ public static partial class ApiMarkdown
 
 	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)")]
 	private static partial Regex OperationLinkPattern();
+
+	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)")]
+	private static partial Regex LinkDestinationPattern();
 
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]

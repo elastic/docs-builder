@@ -28,26 +28,24 @@ public static class PrettyHtmlExtensions
 		if (sanitize)
 		{
 			var links = element.QuerySelectorAll("a");
-			links
-				.ForEach(l =>
-				{
-					l.RemoveAttribute("hx-get");
-					l.RemoveAttribute("hx-select-oob");
-					l.RemoveAttribute("hx-swap");
-					l.RemoveAttribute("hx-indicator");
-					l.RemoveAttribute("hx-push-url");
-					l.RemoveAttribute("preload");
-				});
+			links.ForEach(l =>
+			{
+				l.RemoveAttribute("hx-get");
+				l.RemoveAttribute("hx-select-oob");
+				l.RemoveAttribute("hx-swap");
+				l.RemoveAttribute("hx-indicator");
+				l.RemoveAttribute("hx-push-url");
+				l.RemoveAttribute("preload");
+			});
 		}
 
 		using var sw = new StringWriter();
 		var formatter = new PrettyMarkupFormatter();
-		element.Children
-			.ForEach(c =>
-			{
-				// ReSharper disable once AccessToDisposedClosure
-				c.ToHtml(sw, formatter);
-			});
+		element.Children.ForEach(c =>
+		{
+			// ReSharper disable once AccessToDisposedClosure
+			c.ToHtml(sw, formatter);
+		});
 		return sw.ToString().TrimStart('\n');
 	}
 
@@ -60,11 +58,7 @@ public static class PrettyHtmlExtensions
 		expected = expected.Trim('\n').PrettyHtml(sanitize);
 		actual = actual.Trim('\n').PrettyHtml(sanitize);
 
-		var diff = DiffBuilder
-			.Compare(actual)
-			.WithTest(expected)
-			.Build()
-			.ToArray();
+		var diff = DiffBuilder.Compare(actual).WithTest(expected).Build().ToArray();
 
 		if (diff.Length == 0)
 			return;
@@ -95,9 +89,9 @@ public static class PrettyHtmlExtensions
 		actual = actual.Trim('\n').PrettyHtml(sanitize);
 		var diffLines = InlineDiffBuilder.Diff(expected, actual).Lines;
 
-		var mutatedCount =
-			diffLines
-				.Count(l => l.Type switch
+		var mutatedCount = diffLines.Count(
+			l =>
+				l.Type switch
 				{
 					ChangeType.Unchanged => false,
 					ChangeType.Deleted => true,
@@ -105,7 +99,8 @@ public static class PrettyHtmlExtensions
 					ChangeType.Imaginary => false,
 					ChangeType.Modified => true,
 					_ => false
-				});
+				}
+		);
 		if (mutatedCount == 0)
 			return string.Empty;
 
@@ -122,28 +117,27 @@ public static class PrettyHtmlExtensions
 		}
 
 		using var sw = new StringWriter();
-		diffLines
-			.ForEach(l =>
+		diffLines.ForEach(l =>
+		{
+			switch (l.Type)
 			{
-				switch (l.Type)
-				{
-					case ChangeType.Unchanged:
-						sw.WriteLine(l.Text);
-						break;
-					case ChangeType.Deleted:
-						sw.WriteLine("- " + l.Text);
-						break;
-					case ChangeType.Inserted:
-						sw.WriteLine("+ " + l.Text);
-						break;
-					case ChangeType.Imaginary:
-						sw.WriteLine("? " + l.Text);
-						break;
-					case ChangeType.Modified:
-						sw.WriteLine("+ " + l.Text);
-						break;
-				}
-			});
+				case ChangeType.Unchanged:
+					sw.WriteLine(l.Text);
+					break;
+				case ChangeType.Deleted:
+					sw.WriteLine("- " + l.Text);
+					break;
+				case ChangeType.Inserted:
+					sw.WriteLine("+ " + l.Text);
+					break;
+				case ChangeType.Imaginary:
+					sw.WriteLine("? " + l.Text);
+					break;
+				case ChangeType.Modified:
+					sw.WriteLine("+ " + l.Text);
+					break;
+			}
+		});
 
 		return sw.ToString();
 	}

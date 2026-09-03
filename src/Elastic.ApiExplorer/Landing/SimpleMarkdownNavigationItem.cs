@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
 using Microsoft.AspNetCore.Html;
@@ -21,7 +22,8 @@ public class SimpleMarkdownNavigationItem(
 	string url,
 	string title,
 	IFileInfo fileInfo,
-	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot) : INavigationItem, IApiModel, ILeafNavigationItem<IApiModel>
+	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot
+) : INavigationItem, IApiModel, ILeafNavigationItem<IApiModel>
 {
 	public string Url { get; } = url;
 	public string NavigationTitle { get; } = title;
@@ -37,13 +39,13 @@ public class SimpleMarkdownNavigationItem(
 	/// <inheritdoc />
 	public IApiModel Model => this;
 
-	/// <summary>Creates a URL slug from a markdown filename.</summary>
+	/// <summary>Creates a URL slug from a markdown filename. A <c>.vN</c> suffix is not part of the slug.</summary>
 	public static string CreateSlugFromFile(IFileInfo markdownFile)
 	{
 		var fileName = Path.GetFileNameWithoutExtension(markdownFile.Name);
-		return fileName.ToLowerInvariant()
-			.Replace(' ', '-')
-			.Replace('_', '-');
+		if (ApiSupplementalName.TryParseVersionSuffix(markdownFile.Name, out var stem, out _))
+			fileName = stem;
+		return fileName.ToLowerInvariant().Replace(' ', '-').Replace('_', '-');
 	}
 
 	/// <summary>Throws if the slug collides with reserved API Explorer path segments.</summary>
@@ -54,7 +56,8 @@ public class SimpleMarkdownNavigationItem(
 		if (reservedSegments.Contains(slug, StringComparer.OrdinalIgnoreCase))
 		{
 			throw new InvalidOperationException(
-				$"Markdown file slug '{slug}' (from '{filePath}') conflicts with reserved API Explorer segment in product '{productKey}'. Reserved segments: {string.Join(", ", reservedSegments)}");
+				$"Markdown file slug '{slug}' (from '{filePath}') conflicts with reserved API Explorer segment in product '{productKey}'. Reserved segments: {string.Join(", ", reservedSegments)}"
+			);
 		}
 	}
 
@@ -72,5 +75,11 @@ public class SimpleMarkdownNavigationItem(
 		};
 		var slice = MarkdownPageView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
+	}
+
+	public async Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	{
+		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx).ConfigureAwait(false);
+		return ApiMarkdown.Prepare(markdownContent, context.CurrentNavigation.NavigationRoot.Url);
 	}
 }

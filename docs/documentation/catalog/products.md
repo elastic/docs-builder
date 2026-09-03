@@ -28,7 +28,15 @@ products:
 * `repository`: The repository name for the product. It's optional and primarily intended for handling edge cases where there is a mismatch between the repository name and the product identifier.
 * `features`: An optional mapping that controls which docs-builder subsystems the product participates in. When omitted, all features are enabled (backward compatible). When present, all features default to `true` and individual features can be opted out by setting them to `false`. The available features are:
   * `public-reference`: The product can be referenced in `applies_to` blocks, page frontmatter `products`, and gets `{{ product.<id> }}` substitutions. This is what "being a documentation product" means today.
-  * `release-notes`: The product participates in the changelog and release notes system.
+  * `release-notes`: The product's participation in the changelog and release notes system, and which onboarding path it follows (see the [release-notes onboarding decision flowchart](https://github.com/elastic/docs-eng-team/blob/main/docs/rfcs/release-notes-onboarding.md#decision-flowchart)). Accepts booleans and path names:
+
+    | Value | Meaning |
+    |---|---|
+    | Omitted | Defaults to `on-release`, preserving the default participation behavior |
+    | `true` | Backward-compatible alias for `on-release` |
+    | `false` | Product does not participate in release notes automation |
+    | `prestage` | Release bundles are reviewed and committed to the repository before release |
+    | `on-release` | Final bundles are built and uploaded at release time |
 
 :::{note}
 Products without a `features` mapping behave exactly as before -- they participate in all subsystems. The `features` mapping uses opt-out semantics: all features are enabled by default, and you only need to set a feature to `false` to disable it. For example, internal tools that need release notes but don't have public-facing documentation can set `public-reference: false`.

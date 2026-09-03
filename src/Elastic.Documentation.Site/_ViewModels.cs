@@ -72,13 +72,20 @@ public record GlobalLayoutViewModel
 		}
 	}
 
+	public string? VersionDropdownSerializedModel { get; init; }
+
+	public string? CurrentVersion { get; init; }
+
+	public string? AllVersionsUrl { get; init; }
+
+	public bool ShowVersionDropdown { get; init; }
+
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
 	/// the URL of its nearest visible ancestor. The client uses this to highlight the correct
 	/// nav entry when the page has no rendered nav link of its own.
 	/// </summary>
 	public string? NavigationActiveUrl { get; init; }
-
 
 	// Header properties for isolated mode
 	public string? HeaderTitle { get; init; }
@@ -89,8 +96,8 @@ public record GlobalLayoutViewModel
 	public string? GitHubDocsUrl { get; init; }
 	/// <summary>Full ref from GitHub Actions (e.g. refs/pull/123/merge). Set when built in a pull request workflow.</summary>
 	public string? GitHubRef { get; init; }
-	public string? CanonicalUrl => CanonicalBaseUrl is not null ?
-		new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
+	public string? CanonicalUrl =>
+		CanonicalBaseUrl is not null ? new Uri(CanonicalBaseUrl, CurrentNavigationItem.Url).ToString().TrimEnd('/') : null;
 
 	public required FeatureFlags Features { get; init; }
 	// TODO move to @inject
@@ -104,60 +111,47 @@ public record GlobalLayoutViewModel
 	public bool RenderHamburgerIcon { get; init; } = true;
 
 	/// <summary>Whether the git remote belongs to the <c>elastic</c> GitHub organization.</summary>
-	public bool IsElasticOrg =>
-		GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
+	public bool IsElasticOrg => GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
 
 	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
 	public BrandingConfiguration? Branding { get; init; }
 
 	/// <summary>Static URL of the branding icon, if configured.</summary>
-	public string? BrandingIconStaticPath =>
-		Branding?.Icon is { } icon ? Static(Path.GetFileName(icon)) : null;
+	public string? BrandingIconStaticPath => Branding?.Icon is { } icon ? Static(Path.GetFileName(icon)) : null;
 
 	/// <summary>Static URL of the OG image, if configured.</summary>
-	public string? BrandingOgImageStaticPath =>
-		Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
+	public string? BrandingOgImageStaticPath => Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
 
 	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
-	public string? BrandingFaviconStaticPath =>
-		Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;
+	public string? BrandingFaviconStaticPath => Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;
 
 	/// <summary>Static URL of the Apple touch icon, if configured or auto-discovered.</summary>
-	public string? BrandingAppleTouchIconStaticPath =>
-		Branding?.AppleTouchIcon is { } a ? Static(Path.GetFileName(a)) : null;
+	public string? BrandingAppleTouchIconStaticPath => Branding?.AppleTouchIcon is { } a ? Static(Path.GetFileName(a)) : null;
 
 	/// <summary>Root path for static assets. For codex builds, strips the /r/repoName segment from the URL path prefix.</summary>
 	public string StaticPathPrefix => GetStaticPathPrefix();
 
-	private static string ApiBasePath =>
-		SystemEnvironmentVariables.Instance.ApiPrefix;
+	private static string ApiBasePath => SystemEnvironmentVariables.Instance.ApiPrefix;
 
-	public FrontendConfig FrontendConfig =>
-		BuildType switch
-		{
-			BuildType.Assembler when Features.AirGappedEnabled =>
-				new FrontendConfig("assembler", "docs-frontend", false, StaticPathPrefix, ApiBasePath, AirGapped: true),
-			BuildType.Assembler =>
-				new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
-			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
-			_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
-		};
+	public FrontendConfig FrontendConfig => BuildType switch
+	{
+		BuildType.Assembler when Features.AirGappedEnabled =>
+			new FrontendConfig("assembler", "docs-frontend", false, StaticPathPrefix, ApiBasePath, AirGapped: true),
+		BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
+		BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
+		_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
+	};
 
-	public string FrontendConfigJson =>
-		JsonSerializer.Serialize(FrontendConfig, FrontendConfigJsonContext.Default.FrontendConfig);
+	public string FrontendConfigJson => JsonSerializer.Serialize(FrontendConfig, FrontendConfigJsonContext.Default.FrontendConfig);
 
 	public string Static(string path)
 	{
 		var staticPath = $"_static/{path.TrimStart('/')}";
 		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
 
-		var fullPath = string.IsNullOrEmpty(StaticPathPrefix)
-			? $"/{staticPath}"
-			: $"{StaticPathPrefix}/{staticPath}";
+		var fullPath = string.IsNullOrEmpty(StaticPathPrefix) ? $"/{staticPath}" : $"{StaticPathPrefix}/{staticPath}";
 
-		return string.IsNullOrEmpty(contentHash)
-			? fullPath
-			: $"{fullPath}?v={contentHash}";
+		return string.IsNullOrEmpty(contentHash) ? fullPath : $"{fullPath}?v={contentHash}";
 	}
 
 	private string GetStaticPathPrefix()

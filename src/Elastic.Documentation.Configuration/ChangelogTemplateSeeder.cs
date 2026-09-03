@@ -25,7 +25,8 @@ public static class ChangelogTemplateSeeder
 		if (!string.IsNullOrWhiteSpace(resolvedRepo) && string.IsNullOrWhiteSpace(resolvedOwner))
 			resolvedOwner = "elastic";
 
-		var shouldSeed = !string.IsNullOrWhiteSpace(resolvedOwner) && !string.IsNullOrWhiteSpace(resolvedRepo)
+		var shouldSeed = !string.IsNullOrWhiteSpace(resolvedOwner)
+			&& !string.IsNullOrWhiteSpace(resolvedRepo)
 			&& (!string.IsNullOrWhiteSpace(ownerCli) || !string.IsNullOrWhiteSpace(repoCli) || gitMatched);
 
 		var eol = content.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
@@ -38,16 +39,18 @@ public static class ChangelogTemplateSeeder
 		if (content.Contains(placeholderWithEol, StringComparison.Ordinal))
 			return content.Replace(placeholderWithEol, block, StringComparison.Ordinal);
 
-		return content.Replace(
-			Placeholder,
-			shouldSeed ? block.TrimEnd('\r', '\n') : string.Empty,
-			StringComparison.Ordinal
-		);
+		return content.Replace(Placeholder, shouldSeed ? block.TrimEnd('\r', '\n') : string.Empty, StringComparison.Ordinal);
 	}
 
 	internal static string QuoteForYaml(string value) =>
-		value.Contains(':') || value.Contains(' ') || value.Contains('#') || value.Contains('"')
-			|| value.Contains('\\') || value.Contains('\n') || value.Contains('\r') || value.Contains('\t')
+		value.Contains(':')
+			|| value.Contains(' ')
+			|| value.Contains('#')
+			|| value.Contains('"')
+			|| value.Contains('\\')
+			|| value.Contains('\n')
+			|| value.Contains('\r')
+			|| value.Contains('\t')
 			? $"\"{value
 				.Replace("\\", "\\\\")
 				.Replace("\"", "\\\"")

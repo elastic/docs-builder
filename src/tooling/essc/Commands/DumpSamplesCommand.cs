@@ -8,9 +8,7 @@ using Spectre.Console;
 
 namespace Elastic.SiteSearch.Cli.Commands;
 
-internal sealed class DumpSamplesCommand(
-	ContentStackClient client
-)
+internal sealed class DumpSamplesCommand(ContentStackClient client)
 {
 	private const string DefaultOutputDir = "/tmp/contentstack-samples";
 
@@ -27,11 +25,7 @@ internal sealed class DumpSamplesCommand(
 	/// Lets a new/unregistered UID be inspected before deciding where it belongs in <see cref="PageContentTypes"/>.
 	/// </param>
 	/// <param name="ct">Cancellation token.</param>
-	public async Task Samples(
-		string? outputDir = null,
-		string? contentType = null,
-		Cancel ct = default
-	)
+	public async Task Samples(string? outputDir = null, string? contentType = null, Cancel ct = default)
 	{
 		var dir = outputDir ?? DefaultOutputDir;
 		_ = Directory.CreateDirectory(dir);
@@ -47,16 +41,12 @@ internal sealed class DumpSamplesCommand(
 
 		var results = new List<(string ContentType, int ItemCount, string? FilePath)>();
 
-		await AnsiConsole.Progress()
+		await AnsiConsole
+			.Progress()
 			.AutoRefresh(true)
 			.AutoClear(false)
 			.HideCompleted(false)
-			.Columns(
-				new SpinnerColumn(),
-				new TaskDescriptionColumn(),
-				new ProgressBarColumn(),
-				new PercentageColumn()
-			)
+			.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 			.StartAsync(async ctx =>
 			{
 				var task = ctx.AddTask("[aqua]Fetching samples[/]", maxValue: contentTypes.Length);
@@ -68,11 +58,7 @@ internal sealed class DumpSamplesCommand(
 
 					try
 					{
-						var result = await client.InitialSyncAsync(
-							contentTypeUid: contentType,
-							maxPages: 1,
-							ct: ct
-						);
+						var result = await client.InitialSyncAsync(contentTypeUid: contentType, maxPages: 1, ct: ct);
 
 						if (result.Items.Count > 0 && result.Items[0].Data is { } data)
 						{
@@ -110,17 +96,9 @@ internal sealed class DumpSamplesCommand(
 
 		foreach (var (sampledType, itemCount, filePath) in results)
 		{
-			var status = filePath != null
-				? "[green]✓[/]"
-				: itemCount == 0
-					? "[grey]empty[/]"
-					: "[red]error[/]";
+			var status = filePath != null ? "[green]✓[/]" : itemCount == 0 ? "[grey]empty[/]" : "[red]error[/]";
 
-			_ = table.AddRow(
-				new Markup(Markup.Escape(sampledType)),
-				new Markup($"[white]{itemCount}[/]"),
-				new Markup(status)
-			);
+			_ = table.AddRow(new Markup(Markup.Escape(sampledType)), new Markup($"[white]{itemCount}[/]"), new Markup(status));
 		}
 
 		AnsiConsole.Write(table);

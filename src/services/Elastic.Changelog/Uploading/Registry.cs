@@ -92,11 +92,7 @@ public sealed record RegistryBundle
 	public required string ETag { get; init; }
 }
 
-[JsonSourceGenerationOptions(
-	WriteIndented = true,
-	PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
-	DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-)]
+[JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(Registry))]
 [JsonSerializable(typeof(RegistryBundle))]
 public sealed partial class RegistryJsonContext : JsonSerializerContext;

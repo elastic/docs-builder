@@ -2,6 +2,14 @@
 @implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
+	protected override Task ExecuteSectionAsync(string name)
+	{
+		if (name == GlobalSections.Head)
+		{
+			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
+		}
+		return Task.CompletedTask;
+	}
 }
 @if (Model.BuildType == BuildType.Assembler)
 {

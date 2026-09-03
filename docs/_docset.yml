@@ -3,6 +3,7 @@ max_toc_depth: 2
 dev_docs: true
 cross_links:
   - docs-content
+  - elasticsearch
 exclude:
   - '_*.md'
 subs:
@@ -37,6 +38,18 @@ subs:
 
 features:
   primary-nav: false
+
+# Local fixture for ApiExplorer and supplemental files. The URL key must not collide
+# with docs-content's `elasticsearch` key: assembler preview still builds this checkout
+# even though the repo is `skip: true` in assembler.yml.
+# `repository:` matches the version-index publisher; without it, lookup uses this
+# checkout (`elastic/docs-builder`) and `--strict` fails. Isolated serve (no
+# `--watch`): /api/doc/docs-builder-elasticsearch/
+api:
+  docs-builder-elasticsearch:
+    - spec: elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
 
 cta:
   docs-builder:
@@ -101,6 +114,7 @@ toc:
       - file: kbd.md
       - file: link-card.md
       - file: math.md
+      - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
       - file: task-lists.md
@@ -109,6 +123,7 @@ toc:
       - file: links.md
       - file: list-sub-pages.md
       - file: page-card.md
+      - file: related-learning.md
       - file: stepper.md
       - file: substitutions.md
       - file: version-variables.md
@@ -176,6 +191,7 @@ toc:
         children:
           - file: index.md
           - file: products.md
+          - file: related-learning.md
           - file: versions.md
           - file: synonyms.md
           - file: legacy-url-mappings.md
@@ -193,6 +209,7 @@ toc:
         children:
           - file: index.md
           - file: api-explorer.md
+          - file: supplemental.md
       - folder: cli-schema
         children:
           - file: index.md

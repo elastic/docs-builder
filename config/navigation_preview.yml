@@ -12,7 +12,11 @@ phantoms:
   - toc: docs-content://release-notes/elasticsearch-clients
   - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
+  - toc: docs-content://products
   - toc: cloud://release-notes
+  # Temporary: elastic-agent renames reference/edot-collector → reference/otel-collector (elastic/elastic-agent#16022).
+  # Remove this phantom and update the nav entry below once that PR merges.
+  - toc: elastic-agent://reference/otel-collector
 
 toc:
   ##########
@@ -26,6 +30,7 @@ toc:
       - toc: explore-analyze
       - toc: deploy-manage
       - toc: cloud-account
+        navigation_title: Manage your Cloud account
       - toc: extend
         children:
           - toc: kibana://extend
@@ -45,6 +50,20 @@ toc:
   ########
   - section: APIs
     external: https://www.elastic.co/docs/api/
+
+  ###########
+  # PRODUCTS #
+  ###########
+  - section: Products
+    dropdown:
+      - title: Elasticsearch
+        url: solutions/search/elasticsearch
+      - title: Observability
+        url: solutions/observability
+      - title: Security
+        url: solutions/security
+      - title: Elastic Cloud
+        url: deploy-manage/deploy/elastic-cloud
 
   #############
   # REFERENCE #
