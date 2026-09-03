@@ -20,15 +20,23 @@ internal sealed class DumpSamplesCommand(ContentStackClient client)
 	/// See <see cref="ContentStackCommands.Samples"/> for the generated CLI surface.
 	/// </remarks>
 	/// <param name="outputDir">Output directory for JSON files.</param>
+	/// <param name="contentType">
+	/// Comma-separated content type UIDs to sample; omit to sample every UID in <see cref="PageContentTypes.All"/>.
+	/// Lets a new/unregistered UID be inspected before deciding where it belongs in <see cref="PageContentTypes"/>.
+	/// </param>
 	/// <param name="ct">Cancellation token.</param>
-	public async Task Samples(string? outputDir = null, Cancel ct = default)
+	public async Task Samples(string? outputDir = null, string? contentType = null, Cancel ct = default)
 	{
 		var dir = outputDir ?? DefaultOutputDir;
 		_ = Directory.CreateDirectory(dir);
 
+		var contentTypes = string.IsNullOrWhiteSpace(contentType)
+			? PageContentTypes.All
+			: contentType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 		AnsiConsole.MarkupLine("[aqua bold]Contentstack Sample Dumper[/]");
 		AnsiConsole.MarkupLine($"[dim]Output: {Markup.Escape(dir)}[/]");
-		AnsiConsole.MarkupLine($"[dim]Content types: {PageContentTypes.All.Length}[/]");
+		AnsiConsole.MarkupLine($"[dim]Content types: {contentTypes.Length}[/]");
 		AnsiConsole.WriteLine();
 
 		var results = new List<(string ContentType, int ItemCount, string? FilePath)>();
@@ -41,9 +49,9 @@ internal sealed class DumpSamplesCommand(ContentStackClient client)
 			.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 			.StartAsync(async ctx =>
 			{
-				var task = ctx.AddTask("[aqua]Fetching samples[/]", maxValue: PageContentTypes.All.Length);
+				var task = ctx.AddTask("[aqua]Fetching samples[/]", maxValue: contentTypes.Length);
 
-				foreach (var contentType in PageContentTypes.All)
+				foreach (var contentType in contentTypes)
 				{
 					ct.ThrowIfCancellationRequested();
 					task.Description = $"[aqua]Fetching:[/] {Markup.Escape(contentType)}";
@@ -86,11 +94,11 @@ internal sealed class DumpSamplesCommand(ContentStackClient client)
 			.AddColumn(new TableColumn("[aqua]Items[/]").RightAligned())
 			.AddColumn(new TableColumn("[aqua]Status[/]").Centered());
 
-		foreach (var (contentType, itemCount, filePath) in results)
+		foreach (var (sampledType, itemCount, filePath) in results)
 		{
 			var status = filePath != null ? "[green]✓[/]" : itemCount == 0 ? "[grey]empty[/]" : "[red]error[/]";
 
-			_ = table.AddRow(new Markup(Markup.Escape(contentType)), new Markup($"[white]{itemCount}[/]"), new Markup(status));
+			_ = table.AddRow(new Markup(Markup.Escape(sampledType)), new Markup($"[white]{itemCount}[/]"), new Markup(status));
 		}
 
 		AnsiConsole.Write(table);
