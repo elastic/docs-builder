@@ -29,13 +29,13 @@ jobs:
             landing-page-path-output: ""
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Bootstrap Action Workspace
         uses: ./.github/actions/bootstrap
         
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           repository: ${{ matrix.repository }}
           path: test-repo
