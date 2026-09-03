@@ -4,6 +4,8 @@
 
 using System.Globalization;
 using System.Text;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
@@ -51,6 +53,46 @@ public class LlmsNavigationEnhancer
 		}
 
 		return content.ToString();
+	}
+
+	public string GenerateApiHubIndex(IReadOnlyList<ApiCatalogEntry> entries, Uri canonicalBaseUrl)
+	{
+		if (entries.Count == 0)
+			return string.Empty;
+
+		var content = new StringBuilder();
+		_ = content.AppendLine("# APIs");
+		_ = content.AppendLine();
+		_ = content.AppendLine("> Landing pages for published API products.");
+		_ = content.AppendLine();
+		_ = content.AppendLine("## Products");
+		_ = content.AppendLine();
+		AppendApiProductLinks(content, entries, canonicalBaseUrl);
+		return content.ToString();
+	}
+
+	public string GenerateApiSection(IReadOnlyList<ApiCatalogEntry> entries, Uri canonicalBaseUrl)
+	{
+		if (entries.Count == 0)
+			return string.Empty;
+
+		var content = new StringBuilder();
+		_ = content.AppendLine("## APIs");
+		_ = content.AppendLine();
+		AppendApiProductLinks(content, entries, canonicalBaseUrl);
+		return content.ToString();
+	}
+
+	private static void AppendApiProductLinks(StringBuilder content, IReadOnlyList<ApiCatalogEntry> entries, Uri canonicalBaseUrl)
+	{
+		foreach (var entry in entries.OrderBy(e => e.Key, StringComparer.Ordinal))
+		{
+			var markdownUrl = ApiOutputPaths.MarkdownUrl(entry.Url);
+			var url = LlmRenderingHelpers.MakeAbsoluteUrl(canonicalBaseUrl, markdownUrl);
+			_ = content.AppendLine(CultureInfo.InvariantCulture, $"* [{entry.Title}]({url})");
+		}
+
+		_ = content.AppendLine();
 	}
 
 	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(
