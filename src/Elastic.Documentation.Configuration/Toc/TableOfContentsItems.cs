@@ -195,7 +195,8 @@ public record IsolatedTableOfContentsRef(
 	string PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
-	bool Island = false
+	bool Island = false,
+	string? DefaultCta = null
 ) : ITableOfContentsItem;
 
 /// <summary>Controls how much of the listing appears in the rendered navigation tree.</summary>

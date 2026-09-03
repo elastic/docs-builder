@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
@@ -91,6 +92,9 @@ public record ConfigurationFile
 
 	private readonly Dictionary<string, Cta> _ctas = new(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
 
+	// Pages registered with a default CTA via `default_cta` on docset.yml or nested toc.yml files.
+	private readonly IReadOnlyDictionary<string, string> _tocDefaultCtas;
+
 	/// <summary>
 	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
 	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
@@ -123,6 +127,7 @@ public record ConfigurationFile
 	{
 		_context = context;
 		ScopeDirectory = context.ConfigurationPath.Directory!;
+		_tocDefaultCtas = FrozenDictionary<string, string>.Empty;
 		if (!context.ConfigurationPath.Exists)
 		{
 			Project = "unknown";
@@ -224,9 +229,23 @@ public record ConfigurationFile
 			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
 			foreach (var (name, definition) in docSetFile.Cta)
 			{
-				if (ValidateCta(name, definition, context) is { } cta)
-					_ctas[name] = cta;
+				if (ValidateCta(name, definition, context) is not { } cta)
+					continue;
+				_ctas[name] = cta;
 			}
+
+			foreach (var (pagePath, ctaName) in docSetFile.TocDefaultCtas)
+			{
+				if (!_ctas.ContainsKey(ctaName))
+				{
+					context.EmitError(
+						context.ConfigurationPath,
+						$"'default_cta: {ctaName}' on page '{pagePath}' does not match any 'cta' template in docset.yml."
+					);
+				}
+			}
+
+			_tocDefaultCtas = docSetFile.TocDefaultCtas;
 
 			// Process features
 			_features = [with(StringComparer.OrdinalIgnoreCase)];
@@ -273,17 +292,29 @@ public record ConfigurationFile
 	}
 
 	/// <summary>
-	/// Resolves a page's <c>cta</c> frontmatter id to a template, falling back to <see cref="Cta.DefaultName"/>
-	/// when <paramref name="id"/> is omitted or doesn't match a configured template.
+	/// Resolves the right-gutter CTA for a page. An explicit, known <c>cta</c> frontmatter <paramref name="id"/>
+	/// always wins. Otherwise the template registered via <c>default_cta</c> on the page's navigation file
+	/// applies, falling back to <see cref="Cta.DefaultName"/>.
 	/// </summary>
+	/// <param name="id">The page's <c>cta.id</c> frontmatter value, if any.</param>
+	/// <param name="relativePath">The page's docset-root-relative source path, used for toc default lookup.</param>
 	/// <param name="warning">Set when <paramref name="id"/> is unknown, so the caller can report it.</param>
-	public Cta ResolveCta(string? id, out string? warning)
+	public Cta ResolveCta(string? id, string? relativePath, out string? warning)
 	{
 		warning = null;
-		if (id is not null && Ctas.TryGetValue(id, out var cta))
-			return cta;
 		if (id is not null)
+		{
+			if (Ctas.TryGetValue(id, out var selected))
+				return selected;
+			// Unknown id: warn, then resolve as if the page had no `cta` frontmatter.
 			warning = UnknownCtaWarning(id, Ctas.Keys);
+		}
+		if (relativePath is { Length: > 0 })
+		{
+			var normalizedPath = DocumentationSetFile.NormalizeDocsetRelativePath(relativePath);
+			if (_tocDefaultCtas.TryGetValue(normalizedPath, out var tocDefault) && Ctas.TryGetValue(tocDefault, out var scoped))
+				return scoped;
+		}
 		return Ctas[Cta.DefaultName];
 	}
 
@@ -298,7 +329,7 @@ public record ConfigurationFile
 				: "No 'cta' templates are defined in this docset.yml yet. Add one under a top-level 'cta:' map, e.g.:\n"
 					+ "cta:\n  mp:\n    button:\n      label: Get started on MP\n      url: https://example.com\n    benefits:\n      - \"Some benefit\"";
 		}
-		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml. Falling back to '{Cta.DefaultName}'. {hint}";
+		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml and is ignored. {hint}";
 	}
 
 	private static Cta? ValidateCta(string name, CtaDefinition definition, IDocumentationSetContext context)
