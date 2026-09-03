@@ -152,6 +152,26 @@ vector-sizing-calculator:not(:defined) {
 	line-height: 20px !important;
 }
 
+.vectorSizingCalc__diskRamSentence {
+	margin-top: 12px;
+}
+
+.vectorSizingCalc__diskRamSentence .vectorSizingCalc__labelRow {
+	align-items: flex-start;
+	font-size: 14px;
+	line-height: 20px;
+	font-weight: 500;
+	color: #1d2a3e;
+	white-space: normal;
+}
+
+.vectorSizingCalc__diskRamSentence
+	.vectorSizingCalc__labelRow
+	> span:first-child {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
 .vectorSizingCalc__disclaimerFooter {
 	margin-top: auto;
 	padding-top: 16px;

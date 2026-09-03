@@ -55,7 +55,7 @@ export interface SizingResult {
     totalRam: number
     clusterDisk: number
     clusterRam: number
-    /** Disk ÷ off-heap RAM ratio (per replica). */
+    /** Disk ÷ off-heap RAM working set (per replica). */
     diskToRamRatio: number
     /** Index copies = 1 primary + replicas. */
     totalCopies: number
