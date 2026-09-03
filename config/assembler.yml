@@ -60,7 +60,6 @@ environments:
     google_tag_manager:
       enabled: false
     feature_flags:
-      NAVIGATION_PREVIEW: true
       ASSEMBLER_API_EXPLORER: true
   air-gapped:
     uri: http://localhost:8080
