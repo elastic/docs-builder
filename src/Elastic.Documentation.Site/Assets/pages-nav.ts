@@ -4,7 +4,7 @@ import { $optional, $$optional } from 'select-dom'
 
 const NAV_STATE_KEY = 'nav-expanded'
 
-/** Folder clips and height animation are nav-preview only. Flag-off prod keeps the CSS accordion. */
+/** Folder clips and height animation follow the preview shell, not a body class. */
 function isNavigationPreview(node?: ParentNode | EventTarget | null) {
     const doc =
         node instanceof Document
@@ -12,7 +12,7 @@ function isNavigationPreview(node?: ParentNode | EventTarget | null) {
             : node instanceof Node
               ? node.ownerDocument
               : document
-    return Boolean(doc?.body.classList.contains('navigation-preview'))
+    return Boolean(doc?.querySelector('.pages-nav-v2-shell'))
 }
 
 function expandedStorageKey(nav: ParentNode) {
