@@ -1562,7 +1562,7 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Create changelog entries from the PRs referenced in a GitHub release.</summary>
-	/// <param name="repo">Required: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch" which defaults to elastic/elasticsearch)</param>
+	/// <param name="repo">Optional: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch"). When omitted, falls back to bundle.repo in changelog.yml, then the GITHUB_REPOSITORY env var, then the git remote origin.</param>
 	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="description">Optional: Bundle description text with placeholder support. Supports VERSION, LIFECYCLE, OWNER, and REPO placeholders. Overrides bundle.description from config.</param>
@@ -1573,7 +1573,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> GhRelease(
-		[Argument] string repo,
+		[Argument] string repo = "",
 		[Argument] string version = "latest",
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? description = null,
@@ -1597,6 +1597,22 @@ internal sealed partial class ChangelogCommands(
 			? output
 			: (bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory);
 
+		// Repo precedence: positional arg > bundle.repo > GITHUB_REPOSITORY env var > git remote origin
+		var resolvedRepo = BundleOutputNaming.ResolveRepo(_fileSystem, config?.FullName, repo, bundleConfig?.Bundle?.Repo);
+		if (string.IsNullOrWhiteSpace(resolvedRepo))
+		{
+			collector.EmitError(
+				string.Empty,
+				"changelog gh-release could not determine the repository. " +
+					"Pass <repo> as the first argument, set bundle.repo in changelog.yml, " +
+					"or run where GITHUB_REPOSITORY or a git remote (github.com) is available."
+			);
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, _fileSystem, releaseService, prService);
@@ -1613,7 +1629,7 @@ internal sealed partial class ChangelogCommands(
 
 		var input = new CreateChangelogsFromReleaseArguments
 		{
-			Repository = repo,
+			Repository = resolvedRepo,
 			Version = version,
 			Config = config?.FullName,
 			Output = resolvedOutput,

@@ -3762,15 +3762,15 @@
           ],
           "name": "gh-release",
           "summary": "Create changelog entries from the PRs referenced in a GitHub release.",
-          "usage": "docs-builder changelog gh-release \u003Crepo\u003E [\u003Cversion\u003E] [options]",
+          "usage": "docs-builder changelog gh-release [\u003Crepo\u003E] [\u003Cversion\u003E] [options]",
           "examples": [],
           "parameters": [
             {
               "role": "positional",
               "name": "repo",
               "type": "string",
-              "required": true,
-              "summary": "Required: GitHub repository in owner/repo format (e.g., \u0022elastic/elasticsearch\u0022 or just \u0022elasticsearch\u0022 which defaults to elastic/elasticsearch)"
+              "required": false,
+              "summary": "Optional: GitHub repository in owner/repo format (e.g., \u0022elastic/elasticsearch\u0022 or just \u0022elasticsearch\u0022). When omitted, falls back to bundle.repo in changelog.yml, then the GITHUB_REPOSITORY env var, then the git remote origin."
             },
             {
               "role": "positional",

@@ -14,7 +14,8 @@ public class BundlePlanTests : ChangelogTestBase
 {
 	private ChangelogBundlingService Service { get; }
 
-	public BundlePlanTests(ITestOutputHelper output) : base(output) => Service = new(LoggerFactory, FileSystem, ConfigurationContext);
+	public BundlePlanTests(ITestOutputHelper output) : base(output) =>
+		Service = new(LoggerFactory, FileSystem, ConfigurationContext, env: EmptyEnvironment);
 
 	private async Task<string> CreateConfigAsync(string configContent)
 	{
