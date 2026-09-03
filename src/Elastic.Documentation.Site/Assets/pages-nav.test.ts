@@ -12,6 +12,14 @@ import {
     syncPagesNavFromResponse,
 } from './pages-nav'
 
+beforeEach(() => {
+    document.body.classList.add('navigation-preview')
+})
+
+afterEach(() => {
+    document.body.classList.remove('navigation-preview')
+})
+
 function pagesNav(treeId: string, heading: string, extra = ''): string {
     const headingHtml = heading
         ? `<div class="pages-nav-v2__heading"><span class="pages-nav-v2__heading-text">${heading}</span></div>`
@@ -419,6 +427,30 @@ describe('collapseAllFolders', () => {
 describe('ensureSubtreeClips', () => {
     beforeEach(() => {
         sessionStorage.clear()
+    })
+
+    it('leaves the legacy accordion alone when navigation-preview is off', () => {
+        document.body.classList.remove('navigation-preview')
+        document.body.innerHTML = `
+            <nav id="pages-nav">
+                <li class="nav-folder">
+                    <div class="peer nav-folder-peer">
+                        <input id="folder-a" type="checkbox">
+                    </div>
+                    <ul class="nav-subtree"><li>Child</li></ul>
+                </li>
+            </nav>
+        `
+        initNav()
+        const cb = document.querySelector<HTMLInputElement>('#folder-a')!
+        cb.checked = true
+        cb.dispatchEvent(new Event('change', { bubbles: true }))
+
+        expect(document.querySelector('.nav-subtree-clip')).toBeNull()
+        expect(
+            document.querySelector('li.nav-folder > ul.nav-subtree')
+        ).not.toBeNull()
+        expect(document.body.textContent).toContain('Child')
     })
 
     it('wraps a folder subtree once', () => {
