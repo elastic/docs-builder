@@ -120,20 +120,27 @@ public class GitHubReleaseChangelogService(
 
 			_logger.LogInformation("Processing GitHub release from {Owner}/{Repo}", owner, repo);
 
-			// 2. Resolve product from repo name via products.yml
-			var product = configurationContext.ProductsConfiguration.GetProductByRepositoryName(repo);
-			if (product == null)
+			// 2. Resolve product(s) from repo name via products.yml
+			var products = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(repo);
+			if (products.Count == 0)
 			{
 				collector.EmitError(
 					string.Empty,
-					$"Could not find product for repository '{repo}' in products.yml. " +
+					$"Could not find a product for repository '{repo}' in products.yml. " +
 						$"Add a product to config/products.yml whose ID is '{repo}', " +
 						$"or set 'repository: {repo}' on one or more existing products."
 				);
 				return false;
 			}
 
-			_logger.LogInformation("Resolved product: {ProductId} ({ProductDisplay})", product.Id, product.DisplayName);
+			// Use the first product for versioning context; multiple products (e.g., cloud) share the same versioning system.
+			var product = products[0];
+			_logger.LogInformation(
+				"Resolved {Count} product(s) for '{Repo}': {Products}",
+				products.Count,
+				repo,
+				string.Join(", ", products.Select(p => p.Id))
+			);
 
 			// 3. Load changelog configuration
 			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
@@ -283,7 +290,9 @@ public class GitHubReleaseChangelogService(
 		if (ChangelogCdn.ResolveBaseUri() is not { } baseUri)
 			return [];
 
+#pragma warning disable CS0618
 		var poolOwner = config.Bundle?.Owner ?? owner;
+#pragma warning restore CS0618
 		var poolBranch = config.Bundle?.Branch ?? "main";
 		var entries = await _entryFetcher.FetchAsync(
 			baseUri,

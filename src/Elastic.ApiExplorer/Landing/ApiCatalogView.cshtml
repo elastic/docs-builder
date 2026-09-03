@@ -11,6 +11,8 @@
 		{
 			<li class="api-url-list-item">
 				<a href="@entry.Url">@entry.Title <code>@entry.Key</code></a>
+				<a href="@ApiOutputPaths.JsonUrl(entry.Url)" download>JSON</a>
+				<a href="@ApiOutputPaths.YamlUrl(entry.Url)" download>YAML</a>
 			</li>
 		}
 	</ul>
