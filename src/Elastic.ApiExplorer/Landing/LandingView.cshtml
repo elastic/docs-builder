@@ -8,7 +8,40 @@
 <section id="elastic-docs-v3">
 	<h1>@Model.ApiInfo.Title</h1>
 	<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
-	<p>License: @Model.ApiInfo.License?.Name</p>
+	@if (Model.InfoNote.Servers.Count > 0)
+	{
+		<div class="server-info">
+			<span class="server-label">Base URL@(Model.InfoNote.Servers.Count > 1 ? "s" : ""):</span>
+			@foreach (var server in Model.InfoNote.Servers)
+			{
+				<span class="server-url">
+					<code>@server.Url</code>
+					@if (!string.IsNullOrEmpty(server.Description))
+					{
+						<span class="server-description">(@server.Description)</span>
+					}
+				</span>
+			}
+		</div>
+	}
+	@if (Model.InfoNote.LicenseName is { } licenseName)
+	{
+		<p>
+			License:
+			@if (Model.InfoNote.LicenseUrl is { } licenseUrl)
+			{
+				<a href="@licenseUrl">@licenseName</a>
+			}
+			else
+			{
+				@licenseName
+			}
+		</p>
+	}
+	@if (Model.InfoNote.Version is { } version)
+	{
+		<p>Version: @version</p>
+	}
 	<div class="api-overview">
 		<table>
 			@foreach (var row in Model.OverviewRows)

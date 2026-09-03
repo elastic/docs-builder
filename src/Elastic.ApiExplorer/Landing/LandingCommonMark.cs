@@ -20,13 +20,16 @@ internal static class LandingCommonMark
 		return markdown.ToString();
 	}
 
-	public static string Product(OpenApiInfo? info, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl)
+	public static string Product(OpenApiInfo? info, LandingInfoNote note, IReadOnlyList<ApiOverviewRow> rows, string apiBaseUrl)
 	{
 		var markdown = new StringBuilder();
 		ApiCommonMark.Heading(markdown, 1, info?.Title ?? "API Documentation");
 		ApiCommonMark.Prepared(markdown, info?.Description, apiBaseUrl);
-		if (!string.IsNullOrEmpty(info?.License?.Name))
-			ApiCommonMark.Paragraph(markdown, $"License: {info.License.Name}");
+		WriteBaseUrls(markdown, note.Servers);
+		if (note.LicenseName is not null)
+			ApiCommonMark.Paragraph(markdown, $"License: {note.LicenseName}");
+		if (note.Version is not null)
+			ApiCommonMark.Paragraph(markdown, $"Version: {note.Version}");
 
 		WriteOverview(markdown, rows);
 		return markdown.ToString();
@@ -52,6 +55,22 @@ internal static class LandingCommonMark
 
 		WriteOverview(markdown, model.OverviewRows);
 		return markdown.ToString();
+	}
+
+	private static void WriteBaseUrls(StringBuilder markdown, IReadOnlyList<OpenApiServer> servers)
+	{
+		if (servers.Count == 0)
+			return;
+
+		foreach (var server in servers)
+		{
+			var line = $"`{server.Url}`";
+			if (!string.IsNullOrEmpty(server.Description))
+				line += $" ({server.Description})";
+			_ = markdown.AppendLine($"- Base URL: {line}");
+		}
+
+		_ = markdown.AppendLine();
 	}
 
 	private static void WriteOverview(StringBuilder markdown, IReadOnlyList<ApiOverviewRow> rows)

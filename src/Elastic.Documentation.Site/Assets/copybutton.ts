@@ -138,7 +138,9 @@ const addCopyButtonToCodeCells = (
             }
         }
 
-        codeCell.insertAdjacentElement('afterend', clipboardButton)
+        if (codeCell.classList.contains('server-url'))
+            codeCell.appendChild(clipboardButton)
+        else codeCell.insertAdjacentElement('afterend', clipboardButton)
     })
 
     function escapeRegExp(str: string) {
@@ -229,7 +231,7 @@ const addCopyButtonToCodeCells = (
 }
 
 export function initCopyButton(
-    selector: string = '.highlight pre',
+    selector: string = '.highlight pre, .server-url',
     baseElement: ParentNode = document,
     prefix: string = 'markdown-content-codecell-'
 ) {

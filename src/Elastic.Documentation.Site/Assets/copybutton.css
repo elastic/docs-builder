@@ -39,8 +39,15 @@ div.highlight {
 
 /* Show the copybutton */
 .highlight:hover button.copybtn,
+.server-url:hover button.copybtn,
 button.copybtn.success {
 	opacity: 1;
+}
+
+.server-url button.copybtn {
+	position: static;
+	top: auto;
+	right: auto;
 }
 
 /**
