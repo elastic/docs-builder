@@ -207,7 +207,8 @@ body {
 
 		/* darken connector line when subtree contains the current page */
 		&:has(.current)::before,
-		.peer:has(.current) ~ &::before {
+		.peer:has(.current) ~ &::before,
+		.peer:has(.current) ~ .nav-subtree-clip > &::before {
 			@apply bg-grey-40;
 		}
 	}

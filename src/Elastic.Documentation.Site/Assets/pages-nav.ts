@@ -4,6 +4,17 @@ import { $optional, $$optional } from 'select-dom'
 
 const NAV_STATE_KEY = 'nav-expanded'
 
+/** Folder clips and height animation follow the preview shell, not a body class. */
+function isNavigationPreview(node?: ParentNode | EventTarget | null) {
+    const doc =
+        node instanceof Document
+            ? node
+            : node instanceof Node
+              ? node.ownerDocument
+              : document
+    return Boolean(doc?.querySelector('.pages-nav-v2-shell'))
+}
+
 function expandedStorageKey(nav: ParentNode) {
     return `${NAV_STATE_KEY}:${navSurfaceKey(nav)}`
 }
@@ -80,6 +91,9 @@ function clearNavState(nav: ParentNode) {
 }
 
 export function ensureSubtreeClips(nav: HTMLElement) {
+    if (!isNavigationPreview(nav)) {
+        return
+    }
     $$optional('li.nav-folder > ul.nav-subtree', nav).forEach((ul) => {
         if (!(ul instanceof HTMLElement)) {
             return
@@ -219,6 +233,9 @@ export function syncFolderPanels(
     root: ParentNode,
     options?: { detachClosed?: boolean }
 ) {
+    if (!isNavigationPreview(root)) {
+        return
+    }
     if (root instanceof HTMLElement) {
         ensureSubtreeClips(root)
     }
@@ -366,6 +383,9 @@ function playFolderClose(input: HTMLInputElement, nav: HTMLElement) {
 }
 
 function onFolderCheckboxChange(input: HTMLInputElement) {
+    if (!isNavigationPreview(input)) {
+        return
+    }
     const nav = navFromInput(input)
     if (!nav) {
         return
