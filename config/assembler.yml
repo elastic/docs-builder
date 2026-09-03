@@ -23,6 +23,7 @@ environments:
     feature_flags:
       WEBSITE_SEARCH: true
       ASSEMBLER_API_EXPLORER: true
+      NAVIGATION_PREVIEW: true
     website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
   edge:
     uri: https://d34ipnu52o64md.cloudfront.net
@@ -30,6 +31,8 @@ environments:
     content_source: edge
     google_tag_manager:
       enabled: false
+    feature_flags:
+      NAVIGATION_PREVIEW: true
   # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
   # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step
   # in navigation-test.journey.ts should be replaced with a top-nav step).
@@ -58,6 +61,7 @@ environments:
       enabled: false
     feature_flags:
       NAVIGATION_PREVIEW: true
+      ASSEMBLER_API_EXPLORER: true
   air-gapped:
     uri: http://localhost:8080
     path_prefix: docs
@@ -93,6 +97,10 @@ narrative:
 #             # 'partial' --cone sparse-checkout of only the 'docs' folder with --filter=blob:none
 #   current: <git_ref>
 #   next: <git_ref>
+#   clone_timeout: <duration>
+#             # Per-attempt timeout for network git operations (fetch, pull) in CI.
+#             # Accepts a positive integer followed by 's' (seconds) or 'm' (minutes), e.g. '30s' or '15m'.
+#             # When omitted the global default of 10m applies in CI (unbounded locally).
 ###
 references:
 
@@ -221,3 +229,10 @@ references:
     next: main
     skip: true
     sparse_paths: ["docs", "config"]
+  # Playground repos for release-notes automation (changelog link filtering; do not publish docs)
+  docs-playground-release-notes-changelogs:
+    private: true
+    skip: true
+  docs-playground-release-notes-tagged:
+    private: true
+    skip: true

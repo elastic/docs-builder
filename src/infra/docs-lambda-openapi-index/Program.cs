@@ -23,7 +23,8 @@ var distributionId = Environment.GetEnvironmentVariable("CLOUDFRONT_DISTRIBUTION
 var publisher = new VersionIndexPublisher(new AmazonS3Client(), bucketName);
 var invalidator = new CloudFrontCacheInvalidator(new AmazonCloudFrontClient(), distributionId);
 
-await LambdaBootstrapBuilder.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
+await LambdaBootstrapBuilder
+	.Create<SQSEvent, SQSBatchResponse>(Handler, new SourceGeneratorLambdaJsonSerializer<SerializerContext>())
 	.Build()
 	.RunAsync();
 
@@ -39,7 +40,11 @@ async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 		var objectKeys = ExtractObjectKeys(ev);
 		var ignoredKeys = await publisher.RefreshAsync(CancellationToken.None).ConfigureAwait(false);
 		if (ignoredKeys.Count > 0)
-			context.Logger.LogWarning("Ignored {ignoredCount} object key(s) not shaped as org/repo/version/file: {ignoredKeys}", ignoredKeys.Count, string.Join(", ", ignoredKeys));
+			context.Logger.LogWarning(
+				"Ignored {ignoredCount} object key(s) not shaped as org/repo/version/file: {ignoredKeys}",
+				ignoredKeys.Count,
+				string.Join(", ", ignoredKeys)
+			);
 
 		var paths = OpenApiInvalidationPaths.Build(objectKeys);
 		await invalidator.InvalidateAsync(paths, context.AwsRequestId, CancellationToken.None).ConfigureAwait(false);
@@ -49,15 +54,24 @@ async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 			bucketName,
 			VersionIndexPublisher.IndexKey,
 			paths.Count,
-			ev.Records.Count);
+			ev.Records.Count
+		);
 		return new SQSBatchResponse([]);
 	}
 	catch (Exception ex)
 	{
 		// Return every message in the batch to the queue: the rebuild reads the whole bucket, so
 		// retrying only some of the batch would just repeat the exact same LIST-and-rebuild anyway.
-		context.Logger.LogError(ex, "Failed to refresh {bucketName}/{indexKey}. Returning all {recordCount} message(s) to the queue.", bucketName, VersionIndexPublisher.IndexKey, ev.Records.Count);
-		return new SQSBatchResponse(ev.Records.Select(r => new SQSBatchResponse.BatchItemFailure { ItemIdentifier = r.MessageId }).ToList());
+		context.Logger.LogError(
+			ex,
+			"Failed to refresh {bucketName}/{indexKey}. Returning all {recordCount} message(s) to the queue.",
+			bucketName,
+			VersionIndexPublisher.IndexKey,
+			ev.Records.Count
+		);
+		return new SQSBatchResponse(
+			ev.Records.Select(r => new SQSBatchResponse.BatchItemFailure { ItemIdentifier = r.MessageId }).ToList()
+		);
 	}
 }
 

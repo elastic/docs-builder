@@ -24,6 +24,9 @@ public class ApiCatalog : IApiGroupingModel
 		var viewModel = new ApiCatalogViewModel(context) { Entries = Entries };
 		await ApiCatalogView.Create(viewModel).RenderAsync(stream, cancellationToken: ctx);
 	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
+		Task.FromResult<string?>(LandingCommonMark.Catalog(Entries));
 }
 
 public class ApiCatalogNavigationItem : IRootNavigationItem<ApiCatalog, INavigationItem>, INavigationItem
@@ -51,5 +54,7 @@ public class ApiCatalogNavigationItem : IRootNavigationItem<ApiCatalog, INavigat
 	public bool IsUsingNavigationDropdown => false;
 
 	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
-		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on {nameof(ApiCatalogNavigationItem)}.");
+		throw new NotSupportedException(
+			$"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on {nameof(ApiCatalogNavigationItem)}."
+		);
 }

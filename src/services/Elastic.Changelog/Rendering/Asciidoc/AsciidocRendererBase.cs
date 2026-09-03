@@ -63,7 +63,13 @@ public abstract class AsciidocRendererBase
 	/// <summary>
 	/// Renders an entry's description with optional comment handling and list continuation
 	/// </summary>
-	private static void RenderEntryDescription(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context, bool shouldHide, bool needsContinuation = true)
+	private static void RenderEntryDescription(
+		StringBuilder sb,
+		ChangelogEntry entry,
+		ChangelogRenderContext context,
+		bool shouldHide,
+		bool needsContinuation = true
+	)
 	{
 		if (context.HideDescriptions || string.IsNullOrWhiteSpace(entry.Description))
 			return;

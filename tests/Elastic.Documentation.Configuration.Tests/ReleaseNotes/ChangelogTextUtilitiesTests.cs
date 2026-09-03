@@ -73,15 +73,14 @@ public class ChangelogTextUtilitiesTests
 	[InlineData("+ Plus", true)]
 	[InlineData("\u2013 En dash", true)]
 	[InlineData("\u2014 Em dash", true)]
-	public void TitleNeedsDefensiveYamlQuoting_DetectsBulletLikeScalars(string? input, bool expected)
-	{
+	public void TitleNeedsDefensiveYamlQuoting_DetectsBulletLikeScalars(string? input, bool expected) =>
 		ChangelogTextUtilities.TitleNeedsDefensiveYamlQuoting(input).Should().Be(expected);
-	}
 
 	[Theory]
 	[InlineData("https://github.com/elastic/elasticsearch/pull/123", 123)]
 	[InlineData("elastic/elasticsearch#456", 456)]
 	[InlineData("123", null)] // No default owner/repo
+
 	public void ExtractPrNumber_ExtractsNumber(string input, int? expected)
 	{
 		var result = ChangelogTextUtilities.ExtractPrNumber(input);
@@ -150,6 +149,7 @@ public class ChangelogTextUtilitiesTests
 	[Theory]
 	[InlineData("Add new feature to API", "add-new-feature-to-api")]
 	[InlineData("Fix bug in the search API endpoint handler", "fix-bug-in-the-search-api")] // Takes first 6 words by default
+
 	[InlineData("", "untitled")]
 	public void GenerateSlug_GeneratesSlug(string input, string expected)
 	{
@@ -188,11 +188,7 @@ public class ChangelogTextUtilitiesTests
 	[Fact]
 	public void HasVisibleLinks_WithPublicLinks_ReturnsTrue()
 	{
-		var entry = new ChangelogEntry
-		{
-			Prs = ["123"],
-			Issues = ["456"]
-		};
+		var entry = new ChangelogEntry { Prs = ["123"], Issues = ["456"] };
 
 		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
 
@@ -202,11 +198,7 @@ public class ChangelogTextUtilitiesTests
 	[Fact]
 	public void HasVisibleLinks_WithNoLinks_ReturnsFalse()
 	{
-		var entry = new ChangelogEntry
-		{
-			Prs = null,
-			Issues = null
-		};
+		var entry = new ChangelogEntry { Prs = null, Issues = null };
 
 		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
 
@@ -216,11 +208,7 @@ public class ChangelogTextUtilitiesTests
 	[Fact]
 	public void HasVisibleLinks_WithEmptyArrays_ReturnsFalse()
 	{
-		var entry = new ChangelogEntry
-		{
-			Prs = [],
-			Issues = []
-		};
+		var entry = new ChangelogEntry { Prs = [], Issues = [] };
 
 		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
 

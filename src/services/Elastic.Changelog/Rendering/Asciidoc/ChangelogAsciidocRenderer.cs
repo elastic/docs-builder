@@ -75,10 +75,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		}
 
 		// Render highlights (only if any entries have highlight == true)
-		var highlights = entriesByType.Values
-			.SelectMany(e => e)
-			.Where(e => e.Highlight == true)
-			.ToList();
+		var highlights = entriesByType.Values.SelectMany(e => e).Where(e => e.Highlight == true).ToList();
 		if (highlights.Count > 0)
 		{
 			RenderSectionHeader(sb, "highlights", context.TitleSlug, "Highlights");

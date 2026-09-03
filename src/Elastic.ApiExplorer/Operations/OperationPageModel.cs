@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
@@ -14,7 +15,13 @@ using Microsoft.OpenApi;
 namespace Elastic.ApiExplorer.Operations;
 
 /// <summary>A request/response example with its markdown description prerendered.</summary>
-public record ExampleDisplay(string Title, HtmlString? DescriptionHtml, string? JsonValue, string? ExternalValue);
+public record ExampleDisplay(
+	string Title,
+	HtmlString? DescriptionHtml,
+	string? JsonValue,
+	string? ExternalValue,
+	string? DescriptionMarkdown
+);
 
 /// <summary>Model for the <c>_ExamplesSection</c> partial.</summary>
 public record ExamplesSection(SectionHeader Header, IReadOnlyList<ExampleDisplay> Examples);
@@ -29,6 +36,19 @@ public record ApiQueryParameter
 	public required IReadOnlyList<ConstraintDisplay> Constraints { get; init; }
 	public required IReadOnlyList<string> EnumValues { get; init; }
 	public required IReadOnlyList<UnionBadge> UnionOptions { get; init; }
+	public required HtmlString DescriptionHtml { get; init; }
+	public required string? DescriptionMarkdown { get; init; }
+}
+
+/// <summary>A path parameter with its effective description precomputed.</summary>
+public record ApiPathParameter
+{
+	public required IOpenApiParameter Parameter { get; init; }
+	public required HtmlString DescriptionHtml { get; init; }
+	public required string? DescriptionMarkdown { get; init; }
+
+	public string? Name => Parameter.Name;
+	public bool? Deprecated => Parameter.Deprecated;
 }
 
 /// <summary>One response content entry with its property tree prebuilt.</summary>
@@ -74,8 +94,10 @@ public record OperationPageModel
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
 	public required IReadOnlyCollection<OperationNavigationItem> Overloads { get; init; }
-	public required IReadOnlyList<IOpenApiParameter> PathParameters { get; init; }
+	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
 	public required IReadOnlyList<ApiQueryParameter> QueryParameters { get; init; }
+	public required string? DescriptionMarkdown { get; init; }
+	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
 	public required string RequestContentType { get; init; }
 	public required ApiPropertyList? RequestProperties { get; init; }
 	public required TypeAnnotation? RequestType { get; init; }
@@ -94,6 +116,8 @@ public record OperationPageModel
 		var operation = apiOperation.Operation;
 		var document = context.Model;
 		var analyzer = new SchemaAnalyzer(document);
+		var supplemental = operation.OperationId is { Length: > 0 } operationId
+			&& context.OperationSupplemental.TryGetValue(operationId, out var doc) ? doc : null;
 		var options = new PropertyDisplayOptions
 		{
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
@@ -109,10 +133,9 @@ public record OperationPageModel
 
 		var showRequestExamples = requestExamples is { Count: > 0 } && !(requestExamples.Count == 1 && codeSamples.Count > 0);
 		var showResponseExamples = responseExamples is { Count: > 0 };
-		var examplesAnchor = codeSamples.Count > 0 ? "code-examples"
-			: requestExamples is { Count: > 0 } ? "request-examples"
-			: responseExamples is { Count: > 0 } ? "response-examples"
-			: null;
+		var examplesAnchor = codeSamples.Count > 0
+			? "code-examples"
+			: requestExamples is { Count: > 0 } ? "request-examples" : responseExamples is { Count: > 0 } ? "response-examples" : null;
 
 		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
 		var requestSchema = requestContentEntry?.Value?.Schema;
@@ -131,15 +154,32 @@ public record OperationPageModel
 			ExternalDocs = externalDocs,
 			Servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers,
 			Overloads = ResolveOverloads(context),
-			PathParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Path).ToArray() ?? [],
+			PathParameters = (operation.Parameters ?? [])
+				.Where(p => p.In == ParameterLocation.Path)
+				.Select(p =>
+				{
+					var description = supplemental?.ParameterOr(p.Name ?? "", p.Description) ?? p.Description;
+					return new ApiPathParameter
+					{
+						Parameter = p,
+						DescriptionHtml = ApiMarkdown.Render(context, description),
+						DescriptionMarkdown = description
+					};
+				})
+				.ToArray(),
 			QueryParameters = (operation.Parameters ?? [])
 				.Where(p => p.In == ParameterLocation.Query)
-				.Select(p => BuildQueryParameter(p, analyzer, builder))
+				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
 				.ToArray(),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = requestSchema is not null
-				? builder.BuildPropertyList(requestSchema, new PropertyTreeScope { Prefix = "req", IsRequest = true })
+				? builder.BuildPropertyList(
+					requestSchema,
+					new PropertyTreeScope { Prefix = "req", IsRequest = true, DescriptionOverrides = supplemental?.RequestBodyOverrides }
+				)
 				: null,
+			DescriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
+			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
 			CodeSamples = codeSamples,
@@ -151,26 +191,42 @@ public record OperationPageModel
 		};
 	}
 
-	private static IReadOnlyList<ExampleDisplay> MapExamples(IDictionary<string, IOpenApiExample>? examples, Func<string?, HtmlString> renderMarkdown) =>
+	private static IReadOnlyList<ExampleDisplay> MapExamples(
+		IDictionary<string, IOpenApiExample>? examples,
+		Func<string?, HtmlString> renderMarkdown
+	) =>
 		examples is null
 			? []
-			: examples.Select(e => new ExampleDisplay(
-				string.IsNullOrEmpty(e.Value?.Summary) ? e.Key : e.Value.Summary,
-				string.IsNullOrEmpty(e.Value?.Description) ? null : renderMarkdown(e.Value.Description),
-				e.Value?.Value?.ToString(),
-				string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue)).ToArray();
+			: examples.Select(
+				e => new ExampleDisplay(
+					string.IsNullOrEmpty(e.Value?.Summary) ? e.Key : e.Value.Summary,
+					string.IsNullOrEmpty(e.Value?.Description) ? null : renderMarkdown(e.Value.Description),
+					e.Value?.Value?.ToString(),
+					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue,
+					string.IsNullOrEmpty(e.Value?.Description) ? null : e.Value.Description
+				)
+			).ToArray();
 
 	private static IReadOnlyCollection<OperationNavigationItem> ResolveOverloads(ApiRenderContext context)
 	{
-		if (context.CurrentNavigation.Parent is EndpointNavigationItem { NavigationItems.Count: > 0 } parent
-			&& parent.NavigationItems.All(n => n.Hidden))
+		if (
+			context.CurrentNavigation.Parent is EndpointNavigationItem { NavigationItems.Count: > 0 } parent
+			&& parent.NavigationItems.All(n => n.Hidden)
+		)
 			return parent.NavigationItems;
 		return context.CurrentNavigation is OperationNavigationItem self ? [self] : [];
 	}
 
-	private static ApiQueryParameter BuildQueryParameter(IOpenApiParameter parameter, SchemaAnalyzer analyzer, ApiPropertyTreeBuilder builder)
+	private static ApiQueryParameter BuildQueryParameter(
+		IOpenApiParameter parameter,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder,
+		ApiRenderContext context,
+		ApiSupplementalDoc? supplemental
+	)
 	{
 		var schema = parameter.Schema;
+		var description = supplemental?.ParameterOr(parameter.Name ?? "", parameter.Description) ?? parameter.Description;
 		return new ApiQueryParameter
 		{
 			Parameter = parameter,
@@ -179,7 +235,9 @@ public record OperationPageModel
 			EnumValues = CollectEnumValues(schema, analyzer),
 			UnionOptions = CollectUnionOptionNames(schema, analyzer)
 				.Select(n => new UnionBadge(n, ApiPropertyTreeBuilder.IsTypeOptionBadge(n)))
-				.ToArray()
+				.ToArray(),
+			DescriptionHtml = ApiMarkdown.Render(context, description),
+			DescriptionMarkdown = description
 		};
 	}
 
@@ -198,18 +256,15 @@ public record OperationPageModel
 			return enumValues;
 
 		// Check for oneOf/anyOf with string literals (union enums)
-		var unionSchemas = resolved?.OneOf is { Count: > 0 } ? resolved.OneOf
-			: resolved?.AnyOf is { Count: > 0 } ? resolved.AnyOf
-			: null;
+		var unionSchemas = resolved?.OneOf is { Count: > 0 } ? resolved.OneOf : resolved?.AnyOf is { Count: > 0 } ? resolved.AnyOf : null;
 		if (unionSchemas is not null)
 		{
 			enumValues.AddRange(
 				unionSchemas
 					.Select(analyzer.ResolveSchema)
 					.Where(r => r?.Enum is { Count: > 0 })
-					.SelectMany(r => r!.Enum!
-						.Select(e => e?.ToString()?.Trim('"') ?? "")
-						.Where(e => !string.IsNullOrEmpty(e))));
+					.SelectMany(r => r!.Enum!.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)))
+			);
 		}
 
 		return enumValues;
@@ -225,7 +280,11 @@ public record OperationPageModel
 		return [];
 	}
 
-	private static IReadOnlyList<ApiResponse> BuildResponses(OpenApiOperation operation, SchemaAnalyzer analyzer, ApiPropertyTreeBuilder builder)
+	private static IReadOnlyList<ApiResponse> BuildResponses(
+		OpenApiOperation operation,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
 	{
 		if (operation.Responses is not { Count: > 0 })
 			return [];
@@ -241,24 +300,28 @@ public record OperationPageModel
 				StatusCode = statusCode,
 				Response = response,
 				FirstContentType = response.Content is { Count: > 0 } ? response.Content.First().Key : null,
-				StatusClass = statusCode.StartsWith('2') ? "success"
-					: statusCode.StartsWith('4') || statusCode.StartsWith('5') ? "error"
-					: "info",
+				StatusClass = statusCode.StartsWith('2')
+					? "success"
+					: statusCode.StartsWith('4') || statusCode.StartsWith('5') ? "error" : "info",
 				Contents = response.Content is null
 					? []
-					: response.Content
+					: response
+						.Content
 						.Where(ct => ct.Value?.Schema is not null)
 						.Select(ct => BuildResponseContent(ct.Key, ct.Value!.Schema!, statusCode, analyzer, builder))
 						.ToArray(),
 				Headers = response.Headers is null
 					? []
-					: response.Headers
-						.Select(h => new ApiResponseHeader
-						{
-							Name = h.Key,
-							Header = h.Value,
-							Type = h.Value?.Schema is not null ? builder.Describe(h.Value.Schema) : null
-						})
+					: response
+						.Headers
+						.Select(
+							h => new ApiResponseHeader
+							{
+								Name = h.Key,
+								Header = h.Value,
+								Type = h.Value?.Schema is not null ? builder.Describe(h.Value.Schema) : null
+							}
+						)
 						.ToArray()
 			});
 		}
@@ -267,7 +330,12 @@ public record OperationPageModel
 	}
 
 	private static ApiResponseContent BuildResponseContent(
-		string contentType, IOpenApiSchema responseSchema, string statusCode, SchemaAnalyzer analyzer, ApiPropertyTreeBuilder builder)
+		string contentType,
+		IOpenApiSchema responseSchema,
+		string statusCode,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
 	{
 		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}" };
 		var properties = builder.BuildPropertyList(responseSchema, scope);

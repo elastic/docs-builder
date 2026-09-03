@@ -13,17 +13,26 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Operations;
 
-public record ApiOperation(HttpMethod OperationType, OpenApiOperation Operation, string Route, IOpenApiPathItem Path, string ApiName) : IApiModel
+public record ApiOperation(
+	HttpMethod OperationType,
+	OpenApiOperation Operation,
+	string Route,
+	IOpenApiPathItem Path,
+	string ApiName
+) : IApiModel
 {
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new OperationViewModel(context)
-		{
-			Operation = this,
-			Page = OperationPageModel.Create(this, context)
-		};
+		var viewModel = new OperationViewModel(context) { Operation = this, Page = OperationPageModel.Create(this, context) };
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
+	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	{
+		var page = OperationPageModel.Create(this, context);
+		var prerequisites = OpenApiXReqAuthParser.TryGetPrerequisiteLines(Operation, context.ApiExplorerLog, Route, Operation.OperationId);
+		return Task.FromResult<string?>(OperationCommonMark.Write(this, page, prerequisites, context));
 	}
 }
 
@@ -58,5 +67,4 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 
 	public int NavigationIndex { get; set; }
-
 }

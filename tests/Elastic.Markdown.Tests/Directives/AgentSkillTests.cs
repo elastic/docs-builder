@@ -7,8 +7,9 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class AgentSkillTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
-"""
+public class AgentSkillTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(
+	output,
+	"""
 :::{agent-skill}
 :url: https://github.com/elastic/agent-skills@elasticsearch-esql
 :::
@@ -40,12 +41,10 @@ A regular paragraph.
 	}
 
 	[Fact]
-	public void RendersTitle() =>
-		Html.Should().Contain("Agent skill available");
+	public void RendersTitle() => Html.Should().Contain("Agent skill available");
 
 	[Fact]
-	public void RendersDefaultText() =>
-		Html.Should().Contain("A skill is available to help AI agents with this topic.");
+	public void RendersDefaultText() => Html.Should().Contain("A skill is available to help AI agents with this topic.");
 
 	[Fact]
 	public void RendersLearnMoreLink()
@@ -63,12 +62,12 @@ A regular paragraph.
 	}
 
 	[Fact]
-	public void DoesNotRenderLinkButton() =>
-		Html.Should().NotContain("Get the skill");
+	public void DoesNotRenderLinkButton() => Html.Should().NotContain("Get the skill");
 }
 
-public class AgentSkillWithBodyTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
-"""
+public class AgentSkillWithBodyTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(
+	output,
+	"""
 :::{agent-skill}
 :url: https://github.com/elastic/agent-skills@elasticsearch-esql
 
@@ -79,24 +78,21 @@ A regular paragraph.
 )
 {
 	[Fact]
-	public void RendersCustomBody() =>
-		Html.Should().Contain("This skill helps agents write and optimize ES|QL queries.");
+	public void RendersCustomBody() => Html.Should().Contain("This skill helps agents write and optimize ES|QL queries.");
 
 	[Fact]
-	public void StillRendersDefaultText() =>
-		Html.Should().Contain("A skill is available to help AI agents with this topic.");
+	public void StillRendersDefaultText() => Html.Should().Contain("A skill is available to help AI agents with this topic.");
 
 	[Fact]
-	public void StillRendersLearnMoreLink() =>
-		Html.Should().Contain("Learn more about agent skills for Elastic");
+	public void StillRendersLearnMoreLink() => Html.Should().Contain("Learn more about agent skills for Elastic");
 
 	[Fact]
-	public void StillRendersCopyButton() =>
-		Html.Should().Contain("Copy install command");
+	public void StillRendersCopyButton() => Html.Should().Contain("Copy install command");
 }
 
-public class AgentSkillMissingUrlTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
-"""
+public class AgentSkillMissingUrlTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(
+	output,
+	"""
 :::{agent-skill}
 :::
 A regular paragraph.
@@ -104,12 +100,12 @@ A regular paragraph.
 )
 {
 	[Fact]
-	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires a :url: property"));
+	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires a :url: property"));
 }
 
-public class AgentSkillRelativeUrlTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
-"""
+public class AgentSkillRelativeUrlTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(
+	output,
+	"""
 :::{agent-skill}
 :url: /relative/path
 :::
@@ -118,12 +114,12 @@ A regular paragraph.
 )
 {
 	[Fact]
-	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("must be an absolute URL"));
+	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("must be an absolute URL"));
 }
 
-public class AgentSkillNoSkillNameTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
-"""
+public class AgentSkillNoSkillNameTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(
+	output,
+	"""
 :::{agent-skill}
 :url: https://github.com/elastic/agent-skills
 :::

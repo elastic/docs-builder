@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <summary>
@@ -12,11 +13,9 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public static partial class ApiUrlBuilder
 {
-	public static string ApiRoot(string? urlPathPrefix) =>
-		$"{urlPathPrefix?.TrimEnd('/')}/api";
+	public static string ApiRoot(string? urlPathPrefix) => $"{urlPathPrefix?.TrimEnd('/')}/api";
 
-	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) =>
-		$"{ApiRoot(urlPathPrefix)}/doc/{apiUrlSuffix}";
+	public static string ProductRoot(string? urlPathPrefix, string apiUrlSuffix) => $"{ApiRoot(urlPathPrefix)}/doc/{apiUrlSuffix}";
 
 	/// <summary>
 	/// URL path suffix for one API product version: <c>{key}</c> for <c>main</c>,
@@ -39,14 +38,16 @@ public static partial class ApiUrlBuilder
 	}
 
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>
-	public static string SchemaMoniker(string schemaId) =>
-		schemaId.Replace('.', '-').ToLowerInvariant();
+	public static string SchemaMoniker(string schemaId) => schemaId.Replace('.', '-').ToLowerInvariant();
 
-	/// <summary>Deterministic URL leaf for <c>.../group/{segment}</c> from the canonical tag name.</summary>
-	public static string TagMoniker(string? tagName)
+	/// <summary>
+	/// URL slug for a tag, without the <c>endpoint-</c> prefix. Spaces become hyphens and the
+	/// result is lowercased; underscores are kept. Empty or whitespace names become <c>unknown</c>.
+	/// </summary>
+	public static string TagSlug(string? tagName)
 	{
 		if (string.IsNullOrWhiteSpace(tagName))
-			return "endpoint-unknown";
+			return "unknown";
 
 		var s = tagName.Trim();
 		s = string.Join(" ", s.Split(' ', StringSplitOptions.RemoveEmptyEntries));
@@ -56,11 +57,11 @@ public static partial class ApiUrlBuilder
 		s = s.Replace("/", "-", StringComparison.Ordinal);
 		s = s.Replace(" ", "-", StringComparison.Ordinal);
 		s = s.ToLowerInvariant();
-		if (string.IsNullOrEmpty(s))
-			return "endpoint-unknown";
-
-		return $"endpoint-{s}";
+		return string.IsNullOrEmpty(s) ? "unknown" : s;
 	}
+
+	/// <summary>Deterministic URL leaf for <c>.../group/{segment}</c> from the canonical tag name.</summary>
+	public static string TagMoniker(string? tagName) => $"endpoint-{TagSlug(tagName)}";
 
 	[GeneratedRegex(@"\s*\(([^)]+)\)")]
 	private static partial Regex ParentheticalSuffixPattern();

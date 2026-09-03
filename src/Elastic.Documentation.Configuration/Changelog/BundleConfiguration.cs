@@ -86,13 +86,23 @@ public record BundleProfile
 	public string? Products { get; init; }
 
 	/// <summary>
-	/// Output filename pattern.
-	/// {version} is substituted at runtime.
-	/// Examples:
-	/// - "elasticsearch-{version}.yaml"
-	/// - "serverless-{version}.yaml"
+	/// Legacy output filename pattern. No longer supported: bundle output names are derived by
+	/// convention as <c>{repo}-{product}-{version}.yaml</c> from the authoring repo and the profile's
+	/// primary output product (elastic/docs-builder#3774). Any profile setting this is a hard error
+	/// at bundle time; the field remains parseable for one release cycle so authors get an actionable
+	/// error rather than a YAML parse failure.
 	/// </summary>
+	[Obsolete("No longer supported: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml' from the authoring repo and the profile's output_products. Setting 'output' is a hard error at bundle time.")]
 	public string? Output { get; init; }
+
+	/// <summary>
+	/// Profile-specific output directory. Replaces <see cref="BundleConfiguration.OutputDirectory"/>
+	/// for this profile the same way option-mode <c>--output</c> as a directory replaces it. The
+	/// conventional <c>{repo}-{product}-{version}.yaml</c> name is joined onto this path. A
+	/// <c>.yml</c>/<c>.yaml</c> value is a hard error (use of free-form filenames is what
+	/// <see cref="Output"/> used to allow).
+	/// </summary>
+	public string? OutputDirectory { get; init; }
 
 	/// <summary>
 	/// Output products pattern. When set, overrides the products array derived from matched changelogs.

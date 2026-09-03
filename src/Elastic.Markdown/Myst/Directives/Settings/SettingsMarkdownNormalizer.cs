@@ -17,10 +17,12 @@ internal static class SettingsMarkdownNormalizer
 		var result = markdown.Replace("\r\n", "\n", StringComparison.Ordinal);
 		if (result.Contains("[source,", StringComparison.Ordinal))
 			result = NormalizeAsciiDocSourceBlocks(result);
-		if (result.Contains("](/", StringComparison.Ordinal)
+		if (
+			result.Contains("](/", StringComparison.Ordinal)
 			|| result.Contains("](docs-content://", StringComparison.Ordinal)
 			|| result.Contains("(elasticsearch://", StringComparison.Ordinal)
-			|| result.Contains("(ecs://", StringComparison.Ordinal))
+			|| result.Contains("(ecs://", StringComparison.Ordinal)
+		)
 			result = RewriteReferenceLinksForDocset(result, product);
 
 		return result;
@@ -36,20 +38,11 @@ internal static class SettingsMarkdownNormalizer
 		var referenceBase = string.Equals(product, "Kibana", StringComparison.OrdinalIgnoreCase)
 			? "https://www.elastic.co/docs/reference/kibana/"
 			: "https://www.elastic.co/docs/reference/";
-		s = RewriteParenLinksWithPrefix(
-			s,
-			"](/reference/",
-			referenceBase);
+		s = RewriteParenLinksWithPrefix(s, "](/reference/", referenceBase);
 
-		s = RewriteSchemeLinks(
-			s,
-			"(elasticsearch://reference/",
-			"(https://www.elastic.co/docs/reference/");
+		s = RewriteSchemeLinks(s, "(elasticsearch://reference/", "(https://www.elastic.co/docs/reference/");
 
-		return RewriteSchemeLinks(
-			s,
-			"(ecs://reference/",
-			"(https://www.elastic.co/docs/reference/");
+		return RewriteSchemeLinks(s, "(ecs://reference/", "(https://www.elastic.co/docs/reference/");
 	}
 
 	/// <summary>

@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 /// <summary>
@@ -15,4 +16,7 @@ public record TypeSpan(string Text, string? CssClass = null, string? Title = nul
 /// <summary>
 /// The precomputed display form of a schema type (icons, keywords, name), rendered by <c>_SchemaType</c>.
 /// </summary>
-public record TypeAnnotation(IReadOnlyList<TypeSpan> Spans);
+public record TypeAnnotation(IReadOnlyList<TypeSpan> Spans)
+{
+	public string Text => string.Concat(Spans.Select(s => s.Text)).Trim();
+}

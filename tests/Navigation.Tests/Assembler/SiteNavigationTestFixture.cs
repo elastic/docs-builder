@@ -38,7 +38,8 @@ public static class SiteNavigationTestFixture
 
 		// Add docset.yml
 		// language=yaml
-		var docsetYaml = """
+		var docsetYaml =
+			"""
 		                 project: serverless-observability
 		                 toc:
 		                   - file: index.md
@@ -73,7 +74,8 @@ public static class SiteNavigationTestFixture
 
 		// Add docset.yml
 		// language=yaml
-		var docsetYaml = """
+		var docsetYaml =
+			"""
 		                 project: serverless-search
 		                 toc:
 		                   - file: index.md
@@ -106,7 +108,8 @@ public static class SiteNavigationTestFixture
 
 		// Add docset.yml with underscore prefix
 		// language=yaml
-		var docsetYaml = """
+		var docsetYaml =
+			"""
 		                 project: serverless-security
 		                 toc:
 		                   - file: index.md
@@ -139,7 +142,8 @@ public static class SiteNavigationTestFixture
 
 		// Add docset.yml
 		// language=yaml
-		var docsetYaml = """
+		var docsetYaml =
+			"""
 		                 project: platform
 		                 toc:
 		                   - file: index.md
@@ -153,7 +157,8 @@ public static class SiteNavigationTestFixture
 		var deploymentBaseDir = $"{baseDir}/docs/deployment-guide";
 		fileSystem.AddDirectory(deploymentBaseDir);
 		// language=yaml
-		var deploymentTocYaml = """
+		var deploymentTocYaml =
+			"""
 		                        toc:
 		                          - file: index.md
 		                          - folder: self-managed
@@ -170,7 +175,8 @@ public static class SiteNavigationTestFixture
 		var cloudBaseDir = $"{baseDir}/docs/cloud-guide";
 		fileSystem.AddDirectory(cloudBaseDir);
 		// language=yaml
-		var cloudTocYaml = """
+		var cloudTocYaml =
+			"""
 		                   toc:
 		                     - file: index.md
 		                     - folder: aws
@@ -194,7 +200,8 @@ public static class SiteNavigationTestFixture
 
 		// Add docset.yml
 		// language=yaml
-		var docsetYaml = """
+		var docsetYaml =
+			"""
 		                 project: elasticsearch-reference
 		                 toc:
 		                   - file: index.md

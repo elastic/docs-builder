@@ -47,9 +47,7 @@ public class NavigationPrefixChecker
 
 		_phantoms = SiteNavigationFile.GetPhantomPrefixes(siteNavigationFile);
 
-		_repositories = context.Configuration.AvailableRepositories.Values
-			.Select(r => r.Name)
-			.ToImmutableHashSet();
+		_repositories = context.Configuration.AvailableRepositories.Values.Select(r => r.Name).ToImmutableHashSet();
 
 		_logger = logFactory.CreateLogger<NavigationPrefixChecker>();
 		_logFactoryFactory = logFactory;
@@ -64,7 +62,12 @@ public class NavigationPrefixChecker
 		public required string Path { get; init; }
 	}
 
-	public async Task CheckWithLocalLinksJson(IDiagnosticsCollector collector, string repository, string? localLinksJson, CancellationToken ctx)
+	public async Task CheckWithLocalLinksJson(
+		IDiagnosticsCollector collector,
+		string repository,
+		string? localLinksJson,
+		CancellationToken ctx
+	)
 	{
 		if (string.IsNullOrEmpty(repository))
 			throw new ArgumentNullException(nameof(repository));
@@ -78,7 +81,10 @@ public class NavigationPrefixChecker
 
 		if (!File.Exists(localLinksJson))
 		{
-			collector.EmitError(repository, $"Local links file '{localLinksJson}' not found. This usually means the documentation build step failed or was skipped.");
+			collector.EmitError(
+				repository,
+				$"Local links file '{localLinksJson}' not found. This usually means the documentation build step failed or was skipped."
+			);
 			return;
 		}
 
@@ -89,7 +95,12 @@ public class NavigationPrefixChecker
 	public async Task CheckAllPublishedLinks(IDiagnosticsCollector collector, Cancel ctx) =>
 		await FetchAndValidateCrossLinks(collector, null, null, ctx);
 
-	private async Task FetchAndValidateCrossLinks(IDiagnosticsCollector collector, string? updateRepository, RepositoryLinks? updateReference, Cancel ctx)
+	private async Task FetchAndValidateCrossLinks(
+		IDiagnosticsCollector collector,
+		string? updateRepository,
+		RepositoryLinks? updateReference,
+		Cancel ctx
+	)
 	{
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new LinksIndexCrossLinkFetcher(_logFactoryFactory, linkIndexProvider);
@@ -119,7 +130,10 @@ public class NavigationPrefixChecker
 					var baseOfAPhantom = _phantoms.Any(p => IsPhantomOrDescendant(p, pathUri));
 					if (baseOfAPhantom)
 						continue;
-					collector.EmitError(repository, $"'Can not validate '{crossLink}' it's not declared in any link reference nor is it a phantom");
+					collector.EmitError(
+						repository,
+						$"'Can not validate '{crossLink}' it's not declared in any link reference nor is it a phantom"
+					);
 					continue;
 				}
 				foreach (var navigationPath in navigationPaths)
@@ -131,20 +145,21 @@ public class NavigationPrefixChecker
 						if (_phantoms.Count > 0 && _phantoms.Contains(new Uri($"{repository}://{navigationPath}")))
 							continue;
 
-						var url = _uriResolver.Resolve(new Uri($"{repository}://{relativeLink}"), PublishEnvironmentUriResolver.MarkdownPathToUrlPath(relativeLink));
-						collector.EmitError(repository,
-							$"'{seen.Repository}' defines: '{seen.Path}' that '{repository}://{relativeLink} resolving to '{url.AbsolutePath}' conflicts with ");
+						var url = _uriResolver.Resolve(
+							new Uri($"{repository}://{relativeLink}"),
+							PublishEnvironmentUriResolver.MarkdownPathToUrlPath(relativeLink)
+						);
+						collector.EmitError(
+							repository,
+							$"'{seen.Repository}' defines: '{seen.Path}' that '{repository}://{relativeLink} resolving to '{url.AbsolutePath}' conflicts with "
+						);
 					}
 					else
 					{
 						if (_phantoms.Count > 0 && _phantoms.Contains(new Uri($"{repository}://{navigationPath}")))
 							continue;
 
-						dictionary.Add(navigationPath, new SeenPaths
-						{
-							Repository = repository,
-							Path = navigationPath
-						});
+						dictionary.Add(navigationPath, new SeenPaths { Repository = repository, Path = navigationPath });
 					}
 				}
 			}
@@ -152,10 +167,10 @@ public class NavigationPrefixChecker
 	}
 
 	private static bool IsPhantomOrDescendant(Uri phantom, Uri candidate) =>
-		candidate.Scheme == phantom.Scheme &&
-		candidate.Host == phantom.Host &&
-		(candidate.AbsolutePath == phantom.AbsolutePath ||
-		 candidate.AbsolutePath.StartsWith(phantom.AbsolutePath.TrimEnd('/') + '/', StringComparison.Ordinal));
+		candidate.Scheme == phantom.Scheme
+			&& candidate.Host == phantom.Host
+			&& (candidate.AbsolutePath == phantom.AbsolutePath
+				|| candidate.AbsolutePath.StartsWith(phantom.AbsolutePath.TrimEnd('/') + '/', StringComparison.Ordinal));
 
 	private async Task<RepositoryLinks> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
 	{

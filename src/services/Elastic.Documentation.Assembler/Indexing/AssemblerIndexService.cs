@@ -36,14 +36,19 @@ public class AssemblerIndexService(
 		var cfg = _configurationContext.Endpoints.Elasticsearch;
 		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
 
-		return await BuildAll(collector, new AssemblerBuildOptions
-		{
-			Strict = false,
-			Environment = environment,
-			MetadataOnly = true,
-			ShowHints = false,
-			Exporters = new HashSet<Exporter> { Elasticsearch },
-			AssumeBuild = false
-		}, fileSystem, ctx);
+		return await BuildAll(
+			collector,
+			new AssemblerBuildOptions
+			{
+				Strict = false,
+				Environment = environment,
+				MetadataOnly = true,
+				ShowHints = false,
+				Exporters = new HashSet<Exporter> { Elasticsearch },
+				AssumeBuild = false
+			},
+			fileSystem,
+			ctx
+		);
 	}
 }

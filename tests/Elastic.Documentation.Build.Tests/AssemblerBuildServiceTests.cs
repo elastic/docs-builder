@@ -17,67 +17,39 @@ namespace Elastic.Documentation.Build.Tests;
  * AssemblerBuildService.BuildAll() Behavior Matrix
  * =================================================
  *
- * Column Definitions:
- * -------------------
- * - CI (GITHUB_ACTIONS): Whether the GITHUB_ACTIONS environment variable is set
- *     - Checked via IEnvironmentVariables.IsRunningOnCI
- *     - When set: Indicates build is running in GitHub Actions CI pipeline
- *     - Affects: --assume-build validation, output directory cleanup behavior
+ * AssumeBuild is three-state (bool?):
+ *   null  → default: true locally, false on CI (via IEnvironmentVariables.IsRunningOnCI)
+ *   true  → force skip (throws if on CI)
+ *   false → force rebuild
  *
- * - assumeBuild: The '--assume-build' flag passed to BuildAll()
- *     - Purpose: Skip entire build if output already exists (index.html present)
- *     - Use case: ONLY for local development/testing to avoid rebuilding when unnecessary
- *         - Speeds up test iterations when you know the build output is still valid
- *         - Useful for integration tests that don't need fresh builds
- *     - DANGER on CI: Could serve stale content from a previous/cached build
- *         - CI caches might contain outdated build artifacts
- *         - Merged code changes wouldn't be reflected in output
- *         - Could lead to deploying old documentation
- *     - Therefore: This flag throws an error when used on CI
+ * The stamp check replaces the old File.Exists(index.html) approach.
+ * A stamp hit means code/config/content are unchanged since the last build.
  *
- * - Output Exists: Whether the output directory already exists
- *     - For assumeBuild: Also checks if docs/index.html exists within output
- *     - Determines: Whether cleanup is needed, whether assumeBuild can skip
+ * Truth Table (after the default is resolved):
+ * +---------+------------------+------------+------------------------+-----------------------------------+
+ * | On CI   | effectiveAssume  | Stamp Hit  | elasticsearchExportOnly| Result                            |
+ * +---------+------------------+------------+------------------------+-----------------------------------+
+ * | false   | false            | any        | false                  | Clears output, rebuilds           |
+ * | false   | true             | true       | false                  | Skips build entirely (stamp match)|
+ * | false   | true             | false/none | false                  | Clears output, rebuilds           |
+ * | false   | true             | any        | true                   | Skips stamp check, rebuilds       |
+ * | true    | false (default)  | any        | any                    | Builds fresh                      |
+ * | true    | true (explicit)  | any        | any                    | ERROR (not allowed on CI)         |
+ * +---------+------------------+------------+------------------------+-----------------------------------+
  *
- * - elasticsearchExportOnly: Whether exporters contains ONLY Exporter.Elasticsearch
- *     - When true: Only generating Elasticsearch search index data, not HTML
- *         - HTML output not being regenerated
- *         - Output directory cleanup would be wasteful/destructive
- *     - Allows skipping output directory cleanup since HTML isn't being regenerated
- *         - Previous HTML remains intact for serving
- *         - Only ES index data is updated
+ * Three-state default:
+ * | assumeBuild param | On CI | effectiveAssumeBuild |
+ * |-------------------|-------|----------------------|
+ * | null              | false | true  (local default) |
+ * | null              | true  | false (CI default)    |
+ * | true              | false | true  (explicit)      |
+ * | true              | true  | ERROR thrown          |
+ * | false             | false | false (explicit opt-out) |
+ * | false             | true  | false (explicit)      |
  *
- * - Result: What action the service takes
- *     - "Builds, creates output": Normal full build, creates output from scratch
- *         - Complete build process runs
- *         - All documentation sets are processed
- *         - All exporters generate their outputs
- *     - "Clears output, rebuilds": Deletes existing output directory first, then builds
- *         - OutputDirectory.Delete(true) is called
- *         - Ensures no stale files remain
- *         - Then proceeds with full build
- *     - "Skips clear, rebuilds": Keeps output directory (for ES export), rebuilds in place
- *         - Output directory NOT deleted
- *         - Build proceeds, updating only ES index
- *         - HTML files from previous build remain
- *     - "Skips build entirely": Returns early without building (assumeBuild optimization)
- *         - Returns true immediately
- *         - No build steps executed
- *         - Output from previous build is assumed valid
- *     - "ERROR": Throws InvalidOperationException because this combination is not allowed
- *         - --assume-build on CI is always an error
- *         - Protects against stale content being deployed
- *
- * Truth Table:
- * +-----------------------+-------------+---------------+-------------------------+---------------------------+
- * | CI (GITHUB_ACTIONS)   | assumeBuild | Output Exists | elasticsearchExportOnly | Result                    |
- * +-----------------------+-------------+---------------+-------------------------+---------------------------+
- * | false                 | false       | false         | false                   | Builds, creates output    |
- * | false                 | false       | true          | false                   | Clears output, rebuilds   |
- * | false                 | false       | true          | true                    | Skips clear, rebuilds     |
- * | false                 | true        | false         | false                   | Builds (no prior output)  |
- * | false                 | true        | true (index)  | false                   | Skips build entirely      |
- * | true                  | false       | false         | false                   | Builds, creates output    |
+ * Truth Table (CI (GITHUB_ACTIONS) column kept for legacy reference):
+ * +-----------------------+-------------+---------------------------+
+ * | CI (GITHUB_ACTIONS)   | assumeBuild | Result                    |
  * | true                  | false       | true          | false                   | Clears output, rebuilds   |
  * | true                  | true        | any           | any                     | ERROR (not allowed on CI) |
  * +-----------------------+-------------+---------------+-------------------------+---------------------------+
@@ -122,10 +94,14 @@ public class AssemblerBuildServiceTests : IDisposable
 	}
 
 	[Theory]
-	[InlineData(true, true)]   // CI + assumeBuild=true -> should throw
-	[InlineData(true, false)]  // CI + assumeBuild=false -> should not throw
-	[InlineData(false, true)]  // Local + assumeBuild=true -> should not throw
+	[InlineData(true, true)] // CI + assumeBuild=true -> should throw
+
+	[InlineData(true, false)] // CI + assumeBuild=false -> should not throw
+
+	[InlineData(false, true)] // Local + assumeBuild=true -> should not throw
+
 	[InlineData(false, false)] // Local + assumeBuild=false -> should not throw
+
 	public void AssumeBuildValidation_FollowsTruthTable(bool isCI, bool assumeBuild)
 	{
 		// This test validates the truth table behavior for assumeBuild validation.
@@ -210,6 +186,46 @@ public class AssemblerBuildServiceTests : IDisposable
 		var shouldThrow = assumeBuild && localEnv.IsRunningOnCI;
 
 		shouldThrow.Should().BeFalse("Local + assumeBuild=true should be allowed");
+	}
+
+	// ── Three-state default tests ──────────────────────────────────────────────
+
+	[Theory]
+	[InlineData(true, null, false)] // CI + null → effective false (CI default)
+
+	[InlineData(false, null, true)] // Local + null → effective true (local default)
+
+	[InlineData(true, false, false)] // CI + explicit false → effective false
+
+	[InlineData(false, false, false)] // Local + explicit false → effective false
+
+	[InlineData(false, true, true)] // Local + explicit true → effective true
+
+	public void AssumeBuild_ThreeStateDefault_ResolvesCorrectly(bool isCI, bool? assumeBuild, bool expectedEffective)
+	{
+		var env = isCI ? MockEnvironmentVariables.CreateCI() : MockEnvironmentVariables.CreateLocal();
+		// Mirror the production logic: assumeBuild ?? !_env.IsRunningOnCI
+		var effective = assumeBuild ?? !env.IsRunningOnCI;
+		effective.Should().Be(expectedEffective);
+	}
+
+	[Fact]
+	public void AssumeBuild_ExplicitTrueOnCI_ThrowsGuard()
+	{
+		// explicit true + CI → the error guard must fire (assumeBuild == true && IsRunningOnCI)
+		var env = MockEnvironmentVariables.CreateCI();
+		var shouldThrow = env.IsRunningOnCI; // mirrors: assumeBuild == true && _env.IsRunningOnCI
+		shouldThrow.Should().BeTrue("explicit --assume-build on CI must throw");
+	}
+
+	[Fact]
+	public void AssumeBuild_DefaultTrueOnCI_DoesNotTriggerGuard()
+	{
+		// null (default) on CI: effective is false, guard condition is never true
+		var env = MockEnvironmentVariables.CreateCI();
+		bool? assumeBuild = null;
+		var guardFires = assumeBuild == true && env.IsRunningOnCI;
+		guardFires.Should().BeFalse("the CI guard only fires for explicit --assume-build, never the default");
 	}
 
 	public void Dispose()

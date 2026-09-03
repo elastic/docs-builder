@@ -46,6 +46,10 @@
 		VersioningSystem = Model.VersioningSystem,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDropDownItemViewModelArray),
+		ShowVersionDropdown = Model.BuildType == BuildType.Assembler
+			&& Model.Features.PrimaryNavEnabled
+			&& !Model.VersioningSystem.IsVersionless
+			&& Model.Branding is null,
 		// Header properties for isolated mode
 		HeaderTitle = Model.DocSetName,
 		HeaderVersion = null,

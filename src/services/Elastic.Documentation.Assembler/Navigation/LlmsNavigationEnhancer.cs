@@ -53,9 +53,9 @@ public class LlmsNavigationEnhancer
 		return content.ToString();
 	}
 
-
-	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(INodeNavigationItem<INavigationModel, INavigationItem> group) =>
-		group.NavigationItems.Where(i => !i.Hidden).ToArray();
+	private static IReadOnlyCollection<INavigationItem> GetFirstLevelChildren(
+		INodeNavigationItem<INavigationModel, INavigationItem> group
+	) => group.NavigationItems.Where(i => !i.Hidden).ToArray();
 
 	/// <summary>
 	/// Gets the best title for a navigation item, preferring H1 content over navigation title
@@ -63,13 +63,10 @@ public class LlmsNavigationEnhancer
 	private static string GetBestTitle(INavigationItem navigationItem) => navigationItem switch
 	{
 		// For file navigation items, prefer the H1 title from the Markdown content
-		ILeafNavigationItem<MarkdownFile> markdownNavigation =>
-			markdownNavigation.Model.Title ?? markdownNavigation.NavigationTitle,
-
+		ILeafNavigationItem<MarkdownFile> markdownNavigation => markdownNavigation.Model.Title ?? markdownNavigation.NavigationTitle,
 		// For documentation groups, try to get the full title of the index
 		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
 			markdownNodeNavigation.Index.Model.Title ?? markdownNodeNavigation.NavigationTitle,
-
 		// For other navigation item types, use the navigation title
 		_ => navigationItem.NavigationTitle
 	};
@@ -78,24 +75,21 @@ public class LlmsNavigationEnhancer
 	{
 		// Cross-repository links don't have descriptions in frontmatter
 		ILeafNavigationItem<CrossLinkModel> => null,
-
 		// For file navigation items, extract from frontmatter
-		ILeafNavigationItem<MarkdownFile> markdownNavigation =>
-			markdownNavigation.Model.YamlFrontMatter?.Description,
-
+		ILeafNavigationItem<MarkdownFile> markdownNavigation => markdownNavigation.Model.YamlFrontMatter?.Description,
 		// For documentation groups, try to get from index file
 		INodeNavigationItem<MarkdownFile, INavigationItem> markdownNodeNavigation =>
 			markdownNodeNavigation.Index.Model.YamlFrontMatter?.Description,
-
 		// we only know about MarkdownFiles for now
 		ILeafNavigationItem<IDocumentationFile> => null,
 		INodeNavigationItem<IDocumentationFile, INavigationItem> => null,
-
 		// API-related navigation items (these don't have markdown frontmatter)
 		// Check by namespace to avoid direct assembly references
 		{ } item when item.GetType().FullName?.StartsWith("Elastic.ApiExplorer.", StringComparison.Ordinal) == true => null,
-
 		// Throw exception for any unhandled navigation item types
-		_ => throw new InvalidOperationException($"{nameof(LlmsNavigationEnhancer)}.{nameof(GetDescription)}: Unhandled navigation item type: {navigationItem.GetType().FullName}")
+		_ =>
+			throw new InvalidOperationException(
+				$"{nameof(LlmsNavigationEnhancer)}.{nameof(GetDescription)}: Unhandled navigation item type: {navigationItem.GetType().FullName}"
+			)
 	};
 }

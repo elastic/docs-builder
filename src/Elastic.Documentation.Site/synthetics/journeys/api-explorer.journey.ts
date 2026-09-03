@@ -90,7 +90,7 @@ if (isAssemblerApiExplorerEnabled()) {
             // first unexpanded branch until an operation link becomes clickable.
             const collapsedToggle = page
                 .locator(
-                    '#pages-nav li.nav-folder:visible > div.peer:has(input:not(:checked)) label'
+                    '#pages-nav li.nav-folder:visible > div.peer:has(input:not(:checked)) > a.sidebar-link'
                 )
                 .first()
             for (let depth = 0; depth < 8; depth++) {

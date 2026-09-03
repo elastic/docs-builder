@@ -77,17 +77,16 @@ bundle:
   owner: elastic
   profiles:
     serverless-report:
-      output: "serverless/{version}.yaml" <3>
-      output_products: "cloud-serverless {version}" <4>
+      output_products: "cloud-serverless {version}" <3>
+      output_directory: docs/releases/cloud-serverless <4>
     elasticsearch-release:
-      output: "elasticsearch/{version}.yaml"
       output_products: "elasticsearch {version} {lifecycle}"
 ```
 
 1. The directory that contains changelog files.
-2. The directory that contains changelog bundles.
-3. If `output` is omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename.
-4. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle.
+2. The default directory that contains changelog bundles. Profiles that omit `output_directory` write here.
+3. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle. The authoring repo (`bundle.repo` here) and the first product also determine the bundle's file name, which is derived by convention as `{repo}-{product}-{version}.yaml`.
+4. Optional. Replaces `bundle.output_directory` for this profile (the same as option-mode `--output` when it is a directory). This profile writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-{version}.yaml` so a `{changelog}` directive can point at that folder without mixing other products.
 
 ### Bundle by GitHub releases [profile-gh-release]
 
@@ -105,16 +104,16 @@ bundle:
       source: github_release <1>
       repo: apm-agent-dotnet
       owner: elastic
-      output: "agent-{version}.yaml"
       output_products: "apm-agent-dotnet {version} {lifecycle}" <2>
 ```
 
 1. This profile fetches the PR list from the GitHub release notes for the version tag specified in the command.
-2. For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is inferred from full release tag name. For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
+2. For `source: github_release` profiles, the `{lifecycle}` placeholder in `output_products` is inferred from full release tag name. For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
 
 ### Bundle by git commit range [profile-git-range]
 
-If the source of truth for what was shipped in each release is a **git commit range** — for example, a date-promotion deployment that hands off the previously and currently published commit hashes — pass `--start-git-ref` and `--end-git-ref` alongside the profile. The command derives the PR list from the range itself (GitHub compare API + GraphQL `associatedPullRequests`), so no PR list file or promotion report is needed.
+If the source of truth for what was shipped in each release is a git commit range, pass `--start-git-ref` and `--end-git-ref` alongside the profile.
+The command derives the PR list from the range itself (GitHub compare API + GraphQL `associatedPullRequests`), so no PR list file or promotion report is needed.
 
 Your profile must **not** contain a `products` pattern or `source: github_release`; it contributes output metadata only. For example:
 
@@ -129,7 +128,7 @@ bundle:
 ```
 
 1. The authoring repository whose commit range is resolved and whose entry pool is consulted.
-2. Also applied to entries synthesized from PR metadata when the PR's labels map to no product. When the profile has no `output` pattern, the bundle is named `{product}-{version}.yaml` by convention.
+2. Also applied to entries synthesized from PR metadata when the PR's labels map to no product. The bundle is named `{repo}-{product}-{version}.yaml` by convention (here `my-service-cloud-serverless-2026-08-13.yaml`).
 
 ```sh
 docs-builder changelog bundle serverless-release 2026-08-13 \
@@ -159,32 +158,30 @@ bundle:
     # Collect all changelogs
     release-all:
       products: "* * *" <1>
-      output: "all.yaml"
     # Find changelogs with any lifecycle and a partial date
     serverless-monthly:
       products: "cloud-serverless {version}-* *" <2>
-      output: "serverless-{version}.yaml"
       output_products: "cloud-serverless {version}"
     # Find changelogs with a specific lifecycle
-    elasticsearch-ga-only:
-      products: "elasticsearch {version} ga" <3>
-      output: "elasticsearch-{version}.yaml"
+    kibana-ga-only:
+      products: "kibana {version} ga" <3>
     # Infer the lifecycle from the version
     elasticsearch-with-lifecycle:
       products: "elasticsearch {version} {lifecycle}" <4>
-      output: "elasticsearch-{version}.yaml"
       output_products: "elasticsearch {version}"
 ```
 
 1. This profile collects all changelogs from the `directory`.
-2. This profile collects any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command.
-3. This profile collects any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command.
-4. In this case, the lifecycle is inferred from the version specified in the command. For example, if the version is `9.2.0-beta.1` the lifecycle is `beta`. ISO date arguments (for example, `2026-07-21`) derive `ga`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference).
+2. This profile collects any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. The date pattern matches files that declare `products[].versions` (or a legacy `target`), typically files created with `changelog note`. It does not match PR-linked changelogs that omit `versions`.
+3. This profile collects any changelogs that have `product: kibana`, `lifecycle: ga`, and the version specified in the command. Like the date pattern, a concrete version only matches files that declare `products[].versions` (or a legacy `target`). No two profiles may target the same primary product — they would collide on the same conventional `{repo}-{product}-{version}.yaml` bundle name.
+4. In this case, the lifecycle is inferred from the version specified in the command. For example, if the version is `9.2.0-beta.1` the lifecycle is `beta`. ISO date arguments (for example, `2026-07-21`) derive `ga`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference). A concrete `{version}` in `products` has the same `versions`/`target` matching rule as the previous examples.
 
 For date-based and semver profiles, lifecycle is controlled only in the profile YAML: omit it from the pattern, use `{lifecycle}` to derive it, or hardcode `ga`, `beta`, or `preview`. Non-`ga` date-based releases are exceptional and should hardcode the lifecycle.
 
 :::{note}
 The `products` field determines which changelog files are gathered for consideration. You can still apply [rules](#rules) afterward to further filter changelogs from the bundle. The input stage and bundle filtering stage are conceptually separate.
+
+A concrete version or date in the middle slot of `products` (including `{version}` and `{version}-*`) only matches files that have `products[].versions` or a legacy `target`. A `*` in that slot (for example `products: "* * *"`) still matches every file, including PR-linked changelogs. This filter is local/directory only: when changelog files are sourced from the CDN, `--input-products` and an equivalent versioned profile `products` pattern are not supported.
 :::
 
 ## Create bundles
@@ -281,27 +278,42 @@ For example, if the source of truth for what was shipped in each release is:
 By default all changelogs that match the chosen source of truth are included in the bundle.
 Bundles are self-contained: the full content of each changelog is embedded in the bundle, so you can freely move or remove the changelog files afterward.
 
+When you create a release bundle for a product version from a PR list or GitHub release and the command is sourcing from the CDN, it also adds uploaded changelogs whose `products[].versions` include that version (the version comes from `output_products`). Those files are appended to the same `entries` list as the PR-linked changelogs — they are not a separate section. `rules.bundle` applies to them too. This automatic add does not apply to git-range bundles or `--force-local`.
+
+To create a bundle that contains only "note" changelogs (including files that have different `versions` values), use a [path list](/data/release-notes/bundle.md) (profile third argument or `--files`).
+
 To apply additional filtering by the changelog type, areas, or products, add [bundle rules](#rules).
 
 ## Amend bundles [changelog-bundle-amend]
 
 When you need to add changelogs to an existing bundle, you can use the `docs-builder changelog bundle-amend` command, which creates _amend bundles_.
-For example:
+The parent may be a local bundle file (the sidecar is written next to it) or a published CDN locator such as `/bundle/kibana/9.3.0.yaml`. `--add` and `--remove` accept the same CDN paths as `changelog bundle --files` when the authoring repo resolves; only the file name is used to GET from the resolved authoring pool. For example:
+
+```sh
+docs-builder changelog bundle-amend \
+  /bundle/kibana/9.3.0.yaml \
+  --add /changelog/elastic/kibana/main/138723.yaml \
+  --output ./docs/releases
+```
+
+That writes `9.3.0.amend-1.yaml` under `./docs/releases`. Upload the sidecar with [](/cli/changelog/upload.md) (`--artifact-type bundle`); the command does not upload it for you.
+
+To read local changelog files from disk instead of the CDN, pass `--force-local`. A local parent file still works as before:
 
 ```sh
 docs-builder changelog bundle-amend \
   ./docs/releases/9.3.0.yaml \
-  --add "./docs/changelog/138723.yaml,./docs/changelog/1770424335.yaml"
+  --add /changelog/elastic/kibana/main/138723.yaml
 ```
 
-Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
+Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}` plus the same `.yaml` or `.yml` extension as the parent, where `{N}` is a sequence number.
 
 To remove entries from an existing bundle without editing the parent file, use `--remove` on the same command:
 
 ```sh
 docs-builder changelog bundle-amend \
   ./docs/releases/9.3.0.yaml \
-  --remove "./docs/changelog/138723.yaml"
+  --remove /changelog/elastic/kibana/main/138723.yaml
 ```
 
 This creates an amend file with `exclude-entries` that is merged when the bundle is rendered.
@@ -432,7 +444,6 @@ bundle:
   owner: elastic
   profiles:
     serverless-report:
-      output: "serverless/{version}.yaml"
       output_products: "cloud-serverless {version}"
       hide_features: <1>
         - feature-flag-1

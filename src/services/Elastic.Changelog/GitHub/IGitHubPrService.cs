@@ -33,5 +33,29 @@ public interface IGitHubPrService
 	Task<string?> FetchCommitAuthorAsync(string owner, string repo, string sha, CancellationToken ctx = default);
 
 	/// <summary>Returns the author login of the last commit that touched a file (for manual-edit detection in CI).</summary>
-	Task<string?> FetchLastFileCommitAuthorAsync(string owner, string repo, string filePath, string branch, CancellationToken ctx = default);
+	Task<string?> FetchLastFileCommitAuthorAsync(
+		string owner,
+		string repo,
+		string filePath,
+		string branch,
+		CancellationToken ctx = default
+	);
+
+	/// <summary>
+	/// Fetches the list of files changed by a pull request (status added or modified).
+	/// Returns null when the API call fails — callers decide whether that is fatal.
+	/// </summary>
+	Task<IReadOnlyList<string>?> FetchChangedFilesAsync(string owner, string repo, int prNumber, CancellationToken ctx = default);
+
+	/// <summary>
+	/// Checks whether each PR number in <paramref name="numbers"/> exists in the repository.
+	/// Returns a dictionary of number → exists. Numbers that cannot be determined (transport failure)
+	/// are omitted from the result — callers must treat omission as "unknown", not "absent".
+	/// </summary>
+	Task<IReadOnlyDictionary<int, bool>> CheckPullRequestsExistAsync(
+		string owner,
+		string repo,
+		IReadOnlyList<int> numbers,
+		CancellationToken ctx = default
+	);
 }

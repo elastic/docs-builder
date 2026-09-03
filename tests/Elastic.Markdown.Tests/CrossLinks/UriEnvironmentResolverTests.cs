@@ -15,16 +15,12 @@ namespace Elastic.Markdown.Tests.CrossLinks;
 /// <summary>Mirrors the path extraction logic in CodexBuildService.CollectRedirects.</summary>
 internal static class RedirectPathExtractor
 {
-	public static string GetPath(Uri? uri) =>
-		uri is null
-			? string.Empty
-			: uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
+	public static string GetPath(Uri? uri) => uri is null ? string.Empty : uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
 }
 
 public class CodexAwareUriResolverTests
 {
-	private static readonly FrozenSet<string> CodexRepos =
-		new HashSet<string> { "observability-robots", "docs-eng-team" }.ToFrozenSet();
+	private static readonly FrozenSet<string> CodexRepos = new HashSet<string> { "observability-robots", "docs-eng-team" }.ToFrozenSet();
 
 	[Fact]
 	public void CodexRepo_RelativeMode_ProducesPathOnly()
@@ -276,7 +272,9 @@ public class CrossLinkResolverFallbackUrlTests
 
 		success.Should().BeFalse();
 		emittedError.Should().NotBeNull();
-		emittedError.Should().Contain("https://github.com/elastic/codex-link-index/blob/main/internal/elastic/platform-observability-team/links.json");
+		emittedError.Should().Contain(
+			"https://github.com/elastic/codex-link-index/blob/main/internal/elastic/platform-observability-team/links.json"
+		);
 		emittedError.Should().NotContain("/main/links.json");
 	}
 
