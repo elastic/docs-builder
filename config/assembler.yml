@@ -164,6 +164,7 @@ references:
     edge: master
     private: true
 
+  cli:
   curator: *master
   ecctl: *master
 
