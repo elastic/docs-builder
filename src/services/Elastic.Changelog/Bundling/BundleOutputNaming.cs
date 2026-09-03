@@ -111,7 +111,13 @@ public static class BundleOutputNaming
 	/// is unset (the target state). Emits an informational hint when it matches, and a hard error when
 	/// it points at a different repository (which would silently repoint the S3 pool).
 	/// </summary>
-	public static void ValidateBundleRepo(IDiagnosticsCollector collector, IFileSystem fileSystem, string? configPath, string? bundleRepo)
+	public static void ValidateBundleRepo(
+		IDiagnosticsCollector collector,
+		IFileSystem fileSystem,
+		string? configPath,
+		string? bundleRepo,
+		IEnvironmentVariables? env = null
+	)
 	{
 		if (string.IsNullOrWhiteSpace(bundleRepo))
 			return;
@@ -119,7 +125,9 @@ public static class BundleOutputNaming
 		var normalizedBundleRepo = ChangelogRepoOwnerResolver.NormalizeRepo(bundleRepo);
 
 		// Derive the authoritative repo WITHOUT the bundle.repo value itself.
-		var githubRepository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+		var githubRepository = env != null
+			? env.GetEnvironmentVariable("GITHUB_REPOSITORY")
+			: Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
 		var trueRepo = ChangelogRepoOwnerResolver.NormalizeRepo(githubRepository) ?? TryGitOriginRepo(fileSystem, configPath);
 
 		if (string.IsNullOrWhiteSpace(trueRepo))
