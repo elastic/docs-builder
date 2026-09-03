@@ -307,7 +307,9 @@ document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
     const target = event.target
     if (
         target === document.body ||
-        (target instanceof Element && target.id === 'main-container')
+        (target instanceof Element &&
+            (target.id === 'main-container' ||
+                target.id === 'content-container'))
     ) {
         window.scrollTo(0, 0)
     }

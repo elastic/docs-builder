@@ -835,6 +835,47 @@ function htmlContainsPagesNav(html: string) {
     return html.includes('id="pages-nav"') || html.includes("id='pages-nav'")
 }
 
+/** Docs article/hub pages put the article in `#content-container` with `md:col-start-2`. */
+export function shouldRetargetArticleSwap(
+    current: Element | null,
+    responseHtml: string
+): boolean {
+    if (
+        !(current instanceof HTMLElement) ||
+        current.id !== 'content-container' ||
+        !current.className.includes('col-start-2')
+    ) {
+        return false
+    }
+    return (
+        responseHtml.includes('id="content-container"') &&
+        responseHtml.includes('md:col-start-2')
+    )
+}
+
+function retargetArticleSwap(event: Event) {
+    const detail = (event as CustomEvent).detail as
+        | {
+              target?: EventTarget
+              selectOverride?: string
+              serverResponse?: string
+              xhr?: { response?: string }
+          }
+        | undefined
+    if (!detail) {
+        return
+    }
+    const html =
+        (typeof detail.xhr?.response === 'string' ? detail.xhr.response : '') ||
+        (typeof detail.serverResponse === 'string' ? detail.serverResponse : '')
+    const current = document.getElementById('content-container')
+    if (!shouldRetargetArticleSwap(current, html) || !current) {
+        return
+    }
+    detail.target = current
+    detail.selectOverride = '#content-container'
+}
+
 function responseHtmlFromSwap(event: Event): string {
     const detail = (event as CustomEvent).detail as
         { serverResponse?: string; xhr?: { response?: string } } | undefined
@@ -853,6 +894,7 @@ function responseHtmlFromSwap(event: Event): string {
 }
 
 function onBeforeSwap(event: Event) {
+    retargetArticleSwap(event)
     lastSwapHtml = responseHtmlFromSwap(event)
     pinPagesNavScroll()
 }

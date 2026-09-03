@@ -10,8 +10,8 @@
 
 body.navigation-preview {
 	@media (width >= 768px) {
-		div.min-h-screen.grid:has(> .sidebar > #pages-nav),
-		div.min-h-screen.grid:has(> aside.sidebar > #pages-nav) {
+		div.min-h-screen.grid:has(> .sidebar),
+		div.min-h-screen.grid:has(> aside.sidebar) {
 			grid-template-columns: minmax(0, 279px) 1fr;
 		}
 	}

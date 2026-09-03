@@ -7,6 +7,7 @@ import {
     navSurfaceKey,
     settleCurrentPage,
     pinPagesNavScroll,
+    shouldRetargetArticleSwap,
     syncPagesNavFromResponse,
 } from './pages-nav'
 
@@ -640,5 +641,29 @@ describe('navSurfaceKey', () => {
             'Elasticsearch'
         )
         expect(navSurfaceKey(document)).toBe('nav-tree-es::Elasticsearch')
+    })
+})
+
+describe('shouldRetargetArticleSwap', () => {
+    it('retargets when both pages are docs articles', () => {
+        document.body.innerHTML =
+            '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
+        expect(
+            shouldRetargetArticleSwap(
+                document.getElementById('content-container'),
+                '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
+            )
+        ).toBe(true)
+    })
+
+    it('keeps the full swap for a landing page without the article column', () => {
+        document.body.innerHTML =
+            '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
+        expect(
+            shouldRetargetArticleSwap(
+                document.getElementById('content-container'),
+                '<div class="w-full" id="hero"></div>'
+            )
+        ).toBe(false)
     })
 })
