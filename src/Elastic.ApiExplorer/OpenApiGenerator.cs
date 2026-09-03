@@ -232,7 +232,10 @@ public class OpenApiGenerator(
 		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName).ConfigureAwait(false);
 	}
 
-	private static readonly OpenApiDocument CatalogDocument = new() { Info = new OpenApiInfo { Title = "API Explorer", Version = "1.0" } };
+	private static readonly OpenApiDocument CatalogDocument = new()
+	{
+		Info = new OpenApiInfo { Title = ApiCatalog.PageTitle, Version = "1.0" }
+	};
 
 	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
 	{
@@ -301,6 +304,31 @@ public class OpenApiGenerator(
 		};
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
+		await WriteSpecDownloads(navigation, generation.Document, ctx).ConfigureAwait(false);
+	}
+
+	private async Task WriteSpecDownloads(INavigationItem landing, OpenApiDocument document, Cancel ctx)
+	{
+		await WriteSpecSibling(
+			ApiOutputPaths.RelativeJsonFile(landing.Url, context.UrlPathPrefix),
+			(stream, token) => document.SerializeAsJsonAsync(stream, OpenApiSpecVersion.OpenApi3_1, token),
+			ctx
+		).ConfigureAwait(false);
+		await WriteSpecSibling(
+			ApiOutputPaths.RelativeYamlFile(landing.Url, context.UrlPathPrefix),
+			(stream, token) => document.SerializeAsYamlAsync(stream, OpenApiSpecVersion.OpenApi3_1, token),
+			ctx
+		).ConfigureAwait(false);
+	}
+
+	private async Task WriteSpecSibling(string relativeFile, Func<Stream, Cancel, Task> write, Cancel ctx)
+	{
+		var file = _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, relativeFile));
+		if (!file.Directory!.Exists)
+			file.Directory.Create();
+
+		await using var stream = _writeFileSystem.FileStream.New(file.FullName, FileMode.Create);
+		await write(stream, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>

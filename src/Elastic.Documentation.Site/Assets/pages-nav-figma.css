@@ -10,8 +10,8 @@
 
 body.navigation-preview {
 	@media (width >= 768px) {
-		div.min-h-screen.grid:has(> .sidebar > #pages-nav),
-		div.min-h-screen.grid:has(> aside.sidebar > #pages-nav) {
+		div.min-h-screen.grid:has(> .sidebar),
+		div.min-h-screen.grid:has(> aside.sidebar) {
 			grid-template-columns: minmax(0, 279px) 1fr;
 		}
 	}
@@ -60,6 +60,7 @@ body.navigation-preview {
 			height: auto;
 			max-height: 100%;
 			overflow: hidden;
+			overflow-y: hidden;
 			scrollbar-gutter: auto;
 			background-color: #f6f9fc;
 			border-radius: 16px;
@@ -159,12 +160,47 @@ body.navigation-preview {
 	}
 
 	.pages-nav-v2__menu {
+		--nav-scroll-fade-size: 28px;
 		position: relative;
 		display: flex;
 		flex: 1 1 auto;
 		flex-direction: column;
 		min-height: 0;
 		overflow: hidden;
+	}
+
+	.pages-nav-v2__menu::before,
+	.pages-nav-v2__menu::after {
+		content: '';
+		position: absolute;
+		inset-inline: 0;
+		height: var(--nav-scroll-fade-size);
+		z-index: 40;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+
+	.pages-nav-v2__menu::before {
+		top: 0;
+		background: linear-gradient(to bottom, #f6f9fc, transparent);
+	}
+
+	.pages-nav-v2__menu::after {
+		bottom: 0;
+		background: linear-gradient(to top, #f6f9fc, transparent);
+	}
+
+	.pages-nav-v2__menu:has(
+			.pages-nav-v2__scroll[data-nav-fade-top='true']
+		)::before {
+		opacity: 1;
+	}
+
+	.pages-nav-v2__menu:has(
+			.pages-nav-v2__scroll[data-nav-fade-bottom='true']
+		)::after {
+		opacity: 1;
 	}
 
 	.pages-nav-v2__scroll-btn {
@@ -217,65 +253,17 @@ body.navigation-preview {
 	}
 
 	.pages-nav-v2__scroll {
-		--nav-scroll-fade-size: 28px;
 		flex: 1 1 auto;
 		min-height: 0;
 		min-width: 0;
 		overflow-y: auto;
+		overscroll-behavior: none;
+		touch-action: pan-y;
 		padding-block: 8px;
 		scrollbar-width: thin;
 		scrollbar-color: transparent transparent;
 		scrollbar-gutter: stable;
 		transition: scrollbar-color 0.28s ease;
-		-webkit-mask-image: none;
-		mask-image: none;
-	}
-
-	.pages-nav-v2__scroll[data-nav-fade-top='true'] {
-		-webkit-mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			#000 var(--nav-scroll-fade-size),
-			#000 100%
-		);
-		mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			#000 var(--nav-scroll-fade-size),
-			#000 100%
-		);
-	}
-
-	.pages-nav-v2__scroll[data-nav-fade-bottom='true'] {
-		-webkit-mask-image: linear-gradient(
-			to bottom,
-			#000 0,
-			#000 calc(100% - var(--nav-scroll-fade-size)),
-			transparent 100%
-		);
-		mask-image: linear-gradient(
-			to bottom,
-			#000 0,
-			#000 calc(100% - var(--nav-scroll-fade-size)),
-			transparent 100%
-		);
-	}
-
-	.pages-nav-v2__scroll[data-nav-fade-top='true'][data-nav-fade-bottom='true'] {
-		-webkit-mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			#000 var(--nav-scroll-fade-size),
-			#000 calc(100% - var(--nav-scroll-fade-size)),
-			transparent 100%
-		);
-		mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			#000 var(--nav-scroll-fade-size),
-			#000 calc(100% - var(--nav-scroll-fade-size)),
-			transparent 100%
-		);
 	}
 
 	.pages-nav-v2__scroll::-webkit-scrollbar {
@@ -306,7 +294,13 @@ body.navigation-preview {
 	.pages-nav-v2__content {
 		padding-top: 0;
 		padding-left: 8px;
-		padding-right: 4px;
+		padding-right: 8px;
+		max-width: 100%;
+		min-width: 0;
+		/* clip, not hidden: overflow-x:hidden computes overflow-y to auto
+		   and creates a nested scroller that eats the wheel. */
+		overflow-x: clip;
+		overflow-y: visible;
 	}
 
 	#pages-nav .pages-nav-v2__content ul[id^='nav-tree'] {
@@ -322,6 +316,7 @@ body.navigation-preview {
 		width: 100%;
 		margin: 0;
 		padding: 0;
+		flex-shrink: 0;
 	}
 
 	#pages-nav .pages-nav-v2__heading {
@@ -379,8 +374,7 @@ body.navigation-preview {
 		background-color: transparent;
 		transition:
 			background-color 0.12s ease,
-			color 0.12s ease,
-			border-color 0.12s ease;
+			color 0.12s ease;
 	}
 
 	#pages-nav .nav-v2-nav-text {
@@ -393,16 +387,17 @@ body.navigation-preview {
 		font-weight: 400;
 	}
 
-	#pages-nav a.sidebar-link.nav-v2-link:not(.current):hover {
+	#pages-nav a.sidebar-link.nav-v2-link:hover,
+	#pages-nav a.sidebar-link.nav-v2-link:active,
+	#pages-nav a.sidebar-link.nav-v2-link.nav-v2-hold-hover {
 		background-color: #ecf1f9;
 		color: #1d2a3e;
 	}
 
 	#pages-nav a.sidebar-link.nav-v2-link.current {
 		position: relative;
-		color: #0b64dd;
-		background-color: transparent;
 		font-weight: 400;
+		transition: none;
 	}
 
 	#pages-nav a.sidebar-link.nav-v2-link.current .nav-v2-nav-text,
@@ -414,8 +409,30 @@ body.navigation-preview {
 		font-weight: 600;
 	}
 
-	#pages-nav a.sidebar-link.nav-v2-link.current:hover {
-		color: #0b64dd;
+	/* Hold the hover look until the delayed blue snap. Do not depend on
+	   :hover — inserting a subtree drops it for a frame and blinks the row. */
+	#pages-nav a.sidebar-link.nav-v2-link.current:not(.nav-v2-current-ready),
+	#pages-nav
+		a.sidebar-link.nav-v2-link.current:not(.nav-v2-current-ready):hover,
+	#pages-nav
+		a.sidebar-link.nav-v2-link.current:not(.nav-v2-current-ready):active {
+		color: #1d2a3e !important;
+		background-color: #ecf1f9;
+	}
+
+	#pages-nav a.sidebar-link.nav-v2-link.current.nav-v2-current-ready,
+	#pages-nav a.sidebar-link.nav-v2-link.current.nav-v2-current-ready:hover,
+	#pages-nav a.sidebar-link.nav-v2-link.current.nav-v2-current-ready:active,
+	#pages-nav
+		a.sidebar-link.nav-v2-link.current.nav-v2-current-ready.nav-v2-hold-hover {
+		color: #0b64dd !important;
+		transition: none;
+	}
+
+	#pages-nav a.sidebar-link.nav-v2-link.current.nav-v2-current-ready:hover,
+	#pages-nav a.sidebar-link.nav-v2-link.current.nav-v2-current-ready:active,
+	#pages-nav
+		a.sidebar-link.nav-v2-link.current.nav-v2-current-ready.nav-v2-hold-hover {
 		background-color: #ecf1f9;
 	}
 
@@ -425,6 +442,7 @@ body.navigation-preview {
 
 	#pages-nav .nav-folder-peer {
 		min-width: 0;
+		width: 100%;
 	}
 
 	#pages-nav .nav-folder-chevron,
@@ -457,44 +475,92 @@ body.navigation-preview {
 		/* Tailwind v4 @apply -rotate-90 uses the rotate property; override that, not transform. */
 		rotate: -90deg;
 		transform: none;
+		transition: rotate 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	#pages-nav .peer:has(input[type='checkbox']:checked) .nav-chevron {
 		rotate: 0deg;
 	}
 
+	#pages-nav li.nav-folder {
+		display: flex;
+		flex-direction: column;
+		flex-wrap: nowrap;
+		flex: 0 0 auto;
+		align-self: stretch;
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+		height: auto;
+	}
+
+	#pages-nav .nav-subtree-clip {
+		display: block;
+		flex: 0 0 auto;
+		align-self: stretch;
+		width: 100%;
+		height: 0;
+		min-height: 0;
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	#pages-nav .nav-subtree-clip.nav-subtree-clip--open {
+		height: auto;
+	}
+
+	#pages-nav.nav-no-folder-anim .nav-chevron {
+		transition: none;
+	}
+
 	#pages-nav .nav-subtree {
-		display: none;
 		position: relative;
 		flex-direction: column;
+		justify-content: flex-start;
 		gap: 1px;
-		width: 100%;
-		margin: 8px 0 8px;
-		margin-inline-start: 16px;
+		box-sizing: border-box;
+		width: calc(100% - 16px);
+		max-width: calc(100% - 16px);
+		min-width: 0;
+		min-height: 0;
+		margin: 8px 0 8px 16px;
 		padding: 0;
 		list-style: none;
-		border-inline-start: 1px solid #e3e8f2;
+	}
+
+	/* Before JS wraps (or if it does not): hide with the checkbox. */
+	#pages-nav li.nav-folder > .nav-subtree {
+		display: none;
+	}
+
+	#pages-nav li.nav-folder:has(> .peer input:checked) > .nav-subtree,
+	#pages-nav .nav-subtree-clip > .nav-subtree {
+		display: flex;
+		opacity: 1;
 	}
 
 	#pages-nav .nav-subtree::before {
-		content: none;
-	}
-
-	#pages-nav .peer:has(:checked) ~ .nav-subtree {
-		display: flex;
+		content: '';
+		position: absolute;
+		inset-block: 0;
+		inset-inline-start: 0;
+		z-index: 0;
+		width: 1px;
+		background-color: #e3e8f2;
+		pointer-events: none;
 	}
 
 	#pages-nav .nav-subtree a.sidebar-link.nav-v2-link {
+		position: relative;
+		z-index: 1;
 		border-start-start-radius: 0;
 		border-end-start-radius: 0;
 		border-inline-start: 1px solid transparent;
-		margin-inline-start: -1px;
 		padding-inline-start: 12px;
 		background-clip: padding-box;
 	}
 
 	#pages-nav .nav-subtree a.sidebar-link.nav-v2-link.current {
 		border-inline-start: 2px solid #0b64dd;
-		z-index: 1;
 	}
 }

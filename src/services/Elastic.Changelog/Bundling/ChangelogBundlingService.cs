@@ -183,11 +183,13 @@ public partial class ChangelogBundlingService(
 	IGitHubReleaseService? releaseService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
-	IGitHubCommitRangeService? commitRangeService = null
+	IGitHubCommitRangeService? commitRangeService = null,
+	IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
+	private readonly IEnvironmentVariables? _env = env;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
@@ -531,7 +533,8 @@ public partial class ChangelogBundlingService(
 			input.OutputProducts,
 			input.Repo,
 			input.Owner,
-			featureHidingResult.FeatureIdsToHide
+			featureHidingResult.FeatureIdsToHide,
+			configurationContext?.ProductsConfiguration
 		);
 
 		if (!buildResult.IsValid || buildResult.Data == null)
@@ -688,14 +691,17 @@ public partial class ChangelogBundlingService(
 				var fileName = BundleOutputNaming.ResolveFileName(
 					collector,
 					_fileSystem,
+#pragma warning disable CS0618
 					new BundleOutputNameRequest(
 						primaryProduct,
 						filterResult.Version,
 						input.Repo,
 						profile.Repo,
 						config.Bundle.Repo,
-						input.Config
+						input.Config,
+						_env
 					)
+#pragma warning restore CS0618
 				);
 				outputPath = JoinProfileOutputPath(config, input, fileName);
 			}
@@ -726,8 +732,10 @@ public partial class ChangelogBundlingService(
 			}
 
 			// Profile-level repo/owner/branch takes precedence; fall back to bundle-level defaults
+#pragma warning disable CS0618
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
+#pragma warning restore CS0618
 			branch = profile.Branch ?? config.Bundle.Branch;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
@@ -1030,8 +1038,10 @@ public partial class ChangelogBundlingService(
 		var output = input.Output;
 
 		// Apply repo/owner/branch: CLI takes precedence; fall back to bundle-level config defaults.
+#pragma warning disable CS0618
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
+#pragma warning restore CS0618
 		var branch = input.Branch ?? config.Bundle.Branch;
 
 		// Apply description: CLI takes precedence; fall back to bundle-level config default
@@ -1118,7 +1128,9 @@ public partial class ChangelogBundlingService(
 		// local sourcing, and a CDN base is configured.
 		var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false) || input.ForceLocal;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
+#pragma warning disable CS0618
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
+#pragma warning restore CS0618
 		if (
 			ChangelogEntrySourcing.ShouldSourceFromCdn(
 				authoringRepo,
@@ -1151,7 +1163,17 @@ public partial class ChangelogBundlingService(
 			var fileName = BundleOutputNaming.ResolveFileName(
 				collector,
 				_fileSystem,
-				new BundleOutputNameRequest(primaryProduct, planVersion, input.Repo, profileDef.Repo, config?.Bundle?.Repo, input.Config)
+#pragma warning disable CS0618
+				new BundleOutputNameRequest(
+					primaryProduct,
+					planVersion,
+					input.Repo,
+					profileDef.Repo,
+					config?.Bundle?.Repo,
+					input.Config,
+					_env
+				)
+#pragma warning restore CS0618
 			);
 			outputPath = JoinProfileOutputPath(config, input, fileName);
 		}
@@ -1243,7 +1265,9 @@ public partial class ChangelogBundlingService(
 		var fileName = BundleOutputNaming.ResolveFileNameOrFallback(
 			collector,
 			_fileSystem,
-			new BundleOutputNameRequest(product, version, input.Repo, null, config?.Bundle?.Repo, input.Config)
+#pragma warning disable CS0618
+			new BundleOutputNameRequest(product, version, input.Repo, null, config?.Bundle?.Repo, input.Config, _env)
+#pragma warning restore CS0618
 		);
 		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
 	}

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -16,7 +17,8 @@ public readonly record struct BundleOutputNameRequest(
 	string? CliRepo,
 	string? ProfileRepo,
 	string? BundleRepo,
-	string? ConfigPath
+	string? ConfigPath,
+	IEnvironmentVariables? Env = null
 );
 
 /// <summary>
@@ -103,12 +105,84 @@ public static class BundleOutputNaming
 		return $"{request.Product}-{request.Version}.yaml";
 	}
 
-	internal static string? ResolveAuthoringRepo(IFileSystem fileSystem, BundleOutputNameRequest request)
+	/// <summary>
+	/// Validates <paramref name="bundleRepo"/> against the authoring repository derived from
+	/// <c>GITHUB_REPOSITORY</c> and the git remote. Emits nothing when <paramref name="bundleRepo"/>
+	/// is unset (the target state). Emits an informational hint when it matches, and a hard error when
+	/// it points at a different repository (which would silently repoint the S3 pool).
+	/// </summary>
+	public static void ValidateBundleRepo(
+		IDiagnosticsCollector collector,
+		IFileSystem fileSystem,
+		string? configPath,
+		string? bundleRepo,
+		IEnvironmentVariables? env = null
+	)
 	{
-		var configured = FirstNonEmpty(request.CliRepo, request.ProfileRepo, request.BundleRepo);
-		var normalized = ChangelogRepoOwnerResolver.NormalizeRepo(configured);
-		return !string.IsNullOrWhiteSpace(normalized) ? normalized : TryGitOriginRepo(fileSystem, request.ConfigPath);
+		if (string.IsNullOrWhiteSpace(bundleRepo))
+			return;
+
+		var normalizedBundleRepo = ChangelogRepoOwnerResolver.NormalizeRepo(bundleRepo);
+
+		// Derive the authoritative repo WITHOUT the bundle.repo value itself.
+		var githubRepository = env != null
+			? env.GetEnvironmentVariable("GITHUB_REPOSITORY")
+			: Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+		var trueRepo = ChangelogRepoOwnerResolver.NormalizeRepo(githubRepository) ?? TryGitOriginRepo(fileSystem, configPath);
+
+		if (string.IsNullOrWhiteSpace(trueRepo))
+			return; // can't validate without an authoritative source — skip silently
+
+		if (string.Equals(normalizedBundleRepo, trueRepo, StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitWarning(
+				string.Empty,
+				$"bundle.repo '{bundleRepo}' is redundant — it matches the derived repository '{trueRepo}'. " +
+					"Remove it from changelog.yml; the repository is now derived automatically."
+			);
+		}
+		else
+		{
+			collector.EmitError(
+				string.Empty,
+				$"bundle.repo '{bundleRepo}' does not match the repository running this command ('{trueRepo}'). " +
+					"This would silently repoint the S3 upload pool and GitHub API calls to a different repository. " +
+					"Remove bundle.repo from changelog.yml to derive it automatically."
+			);
+		}
 	}
+
+	/// <summary>
+	/// Resolves the authoring repository for any changelog command. Precedence:
+	/// explicit value(s), <c>GITHUB_REPOSITORY</c> env var, git <c>origin</c>.
+	/// </summary>
+	public static string? ResolveRepo(IFileSystem fileSystem, string? configPath, params string?[] candidates) =>
+		ResolveRepo(fileSystem, configPath, null, candidates);
+
+	/// <summary>
+	/// Resolves the authoring repository with an injectable environment for testing.
+	/// When <paramref name="env"/> is null the real <see cref="Environment.GetEnvironmentVariable"/> is used.
+	/// </summary>
+	internal static string? ResolveRepo(IFileSystem fileSystem, string? configPath, IEnvironmentVariables? env, params string?[] candidates)
+	{
+		var configured = FirstNonEmpty(candidates);
+		var normalized = ChangelogRepoOwnerResolver.NormalizeRepo(configured);
+		if (!string.IsNullOrWhiteSpace(normalized))
+			return normalized;
+
+		// GITHUB_REPOSITORY is "owner/repo"; NormalizeRepo takes the last segment.
+		var githubRepository = env != null
+			? env.GetEnvironmentVariable("GITHUB_REPOSITORY")
+			: Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+		var ghNormalized = ChangelogRepoOwnerResolver.NormalizeRepo(githubRepository);
+		if (!string.IsNullOrWhiteSpace(ghNormalized))
+			return ghNormalized;
+
+		return TryGitOriginRepo(fileSystem, configPath);
+	}
+
+	internal static string? ResolveAuthoringRepo(IFileSystem fileSystem, BundleOutputNameRequest request) =>
+		ResolveRepo(fileSystem, request.ConfigPath, request.Env, request.CliRepo, request.ProfileRepo, request.BundleRepo);
 
 	private static string? FirstNonEmpty(params string?[] values)
 	{

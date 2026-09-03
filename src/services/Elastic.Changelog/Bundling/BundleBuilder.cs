@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -20,20 +21,22 @@ public class BundleBuilder
 	/// <param name="collector">The diagnostics collector.</param>
 	/// <param name="entries">Matched changelog files to bundle.</param>
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
-	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
-	/// <param name="owner">Optional GitHub owner to set on products for link generation.</param>
+	/// <param name="repo">Fallback GitHub repository name when a product cannot be resolved from <paramref name="productsConfiguration"/>.</param>
+	/// <param name="owner">GitHub owner for link generation.</param>
 	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
+	/// <param name="productsConfiguration">Optional product catalogue used to resolve per-product repository names.</param>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo = null,
 		string? owner = null,
-		HashSet<string>? hideFeatures = null
+		HashSet<string>? hideFeatures = null,
+		ProductsConfiguration? productsConfiguration = null
 	)
 	{
 		// Build products list
-		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
+		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner, productsConfiguration);
 
 		// Build entries list
 		var bundledEntries = BuildResolvedEntries(collector, entries);
@@ -58,7 +61,8 @@ public class BundleBuilder
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo,
-		string? owner
+		string? owner,
+		ProductsConfiguration? productsConfiguration
 	)
 	{
 		List<BundledProduct> bundledProducts;
@@ -75,7 +79,7 @@ public class BundleBuilder
 						ProductId = p.Product ?? "",
 						Target = p.Target == "*" ? null : p.Target,
 						Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
-						Repo = repo,
+						Repo = ResolveProductRepo(p.Product, productsConfiguration, repo),
 						Owner = owner
 					}
 				)
@@ -108,7 +112,7 @@ public class BundleBuilder
 						pv.product,
 						string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
 						pv.lifecycle,
-						repo,
+						ResolveProductRepo(pv.product, productsConfiguration, repo),
 						owner
 					)
 				)
@@ -139,6 +143,25 @@ public class BundleBuilder
 		}
 
 		return bundledProducts;
+	}
+
+	/// <summary>
+	/// Resolves the GitHub repository name for a product. Looks up the product in
+	/// <paramref name="productsConfiguration"/> and returns its <c>Repository</c> field
+	/// (which is already defaulted to the product ID when not explicitly set). Falls back
+	/// to <paramref name="bundleRepo"/> when the product is not found in the catalogue.
+	/// </summary>
+	private static string? ResolveProductRepo(string? productId, ProductsConfiguration? productsConfiguration, string? bundleRepo)
+	{
+		if (string.IsNullOrWhiteSpace(productId) || productsConfiguration == null)
+			return bundleRepo;
+
+		// product.Repository is the authoritative per-product repo when explicitly set in products.yml.
+		// When null (product created without an explicit repository: field), fall back to the bundle-level value.
+		if (productsConfiguration.Products.TryGetValue(productId, out var product))
+			return product.Repository ?? bundleRepo;
+
+		return bundleRepo;
 	}
 
 	private static Lifecycle? ParseLifecycle(string? value)

@@ -341,8 +341,11 @@ internal sealed partial class ChangelogCommands(
 			config?.FullName,
 			ctx
 		);
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 
 		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
@@ -619,8 +622,11 @@ internal sealed partial class ChangelogCommands(
 			config?.FullName,
 			ctx
 		);
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
 		var extractReleaseNotes = noExtractReleaseNotes ? false : (bool?)null;
@@ -860,8 +866,11 @@ internal sealed partial class ChangelogCommands(
 					configurationContext,
 					_fileSystem
 				).LoadChangelogConfiguration(collector, config?.FullName, ctx);
+#pragma warning disable CS0618
+				BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 				var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 				var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 
 				if (string.IsNullOrWhiteSpace(resolvedRepo))
 				{
@@ -1303,8 +1312,11 @@ internal sealed partial class ChangelogCommands(
 				configurationContext,
 				_fileSystem
 			).LoadChangelogConfiguration(collector, config?.FullName, ctx);
+#pragma warning disable CS0618
+			BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 
 			if (string.IsNullOrWhiteSpace(resolvedRepo))
 			{
@@ -1562,7 +1574,7 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Create changelog entries from the PRs referenced in a GitHub release.</summary>
-	/// <param name="repo">Required: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch" which defaults to elastic/elasticsearch)</param>
+	/// <param name="repo">Optional: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch"). When omitted, falls back to bundle.repo in changelog.yml, then the GITHUB_REPOSITORY env var, then the git remote origin.</param>
 	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="description">Optional: Bundle description text with placeholder support. Supports VERSION, LIFECYCLE, OWNER, and REPO placeholders. Overrides bundle.description from config.</param>
@@ -1573,7 +1585,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> GhRelease(
-		[Argument] string repo,
+		[Argument] string repo = "",
 		[Argument] string version = "latest",
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? description = null,
@@ -1597,6 +1609,29 @@ internal sealed partial class ChangelogCommands(
 			? output
 			: (bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory);
 
+		// Validate bundle.repo if set — mismatch with running repo is a hard error.
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
+#pragma warning restore CS0618
+
+		// Repo precedence: positional arg > bundle.repo > GITHUB_REPOSITORY env var > git remote origin
+#pragma warning disable CS0618
+		var resolvedRepo = BundleOutputNaming.ResolveRepo(_fileSystem, config?.FullName, repo, bundleConfig?.Bundle?.Repo);
+#pragma warning restore CS0618
+		if (string.IsNullOrWhiteSpace(resolvedRepo))
+		{
+			collector.EmitError(
+				string.Empty,
+				"changelog gh-release could not determine the repository. " +
+					"Pass <repo> as the first argument, set bundle.repo in changelog.yml, " +
+					"or run where GITHUB_REPOSITORY or a git remote (github.com) is available."
+			);
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, _fileSystem, releaseService, prService);
@@ -1613,7 +1648,7 @@ internal sealed partial class ChangelogCommands(
 
 		var input = new CreateChangelogsFromReleaseArguments
 		{
-			Repository = repo,
+			Repository = resolvedRepo,
 			Version = version,
 			Config = config?.FullName,
 			Output = resolvedOutput,
@@ -2417,9 +2452,11 @@ internal sealed partial class ChangelogCommands(
 		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
 			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
 
+#pragma warning disable CS0618
 		var explicitRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : bundleConfig?.Bundle?.Repo;
 		var resolvedRepo = explicitRepo ?? gitRepo;
 		var resolvedOwner = ChangelogRepoOwnerResolver.ResolveOwner(ownerCli ?? bundleConfig?.Bundle?.Owner, explicitRepo, gitOwner);
+#pragma warning restore CS0618
 
 		// The producer branch is the branch being published: --branch, else the current checkout's branch.
 		// bundle.branch is intentionally not consulted here — it selects which pool to read when bundling.

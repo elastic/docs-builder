@@ -33,7 +33,7 @@ else
 					</article>
 				</main>
 			</div>
-			@await RenderPartialAsync(_ApiToc.Create(Model.TocItems.ToArray()))
+			@await RenderPartialAsync(_ApiToc.Create(Model))
 		</div>
 		@await RenderPartialAsync(_ApiPagesNav.Create(Model))
 	</div>
