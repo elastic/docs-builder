@@ -55,9 +55,6 @@ public static partial class ApiMarkdown
 		return RewriteIntraApiLinks(escaped, apiBaseUrl);
 	}
 
-	/// <summary>
-	/// Spec description in. Markdown out. Never null. Idempotent.
-	/// </summary>
 	internal static string Clean(string? markdown)
 	{
 		if (string.IsNullOrEmpty(markdown))
