@@ -29,6 +29,7 @@ else
 				<main id="content-container" class="w-full flex flex-col relative pb-12 overflow-x-hidden">
 					<article id="markdown-content" class="content-container markdown-content md:px-4">
 						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						@await RenderPartialAsync(_ApiMobileNavOpen.Create(Model))
 						@await RenderBodyAsync()
 					</article>
 				</main>
