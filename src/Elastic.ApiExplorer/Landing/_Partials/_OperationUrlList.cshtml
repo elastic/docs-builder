@@ -4,10 +4,10 @@
 		{
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			<li class="api-url-list-item">
-				<a href="@overload.Url" class="current api-url-list-item-landing" @Model.HtmxAttributes>
+				<span class="api-url-row">
 					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
 					<span class="api-url">@overload.Model.Route</span>
-				</a>
+				</span>
 			</li>
 		}
 		</ul>

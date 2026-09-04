@@ -20,7 +20,7 @@ public record ExternalDocLink(string Url, bool IsElasticDocs)
 /// <summary>A "See X type →" link to a schema type's dedicated page.</summary>
 public record TypePageLink(string TypeName, string? Url);
 
-/// <summary>A single validation constraint line, e.g. <c>min length: 5</c> or <c>default: &lt;code&gt;true&lt;/code&gt;</c>.</summary>
+/// <summary>A single validation constraint, e.g. <c>min: 5</c> or <c>default: 10</c>.</summary>
 public record ConstraintDisplay(string Text, string? Code = null);
 
 /// <summary>How a union renders inline on a property row.</summary>

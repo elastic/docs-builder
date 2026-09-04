@@ -3,6 +3,7 @@
  * Handles expand/collapse toggles, scroll state, and find-in-page support
  * for both OperationView and SchemaView pages.
  */
+import { applyParamSummaryFit } from './api-param-summary'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
@@ -159,6 +160,72 @@ function expandUnionContainer(container: HTMLElement): void {
     }
 }
 
+function paramSectionBody(section: HTMLElement): HTMLElement | null {
+    return section.querySelector<HTMLElement>(
+        ':scope > .api-param-section-body'
+    )
+}
+
+function expandParamSection(section: HTMLElement): void {
+    const toggle = section.querySelector<HTMLButtonElement>(
+        ':scope > .api-param-section-header > .api-param-section-toggle'
+    )
+    const body = paramSectionBody(section)
+
+    section.classList.remove('collapsed')
+    section.classList.add('expanded')
+    toggle?.setAttribute('aria-expanded', 'true')
+    body?.removeAttribute('hidden')
+}
+
+function collapseParamSection(section: HTMLElement): void {
+    const toggle = section.querySelector<HTMLButtonElement>(
+        ':scope > .api-param-section-header > .api-param-section-toggle'
+    )
+    const body = paramSectionBody(section)
+    const summary = section.querySelector<HTMLElement>('[data-param-summary]')
+
+    section.classList.remove('expanded')
+    section.classList.add('collapsed')
+    toggle?.setAttribute('aria-expanded', 'false')
+    if (body && supportsHiddenUntilFound)
+        body.setAttribute('hidden', 'until-found')
+    else body?.setAttribute('hidden', '')
+
+    if (summary) requestAnimationFrame(() => applyParamSummaryFit(summary))
+}
+
+let paramSummaryObserver: ResizeObserver | null = null
+let paramHashListenerBound = false
+
+function initParamSummaries(): void {
+    paramSummaryObserver?.disconnect()
+    paramSummaryObserver = new ResizeObserver((entries) => {
+        for (const entry of entries)
+            applyParamSummaryFit(entry.target as HTMLElement)
+    })
+
+    document
+        .querySelectorAll<HTMLElement>('[data-param-summary]')
+        .forEach((summary) => {
+            applyParamSummaryFit(summary)
+            paramSummaryObserver?.observe(summary)
+        })
+
+    if (!paramHashListenerBound) {
+        paramHashListenerBound = true
+        window.addEventListener('hashchange', expandParamSectionForHash)
+    }
+}
+
+function expandParamSectionForHash(): void {
+    const id = window.location.hash.slice(1)
+    if (!id) return
+    const target = document.getElementById(id)
+    const section = target?.closest<HTMLElement>('[data-param-section]')
+    if (section) expandParamSection(section)
+}
+
 /**
  * Initialize API docs for OperationView pages
  */
@@ -211,6 +278,19 @@ function initOperationView(section: HTMLElement): void {
                     if (container?.classList.contains('response-fields')) {
                         expandResponseFields(container)
                     }
+                })
+            })
+
+        section
+            .querySelectorAll<HTMLElement>(
+                '.api-param-section-body[hidden="until-found"]'
+            )
+            .forEach((body) => {
+                body.addEventListener('beforematch', function () {
+                    const container = body.closest<HTMLElement>(
+                        '[data-param-section]'
+                    )
+                    if (container) expandParamSection(container)
                 })
             })
     }
@@ -364,6 +444,22 @@ function initGlobalClickHandlers(): void {
             '#elastic-api-v3, #schema-definition'
         ) as HTMLElement
         if (!apiSection) return
+
+        const paramSectionToggle = target.closest<HTMLButtonElement>(
+            '.api-param-section-toggle'
+        )
+        if (paramSectionToggle) {
+            e.preventDefault()
+            e.stopPropagation()
+            const section = paramSectionToggle.closest<HTMLElement>(
+                '[data-param-section]'
+            )
+            if (!section) return
+            if (section.classList.contains('expanded'))
+                collapseParamSection(section)
+            else expandParamSection(section)
+            return
+        }
 
         const responseFieldsToggle = target.closest<HTMLButtonElement>(
             '.response-fields-toggle'
@@ -902,8 +998,11 @@ export function initApiDocs(): void {
     initApiCodeLineNumbers()
 
     // Check for OperationView page - initialize view-specific features
+    initParamSummaries()
+
     const operationSection = document.getElementById('elastic-api-v3')
     if (operationSection) {
         initOperationView(operationSection)
+        expandParamSectionForHash()
     }
 }

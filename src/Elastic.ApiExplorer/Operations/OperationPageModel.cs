@@ -140,6 +140,10 @@ public partial record OperationPageModel
 	public bool HasMultipleOverloads => Overloads.Count > 1;
 	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
 	public required IReadOnlyList<ApiQueryParameter> QueryParameters { get; init; }
+
+	public IReadOnlyList<string> PathParameterNames => NamesOf(PathParameters.Select(static p => p.Name));
+
+	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Select(static q => q.Parameter.Name));
 	public required string? DescriptionMarkdown { get; init; }
 	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
 	public required string RequestContentType { get; init; }
@@ -736,6 +740,8 @@ public partial record OperationPageModel
 			ArrayItemProperties = arrayItemProperties
 		};
 	}
+
+	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];
 
 	private static IOpenApiSchema? ResolveArrayItems(IOpenApiSchema schema, SchemaAnalyzer analyzer)
 	{

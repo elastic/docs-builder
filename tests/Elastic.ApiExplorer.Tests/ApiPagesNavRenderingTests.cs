@@ -64,5 +64,43 @@ public class ApiPagesNavRenderingTests
 		html.Should().NotContain("api-version-switcher");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
+		html.Should().NotContain("hx-preserve");
+	}
+
+	[Fact]
+	public async Task Render_PreservesTheNavAcrossHtmxSwapsWhenPreviewEnabled()
+	{
+		var fs = new FileSystem();
+		var context = new BuildContext(
+			new DiagnosticsCollector([]),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			TestHelpers.CreateConfigurationContext(fs)
+		);
+		var navigationItem = new LandingNavigationItem("/api/doc/elasticsearch/").Index;
+		var model = new ApiLayoutViewModel
+		{
+			DocsBuilderVersion = "test",
+			DocSetName = "Api Explorer",
+			Description = string.Empty,
+			CurrentNavigationItem = navigationItem,
+			Previous = null,
+			Next = null,
+			NavigationHtml = "<nav>tree</nav>",
+			UrlPathPrefix = string.Empty,
+			AllowIndexing = false,
+			CanonicalBaseUrl = null,
+			GoogleTagManager = new GoogleTagManagerConfiguration(),
+			Optimizely = new OptimizelyConfiguration(),
+			Features = new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true }),
+			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
+			TocItems = [],
+			MarkdownUrl = "/api/doc/elasticsearch.md",
+			Breadcrumbs = ApiBreadcrumbTrail.Empty
+		};
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("id=\"pages-nav\"");
+		html.Should().Contain("hx-preserve");
 	}
 }

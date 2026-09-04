@@ -66,6 +66,19 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	}
 
 	[Fact]
+	public async Task Operation_QueryParameters_RenderCollapsedWithNameSummary()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("data-param-section");
+		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("id=\"query-params-list\"");
+		html.Should().Contain("api-param-summary");
+		html.Should().Contain("data-param-item");
+	}
+
+	[Fact]
 	public async Task Operation_EmptySpecDescription_ShowsSupplemental()
 	{
 		var src = SearchOperation();
@@ -290,6 +303,17 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			.IndexOf("id=\"getting-started\"", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("api-overview", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task Tag_OverviewRows_LinkTheTitleNotTheMethodPath()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(nav.Index.Model, nav);
+
+		html.Should().Contain("api-overview-title");
+		html.Should().Contain("api-url-row");
+		html.Should().NotContain("api-url-list-item-landing");
 	}
 
 	[Fact]

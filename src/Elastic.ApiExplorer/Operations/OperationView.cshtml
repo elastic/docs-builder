@@ -20,11 +20,11 @@
 		<div class="api-title-badges">
 			@if (operation.Deprecated)
 			{
-				<span class="deprecated-badge">deprecated</span>
+				<span class="deprecated-badge type-status">deprecated</span>
 			}
 			@if (pageModel.IsBeta)
 			{
-				<span class="beta-badge">Beta</span>
+				<span class="beta-badge type-status">Beta</span>
 			}
 		</div>
 	}
@@ -70,7 +70,7 @@
 					@(await RenderPartialAsync<_EndpointCopyButton, string>(overload.Model.Route))
 					@if (isDeprecated)
 					{
-						<span class="deprecated-badge">deprecated</span>
+						<span class="deprecated-badge type-status">deprecated</span>
 					}
 				</label>
 			</li>
@@ -123,7 +123,9 @@
 	}
 	@if (pageModel.PathParameters.Count > 0)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Parameters", "parameters")))
+		<div class="api-param-section collapsed" data-param-section>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Parameters", "parameters", pageModel.PathParameterNames)))
+		<div class="api-param-section-body" id="parameters-list" hidden="until-found">
 		<dl class="property-list">
 		@foreach (var path in pageModel.PathParameters)
 		{
@@ -133,18 +135,20 @@
 						<code>@path.Name</code>
 						@if (path.Required)
 						{
-							<span class="required">required</span>
+							<span class="required type-status">required</span>
 						}
 						@if (path.Deprecated is true)
 						{
-							<span class="deprecated-badge">deprecated</span>
+							<span class="deprecated-badge type-status">deprecated</span>
 						}
 					</a>
 				</dt>
-				<dd>@path.DescriptionHtml</dd>
-			</div>
+			<dd>@path.DescriptionHtml</dd>
+		</div>
 		}
 		</dl>
+		</div>
+		</div>
 	}
 
 	@if (pageModel.AuthSchemes.Count > 0)
@@ -162,7 +166,9 @@
 
 	@if (pageModel.QueryParameters.Count > 0)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Query Parameters", "query-params")))
+		<div class="api-param-section collapsed" data-param-section>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query Parameters", "query-params", pageModel.QueryParameterNames)))
+		<div class="api-param-section-body" id="query-params-list" hidden="until-found">
 		<dl class="property-list">
 			@foreach (var qp in pageModel.QueryParameters)
 			{
@@ -177,19 +183,15 @@
 							}
 							@if (qs.Required)
 							{
-								<span class="required">required</span>
+								<span class="required type-status">required</span>
 							}
 							@if (qs.Deprecated == true)
 							{
-								<span class="deprecated-badge">deprecated</span>
+								<span class="deprecated-badge type-status">deprecated</span>
 							}
 						</a>
 					</dt>
 					<dd>@qp.DescriptionHtml</dd>
-					@if (qp.Type is not null)
-					{
-						@(await RenderPartialAsync<_ValidationConstraints, IReadOnlyList<ConstraintDisplay>>(qp.Constraints))
-					}
 				@if (qp.UnionOptions.Count > 0 && qp.EnumValues.Count == 0)
 				{
 					<dd class="union-options">
@@ -201,7 +203,7 @@
 							{
 								<span class="union-inline-separator">or</span>
 							}
-							<code class="@(unionOpt.IsTypeOption ? "union-type-option" : "union-option")">@unionOpt.Text</code>
+							<code class="@SchemaHelpers.UnionOptionClasses(unionOpt.IsTypeOption, unionOpt.Text)">@unionOpt.Text</code>
 						}
 					</dd>
 				}
@@ -218,6 +220,8 @@
 				</div>
 			}
 		</dl>
+		</div>
+		</div>
 	}
 	@if (operation.RequestBody is not null)
 	{
@@ -340,11 +344,11 @@
 												}
 												@if (header.Header?.Required == true)
 												{
-													<span class="required">required</span>
+													<span class="required type-status">required</span>
 												}
 												@if (header.Header?.Deprecated == true)
 												{
-													<span class="deprecated-badge">deprecated</span>
+													<span class="deprecated-badge type-status">deprecated</span>
 												}
 											</a>
 										</dt>

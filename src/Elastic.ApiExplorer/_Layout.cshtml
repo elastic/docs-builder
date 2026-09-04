@@ -25,7 +25,7 @@ else
 		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
 			@* Two-column mode is driven by CSS :has(#api-examples-panel.api-examples-panel). *@
 			@* display:grid at ≥1024px is set in api-docs.css (:has examples) — do not use lg:grid (1280). *@
-			<div class="min-w-0 flex flex-col md:order-2 gap-y-4 gap-x-6 api-content-grid">
+			<div id="api-content-grid" class="min-w-0 flex flex-col md:order-2 gap-y-4 gap-x-6 api-content-grid">
 				<div class="api-page-main min-w-0 pt-6">
 					<main id="content-container" class="w-full flex flex-col relative pb-12 overflow-x-hidden">
 						<article id="markdown-content" class="content-container markdown-content min-w-0">
