@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
@@ -33,6 +34,10 @@ public record ApiRenderContext(
 	public ILogger? ApiExplorerLog { get; init; }
 
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
+
+	public IReadOnlyList<ApiCatalogEntry> CatalogEntries { get; init; } = [];
+
+	public string? CurrentApiKey { get; init; }
 
 	/// <summary>Product bound to this API key, or <see langword="null"/> on the combined catalog.</summary>
 	public Product? Product { get; init; }

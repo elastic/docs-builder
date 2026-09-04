@@ -3,26 +3,49 @@
 	<nav
 		id="pages-nav"
 		class="sidebar-nav h-full simple-scrollbar">
-		@if (Model.VersionSwitcherItems.Count > 1)
+		@if (Model.HubSwitcherItems.Count > 0 || Model.VersionSwitcherItems.Count > 1)
 		{
-			<div class="sticky top-0 z-10 bg-white px-4 pt-4 pb-2">
-				<label for="api-version-switcher" class="sr-only">API version</label>
-				<select
-					id="api-version-switcher"
-					class="w-full border border-grey-20 rounded-sm font-sans font-semibold text-sm pl-3 pr-8 py-2 bg-white hover:border-grey-40 focus:outline-none focus:ring-2 focus:ring-blue-elastic-50 cursor-pointer"
-					onchange="window.location.href = this.value">
-					@foreach (var item in Model.VersionSwitcherItems)
-					{
-						if (item.Selected)
+			<div class="sticky top-0 z-10 bg-white px-4 pt-4 pb-2 flex flex-col gap-2">
+				@if (Model.HubSwitcherItems.Count > 0)
+				{
+					<label for="api-hub-switcher" class="sr-only">API product</label>
+					<select
+						id="api-hub-switcher"
+						class="w-full border border-grey-20 rounded-sm font-sans font-semibold text-sm pl-3 pr-8 py-2 bg-white hover:border-grey-40 focus:outline-none focus:ring-2 focus:ring-blue-elastic-50 cursor-pointer"
+						onchange="window.location.href = this.value">
+						@foreach (var item in Model.HubSwitcherItems)
 						{
-							<option value="@item.Url" selected>@item.Label</option>
+							if (item.Selected)
+							{
+								<option value="@item.Url" selected>@item.Label</option>
+							}
+							else
+							{
+								<option value="@item.Url">@item.Label</option>
+							}
 						}
-						else
+					</select>
+				}
+				@if (Model.VersionSwitcherItems.Count > 1)
+				{
+					<label for="api-version-switcher" class="sr-only">API version</label>
+					<select
+						id="api-version-switcher"
+						class="w-full border border-grey-20 rounded-sm font-sans font-semibold text-sm pl-3 pr-8 py-2 bg-white hover:border-grey-40 focus:outline-none focus:ring-2 focus:ring-blue-elastic-50 cursor-pointer"
+						onchange="window.location.href = this.value">
+						@foreach (var item in Model.VersionSwitcherItems)
 						{
-							<option value="@item.Url">@item.Label</option>
+							if (item.Selected)
+							{
+								<option value="@item.Url" selected>@item.Label</option>
+							}
+							else
+							{
+								<option value="@item.Url">@item.Label</option>
+							}
 						}
-					}
-				</select>
+					</select>
+				}
 			</div>
 		}
 		@(new HtmlString(Model.NavigationHtml))
