@@ -23,8 +23,12 @@ groups:
         datatype: bool
         default: "true"
         applies_to:
-          stack: ga 9.2
+          stack: preview 9.2
           ech: ga
+          ece: ga
+          eck: ga
+          self: ga
+          serverless: ga
         options:
           - option: "true"
             description: Turns the feature on.
@@ -41,12 +45,19 @@ groups:
         default: strict
         applies_to:
           stack: ga 9.2
+          ech: ga
+          ece: ga
+          eck: ga
+          self: ga
+          serverless: ga
         options:
           - option: strict
             description: Full validation.
           - option: lenient
             description: Reduced validation.
-        warning: Lenient mode may hide configuration mistakes.
+        warning: |
+          :applies_to: stack: ga 9.2
+          Lenient mode may hide configuration mistakes.
         important: Strict mode is recommended for production.
         deprecation_details: The `lenient` option will be deprecated in a future release.
         example: |
@@ -76,7 +87,11 @@ groups:
         default: "[]"
         applies_to:
           stack: ga 9.2
+          ech: unavailable
+          ece: unavailable
+          eck: unavailable
           self: ga
+          serverless: unavailable
         settings:
           - setting: "[n].url"
             id: xpack-example-hosts-url
@@ -87,7 +102,7 @@ groups:
           - setting: "[n].mode"
             id: xpack-example-hosts-mode
             description: |
-              Child setting overrides applies_to.
+              Child setting replaces the parent applies_to map.
             datatype: enum
             default: strict
             tip: Keep all host modes aligned to simplify troubleshooting and reduce drift.
@@ -98,6 +113,11 @@ groups:
                 description: Allows lenient checks.
             applies_to:
               stack: preview 9.3
+              ech: unavailable
+              ece: unavailable
+              eck: unavailable
+              self: ga
+              serverless: unavailable
             example: |
               ```yaml
               xpack.example.hosts:
