@@ -181,7 +181,7 @@ public record OperationPageModel
 					new PropertyTreeScope { Prefix = "req", IsRequest = true, DescriptionOverrides = supplemental?.RequestBodyOverrides }
 				)
 				: null,
-			DescriptionMarkdown = supplemental?.DescriptionOr(operation.Description) ?? operation.Description,
+			DescriptionMarkdown = ApiMarkdown.Clean(supplemental?.DescriptionOr(operation.Description) ?? operation.Description),
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),

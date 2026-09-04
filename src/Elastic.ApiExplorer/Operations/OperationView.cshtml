@@ -101,9 +101,9 @@
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown))
 	{
 		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Description", "description", Model.Operation.Route)))
-		<p>
+		<div class="api-operation-description">
 			@(Model.RenderMarkdown(pageModel.DescriptionMarkdown))
-		</p>
+		</div>
 		@if (pageModel.ExternalDocs is not null)
 		{
 			<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>

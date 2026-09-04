@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
@@ -18,6 +19,19 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public static partial class ApiMarkdown
 {
+	private const string AllMethodsHeading = "**All methods and paths for this operation:**";
+
+	private static readonly FrozenDictionary<string, string> AdmonitionDirectives = new Dictionary<string, string>(
+		StringComparer.OrdinalIgnoreCase
+	)
+	{
+		["NOTE"] = "note",
+		["TIP"] = "tip",
+		["WARNING"] = "warning",
+		["IMPORTANT"] = "important",
+		["CAUTION"] = "warning"
+	}.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+
 	public static HtmlString Render(ApiRenderContext context, string? markdown)
 	{
 		if (string.IsNullOrEmpty(markdown))
@@ -40,6 +54,53 @@ public static partial class ApiMarkdown
 		var escaped = MustachePattern().Replace(markdown, match => $"`{match.Value}`");
 		return RewriteIntraApiLinks(escaped, apiBaseUrl);
 	}
+
+	/// <summary>
+	/// Spec description in. Markdown out. Never null. Idempotent.
+	/// </summary>
+	internal static string Clean(string? markdown)
+	{
+		if (string.IsNullOrEmpty(markdown))
+			return string.Empty;
+
+		var withoutIsland = StripBumpIsland(markdown);
+		var withoutHeading = withoutIsland.Replace(AllMethodsHeading, string.Empty, StringComparison.Ordinal);
+		var withoutMarkup = StripLeftoverBumpMarkup(withoutHeading);
+		var withAdmonitions = AdmonitionPrefixRegex().Replace(withoutMarkup, ReplaceAdmonition);
+		return CollapseBlankLines(withAdmonitions).Trim();
+	}
+
+	private static string StripBumpIsland(string markdown)
+	{
+		var matches = OperationVerbPathRegex().Matches(markdown);
+		if (matches.Count == 0)
+			return markdown;
+
+		var htmlStartIndex = markdown.IndexOf("<div>", StringComparison.Ordinal);
+		var lastMatchEnd = matches[^1].Index + matches[^1].Length;
+		var htmlEndIndex = markdown.IndexOf("</div>", lastMatchEnd, StringComparison.Ordinal);
+		if (htmlStartIndex == -1 || htmlEndIndex == -1)
+			return markdown;
+
+		return markdown[..htmlStartIndex] + markdown[(htmlEndIndex + "</div>".Length)..];
+	}
+
+	private static string StripLeftoverBumpMarkup(string markdown)
+	{
+		var withoutSpans = LeftoverOperationSpanRegex().Replace(markdown, string.Empty);
+		return EmptyDivRegex().Replace(withoutSpans, string.Empty);
+	}
+
+	private static string ReplaceAdmonition(Match match)
+	{
+		var marker = match.Groups["marker"].Value;
+		if (!AdmonitionDirectives.TryGetValue(marker, out var directive))
+			return match.Value;
+
+		return $":::{{{directive}}}\n{match.Groups["body"].Value}\n:::";
+	}
+
+	private static string CollapseBlankLines(string markdown) => ExtraBlankLinesRegex().Replace(markdown, "\n\n");
 
 	internal static string RewriteIntraApiLinks(string markdown, string apiBaseUrl)
 	{
@@ -78,4 +139,19 @@ public static partial class ApiMarkdown
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
 	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
 	private static partial Regex MustachePattern();
+
+	[GeneratedRegex(@"<span class=""operation-verb (\w+)"">(\w+)</span>\s*<span class=""operation-path"">([^<]+)</span>", RegexOptions.IgnoreCase)]
+	private static partial Regex OperationVerbPathRegex();
+
+	[GeneratedRegex(@"<span class=""operation-(?:verb[^""]*|path)"">[^<]*</span>", RegexOptions.IgnoreCase)]
+	private static partial Regex LeftoverOperationSpanRegex();
+
+	[GeneratedRegex(@"<div>\s*</div>", RegexOptions.IgnoreCase)]
+	private static partial Regex EmptyDivRegex();
+
+	[GeneratedRegex(@"^(?<marker>NOTE|TIP|WARNING|IMPORTANT|CAUTION):\s+(?<body>.+)$", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
+	private static partial Regex AdmonitionPrefixRegex();
+
+	[GeneratedRegex(@"(?:\r?\n){3,}")]
+	private static partial Regex ExtraBlankLinesRegex();
 }
