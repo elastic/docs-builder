@@ -31,13 +31,13 @@
 			<div class="union-variant-label">
 				@if (variant.IsArrayVariant)
 				{
-					<span class="array-icon">[]</span>
+					<span class="@SchemaHelpers.WrapperArrayIconCssClass">[]</span>
 				}
 				@if (variant.IsObjectType)
 				{
-					<span class="object-icon">{}</span>
+					<span class="@SchemaHelpers.WrapperObjectIconCssClass">{}</span>
 				}
-				<code class="schema-type">@variant.DisplayName</code>
+				<code class="schema-type"><span class="@SchemaHelpers.TypeAtomCssClassOrNull(variant.DisplayName)">@variant.DisplayName</span></code>
 			</div>
 			@if (variant.ShowProperties && variant.Properties is not null)
 			{

@@ -355,7 +355,7 @@ body.navigation-preview {
 		box-sizing: border-box;
 		display: flex;
 		align-items: center;
-		gap: 4px;
+		gap: 8px;
 		width: 100%;
 		max-width: 100%;
 		min-width: 0;

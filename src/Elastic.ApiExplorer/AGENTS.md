@@ -25,8 +25,7 @@ Navigation/              Navigation tree assembly (ApiNavigationBuilder) and nav
 Components/              Reusable View+ViewModel widgets embedded by more than one page.
   PropertyTree/          The collapsible property listing: ApiProperty view-model tree,
                          ApiPropertyTreeBuilder (maps Model → view models), TypeAnnotation.
-    _Partials/           Its templates: _PropertyItem, _PropertyList, _UnionOptions, _SchemaType,
-                         _ValidationConstraints, _RecursiveBadge.
+    _Partials/           Its templates: _PropertyItem, _PropertyList, _UnionOptions, _SchemaType.
 
 Landing/                 Slice: product landing, tag landing and intro/outro markdown pages.
 Operations/              Slice: operation pages (ApiOperation/ApiEndpoint, page model, view).

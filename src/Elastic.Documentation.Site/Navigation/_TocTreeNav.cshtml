@@ -6,6 +6,7 @@
 	{
 		<li class="flex group/li">
 			<a href="@item.Url" class="sidebar-link nav-link nav-v2-link">
+				@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 				<span class="nav-v2-nav-text">@item.NavigationTitle</span>
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 			</a>
@@ -39,6 +40,7 @@
 						aria-hidden="true">
 				}
 				<a href="@item.Url" class="sidebar-link nav-folder-link nav-v2-link">
+					@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 					<span class="nav-v2-nav-text">@item.NavigationTitle</span>
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 					@if (item.ShowToggle)

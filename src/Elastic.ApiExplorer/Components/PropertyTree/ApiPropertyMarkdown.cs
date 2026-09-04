@@ -69,7 +69,7 @@ internal static class ApiPropertyMarkdown
 		_ = markdown.AppendLine();
 
 		WriteNestedLine(markdown, depth, ApiMarkdown.Prepare(property.DescriptionMarkdown, apiBaseUrl));
-		WriteConstraints(markdown, property, depth);
+		WriteArrayItemType(markdown, property, depth);
 		WriteEnumOrUnion(markdown, property, depth);
 		if (property.TypeLink is { Url: { Length: > 0 } url })
 			WriteNestedLine(markdown, depth, $"See {ApiCommonMark.Link(property.TypeLink.TypeName, url)}");
@@ -77,14 +77,8 @@ internal static class ApiPropertyMarkdown
 		WriteChildren(markdown, property, apiBaseUrl, depth);
 	}
 
-	private static void WriteConstraints(StringBuilder markdown, ApiProperty property, int depth)
+	private static void WriteArrayItemType(StringBuilder markdown, ApiProperty property, int depth)
 	{
-		foreach (var constraint in property.Constraints)
-		{
-			var text = constraint.Code is null ? constraint.Text : $"{constraint.Text}`{constraint.Code}`";
-			WriteNestedLine(markdown, depth, text);
-		}
-
 		if (property.ArrayItemTypeName is { Length: > 0 })
 			WriteNestedLine(markdown, depth, $"Array of: `{property.ArrayItemTypeName}`");
 	}
@@ -101,9 +95,6 @@ internal static class ApiPropertyMarkdown
 		{
 			case UnionDisplayKind.EnumLike when property.Union.EnumLikeValues.Count > 0:
 				WriteNestedLine(markdown, depth, "Values: " + string.Join(", ", property.Union.EnumLikeValues.Select(v => $"`{v}`")));
-				break;
-			case UnionDisplayKind.SimpleArrayUnion when property.Union.SimpleUnionBaseName is { Length: > 0 } name:
-				WriteNestedLine(markdown, depth, $"One of: `{name}` or `[]{name}`");
 				break;
 			case UnionDisplayKind.Badges when property.Union.Badges.Count > 0:
 				WriteNestedLine(markdown, depth, "One of: " + string.Join(" or ", property.Union.Badges.Select(b => $"`{b.Text}`")));

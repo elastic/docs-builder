@@ -76,7 +76,8 @@ public static class ApiOverviewBuilder
 					{
 						Kind = OverviewRowKind.Operation,
 						Title = operation.NavigationTitle,
-						Operations = [operation]
+						Operations = [operation],
+						Url = operation.Url
 					});
 					break;
 				case SchemaCategoryNavigationItem schemaCategory:
@@ -123,7 +124,8 @@ public static class ApiOverviewBuilder
 					{
 						Kind = OverviewRowKind.Operation,
 						Title = operation.NavigationTitle,
-						Operations = [operation]
+						Operations = [operation],
+						Url = operation.Url
 					});
 					break;
 				default:
@@ -146,7 +148,8 @@ public static class ApiOverviewBuilder
 			{
 				Kind = OverviewRowKind.Endpoint,
 				Title = endpoint.NavigationTitle,
-				Operations = endpointOperations
+				Operations = endpointOperations,
+				Url = endpoint.Url
 			});
 		else
 			recurse(endpoint, rows);

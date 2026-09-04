@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.ApiExplorer.Model;
-using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
 using Microsoft.AspNetCore.Html;
 
@@ -15,6 +13,9 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// buttons; <paramref name="ContentTypeBadge"/> adds a content-type badge next to the title.
 /// </summary>
 public record SectionHeader(string Title, string Anchor, string? Route = null, string? ContentTypeBadge = null);
+
+/// <summary>Collapsible Parameters / Query Parameters heading with a one-line name summary.</summary>
+public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names);
 
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>
 public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml, string BodyMarkdown)
