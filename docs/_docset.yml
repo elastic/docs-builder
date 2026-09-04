@@ -39,35 +39,17 @@ subs:
 features:
   primary-nav: false
 
-# Isolated-serve fixtures: same product keys as docs-content, fetched from the
-# version index (no local spec files). This repo is skip: true in assembler.yml,
-# so these keys do not join the assembled catalog.
-# Isolated serve (no --watch): /api/doc/elasticsearch/, /api/doc/kibana/, …
+# Local fixture for ApiExplorer and supplemental files. The URL key must not collide
+# with docs-content's `elasticsearch` key: assembler preview still builds this checkout
+# even though the repo is `skip: true` in assembler.yml.
+# `repository:` matches the version-index publisher; without it, lookup uses this
+# checkout (`elastic/docs-builder`) and `--strict` fails. Isolated serve (no
+# `--watch`): /api/doc/docs-builder-elasticsearch/
 api:
-  elasticsearch:
+  docs-builder-elasticsearch:
     - spec: elasticsearch.json
       product: elasticsearch
       repository: elastic/elasticsearch-specification
-  elasticsearch-serverless:
-    - spec: elasticsearch-serverless.json
-      product: serverless-elasticsearch
-      repository: elastic/elasticsearch-specification
-  kibana:
-    - spec: kibana.yaml
-      product: kibana
-      repository: elastic/kibana
-  kibana-serverless:
-    - spec: kibana-serverless.yaml
-      product: kibana
-      repository: elastic/kibana
-  cloud-connect:
-    - spec: cloud-connect.yml
-      product: ess
-      repository: elastic/cloud-connected-api
-  cloud-serverless:
-    - spec: elastic-cloud-serverless.yml
-      product: cloud-serverless
-      repository: elastic/serverless-api-specification
 
 cta:
   docs-builder:
