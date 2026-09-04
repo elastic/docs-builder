@@ -304,11 +304,12 @@ public class DocumentationWebHost
 		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
 		var outputRoot = Path.GetFullPath(holder.ApiPath.Parent!.FullName);
 		var trimmed = slug.Trim('/');
-		var wantsMarkdown = trimmed.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			|| MarkdownAccept.PrefersMarkdown(http.Request.Headers.Accept);
-		var path = wantsMarkdown
-			? ApiMarkdownRequest.ResolveFile(apiRoot, trimmed)
-			: Path.GetFullPath(Path.Join(apiRoot, trimmed, "index.html"));
+		var specMime = SpecMime(trimmed);
+		var wantsMarkdown = specMime is null
+			&& (trimmed.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || MarkdownAccept.PrefersMarkdown(http.Request.Headers.Accept));
+		var path = specMime is not null
+			? Path.GetFullPath(Path.Join(apiRoot, trimmed))
+			: wantsMarkdown ? ApiMarkdownRequest.ResolveFile(apiRoot, trimmed) : Path.GetFullPath(Path.Join(apiRoot, trimmed, "index.html"));
 		if (!path.StartsWith(outputRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
 			return Results.NotFound();
 
@@ -317,10 +318,21 @@ public class DocumentationWebHost
 			return Results.NotFound();
 
 		var contents = await _writeFileSystem.File.ReadAllTextAsync(info.FullName, ctx);
+		if (specMime is not null)
+			return Results.Content(contents, specMime);
 		if (wantsMarkdown)
 			return Results.Content(contents, "text/markdown; charset=utf-8");
 
 		return LiveReloadHtml(contents, Encoding.UTF8, 200);
+
+		static string? SpecMime(string slug)
+		{
+			if (slug.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+				return "application/json";
+			if (slug.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || slug.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
+				return "text/yaml";
+			return null;
+		}
 	}
 
 	private static async Task<IResult> ServeDocumentationFile(

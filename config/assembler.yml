@@ -23,7 +23,7 @@ environments:
     feature_flags:
       WEBSITE_SEARCH: true
       ASSEMBLER_API_EXPLORER: true
-      NAVIGATION_PREVIEW: true
+      NAVIGATION_PREVIEW: false
     website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
   edge:
     uri: https://d34ipnu52o64md.cloudfront.net
@@ -31,8 +31,8 @@ environments:
     content_source: edge
     google_tag_manager:
       enabled: false
-    feature_flags:
-      NAVIGATION_PREVIEW: true
+  #  feature_flags:
+  #    NAVIGATION_PREVIEW: true
   # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
   # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step
   # in navigation-test.journey.ts should be replaced with a top-nav step).
@@ -51,7 +51,7 @@ environments:
     path_prefix: docs
     feature_flags:
       WEBSITE_SEARCH: true
-      NAVIGATION_PREVIEW: true
+      NAVIGATION_PREVIEW: false
     website_search_url: http://localhost:4078/elastic-website-search.js
   preview:
     uri: https://docs-v3-preview.elastic.dev
@@ -60,7 +60,6 @@ environments:
     google_tag_manager:
       enabled: false
     feature_flags:
-      NAVIGATION_PREVIEW: true
       ASSEMBLER_API_EXPLORER: true
   air-gapped:
     uri: http://localhost:8080

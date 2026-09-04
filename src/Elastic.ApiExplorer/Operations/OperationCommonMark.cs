@@ -29,7 +29,7 @@ internal static class OperationCommonMark
 		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
 		WritePathParameters(markdown, page, apiBaseUrl);
 		WriteDescription(markdown, page, apiBaseUrl);
-		WriteSecurity(markdown, operation);
+		WriteSecurity(markdown, page);
 		WriteQueryParameters(markdown, page, apiBaseUrl);
 		WriteRequestBody(markdown, apiOperation, page, apiBaseUrl);
 		WriteResponses(markdown, page, apiBaseUrl);
@@ -131,20 +131,12 @@ internal static class OperationCommonMark
 			ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(docs.LinkText, docs.Url));
 	}
 
-	private static void WriteSecurity(StringBuilder markdown, OpenApiOperation operation)
+	private static void WriteSecurity(StringBuilder markdown, OperationPageModel page)
 	{
-		if (operation.Security is not { Count: > 0 })
+		if (page.AuthSchemes.Count == 0)
 			return;
 
-		var schemes = operation
-			.Security
-			.SelectMany(requirement => requirement)
-			.Select(scheme =>
-			{
-				var name = $"`{scheme.Key.Name}`";
-				return scheme.Value is { Count: > 0 } ? $"{name} ({string.Join(", ", scheme.Value)})" : name;
-			});
-		ApiCommonMark.Paragraph(markdown, "Authorization: " + string.Join(", ", schemes));
+		ApiCommonMark.Paragraph(markdown, "Authorization: " + string.Join(", ", page.AuthSchemes.Select(scheme => scheme.Label)));
 	}
 
 	private static void WriteQueryParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)

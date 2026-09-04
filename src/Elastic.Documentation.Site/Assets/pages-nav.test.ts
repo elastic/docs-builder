@@ -237,6 +237,70 @@ describe('syncPagesNavFromResponse', () => {
             document.querySelector<HTMLInputElement>('#other')?.checked
         ).toBe(false)
     })
+
+    it('expands the current path after an HTMX cross-tree swap on the production accordion', () => {
+        const path = window.location.pathname
+        const incoming = `
+            <nav id="pages-nav">
+                <ul id="nav-tree-deploy">
+                    <li class="nav-folder">
+                        <div class="peer nav-folder-peer">
+                            <a class="sidebar-link nav-folder-link" href="/docs/deploy-manage/deploy/">Deploy</a>
+                            <label for="deploy">
+                                <input id="deploy" type="checkbox" class="hidden">
+                            </label>
+                        </div>
+                        <ul class="nav-subtree">
+                            <li class="nav-folder">
+                                <div class="peer nav-folder-peer">
+                                    <a class="sidebar-link nav-folder-link current" href="${path}">Elastic Cloud</a>
+                                    <label for="cloud">
+                                        <input id="cloud" type="checkbox" class="hidden">
+                                    </label>
+                                </div>
+                                <ul class="nav-subtree"><li>Child page</li></ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        `
+        document.body.innerHTML = `
+            <nav id="pages-nav">
+                <ul id="nav-tree-guides">
+                    <li><a class="sidebar-link current" href="/docs/get-started/">Get started</a></li>
+                </ul>
+            </nav>
+        `
+        initNav()
+        const raf = jest
+            .spyOn(window, 'requestAnimationFrame')
+            .mockImplementation((cb) => {
+                cb(0)
+                return 0
+            })
+
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: {
+                    xhr: { response: `<html><body>${incoming}</body></html>` },
+                },
+            })
+        )
+
+        expect(
+            document.querySelector<HTMLInputElement>('#deploy')?.checked
+        ).toBe(true)
+        expect(
+            document.querySelector<HTMLInputElement>('#cloud')?.checked
+        ).toBe(true)
+        expect(
+            document
+                .querySelector('#pages-nav a.sidebar-link.current')
+                ?.textContent?.trim()
+        ).toBe('Elastic Cloud')
+        raf.mockRestore()
+    })
 })
 
 describe('markCurrentPage', () => {
@@ -421,7 +485,7 @@ describe('ensureSubtreeClips', () => {
         sessionStorage.clear()
     })
 
-    it('wraps a folder subtree once', () => {
+    it('leaves the legacy accordion alone when navigation-preview is off', () => {
         document.body.innerHTML = `
             <nav id="pages-nav">
                 <li class="nav-folder">
@@ -430,6 +494,31 @@ describe('ensureSubtreeClips', () => {
                     </div>
                     <ul class="nav-subtree"><li>Child</li></ul>
                 </li>
+            </nav>
+        `
+        initNav()
+        const cb = document.querySelector<HTMLInputElement>('#folder-a')!
+        cb.checked = true
+        cb.dispatchEvent(new Event('change', { bubbles: true }))
+
+        expect(document.querySelector('.nav-subtree-clip')).toBeNull()
+        expect(
+            document.querySelector('li.nav-folder > ul.nav-subtree')
+        ).not.toBeNull()
+        expect(document.body.textContent).toContain('Child')
+    })
+
+    it('wraps a folder subtree once', () => {
+        document.body.innerHTML = `
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Test">
+                    <li class="nav-folder">
+                        <div class="peer nav-folder-peer">
+                            <input id="folder-a" type="checkbox">
+                        </div>
+                        <ul class="nav-subtree"><li>Child</li></ul>
+                    </li>
+                </div>
             </nav>
         `
         const nav = document.querySelector<HTMLElement>('#pages-nav')!
@@ -446,12 +535,14 @@ describe('ensureSubtreeClips', () => {
     it('initNav wraps folders so open/close can animate without breaking layout', () => {
         document.body.innerHTML = `
             <nav id="pages-nav">
-                <li class="nav-folder">
-                    <div class="peer nav-folder-peer">
-                        <input id="folder-a" type="checkbox">
-                    </div>
-                    <ul class="nav-subtree"><li>Child</li></ul>
-                </li>
+                <div class="pages-nav-v2-shell" data-nav-heading="Test">
+                    <li class="nav-folder">
+                        <div class="peer nav-folder-peer">
+                            <input id="folder-a" type="checkbox">
+                        </div>
+                        <ul class="nav-subtree"><li>Child</li></ul>
+                    </li>
+                </div>
             </nav>
         `
         initNav()
@@ -464,12 +555,14 @@ describe('ensureSubtreeClips', () => {
     it('keeps a closed subtree in the document so the first open can animate', () => {
         document.body.innerHTML = `
             <nav id="pages-nav">
-                <li class="nav-folder">
-                    <div class="peer nav-folder-peer">
-                        <input id="folder-a" type="checkbox">
-                    </div>
-                    <ul class="nav-subtree"><li>Child</li></ul>
-                </li>
+                <div class="pages-nav-v2-shell" data-nav-heading="Test">
+                    <li class="nav-folder">
+                        <div class="peer nav-folder-peer">
+                            <input id="folder-a" type="checkbox">
+                        </div>
+                        <ul class="nav-subtree"><li>Child</li></ul>
+                    </li>
+                </div>
             </nav>
         `
         initNav()
@@ -490,12 +583,14 @@ describe('ensureSubtreeClips', () => {
     it('does not yank a clip that is already in the document back to closed', () => {
         document.body.innerHTML = `
             <nav id="pages-nav">
-                <li class="nav-folder">
-                    <div class="peer nav-folder-peer">
-                        <input id="folder-a" type="checkbox">
-                    </div>
-                    <ul class="nav-subtree"><li>Child</li></ul>
-                </li>
+                <div class="pages-nav-v2-shell" data-nav-heading="Test">
+                    <li class="nav-folder">
+                        <div class="peer nav-folder-peer">
+                            <input id="folder-a" type="checkbox">
+                        </div>
+                        <ul class="nav-subtree"><li>Child</li></ul>
+                    </li>
+                </div>
             </nav>
         `
         initNav()
@@ -609,20 +704,22 @@ describe('ensureSubtreeClips', () => {
     it('keeps nested closed subtrees out of the document when the parent is open', () => {
         document.body.innerHTML = `
             <nav id="pages-nav">
-                <li class="nav-folder">
-                    <div class="peer nav-folder-peer">
-                        <input id="parent" type="checkbox">
-                    </div>
-                    <ul class="nav-subtree">
-                        <li class="nav-folder">
-                            <div class="peer nav-folder-peer">
-                                <input id="child" type="checkbox">
-                            </div>
-                            <ul class="nav-subtree"><li>Grandchild</li></ul>
-                        </li>
-                        <li>Leaf</li>
-                    </ul>
-                </li>
+                <div class="pages-nav-v2-shell" data-nav-heading="Test">
+                    <li class="nav-folder">
+                        <div class="peer nav-folder-peer">
+                            <input id="parent" type="checkbox">
+                        </div>
+                        <ul class="nav-subtree">
+                            <li class="nav-folder">
+                                <div class="peer nav-folder-peer">
+                                    <input id="child" type="checkbox">
+                                </div>
+                                <ul class="nav-subtree"><li>Grandchild</li></ul>
+                            </li>
+                            <li>Leaf</li>
+                        </ul>
+                    </li>
+                </div>
             </nav>
         `
         initNav()

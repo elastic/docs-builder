@@ -175,6 +175,10 @@ body {
 		@apply relative flex flex-wrap;
 	}
 
+	.nav-subtree-clip {
+		@apply w-full;
+	}
+
 	.nav-toggle-btn {
 		@apply hover:bg-grey-20 cursor-pointer rounded-sm p-1;
 	}
@@ -187,10 +191,11 @@ body {
 	}
 
 	.nav-subtree {
-		@apply relative ml-4 hidden w-full;
+		@apply relative ml-4 hidden;
 
 		/* revealed when the sibling .peer div contains a checked checkbox */
-		.peer:has(:checked) ~ & {
+		.peer:has(:checked) ~ &,
+		.peer:has(:checked) ~ .nav-subtree-clip > & {
 			display: block;
 		}
 
@@ -202,7 +207,8 @@ body {
 
 		/* darken connector line when subtree contains the current page */
 		&:has(.current)::before,
-		.peer:has(.current) ~ &::before {
+		.peer:has(.current) ~ &::before,
+		.peer:has(.current) ~ .nav-subtree-clip > &::before {
 			@apply bg-grey-40;
 		}
 	}

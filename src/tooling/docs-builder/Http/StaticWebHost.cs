@@ -160,6 +160,7 @@ public class StaticWebHost
 				".txt" => "text/plain",
 				".xml" => "text/xml",
 				".yml" => "text/yaml",
+				".yaml" => "text/yaml",
 				".md" => "text/markdown; charset=utf-8",
 				_ => "text/html"
 			};
