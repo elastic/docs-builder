@@ -103,6 +103,9 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		operation.Should().Contain("`/{index}/_search`");
 		operation.Should().Contain("## Description");
 		operation.Should().Contain("Returns hits that match the query");
+		operation.Should().Contain(":::{important}");
+		operation.Should().NotContain("operation-verb");
+		operation.Should().NotContain("All methods and paths");
 		operation.Should().NotContain("<!DOCTYPE");
 		operation.Should().NotContain("<html");
 
@@ -149,6 +152,10 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			"""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch/operation/operation-search.md" title="Markdown export"/>"""
 		);
 		operationHtml.Should().Contain("View as Markdown");
+		operationHtml.Should().Contain("class=\"api-operation-description\"");
+		operationHtml.Should().NotContain("operation-verb");
+		operationHtml.Should().Contain("POST");
+		operationHtml.Should().Contain("/{index}/_search");
 	}
 
 	[Fact]

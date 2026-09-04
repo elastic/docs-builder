@@ -92,9 +92,9 @@ internal static class ApiMarkdownFrontMatter
 			operation.Operation.OperationId is { Length: > 0 } operationId
 			&& context.OperationSupplemental.TryGetValue(operationId, out var doc)
 		)
-			return doc.DescriptionOr(spec);
+			return ApiMarkdown.Clean(doc.DescriptionOr(spec));
 
-		return spec;
+		return ApiMarkdown.Clean(spec);
 	}
 
 	private static string? Heading(string markdown)

@@ -5,14 +5,9 @@
 using System.Collections.Concurrent;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
-using Elastic.ApiExplorer.Model;
-using Elastic.ApiExplorer.Operations;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Search;
-using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
-using static System.StringComparison;
+using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -122,9 +117,8 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Fact]
-	public async Task DescriptionWithHtmlOperationsListShouldTransformToMarkdownAtEnd()
+	public void ConvertToDocuments_DescriptionWithBumpHtml_LeavesNoHtmlAndNoRebuiltList()
 	{
-		// Arrange
 		var versionsConfiguration = new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
@@ -141,40 +135,44 @@ public class OpenApiDocumentExporterTests
 			}
 		};
 
-		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
-
-		// Act - Get some Elasticsearch documents
-		var documents = new List<DocumentationDocument>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current.CancellationToken))
+		var spec = new OpenApiDocument
 		{
-			if (doc.Description != null && doc.Description.Contains("**All methods and paths for this operation:**"))
+			Paths = new OpenApiPaths
 			{
-				documents.Add(doc);
+				["/_search"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new OpenApiOperation
+						{
+							OperationId = "search",
+							Summary = "Run a search",
+							Description =
+								"""
+								**All methods and paths for this operation:**
+
+								<div>
+								  <span class="operation-verb get">GET</span>
+								  <span class="operation-path">/_search</span>
+								  </div>
+
+								Returns hits that match the query defined in the request.
+								"""
+						}
+					}
+				}
 			}
-		}
+		};
 
-		// Assert we found at least one document with the pattern
-		documents.Should().NotBeEmpty("there should be at least one document with operation list");
+		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
+		var documents = exporter.ConvertToDocuments(spec, "elasticsearch").ToArray();
 
-		foreach (var doc in documents)
-		{
-			// Should not contain HTML
-			doc.Description.Should().NotContain("<div>", "HTML should be converted to markdown");
-			doc.Description.Should().NotContain("<span", "HTML should be converted to markdown");
-
-			// Should contain markdown list items
-			doc.Description.Should().Contain("- **", "should have markdown list items");
-			doc.Description.Should().Contain("`", "paths should be in code blocks");
-
-			// Check that the markdown list appears at the end
-			var lines = doc.Description.Split('\n', StringSplitOptions.TrimEntries);
-			var lastNonEmptyLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).TakeLast(5).ToList();
-
-			// At least one of the last few lines should be a Markdown list item
-			var hasMarkdownListAtEnd = lastNonEmptyLines.Any(l => l.StartsWith("- **", InvariantCulture));
-			hasMarkdownListAtEnd.Should().BeTrue(
-				$"markdown list should be at the end of the description. Last lines:\n{string.Join("\n", lastNonEmptyLines)}\n\nFull description:\n{doc.Description}"
-			);
-		}
+		documents.Should().ContainSingle();
+		var description = documents[0].Description;
+		description.Should().NotBeNull();
+		description.Should().NotContain("<div>");
+		description.Should().NotContain("<span");
+		description.Should().NotContain("- **GET**");
+		description.Should().Contain("Returns hits that match the query");
 	}
 }

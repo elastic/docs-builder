@@ -69,7 +69,7 @@
         ],
         "tags": ["search"],
         "summary": "Run a search",
-        "description": "Returns hits that match the query defined in the request.\n\nSupports pagination through `size` and `from`.",
+        "description": "**All methods and paths for this operation:**\n\n<div>\n  <span class=\"operation-verb get\">GET</span>\n  <span class=\"operation-path\">/_search</span>\n  </div>\n<div>\n  <span class=\"operation-verb post\">POST</span>\n  <span class=\"operation-path\">/_search</span>\n  </div>\n<div>\n  <span class=\"operation-verb get\">GET</span>\n  <span class=\"operation-path\">/{index}/_search</span>\n  </div>\n<div>\n  <span class=\"operation-verb post\">POST</span>\n  <span class=\"operation-path\">/{index}/_search</span>\n  </div>\n\nReturns hits that match the query defined in the request.\n\nSupports pagination through `size` and `from`.\n\nIMPORTANT: The same point-in-time ID should be used for all slices.",
         "externalDocs": {
           "url": "https://www.elastic.co/docs/fixture/search-reference"
         },
