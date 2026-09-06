@@ -98,7 +98,7 @@ In settings YAML, list every deployment key so that line is complete and the `:d
 
 `ga` on a deployment key is a support flag. It does not mean the setting is generally available. If `stack` is `preview` and the setting exists on Elastic Cloud Hosted, write `ech: ga`.
 
-Some settings exist on only some serverless projects. This is common for Advanced Settings. When that is the case, nest those project keys under `serverless`. The keys are `elasticsearch`, `observability`, and `security`. Write `ga` on the projects that include the setting. Those keys are support flags. Never write a version. Never write `preview`, `experimental`, `deprecated`, or `removed`.
+Some settings exist on only some serverless projects. This is common for Advanced Settings. When that is the case, nest those project keys under `serverless`. The keys are `elasticsearch`, `observability`, `security`, and `vectordb`. Write `ga` on the projects that include the setting. Those keys are support flags. Never write a version. Never write `preview`, `experimental`, `deprecated`, or `removed`. Do not nest `workplace_ai`. That project type never shipped, and docs-builder has no `workplace_ai` key.
 
 Do not mix a scalar `serverless:` with project keys.
 
@@ -159,6 +159,8 @@ applies_to:
     observability: ga
 ```
 
+The same nested shape works for `elasticsearch`, `security`, and `vectordb`.
+
 ### Example
 
 See `/syntax/settings-with-applies-example.yml` for a full, schema-compliant sample.
@@ -171,8 +173,8 @@ It demonstrates:
 - Nested `settings`.
 - A complete `applies_to` map, including `unavailable` keys and `stack: preview` with `ech: ga`.
 - `applies_to` inheritance when a child omits the field, and replacement when it sets its own map.
-- Inline `{applies_to}` badges inside a setting `description` (for example, to label per-version defaults in a bulleted list).
-- A gated `warning` with `:applies_to:` on the first line.
+- Inline `{applies_to}` badges inside a setting `description` for version-scoped behavior that is not the `default` field.
+- A gated `note` for a previous default, and a gated `warning` with `:applies_to:` on the first line.
 - Top-level `page_description`.
 
 ### Result

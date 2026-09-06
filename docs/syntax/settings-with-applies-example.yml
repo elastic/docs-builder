@@ -68,11 +68,21 @@ groups:
       - setting: xpack.example.defaultModel
         id: xpack-example-default-model
         description: |
-          Default model used by the feature. The default varies by version:
+          Default model used by the feature.
 
-          * {applies_to}`stack: ga 9.2` Defaults to `model-v2`.
-          * {applies_to}`stack: ga 9.1` Defaults to `model-v1`.
+          {applies_to}`stack: ga 9.2` The model picker is also available in Discover.
         datatype: string
+        default: model-v2
+        applies_to:
+          stack: ga 9.2
+          ech: ga
+          ece: ga
+          eck: ga
+          self: ga
+          serverless: ga
+        note: |
+          :applies_to: stack: ga 9.1
+          In these versions, this setting defaults to `model-v1`.
 
   - group: Advanced settings
     id: advanced-settings
