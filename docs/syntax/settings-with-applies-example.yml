@@ -81,8 +81,8 @@ groups:
           self: ga
           serverless: ga
         note: |
-          :applies_to: stack: ga 9.1
-          In these versions, this setting defaults to `model-v1`.
+          :applies_to: stack: ga =9.1
+          In this version, this setting defaults to `model-v1`.
 
   - group: Advanced settings
     id: advanced-settings
