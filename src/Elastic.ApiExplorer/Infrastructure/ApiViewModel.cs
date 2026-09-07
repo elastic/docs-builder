@@ -83,6 +83,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Features = BuildContext.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
+			PageFeedbackSurface = "api",
 			TocItems = GetTocItems(),
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
 			HubSwitcherItems = ApiHubSwitcher.Build(

@@ -130,6 +130,12 @@ page-feedback + #prev-next-nav {
 	font-weight: 600;
 }
 
+.page-feedback__option {
+	display: grid;
+	gap: 0.625rem;
+	min-width: 0;
+}
+
 .page-feedback__reason {
 	display: grid;
 	grid-template-columns: auto 1fr;
@@ -164,6 +170,7 @@ page-feedback + #prev-next-nav {
 .page-feedback__details {
 	display: grid;
 	gap: 0.625rem;
+	margin-left: 1.625rem;
 	animation: page-feedback-content-reveal 180ms ease-out both;
 }
 

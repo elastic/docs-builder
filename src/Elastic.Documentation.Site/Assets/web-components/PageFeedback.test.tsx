@@ -9,11 +9,13 @@ const failedResponse = { ok: false, status: 503 } as Response
 
 describe('PageFeedback', () => {
     beforeEach(() => {
+        sessionStorage.clear()
         jest.spyOn(crypto, 'randomUUID').mockReturnValue(feedbackId)
         global.fetch = jest.fn().mockResolvedValue(successfulResponse)
     })
 
     afterEach(() => {
+        sessionStorage.clear()
         jest.restoreAllMocks()
     })
 
@@ -46,6 +48,9 @@ describe('PageFeedback', () => {
         expect(screen.getByRole('radio', { name: /Accurate/ })).toHaveFocus()
         expect(
             screen.queryByRole('radio', { name: /Inaccurate/ })
+        ).not.toBeInTheDocument()
+        expect(
+            screen.queryByRole('textbox', { name: 'Tell us more (optional)' })
         ).not.toBeInTheDocument()
         expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
     })
@@ -144,10 +149,9 @@ describe('PageFeedback', () => {
                 name: /Couldn't find what I needed/,
             })
         )
-        const commentField = screen.getByRole('textbox', {
-            name: 'Tell us more (optional)',
-        })
-        expect(commentField).toHaveAttribute('maxlength', '2000')
+        expect(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
+        ).toHaveAttribute('maxlength', '2000')
         await user.click(screen.getByRole('button', { name: 'Submit' }))
 
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
@@ -166,6 +170,53 @@ describe('PageFeedback', () => {
         expect(
             await screen.findByText('Thank you for your feedback.')
         ).toBeInTheDocument()
+    })
+
+    it('moves the comment field under the selected reason', async () => {
+        const user = userEvent.setup()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Yes, this page was helpful',
+            })
+        )
+        const accurate = screen.getByRole('radio', { name: /Accurate/ })
+        const solved = screen.getByRole('radio', { name: /Solved my problem/ })
+
+        await user.click(accurate)
+        const firstComment = screen.getByRole('textbox', {
+            name: 'Tell us more (optional)',
+        })
+        expect(
+            accurate.compareDocumentPosition(firstComment) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy()
+        expect(
+            firstComment.compareDocumentPosition(solved) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy()
+        await user.type(firstComment, 'Clear write-up.')
+
+        await user.click(solved)
+        const movedComment = screen.getByRole('textbox', {
+            name: 'Tell us more (optional)',
+        })
+        expect(movedComment).toHaveValue('')
+        await user.type(movedComment, 'Fixed my issue.')
+        expect(
+            solved.compareDocumentPosition(movedComment) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy()
+        expect(
+            movedComment.compareDocumentPosition(solved) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeFalsy()
+
+        await user.click(accurate)
+        expect(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
+        ).toHaveValue('Clear write-up.')
     })
 
     it('waits for an in-flight reaction save before storing richer feedback', async () => {
@@ -235,5 +286,96 @@ describe('PageFeedback', () => {
         expect(
             await screen.findByText('Thank you for your feedback.')
         ).toBeInTheDocument()
+    })
+
+    it('restores a per-option draft after remount and clears it on submit', async () => {
+        const user = userEvent.setup()
+        const { unmount } = render(
+            <PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />
+        )
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Yes, this page was helpful',
+            })
+        )
+        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
+        await user.type(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' }),
+            'Clear write-up.'
+        )
+        await user.click(
+            screen.getByRole('radio', { name: /Solved my problem/ })
+        )
+        await user.type(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' }),
+            'Fixed my issue.'
+        )
+        await waitFor(() =>
+            expect(
+                sessionStorage.getItem('docs-page-feedback:/docs/test-page')
+            ).toContain('Fixed my issue.')
+        )
+
+        unmount()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
+
+        expect(
+            screen.getByRole('button', { name: 'Yes, this page was helpful' })
+        ).toHaveAttribute('aria-pressed', 'true')
+        expect(
+            screen.getByRole('radio', { name: /Solved my problem/ })
+        ).toBeChecked()
+        expect(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
+        ).toHaveValue('Fixed my issue.')
+
+        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
+        expect(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
+        ).toHaveValue('Clear write-up.')
+        await user.click(screen.getByRole('button', { name: 'Submit' }))
+
+        expect(
+            await screen.findByText('Thank you for your feedback.')
+        ).toBeInTheDocument()
+        expect(
+            sessionStorage.getItem('docs-page-feedback:/docs/test-page')
+        ).toBeNull()
+    })
+
+    it('keeps stored reason values on API pages and uses API copy', async () => {
+        const user = userEvent.setup()
+        render(
+            <PageFeedback
+                pageUrl="/api/doc/elasticsearch/search"
+                pageTitle="Search"
+                surface="api"
+            />
+        )
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'No, this page was not helpful',
+            })
+        )
+        expect(
+            screen.getByText(
+                'Missing a parameter, field, status, or auth detail.'
+            )
+        ).toBeInTheDocument()
+        await user.click(screen.getByRole('radio', { name: /Example errors/ }))
+        await user.click(screen.getByRole('button', { name: 'Submit' }))
+
+        await waitFor(() =>
+            expect(global.fetch).toHaveBeenLastCalledWith(
+                `/docs/_api/v1/page-feedback/${feedbackId}`,
+                expect.objectContaining({
+                    body: expect.stringContaining(
+                        '"reason":"codeSampleErrors"'
+                    ),
+                })
+            )
+        )
     })
 })

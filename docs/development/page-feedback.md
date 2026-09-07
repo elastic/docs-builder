@@ -12,9 +12,13 @@ changes replace the same document.
 The thumbs-up or thumbs-down selection writes a document with the reaction after
 a short debounce, so quickly changing the selection records only the final
 choice. The follow-up questionnaire writes the same document again with a
-structured reason, the reason-set version, and optional details. Submitting the
-questionnaire flushes any pending reaction write first. This keeps abandoned
-questionnaires useful while ensuring the richer submission wins.
+structured reason, the reason-set version, and optional details. The comment
+field sits under the selected option. Each option keeps its own comment draft.
+The browser stores that draft in `sessionStorage` for the current tab and page
+so an accidental refresh can restore it, and clears it after a successful
+submit. Submitting the questionnaire flushes any pending reaction write first.
+This keeps abandoned questionnaires useful while ensuring the richer
+submission wins.
 
 Reasons are stored as keyword enum values for filtering and aggregation.
 `reason_set_version` identifies the questionnaire revision that presented the
@@ -25,7 +29,9 @@ clients and historical documents remain valid.
 The current positive reasons are `accurate`, `solvedProblem`,
 `easyToUnderstand`, `helpfulExamples`, and `anotherReason`. The current negative
 reasons are `inaccurate`, `missingInformation`, `hardToUnderstand`,
-`codeSampleErrors`, and `anotherReason`.
+`codeSampleErrors`, and `anotherReason`. API pages use the same stored values
+and `reason_set_version`. They pass `surface="api"` so labels and descriptions
+talk about the spec and examples instead of a product how-to.
 
 ## Provision the index
 
