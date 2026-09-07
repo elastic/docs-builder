@@ -18,7 +18,8 @@ public class PageFeedbackEndpointTests
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
 		PageFeedbackRecord? recorded = null;
-		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
+		A
+			.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
 			.Invokes((PageFeedbackRecord record, CancellationToken _) => recorded = record)
 			.Returns(Task.FromResult(true));
 		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
@@ -45,7 +46,8 @@ public class PageFeedbackEndpointTests
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
 		PageFeedbackRecord? recorded = null;
-		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
+		A
+			.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
 			.Invokes((PageFeedbackRecord record, CancellationToken _) => recorded = record)
 			.Returns(Task.FromResult(true));
 		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
@@ -75,7 +77,8 @@ public class PageFeedbackEndpointTests
 		var feedbackService = A.Fake<IPageFeedbackService>();
 		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
 		using var client = factory.CreateClient();
-		var payload = $$"""
+		var payload =
+			$$"""
 			{
 				"pageUrl": "/docs/test-page",
 				"pageTitle": "Test page",
@@ -90,13 +93,13 @@ public class PageFeedbackEndpointTests
 		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
 	[Theory]
 	[InlineData(
-		/*lang=json,strict*/ """
+	/*lang=json,strict*/
+	"""
 		{
 			"pageUrl": "/docs/test-page",
 			"pageTitle": "Test page",
@@ -106,14 +109,16 @@ public class PageFeedbackEndpointTests
 		}
 		""")]
 	[InlineData(
-		/*lang=json,strict*/ """
+	/*lang=json,strict*/
+	"""
 		{
 			"pageUrl": "/docs/test-page",
 			"pageTitle": "Test page"
 		}
 		""")]
 	[InlineData(
-		/*lang=json,strict*/ """
+	/*lang=json,strict*/
+	"""
 		{
 			"pageUrl": "/docs/test-page",
 			"pageTitle": "Test page",
@@ -122,7 +127,8 @@ public class PageFeedbackEndpointTests
 		}
 		""")]
 	[InlineData(
-		/*lang=json,strict*/ """
+	/*lang=json,strict*/
+	"""
 		{
 			"pageUrl": "/docs/test-page",
 			"pageTitle": "Test page",
@@ -140,16 +146,16 @@ public class PageFeedbackEndpointTests
 		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
 	public async Task Put_PersistenceFails_ReturnsServiceUnavailable()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
-		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
-			.Returns(Task.FromResult(false));
+		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).Returns(
+			Task.FromResult(false)
+		);
 		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
 		using var client = factory.CreateClient();
 		using var request = CreateRequest(Guid.NewGuid(), ValidPayload);
@@ -164,18 +170,14 @@ public class PageFeedbackEndpointTests
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
 		var feedbackId = Guid.NewGuid();
-		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._))
-			.Returns(Task.FromResult(true));
+		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._)).Returns(Task.FromResult(true));
 		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
 		using var client = factory.CreateClient();
 
-		using var response = await client.DeleteAsync(
-			$"/docs/_api/v1/page-feedback/{feedbackId}",
-			TestContext.Current.CancellationToken);
+		using var response = await client.DeleteAsync($"/docs/_api/v1/page-feedback/{feedbackId}", TestContext.Current.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
 	}
 
 	private const string ValidPayload = /*lang=json,strict*/

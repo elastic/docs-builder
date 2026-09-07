@@ -43,7 +43,8 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 				"Failed to index page feedback {FeedbackId}: HTTP {StatusCode}, item statuses {ItemStatuses}",
 				record.FeedbackId,
 				response.ApiCallDetails.HttpStatusCode,
-				response.Items?.Select(item => item.Status).ToArray() ?? []);
+				response.Items?.Select(item => item.Status).ToArray() ?? []
+			);
 			return false;
 		}
 		catch (Exception exception)
@@ -57,9 +58,7 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 	{
 		try
 		{
-			var response = await transport.DeleteAsync<StringResponse>(
-				$"{index.Name}/_doc/{feedbackId}",
-				cancellationToken: ctx);
+			var response = await transport.DeleteAsync<StringResponse>($"{index.Name}/_doc/{feedbackId}", cancellationToken: ctx);
 
 			if (response.ApiCallDetails.HasSuccessfulStatusCode || response.ApiCallDetails.HttpStatusCode is 404)
 				return true;
@@ -67,7 +66,8 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 			logger.LogWarning(
 				"Failed to delete page feedback {FeedbackId}: HTTP {StatusCode}",
 				feedbackId,
-				response.ApiCallDetails.HttpStatusCode);
+				response.ApiCallDetails.HttpStatusCode
+			);
 			return false;
 		}
 		catch (Exception exception)

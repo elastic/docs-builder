@@ -81,10 +81,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
-			Features = new FeatureFlags([])
-			{
-				PageFeedbackEnabled = BuildContext.Configuration.Features.PageFeedbackEnabled
-			},
+			Features = new FeatureFlags([]) { PageFeedbackEnabled = BuildContext.Configuration.Features.PageFeedbackEnabled },
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),

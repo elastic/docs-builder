@@ -37,10 +37,7 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway(
 
 		logger.LogDebug("Indexing feedback with ID {FeedbackId} to index {IndexName}", feedbackId, _indexName);
 		var json = JsonSerializer.Serialize(document, MessageFeedbackJsonContext.Default.MessageFeedbackDocument);
-		var response = await transport.PutAsync<StringResponse>(
-			$"{_indexName}/_doc/{feedbackId}",
-			PostData.String(json),
-			ctx);
+		var response = await transport.PutAsync<StringResponse>($"{_indexName}/_doc/{feedbackId}", PostData.String(json), ctx);
 
 		// MessageId and ConversationId are Guid types, so no sanitization needed
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
@@ -48,7 +45,8 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway(
 			logger.LogWarning(
 				"Failed to index message feedback for message {MessageId}: HTTP {StatusCode}",
 				record.MessageId,
-				response.ApiCallDetails.HttpStatusCode);
+				response.ApiCallDetails.HttpStatusCode
+			);
 		}
 		else
 		{
@@ -58,7 +56,8 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway(
 				record.MessageId,
 				record.ConversationId,
 				feedbackId,
-				_indexName);
+				_indexName
+			);
 		}
 	}
 }

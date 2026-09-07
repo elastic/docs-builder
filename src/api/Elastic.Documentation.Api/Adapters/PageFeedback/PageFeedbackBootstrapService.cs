@@ -17,9 +17,7 @@ internal sealed class PageFeedbackBootstrapService(
 {
 	public async Task StartAsync(CancellationToken cancellationToken)
 	{
-		var method = appEnvironment.Current is AppEnv.Dev
-			? BootstrapMethod.Silent
-			: BootstrapMethod.Failure;
+		var method = appEnvironment.Current is AppEnv.Dev ? BootstrapMethod.Silent : BootstrapMethod.Failure;
 
 		if (await channel.BootstrapElasticsearchAsync(method, cancellationToken))
 		{

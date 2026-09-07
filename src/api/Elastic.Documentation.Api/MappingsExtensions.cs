@@ -184,7 +184,8 @@ public static class MappingsExtension
 			HttpContext context,
 			IPageFeedbackService feedbackService,
 			ILogger<Program> logger,
-			Cancel ctx) =>
+			Cancel ctx
+		) =>
 		{
 			if (!IsValidPageFeedback(request))
 				return Results.BadRequest();
@@ -216,7 +217,8 @@ public static class MappingsExtension
 			Guid feedbackId,
 			IPageFeedbackService feedbackService,
 			ILogger<Program> logger,
-			Cancel ctx) =>
+			Cancel ctx
+		) =>
 		{
 			if (!await feedbackService.DeleteFeedbackAsync(feedbackId, ctx))
 			{
@@ -231,15 +233,15 @@ public static class MappingsExtension
 
 	private static bool IsValidPageFeedback(PageFeedbackRequest request) =>
 		!string.IsNullOrWhiteSpace(request.PageUrl)
-		&& request.PageUrl.Length <= 2048
-		&& request.PageUrl.StartsWith('/')
-		&& !request.PageUrl.StartsWith("//", StringComparison.Ordinal)
-		&& Uri.TryCreate(request.PageUrl, UriKind.Relative, out _)
-		&& !string.IsNullOrWhiteSpace(request.PageTitle)
-		&& request.PageTitle.Length <= 500
-		&& request.Reaction is PageFeedbackReaction.ThumbsUp or PageFeedbackReaction.ThumbsDown
-		&& (request.Comment is null || request.Comment.Length <= 2000)
-		&& IsValidFeedbackDetails(request);
+			&& request.PageUrl.Length <= 2048
+			&& request.PageUrl.StartsWith('/')
+			&& !request.PageUrl.StartsWith("//", StringComparison.Ordinal)
+			&& Uri.TryCreate(request.PageUrl, UriKind.Relative, out _)
+			&& !string.IsNullOrWhiteSpace(request.PageTitle)
+			&& request.PageTitle.Length <= 500
+			&& request.Reaction is PageFeedbackReaction.ThumbsUp or PageFeedbackReaction.ThumbsDown
+			&& (request.Comment is null || request.Comment.Length <= 2000)
+			&& IsValidFeedbackDetails(request);
 
 	private static bool IsValidFeedbackDetails(PageFeedbackRequest request)
 	{
@@ -251,22 +253,12 @@ public static class MappingsExtension
 			&& IsReasonValidForReaction(request.Reaction, request.Reason.Value);
 	}
 
-	private static bool IsReasonValidForReaction(PageFeedbackReaction reaction, PageFeedbackReason reason) =>
-		reaction switch
-		{
-			PageFeedbackReaction.ThumbsUp => reason is
-				PageFeedbackReason.Accurate
-				or PageFeedbackReason.SolvedProblem
-				or PageFeedbackReason.EasyToUnderstand
-				or PageFeedbackReason.HelpfulExamples
-				or PageFeedbackReason.AnotherReason,
-			PageFeedbackReaction.ThumbsDown => reason is
-				PageFeedbackReason.Inaccurate
-				or PageFeedbackReason.MissingInformation
-				or PageFeedbackReason.HardToUnderstand
-				or PageFeedbackReason.CodeSampleErrors
-				or PageFeedbackReason.AnotherReason,
-			_ => false
-		};
-
+	private static bool IsReasonValidForReaction(PageFeedbackReaction reaction, PageFeedbackReason reason) => reaction switch
+	{
+		PageFeedbackReaction.ThumbsUp =>
+			reason is PageFeedbackReason.Accurate or PageFeedbackReason.SolvedProblem or PageFeedbackReason.EasyToUnderstand or PageFeedbackReason.HelpfulExamples or PageFeedbackReason.AnotherReason,
+		PageFeedbackReaction.ThumbsDown =>
+			reason is PageFeedbackReason.Inaccurate or PageFeedbackReason.MissingInformation or PageFeedbackReason.HardToUnderstand or PageFeedbackReason.CodeSampleErrors or PageFeedbackReason.AnotherReason,
+		_ => false
+	};
 }

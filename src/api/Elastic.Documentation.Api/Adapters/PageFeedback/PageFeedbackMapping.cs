@@ -57,18 +57,15 @@ public sealed record PageFeedbackDocument
 internal sealed partial class PageFeedbackJsonContext : JsonSerializerContext;
 
 [ElasticsearchMappingContext(JsonContext = typeof(PageFeedbackJsonContext))]
-[Index<PageFeedbackDocument>(
-	NameTemplate = "page-feedback-v1-{env}",
-	Dynamic = false,
-	MappingVersionFromAssembly = true
-)]
+[Index<PageFeedbackDocument>(NameTemplate = "page-feedback-v1-{env}", Dynamic = false, MappingVersionFromAssembly = true)]
 internal static partial class PageFeedbackMappingContext;
 
 internal sealed class PageFeedbackIndex(AppEnvironment appEnvironment)
 {
-	public ElasticsearchTypeContext MappingContext { get; } =
-		PageFeedbackMappingContext.PageFeedbackDocument.CreateContext(env: appEnvironment.Current.ToStringFast(true));
+	public ElasticsearchTypeContext MappingContext { get; } = PageFeedbackMappingContext.PageFeedbackDocument.CreateContext(
+		env: appEnvironment.Current.ToStringFast(true)
+	);
 
-	public string Name => MappingContext.IndexStrategy?.WriteTarget
-		?? throw new InvalidOperationException("Page feedback index mapping has no write target.");
+	public string Name =>
+		MappingContext.IndexStrategy?.WriteTarget ?? throw new InvalidOperationException("Page feedback index mapping has no write target.");
 }

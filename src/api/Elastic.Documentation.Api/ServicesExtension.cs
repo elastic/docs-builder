@@ -79,9 +79,11 @@ public static class ServicesExtension
 		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
-		_ = services.AddSingleton<ITransport>(serviceProvider =>
-			ElasticsearchTransportFactory.Create(
-				serviceProvider.GetRequiredService<DocumentationEndpoints>().Elasticsearch));
+		_ = services.AddSingleton<ITransport>(
+			serviceProvider => ElasticsearchTransportFactory.Create(
+				serviceProvider.GetRequiredService<DocumentationEndpoints>().Elasticsearch
+			)
+		);
 		AddDistributedCache(services, appEnv);
 		AddAskAiServices(services, appEnv);
 		AddPageFeedbackServices(services);

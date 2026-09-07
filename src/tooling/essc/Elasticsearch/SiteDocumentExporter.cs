@@ -4,7 +4,6 @@
 
 using System.Threading;
 using Elastic.Channels;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;

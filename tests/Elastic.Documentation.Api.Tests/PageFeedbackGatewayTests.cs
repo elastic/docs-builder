@@ -51,28 +51,31 @@ public class PageFeedbackGatewayTests
 	}
 
 	private static ITransport CreateTransport(int itemStatus) =>
-		Virtual.Elasticsearch
+		Virtual
+			.Elasticsearch
 			.Bootstrap(1)
 			.Ping(call => call.SucceedAlways())
-			.ClientCalls(call => call
-				.OnPath("_bulk")
-				.SucceedAlways()
-				.ReturnResponse(new
-				{
-					errors = itemStatus is < 200 or > 299,
-					items = new[]
+			.ClientCalls(
+				call => call
+					.OnPath("_bulk")
+					.SucceedAlways()
+					.ReturnResponse(new
 					{
-						new
+						errors = itemStatus is < 200 or > 299,
+						items = new[]
 						{
-							index = new
+							new
 							{
-								_index = "page-feedback-v1-dev",
-								_id = "00000000-0000-4000-8000-000000000001",
-								status = itemStatus
+								index = new
+								{
+									_index = "page-feedback-v1-dev",
+									_id = "00000000-0000-4000-8000-000000000001",
+									status = itemStatus
+								}
 							}
 						}
-					}
-				}))
+					})
+			)
 			.StaticNodePool()
 			.Settings(settings => settings.DisablePing().EnableDebugMode())
 			.RequestHandler;
@@ -82,14 +85,15 @@ public class PageFeedbackGatewayTests
 	private static IngestChannel<PageFeedbackDocument> CreateChannel(ITransport transport, PageFeedbackIndex index) =>
 		new(new IngestChannelOptions<PageFeedbackDocument>(transport, index.MappingContext));
 
-	private static PageFeedbackRecord CreateRecord() => new(
-		Guid.Parse("00000000-0000-4000-8000-000000000001"),
-		"/docs/test-page",
-		"Test page",
-		PageFeedbackReaction.ThumbsUp,
-		PageFeedbackReason.Accurate,
-		1,
-		"Clear and useful.",
-		"test-euid"
-	);
+	private static PageFeedbackRecord CreateRecord() =>
+		new(
+			Guid.Parse("00000000-0000-4000-8000-000000000001"),
+			"/docs/test-page",
+			"Test page",
+			PageFeedbackReaction.ThumbsUp,
+			PageFeedbackReason.Accurate,
+			1,
+			"Clear and useful.",
+			"test-euid"
+		);
 }
