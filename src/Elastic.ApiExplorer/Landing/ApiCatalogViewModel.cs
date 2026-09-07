@@ -14,7 +14,6 @@ public sealed record ApiCatalogTile(
 	string MarkdownUrl,
 	string JsonUrl,
 	string? IconSvg,
-	string Initials,
 	string? Teaser
 );
 
@@ -35,7 +34,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 			ApiOutputPaths.MarkdownUrl(entry.Url),
 			ApiOutputPaths.JsonUrl(entry.Url),
 			ProductIcons.Get(iconKey),
-			ProductIcons.Initials(iconKey),
 			entry.Teaser
 		);
 	}

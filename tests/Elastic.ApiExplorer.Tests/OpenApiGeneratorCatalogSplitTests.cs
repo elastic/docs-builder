@@ -72,6 +72,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current.CancellationToken);
 		html.Should().Contain("<h1>API catalog</h1>");
 		html.Should().Contain("api-catalog-grid");
+		html.Should().NotContain("hub-card");
+		html.Should().NotContain("hub-page");
 		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch/">Elasticsearch</a>""");
 		html.Should().Contain("""<a href="/docs/api/doc/kibana/">Kibana</a>""");
 		html.Should().Contain("A distributed search engine.");
