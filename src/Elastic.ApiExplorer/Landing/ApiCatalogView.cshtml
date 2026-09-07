@@ -4,15 +4,39 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
-<section id="elastic-docs-v3">
+<section id="elastic-docs-v3" class="api-catalog">
 	<h1>@ApiCatalog.PageTitle</h1>
-	<ul class="api-url-listing">
-		@foreach (var entry in Model.Entries.OrderBy(e => e.Key))
+	<p class="api-catalog-lede">Choose a product. Open the docs, or the spec.</p>
+	<ul class="api-catalog-grid">
+		@foreach (var tile in Model.Tiles)
 		{
-			<li class="api-url-list-item">
-				<a href="@entry.Url">@entry.Title <code>@entry.Key</code></a>
-				<a href="@ApiOutputPaths.JsonUrl(entry.Url)" download>JSON</a>
-				<a href="@ApiOutputPaths.YamlUrl(entry.Url)" download>YAML</a>
+			<li class="api-catalog-tile">
+				<div class="api-catalog-tile-head">
+					<span class="api-catalog-tile-mark" aria-hidden="true">
+						@if (tile.IconSvg is not null)
+						{
+							@(new HtmlString(tile.IconSvg))
+						}
+						else
+						{
+							<span class="api-catalog-tile-initials">@tile.Initials</span>
+						}
+					</span>
+					<div>
+						<h2 class="api-catalog-tile-title">
+							<a href="@tile.Url">@tile.Title</a>
+						</h2>
+						<code class="api-catalog-tile-key">@tile.Key</code>
+					</div>
+				</div>
+				@if (tile.Teaser is not null)
+				{
+					<p class="api-catalog-tile-teaser">@tile.Teaser</p>
+				}
+				<div class="api-catalog-formats">
+					<a href="@tile.MarkdownUrl" target="_blank" rel="noopener">Markdown</a>
+					<a href="@tile.JsonUrl" target="_blank" rel="noopener">JSON</a>
+				</div>
 			</li>
 		}
 	</ul>

@@ -46,6 +46,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		var entries = await generator.GenerateProducts(ctx: TestContext.Current.CancellationToken);
 
 		entries.Should().ContainSingle();
+		entries[0].ProductId.Should().Be("elasticsearch");
+		entries[0].Teaser.Should().Be("A distributed search engine.");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
 	}
@@ -59,8 +61,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
 		var entries = new List<ApiCatalogEntry>
 		{
-			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/"),
-			new("kibana", "Kibana", "/docs/api/doc/kibana/")
+			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/", "elasticsearch", "A distributed search engine."),
+			new("kibana", "Kibana", "/docs/api/doc/kibana/", "kibana")
 		};
 
 		await generator.GenerateCatalog(entries, TestContext.Current.CancellationToken);
@@ -69,8 +71,13 @@ public class OpenApiGeneratorCatalogSplitTests
 		context.WriteFileSystem.File.Exists(catalogPath).Should().BeTrue();
 		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current.CancellationToken);
 		html.Should().Contain("<h1>API catalog</h1>");
-		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch/">Elasticsearch <code>elasticsearch</code></a>""");
-		html.Should().Contain("""<a href="/docs/api/doc/kibana/">Kibana <code>kibana</code></a>""");
+		html.Should().Contain("api-catalog-grid");
+		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch/">Elasticsearch</a>""");
+		html.Should().Contain("""<a href="/docs/api/doc/kibana/">Kibana</a>""");
+		html.Should().Contain("A distributed search engine.");
+		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch.md" target="_blank" rel="noopener">Markdown</a>""");
+		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch.json" target="_blank" rel="noopener">JSON</a>""");
+		html.Should().NotContain("YAML");
 	}
 
 	[Fact]
@@ -180,7 +187,12 @@ public class OpenApiGeneratorCatalogSplitTests
 	private static OpenApiDocument SpecDocument(string title) =>
 		new()
 		{
-			Info = new OpenApiInfo { Title = title, Version = "1.0" },
+			Info = new OpenApiInfo
+			{
+				Title = title,
+				Version = "1.0",
+				Description = "A **distributed** [search](https://example.com) engine.\n\nMore detail."
+			},
 			Paths = new OpenApiPaths
 			{
 				["/ping"] = new OpenApiPathItem

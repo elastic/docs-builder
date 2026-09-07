@@ -15,8 +15,15 @@ internal static class LandingCommonMark
 	{
 		var markdown = new StringBuilder();
 		ApiCommonMark.Heading(markdown, 1, ApiCatalog.PageTitle);
-		foreach (var entry in entries.OrderBy(e => e.Key))
+		foreach (var entry in entries.OrderBy(e => e.Key, StringComparer.Ordinal))
+		{
 			_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} (`{entry.Key}`)");
+			if (entry.Teaser is not null)
+				_ = markdown.AppendLine($"  {entry.Teaser}");
+			_ = markdown.AppendLine(
+				$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))}"
+			);
+		}
 		return markdown.ToString();
 	}
 

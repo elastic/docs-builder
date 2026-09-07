@@ -4,12 +4,11 @@
 
 using System.Collections.Frozen;
 
-namespace Elastic.Markdown.Myst.Directives.Hub;
+namespace Elastic.Documentation.Site.Icons;
 
 /// <summary>
-/// Looks up an inline SVG by product key. Used by the {hero} directive (hero-icon
-/// chip) and {link-card} (solution-card icon). Keys are kept lowercase and match
-/// the product ids in <c>products.yml</c> wherever possible.
+/// Looks up an inline SVG by product key. Used by hub directives and the API catalog.
+/// Keys are kept lowercase and match the product ids in <c>products.yml</c> wherever possible.
 /// </summary>
 public static class ProductIcons
 {
@@ -69,10 +68,6 @@ public static class ProductIcons
 			"""
 	}.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
-	/// <summary>
-	/// Returns the inline SVG markup for <paramref name="key"/>, or null when no icon
-	/// is registered for that product.
-	/// </summary>
 	public static string? Get(string? key)
 	{
 		if (string.IsNullOrWhiteSpace(key))
@@ -80,10 +75,5 @@ public static class ProductIcons
 		return Icons.TryGetValue(key, out var svg) ? svg : null;
 	}
 
-	/// <summary>
-	/// Initials fallback: the first character of the key, uppercased. Returns a
-	/// single-letter string, suitable for the standard hero-icon chip when no
-	/// SVG is registered.
-	/// </summary>
 	public static string Initials(string? key) => string.IsNullOrWhiteSpace(key) ? "?" : char.ToUpperInvariant(key[0]).ToString();
 }
