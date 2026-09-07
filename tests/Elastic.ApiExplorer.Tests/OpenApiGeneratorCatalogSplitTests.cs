@@ -43,7 +43,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			reader
 		);
 
-		var entries = await generator.GenerateProducts(TestContext.Current.CancellationToken);
+		var entries = await generator.GenerateProducts(ctx: TestContext.Current.CancellationToken);
 
 		entries.Should().ContainSingle();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
@@ -90,10 +90,42 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		await generator.Generate(TestContext.Current.CancellationToken);
 
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
-		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeTrue();
+		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
+		var catalogHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "index.html"));
+		productHtml.Should().Contain("id=\"api-hub-switcher\"");
+		productHtml.Should().Contain("Back to hub");
+		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task GenerateProducts_WithHubEntries_WritesSiblingApisOnProductPage()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(SpecDocument("Elasticsearch main"));
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+		var hubEntries = new List<ApiCatalogEntry>
+		{
+			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/"),
+			new("kibana", "Kibana", "/docs/api/doc/kibana/")
+		};
+
+		_ = await generator.GenerateProducts(hubEntries, TestContext.Current.CancellationToken);
+
+		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
+		productHtml.Should().Contain("id=\"api-hub-switcher\"");
+		productHtml.Should().Contain("<option value=\"/docs/api/\">Back to hub</option>");
+		productHtml.Should().Contain("<option value=\"/docs/api/doc/elasticsearch/\" selected>Elasticsearch</option>");
+		productHtml.Should().Contain("<option value=\"/docs/api/doc/kibana/\">Kibana</option>");
 	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)

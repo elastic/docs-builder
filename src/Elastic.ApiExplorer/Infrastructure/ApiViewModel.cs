@@ -23,6 +23,7 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
 	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
+	public IReadOnlyList<ApiVersionSwitcherItem> HubSwitcherItems { get; init; } = [];
 	public required string MarkdownUrl { get; init; }
 }
 
@@ -85,6 +86,11 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
+			HubSwitcherItems = ApiHubSwitcher.Build(
+				RenderContext.CatalogEntries,
+				RenderContext.CurrentApiKey,
+				$"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/"
+			),
 			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,

@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Text;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
@@ -52,6 +53,21 @@ public static class AssemblerOpenApiBuildStep
 		var catalogEntries = new List<ApiCatalogEntry>();
 		using var versionIndexClient = new VersionIndexClient();
 
+		var hubEntries = new List<ApiCatalogEntry>();
+		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var owner in owners)
+		{
+			var declared = ApiHubSwitcher.CollectDeclaredEntries(
+				owner.Set.BuildContext.UrlPathPrefix,
+				owner.Set.BuildContext.Configuration.ApiConfigurations
+			);
+			foreach (var entry in declared)
+			{
+				if (seenKeys.Add(entry.Key))
+					hubEntries.Add(entry);
+			}
+		}
+
 		foreach (var owner in owners)
 		{
 			ApplyFeatureFlags(owner.Set, env.FeatureFlags);
@@ -62,7 +78,7 @@ public static class AssemblerOpenApiBuildStep
 				generator.MarkdownStringRenderer,
 				versionIndexClient
 			);
-			var entries = await openApiGenerator.GenerateProducts(ctx).ConfigureAwait(false);
+			var entries = await openApiGenerator.GenerateProducts(hubEntries: hubEntries, ctx).ConfigureAwait(false);
 			catalogEntries.AddRange(entries);
 		}
 

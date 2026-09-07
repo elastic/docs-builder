@@ -32,7 +32,9 @@ internal sealed record ApiProductGeneration(
 	IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems,
 	string Moniker,
 	bool EmitUnmatchedBaseFiles,
-	int? SupplementalMajor
+	int? SupplementalMajor,
+	IReadOnlyList<ApiCatalogEntry> CatalogEntries,
+	string? CurrentApiKey
 );
 
 /// <summary>
@@ -67,7 +69,8 @@ public class OpenApiGenerator(
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		var catalogEntries = await GenerateProducts(ctx).ConfigureAwait(false);
+		var declaredEntries = ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
+		var catalogEntries = await GenerateProducts(hubEntries: declaredEntries, ctx).ConfigureAwait(false);
 		if (catalogEntries.Count > 0)
 			await GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
 	}
@@ -76,18 +79,23 @@ public class OpenApiGenerator(
 	/// Renders every configured API product for this build context and returns catalog entries.
 	/// Does not write the combined API catalog page.
 	/// </summary>
-	public async Task<IReadOnlyList<ApiCatalogEntry>> GenerateProducts(Cancel ctx = default)
+	public async Task<IReadOnlyList<ApiCatalogEntry>> GenerateProducts(
+		IReadOnlyList<ApiCatalogEntry>? hubEntries = null,
+		Cancel ctx = default
+	)
 	{
 		if (context.Configuration.ApiConfigurations is null)
 			return [];
 
+		var catalogForSwitcher = hubEntries
+			?? ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
 		var catalogEntries = new List<ApiCatalogEntry>();
 
 		foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 		{
 			try
 			{
-				var entry = await GenerateProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
+				var entry = await GenerateProduct(prefix, apiConfig, catalogForSwitcher, ctx).ConfigureAwait(false);
 				if (entry is not null)
 					catalogEntries.Add(entry);
 			}
@@ -106,7 +114,12 @@ public class OpenApiGenerator(
 	public Task GenerateCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx = default) =>
 		entries.Count == 0 ? Task.CompletedTask : GenerateApiCatalog(entries, ctx);
 
-	private async Task<ApiCatalogEntry?> GenerateProduct(string prefix, ResolvedApiConfiguration apiConfig, Cancel ctx)
+	private async Task<ApiCatalogEntry?> GenerateProduct(
+		string prefix,
+		ResolvedApiConfiguration apiConfig,
+		IReadOnlyList<ApiCatalogEntry> hubEntries,
+		Cancel ctx
+	)
 	{
 		var resolved = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
 		if (resolved.Documents.Count == 0)
@@ -127,7 +140,9 @@ public class OpenApiGenerator(
 					switcherItems,
 					versioned.Version.Moniker,
 					EmitUnmatchedBaseFiles: versioned.Version.Moniker == resolved.UnmatchedBaseFilesMoniker,
-					SupplementalMajor: SupplementalMajor(versioned.Version.Moniker, highestMajor)
+					SupplementalMajor: SupplementalMajor(versioned.Version.Moniker, highestMajor),
+					CatalogEntries: hubEntries,
+					CurrentApiKey: prefix
 				),
 				ctx
 			).ConfigureAwait(false);
@@ -298,6 +313,8 @@ public class OpenApiGenerator(
 			MarkdownRenderer = markdownStringRenderer,
 			ApiExplorerLog = _logger,
 			VersionSwitcherItems = generation.VersionSwitcherItems,
+			CatalogEntries = generation.CatalogEntries,
+			CurrentApiKey = generation.CurrentApiKey,
 			OperationSupplemental = operations,
 			TagSupplemental = tags,
 			Product = generation.ApiConfig?.Product

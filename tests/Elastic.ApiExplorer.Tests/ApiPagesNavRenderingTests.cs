@@ -25,19 +25,67 @@ public partial class ApiPagesNavRenderingTests
 	[Fact]
 	public async Task Render_MarksOnlyCurrentVersionSelected()
 	{
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/v9/",
+			"/api/doc/elasticsearch/v9.md",
+			versionSwitcherItems: [
+				new("Latest", "/api/doc/elasticsearch/", Selected: false),
+				new("9.x", "/api/doc/elasticsearch/v9/", Selected: true),
+				new("8.x", "/api/doc/elasticsearch/v8/", Selected: false),
+			]
+		);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().NotContain("selected=\"False\"");
+		html.Should().NotContain("selected=\"True\"");
+		html.Should().Contain("<option value=\"/api/doc/elasticsearch/v9/\" selected>9.x</option>");
+		CountSelectedOptions(html).Should().Be(1);
+	}
+
+	[Fact]
+	public async Task Render_MarksOnlyCurrentHubProductSelected()
+	{
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/",
+			"/api/doc/elasticsearch.md",
+			hubSwitcherItems: [
+				new("Back to hub", "/api/", Selected: false),
+				new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true),
+				new("Kibana", "/api/doc/kibana/", Selected: false),
+			]
+		);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("id=\"api-hub-switcher\"");
+		html.Should().NotContain("selected=\"False\"");
+		html.Should().NotContain("selected=\"True\"");
+		html.Should().Contain("<option value=\"/api/\">Back to hub</option>");
+		html.Should().Contain("<option value=\"/api/doc/elasticsearch/\" selected>Elasticsearch</option>");
+		html.Should().Contain("<option value=\"/api/doc/kibana/\">Kibana</option>");
+		CountSelectedOptions(html).Should().Be(1);
+	}
+
+	private static ApiLayoutViewModel CreateLayoutModel(
+		string navigationUrl,
+		string markdownUrl,
+		IReadOnlyList<ApiVersionSwitcherItem>? versionSwitcherItems = null,
+		IReadOnlyList<ApiVersionSwitcherItem>? hubSwitcherItems = null
+	)
+	{
 		var fs = new FileSystem();
 		var context = new BuildContext(
 			new DiagnosticsCollector([]),
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			TestHelpers.CreateConfigurationContext(fs)
 		);
-		var navigationItem = new LandingNavigationItem("/api/doc/elasticsearch/v9/").Index;
-		var model = new ApiLayoutViewModel
+		return new()
 		{
 			DocsBuilderVersion = "test",
 			DocSetName = "Api Explorer",
 			Description = string.Empty,
-			CurrentNavigationItem = navigationItem,
+			CurrentNavigationItem = new LandingNavigationItem(navigationUrl).Index,
 			Previous = null,
 			Next = null,
 			NavigationHtml = string.Empty,
@@ -49,24 +97,14 @@ public partial class ApiPagesNavRenderingTests
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
-			MarkdownUrl = "/api/doc/elasticsearch/v9.md",
-			VersionSwitcherItems =
-			[
-				new("Latest", "/api/doc/elasticsearch/", Selected: false),
-				new("9.x", "/api/doc/elasticsearch/v9/", Selected: true),
-				new("8.x", "/api/doc/elasticsearch/v8/", Selected: false),
-			],
+			MarkdownUrl = markdownUrl,
+			VersionSwitcherItems = versionSwitcherItems ?? [],
+			HubSwitcherItems = hubSwitcherItems ?? [],
 		};
-
-		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
-
-		html.Should().NotContain("selected=\"False\"");
-		html.Should().NotContain("selected=\"True\"");
-		html.Should().Contain("<option value=\"/api/doc/elasticsearch/v9/\" selected>9.x</option>");
-
-		var selectedOptions = OptionTag().Matches(html).Count(m => m.Value.Contains(" selected", StringComparison.Ordinal));
-		selectedOptions.Should().Be(1);
 	}
+
+	private static int CountSelectedOptions(string html) =>
+		OptionTag().Matches(html).Count(m => m.Value.Contains(" selected", StringComparison.Ordinal));
 
 	[GeneratedRegex("<option[^>]*>", RegexOptions.IgnoreCase)]
 	private static partial Regex OptionTag();
