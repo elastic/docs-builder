@@ -31,7 +31,7 @@ interface ReasonOption {
 
 const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
     accurate: {
-        description: 'The reference is correct and matches the real API.',
+        description: 'The reference is correct about how the API works.',
     },
     solvedProblem: {
         description: 'Helped me call the endpoint or use the schema.',
@@ -74,7 +74,7 @@ const POSITIVE_REASONS: ReasonOption[] = [
     {
         value: 'accurate',
         label: 'Accurate',
-        description: 'The information is correct and up to date.',
+        description: 'The page is correct about how the product works.',
     },
     {
         value: 'helpfulExamples',
