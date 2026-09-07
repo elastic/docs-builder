@@ -16,14 +16,14 @@ export function formatTimes(value: number): string {
 }
 
 /**
- * Compactness of this field: disk ÷ off-heap RAM working set.
+ * Compactness of this field: disk ÷ RAM needed for search.
  * Empty when the ratio is not meaningful.
  */
 export function formatDiskToRamSentence(ratio: number): string {
     if (ratio <= 0) {
         return ''
     }
-    return `Disk is about ${formatTimes(ratio)} the off-heap RAM working set.`
+    return `Disk is about ${formatTimes(ratio)} the RAM needed for search.`
 }
 
 /** Normalize user input: commas = thousands, dot = decimal; accepts legacy dot-grouping. */

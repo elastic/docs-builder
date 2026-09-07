@@ -2,7 +2,7 @@ import { formatHeroSizeParts } from '../calculations'
 
 interface HeroSizeLineProps {
     bytes?: number
-    resourceLabel: 'Disk' | 'Off-heap RAM'
+    resourceLabel: 'Disk' | 'RAM'
 }
 
 export function HeroSizeLine({ bytes = 0, resourceLabel }: HeroSizeLineProps) {

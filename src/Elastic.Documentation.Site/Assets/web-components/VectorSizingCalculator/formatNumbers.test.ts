@@ -13,12 +13,12 @@ describe('formatTimes', () => {
 })
 
 describe('formatDiskToRamSentence', () => {
-    it('describes disk relative to the off-heap RAM working set', () => {
+    it('describes disk relative to the RAM needed for search', () => {
         expect(formatDiskToRamSentence(19.4)).toBe(
-            'Disk is about 19× the off-heap RAM working set.'
+            'Disk is about 19× the RAM needed for search.'
         )
         expect(formatDiskToRamSentence(1.54)).toBe(
-            'Disk is about 1.5× the off-heap RAM working set.'
+            'Disk is about 1.5× the RAM needed for search.'
         )
     })
 

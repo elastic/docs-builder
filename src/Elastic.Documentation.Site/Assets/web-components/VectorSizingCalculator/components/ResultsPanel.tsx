@@ -3,7 +3,7 @@ import { formatDiskToRamSentence, formatGroupedInteger } from '../formatNumbers'
 import type { SizingResult, ValidationResult } from '../types'
 import { CalcToolTip } from './CalcToolTip'
 import { HeroSizeLine } from './HeroSizeLine'
-import { EuiHorizontalRule, EuiLink, EuiText } from '@elastic/eui'
+import { EuiHorizontalRule, EuiText } from '@elastic/eui'
 
 interface ResultsPanelProps {
     result: SizingResult | null
@@ -13,14 +13,13 @@ interface ResultsPanelProps {
     validation: ValidationResult
 }
 
-const KNN_MEMORY_DOC =
-    'https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performance/approximate-knn-search#_ensure_data_nodes_have_enough_memory'
+const SERVERLESS_NOTE = 'Does not apply to Elastic Cloud Serverless.'
 
 const SIZING_DISCLAIMER =
-    'These estimates are vector-field disk and off-heap (page cache) RAM per copy, for self-managed Elasticsearch and Elastic Cloud Hosted. They are not JVM heap, not a full-node size, and not how you size Elastic Cloud Serverless. Actual needs still depend on data shape, indexing settings, and query patterns.'
+    'These estimates are disk and RAM per copy for self-managed Elasticsearch and Elastic Cloud Hosted. This RAM is for fast search, not the Java heap, and is not a full node size. Actual needs still depend on data shape, indexing settings, and query patterns.'
 
 const DISK_TO_RAM_TIP =
-    'This is how much disk this field uses relative to its off-heap RAM working set. A high ratio, typical of DiskBBQ, means most of the index can stay on disk. It is not a node type, not JVM heap, and not a serverless capacity number.'
+    'This compares how much the field stores on disk with how much RAM it wants in the filesystem cache for fast search. A high number, typical of DiskBBQ, means most of the index can stay on disk. It is not a node type, not Java heap, and not a serverless capacity number.'
 
 function clusterResourcesLabel(replicas: number): string {
     if (replicas === 0) {
@@ -64,16 +63,13 @@ export function ResultsPanel({
                             />
                             <HeroSizeLine
                                 bytes={result.clusterRam}
-                                resourceLabel="Off-heap RAM"
+                                resourceLabel="RAM"
                             />
                         </div>
                     ) : (
                         <div className="vectorSizingCalc__heroTotals">
                             <HeroSizeLine bytes={0} resourceLabel="Disk" />
-                            <HeroSizeLine
-                                bytes={0}
-                                resourceLabel="Off-heap RAM"
-                            />
+                            <HeroSizeLine bytes={0} resourceLabel="RAM" />
                         </div>
                     )}
 
@@ -103,7 +99,7 @@ export function ResultsPanel({
                                 size="s"
                                 className="vectorSizingCalc__detailLabel"
                             >
-                                Off-heap RAM per replica:
+                                RAM per replica:
                             </EuiText>
                         </div>
                         <div className="vectorSizingCalc__resultsDetailValues">
@@ -169,16 +165,15 @@ export function ResultsPanel({
                     <div className="vectorSizingCalc__disclaimerFooter">
                         <EuiText
                             size="xs"
+                            className="vectorSizingCalc__serverlessNote"
+                        >
+                            {SERVERLESS_NOTE}
+                        </EuiText>
+                        <EuiText
+                            size="xs"
                             className="vectorSizingCalc__disclaimer"
                         >
-                            {SIZING_DISCLAIMER}{' '}
-                            <EuiLink
-                                href={KNN_MEMORY_DOC}
-                                target="_blank"
-                                external
-                            >
-                                Learn more
-                            </EuiLink>
+                            {SIZING_DISCLAIMER}
                         </EuiText>
                     </div>
                 )}

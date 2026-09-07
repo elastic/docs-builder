@@ -43,46 +43,42 @@ function renderPanel(
 }
 
 describe('ResultsPanel', () => {
-    it('labels RAM as off-heap and states disk relative to that working set', () => {
+    it('labels RAM plainly and states disk relative to RAM needed for search', () => {
         renderPanel()
 
-        expect(screen.getAllByText(/Off-heap RAM/).length).toBeGreaterThan(0)
+        expect(screen.getByText('RAM per replica:')).toBeInTheDocument()
         expect(
-            screen.getByText('Off-heap RAM per replica:')
+            screen.getByText(/Disk is about .+ the RAM needed for search\./)
         ).toBeInTheDocument()
-        expect(
-            screen.getByText(/Disk is about .+ the off-heap RAM working set\./)
-        ).toBeInTheDocument()
+        expect(screen.queryByText(/Off-heap RAM/)).not.toBeInTheDocument()
         expect(
             screen.queryByText(/Disk : off-heap RAM/)
         ).not.toBeInTheDocument()
     })
 
-    it('scopes the estimate to self-managed and Elastic Cloud Hosted', () => {
+    it('calls out serverless on its own line and does not link away', () => {
         renderPanel()
 
+        expect(
+            screen.getByText('Does not apply to Elastic Cloud Serverless.')
+        ).toBeInTheDocument()
         expect(
             screen.getByText(
                 /self-managed Elasticsearch and Elastic Cloud Hosted/
             )
         ).toBeInTheDocument()
-        expect(
-            screen.getByText(/not how you size Elastic Cloud Serverless/)
-        ).toBeInTheDocument()
-        expect(screen.getByText(/not JVM heap/)).toBeInTheDocument()
+        expect(screen.queryByText('Learn more')).not.toBeInTheDocument()
     })
 
     it('hides the compactness sentence and disclaimer when inputs are invalid', () => {
         renderPanel({ result: null, inputsValid: false })
 
         expect(
-            screen.queryByText(/off-heap RAM working set/)
+            screen.queryByText(/RAM needed for search/)
         ).not.toBeInTheDocument()
         expect(
             screen.queryByText(/Elastic Cloud Serverless/)
         ).not.toBeInTheDocument()
-        expect(
-            screen.getByText('Off-heap RAM per replica:')
-        ).toBeInTheDocument()
+        expect(screen.getByText('RAM per replica:')).toBeInTheDocument()
     })
 })

@@ -177,6 +177,15 @@ vector-sizing-calculator:not(:defined) {
 	padding-top: 16px;
 }
 
+.vectorSizingCalc__serverlessNote {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 600 !important;
+	color: #1d2a3e !important;
+}
+
 .vectorSizingCalc__byteSizeValue {
 	display: inline-block;
 	max-width: 100%;
@@ -227,12 +236,6 @@ vector-sizing-calculator:not(:defined) {
 	line-height: 16px !important;
 	font-weight: 400 !important;
 	color: #798eaf !important;
-}
-
-.vectorSizingCalc__disclaimer .euiLink {
-	font-size: 12px !important;
-	line-height: 16px !important;
-	font-weight: 400 !important;
 }
 
 .vectorSizingCalc__sectionTitle {
