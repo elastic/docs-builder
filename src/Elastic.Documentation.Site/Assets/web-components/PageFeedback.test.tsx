@@ -188,14 +188,9 @@ describe('PageFeedback', () => {
         const firstComment = screen.getByRole('textbox', {
             name: 'Tell us more (optional)',
         })
-        expect(
-            accurate.compareDocumentPosition(firstComment) &
-                Node.DOCUMENT_POSITION_FOLLOWING
-        ).toBeTruthy()
-        expect(
-            firstComment.compareDocumentPosition(solved) &
-                Node.DOCUMENT_POSITION_FOLLOWING
-        ).toBeTruthy()
+        expect(accurate.closest('.page-feedback__option')).toContainElement(
+            firstComment
+        )
         await user.type(firstComment, 'Clear write-up.')
 
         await user.click(solved)
@@ -203,17 +198,61 @@ describe('PageFeedback', () => {
             name: 'Tell us more (optional)',
         })
         expect(movedComment).toHaveValue('')
+        expect(solved.closest('.page-feedback__option')).toContainElement(
+            movedComment
+        )
         await user.type(movedComment, 'Fixed my issue.')
-        expect(
-            solved.compareDocumentPosition(movedComment) &
-                Node.DOCUMENT_POSITION_FOLLOWING
-        ).toBeTruthy()
-        expect(
-            movedComment.compareDocumentPosition(solved) &
-                Node.DOCUMENT_POSITION_FOLLOWING
-        ).toBeFalsy()
 
         await user.click(accurate)
+        expect(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
+        ).toHaveValue('Clear write-up.')
+    })
+
+    it('keeps per-option comments when switching between yes and no', async () => {
+        const user = userEvent.setup()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Yes, this page was helpful',
+            })
+        )
+        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
+        await user.type(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' }),
+            'Clear write-up.'
+        )
+        await user.click(screen.getByRole('radio', { name: /Another reason/ }))
+        await user.type(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' }),
+            'Shared note.'
+        )
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'No, this page was not helpful',
+            })
+        )
+        expect(
+            screen.getByRole('radio', { name: /Another reason/ })
+        ).toBeChecked()
+        expect(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
+        ).toHaveValue('Shared note.')
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'Yes, this page was helpful',
+            })
+        )
+        expect(
+            screen.getByRole('radio', { name: /Another reason/ })
+        ).toBeChecked()
+        expect(
+            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
+        ).toHaveValue('Shared note.')
+        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
         expect(
             screen.getByRole('textbox', { name: 'Tell us more (optional)' })
         ).toHaveValue('Clear write-up.')

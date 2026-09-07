@@ -290,8 +290,15 @@ export const PageFeedback = ({
         if (nextReaction === reaction) return
 
         setReaction(nextReaction)
-        setReason(null)
-        setComments({})
+        setReason(
+            reason &&
+                (nextReaction === 'thumbsUp'
+                    ? POSITIVE_REASONS
+                    : NEGATIVE_REASONS
+                ).some((option) => option.value === reason)
+                ? reason
+                : null
+        )
         setError(false)
         pendingReactionSaveRef.current?.(false)
 
@@ -350,7 +357,7 @@ export const PageFeedback = ({
 
     if (showThanks) {
         return (
-            <section className="page-feedback page-feedback--success">
+            <section className="page-feedback">
                 <p className="page-feedback__thanks" role="status">
                     <span
                         className="page-feedback__thanks-icon"

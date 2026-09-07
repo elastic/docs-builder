@@ -13,10 +13,10 @@ The thumbs-up or thumbs-down selection writes a document with the reaction after
 a short debounce, so quickly changing the selection records only the final
 choice. The follow-up questionnaire writes the same document again with a
 structured reason, the reason-set version, and optional details. The comment
-field sits under the selected option. Each option keeps its own comment draft.
-The browser stores that draft in `sessionStorage` for the current tab and page
-so an accidental refresh can restore it, and clears it after a successful
-submit. Submitting the questionnaire flushes any pending reaction write first.
+field sits under the selected option. Each option keeps its own comment draft,
+including when the reader switches between Yes and No. The browser stores that
+draft in `sessionStorage` for the current tab and page so an accidental refresh
+can restore it, and clears it after a successful submit. Submitting the questionnaire flushes any pending reaction write first.
 This keeps abandoned questionnaires useful while ensuring the richer
 submission wins.
 
