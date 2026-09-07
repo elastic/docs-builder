@@ -15,6 +15,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Http;
 #if DEBUG
 using Elastic.Documentation.Api;
+using Elastic.Documentation.Api.PageFeedback;
 #endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
@@ -25,6 +26,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -58,6 +60,7 @@ public class DocumentationWebHost
 
 #if DEBUG
 		builder.Services.AddElasticDocsApiServices("dev");
+		builder.Services.Replace(ServiceDescriptor.Singleton<IPageFeedbackService, DebugPageFeedbackService>());
 #endif
 
 		_ = builder
@@ -79,6 +82,9 @@ public class DocumentationWebHost
 		Context = new BuildContext(collector, docFs, configurationContext) { CanonicalBaseUrl = new Uri(hostUrl), };
 
 		Context.Configuration.Features.DiagnosticsPanelEnabled = !noHud;
+#if DEBUG
+		Context.Configuration.Features.PageFeedbackEnabled = true;
+#endif
 
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
