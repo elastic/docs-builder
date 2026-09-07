@@ -21,9 +21,9 @@
 						}
 						<h2 class="api-catalog-card-title">@tile.Title</h2>
 					</div>
-					@if (tile.Teaser is not null)
+					@if (!string.IsNullOrWhiteSpace(tile.Description))
 					{
-						<p class="api-catalog-card-teaser">@tile.Teaser</p>
+						<p class="api-catalog-card-desc line-clamp-3">@tile.Description</p>
 					}
 				</a>
 			</li>

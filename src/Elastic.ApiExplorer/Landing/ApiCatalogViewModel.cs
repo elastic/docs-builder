@@ -7,7 +7,7 @@ using Elastic.Documentation.Site.Icons;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public sealed record ApiCatalogTile(string Key, string Title, string Url, string? IconSvg, string? Teaser);
+public sealed record ApiCatalogTile(string Key, string Title, string Url, string? IconSvg, string? Description);
 
 public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
@@ -19,6 +19,6 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 	private static ApiCatalogTile ToTile(ApiCatalogEntry entry)
 	{
 		var iconKey = entry.ProductId ?? entry.Key;
-		return new(entry.Key, entry.Title, entry.Url, ProductIcons.Get(iconKey), entry.Teaser);
+		return new(entry.Key, entry.Title, entry.Url, ProductIcons.Get(iconKey), entry.Description);
 	}
 }

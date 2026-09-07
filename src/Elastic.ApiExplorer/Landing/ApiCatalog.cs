@@ -13,7 +13,7 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public sealed record ApiCatalogEntry(string Key, string Title, string Url, string? ProductId = null, string? Teaser = null);
+public sealed record ApiCatalogEntry(string Key, string Title, string Url, string? ProductId = null, string? Description = null);
 
 public class ApiCatalog : IApiGroupingModel
 {

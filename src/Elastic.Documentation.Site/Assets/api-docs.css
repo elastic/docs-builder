@@ -1246,7 +1246,7 @@
 	color: var(--color-blue-elastic);
 }
 
-.api-catalog-card-teaser {
+.api-catalog-card-desc {
 	margin: 0;
 	font-size: var(--text-base);
 	line-height: 1.5;

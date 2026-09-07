@@ -47,7 +47,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		entries.Should().ContainSingle();
 		entries[0].ProductId.Should().Be("elasticsearch");
-		entries[0].Teaser.Should().Be("A distributed search engine.");
+		entries[0].Description.Should().Be("A **distributed** [search](https://example.com) engine.\n\nMore detail.");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
 	}

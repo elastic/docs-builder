@@ -11,7 +11,7 @@ The API Explorer turns an OpenAPI spec into HTML pages. If you add an `api:` ent
 - one operation page per operation
 - schema type pages for shared types
 
-The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card teaser is the first paragraph of the spec `info.description`.
+The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card shows `info.description`, clamped to three lines.
 
 :::{warning}
 This feature is still under development and the functionality described on this page might change.

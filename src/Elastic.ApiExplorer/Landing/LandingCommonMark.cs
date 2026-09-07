@@ -18,8 +18,6 @@ internal static class LandingCommonMark
 		foreach (var entry in entries.OrderBy(e => e.Key, StringComparer.Ordinal))
 		{
 			_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} (`{entry.Key}`)");
-			if (entry.Teaser is not null)
-				_ = markdown.AppendLine($"  {entry.Teaser}");
 			_ = markdown.AppendLine(
 				$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(entry.Url))}"
 			);
