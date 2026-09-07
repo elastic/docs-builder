@@ -1144,3 +1144,111 @@
 		right: 2rem;
 	}
 }
+
+/* API catalog — own markup and selectors. Values match hub cards so the
+   pages feel related; a hub.css change does not restyle this page. */
+.api-catalog {
+	margin: 0 auto;
+	max-width: 64rem;
+}
+
+.api-catalog-header {
+	padding: 40px 0 28px;
+	margin-bottom: 44px;
+	border-bottom: 1px solid var(--color-grey-20);
+}
+
+.api-catalog-header h1 {
+	margin: 0;
+	font-size: var(--text-4xl);
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: -0.5px;
+	color: var(--color-ink-dark);
+}
+
+.api-catalog-lede {
+	margin: 16px 0 0;
+	max-width: 760px;
+	font-size: var(--text-base);
+	line-height: 1.6;
+	color: var(--color-ink-light);
+}
+
+.api-catalog-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(310px, 100%), 1fr));
+	gap: 24px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.api-catalog-grid > li {
+	margin: 0;
+	list-style: none;
+}
+
+.api-catalog-grid .api-catalog-card {
+	display: block;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 22px;
+	background: var(--color-white);
+	border: 1px solid var(--color-grey-20);
+	border-radius: 14px;
+	text-decoration: none;
+	color: inherit;
+	transition:
+		box-shadow 0.15s,
+		border-color 0.15s;
+}
+
+.api-catalog-grid .api-catalog-card:hover,
+.api-catalog-grid .api-catalog-card:focus-visible {
+	border-color: var(--color-grey-80);
+	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+}
+
+.api-catalog-card-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 6px;
+}
+
+.api-catalog-card-icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 8px;
+	background: var(--color-grey-10);
+}
+
+.api-catalog-card-icon svg {
+	width: 22px;
+	height: 22px;
+	display: block;
+}
+
+.api-catalog-card-title {
+	margin: 0;
+	font-size: var(--text-base);
+	font-weight: 700;
+	color: var(--color-ink-dark);
+}
+
+.api-catalog-card:hover .api-catalog-card-title,
+.api-catalog-card:focus-visible .api-catalog-card-title {
+	color: var(--color-blue-elastic);
+}
+
+.api-catalog-card-desc {
+	margin: 0;
+	font-size: var(--text-base);
+	line-height: 1.5;
+	color: var(--color-ink-light);
+}

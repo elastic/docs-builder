@@ -1,0 +1,37 @@
+@inherits RazorLayoutSlice<Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
+@implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model;
+	protected override Task ExecuteSectionAsync(string name)
+	{
+		if (name == GlobalSections.Head)
+		{
+			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
+		}
+		return Task.CompletedTask;
+	}
+}
+@if (Model.BuildType == BuildType.Assembler)
+{
+	@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))
+}
+else
+{
+	@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
+}
+<div id="main-container" class="flex flex-col items-center">
+	<div class="max-w-(--max-layout-width) w-full px-6">
+		<main id="content-container" class="w-full pb-12">
+			@await RenderBodyAsync()
+			@await RenderPartialAsync(_PageFeedback.Create(Model))
+		</main>
+	</div>
+</div>
+@if (Model.BuildType == BuildType.Assembler)
+{
+	@(await RenderPartialAsync(_AssemblerFooter.Create(Model)))
+}
+else
+{
+	@(await RenderPartialAsync(_IsolatedFooter.Create(Model)))
+}
