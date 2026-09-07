@@ -49,7 +49,7 @@ describe('PageFeedback', () => {
             screen.getByRole('checkbox', { name: /Solved my problem/ })
         ).toHaveFocus()
         expect(
-            screen.queryByRole('checkbox', { name: /Inaccurate/ })
+            screen.queryByRole('checkbox', { name: /Technically incorrect/ })
         ).not.toBeInTheDocument()
         expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
     })
@@ -157,7 +157,9 @@ describe('PageFeedback', () => {
             })
         )
 
-        await user.click(screen.getByRole('checkbox', { name: /Inaccurate/ }))
+        await user.click(
+            screen.getByRole('checkbox', { name: /Technically incorrect/ })
+        )
         await user.click(screen.getByRole('checkbox', { name: /Out of date/ }))
         expect(
             screen.getByRole('button', { name: 'Submit' })

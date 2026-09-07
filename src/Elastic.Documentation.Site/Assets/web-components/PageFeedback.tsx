@@ -46,7 +46,7 @@ const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
         description: 'I found the endpoint or schema I needed quickly.',
     },
     inaccurate: {
-        description: 'The reference is wrong or does not match the real API.',
+        description: 'The reference is wrong about how the API works.',
     },
     missingInformation: {
         description: 'Missing a parameter, field, status, or auth detail.',
@@ -56,7 +56,7 @@ const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
         description: 'A request or response example is wrong.',
     },
     outOfDate: {
-        description: "The reference doesn't reflect the current API version.",
+        description: 'The reference describes an older version of the API.',
     },
 }
 
@@ -93,8 +93,7 @@ const NEGATIVE_REASONS: ReasonOption[] = [
     {
         value: 'outOfDate',
         label: 'Out of date',
-        description:
-            "The content doesn't reflect the current product or version.",
+        description: 'The page describes an older version of the product.',
     },
     {
         value: 'hardToUnderstand',
@@ -103,8 +102,8 @@ const NEGATIVE_REASONS: ReasonOption[] = [
     },
     {
         value: 'inaccurate',
-        label: 'Inaccurate',
-        description: 'The information is wrong or misleading.',
+        label: 'Technically incorrect',
+        description: 'The page is wrong about how the product works.',
     },
     {
         value: 'codeSampleErrors',
