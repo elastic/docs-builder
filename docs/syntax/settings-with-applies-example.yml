@@ -44,7 +44,7 @@ groups:
         datatype: enum
         default: strict
         applies_to:
-          stack: ga 9.2
+          stack: ga 9.1
           ech: ga
           ece: ga
           eck: ga
