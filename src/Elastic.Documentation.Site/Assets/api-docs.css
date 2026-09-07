@@ -1184,21 +1184,28 @@
 	list-style: none;
 }
 
-.api-catalog-card {
-	position: relative;
+.api-catalog-grid > li {
 	margin: 0;
-	padding: 22px 22px 20px;
 	list-style: none;
+}
+
+.api-catalog-grid .api-catalog-card {
+	display: block;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 22px;
 	background: var(--color-white);
 	border: 1px solid var(--color-grey-20);
 	border-radius: 14px;
+	text-decoration: none;
+	color: inherit;
 	transition:
 		box-shadow 0.15s,
 		border-color 0.15s;
 }
 
-.api-catalog-card:hover,
-.api-catalog-card:focus-within {
+.api-catalog-grid .api-catalog-card:hover,
+.api-catalog-grid .api-catalog-card:focus-visible {
 	border-color: var(--color-grey-80);
 	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
 }
@@ -1210,9 +1217,20 @@
 	margin-bottom: 6px;
 }
 
+.api-catalog-card-icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 8px;
+	background: var(--color-grey-10);
+}
+
 .api-catalog-card-icon svg {
-	width: 28px;
-	height: 28px;
+	width: 22px;
+	height: 22px;
 	display: block;
 }
 
@@ -1223,50 +1241,14 @@
 	color: var(--color-ink-dark);
 }
 
-.api-catalog-card-title a {
-	color: var(--color-ink-dark);
-	text-decoration: none;
-}
-
-.api-catalog-card-title a::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-}
-
-.api-catalog-card-title a:hover {
+.api-catalog-card:hover .api-catalog-card-title,
+.api-catalog-card:focus-visible .api-catalog-card-title {
 	color: var(--color-blue-elastic);
 }
 
 .api-catalog-card-teaser {
-	margin: 0 0 14px;
+	margin: 0;
 	font-size: var(--text-base);
 	line-height: 1.5;
 	color: var(--color-ink-light);
-}
-
-.api-catalog-card-links {
-	position: relative;
-	margin: 0;
-	padding-left: 1.1em;
-	list-style: disc;
-}
-
-.api-catalog-card-links li {
-	margin: 0 0 4px;
-	list-style: disc;
-}
-
-.api-catalog-card-links a {
-	display: inline-block;
-	padding-block: 2px;
-	font-size: var(--text-base);
-	line-height: 1.35;
-	color: var(--color-blue-elastic-100);
-	text-decoration: underline;
-}
-
-.api-catalog-card-links a:hover,
-.api-catalog-card-links a:focus-visible {
-	color: var(--color-blue-elastic-110);
 }

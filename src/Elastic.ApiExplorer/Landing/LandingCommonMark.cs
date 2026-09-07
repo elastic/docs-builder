@@ -21,7 +21,7 @@ internal static class LandingCommonMark
 			if (entry.Teaser is not null)
 				_ = markdown.AppendLine($"  {entry.Teaser}");
 			_ = markdown.AppendLine(
-				$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))}"
+				$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(entry.Url))}"
 			);
 		}
 		return markdown.ToString();

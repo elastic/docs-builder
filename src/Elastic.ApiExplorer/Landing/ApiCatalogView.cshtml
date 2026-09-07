@@ -7,29 +7,25 @@
 <section id="elastic-docs-v3" class="api-catalog">
 	<header class="api-catalog-header">
 		<h1>@ApiCatalog.PageTitle</h1>
-		<p class="api-catalog-lede">Choose a product. Open the docs, or the spec.</p>
+		<p class="api-catalog-lede">Choose a product to open its API reference.</p>
 	</header>
 	<ul class="api-catalog-grid">
 		@foreach (var tile in Model.Tiles)
 		{
-			<li class="api-catalog-card">
-				<div class="api-catalog-card-head">
-					@if (tile.IconSvg is not null)
+			<li>
+				<a class="api-catalog-card" href="@tile.Url">
+					<div class="api-catalog-card-head">
+						@if (tile.IconSvg is not null)
+						{
+							<span class="api-catalog-card-icon">@(new HtmlString(tile.IconSvg))</span>
+						}
+						<h2 class="api-catalog-card-title">@tile.Title</h2>
+					</div>
+					@if (tile.Teaser is not null)
 					{
-						<span class="api-catalog-card-icon">@(new HtmlString(tile.IconSvg))</span>
+						<p class="api-catalog-card-teaser">@tile.Teaser</p>
 					}
-					<h2 class="api-catalog-card-title">
-						<a href="@tile.Url">@tile.Title</a>
-					</h2>
-				</div>
-				@if (tile.Teaser is not null)
-				{
-					<p class="api-catalog-card-teaser">@tile.Teaser</p>
-				}
-				<ul class="api-catalog-card-links">
-					<li><a href="@tile.MarkdownUrl" target="_blank" rel="noopener">Markdown</a></li>
-					<li><a href="@tile.JsonUrl" target="_blank" rel="noopener">JSON</a></li>
-				</ul>
+				</a>
 			</li>
 		}
 	</ul>

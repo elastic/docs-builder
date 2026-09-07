@@ -74,12 +74,12 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().Contain("api-catalog-grid");
 		html.Should().NotContain("hub-card");
 		html.Should().NotContain("hub-page");
-		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch/">Elasticsearch</a>""");
-		html.Should().Contain("""<a href="/docs/api/doc/kibana/">Kibana</a>""");
+		html.Should().Contain("""<a class="api-catalog-card" href="/docs/api/doc/elasticsearch/">""");
+		html.Should().Contain("""<a class="api-catalog-card" href="/docs/api/doc/kibana/">""");
 		html.Should().Contain("A distributed search engine.");
-		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch.md" target="_blank" rel="noopener">Markdown</a>""");
-		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch.json" target="_blank" rel="noopener">JSON</a>""");
-		html.Should().NotContain("YAML");
+		html.Should().NotContain("elasticsearch.md");
+		html.Should().NotContain("elasticsearch.json");
+		html.Should().NotContain("elasticsearch.yaml");
 		html.Should().NotContain("markdown-content");
 		html.Should().NotContain("id=\"pages-nav\"");
 	}

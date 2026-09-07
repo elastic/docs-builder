@@ -114,6 +114,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		catalog.Should().Contain("`elasticsearch`");
 		catalog.Should().Contain("[Markdown](/api/doc/elasticsearch.md)");
 		catalog.Should().Contain("[JSON](/api/doc/elasticsearch.json)");
+		catalog.Should().Contain("[YAML](/api/doc/elasticsearch.yaml)");
 		catalog.Should().Contain("A hand-written OpenAPI document");
 	}
 
