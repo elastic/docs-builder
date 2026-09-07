@@ -17,7 +17,7 @@ namespace Elastic.ApiExplorer.Infrastructure;
 public record SectionHeader(string Title, string Anchor, string? Route = null, string? ContentTypeBadge = null);
 
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>
-public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
+public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml, string BodyMarkdown)
 {
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
 		[
@@ -47,7 +47,7 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
 		{
 			var (title, explicitId) = SplitHeading(s.Heading);
 			var anchor = ResolveAnchor(title, explicitId, used);
-			result.Add(new ApiPostSection(title, anchor, ApiMarkdown.Render(context, s.Body)));
+			result.Add(new ApiPostSection(title, anchor, ApiMarkdown.Render(context, s.Body), s.Body));
 		}
 
 		return result;

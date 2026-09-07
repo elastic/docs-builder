@@ -123,9 +123,11 @@ public class ChangelogBundleAmendService(
 
 			var parentBundle = parent.Bundle;
 			var useLocalChangelogs = (changelogConfig?.Bundle?.UseLocalChangelogs ?? false) || input.ForceLocal;
+#pragma warning disable CS0618
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(
 				changelogConfig?.Bundle?.Repo ?? (parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null)
 			);
+#pragma warning restore CS0618
 			var useCdn = ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs);
 
 			IReadOnlyDictionary<string, string>? cdnContents = null;
@@ -354,11 +356,13 @@ public class ChangelogBundleAmendService(
 	)
 	{
 		var parentOwner = request.ParentBundle.Products.Count > 0 ? request.ParentBundle.Products[0].Owner : null;
+#pragma warning disable CS0618
 		var owner = ChangelogRepoOwnerResolver.ResolveOwner(
 			request.ChangelogConfig?.Bundle?.Owner,
 			request.ChangelogConfig?.Bundle?.Repo,
 			parentOwner
 		)
+#pragma warning restore CS0618
 			?? ChangelogEntrySourcing.DefaultOwner;
 		var configuredBranch = request.ChangelogConfig?.Bundle?.Branch;
 		var branch = string.IsNullOrWhiteSpace(configuredBranch) ? ChangelogEntrySourcing.DefaultBranch : configuredBranch;

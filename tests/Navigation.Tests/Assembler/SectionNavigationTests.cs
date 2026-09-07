@@ -368,7 +368,7 @@ public class SectionNavigationTests(ITestOutputHelper output)
 		var (nav, _, searchNav) = BuildTwoChildSection(output, yaml);
 		var section = nav.NavigationItems.First().Should().BeOfType<SectionNavigation>().Subject;
 
-		searchNav.RendersAsIsland().Should().BeTrue("nested toc: children in navigation.yml are islands even without island: true");
+		searchNav.RendersAsIsland().Should().BeTrue("PromoteSectionListingIslands marks single-listing section children as islands");
 
 		var searchLeaf = nav
 			.NavigationIndexedByOrder

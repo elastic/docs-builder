@@ -28,16 +28,16 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	private static EvaluateArtifactArguments DefaultArgs() =>
 		new() { MetadataPath = MetadataFilePath, Owner = "elastic", Repo = "test-repo" };
 
-	private async Task WriteMetadata(ChangelogArtifactMetadata metadata, string? path = null)
+	private async Task WriteMetadata(GithubDecisionMetadata metadata, string? path = null)
 	{
 		path ??= MetadataFilePath;
 		var dir = FileSystem.Path.GetDirectoryName(path)!;
 		FileSystem.Directory.CreateDirectory(dir);
-		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 		await FileSystem.File.WriteAllTextAsync(path, json);
 	}
 
-	private static ChangelogArtifactMetadata DefaultMetadata(
+	private static GithubDecisionMetadata DefaultMetadata(
 		string status = "success",
 		string? changelogFilename = "42.yaml",
 		bool canCommit = true

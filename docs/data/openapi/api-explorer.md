@@ -167,6 +167,8 @@ If a local spec file exists, it overrides `main` only.
 
 A versionless product (`versioning: serverless` and similar) renders only `/api/doc/{key}/`. If more than one version is rendered, the left navigation shows a version dropdown.
 
+Product pages show an API product switcher in the left navigation. The list includes every declared API and a Back to hub option.
+
 ## Remote spec resolution
 
 If `spec:` does not resolve to a file on disk, {{dbuild}} fetches `main` from a CloudFront version index. Repositories that publish OpenAPI specs share this index.

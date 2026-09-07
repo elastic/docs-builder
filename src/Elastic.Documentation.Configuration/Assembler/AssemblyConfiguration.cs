@@ -60,6 +60,13 @@ public record AssemblyConfiguration
 				.ToDictionary(kvp => kvp.Name, kvp => kvp);
 
 			config.PrivateRepositories = privateRepositories.Where(r => !r.Value.Skip).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			// All repos marked private: true, regardless of skip: true. Skip means "does not publish
+			// docs", not "is not private". This set is used for render-time link visibility so that
+			// entries like kibana-team (private: true, skip: true) still have their links hidden.
+			config.AllPrivateRepositoryNames = new HashSet<string>(
+				privateRepositories.Select(r => r.Key),
+				StringComparer.OrdinalIgnoreCase
+			);
 			return config;
 		}
 		catch (Exception e)
@@ -118,6 +125,13 @@ public record AssemblyConfiguration
 	/// Repositories marked as private, these are listed under <see cref="AvailableRepositories"/> if `--skip-private-repositories` is not specified
 	[YamlIgnore]
 	public IReadOnlyDictionary<string, Repository> PrivateRepositories { get; private set; } = new Dictionary<string, Repository>();
+
+	/// All repository names marked <c>private: true</c>, regardless of <c>skip: true</c>.
+	/// <c>skip: true</c> means a repo does not publish docs, not that it is publicly visible.
+	/// Use this set for render-time link visibility rather than <see cref="PrivateRepositories"/>,
+	/// which excludes skipped repos because the cross-link fetcher has no link index for them.
+	[YamlIgnore]
+	public IReadOnlySet<string> AllPrivateRepositoryNames { get; private set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 	[YamlMember(Alias = "environments")]
 	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];

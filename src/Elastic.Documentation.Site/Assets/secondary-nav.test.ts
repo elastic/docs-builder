@@ -142,6 +142,21 @@ describe('syncSecondaryNavActive', () => {
         )
     })
 
+    it('previews the clicked tab as active before the swap', () => {
+        const { guides, reference } = renderTabs()
+
+        reference.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, button: 0 })
+        )
+
+        expect(guides.classList.contains('secondary-nav-item--active')).toBe(
+            false
+        )
+        expect(reference.classList.contains('secondary-nav-item--active')).toBe(
+            true
+        )
+    })
+
     it('clears every active tab when the page has no section', () => {
         const { guides, reference } = renderTabs()
 

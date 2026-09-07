@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.RelatedLearning;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
@@ -53,6 +54,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
 	public DocumentationEndpoints Endpoints { get; }
 	public ProductsConfiguration ProductsConfiguration { get; }
+	public RelatedLearningConfiguration RelatedLearningConfiguration { get; }
 	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
 	public SearchConfiguration SearchConfiguration { get; }
 	public IEnvironmentVariables Environment { get; }
@@ -97,6 +99,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
 		ProductsConfiguration = configurationContext.ProductsConfiguration;
+		RelatedLearningConfiguration = configurationContext.ConfigurationFileProvider.CreateRelatedLearningConfiguration();
 		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 		Endpoints = configurationContext.Endpoints;
 

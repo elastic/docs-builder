@@ -42,7 +42,7 @@ runs:
         # match doesn't trip `set -e`. The explicit non-empty test below
         # is what decides pass/fail.
         v1_matches=$(
-          find "$SCAN_PATH" -type f -name "*.js" -exec sha256sum {} \; \
+          find "$SCAN_PATH" -type f -name "*.js" -print0 | xargs -0 sha256sum \
             | grep "$SHAI_HULUD_V1_SHA256" || true
         )
         if [ -n "$v1_matches" ]; then
@@ -52,7 +52,7 @@ runs:
         fi
 
         v2_matches=$(
-          find "$SCAN_PATH" -type f -name "*.js" -exec sha1sum {} \; \
+          find "$SCAN_PATH" -type f -name "*.js" -print0 | xargs -0 sha1sum \
             | grep "$SHAI_HULUD_V2_SHA1" || true
         )
         if [ -n "$v2_matches" ]; then

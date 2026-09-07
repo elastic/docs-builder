@@ -235,8 +235,10 @@ public class ChangelogRemoveService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+#pragma warning disable CS0618
 		var repo = input.Repo ?? config?.Bundle?.Repo;
 		var owner = input.Owner ?? config?.Bundle?.Owner;
+#pragma warning restore CS0618
 
 		return input with { Directory = directory, Repo = repo, Owner = owner };
 	}

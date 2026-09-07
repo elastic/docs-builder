@@ -31,14 +31,14 @@ if (isAssemblerApiExplorerEnabled()) {
         const host = params.baseUrl
         const catalogPath = '/docs/api/'
 
-        step('Open the API Explorer catalog', async () => {
+        step('Open the API catalog', async () => {
             const response = await page.goto(`${host}${catalogPath}`, {
                 timeout: 60000,
                 waitUntil: 'domcontentloaded',
             })
             expect(response?.ok()).toBeTruthy()
             await expect(
-                page.getByRole('heading', { name: 'API Explorer' })
+                page.getByRole('heading', { name: 'API catalog' })
             ).toBeVisible()
         })
 

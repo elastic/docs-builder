@@ -119,8 +119,8 @@ journey('navigation test', ({ page, params }) => {
             page.getByRole('heading', { name: 'Deployment options' })
         ).toBeVisible()
 
-        // Same-group navigation: no reload. The sidebar is part of #main-container
-        // and is swapped, so expand/collapse is not preserved across the click.
+        // Same-group navigation: no reload. The sidebar is hx-preserve'd, so
+        // expand/collapse stays; only the article swap is visible.
         const state = await page.evaluate(() => {
             const navTree = document.querySelector('[id^="nav-tree"]')
             return {
@@ -146,6 +146,15 @@ journey('navigation test', ({ page, params }) => {
         )
         await expect(page).toHaveTitle(/Elastic Cloud/)
 
+        // Same Guides tree on both pages. Collapsed folders are detached, so
+        // wait for initNav to mark the new current path (that also reattaches
+        // the deploy-manage ancestors) before inspecting the live tree.
+        await expect(
+            page.locator(
+                '#pages-nav a.sidebar-link.current[href*="/deploy-manage/"]'
+            )
+        ).toBeVisible()
+
         // Cross-group navigation: still no reload. htmx preserves identical
         // trees by id, so only require a fresh node when the tree id changes.
         const state = await page.evaluate(() => {
@@ -154,13 +163,9 @@ journey('navigation test', ({ page, params }) => {
                 noReload: window['__synthNoReload'] === true,
                 treeId: navTree?.id,
                 treeIsNewNode: navTree?.['__synthOriginal'] === undefined,
-                treeShowsNewGroup:
-                    navTree?.querySelector('a[href*="/deploy-manage/"]') !==
-                    null,
             }
         })
         expect(state.noReload).toBe(true)
-        expect(state.treeShowsNewGroup).toBe(true)
         if (state.treeId !== treeIdBefore)
             expect(state.treeIsNewNode).toBe(true)
     })
@@ -174,30 +179,34 @@ journey('navigation test', ({ page, params }) => {
     })
 
     step(
-        'Island click swaps heading and Overview, back restores them',
+        'Sidebar click reaches Elasticsearch and back restores Reference',
         async () => {
-            await expect(
-                page.locator('#pages-nav .pages-nav-v2__heading-text')
-            ).toHaveText('Reference')
             await page
                 .locator('#pages-nav a[href$="/reference/elasticsearch"]')
                 .first()
                 .click()
             await expect(page).toHaveURL(/\/reference\/elasticsearch/)
             await expect(
-                page.locator('#pages-nav .pages-nav-v2__heading-text')
-            ).toHaveText('Elasticsearch')
-            await expect(
-                page.locator('#pages-nav .nav-v2-nav-text').first()
-            ).toHaveText('Overview')
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
+                )
+            ).toBeVisible()
+
+            // The hub page itself has no row in the tree, so nothing is
+            // current after back; the tree is visible and the old current
+            // marker is gone.
             await page.goBack()
             await expect(page).toHaveURL(/\/reference\/?$/)
             await expect(
-                page.locator('#pages-nav .pages-nav-v2__heading-text')
-            ).toHaveText('Reference')
+                page
+                    .locator('#pages-nav a[href$="/reference/elasticsearch"]')
+                    .first()
+            ).toBeVisible()
             await expect(
-                page.locator('#pages-nav .nav-v2-nav-text').first()
-            ).toHaveText('Overview')
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
+                )
+            ).toHaveCount(0)
         }
     )
 

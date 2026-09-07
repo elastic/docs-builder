@@ -15,6 +15,7 @@ using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -142,6 +143,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			_ = await MinimalParseAsync(documentationFileLookup, ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
+		RelatedLearningBlock.InsertHeadings(document);
 		return document;
 	}
 
@@ -205,6 +207,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			Collector.EmitWarning(FilePath, "Document has no title, using file name as title.");
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
+
+		RelatedLearningBlock.InsertHeadings(document);
 
 		var toc = GetAnchors(Collector, documentationFileLookup, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 

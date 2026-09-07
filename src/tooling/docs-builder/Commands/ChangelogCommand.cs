@@ -341,8 +341,11 @@ internal sealed partial class ChangelogCommands(
 			config?.FullName,
 			ctx
 		);
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 
 		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
@@ -619,8 +622,11 @@ internal sealed partial class ChangelogCommands(
 			config?.FullName,
 			ctx
 		);
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
 		var extractReleaseNotes = noExtractReleaseNotes ? false : (bool?)null;
@@ -756,7 +762,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). A non-wildcard target matches products[].versions (changelog note) or a legacy target; not supported when sourcing from the CDN. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
-	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as <c>{product}-{version}.yaml</c> from the profile's primary output product.</param>
+	/// <param name="output">Output path for the bundled changelog. A .yml/.yaml file is used as-is. A directory, or omitting this option, writes <c>{repo}-{product}-{version}.yaml</c> (from --repo / bundle.repo / git origin, --output-products then --input-products, then --release-version). Warns and writes changelog-bundle.yaml if product or version cannot be resolved, or <c>{product}-{version}.yaml</c> if no repo resolves. Not supported in profile-based commands; the equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output_directory</c> (directory only; same convention for the file name).</param>
 	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output_products</c>.</param>
 	/// <param name="owner">GitHub repository owner for PR/issue numbers or --release-version. Falls back to <c>bundle.owner</c> or "elastic". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.owner</c> or <c>bundle.profiles.&lt;name&gt;.owner</c>.</param>
 	/// <param name="branch">Branch whose CDN changelog entry pool (<c>changelog/{org}/{repo}/{branch}/...</c>) is sourced from. Falls back to <c>bundle.branch</c> or "main". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.branch</c> or <c>bundle.profiles.&lt;name&gt;.branch</c>.</param>
@@ -860,8 +866,11 @@ internal sealed partial class ChangelogCommands(
 					configurationContext,
 					_fileSystem
 				).LoadChangelogConfiguration(collector, config?.FullName, ctx);
+#pragma warning disable CS0618
+				BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 				var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 				var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 
 				if (string.IsNullOrWhiteSpace(resolvedRepo))
 				{
@@ -985,6 +994,39 @@ internal sealed partial class ChangelogCommands(
 
 			if (specifiedFilters.Count == 0)
 			{
+				// --plan with no filters and no profile: auto-resolve the release mode from the config.
+				// If the config has no profiles → gh-release mode; otherwise the caller must name a profile.
+				if (plan)
+				{
+					var bundleConfigLoader = new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem);
+					var bundleConfig = await bundleConfigLoader.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+
+					var profiles = bundleConfig?.Bundle?.Profiles;
+					if (profiles is { Count: > 0 })
+					{
+						var profileNames = string.Join(", ", profiles.Keys);
+						collector.EmitError(
+							string.Empty,
+							$"--plan without a profile: the config has {profiles.Count} profile(s) ({profileNames}). " +
+								"Pass the profile name as the first argument (e.g. 'bundle my-profile 9.2.0 --plan')."
+						);
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+
+					// No profiles → gh-release mode. Resolve the output path the same way gh-release would.
+					var ghReleaseOutput = bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory;
+
+					await githubActionsService.SetOutputAsync("mode", "gh-release");
+					await githubActionsService.SetOutputAsync("needs_network", "true");
+					await githubActionsService.SetOutputAsync("needs_github_token", "true");
+					if (ghReleaseOutput != null)
+						await githubActionsService.SetOutputAsync("output_path", ghReleaseOutput);
+					return 0;
+				}
+
 				collector.EmitError(
 					string.Empty,
 					"At least one filter option must be specified: --all, --input-products, --prs, --issues, --report, --files, --start-git-ref/--end-git-ref, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')"
@@ -1093,8 +1135,8 @@ internal sealed partial class ChangelogCommands(
 					return 1;
 				}
 
-				// It's a directory path - append default filename
-				processedOutput = Path.Join(output, "changelog-bundle.yaml");
+				// Directory: the service joins the conventional file name (or changelog-bundle.yaml).
+				processedOutput = output;
 			}
 		}
 
@@ -1110,7 +1152,10 @@ internal sealed partial class ChangelogCommands(
 				Files = allFiles.Count > 0 ? allFiles.ToArray() : null,
 				ForceLocal = forceLocal,
 				Directory = directory?.FullName,
+				InputProducts = inputProducts,
+				OutputProducts = outputProducts,
 				Repo = repo,
+				ReleaseVersion = releaseVersion,
 				Config = config?.FullName,
 				Description = description,
 				StartGitRef = startGitRef,
@@ -1120,6 +1165,7 @@ internal sealed partial class ChangelogCommands(
 			if (planResult == null)
 				return 1;
 
+			await githubActionsService.SetOutputAsync("mode", planResult.Mode ?? "bundle");
 			await githubActionsService.SetOutputAsync("needs_network", planResult.NeedsNetwork ? "true" : "false");
 			await githubActionsService.SetOutputAsync("needs_github_token", planResult.NeedsGithubToken ? "true" : "false");
 			if (planResult.OutputPath != null)
@@ -1175,6 +1221,7 @@ internal sealed partial class ChangelogCommands(
 			ForceLocal = forceLocal,
 			Owner = owner,
 			Repo = repo,
+			ReleaseVersion = releaseVersion,
 			Branch = branch,
 			Profile = profile,
 			ProfileArgument = profileArg,
@@ -1265,8 +1312,11 @@ internal sealed partial class ChangelogCommands(
 				configurationContext,
 				_fileSystem
 			).LoadChangelogConfiguration(collector, config?.FullName, ctx);
+#pragma warning disable CS0618
+			BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+#pragma warning restore CS0618
 
 			if (string.IsNullOrWhiteSpace(resolvedRepo))
 			{
@@ -1524,7 +1574,7 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Create changelog entries from the PRs referenced in a GitHub release.</summary>
-	/// <param name="repo">Required: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch" which defaults to elastic/elasticsearch)</param>
+	/// <param name="repo">Optional: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch"). When omitted, falls back to bundle.repo in changelog.yml, then the GITHUB_REPOSITORY env var, then the git remote origin.</param>
 	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="description">Optional: Bundle description text with placeholder support. Supports VERSION, LIFECYCLE, OWNER, and REPO placeholders. Overrides bundle.description from config.</param>
@@ -1535,7 +1585,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> GhRelease(
-		[Argument] string repo,
+		[Argument] string repo = "",
 		[Argument] string version = "latest",
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? description = null,
@@ -1549,13 +1599,38 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		// --output CLI > bundle.directory config > ./changelogs (service default)
+		// --output CLI > bundle.output_directory > bundle.directory > ./changelogs (service default)
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
 			collector,
 			config?.FullName,
 			ctx
 		);
-		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output)
+			? output
+			: (bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory);
+
+		// Validate bundle.repo if set — mismatch with running repo is a hard error.
+#pragma warning disable CS0618
+		BundleOutputNaming.ValidateBundleRepo(collector, _fileSystem, config?.FullName, bundleConfig?.Bundle?.Repo);
+#pragma warning restore CS0618
+
+		// Repo precedence: positional arg > bundle.repo > GITHUB_REPOSITORY env var > git remote origin
+#pragma warning disable CS0618
+		var resolvedRepo = BundleOutputNaming.ResolveRepo(_fileSystem, config?.FullName, repo, bundleConfig?.Bundle?.Repo);
+#pragma warning restore CS0618
+		if (string.IsNullOrWhiteSpace(resolvedRepo))
+		{
+			collector.EmitError(
+				string.Empty,
+				"changelog gh-release could not determine the repository. " +
+					"Pass <repo> as the first argument, set bundle.repo in changelog.yml, " +
+					"or run where GITHUB_REPOSITORY or a git remote (github.com) is available."
+			);
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
 
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
@@ -1573,7 +1648,7 @@ internal sealed partial class ChangelogCommands(
 
 		var input = new CreateChangelogsFromReleaseArguments
 		{
-			Repository = repo,
+			Repository = resolvedRepo,
 			Version = version,
 			Config = config?.FullName,
 			Output = resolvedOutput,
@@ -1691,7 +1766,12 @@ internal sealed partial class ChangelogCommands(
 		bool titleChanged = false,
 		bool bodyChanged = false,
 		bool stripTitlePrefix = false,
+		bool requireChangelogFile = false,
 		string botName = "github-actions[bot]",
+		bool isFork = false,
+		bool canCommit = false,
+		bool maintainerCanModify = false,
+		string? headRepo = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1700,7 +1780,14 @@ internal sealed partial class ChangelogCommands(
 
 		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
-		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService, fileSystem);
+		var service = new ChangelogPrEvaluationService(
+			logFactory,
+			configurationContext,
+			prService,
+			githubActionsService,
+			fileSystem,
+			environmentVariables
+		);
 
 		var prBodyFile = environmentVariables.GetEnvironmentVariable("PR_BODY_FILE");
 		var prBody = !string.IsNullOrWhiteSpace(prBodyFile)
@@ -1722,11 +1809,161 @@ internal sealed partial class ChangelogCommands(
 			TitleChanged = titleChanged,
 			BodyChanged = bodyChanged,
 			StripTitlePrefix = stripTitlePrefix,
-			BotName = botName
+			RequireChangelogFile = requireChangelogFile,
+			BotName = botName,
+			IsFork = isFork,
+			CanCommit = canCommit,
+			MaintainerCanModify = maintainerCanModify,
+			HeadRepo = headRepo
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.EvaluatePr(collector, state, ctx));
 
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI) Validate PR labels against the changelog config without writing any files or calling the GitHub API.</summary>
+	/// <remarks>
+	/// A lightweight label-only gate intended for the <c>pull_request</c> event. Resolves
+	/// <c>pivot.types</c>, <c>pivot.products</c>, and <c>rules.create</c> skip labels against the PR's
+	/// label set and exits non-zero on <c>no-label</c>. Does not perform title resolution, bot-loop
+	/// detection, or changelog-file lookup — use <see cref="EvaluatePr"/> when those are needed.
+	///
+	/// <para>
+	/// Outputs: <c>status</c> (ok | no-label | skipped), <c>type</c>, <c>products</c>,
+	/// <c>label-table</c> (shown on failure), <c>product-label-table</c> (shown on product failure),
+	/// <c>skip-labels</c>.
+	/// </para>
+	/// </remarks>
+	/// <param name="config">Path to the changelog.yml configuration file.</param>
+	/// <param name="prLabels">Comma-separated list of PR labels (use <c>${{ join(github.event.pull_request.labels.*.name, ',') }}</c> in actions).</param>
+	/// <param name="prNumber">PR number — required for decision metadata written when running on CI.</param>
+	/// <param name="headRef">PR head branch ref — written to decision metadata when on CI.</param>
+	/// <param name="headSha">PR head commit SHA — written to decision metadata when on CI.</param>
+	/// <param name="isFork">Whether the PR is from a fork.</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing.</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits.</param>
+	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> ValidateLabels(
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		string prLabels,
+		int prNumber = 0,
+		string headRef = "",
+		string headSha = "",
+		bool isFork = false,
+		bool canCommit = false,
+		bool maintainerCanModify = false,
+		string? headRepo = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
+		var service = new ChangelogLabelValidationService(
+			logFactory,
+			configurationContext,
+			githubActionsService,
+			fileSystem,
+			environmentVariables
+		);
+
+		var args = new ValidateLabelsArguments
+		{
+			Config = config.FullName,
+			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+			PrNumber = prNumber,
+			HeadRef = headRef,
+			HeadSha = headSha,
+			IsFork = isFork,
+			CanCommit = canCommit,
+			MaintainerCanModify = maintainerCanModify,
+			HeadRepo = headRepo,
+			ConfigFile = config.FullName
+		};
+
+		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateLabels(collector, state, ctx));
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// (CI and local) Validate changelog entry files that a PR added or modified.
+	/// Checks YAML validity, required fields, config-value membership, PR existence, and entry hygiene.
+	/// Exits non-zero on any error-level finding; warnings do not block.
+	/// </summary>
+	/// <param name="prNumber">Pull request number to validate.</param>
+	/// <param name="config">Path to the changelog configuration file. Defaults to <c>docs/changelog.yml</c>.</param>
+	/// <param name="owner">GitHub repository owner. Defaults to the owner inferred from the git remote origin.</param>
+	/// <param name="repo">GitHub repository name. Defaults to the repo inferred from the git remote origin.</param>
+	/// <param name="prLabels">Comma-separated list of PR labels. When supplied, validates that <c>type:</c> matches the label-derived type (use <c>${{ join(github.event.pull_request.labels.*.name, ',') }}</c> in Actions).</param>
+	/// <param name="files">Explicit file list; bypasses GitHub API discovery. Useful for local runs without a token.</param>
+	/// <param name="require">Also fail when no changelog entry file references this PR number.</param>
+	/// <param name="headRef">PR head branch ref — written to decision metadata when on CI.</param>
+	/// <param name="headSha">PR head commit SHA — written to decision metadata when on CI.</param>
+	/// <param name="isFork">Whether the PR is from a fork.</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing.</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits.</param>
+	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
+	/// <param name="ct">Cancellation token.</param>
+	[NoOptionsInjection]
+	public async Task<int> Validate(
+		[Argument] int prNumber,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		string? owner = null,
+		string? repo = null,
+		string? prLabels = null,
+		string[]? files = null,
+		bool require = false,
+		string headRef = "",
+		string headSha = "",
+		bool isFork = false,
+		bool canCommit = false,
+		bool maintainerCanModify = false,
+		string? headRepo = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		// Resolve owner/repo: CLI flag > git remote origin
+		var cwd = Directory.GetCurrentDirectory();
+		var repoRoot = Paths.FindGitRoot(_fileSystem.DirectoryInfo.New(cwd))?.FullName ?? cwd;
+		string? gitOwner = null;
+		string? gitRepo = null;
+		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
+			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
+		var resolvedOwner = owner ?? gitOwner ?? "";
+		var resolvedRepo = repo ?? gitRepo ?? "";
+
+		// Resolve config: CLI flag > docs/changelog.yml
+		var configPath = config?.FullName ?? _fileSystem.Path.Join(repoRoot, "docs", "changelog.yml");
+
+		var fileSystem = RunnerTempFileSystem.ForEvaluatePr(environmentVariables);
+		IGitHubPrService prService = new GitHubPrService(logFactory);
+		var service = new ChangelogEntryValidationService(logFactory, configurationContext, prService, fileSystem, environmentVariables);
+
+		var args = new ValidateEntriesArguments
+		{
+			ConfigFile = configPath,
+			Owner = resolvedOwner,
+			Repo = resolvedRepo,
+			PrNumber = prNumber,
+			PrLabels = prLabels?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [],
+			Files = files,
+			RequireChangelogFile = require,
+			HeadRef = headRef,
+			HeadSha = headSha,
+			IsFork = isFork,
+			CanCommit = canCommit,
+			MaintainerCanModify = maintainerCanModify,
+			HeadRepo = headRepo
+		};
+
+		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateEntries(collector, state, ctx));
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
@@ -1843,6 +2080,75 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
+	/// <summary>(CI, hidden) Record commit outcome into the decision metadata file.</summary>
+	/// <remarks>
+	/// Reads <c>metadata.json</c>, amends it with the commit step result, and writes it back.
+	/// Run by <c>submit/apply</c> after the git-push step so the downstream
+	/// <c>changelog github-comment</c> command knows which body to render.
+	/// </remarks>
+	/// <param name="metadata">Path to the decision metadata.json file</param>
+	/// <param name="commitOutcome">Outcome of the changelog commit step</param>
+	/// <param name="committedFile">Repo-relative path to the committed file (when <paramref name="commitOutcome"/> is Committed)</param>
+	[Hidden]
+	[NoOptionsInjection]
+	public async Task<int> GithubDecision(
+		string metadata,
+		CommitOutcome commitOutcome,
+		string? committedFile = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fs = RunnerTempFileSystem.ForEvaluateArtifact(metadata);
+		var service = new ChangelogGithubDecisionService(logFactory, fs);
+
+		var args = new GithubDecisionArguments { MetadataPath = metadata, CommitOutcome = commitOutcome, CommittedFile = committedFile };
+
+		serviceInvoker.AddCommand(service, args, static async (s, _, state, ctx) => await s.RecordDecision(state, ctx));
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI, hidden) Post or update the sticky changelog comment on the PR.</summary>
+	/// <remarks>
+	/// Reads the decision metadata and renders the appropriate body based on the validation status
+	/// and commit outcome. Owner and repo are resolved from the <c>GITHUB_REPOSITORY</c> environment
+	/// variable (always set by GitHub Actions). This command is only meaningful under
+	/// <c>GITHUB_ACTIONS</c> and must only be invoked from a job with <c>pull-requests: write</c>.
+	/// </remarks>
+	/// <param name="metadata">Path to the decision metadata.json file</param>
+	[Hidden]
+	[NoOptionsInjection]
+	public async Task<int> GithubComment(string metadata, CancellationToken ct = default)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		// Parse owner/repo from GITHUB_REPOSITORY ("owner/repo").
+		var githubRepository = environmentVariables.GetEnvironmentVariable("GITHUB_REPOSITORY") ?? "";
+		var repoParts = githubRepository.Split('/', 2);
+		var owner = repoParts.Length == 2 ? repoParts[0] : githubRepository;
+		var repo = repoParts.Length == 2 ? repoParts[1] : githubRepository;
+
+		var fs = RunnerTempFileSystem.ForEvaluateArtifact(metadata);
+		IGitHubCommentService commentSvc = new GitHubCommentService(logFactory);
+		var service = new ChangelogGithubCommentService(logFactory, commentSvc, fs);
+
+		var args = new GithubCommentArguments
+		{
+			MetadataPath = metadata,
+			MetadataDir = Path.GetDirectoryName(metadata) ?? ".",
+			Owner = owner,
+			Repo = repo
+		};
+
+		serviceInvoker.AddCommand(service, args, static async (s, _, state, ctx) => await s.PostComment(state, ctx));
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
 	private static List<string> ExpandCommaSeparated(string[]? values)
 	{
 		if (values is not { Length: > 0 })
@@ -1924,9 +2230,23 @@ internal sealed partial class ChangelogCommands(
 	)
 	{
 		var ctx = ct;
-		if (!Enum.TryParse<ArtifactType>(artifactType, ignoreCase: true, out var parsedArtifactType))
+
+		// Accept a comma-separated list of artifact types (e.g. "changelog,amend")
+		var artifactTypeList = artifactType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var parsedArtifactTypes = new List<ArtifactType>(artifactTypeList.Length);
+		foreach (var typeStr in artifactTypeList)
 		{
-			collector.EmitError(string.Empty, $"Invalid artifact type '{artifactType}'. Valid values: changelog, bundle");
+			if (!Enum.TryParse<ArtifactType>(typeStr, ignoreCase: true, out var parsed))
+			{
+				collector.EmitError(string.Empty, $"Invalid artifact type '{typeStr}'. Valid values: changelog, bundle, amend");
+				return 1;
+			}
+			parsedArtifactTypes.Add(parsed);
+		}
+
+		if (parsedArtifactTypes.Count == 0)
+		{
+			collector.EmitError(string.Empty, "--artifact-type must not be empty");
 			return 1;
 		}
 
@@ -1959,19 +2279,25 @@ internal sealed partial class ChangelogCommands(
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, _fileSystem, configurationContext);
-		var args = new ChangelogUploadArguments
+
+		// Run one upload per requested artifact type; all failures are collected
+		foreach (var parsedArtifactType in parsedArtifactTypes)
 		{
-			ArtifactType = parsedArtifactType,
-			Target = parsedTarget,
-			S3BucketName = s3BucketName,
-			Config = resolvedConfig,
-			Directory = resolvedDirectory,
-			Repo = resolvedRepo,
-			Owner = resolvedOwner,
-			Branch = resolvedBranch,
-			SkipEtagCheck = skipEtagCheck
-		};
-		serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
+			var args = new ChangelogUploadArguments
+			{
+				ArtifactType = parsedArtifactType,
+				Target = parsedTarget,
+				S3BucketName = s3BucketName,
+				Config = resolvedConfig,
+				Directory = resolvedDirectory,
+				Repo = resolvedRepo,
+				Owner = resolvedOwner,
+				Branch = resolvedBranch,
+				SkipEtagCheck = skipEtagCheck
+			};
+			serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
+		}
+
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
@@ -2126,9 +2452,11 @@ internal sealed partial class ChangelogCommands(
 		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
 			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
 
+#pragma warning disable CS0618
 		var explicitRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : bundleConfig?.Bundle?.Repo;
 		var resolvedRepo = explicitRepo ?? gitRepo;
 		var resolvedOwner = ChangelogRepoOwnerResolver.ResolveOwner(ownerCli ?? bundleConfig?.Bundle?.Owner, explicitRepo, gitOwner);
+#pragma warning restore CS0618
 
 		// The producer branch is the branch being published: --branch, else the current checkout's branch.
 		// bundle.branch is intentionally not consulted here — it selects which pool to read when bundling.

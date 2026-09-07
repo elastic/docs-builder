@@ -359,14 +359,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			{
 				var childItem = CreateSiteTableOfContentsNavigation(child, childIndex++, context, node, root);
 				if (childItem != null)
-				{
-					// Nested `toc:` entries in navigation.yml are islands (arrow + own
-					// heading), even when they omit `island: true` — Release notes
-					// clients, Reference nested books, etc.
-					if (childItem is IAssignableIslandNavigation childIsland)
-						childIsland.IsIsland = true;
 					children.Add(childItem);
-				}
 			}
 		}
 

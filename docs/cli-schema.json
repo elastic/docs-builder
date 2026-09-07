@@ -3246,7 +3246,7 @@
               "name": "output",
               "type": "string",
               "required": false,
-              "summary": "Output path for the bundled changelog (directory or .yml/.yaml file). Uses config bundle.output_directory or defaults to \u0027changelog-bundle.yaml\u0027 in the input directory. This option is not supported in profile-based commands, where bundle names are derived by convention as {product}-{version}.yaml from the profile\u0027s primary output product."
+              "summary": "Output path for the bundled changelog. A .yml/.yaml file is used as-is. A directory, or omitting this option, writes {repo}-{product}-{version}.yaml (from --repo / bundle.repo / git origin, --output-products then --input-products, then --release-version). Warns and writes changelog-bundle.yaml if product or version cannot be resolved, or {product}-{version}.yaml if no repo resolves. Not supported in profile-based commands; the equivalent configuration option is bundle.profiles.\u003Cname\u003E.output_directory (directory only; same convention for the file name)."
             },
             {
               "role": "flag",
@@ -3677,11 +3677,45 @@
             },
             {
               "role": "flag",
+              "name": "require-changelog-file",
+              "type": "boolean",
+              "required": false,
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "bot-name",
               "type": "string",
               "required": false,
               "summary": "Bot login name for loop detection",
               "defaultValue": "github-actions[bot]"
+            },
+            {
+              "role": "flag",
+              "name": "is-fork",
+              "type": "boolean",
+              "required": false,
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "can-commit",
+              "type": "boolean",
+              "required": false,
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "maintainer-can-modify",
+              "type": "boolean",
+              "required": false,
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "head-repo",
+              "type": "string",
+              "required": false
             },
             {
               "role": "flag",
@@ -3728,15 +3762,15 @@
           ],
           "name": "gh-release",
           "summary": "Create changelog entries from the PRs referenced in a GitHub release.",
-          "usage": "docs-builder changelog gh-release \u003Crepo\u003E [\u003Cversion\u003E] [options]",
+          "usage": "docs-builder changelog gh-release [\u003Crepo\u003E] [\u003Cversion\u003E] [options]",
           "examples": [],
           "parameters": [
             {
               "role": "positional",
               "name": "repo",
               "type": "string",
-              "required": true,
-              "summary": "Required: GitHub repository in owner/repo format (e.g., \u0022elastic/elasticsearch\u0022 or just \u0022elasticsearch\u0022 which defaults to elastic/elasticsearch)"
+              "required": false,
+              "summary": "Optional: GitHub repository in owner/repo format (e.g., \u0022elastic/elasticsearch\u0022 or just \u0022elasticsearch\u0022). When omitted, falls back to bundle.repo in changelog.yml, then the GITHUB_REPOSITORY env var, then the git remote origin."
             },
             {
               "role": "positional",
@@ -3843,6 +3877,139 @@
               "summary": "Skip cloning private repositories"
             }
           ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "github-comment",
+          "summary": "(CI, hidden) Post or update the sticky changelog comment on the PR.",
+          "notes": "Reads the decision metadata and renders the appropriate body based on the validation status\nand commit outcome. Owner and repo are resolved from the GITHUB_REPOSITORY environment\nvariable (always set by GitHub Actions). This command is only meaningful under\nGITHUB_ACTIONS and must only be invoked from a job with pull-requests: write.",
+          "usage": "docs-builder changelog github-comment --metadata \u003Cstring\u003E",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "metadata",
+              "type": "string",
+              "required": true,
+              "summary": "Path to the decision metadata.json file"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ],
+          "hidden": true
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "github-decision",
+          "summary": "(CI, hidden) Record commit outcome into the decision metadata file.",
+          "notes": "Reads metadata.json, amends it with the commit step result, and writes it back.\nRun by submit/apply after the git-push step so the downstream\nchangelog github-comment command knows which body to render.",
+          "usage": "docs-builder changelog github-decision --metadata \u003Cstring\u003E --commit-outcome \u003Cenum\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "metadata",
+              "type": "string",
+              "required": true,
+              "summary": "Path to the decision metadata.json file"
+            },
+            {
+              "role": "flag",
+              "name": "commit-outcome",
+              "type": "enum",
+              "required": true,
+              "summary": "Outcome of the changelog commit step",
+              "enumValues": [
+                "none",
+                "committed",
+                "failed"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "committed-file",
+              "type": "string",
+              "required": false,
+              "summary": "Repo-relative path to the committed file (when commitOutcome is Committed)"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ],
+          "hidden": true
         },
         {
           "path": [
@@ -4844,6 +5011,291 @@
               "required": false,
               "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
               "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "validate",
+          "summary": "(CI and local) Validate changelog entry files that a PR added or modified. Checks YAML validity, required fields, config-value membership, PR existence, and entry hygiene. Exits non-zero on any error-level finding; warnings do not block.",
+          "usage": "docs-builder changelog validate \u003Cpr-number\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "positional",
+              "name": "pr-number",
+              "type": "integer",
+              "required": true,
+              "summary": "Pull request number to validate."
+            },
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": false,
+              "summary": "Path to the changelog configuration file. Defaults to docs/changelog.yml.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub repository owner. Defaults to the owner inferred from the git remote origin."
+            },
+            {
+              "role": "flag",
+              "name": "repo",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub repository name. Defaults to the repo inferred from the git remote origin."
+            },
+            {
+              "role": "flag",
+              "name": "pr-labels",
+              "type": "string",
+              "required": false,
+              "summary": "Comma-separated list of PR labels. When supplied, validates that type: matches the label-derived type (use ${{ join(github.event.pull_request.labels.*.name, \u0027,\u0027) }} in Actions)."
+            },
+            {
+              "role": "flag",
+              "name": "files",
+              "type": "array",
+              "required": false,
+              "summary": "Explicit file list; bypasses GitHub API discovery. Useful for local runs without a token.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "require",
+              "type": "boolean",
+              "required": false,
+              "summary": "Also fail when no changelog entry file references this PR number.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "head-ref",
+              "type": "string",
+              "required": false,
+              "summary": "PR head branch ref \u2014 written to decision metadata when on CI."
+            },
+            {
+              "role": "flag",
+              "name": "head-sha",
+              "type": "string",
+              "required": false,
+              "summary": "PR head commit SHA \u2014 written to decision metadata when on CI."
+            },
+            {
+              "role": "flag",
+              "name": "is-fork",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the PR is from a fork.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "can-commit",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the commit strategy allows committing.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "maintainer-can-modify",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the fork PR allows maintainer edits.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "head-repo",
+              "type": "string",
+              "required": false,
+              "summary": "Fork repository full name (owner/repo)."
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "validate-labels",
+          "summary": "(CI) Validate PR labels against the changelog config without writing any files or calling the GitHub API.",
+          "notes": "A lightweight label-only gate intended for the pull_request event. Resolves\npivot.types, pivot.products, and rules.create skip labels against the PR\u0027s\nlabel set and exits non-zero on no-label. Does not perform title resolution, bot-loop\ndetection, or changelog-file lookup \u2014 use EvaluatePr when those are needed.\n\n\nOutputs: status (ok | no-label | skipped), type, products,\nlabel-table (shown on failure), product-label-table (shown on product failure),\nskip-labels.",
+          "usage": "docs-builder changelog validate-labels --config \u003Cfile\u003E --pr-labels \u003Cstring\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": true,
+              "summary": "Path to the changelog.yml configuration file.",
+              "validations": [
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "pr-labels",
+              "type": "string",
+              "required": true,
+              "summary": "Comma-separated list of PR labels (use ${{ join(github.event.pull_request.labels.*.name, \u0027,\u0027) }} in actions)."
+            },
+            {
+              "role": "flag",
+              "name": "pr-number",
+              "type": "integer",
+              "required": false,
+              "summary": "PR number \u2014 required for decision metadata written when running on CI.",
+              "defaultValue": "0"
+            },
+            {
+              "role": "flag",
+              "name": "head-ref",
+              "type": "string",
+              "required": false,
+              "summary": "PR head branch ref \u2014 written to decision metadata when on CI."
+            },
+            {
+              "role": "flag",
+              "name": "head-sha",
+              "type": "string",
+              "required": false,
+              "summary": "PR head commit SHA \u2014 written to decision metadata when on CI."
+            },
+            {
+              "role": "flag",
+              "name": "is-fork",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the PR is from a fork.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "can-commit",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the commit strategy allows committing.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "maintainer-can-modify",
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the fork PR allows maintainer edits.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "head-repo",
+              "type": "string",
+              "required": false,
+              "summary": "Fork repository full name (owner/repo)."
             },
             {
               "role": "flag",

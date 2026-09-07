@@ -76,4 +76,10 @@ public class SimpleMarkdownNavigationItem(
 		var slice = MarkdownPageView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
+
+	public async Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
+	{
+		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx).ConfigureAwait(false);
+		return ApiMarkdown.Prepare(markdownContent, context.CurrentNavigation.NavigationRoot.Url);
+	}
 }

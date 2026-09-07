@@ -9,6 +9,7 @@
 	<h1>@Model.ApiInfo.Title</h1>
 	<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
 	<p>License: @Model.ApiInfo.License?.Name</p>
+	<p>Download source: <a href="@Model.JsonUrl" download>JSON</a> <a href="@Model.YamlUrl" download>YAML</a></p>
 	<div class="api-overview">
 		<table>
 			@foreach (var row in Model.OverviewRows)

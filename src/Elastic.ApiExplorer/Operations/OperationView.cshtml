@@ -118,22 +118,15 @@
 		</a>
 	}
 
-	@if (operation.Security is { Count: > 0 })
+	@if (pageModel.AuthSchemes.Count > 0)
 	{
 		<div class="security-requirements">
 			<span class="security-label">Authorization:</span>
-			@foreach (var requirement in operation.Security)
+			@foreach (var scheme in pageModel.AuthSchemes)
 			{
-				@foreach (var scheme in requirement)
-				{
-					<span class="security-scheme">
-						<code>@scheme.Key.Name</code>
-						@if (scheme.Value is { Count: > 0 })
-						{
-							<span class="security-scopes">(@string.Join(", ", scheme.Value))</span>
-						}
-					</span>
-				}
+				<span class="security-scheme">
+					<span class="security-scheme-badge">@scheme.Label</span>
+				</span>
 			}
 		</div>
 	}

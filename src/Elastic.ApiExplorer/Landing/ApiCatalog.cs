@@ -17,6 +17,8 @@ public sealed record ApiCatalogEntry(string Key, string Title, string Url);
 
 public class ApiCatalog : IApiGroupingModel
 {
+	public const string PageTitle = "API catalog";
+
 	public required IReadOnlyList<ApiCatalogEntry> Entries { get; init; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
@@ -24,6 +26,9 @@ public class ApiCatalog : IApiGroupingModel
 		var viewModel = new ApiCatalogViewModel(context) { Entries = Entries };
 		await ApiCatalogView.Create(viewModel).RenderAsync(stream, cancellationToken: ctx);
 	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
+		Task.FromResult<string?>(LandingCommonMark.Catalog(Entries));
 }
 
 public class ApiCatalogNavigationItem : IRootNavigationItem<ApiCatalog, INavigationItem>, INavigationItem
@@ -44,7 +49,7 @@ public class ApiCatalogNavigationItem : IRootNavigationItem<ApiCatalog, INavigat
 		NavigationRoot = this;
 		Id = ShortId.Create("api-catalog");
 		var catalog = new ApiCatalog { Entries = entries };
-		Index = new ApiIndexLeafNavigation<ApiCatalog>(catalog, url, "API Explorer", this);
+		Index = new ApiIndexLeafNavigation<ApiCatalog>(catalog, url, ApiCatalog.PageTitle, this);
 	}
 
 	/// <inheritdoc />

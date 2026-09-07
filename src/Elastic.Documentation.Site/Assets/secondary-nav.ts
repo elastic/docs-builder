@@ -114,6 +114,15 @@ export function syncSecondaryNavActive(sectionId: string | null | undefined) {
     }
 }
 
+function previewSecondaryNavActive(item: Element) {
+    const items = document.querySelectorAll(
+        '#secondary-nav .secondary-nav-item'
+    )
+    for (const el of items) {
+        el.classList.toggle(ACTIVE, el === item)
+    }
+}
+
 export function initSecondaryNav() {
     document.addEventListener(
         'toggle',
@@ -132,6 +141,10 @@ export function initSecondaryNav() {
 
     document.addEventListener('click', (event: MouseEvent) => {
         const target = event.target as HTMLElement | null
+        const tab = target?.closest('#secondary-nav .secondary-nav-item')
+        if (tab && event.button === 0) {
+            previewSecondaryNavActive(tab)
+        }
         // A click on a summary toggles its own dropdown; only the siblings close here,
         // otherwise we would fight the native toggle.
         const clicked =

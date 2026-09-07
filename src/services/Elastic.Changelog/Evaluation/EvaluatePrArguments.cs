@@ -21,4 +21,18 @@ public record EvaluatePrArguments
 	public bool BodyChanged { get; init; }
 	public bool StripTitlePrefix { get; init; }
 	public string BotName { get; init; } = "github-actions[bot]";
+
+	/// <summary>
+	/// When true, a missing changelog entry file causes evaluation to fail with
+	/// <see cref="PrEvaluationResult.MissingEntry"/> instead of proceeding.
+	/// Passed as a workflow input (<c>require-changelog-file</c>) so repos can opt into the gate
+	/// without editing <c>changelog.yml</c>.
+	/// </summary>
+	public bool RequireChangelogFile { get; init; }
+
+	// Additional PR context for GithubDecisionMetadata — optional, populated when known.
+	public bool IsFork { get; init; }
+	public bool CanCommit { get; init; }
+	public bool MaintainerCanModify { get; init; }
+	public string? HeadRepo { get; init; }
 }

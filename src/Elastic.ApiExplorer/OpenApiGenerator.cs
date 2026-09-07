@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -33,7 +32,9 @@ internal sealed record ApiProductGeneration(
 	IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems,
 	string Moniker,
 	bool EmitUnmatchedBaseFiles,
-	int? SupplementalMajor
+	int? SupplementalMajor,
+	IReadOnlyList<ApiCatalogEntry> CatalogEntries,
+	string? CurrentApiKey
 );
 
 /// <summary>
@@ -68,7 +69,8 @@ public class OpenApiGenerator(
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		var catalogEntries = await GenerateProducts(ctx).ConfigureAwait(false);
+		var declaredEntries = ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
+		var catalogEntries = await GenerateProducts(hubEntries: declaredEntries, ctx).ConfigureAwait(false);
 		if (catalogEntries.Count > 0)
 			await GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
 	}
@@ -77,18 +79,23 @@ public class OpenApiGenerator(
 	/// Renders every configured API product for this build context and returns catalog entries.
 	/// Does not write the combined API catalog page.
 	/// </summary>
-	public async Task<IReadOnlyList<ApiCatalogEntry>> GenerateProducts(Cancel ctx = default)
+	public async Task<IReadOnlyList<ApiCatalogEntry>> GenerateProducts(
+		IReadOnlyList<ApiCatalogEntry>? hubEntries = null,
+		Cancel ctx = default
+	)
 	{
 		if (context.Configuration.ApiConfigurations is null)
 			return [];
 
+		var catalogForSwitcher = hubEntries
+			?? ApiHubSwitcher.CollectDeclaredEntries(context.UrlPathPrefix, context.Configuration.ApiConfigurations);
 		var catalogEntries = new List<ApiCatalogEntry>();
 
 		foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 		{
 			try
 			{
-				var entry = await GenerateProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
+				var entry = await GenerateProduct(prefix, apiConfig, catalogForSwitcher, ctx).ConfigureAwait(false);
 				if (entry is not null)
 					catalogEntries.Add(entry);
 			}
@@ -107,7 +114,12 @@ public class OpenApiGenerator(
 	public Task GenerateCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx = default) =>
 		entries.Count == 0 ? Task.CompletedTask : GenerateApiCatalog(entries, ctx);
 
-	private async Task<ApiCatalogEntry?> GenerateProduct(string prefix, ResolvedApiConfiguration apiConfig, Cancel ctx)
+	private async Task<ApiCatalogEntry?> GenerateProduct(
+		string prefix,
+		ResolvedApiConfiguration apiConfig,
+		IReadOnlyList<ApiCatalogEntry> hubEntries,
+		Cancel ctx
+	)
 	{
 		var resolved = await ResolveDocumentsForProduct(prefix, apiConfig, ctx).ConfigureAwait(false);
 		if (resolved.Documents.Count == 0)
@@ -128,7 +140,9 @@ public class OpenApiGenerator(
 					switcherItems,
 					versioned.Version.Moniker,
 					EmitUnmatchedBaseFiles: versioned.Version.Moniker == resolved.UnmatchedBaseFilesMoniker,
-					SupplementalMajor: SupplementalMajor(versioned.Version.Moniker, highestMajor)
+					SupplementalMajor: SupplementalMajor(versioned.Version.Moniker, highestMajor),
+					CatalogEntries: hubEntries,
+					CurrentApiKey: prefix
 				),
 				ctx
 			).ConfigureAwait(false);
@@ -233,7 +247,10 @@ public class OpenApiGenerator(
 		return await _openApiReader.ReadAsync(stream, apiConfig.SpecFileName).ConfigureAwait(false);
 	}
 
-	private static readonly OpenApiDocument CatalogDocument = new() { Info = new OpenApiInfo { Title = "API Explorer", Version = "1.0" } };
+	private static readonly OpenApiDocument CatalogDocument = new()
+	{
+		Info = new OpenApiInfo { Title = ApiCatalog.PageTitle, Version = "1.0" }
+	};
 
 	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
 	{
@@ -296,11 +313,39 @@ public class OpenApiGenerator(
 			MarkdownRenderer = markdownStringRenderer,
 			ApiExplorerLog = _logger,
 			VersionSwitcherItems = generation.VersionSwitcherItems,
+			CatalogEntries = generation.CatalogEntries,
+			CurrentApiKey = generation.CurrentApiKey,
 			OperationSupplemental = operations,
-			TagSupplemental = tags
+			TagSupplemental = tags,
+			Product = generation.ApiConfig?.Product
 		};
 
 		await RenderNavigationItems(renderContext, navigationRenderer, navigation, ctx).ConfigureAwait(false);
+		await WriteSpecDownloads(navigation, generation.Document, ctx).ConfigureAwait(false);
+	}
+
+	private async Task WriteSpecDownloads(INavigationItem landing, OpenApiDocument document, Cancel ctx)
+	{
+		await WriteSpecSibling(
+			ApiOutputPaths.RelativeJsonFile(landing.Url, context.UrlPathPrefix),
+			(stream, token) => document.SerializeAsJsonAsync(stream, OpenApiSpecVersion.OpenApi3_1, token),
+			ctx
+		).ConfigureAwait(false);
+		await WriteSpecSibling(
+			ApiOutputPaths.RelativeYamlFile(landing.Url, context.UrlPathPrefix),
+			(stream, token) => document.SerializeAsYamlAsync(stream, OpenApiSpecVersion.OpenApi3_1, token),
+			ctx
+		).ConfigureAwait(false);
+	}
+
+	private async Task WriteSpecSibling(string relativeFile, Func<Stream, Cancel, Task> write, Cancel ctx)
+	{
+		var file = _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, relativeFile));
+		if (!file.Directory!.Exists)
+			file.Directory.Create();
+
+		await using var stream = _writeFileSystem.FileStream.New(file.FullName, FileMode.Create);
+		await write(stream, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -362,14 +407,33 @@ public class OpenApiGenerator(
 		renderContext = renderContext with { CurrentNavigation = current, NavigationHtml = navigationRenderResult.Html };
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.OpenOrCreate);
 		await page.RenderAsync(stream, renderContext, ctx);
+
+		if (page is IApiModel apiPage)
+			await WriteCommonMark(current, apiPage, renderContext, ctx).ConfigureAwait(false);
+
 		return outputFile;
 
 		IFileInfo OutputFile(INavigationItem currentNavigation)
 		{
-			const string indexHtml = "index.html";
-			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{context.UrlPathPrefix}", string.Empty);
-			var fileInfo = _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, fileName.Trim('/')));
-			return fileInfo;
+			var fileName = ApiOutputPaths.RelativeHtmlFile(currentNavigation.Url, context.UrlPathPrefix);
+			return _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, fileName));
 		}
+	}
+
+	private async Task WriteCommonMark(INavigationItem current, IApiModel page, ApiRenderContext renderContext, Cancel ctx)
+	{
+		var markdown = await page.RenderCommonMarkAsync(renderContext, ctx).ConfigureAwait(false);
+		if (string.IsNullOrEmpty(markdown))
+			return;
+
+		markdown = ApiMarkdownFrontMatter.Wrap(markdown, current, renderContext, page);
+
+		var markdownFile = _writeFileSystem.FileInfo.New(
+			Path.Join(context.OutputDirectory.FullName, ApiOutputPaths.RelativeMarkdownFile(current.Url, context.UrlPathPrefix))
+		);
+		if (!markdownFile.Directory!.Exists)
+			markdownFile.Directory.Create();
+
+		await _writeFileSystem.File.WriteAllTextAsync(markdownFile.FullName, markdown, ctx).ConfigureAwait(false);
 	}
 }

@@ -24,7 +24,7 @@ The `:title:` option doubles as the page title, so a hub page needs no body H1. 
 |---|---|---|
 | `:title:` | string | **Required.** Renders as the page `<h1>` next to the icon. Also used as the document title. |
 | `:description:` | inline markdown | One-line summary below the title. Supports bold, italics, and links. |
-| `:icon:` | string | Product key. Resolves to an inline SVG. Known keys: `elasticsearch`, `kibana`, `observability`, `security`. An unknown key falls back to a single-letter chip. |
+| `:icon:` | string | Product key. Resolves to an inline SVG. Known keys: `elasticsearch`, `kibana`, `logstash`, `observability`, `security`, `elastic-stack`. An unknown key falls back to a single-letter chip. |
 | `:primary-action:` | markdown link | First action. Format: `[Label](/url)` or `[Label](#anchor)`. |
 | `:secondary-action:` | markdown link | Second action. |
 | `:tertiary-action:` | markdown link | Third action. |

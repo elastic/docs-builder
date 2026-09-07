@@ -20,7 +20,7 @@ The second positional argument accepts:
 - A plain-text URL list file (one fully-qualified GitHub PR or issue URL per line)
 - A plain-text path list file (one changelog YAML path per line, ending in `.yaml` or `.yml`)
 
-When your profile uses `{version}` in its `output_products` pattern (or you want the conventional `{product}-{version}.yaml` bundle name) and you also want to filter by a report or list file, pass both arguments (version first, then the filter file).
+When your profile uses `{version}` in its `output_products` pattern (or you want the conventional `{repo}-{product}-{version}.yaml` bundle name) and you also want to filter by a report or list file, pass both arguments (version first, then the filter file).
 
 Example profile in `changelog.yml`:
 
@@ -33,9 +33,12 @@ bundle:
   profiles:
     elasticsearch-release:
       output_products: "elasticsearch {version}"
+    serverless-release:
+      output_products: "cloud-serverless {version}"
+      output_directory: docs/releases/cloud-serverless
 ```
 
-The bundle's file name is derived by convention as `{product}-{version}.yaml` from the profile's primary output product and the version argument (for example, `docs/releases/elasticsearch-9.2.0.yaml`). Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
+The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument. For example, `docs-builder changelog bundle elasticsearch-release 9.2.0` writes `docs/releases/elasticsearch-elasticsearch-9.2.0.yaml`. A profile `output_directory` replaces `bundle.output_directory` for that profile (the same as option-mode `--output` when it is a directory): `docs-builder changelog bundle serverless-release 2026-08-31` writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-2026-08-31.yaml`. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
 
 ## Option-based mode
 
@@ -96,7 +99,7 @@ Both refs are always required together — the start ref is never inferred from 
    - **PRs whose metadata cannot be fetched are reported as missing** with a warning.
 4. Records the end ref in the bundle output as the `git_ref` metadata field.
 
-Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. The bundle name follows the `{product}-{version}.yaml` convention.
+Commit-range mode works in both profile-based and option-based commands and is mutually exclusive with every other filter. In profile-based commands the profile contributes output metadata only (`output_products`, `repo`, `owner`, `rules`, and so on) — it must not set a `products` pattern or `source: github_release`. The bundle name follows the `{repo}-{product}-{version}.yaml` convention.
 
 Re-running the same range produces the same bundle content; bundling never overwrites changelog entries.
 Commit-range mode does not automatically add changelog notes whose `products[].versions` match `output_products`. Use `--files` or a path list if those files must be in the bundle.
@@ -122,7 +125,16 @@ When you bundle from a PR list or GitHub release and the command is sourcing fro
 
 ## CI usage
 
-Pass `--plan` to emit GitHub Actions step outputs (`needs_network`, `needs_github_token`, `output_path`) without generating the bundle. Use this in a planning step to decide whether subsequent steps require a GitHub token or network access.
+Pass `--plan` to emit GitHub Actions step outputs without generating the bundle. Use this in a planning step to decide whether subsequent steps require a GitHub token or network access.
+
+| Output | Description |
+|--------|-------------|
+| `mode` | Resolved bundle mode: `gh-release` when no `bundle.profiles` are configured; `bundle` for profile-based bundling |
+| `output_path` | Resolved output file path for the bundle |
+| `needs_network` | `true` if the bundle step requires network access |
+| `needs_github_token` | `true` if the bundle step requires a GitHub token |
+
+When `mode` is `gh-release` (no profiles configured), pass only `--config` and a version — no profile name or filter flags are needed. The plan step resolves `output_path` from `bundle.output_directory` so the bundle-upload step does not need to discover the file separately.
 
 For full configuration reference, see [Bundle changelogs](/data/release-notes/bundle.md).
 
@@ -268,7 +280,9 @@ https://github.com/elastic/elasticsearch/pull/136886
 https://github.com/elastic/elasticsearch/pull/137126
 ```
 
-By default all changelogs that match PRs in the list are included in the bundle.
+A changelog matches a listed PR when the file name's leading dash-separated numeric segments include that PR number (for example `12345.yaml`) or when the `prs:` field contains it. That is the same rule git-range matching uses. Local `--prs` therefore also matches leftover hyphenated or timestamp-prefix names whose leading digits equal the requested PR. Use [`--files`](#changelog-bundle-files) when you need to select entries by path. CDN `--prs` is separate: it probes `{n}.yaml` by object key and does not scan the directory.
+
+By default all matching changelogs are included in the bundle.
 To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/data/release-notes/configure-ref.md#rules-bundle) configuration settings.
 
 If you have changelog files that reference those pull requests, the command creates a file like this:
@@ -416,7 +430,7 @@ In profile mode, pass the same path list as a positional argument:
 docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelog_files.txt
 ```
 
-`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN pool entries by file name and do not need to exist locally — useful for private repositories whose entries exist only in S3 and whose public copies have PR/issue references scrubbed, so PR-based filters cannot match. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
+`--files` / path-list selection follows the standard entry-sourcing rules. When entries are sourced from the CDN (the default when `bundle.repo` resolves), the listed paths are matched to CDN pool entries by file name and do not need to exist locally. Use this when you already know the object names — for example leftover timestamp-slug files that CDN [`--prs`](#changelog-bundle-pr) cannot find (CDN probes `{n}.yaml` only) or that you want to select by path rather than by leading filename digits or YAML `prs:` / `issues:`. With local sourcing (`--force-local`, `--directory`, or `bundle.use_local_changelogs`), the listed files are read from disk and must exist. In either mode, a listed entry that cannot be found fails the run, and `rules.bundle` still applies after selection.
 
 ### Force local entry sourcing [changelog-bundle-force-local]
 

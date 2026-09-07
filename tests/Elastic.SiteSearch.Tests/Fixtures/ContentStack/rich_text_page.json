@@ -1,0 +1,62 @@
+{
+  "title": "Amazon Bedrock",
+  "title_l10n": "Amazon Bedrock",
+  "url": "/search-labs/integrations/amazon-bedrock",
+  "locale": "en-us",
+  "description_l10n": {
+    "content_simple_l10n": {
+      "type": "doc",
+      "children": [
+        {
+          "type": "p",
+          "children": [
+            { "text": "Amazon Bedrock is a fully managed service offering foundation models from leading AI companies." }
+          ]
+        }
+      ]
+    }
+  },
+  "main_content": {
+    "content_l10n": {
+      "type": "doc",
+      "children": [
+        {
+          "type": "p",
+          "children": [
+            { "text": "Amazon Bedrock makes leading foundation models available through a single API." }
+          ]
+        },
+        {
+          "type": "h3",
+          "children": [ { "text": "Blogs to get started" } ]
+        },
+        {
+          "type": "ul",
+          "children": [
+            {
+              "type": "li",
+              "children": [
+                {
+                  "type": "p",
+                  "children": [
+                    {
+                      "type": "a",
+                      "attrs": { "url": "https://www.elastic.co/search-labs/blog/example", "target": "_blank" },
+                      "children": [ { "text": "RAG using Bedrock" } ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "seo": {
+    "seo_title_l10n": "Amazon Bedrock Integration",
+    "seo_description_l10n": "Connect Amazon Bedrock to Elasticsearch."
+  },
+  "updated_at": "2026-07-01T00:00:00.000Z",
+  "publish_details": { "locale": "en-us" }
+}
