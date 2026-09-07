@@ -203,13 +203,14 @@ public static class MappingsExtension
 				euid
 			);
 
+			var pageUrlForLog = request.PageUrl.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal);
 			if (!await feedbackService.UpsertFeedbackAsync(record, ctx))
 			{
-				logger.LogWarning("Failed to record page feedback {FeedbackId} for {PageUrl}", feedbackId, request.PageUrl);
+				logger.LogWarning("Failed to record page feedback {FeedbackId} for {PageUrl}", feedbackId, pageUrlForLog);
 				return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 			}
 
-			logger.LogInformation("Recorded page feedback {FeedbackId} for {PageUrl}", feedbackId, request.PageUrl);
+			logger.LogInformation("Recorded page feedback {FeedbackId} for {PageUrl}", feedbackId, pageUrlForLog);
 			return Results.NoContent();
 		}).DisableAntiforgery();
 
