@@ -35,8 +35,8 @@ public class PageFeedbackEndpointTests
 		recorded.FeedbackId.Should().Be(feedbackId);
 		recorded.PageUrl.Should().Be("/docs/test-page");
 		recorded.Reaction.Should().Be(PageFeedbackReaction.ThumbsUp);
-		recorded.Reason.Should().Be(PageFeedbackReason.Accurate);
-		recorded.ReasonSetVersion.Should().Be(1);
+		recorded.Reasons.Should().ContainSingle(r => r == PageFeedbackReason.Accurate);
+		recorded.ReasonSetVersion.Should().Be(2);
 		recorded.Comment.Should().Be("Useful page");
 		recorded.Euid.Should().Be("test-euid");
 	}
@@ -66,9 +66,39 @@ public class PageFeedbackEndpointTests
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		recorded.Should().NotBeNull();
-		recorded.Reason.Should().BeNull();
+		recorded.Reasons.Should().BeNull();
 		recorded.ReasonSetVersion.Should().BeNull();
 		recorded.Comment.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task Put_MultipleReasons_RecordsAllReasons()
+	{
+		var feedbackService = A.Fake<IPageFeedbackService>();
+		PageFeedbackRecord? recorded = null;
+		A
+			.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
+			.Invokes((PageFeedbackRecord record, CancellationToken _) => recorded = record)
+			.Returns(Task.FromResult(true));
+		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
+		using var client = factory.CreateClient();
+		const string payload = /*lang=json,strict*/
+			"""
+			{
+				"pageUrl": "/docs/test-page",
+				"pageTitle": "Test page",
+				"reaction": "thumbsDown",
+				"reasons": ["inaccurate", "outOfDate"],
+				"reasonSetVersion": 2
+			}
+			""";
+		using var request = CreateRequest(Guid.NewGuid(), payload);
+
+		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+		recorded.Should().NotBeNull();
+		recorded.Reasons.Should().BeEquivalentTo([PageFeedbackReason.Inaccurate, PageFeedbackReason.OutOfDate]);
 	}
 
 	[Fact]
@@ -83,8 +113,8 @@ public class PageFeedbackEndpointTests
 				"pageUrl": "/docs/test-page",
 				"pageTitle": "Test page",
 				"reaction": "thumbsDown",
-				"reason": "inaccurate",
-				"reasonSetVersion": 1,
+				"reasons": ["inaccurate"],
+				"reasonSetVersion": 2,
 				"comment": "{{new string('x', 2001)}}"
 			}
 			""";
@@ -104,8 +134,8 @@ public class PageFeedbackEndpointTests
 			"pageUrl": "/docs/test-page",
 			"pageTitle": "Test page",
 			"reaction": "thumbsUp",
-			"reason": "inaccurate",
-			"reasonSetVersion": 1
+			"reasons": ["inaccurate"],
+			"reasonSetVersion": 2
 		}
 		""")]
 	[InlineData(
@@ -133,7 +163,7 @@ public class PageFeedbackEndpointTests
 			"pageUrl": "/docs/test-page",
 			"pageTitle": "Test page",
 			"reaction": "thumbsDown",
-			"reason": "inaccurate"
+			"reasons": ["inaccurate"]
 		}
 		""")]
 	public async Task Put_InvalidFeedback_ReturnsBadRequest(string payload)
@@ -186,8 +216,8 @@ public class PageFeedbackEndpointTests
 			"pageUrl": "/docs/test-page",
 			"pageTitle": "Test page",
 			"reaction": "thumbsUp",
-			"reason": "accurate",
-			"reasonSetVersion": 1,
+			"reasons": ["accurate"],
+			"reasonSetVersion": 2,
 			"comment": " Useful page "
 		}
 		""";

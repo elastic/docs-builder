@@ -11,25 +11,28 @@ changes replace the same document.
 
 The thumbs-up or thumbs-down selection writes a document with the reaction after
 a short debounce, so quickly changing the selection records only the final
-choice. The follow-up questionnaire writes the same document again with a
-structured reason, the reason-set version, and optional details. The comment
-field sits under the selected option. Each option keeps its own comment draft,
-including when the reader switches between Yes and No. The browser stores that
-draft in `sessionStorage` for the current tab and page so an accidental refresh
-can restore it, and clears it after a successful submit. Submitting the questionnaire flushes any pending reaction write first.
+choice. The follow-up questionnaire writes the same document again with one or
+more structured reasons, the reason-set version, and optional details. Readers
+can select several reasons at once. One comment field applies to the whole
+submission. It keeps its value when the reader switches between Yes and No.
+Switching the reaction clears any selected reason that does not belong to the new
+reason set. The browser stores that draft in `sessionStorage` for the current tab
+and page so an accidental refresh can restore it, and clears it after a
+successful submit. Submitting the questionnaire flushes any pending reaction write first.
 This keeps abandoned questionnaires useful while ensuring the richer
 submission wins.
 
-Reasons are stored as keyword enum values for filtering and aggregation.
-`reason_set_version` identifies the questionnaire revision that presented the
-option. Display labels may change without changing their stored value. Add a new
+Reasons are stored in the multi-valued `reasons` keyword field for filtering and
+aggregation. `reason_set_version` identifies the questionnaire revision that
+presented the option. Display labels may change without changing their stored value. Add a new
 enum value when an option's meaning changes, and retain retired values so older
 clients and historical documents remain valid.
 
-The current positive reasons are `accurate`, `solvedProblem`,
-`easyToUnderstand`, `helpfulExamples`, and `anotherReason`. The current negative
-reasons are `inaccurate`, `missingInformation`, `hardToUnderstand`,
-`codeSampleErrors`, and `anotherReason`. API pages use the same stored values
+Reason set version 2 presents these positive reasons in display order:
+`solvedProblem`, `easyToUnderstand`, `accurate`, `helpfulExamples`,
+`easyToFind`, and `anotherReason`. The negative reasons are `outOfDate`,
+`hardToUnderstand`, `inaccurate`, `codeSampleErrors`, `missingInformation`, and
+`anotherReason`. API pages use the same stored values
 and `reason_set_version`. They pass `surface="api"` so labels and descriptions
 talk about the spec and examples instead of a product how-to.
 

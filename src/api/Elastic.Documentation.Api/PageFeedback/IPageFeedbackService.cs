@@ -15,7 +15,7 @@ public record PageFeedbackRecord(
 	string PageUrl,
 	string PageTitle,
 	PageFeedbackReaction Reaction,
-	PageFeedbackReason? Reason,
+	IReadOnlyList<PageFeedbackReason>? Reasons,
 	int? ReasonSetVersion,
 	string? Comment,
 	string? Euid
@@ -27,7 +27,7 @@ public record PageFeedbackRecord(
 			request.PageUrl,
 			request.PageTitle,
 			request.Reaction,
-			request.Reason,
+			request.Reasons is null or [] ? null : request.Reasons,
 			request.ReasonSetVersion,
 			string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim(),
 			euid

@@ -25,7 +25,7 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 			PageUrl = record.PageUrl,
 			PageTitle = record.PageTitle,
 			Reaction = record.Reaction,
-			Reason = record.Reason,
+			Reasons = record.Reasons,
 			ReasonSetVersion = record.ReasonSetVersion,
 			Comment = record.Comment,
 			Euid = record.Euid,

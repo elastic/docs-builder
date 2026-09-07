@@ -45,12 +45,11 @@ describe('PageFeedback', () => {
         expect(
             screen.getByRole('group', { name: 'What did you like?' })
         ).toBeInTheDocument()
-        expect(screen.getByRole('radio', { name: /Accurate/ })).toHaveFocus()
         expect(
-            screen.queryByRole('radio', { name: /Inaccurate/ })
-        ).not.toBeInTheDocument()
+            screen.getByRole('checkbox', { name: /Solved my problem/ })
+        ).toHaveFocus()
         expect(
-            screen.queryByRole('textbox', { name: 'Tell us more (optional)' })
+            screen.queryByRole('checkbox', { name: /Inaccurate/ })
         ).not.toBeInTheDocument()
         expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
     })
@@ -69,12 +68,31 @@ describe('PageFeedback', () => {
             screen.getByRole('group', { name: 'What went wrong?' })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('radio', {
+            screen.getByRole('checkbox', {
                 name: /Couldn't find what I needed/,
             })
         ).toBeInTheDocument()
         expect(
-            screen.queryByRole('radio', { name: /Solved my problem/ })
+            screen.getByRole('checkbox', { name: /Out of date/ })
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('checkbox', { name: /Solved my problem/ })
+        ).not.toBeInTheDocument()
+    })
+
+    it('shows positive findability option after a positive reaction', async () => {
+        const user = userEvent.setup()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
+
+        await user.click(
+            screen.getByRole('button', { name: 'Yes, this page was helpful' })
+        )
+
+        expect(
+            screen.getByRole('checkbox', { name: /Easy to find/ })
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('checkbox', { name: /Out of date/ })
         ).not.toBeInTheDocument()
     })
 
@@ -90,7 +108,7 @@ describe('PageFeedback', () => {
         })
 
         await user.click(yes)
-        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
+        await user.click(screen.getByRole('checkbox', { name: /Accurate/ }))
         await user.click(no)
 
         expect(yes).toHaveAttribute('aria-pressed', 'false')
@@ -99,7 +117,7 @@ describe('PageFeedback', () => {
             screen.getByRole('group', { name: 'What went wrong?' })
         ).toBeInTheDocument()
         expect(
-            screen.queryByRole('radio', { name: /Accurate/ })
+            screen.queryByRole('checkbox', { name: /Accurate/ })
         ).not.toBeInTheDocument()
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledTimes(1)
@@ -129,7 +147,7 @@ describe('PageFeedback', () => {
         ).not.toBeInTheDocument()
     })
 
-    it('submits a structured reason without requiring details', async () => {
+    it('allows selecting multiple reasons and submits them all', async () => {
         const user = userEvent.setup()
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
 
@@ -138,14 +156,43 @@ describe('PageFeedback', () => {
                 name: 'No, this page was not helpful',
             })
         )
+
+        await user.click(screen.getByRole('checkbox', { name: /Inaccurate/ }))
+        await user.click(screen.getByRole('checkbox', { name: /Out of date/ }))
         expect(
-            screen.queryByRole('textbox', {
-                name: 'Tell us more (optional)',
+            screen.getByRole('button', { name: 'Submit' })
+        ).not.toBeDisabled()
+        await user.click(screen.getByRole('button', { name: 'Submit' }))
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
+        expect(global.fetch).toHaveBeenLastCalledWith(
+            `/docs/_api/v1/page-feedback/${feedbackId}`,
+            expect.objectContaining({
+                body: JSON.stringify({
+                    pageUrl: '/docs/test-page',
+                    pageTitle: 'Test page',
+                    reaction: 'thumbsDown',
+                    reasons: ['inaccurate', 'outOfDate'],
+                    reasonSetVersion: 2,
+                }),
             })
-        ).not.toBeInTheDocument()
+        )
+        expect(
+            await screen.findByText('Thank you for your feedback.')
+        ).toBeInTheDocument()
+    })
+
+    it('submits a single reason without a comment', async () => {
+        const user = userEvent.setup()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
 
         await user.click(
-            screen.getByRole('radio', {
+            screen.getByRole('button', {
+                name: 'No, this page was not helpful',
+            })
+        )
+        await user.click(
+            screen.getByRole('checkbox', {
                 name: /Couldn't find what I needed/,
             })
         )
@@ -162,8 +209,8 @@ describe('PageFeedback', () => {
                     pageUrl: '/docs/test-page',
                     pageTitle: 'Test page',
                     reaction: 'thumbsDown',
-                    reason: 'missingInformation',
-                    reasonSetVersion: 1,
+                    reasons: ['missingInformation'],
+                    reasonSetVersion: 2,
                 }),
             })
         )
@@ -172,61 +219,46 @@ describe('PageFeedback', () => {
         ).toBeInTheDocument()
     })
 
-    it('moves the comment field under the selected reason', async () => {
+    it('shows a single shared comment field once the reaction is selected', async () => {
         const user = userEvent.setup()
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
 
-        await user.click(
-            screen.getByRole('button', {
-                name: 'Yes, this page was helpful',
-            })
-        )
-        const accurate = screen.getByRole('radio', { name: /Accurate/ })
-        const solved = screen.getByRole('radio', { name: /Solved my problem/ })
-
-        await user.click(accurate)
-        const firstComment = screen.getByRole('textbox', {
-            name: 'Tell us more (optional)',
-        })
-        expect(accurate.closest('.page-feedback__option')).toContainElement(
-            firstComment
-        )
-        await user.type(firstComment, 'Clear write-up.')
-
-        await user.click(solved)
-        const movedComment = screen.getByRole('textbox', {
-            name: 'Tell us more (optional)',
-        })
-        expect(movedComment).toHaveValue('')
-        expect(solved.closest('.page-feedback__option')).toContainElement(
-            movedComment
-        )
-        await user.type(movedComment, 'Fixed my issue.')
-
-        await user.click(accurate)
         expect(
-            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
-        ).toHaveValue('Clear write-up.')
+            screen.queryByRole('textbox', { name: 'Tell us more (optional)' })
+        ).not.toBeInTheDocument()
+
+        await user.click(
+            screen.getByRole('button', { name: 'Yes, this page was helpful' })
+        )
+
+        const textarea = screen.getByRole('textbox', {
+            name: 'Tell us more (optional)',
+        })
+        expect(textarea).toBeInTheDocument()
+
+        await user.click(screen.getByRole('checkbox', { name: /Accurate/ }))
+        await user.click(
+            screen.getByRole('checkbox', { name: /Helpful examples/ })
+        )
+        expect(screen.getAllByRole('checkbox', { checked: true })).toHaveLength(
+            2
+        )
+        expect(textarea).toBeInTheDocument()
+        expect(
+            screen.getAllByRole('textbox', { name: 'Tell us more (optional)' })
+        ).toHaveLength(1)
     })
 
-    it('keeps per-option comments when switching between yes and no', async () => {
+    it('retains the comment when switching between reactions', async () => {
         const user = userEvent.setup()
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
 
         await user.click(
-            screen.getByRole('button', {
-                name: 'Yes, this page was helpful',
-            })
+            screen.getByRole('button', { name: 'Yes, this page was helpful' })
         )
-        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
         await user.type(
             screen.getByRole('textbox', { name: 'Tell us more (optional)' }),
-            'Clear write-up.'
-        )
-        await user.click(screen.getByRole('radio', { name: /Another reason/ }))
-        await user.type(
-            screen.getByRole('textbox', { name: 'Tell us more (optional)' }),
-            'Shared note.'
+            'Great page.'
         )
 
         await user.click(
@@ -234,28 +266,30 @@ describe('PageFeedback', () => {
                 name: 'No, this page was not helpful',
             })
         )
-        expect(
-            screen.getByRole('radio', { name: /Another reason/ })
-        ).toBeChecked()
+
         expect(
             screen.getByRole('textbox', { name: 'Tell us more (optional)' })
-        ).toHaveValue('Shared note.')
+        ).toHaveValue('Great page.')
+    })
+
+    it('clears reasons that are invalid for the new reaction when switching', async () => {
+        const user = userEvent.setup()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
 
         await user.click(
+            screen.getByRole('button', { name: 'Yes, this page was helpful' })
+        )
+        await user.click(screen.getByRole('checkbox', { name: /Accurate/ }))
+        await user.click(
             screen.getByRole('button', {
-                name: 'Yes, this page was helpful',
+                name: 'No, this page was not helpful',
             })
         )
+
         expect(
-            screen.getByRole('radio', { name: /Another reason/ })
-        ).toBeChecked()
-        expect(
-            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
-        ).toHaveValue('Shared note.')
-        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
-        expect(
-            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
-        ).toHaveValue('Clear write-up.')
+            screen.queryByRole('checkbox', { checked: true })
+        ).not.toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
     })
 
     it('waits for an in-flight reaction save before storing richer feedback', async () => {
@@ -275,7 +309,7 @@ describe('PageFeedback', () => {
             })
         )
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
-        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
+        await user.click(screen.getByRole('checkbox', { name: /Accurate/ }))
         await user.click(screen.getByRole('button', { name: 'Submit' }))
 
         expect(global.fetch).toHaveBeenCalledTimes(1)
@@ -284,12 +318,12 @@ describe('PageFeedback', () => {
         expect(global.fetch).toHaveBeenLastCalledWith(
             `/docs/_api/v1/page-feedback/${feedbackId}`,
             expect.objectContaining({
-                body: expect.stringContaining('"reason":"accurate"'),
+                body: expect.stringContaining('"reasons":["accurate"]'),
             })
         )
     })
 
-    it('preserves the selected reason and details when submission is retried', async () => {
+    it('preserves selected reasons and comment when submission is retried', async () => {
         const user = userEvent.setup()
         jest.mocked(global.fetch)
             .mockResolvedValueOnce(successfulResponse)
@@ -303,7 +337,7 @@ describe('PageFeedback', () => {
             })
         )
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
-        const reason = screen.getByRole('radio', {
+        const reason = screen.getByRole('checkbox', {
             name: /Code sample errors/,
         })
         await user.click(reason)
@@ -327,7 +361,7 @@ describe('PageFeedback', () => {
         ).toBeInTheDocument()
     })
 
-    it('restores a per-option draft after remount and clears it on submit', async () => {
+    it('restores reasons and comment from draft after remount and clears on submit', async () => {
         const user = userEvent.setup()
         const { unmount } = render(
             <PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />
@@ -338,22 +372,18 @@ describe('PageFeedback', () => {
                 name: 'Yes, this page was helpful',
             })
         )
-        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
-        await user.type(
-            screen.getByRole('textbox', { name: 'Tell us more (optional)' }),
-            'Clear write-up.'
-        )
+        await user.click(screen.getByRole('checkbox', { name: /Accurate/ }))
         await user.click(
-            screen.getByRole('radio', { name: /Solved my problem/ })
+            screen.getByRole('checkbox', { name: /Helpful examples/ })
         )
         await user.type(
             screen.getByRole('textbox', { name: 'Tell us more (optional)' }),
-            'Fixed my issue.'
+            'Great content.'
         )
         await waitFor(() =>
             expect(
                 sessionStorage.getItem('docs-page-feedback:/docs/test-page')
-            ).toContain('Fixed my issue.')
+            ).toContain('Great content.')
         )
 
         unmount()
@@ -362,17 +392,14 @@ describe('PageFeedback', () => {
         expect(
             screen.getByRole('button', { name: 'Yes, this page was helpful' })
         ).toHaveAttribute('aria-pressed', 'true')
+        expect(screen.getByRole('checkbox', { name: /Accurate/ })).toBeChecked()
         expect(
-            screen.getByRole('radio', { name: /Solved my problem/ })
+            screen.getByRole('checkbox', { name: /Helpful examples/ })
         ).toBeChecked()
         expect(
             screen.getByRole('textbox', { name: 'Tell us more (optional)' })
-        ).toHaveValue('Fixed my issue.')
+        ).toHaveValue('Great content.')
 
-        await user.click(screen.getByRole('radio', { name: /Accurate/ }))
-        expect(
-            screen.getByRole('textbox', { name: 'Tell us more (optional)' })
-        ).toHaveValue('Clear write-up.')
         await user.click(screen.getByRole('button', { name: 'Submit' }))
 
         expect(
@@ -403,7 +430,9 @@ describe('PageFeedback', () => {
                 'Missing a parameter, field, status, or auth detail.'
             )
         ).toBeInTheDocument()
-        await user.click(screen.getByRole('radio', { name: /Example errors/ }))
+        await user.click(
+            screen.getByRole('checkbox', { name: /Example errors/ })
+        )
         await user.click(screen.getByRole('button', { name: 'Submit' }))
 
         await waitFor(() =>
@@ -411,7 +440,7 @@ describe('PageFeedback', () => {
                 `/docs/_api/v1/page-feedback/${feedbackId}`,
                 expect.objectContaining({
                     body: expect.stringContaining(
-                        '"reason":"codeSampleErrors"'
+                        '"reasons":["codeSampleErrors"]'
                     ),
                 })
             )

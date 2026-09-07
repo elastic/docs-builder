@@ -91,8 +91,8 @@ public class PageFeedbackGatewayTests
 			"/docs/test-page",
 			"Test page",
 			PageFeedbackReaction.ThumbsUp,
-			PageFeedbackReason.Accurate,
-			1,
+			[PageFeedbackReason.Accurate],
+			2,
 			"Clear and useful.",
 			"test-euid"
 		);
