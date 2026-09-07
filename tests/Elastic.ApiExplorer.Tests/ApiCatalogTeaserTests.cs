@@ -36,4 +36,17 @@ public class ApiCatalogTeaserTests
 
 		ApiCatalogTeaser.From(description).Should().Be("The Kibana saved objects API.");
 	}
+
+	[Fact]
+	public void From_StopsAtHeadingWithoutBlankLine()
+	{
+		var description =
+			"""
+			Elasticsearch provides REST APIs that are used by the UI components.
+			## Documentation source and versions
+			This documentation is generated from the OpenAPI spec.
+			""";
+
+		ApiCatalogTeaser.From(description).Should().Be("Elasticsearch provides REST APIs that are used by the UI components.");
+	}
 }

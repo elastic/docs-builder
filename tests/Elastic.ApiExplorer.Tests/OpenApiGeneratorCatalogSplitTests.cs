@@ -78,6 +78,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch.md" target="_blank" rel="noopener">Markdown</a>""");
 		html.Should().Contain("""<a href="/docs/api/doc/elasticsearch.json" target="_blank" rel="noopener">JSON</a>""");
 		html.Should().NotContain("YAML");
+		html.Should().NotContain("markdown-content");
+		html.Should().NotContain("id=\"pages-nav\"");
 	}
 
 	[Fact]
