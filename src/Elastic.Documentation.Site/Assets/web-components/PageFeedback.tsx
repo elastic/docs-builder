@@ -87,10 +87,6 @@ interface PageFeedbackPayload {
     comment?: string
 }
 
-interface PendingReactionSave {
-    finish: (shouldSave: boolean) => void
-}
-
 const ThumbIcon = ({ down = false }: { down?: boolean }) => (
     <svg
         aria-hidden="true"
@@ -136,7 +132,9 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
     const guidanceId = useId()
     const firstReasonRef = useRef<HTMLInputElement>(null)
     const initialSaveRef = useRef<Promise<void>>(Promise.resolve())
-    const pendingReactionSaveRef = useRef<PendingReactionSave | null>(null)
+    const pendingReactionSaveRef = useRef<
+        ((shouldSave: boolean) => void) | null
+    >(null)
     const [feedbackId] = useState(() => crypto.randomUUID())
     const [reaction, setReaction] = useState<Reaction | null>(null)
     const [reason, setReason] = useState<Reason | null>(null)
@@ -149,20 +147,17 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
         if (reaction) firstReasonRef.current?.focus()
     }, [reaction])
 
-    useEffect(() => () => pendingReactionSaveRef.current?.finish(false), [])
+    useEffect(() => () => pendingReactionSaveRef.current?.(false), [])
 
     const saveInitialReaction = async (nextReaction: Reaction) => {
-        const payload = { pageUrl, pageTitle, reaction: nextReaction }
-
         try {
-            await submitFeedback(feedbackId, payload)
+            await submitFeedback(feedbackId, {
+                pageUrl,
+                pageTitle,
+                reaction: nextReaction,
+            })
         } catch {
-            try {
-                await submitFeedback(feedbackId, payload)
-            } catch {
-                // The questionnaire remains available and its submission retries
-                // the complete feedback payload.
-            }
+            // Questionnaire submit retries the complete payload.
         }
     }
 
@@ -172,7 +167,7 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
         setReaction(nextReaction)
         setReason(null)
         setError(false)
-        pendingReactionSaveRef.current?.finish(false)
+        pendingReactionSaveRef.current?.(false)
 
         const debounce = new Promise<boolean>((resolve) => {
             let settled = false
@@ -189,7 +184,7 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
                 resolve(shouldSave)
             }
 
-            pendingReactionSaveRef.current = { finish }
+            pendingReactionSaveRef.current = finish
         })
 
         initialSaveRef.current = initialSaveRef.current.then(async () => {
@@ -215,7 +210,7 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
         setError(false)
 
         try {
-            pendingReactionSaveRef.current?.finish(true)
+            pendingReactionSaveRef.current?.(false)
             await initialSaveRef.current
             await submitFeedback(feedbackId, payload)
             setShowThanks(true)

@@ -19,4 +19,17 @@ public record PageFeedbackRecord(
 	int? ReasonSetVersion,
 	string? Comment,
 	string? Euid
-);
+)
+{
+	public static PageFeedbackRecord From(Guid feedbackId, PageFeedbackRequest request, string? euid) =>
+		new(
+			feedbackId,
+			request.PageUrl,
+			request.PageTitle,
+			request.Reaction,
+			request.Reason,
+			request.ReasonSetVersion,
+			string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim(),
+			euid
+		);
+}

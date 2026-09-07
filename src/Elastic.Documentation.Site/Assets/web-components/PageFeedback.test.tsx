@@ -107,11 +107,9 @@ describe('PageFeedback', () => {
         })
     })
 
-    it('silently retries a failed immediate reaction once', async () => {
+    it('does not retry a failed immediate reaction', async () => {
         const user = userEvent.setup()
-        jest.mocked(global.fetch)
-            .mockResolvedValueOnce(failedResponse)
-            .mockResolvedValueOnce(successfulResponse)
+        jest.mocked(global.fetch).mockResolvedValueOnce(failedResponse)
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
 
         await user.click(
@@ -120,7 +118,7 @@ describe('PageFeedback', () => {
             })
         )
 
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2))
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
         expect(
             screen.queryByText("We couldn't save your feedback.")
         ).not.toBeInTheDocument()
@@ -152,7 +150,7 @@ describe('PageFeedback', () => {
         expect(commentField).toHaveAttribute('maxlength', '2000')
         await user.click(screen.getByRole('button', { name: 'Submit' }))
 
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2))
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
         expect(global.fetch).toHaveBeenLastCalledWith(
             `/docs/_api/v1/page-feedback/${feedbackId}`,
             expect.objectContaining({
@@ -170,7 +168,7 @@ describe('PageFeedback', () => {
         ).toBeInTheDocument()
     })
 
-    it('waits for the immediate reaction before storing richer feedback', async () => {
+    it('waits for an in-flight reaction save before storing richer feedback', async () => {
         const user = userEvent.setup()
         let resolveInitialSave: (response: Response) => void = () => {}
         const initialSave = new Promise<Response>((resolve) => {
@@ -186,6 +184,7 @@ describe('PageFeedback', () => {
                 name: 'Yes, this page was helpful',
             })
         )
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
         await user.click(screen.getByRole('radio', { name: /Accurate/ }))
         await user.click(screen.getByRole('button', { name: 'Submit' }))
 
@@ -213,6 +212,7 @@ describe('PageFeedback', () => {
                 name: 'No, this page was not helpful',
             })
         )
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
         const reason = screen.getByRole('radio', {
             name: /Code sample errors/,
         })

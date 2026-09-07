@@ -60,8 +60,7 @@ public static class MappingsExtension
 			var inputMessages = new[] { new InputMessage("user", [new MessagePart("text", askAiRequest.Message)]) };
 			var inputMessagesJson = JsonSerializer.Serialize(inputMessages, ApiJsonContext.Default.InputMessageArray);
 			_ = activity?.SetTag("gen_ai.input.messages", inputMessagesJson);
-			var sanitizedMessage = askAiRequest.Message?.Replace("\r", "").Replace("\n", "");
-			logger.LogInformation("AskAI input message: <{ask_ai.input.message}>", sanitizedMessage);
+			logger.LogInformation("AskAI input message: <{ask_ai.input.message}>", SanitizeForLog(askAiRequest.Message));
 			logger.LogInformation("Streaming AskAI response");
 
 			var response = await askAiService.AskAi(askAiRequest, ctx);
@@ -88,8 +87,7 @@ public static class MappingsExtension
 			Cancel ctx
 		) =>
 		{
-			// Extract euid cookie for user tracking
-			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+			var euid = TryGetEuid(context);
 
 			var feedbackActivitySource = new ActivitySource(TelemetryConstants.AskAiFeedbackSourceName);
 			using var activity = feedbackActivitySource.StartActivity("record message-feedback", ActivityKind.Internal);
@@ -190,27 +188,15 @@ public static class MappingsExtension
 			if (!IsValidPageFeedback(request))
 				return Results.BadRequest();
 
-			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
-			var comment = string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim();
-			var record = new PageFeedbackRecord(
-				feedbackId,
-				request.PageUrl,
-				request.PageTitle,
-				request.Reaction,
-				request.Reason,
-				request.ReasonSetVersion,
-				comment,
-				euid
-			);
-
-			var pageUrlForLog = request.PageUrl.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal);
+			var record = PageFeedbackRecord.From(feedbackId, request, TryGetEuid(context));
+			var pageUrlForLog = SanitizeForLog(request.PageUrl);
 			if (!await feedbackService.UpsertFeedbackAsync(record, ctx))
 			{
 				logger.LogWarning("Failed to record page feedback {FeedbackId} for {PageUrl}", feedbackId, pageUrlForLog);
 				return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 			}
 
-			logger.LogInformation("Recorded page feedback {FeedbackId} for {PageUrl}", feedbackId, pageUrlForLog);
+			logger.LogDebug("Recorded page feedback {FeedbackId} for {PageUrl}", feedbackId, pageUrlForLog);
 			return Results.NoContent();
 		}).DisableAntiforgery();
 
@@ -262,4 +248,13 @@ public static class MappingsExtension
 			reason is PageFeedbackReason.Inaccurate or PageFeedbackReason.MissingInformation or PageFeedbackReason.HardToUnderstand or PageFeedbackReason.CodeSampleErrors or PageFeedbackReason.AnotherReason,
 		_ => false
 	};
+
+	private static string? TryGetEuid(HttpContext context)
+	{
+		_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+		return euid;
+	}
+
+	private static string? SanitizeForLog(string? value) =>
+		value?.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal);
 }
