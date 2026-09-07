@@ -65,14 +65,39 @@ public static class ProductIcons
 				<path fill="#00BFB3" d="M0 20.148h32v-8.296H0v8.296Z"/>
 				<path fill="#07C" d="M0 23.111h32v6.519A2.37 2.37 0 0 1 29.63 32H2.37A2.37 2.37 0 0 1 0 29.63v-6.52Z"/>
 			</svg>
+			""",
+		["ess"] =
 			"""
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+				<g fill="none" fill-rule="evenodd" transform="translate(2)">
+					<path fill="rgba(255,255,255,0.85)" d="M10.3691,18.3525 C10.4021,18.3415 10.4361,18.3385 10.4701,18.3295 C10.1671,17.6135 10.0001,16.8265 10.0001,15.9995 C10.0001,12.6865 12.6861,9.9995 16.0001,9.9995 L16.0001,-0.0005 C7.1631,-0.0005 0.0001,7.1635 0.0001,15.9995 C0.0001,18.7925 0.7191,21.4155 1.9761,23.7015 C4.2571,21.2015 7.1381,19.3545 10.3691,18.3525"/>
+					<path fill="#0080D5" d="M16,0 C11.063,0 6.651,2.236 3.717,5.75 C5.669,8.088 8.277,9.858 11.258,10.782 C11.968,11.002 12.735,10.917 13.404,10.594 C14.189,10.214 15.069,10 16,10 C16.931,10 17.811,10.214 18.596,10.594 C19.265,10.917 20.032,11.002 20.742,10.782 C23.723,9.858 26.33,8.088 28.283,5.75 C25.349,2.236 20.937,0 16,0"/>
+					<path fill="#00BFB3" d="M20.7422,21.2178 C20.0322,20.9978 19.2642,21.0828 18.5962,21.4058 C17.8102,21.7858 16.9302,21.9998 16.0002,21.9998 C15.0692,21.9998 14.1892,21.7858 13.4042,21.4058 C12.7352,21.0828 11.9682,20.9978 11.2582,21.2178 C8.2772,22.1418 5.6692,23.9118 3.7172,26.2498 C6.6512,29.7638 11.0632,31.9998 16.0002,31.9998 C20.9362,31.9998 25.3482,29.7638 28.2832,26.2498 C26.3302,23.9118 23.7222,22.1418 20.7422,21.2178"/>
+				</g>
+			</svg>
+			"""
+	}.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// Product ids that reuse another mark. Serverless siblings share the stack product icon;
+	/// Cloud Serverless shares the Elastic Cloud mark.
+	/// </summary>
+	private static readonly FrozenDictionary<string, string> Aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+	{
+		["serverless-elasticsearch"] = "elasticsearch",
+		["serverless-kibana"] = "kibana",
+		["serverless-observability"] = "observability",
+		["serverless-security"] = "security",
+		["cloud-serverless"] = "ess"
 	}.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
 	public static string? Get(string? key)
 	{
 		if (string.IsNullOrWhiteSpace(key))
 			return null;
-		return Icons.TryGetValue(key, out var svg) ? svg : null;
+		if (Icons.TryGetValue(key, out var svg))
+			return svg;
+		return Aliases.TryGetValue(key, out var canonical) && Icons.TryGetValue(canonical, out svg) ? svg : null;
 	}
 
 	public static string Initials(string? key) => string.IsNullOrWhiteSpace(key) ? "?" : char.ToUpperInvariant(key[0]).ToString();
