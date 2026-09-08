@@ -1,6 +1,6 @@
 /*
 	The markdown layout wraps <page-feedback> and .page-actions in .page-outro so the
-	"Edit page" / "Report issue" buttons sit on the Yes/No button row, right aligned.
+	"Edit page" button sits on the Yes/No button row, right aligned.
 
 	The row takes over the top border and spacing that page-feedback.css sets on the
 	page-feedback element, which would otherwise stop at the left column. Layouts that render
@@ -47,7 +47,7 @@
 }
 
 /*
-	The buttons copy .page-feedback__choice in page-feedback.css so the four controls on the row
+	The button copies .page-feedback__choice in page-feedback.css so the three controls on the row
 	read as one group. Keep the two rule sets in step. The layer matters: Tailwind's `hidden`
 	utility has to win over `display: inline-flex` for the HideEditThisPage path to work.
 */

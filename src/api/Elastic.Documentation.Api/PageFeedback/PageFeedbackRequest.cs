@@ -61,6 +61,9 @@ public enum PageFeedbackReason
 	[JsonStringEnumMemberName("outOfDate")]
 	OutOfDate,
 
+	[JsonStringEnumMemberName("siteProblem")]
+	SiteProblem,
+
 	[JsonStringEnumMemberName("anotherReason")]
 	AnotherReason
 }

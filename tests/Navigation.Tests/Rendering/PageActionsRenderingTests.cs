@@ -21,55 +21,14 @@ namespace Elastic.Documentation.Navigation.Tests.Rendering;
 public class PageActionsRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
 {
 	[Fact]
-	public async Task PrimaryNavOn_RendersBothCtas()
-	{
-		var html = await Render(new PageActionsScenario
-		{
-			PrimaryNavEnabled = true,
-			GithubEditUrl = "https://github.com/elastic/docs/edit/main/page.md"
-		});
-
-		html.Should().Contain("class=\"page-actions\"");
-		html.Should().Contain("Edit page");
-		html.Should().Contain("Report issue");
-		html.Should().Contain("href=\"https://github.com/elastic/docs/edit/main/page.md\"");
-		html.Should().NotContain("page-actions__action hidden");
-		html
-			.IndexOf("Edit page", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("Report issue", StringComparison.Ordinal), "the edit button comes first");
-	}
-
-	[Fact]
-	public async Task PrimaryNavOff_OmitsReportIssueButKeepsEditPage()
+	public async Task GithubEditUrl_RendersEditPageButton()
 	{
 		var html = await Render(new PageActionsScenario { GithubEditUrl = "https://github.com/elastic/docs/edit/main/page.md" });
 
-		html.Should().NotContain("Report issue");
+		html.Should().Contain("class=\"page-actions\"");
 		html.Should().Contain("Edit page");
-	}
-
-	[Fact]
-	public async Task Codex_OmitsReportIssue()
-	{
-		var html = await Render(new PageActionsScenario
-		{
-			BuildType = BuildType.Codex,
-			PrimaryNavEnabled = true,
-			GithubEditUrl = "https://github.com/elastic/docs/edit/main/page.md"
-		});
-
-		html.Should().NotContain("Report issue");
-		html.Should().Contain("Edit page");
-	}
-
-	[Fact]
-	public async Task NoGithubEditUrl_OmitsEditPage()
-	{
-		var html = await Render(new PageActionsScenario { PrimaryNavEnabled = true });
-
-		html.Should().Contain("Report issue");
-		html.Should().NotContain("Edit page");
+		html.Should().Contain("href=\"https://github.com/elastic/docs/edit/main/page.md\"");
+		html.Should().NotContain("page-actions__action hidden");
 	}
 
 	[Fact]
@@ -77,7 +36,6 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 	{
 		var html = await Render(new PageActionsScenario
 		{
-			PrimaryNavEnabled = true,
 			GithubEditUrl = "https://github.com/elastic/docs/edit/main/page.md",
 			HideEditThisPage = true
 		});
@@ -87,7 +45,7 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 	}
 
 	[Fact]
-	public async Task NoCtas_RendersNothing()
+	public async Task NoGithubEditUrl_RendersNothing()
 	{
 		var html = await Render(new PageActionsScenario());
 
@@ -98,7 +56,6 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 	private sealed record PageActionsScenario
 	{
 		public BuildType BuildType { get; init; } = BuildType.Assembler;
-		public bool PrimaryNavEnabled { get; init; }
 		public string? GithubEditUrl { get; init; }
 		public bool HideEditThisPage { get; init; }
 	}
@@ -121,7 +78,7 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = new FeatureFlags(new Dictionary<string, bool> { ["primary-nav"] = scenario.PrimaryNavEnabled }),
+			Features = new FeatureFlags([]),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),

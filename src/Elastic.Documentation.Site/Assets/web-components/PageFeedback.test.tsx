@@ -175,13 +175,53 @@ describe('PageFeedback', () => {
                     pageTitle: 'Test page',
                     reaction: 'thumbsDown',
                     reasons: ['inaccurate', 'outOfDate'],
-                    reasonSetVersion: 2,
+                    reasonSetVersion: 3,
                 }),
             })
         )
         expect(
             await screen.findByText('Thank you for your feedback.')
         ).toBeInTheDocument()
+    })
+
+    it('offers a site problem reason on the negative reaction only', async () => {
+        const user = userEvent.setup()
+        render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
+
+        await user.click(
+            screen.getByRole('button', { name: 'Yes, this page was helpful' })
+        )
+        expect(
+            screen.queryByRole('checkbox', { name: /Something is broken/ })
+        ).not.toBeInTheDocument()
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'No, this page was not helpful',
+            })
+        )
+        await user.click(
+            screen.getByRole('checkbox', { name: /Something is broken/ })
+        )
+        await user.click(screen.getByRole('button', { name: 'Submit' }))
+
+        // No call count here: switching the reaction leaves a debounced reaction
+        // save that may or may not have flushed. The full payload is always last.
+        expect(
+            await screen.findByText('Thank you for your feedback.')
+        ).toBeInTheDocument()
+        expect(global.fetch).toHaveBeenLastCalledWith(
+            `/docs/_api/v1/page-feedback/${feedbackId}`,
+            expect.objectContaining({
+                body: JSON.stringify({
+                    pageUrl: '/docs/test-page',
+                    pageTitle: 'Test page',
+                    reaction: 'thumbsDown',
+                    reasons: ['siteProblem'],
+                    reasonSetVersion: 3,
+                }),
+            })
+        )
     })
 
     it('submits a single reason without a comment', async () => {
@@ -212,7 +252,7 @@ describe('PageFeedback', () => {
                     pageTitle: 'Test page',
                     reaction: 'thumbsDown',
                     reasons: ['missingInformation'],
-                    reasonSetVersion: 2,
+                    reasonSetVersion: 3,
                 }),
             })
         )

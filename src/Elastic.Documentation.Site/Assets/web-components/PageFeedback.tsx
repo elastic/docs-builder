@@ -4,7 +4,7 @@ import * as React from 'react'
 import { FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 const COMMENT_MAX_LENGTH = 2000
-const REASON_SET_VERSION = 2
+const REASON_SET_VERSION = 3
 const REACTION_SAVE_DELAY = 400
 const DRAFT_STORAGE_PREFIX = 'docs-page-feedback:'
 
@@ -21,6 +21,7 @@ type Reason =
     | 'hardToUnderstand'
     | 'codeSampleErrors'
     | 'outOfDate'
+    | 'siteProblem'
     | 'anotherReason'
 
 interface ReasonOption {
@@ -114,6 +115,12 @@ const NEGATIVE_REASONS: ReasonOption[] = [
         value: 'missingInformation',
         label: "Couldn't find what I needed",
         description: 'Missing important information.',
+    },
+    {
+        value: 'siteProblem',
+        label: 'Something is broken',
+        description:
+            'A link, button, search, or other part of the site does not work.',
     },
     { value: 'anotherReason', label: 'Another reason' },
 ]

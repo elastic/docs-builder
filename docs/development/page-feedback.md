@@ -28,13 +28,24 @@ presented the option. Display labels may change without changing their stored va
 enum value when an option's meaning changes, and retain retired values so older
 clients and historical documents remain valid.
 
-Reason set version 2 presents these positive reasons in display order:
+Reason set version 3 presents these positive reasons in display order:
 `solvedProblem`, `easyToUnderstand`, `accurate`, `helpfulExamples`,
 `easyToFind`, and `anotherReason`. The negative reasons are `outOfDate`,
-`hardToUnderstand`, `inaccurate`, `codeSampleErrors`, `missingInformation`, and
-`anotherReason`. API pages use the same stored values
+`hardToUnderstand`, `inaccurate`, `codeSampleErrors`, `missingInformation`,
+`siteProblem`, and `anotherReason`. API pages use the same stored values
 and `reason_set_version`. They pass `surface="api"` so labels and descriptions
 talk about the spec and examples instead of a product how-to.
+
+`siteProblem` reports a fault in the site rather than in the content. A broken
+link, a control that does nothing, or a search that returns nothing belongs
+here, while `inaccurate` and `codeSampleErrors` stay with the words on the page.
+Version 2 offered the same reasons without `siteProblem`, so a query that counts
+site faults must not read version 2 documents as an absence of them.
+
+The endpoint accepts a reason only for the reaction it belongs to. A negative
+reason sent with `thumbsUp` fails validation in `IsReasonValidForReaction` and
+the request returns `400`. Adding an option means adding it to
+`PageFeedbackReason`, to that reaction's list, and to the browser's reason set.
 
 ## Provision the index
 
