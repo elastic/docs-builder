@@ -30,7 +30,7 @@ clients and historical documents remain valid.
 
 Reason set version 3 presents these positive reasons in display order:
 `solvedProblem`, `easyToUnderstand`, `accurate`, `helpfulExamples`,
-`easyToFind`, and `anotherReason`. The negative reasons are `outOfDate`,
+`easyToFind`, and `anotherReason`. The negative reasons are
 `hardToUnderstand`, `inaccurate`, `codeSampleErrors`, `missingInformation`,
 `siteProblem`, and `anotherReason`. API pages use the same stored values
 and `reason_set_version`. They pass `surface="api"` so labels and descriptions
@@ -39,13 +39,21 @@ talk about the spec and examples instead of a product how-to.
 `siteProblem` reports a fault in the site rather than in the content. A broken
 link, a control that does nothing, or a search that returns nothing belongs
 here, while `inaccurate` and `codeSampleErrors` stay with the words on the page.
-Version 2 offered the same reasons without `siteProblem`, so a query that counts
-site faults must not read version 2 documents as an absence of them.
+
+`inaccurate` also covers content that describes an older version of the product.
+Version 3 retired `outOfDate` and folded it in, because a reader cannot tell a
+page that was never right from a page that stopped being right. Two negative
+sets therefore differ from version 2: it offered `outOfDate` and lacked
+`siteProblem`. A query that counts either one must scope itself to a version.
+
+`outOfDate` remains a stored value. Historical documents hold it, and a browser
+running a cached bundle still submits it, so the endpoint still accepts it.
 
 The endpoint accepts a reason only for the reaction it belongs to. A negative
 reason sent with `thumbsUp` fails validation in `IsReasonValidForReaction` and
 the request returns `400`. Adding an option means adding it to
 `PageFeedbackReason`, to that reaction's list, and to the browser's reason set.
+Retiring one means removing it from the browser's set alone.
 
 ## Provision the index
 

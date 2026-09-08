@@ -73,7 +73,7 @@ describe('PageFeedback', () => {
             })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('checkbox', { name: /Out of date/ })
+            screen.getByRole('checkbox', { name: /Something is broken/ })
         ).toBeInTheDocument()
         expect(
             screen.queryByRole('checkbox', { name: /Solved my problem/ })
@@ -92,7 +92,7 @@ describe('PageFeedback', () => {
             screen.getByRole('checkbox', { name: /Easy to find/ })
         ).toBeInTheDocument()
         expect(
-            screen.queryByRole('checkbox', { name: /Out of date/ })
+            screen.queryByRole('checkbox', { name: /Something is broken/ })
         ).not.toBeInTheDocument()
     })
 
@@ -160,7 +160,9 @@ describe('PageFeedback', () => {
         await user.click(
             screen.getByRole('checkbox', { name: /Technically incorrect/ })
         )
-        await user.click(screen.getByRole('checkbox', { name: /Out of date/ }))
+        await user.click(
+            screen.getByRole('checkbox', { name: /Code sample errors/ })
+        )
         expect(
             screen.getByRole('button', { name: 'Submit' })
         ).not.toBeDisabled()
@@ -174,7 +176,7 @@ describe('PageFeedback', () => {
                     pageUrl: '/docs/test-page',
                     pageTitle: 'Test page',
                     reaction: 'thumbsDown',
-                    reasons: ['inaccurate', 'outOfDate'],
+                    reasons: ['inaccurate', 'codeSampleErrors'],
                     reasonSetVersion: 3,
                 }),
             })

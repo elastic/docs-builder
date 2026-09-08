@@ -71,6 +71,8 @@ public class PageFeedbackEndpointTests
 		recorded.Comment.Should().BeNull();
 	}
 
+	// Also the guard for retired reasons: reason set 3 stopped offering outOfDate, but a browser
+	// running a cached bundle still sends it and must still get a 204.
 	[Fact]
 	public async Task Put_MultipleReasons_RecordsAllReasons()
 	{

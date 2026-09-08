@@ -20,7 +20,6 @@ type Reason =
     | 'missingInformation'
     | 'hardToUnderstand'
     | 'codeSampleErrors'
-    | 'outOfDate'
     | 'siteProblem'
     | 'anotherReason'
 
@@ -47,7 +46,8 @@ const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
         description: 'I found the endpoint or schema I needed quickly.',
     },
     inaccurate: {
-        description: 'The reference is wrong about how the API works.',
+        description:
+            'The reference is wrong about how the API works, or describes an older version.',
     },
     missingInformation: {
         description: 'Missing a parameter, field, status, or auth detail.',
@@ -55,9 +55,6 @@ const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
     codeSampleErrors: {
         label: 'Example errors',
         description: 'A request or response example is wrong.',
-    },
-    outOfDate: {
-        description: 'The reference describes an older version of the API.',
     },
 }
 
@@ -92,11 +89,6 @@ const POSITIVE_REASONS: ReasonOption[] = [
 
 const NEGATIVE_REASONS: ReasonOption[] = [
     {
-        value: 'outOfDate',
-        label: 'Out of date',
-        description: 'The page describes an older version of the product.',
-    },
-    {
         value: 'hardToUnderstand',
         label: 'Hard to understand',
         description: 'Too complicated or unclear.',
@@ -104,7 +96,8 @@ const NEGATIVE_REASONS: ReasonOption[] = [
     {
         value: 'inaccurate',
         label: 'Technically incorrect',
-        description: 'The page is wrong about how the product works.',
+        description:
+            'The page is wrong about how the product works, or describes an older version.',
     },
     {
         value: 'codeSampleErrors',

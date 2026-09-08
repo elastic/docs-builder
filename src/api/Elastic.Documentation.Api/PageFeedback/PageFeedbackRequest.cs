@@ -58,6 +58,8 @@ public enum PageFeedbackReason
 	[JsonStringEnumMemberName("codeSampleErrors")]
 	CodeSampleErrors,
 
+	// Retired in reason set 3, folded into Inaccurate. Kept so historical documents stay readable
+	// and a cached browser bundle still submits successfully. Do not remove.
 	[JsonStringEnumMemberName("outOfDate")]
 	OutOfDate,
 
