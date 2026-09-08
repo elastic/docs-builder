@@ -174,6 +174,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		var (_, propSchema, typeInfo, _, _, _, isRecursive) = row;
 		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, propSchema.Description, scope);
+		var typeLink = BuildTypeLink(typeInfo, expansion);
 
 		return new ApiProperty
 		{
@@ -185,7 +186,10 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			IsLast = row.IsLast,
 			IsRecursive = isRecursive,
 			IsRequest = scope.IsRequest,
-			Type = WithConstraints(BuildAnnotation(typeInfo, HasActualProperties(propSchema)), BuildConstraints(propSchema)),
+			Type = WithTypeLink(
+				WithConstraints(BuildAnnotation(typeInfo, HasActualProperties(propSchema)), BuildConstraints(propSchema)),
+				typeLink
+			),
 			DescriptionHtml = descriptionHtml,
 			DescriptionMarkdown = descriptionMarkdown,
 			ShowDeprecatedBadge = options.ShowDeprecated && propSchema.Deprecated,
@@ -196,7 +200,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
 			// Type annotation already reads "[] …"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
-			TypeLink = BuildTypeLink(typeInfo, expansion),
+			TypeLink = typeLink,
 			IsCollapsible = expansion.IsCollapsible,
 			DefaultExpanded = expansion.DefaultExpanded,
 			NestedCount = expansion.NestedCount,
@@ -341,6 +345,23 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	}
 
 	internal static bool IsElasticDocsUrl(string url) => url.Contains("www.elastic.co/docs") || url.Contains("elastic.co/guide");
+
+	private static TypeAnnotation WithTypeLink(TypeAnnotation type, TypePageLink? typeLink)
+	{
+		if (typeLink is not { Url: { Length: > 0 } url })
+			return type;
+
+		var spans = new List<TypeSpan>(type.Spans);
+		for (var i = 0; i < spans.Count; i++)
+		{
+			var span = spans[i];
+			if (span.Bare || span.Text != typeLink.TypeName)
+				continue;
+			spans[i] = span with { Href = url, CssClass = SchemaHelpers.LinkedCssClass };
+		}
+
+		return new TypeAnnotation(spans);
+	}
 
 	private TypePageLink? BuildTypeLink(TypeInfo typeInfo, Expansion expansion)
 	{

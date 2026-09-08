@@ -78,6 +78,27 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		aggs.TypeLink.Should().NotBeNull();
 		aggs.TypeLink!.TypeName.Should().Be("AggregationContainer");
 		aggs.TypeLink.Url.Should().Be("/api/doc/fixture/types/_types-aggregations-aggregationcontainer");
+		aggs
+			.Type
+			.Spans
+			.Should()
+			.Contain(s => s.Text == "AggregationContainer" && s.CssClass == "type-linked" && s.Href == aggs.TypeLink.Url);
+		aggs.Type.Spans.Where(s => s.Text is "map" or "{}").Should().OnlyContain(s => string.IsNullOrEmpty(s.Href));
+	}
+
+	[Fact]
+	public void BuildPropertyList_LinkedType_PutsHrefOnTypeName()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.SearchRequestBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var query = list!.Items.Single(p => p.Name == "query");
+		query.TypeLink.Should().NotBeNull();
+		query.Type.Spans.Should().Contain(s => s.Text == "QueryContainer" && s.CssClass == "type-linked" && s.Href == query.TypeLink!.Url);
 	}
 
 	[Fact]

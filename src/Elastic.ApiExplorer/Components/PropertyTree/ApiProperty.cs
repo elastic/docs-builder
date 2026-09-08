@@ -17,7 +17,7 @@ public record ExternalDocLink(string Url, bool IsElasticDocs)
 	public string LinkText => IsElasticDocs ? "Read the reference documentation" : "External documentation";
 }
 
-/// <summary>A "See X type →" link to a schema type's dedicated page.</summary>
+/// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
 public record TypePageLink(string TypeName, string? Url);
 
 /// <summary>A single validation constraint, e.g. <c>min: 5</c> or <c>default: 10</c>.</summary>
