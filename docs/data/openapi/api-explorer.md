@@ -11,7 +11,9 @@ The API Explorer turns an OpenAPI spec into HTML pages. If you add an `api:` ent
 - one operation page per operation
 - schema type pages for shared types
 
-The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card shows `info.description`, clamped to three lines.
+The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page and includes REST and category badges plus JSON and YAML downloads. The card shows `info.description`, clamped to three lines.
+
+The catalog reuses listing filter chips. A click selects one category. Cmd or Ctrl click adds or removes categories. Categories are discovery labels only. They do not claim versioned availability. An API with no `catalog.categories` appears only when **All** is selected. The filter bar shows only categories that at least one API uses. Filter state is not stored in the URL.
 
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
@@ -39,7 +41,7 @@ api:
 
 The map key is the URL suffix. This key produces `/api/doc/docs-builder-elasticsearch/`.
 
-Each key takes a sequence with exactly one entry. That entry requires `spec:` and `product:`. `repository:` and `children:` are optional. See [Reference](#reference).
+Each key takes a sequence with exactly one entry. That entry requires `spec:` and `product:`. `repository:`, `children:`, and `catalog:` are optional. See [Reference](#reference).
 
 ::::
 
@@ -112,6 +114,7 @@ Fix the file. Then rebuild. More messages are in [Writing supplemental content](
 | `product:` | yes | A product id from `products.yml`. This binds the API to that product's versioning system. |
 | `repository:` | no | `org/repo` used to look up the version index. Set this when the spec is published from a different GitHub repository than the docset. |
 | `children:` | no | Extra Markdown pages under `api/<key>/`, in declared order. See [children:](./supplemental.md#children-pages). |
+| `catalog.categories:` | no | Category chips on the API catalog. Accepted values: `self`, `ece`, `ess` (`ech` is an alias for `ess`), and `serverless`. These are filter labels, not `applies_to` availability claims. |
 
 Each product key must have exactly one sequence entry. That entry must have exactly one `spec:`. An empty sequence fails the build. A sequence with more than one entry also fails the build.
 
@@ -136,6 +139,29 @@ If you omit `repository:`, {{dbuild}} uses the GitHub remote of the current chec
 `children:` adds full Markdown pages under the product root. Supplemental `op-*.md` and `tag-*.md` files are not `children:` pages. They merge into generated operation and tag pages.
 
 {{dbuild}} does not emit child files as normal docset HTML. Do not add them to `exclude:`.
+
+### `catalog.categories:`
+
+Use this when an API should appear under one or more catalog chips. An API may list several categories. The same identifiers are used in `applies_to`, but a category here does not mean the API is generally available for every version of that deployment.
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+      catalog:
+        categories:
+          - self
+          - ece
+          - ess
+```
+
+- `self` → Self-managed
+- `ece` → Elastic Cloud Enterprise
+- `ess` or `ech` → Elastic Cloud Hosted
+- `serverless` → Serverless
+
+Unknown values fail the build. Omit `catalog:` to keep the API visible only under **All**.
 
 ## Page URLs
 

@@ -48,6 +48,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		entries.Should().ContainSingle();
 		entries[0].ProductId.Should().Be("elasticsearch");
 		entries[0].Description.Should().Be("A **distributed** [search](https://example.com) engine.\n\nMore detail.");
+		entries[0].CatalogCategories.Should().Equal("ece", "ess", "self");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
 	}
@@ -72,14 +73,18 @@ public class OpenApiGeneratorCatalogSplitTests
 		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current.CancellationToken);
 		html.Should().Contain("<h1>API catalog</h1>");
 		html.Should().Contain("api-catalog-grid");
+		html.Should().Contain("listing-root");
+		html.Should().NotContain("listing-filter-input");
 		html.Should().NotContain("hub-card");
 		html.Should().NotContain("hub-page");
-		html.Should().Contain("""<a class="api-catalog-card" href="/docs/api/doc/elasticsearch/">""");
-		html.Should().Contain("""<a class="api-catalog-card" href="/docs/api/doc/kibana/">""");
+		html.Should().Contain("<a class=\"api-catalog-card-main\" href=\"/docs/api/doc/elasticsearch/\">");
+		html.Should().Contain("<a class=\"api-catalog-card-main\" href=\"/docs/api/doc/kibana/\">");
 		html.Should().Contain("A distributed search engine.");
-		html.Should().NotContain("elasticsearch.md");
-		html.Should().NotContain("elasticsearch.json");
-		html.Should().NotContain("elasticsearch.yaml");
+		html.Should().Contain(">REST<");
+		html.Should().Contain("<code class=\"api-catalog-card-key\">elasticsearch</code>");
+		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.json\" download");
+		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.yaml\" download");
+		html.Should().NotContain("listing-group-chips");
 		html.Should().NotContain("markdown-content");
 		html.Should().NotContain("id=\"pages-nav\"");
 	}
@@ -106,6 +111,9 @@ public class OpenApiGeneratorCatalogSplitTests
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
 		productHtml.Should().Contain("Back to hub");
 		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
+		catalogHtml.Should().Contain("listing-group-chips");
+		catalogHtml.Should().Contain("data-group=\"self\"");
+		catalogHtml.Should().Contain("Self-managed");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
 	}
@@ -139,6 +147,41 @@ public class OpenApiGeneratorCatalogSplitTests
 		productHtml.Should().Contain("<option value=\"/docs/api/doc/kibana/\">Kibana</option>");
 	}
 
+	[Fact]
+	public async Task GenerateCatalog_RendersUsedCategoryChipsOnly()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
+		var entries = new List<ApiCatalogEntry>
+		{
+			new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch/", "elasticsearch") { CatalogCategories = ["self", "ess"] },
+			new("serverless", "Elasticsearch Serverless", "/docs/api/doc/serverless/", "elasticsearch")
+			{
+				CatalogCategories = ["serverless"]
+			},
+			new("connect", "Cloud Connect", "/docs/api/doc/connect/", "cloud")
+		};
+
+		await generator.GenerateCatalog(entries, TestContext.Current.CancellationToken);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current.CancellationToken);
+		html.Should().Contain("listing-group-chips");
+		html.Should().Contain("data-group=\"ess\"");
+		html.Should().Contain("data-group=\"self\"");
+		html.Should().Contain("data-group=\"serverless\"");
+		html.Should().NotContain("data-group=\"ece\"");
+		html.Should().Contain("data-listing-groups=\"ess self\"");
+		html.Should().Contain("data-listing-groups=\"serverless\"");
+		html.Should().Contain("Elastic Cloud Hosted");
+		html.Should().Contain("Self-managed");
+		html.Should().Contain("No APIs match your filter.");
+	}
+
 	private static BuildContext CreateGenerateContext(string outputRoot)
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -152,6 +195,11 @@ public class OpenApiGeneratorCatalogSplitTests
 			  elasticsearch:
 			    - spec: elasticsearch-openapi.json
 			      product: elasticsearch
+			      catalog:
+			        categories:
+			          - self
+			          - ece
+			          - ess
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
