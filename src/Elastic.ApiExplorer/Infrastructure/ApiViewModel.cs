@@ -7,7 +7,6 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
@@ -28,6 +27,7 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 	public required ApiBreadcrumbTrail Breadcrumbs { get; init; }
 	public IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems { get; init; } = [];
+	public IReadOnlyList<ApiVersionSwitcherItem> HubSwitcherItems { get; init; } = [];
 	public required string MarkdownUrl { get; init; }
 
 	/// <summary>
@@ -95,12 +95,18 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = BuildContext.GoogleTagManager,
 			Optimizely = BuildContext.Optimizely,
-			Features = new FeatureFlags([]),
+			Features = BuildContext.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
+			PageFeedbackSurface = "api",
 			TocItems = GetTocItems(),
 			Breadcrumbs = ApiBreadcrumbBuilder.Build(CurrentNavigationItem, BreadcrumbCurrentTitle, Document.Info?.Title),
 			VersionSwitcherItems = RenderContext.VersionSwitcherItems,
+			HubSwitcherItems = ApiHubSwitcher.Build(
+				RenderContext.CatalogEntries,
+				RenderContext.CurrentApiKey,
+				$"{ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix)}/"
+			),
 			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,

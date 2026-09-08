@@ -34,6 +34,7 @@ else
 								new ApiBreadcrumbsView(Model.Breadcrumbs, Model.HxAttributes)))
 							@await RenderBodyAsync()
 						</article>
+						@await RenderPartialAsync(_PageFeedback.Create(Model))
 					</main>
 				</div>
 				@* API pages never show "On this page"; right rail is examples-only. Keep both IDs for htmx swaps. *@

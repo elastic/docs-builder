@@ -6,6 +6,8 @@ navigation_title: API Explorer
 
 The API Explorer renders OpenAPI specifications as interactive API documentation. When you configure it in your content set, `docs-builder` automatically generates pages for each API operation, request and response schemas, shared type definitions, and inline examples.
 
+The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card shows `info.description`, clamped to three lines.
+
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
 :::
@@ -114,6 +116,8 @@ also fails with a duplicate-slug error.
 Each product key in the `api:` block must have **exactly one** entry, with **exactly one**
 `spec:`. The build fails if a product sequence is empty or has more than one entry. Multiple
 specs per product are not currently supported.
+
+Product pages show an API product switcher in the left navigation. The list includes every declared API and a Back to hub option.
 
 ## Remote spec resolution
 
