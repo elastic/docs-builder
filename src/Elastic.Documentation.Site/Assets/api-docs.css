@@ -1190,7 +1190,8 @@
 }
 
 .api-catalog-grid .api-catalog-card {
-	display: block;
+	display: flex;
+	flex-direction: column;
 	height: 100%;
 	box-sizing: border-box;
 	padding: 22px;
@@ -1205,9 +1206,16 @@
 }
 
 .api-catalog-grid .api-catalog-card:hover,
-.api-catalog-grid .api-catalog-card:focus-visible {
+.api-catalog-grid .api-catalog-card:focus-within {
 	border-color: var(--color-grey-80);
 	box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+}
+
+.api-catalog-card-main {
+	display: block;
+	flex: 1 1 auto;
+	text-decoration: none;
+	color: inherit;
 }
 
 .api-catalog-card-head {
@@ -1242,13 +1250,66 @@
 }
 
 .api-catalog-card:hover .api-catalog-card-title,
-.api-catalog-card:focus-visible .api-catalog-card-title {
+.api-catalog-card:focus-within .api-catalog-card-title {
 	color: var(--color-blue-elastic);
 }
 
+.api-catalog-card-key {
+	display: inline-block;
+	margin-top: 4px;
+	font-size: var(--text-sm);
+	color: var(--color-ink-light);
+}
+
+.api-catalog-card-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+.api-catalog-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 999px;
+	border: 1px solid var(--color-grey-20);
+	background: var(--color-grey-10);
+	font-size: var(--text-xs);
+	line-height: 1.4;
+	color: var(--color-ink-light);
+}
+
+.api-catalog-badge-rest {
+	border-color: var(--color-blue-elastic-30);
+	background: var(--color-blue-elastic-10);
+	color: var(--color-blue-elastic);
+	font-weight: 600;
+}
+
 .api-catalog-card-desc {
-	margin: 0;
+	margin: 10px 0 0;
 	font-size: var(--text-base);
 	line-height: 1.5;
 	color: var(--color-ink-light);
+}
+
+.api-catalog-card-actions {
+	display: flex;
+	gap: 12px;
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid var(--color-grey-20);
+}
+
+.api-catalog-card-actions a {
+	font-size: var(--text-sm);
+	font-weight: 600;
+	color: var(--color-blue-elastic);
+	text-decoration: none;
+}
+
+.api-catalog-card-actions a:hover,
+.api-catalog-card-actions a:focus-visible {
+	text-decoration: underline;
 }
