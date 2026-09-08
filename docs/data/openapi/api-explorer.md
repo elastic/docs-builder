@@ -6,7 +6,9 @@ navigation_title: API Explorer
 
 The API Explorer renders OpenAPI specifications as interactive API documentation. When you configure it in your content set, `docs-builder` automatically generates pages for each API operation, request and response schemas, shared type definitions, and inline examples.
 
-The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card shows `info.description`, clamped to three lines.
+The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page and includes REST and category badges plus JSON and YAML downloads. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card shows `info.description`, clamped to three lines.
+
+The catalog reuses listing filter chips. A click selects one category. Cmd or Ctrl click adds or removes categories. Categories are discovery labels only. They do not claim versioned availability. An API with no `catalog.categories` appears only when **All** is selected. The filter bar shows only categories that at least one API uses. Filter state is not stored in the URL.
 
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
@@ -15,8 +17,8 @@ This feature is still under development and the functionality described on this 
 ## Configure the API Explorer
 
 Add the `api` key to your `docset.yml` file to enable the API Explorer. Each product key takes a
-single-entry sequence with a required `spec:` and `product:`, and optional `repository:` and
-`children:`:
+single-entry sequence with a required `spec:` and `product:`, and optional `repository:`,
+`children:`, and `catalog:`:
 
 ```yaml
 api:
@@ -110,6 +112,33 @@ the reserved or operation segment.
 
 If the same slug is produced by two different child files in the same product, the build
 also fails with a duplicate-slug error.
+
+### `catalog:` (optional)
+
+Use this when an API should appear under one or more catalog chips on the API catalog page. An
+API may list several categories. The same identifiers are used in `applies_to`, but a category
+here does not mean the API is generally available for every version of that deployment.
+
+```yaml
+api:
+  elasticsearch:
+    - spec: elasticsearch-openapi.json
+      product: elasticsearch
+      catalog:
+        categories:
+          - self
+          - ece
+          - ess
+```
+
+`catalog.categories:` accepts:
+
+- `self` → Self-managed
+- `ece` → Elastic Cloud Enterprise
+- `ess` or `ech` → Elastic Cloud Hosted
+- `serverless` → Serverless
+
+Unknown values fail the build. Omit `catalog:` to keep the API visible only under **All**.
 
 ### One spec per product
 

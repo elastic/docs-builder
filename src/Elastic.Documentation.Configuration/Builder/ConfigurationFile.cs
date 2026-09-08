@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
@@ -601,8 +602,42 @@ public record ConfigurationFile
 			LocalSpecFile = localSpecFile,
 			Repository = repository,
 			Children = children,
-			ApiContentDirectory = apiContentDirectory
+			ApiContentDirectory = apiContentDirectory,
+			CatalogCategories = ResolveCatalogCategories(productKey, entry, context)
 		};
+	}
+
+	private static IReadOnlyList<string> ResolveCatalogCategories(
+		string productKey,
+		ApiProductEntry entry,
+		IDocumentationSetContext context
+	)
+	{
+		var raw = entry.Catalog?.Categories ?? [];
+		if (raw.Count == 0)
+			return [];
+
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var item in raw)
+		{
+			if (ApiCatalogCategory.Normalize(item) is { } canonical)
+			{
+				_ = seen.Add(canonical);
+				continue;
+			}
+
+			context.Collector.Write(new Diagnostic
+			{
+				Severity = Severity.Error,
+				File = context.ConfigurationPath.FullName,
+				Line = entry.Catalog?.Line ?? entry.Line,
+				Column = entry.Catalog?.Column ?? entry.Column,
+				Message =
+					$"Unknown catalog category '{item}' for API '{productKey}'. Valid categories: {string.Join(", ", ApiCatalogCategory.DisplayOrder)} (or {ApplicabilityKeys.Ech} for {ApplicabilityKeys.Ess})."
+			});
+		}
+
+		return ApiCatalogCategory.DisplayOrder.Where(seen.Contains).ToArray();
 	}
 
 	/// Children resolve only under 'api/&lt;key&gt;/'; escaping paths and symlinks are rejected the
