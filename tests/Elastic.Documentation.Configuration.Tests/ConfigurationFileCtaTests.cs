@@ -275,24 +275,14 @@ public class ConfigurationFileCtaTests
 		params (string Content, string Path)[] files
 	)
 	{
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>(), "/docs");
+		var fileSystem = new MockFileSystem();
 		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
 
 		foreach (var (content, path) in files)
-		{
-			var fullPath = $"/docs/{path}";
-			var directory = fileSystem.Path.GetDirectoryName(fullPath);
-			if (directory is not null)
-				fileSystem.AddDirectory(directory);
-			fileSystem.AddFile(fullPath, new MockFileData(content));
-		}
+			fileSystem.AddFile($"/docs/{path}", new MockFileData(content));
 
-		return DocumentationSetFile.LoadAndResolve(
-			collector,
-			docsetYaml,
-			fileSystem.DirectoryInfo.New("/docs"),
-			new ScopedFileSystem(fileSystem, "/docs")
-		);
+		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		return DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 	}
 
 	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet)
