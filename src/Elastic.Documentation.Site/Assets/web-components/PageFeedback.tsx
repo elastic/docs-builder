@@ -96,8 +96,7 @@ const NEGATIVE_REASONS: ReasonOption[] = [
     {
         value: 'inaccurate',
         label: 'Technically incorrect',
-        description:
-            'The page is wrong about how the product works, or describes an older version.',
+        description: 'The page is wrong or describes an older version.',
     },
     {
         value: 'codeSampleErrors',
