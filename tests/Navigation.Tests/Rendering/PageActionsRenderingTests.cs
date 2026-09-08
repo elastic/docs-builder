@@ -4,12 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Tests.Isolation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -20,88 +18,79 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
-public class TableOfContentsRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class PageActionsRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
 {
 	[Fact]
-	public async Task Assembler_FlagOff_RendersVersionDropdown()
+	public async Task GithubEditUrl_RendersEditPageButton()
 	{
-		var html = await Render(BuildType.Assembler, showVersionDropdown: true, navigationPreviewEnabled: false);
+		var html = await Render(new PageActionsScenario { GithubEditUrl = "https://github.com/elastic/docs/edit/main/page.md" });
 
-		html.Should().Contain("<version-dropdown");
-		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
-		html.Should().Contain("<div class=\"mb-4\">");
-		html.Should().NotContain("hidden md:block");
+		html.Should().Contain("class=\"page-actions\"");
+		html.Should().Contain("Edit page");
+		html.Should().Contain("href=\"https://github.com/elastic/docs/edit/main/page.md\"");
+		html.Should().NotContain("page-actions__action hidden");
 	}
 
 	[Fact]
-	public async Task Assembler_FlagOn_OmitsVersionDropdown()
+	public async Task HideEditThisPage_RendersEditPageHidden()
 	{
-		var html = await Render(BuildType.Assembler, showVersionDropdown: true, navigationPreviewEnabled: true);
+		var html = await Render(new PageActionsScenario
+		{
+			GithubEditUrl = "https://github.com/elastic/docs/edit/main/page.md",
+			HideEditThisPage = true
+		});
 
-		html.Should().NotContain("<version-dropdown");
-		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
+		// main.ts reveals every ".edit-this-page.hidden" when ?edit is present, so the class pair matters.
+		html.Should().Contain("edit-this-page page-actions__action hidden");
 	}
 
 	[Fact]
-	public async Task Isolated_OmitsVersionDropdown()
+	public async Task NoGithubEditUrl_RendersNothing()
 	{
-		var html = await Render(BuildType.Isolated, showVersionDropdown: false, navigationPreviewEnabled: false);
+		var html = await Render(new PageActionsScenario());
 
-		html.Should().NotContain("<version-dropdown");
-		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
+		html.Should().NotContain("page-actions");
+		html.Trim().Should().BeEmpty();
 	}
 
-	[Fact]
-	public async Task PrimaryNavOn_OmitsLearnHowToContribute()
+	private sealed record PageActionsScenario
 	{
-		var html = await Render(BuildType.Assembler, showVersionDropdown: false, navigationPreviewEnabled: false, primaryNavEnabled: true);
-
-		html.Should().Contain("Report a docs issue");
-		html.Should().NotContain("Learn how to contribute");
-		html.Should().NotContain("contribute-docs");
+		public BuildType BuildType { get; init; } = BuildType.Assembler;
+		public string? GithubEditUrl { get; init; }
+		public bool HideEditThisPage { get; init; }
 	}
 
-	private async Task<string> Render(
-		BuildType buildType,
-		bool showVersionDropdown,
-		bool navigationPreviewEnabled,
-		bool primaryNavEnabled = false
-	)
+	private async Task<string> Render(PageActionsScenario scenario)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var currentNavItem = new StubNavigationItem("/docs/");
 
 		var model = new MarkdownLayoutViewModel
 		{
 			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
-			CurrentNavigationItem = currentNavItem,
+			CurrentNavigationItem = new StubNavigationItem("/docs/"),
 			Previous = null,
 			Next = null,
 			NavigationHtml = "",
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = new FeatureFlags(new Dictionary<string, bool>
-			{
-				["navigation-preview"] = navigationPreviewEnabled,
-				["primary-nav"] = primaryNavEnabled
-			}),
+			Features = new FeatureFlags([]),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
-			BuildType = buildType,
-			ShowVersionDropdown = showVersionDropdown,
+			BuildType = scenario.BuildType,
+			ShowVersionDropdown = false,
 			AllVersionsUrl = "/docs/versions/",
 			CurrentVersion = "8.19",
 			VersionDropdownSerializedModel = "[]",
-			GithubEditUrl = null,
+			GithubEditUrl = scenario.GithubEditUrl,
 			MarkdownUrl = "/docs/page.md",
-			HideEditThisPage = true,
-			ReportIssueUrl = null,
+			HideEditThisPage = scenario.HideEditThisPage,
+			ReportIssueUrl = "https://github.com/elastic/docs/issues/new",
 			Breadcrumbs = [],
 			PageTocItems = [],
 			Layout = null,
@@ -114,7 +103,7 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 			Cta = Cta.Default
 		};
 
-		return await _TableOfContents.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return await _PageActions.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 	}
 
 	private sealed record StubNavigationItem(string Url) : INavigationItem

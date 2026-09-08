@@ -42,7 +42,10 @@
 								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 								@await RenderBodyAsync()
 							</article>
-							@await RenderPartialAsync(_PageFeedback.Create(Model))
+							<div class="page-outro">
+								@await RenderPartialAsync(_PageFeedback.Create(Model))
+								@await RenderPartialAsync(_PageActions.Create(Model))
+							</div>
 							@await RenderPartialAsync(_PrevNextNav.Create(Model))
 							@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
 							{
