@@ -174,4 +174,48 @@ public class TocTreeRenderingTests
 		html.Should().NotContain("nav-v2-separator");
 		html.Should().NotContain("hx-preserve");
 	}
+
+	[Fact]
+	public async Task VersionSwitcher_RendersInBackChromeWithoutBooleanSelected()
+	{
+		var model = new NavigationRenderModel
+		{
+			IsUsingNavigationDropdown = false,
+			CurrentTopLevelNavigationTitle = "APIs",
+			CurrentTopLevelUrl = "/api/doc/elasticsearch/",
+			DropdownItems = [],
+			BackLinks = [],
+			VersionSwitcher =
+			[
+				new NavigationSelectOption("Latest", "/api/doc/elasticsearch/", Selected: false),
+				new NavigationSelectOption("9.x", "/api/doc/elasticsearch/v9/", Selected: true),
+				new NavigationSelectOption("8.x", "/api/doc/elasticsearch/v8/", Selected: false)
+			],
+			Tree =
+			[
+				new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Leaf,
+					IsTopLevel = true,
+					NavigationTitle = "Overview",
+					Url = "/api/doc/elasticsearch/"
+				}
+			],
+			ContentHash = "api-versions",
+			NavigationPreviewEnabled = true
+		};
+
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("pages-nav-v2__back-chrome");
+		html.Should().Contain("id=\"api-version-switcher\"");
+		html.Should().Contain("class=\"nav-select\"");
+		html.Should().Contain("href=\"/api/doc/elasticsearch/v9/\"");
+		html.Should().Contain("aria-selected=\"true\"");
+		html.Should().Contain("aria-selected=\"false\"");
+		html.Should().NotContain("selected=\"False\"");
+		html.Should().NotContain("selected=\"True\"");
+		html.Should().NotContain("<select");
+		html.Should().NotContain("<option");
+	}
 }

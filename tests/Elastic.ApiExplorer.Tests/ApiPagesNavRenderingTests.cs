@@ -23,7 +23,7 @@ namespace Elastic.ApiExplorer.Tests;
 public partial class ApiPagesNavRenderingTests
 {
 	[Fact]
-	public async Task Render_MarksOnlyCurrentVersionSelected()
+	public async Task Render_DoesNotHostTheVersionSwitcher()
 	{
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/v9/",
@@ -37,10 +37,12 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-		html.Should().NotContain("selected=\"False\"");
-		html.Should().NotContain("selected=\"True\"");
-		html.Should().Contain("<option value=\"/api/doc/elasticsearch/v9/\" selected>9.x</option>");
-		CountSelectedOptions(html).Should().Be(1);
+		html.Should().Contain("<nav>tree</nav>");
+		html.Should().Contain("View as Markdown");
+		html.Should().NotContain("api-version-switcher");
+		html.Should().NotContain("<select");
+		html.Should().NotContain("<option");
+		html.Should().NotContain("hx-preserve");
 	}
 
 	[Fact]
@@ -59,6 +61,7 @@ public partial class ApiPagesNavRenderingTests
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
 
 		html.Should().Contain("id=\"api-hub-switcher\"");
+		html.Should().NotContain("api-version-switcher");
 		html.Should().NotContain("selected=\"False\"");
 		html.Should().NotContain("selected=\"True\"");
 		html.Should().Contain("<option value=\"/api/\">Back to hub</option>");
@@ -67,11 +70,27 @@ public partial class ApiPagesNavRenderingTests
 		CountSelectedOptions(html).Should().Be(1);
 	}
 
+	[Fact]
+	public async Task Render_PreservesTheNavAcrossHtmxSwapsWhenPreviewEnabled()
+	{
+		var model = CreateLayoutModel(
+			"/api/doc/elasticsearch/",
+			"/api/doc/elasticsearch.md",
+			features: new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
+		);
+
+		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+		html.Should().Contain("id=\"pages-nav\"");
+		html.Should().Contain("hx-preserve");
+	}
+
 	private static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
 		IReadOnlyList<ApiVersionSwitcherItem>? versionSwitcherItems = null,
-		IReadOnlyList<ApiVersionSwitcherItem>? hubSwitcherItems = null
+		IReadOnlyList<ApiVersionSwitcherItem>? hubSwitcherItems = null,
+		FeatureFlags? features = null
 	)
 	{
 		var fs = new FileSystem();
@@ -88,16 +107,17 @@ public partial class ApiPagesNavRenderingTests
 			CurrentNavigationItem = new LandingNavigationItem(navigationUrl).Index,
 			Previous = null,
 			Next = null,
-			NavigationHtml = string.Empty,
+			NavigationHtml = "<nav>tree</nav>",
 			UrlPathPrefix = string.Empty,
 			AllowIndexing = false,
 			CanonicalBaseUrl = null,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
-			Features = new FeatureFlags([]),
+			Features = features ?? new FeatureFlags([]),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = [],
 			MarkdownUrl = markdownUrl,
+			Breadcrumbs = ApiBreadcrumbTrail.Empty,
 			VersionSwitcherItems = versionSwitcherItems ?? [],
 			HubSwitcherItems = hubSwitcherItems ?? [],
 		};

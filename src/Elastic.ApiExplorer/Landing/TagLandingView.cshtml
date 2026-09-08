@@ -5,6 +5,9 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
+@{
+	var apiHxAttrs = LayoutModel.HxAttributes;
+}
 <section id="elastic-api-v3">
 	<h1>@Model.Tag.DisplayName</h1>
 	@if (!string.Equals(Model.Tag.Name, Model.Tag.DisplayName, StringComparison.Ordinal))
@@ -34,16 +37,20 @@
 				switch (row.Kind)
 				{
 					case OverviewRowKind.Endpoint:
-						<tr>
-							<td class="api-name">@(row.Title)</td>
-							<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
-						</tr>
-						break;
 					case OverviewRowKind.Operation:
-					<tr>
-						<td class="api-name">@(row.Title)</td>
-						<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
-					</tr>
+						<tr>
+							<td class="api-name">
+								@if (row.Url is not null)
+								{
+									<a href="@row.Url" class="api-overview-title" @apiHxAttrs>@(row.Title)</a>
+								}
+								else
+								{
+									@(row.Title)
+								}
+							</td>
+							<td>@(await RenderPartialAsync<_OperationUrlList, OperationUrlListModel>(new OperationUrlListModel(row.Operations, apiHxAttrs)))</td>
+						</tr>
 						break;
 				}
 			}

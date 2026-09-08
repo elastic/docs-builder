@@ -76,6 +76,12 @@
         "security": [
           {
             "apiKey": []
+          },
+          {
+            "basicAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "parameters": [
@@ -345,6 +351,14 @@
         "type": "apiKey",
         "in": "header",
         "name": "Authorization"
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
       }
     },
     "schemas": {
