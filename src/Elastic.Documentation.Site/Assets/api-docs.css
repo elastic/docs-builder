@@ -553,11 +553,16 @@
 	@apply mt-2;
 }
 
-.response-fields-toggle {
+.response-fields-toggle,
+.property-list .expand-toggle,
+.union-expand-toggle .expand-toggle,
+.union-group-toggle {
 	@apply text-grey-80 hover:text-grey-120 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm;
 }
 
-.response-fields-toggle .toggle-icon {
+.response-fields-toggle .toggle-icon,
+.expand-toggle .toggle-icon,
+.union-group-toggle .toggle-icon {
 	@apply font-mono font-semibold;
 }
 
@@ -597,29 +602,35 @@
 		margin: 0;
 		line-height: 24px;
 
-		a {
-			position: relative;
+		> a.property-anchor {
 			display: inline-flex;
 			flex: 0 0 auto;
 			align-items: center;
-			flex-wrap: wrap;
 			width: fit-content;
 			max-width: 100%;
-			gap: 8px;
 			overflow: visible;
 			text-decoration: none;
 		}
 
-		a[href^='#']::after {
-			content: '';
+		.property-anchor-icon {
 			position: absolute;
-			left: 100%;
-			top: 0;
+			right: 100%;
+			top: 16px;
 			z-index: 2;
+			box-sizing: content-box;
+			width: 24px;
+			height: 24px;
+			padding-right: 8px;
+			opacity: 0;
+			transition: opacity 0.15s ease;
+		}
+
+		.property-anchor-icon::after {
+			content: '';
+			display: block;
 			box-sizing: border-box;
 			width: 24px;
 			height: 24px;
-			margin-left: 8px;
 			border: 1px solid #cad3e2;
 			border-radius: 8px;
 			background-color: #fff;
@@ -627,24 +638,21 @@
 			background-repeat: no-repeat;
 			background-position: center;
 			background-size: 12px 12px;
-			opacity: 0;
-			pointer-events: none;
-			transition: opacity 0.15s ease;
 		}
 
-		&:hover a[href^='#']::after,
-		a[href^='#']:focus-visible::after {
+		&:hover > .property-anchor .property-anchor-icon,
+		> .property-anchor:hover .property-anchor-icon,
+		> .property-anchor:focus-visible .property-anchor-icon {
 			opacity: 1;
-			pointer-events: auto;
 		}
 
-		a[href^='#']:focus-visible::after {
+		> .property-anchor:focus-visible .property-anchor-icon::after {
 			outline: 2px solid var(--color-blue-elastic, #0b64dd);
 			outline-offset: 2px;
 		}
 
-		> code:first-of-type,
-		a > code:first-of-type {
+		> a.property-anchor > code,
+		> code {
 			color: #6b3c9f;
 			font-family:
 				'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
@@ -661,6 +669,12 @@
 			word-break: break-word;
 			white-space: normal;
 		}
+	}
+
+	.property-item:hover > dt > .property-anchor .property-anchor-icon,
+	.query-param:hover > dt > .property-anchor .property-anchor-icon,
+	.path-param:hover > dt > .property-anchor .property-anchor-icon {
+		opacity: 1;
 	}
 
 	dd {
@@ -824,36 +838,6 @@
 		opacity: 1;
 	}
 
-	/* Expand/collapse toggle button - default grey (expanded state) */
-	.expand-toggle {
-		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
-		padding: 0.25rem 0.5rem;
-		font-size: 0.8rem;
-		line-height: 1.2;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		transition: all 0.1s ease;
-	}
-
-	/* Collapsed state - green button */
-	.property-item.collapsed > .expand-toggle-row > .expand-toggle {
-		@apply text-green-90 bg-green-10 border-green-30;
-	}
-
-	.expand-toggle:hover {
-		@apply text-blue-elastic bg-blue-elastic-10 border-blue-elastic-30;
-	}
-
-	.toggle-icon {
-		font-weight: 700;
-		font-size: 0.85rem;
-	}
-
-	.toggle-label {
-		font-weight: 500;
-	}
-
 	/* Collapsed state - hide nested properties using hidden="until-found" for searchability */
 	/* The hidden attribute handles visibility; this is a fallback for unsupported browsers */
 	.property-item.collapsed > .nested-properties:not([hidden='until-found']) {
@@ -873,7 +857,8 @@
 
 .query-param,
 .path-param,
-.prerequisite-item {
+.prerequisite-item,
+.auth-scheme-item {
 	border-bottom: 1px solid #e3e8f2;
 	padding-bottom: 16px;
 }
@@ -1095,11 +1080,27 @@
 
 .type-linked,
 .schema-type .type-linked,
+.schema-type a.type-linked,
 .union-type-option.type-linked {
 	color: #5929b4;
+	text-decoration: none;
 }
 
-.required.type-status,
+#elastic-api-v3 .schema-type a[href]:hover,
+#schema-definition .schema-type a[href]:hover,
+.schema-type a[href]:hover,
+a.type-linked:hover {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.required.type-status {
+	color: #ed6723;
+	padding: 0;
+	background-color: transparent;
+	border-radius: 0;
+}
+
 .deprecated-badge.type-status,
 .beta-badge.type-status {
 	color: #f04e98;
@@ -1308,28 +1309,6 @@
 	@apply text-purple-70 bg-purple-10 rounded px-1.5 py-0.5 text-xs;
 }
 
-/* Security requirements display */
-.security-requirements {
-	@apply mt-4 mb-4 flex flex-wrap items-center gap-2 rounded p-3;
-	@apply bg-blue-elastic-10 border-blue-elastic-20 border;
-}
-
-.security-label {
-	@apply text-blue-elastic text-sm font-medium;
-}
-
-.security-scheme {
-	@apply flex items-center gap-1;
-}
-
-.security-scheme-badge {
-	@apply text-blue-elastic rounded bg-white px-1.5 py-0.5 text-xs font-medium;
-}
-
-.security-scopes {
-	@apply text-grey-60 text-xs;
-}
-
 /* Response headers display */
 .response-headers {
 	@apply border-grey-20 mt-4 border-t pt-4;
@@ -1466,22 +1445,6 @@
 		opacity: 0;
 		transition: opacity 0.1s ease;
 	}
-
-	/* Button styling */
-	.union-group-toggle {
-		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
-		padding: 0.25rem 0.5rem;
-		font-size: 0.8rem;
-		line-height: 1.2;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		transition: all 0.1s ease;
-	}
-
-	.union-group-toggle:hover {
-		@apply text-blue-elastic bg-blue-elastic-10 border-blue-elastic-30;
-	}
 }
 
 /* Expanded state - show vertical line extending through the toggle row */
@@ -1490,16 +1453,10 @@
 	height: 100%; /* Extend to bottom of toggle row */
 }
 
-/* Collapsed state - show both vertical and horizontal connector, green button */
+/* Collapsed state - show both vertical and horizontal connector */
 .union-variants-container.collapsed > .union-collapse-toggle::before,
 .union-variants-container.collapsed > .union-collapse-toggle::after {
 	opacity: 1;
-}
-
-.union-variants-container.collapsed
-	> .union-collapse-toggle
-	.union-group-toggle {
-	@apply text-green-90 bg-green-10 border-green-30;
 }
 
 /* Union variants content - the actual list of type options */
@@ -1580,22 +1537,6 @@
 		opacity: 0;
 		transition: opacity 0.1s ease;
 	}
-
-	/* Default button style (expanded state - grey) */
-	.expand-toggle {
-		@apply text-grey-60 bg-grey-10 border-grey-20 cursor-pointer rounded border;
-		padding: 0.25rem 0.5rem;
-		font-size: 0.8rem;
-		line-height: 1.2;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		transition: all 0.1s ease;
-	}
-
-	.expand-toggle:hover {
-		@apply text-blue-elastic bg-blue-elastic-10 border-blue-elastic-30;
-	}
 }
 
 /* Union expanded state - show vertical line extending through the toggle row */
@@ -1620,14 +1561,10 @@
 	border-left: 1px solid #cbd5e1;
 }
 
-/* Union collapsed state - show both vertical and horizontal connector, green button */
+/* Union collapsed state - show both vertical and horizontal connector */
 .union-variant-item.collapsed > .union-expand-toggle::before,
 .union-variant-item.collapsed > .union-expand-toggle::after {
 	opacity: 1;
-}
-
-.union-variant-item.collapsed > .union-expand-toggle .expand-toggle {
-	@apply text-green-90 bg-green-10 border-green-30;
 }
 
 /* Union separator between type options */

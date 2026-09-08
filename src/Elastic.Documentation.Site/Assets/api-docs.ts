@@ -8,6 +8,19 @@ import { applyParamSummaryFit } from './api-param-summary'
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
 const supportsHiddenUntilFound = 'onbeforematch' in document.body
 
+function setDisclosureToggle(
+    toggleBtn: Element | null,
+    expanded: boolean,
+    noun: string
+): void {
+    if (!toggleBtn) return
+    toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false')
+    const icon = toggleBtn.querySelector('.toggle-icon')
+    const label = toggleBtn.querySelector('.toggle-label')
+    if (icon) icon.textContent = expanded ? '−' : '+'
+    if (label) label.textContent = `${expanded ? 'hide' : 'show'} ${noun}`
+}
+
 /**
  * Expand a response fields panel (and ancestors if nested later).
  */
@@ -21,14 +34,7 @@ function expandResponseFields(container: HTMLElement): void {
 
     container.classList.remove('collapsed')
     container.classList.add('expanded')
-
-    if (toggleBtn) {
-        toggleBtn.setAttribute('aria-expanded', 'true')
-        const toggleIcon = toggleBtn.querySelector('.toggle-icon')
-        const toggleLabel = toggleBtn.querySelector('.toggle-label')
-        if (toggleIcon) toggleIcon.textContent = '−'
-        if (toggleLabel) toggleLabel.textContent = 'hide fields'
-    }
+    setDisclosureToggle(toggleBtn, true, 'fields')
 
     if (body) body.removeAttribute('hidden')
 }
@@ -48,16 +54,7 @@ function expandPropertyItem(propertyItem: HTMLElement): void {
 
     propertyItem.classList.remove('collapsed')
     propertyItem.classList.add('expanded')
-
-    if (toggleBtn) {
-        toggleBtn.setAttribute('aria-expanded', 'true')
-        const toggleIcon = toggleBtn.querySelector('.toggle-icon')
-        const toggleLabel = toggleBtn.querySelector('.toggle-label')
-        const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
-        if (toggleIcon) toggleIcon.textContent = '−'
-        if (toggleLabel)
-            toggleLabel.textContent = `Hide ${propCount} properties`
-    }
+    setDisclosureToggle(toggleBtn, true, 'properties')
 
     if (nestedProps) {
         nestedProps.removeAttribute('hidden')
@@ -91,15 +88,7 @@ function expandUnionVariantItem(variantItem: HTMLElement): void {
 
     variantItem.classList.remove('collapsed')
     variantItem.classList.add('expanded')
-
-    if (toggleBtn) {
-        const toggleIcon = toggleBtn.querySelector('.toggle-icon')
-        const toggleLabel = toggleBtn.querySelector('.toggle-label')
-        const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
-        if (toggleIcon) toggleIcon.textContent = '−'
-        if (toggleLabel)
-            toggleLabel.textContent = `Hide ${propCount} properties`
-    }
+    setDisclosureToggle(toggleBtn, true, 'properties')
 
     if (nestedProps) {
         nestedProps.removeAttribute('hidden')
@@ -133,15 +122,7 @@ function expandUnionContainer(container: HTMLElement): void {
 
     container.classList.remove('collapsed')
     container.classList.add('expanded')
-
-    if (toggleBtn) {
-        const toggleIcon = toggleBtn.querySelector('.toggle-icon')
-        const toggleLabel = toggleBtn.querySelector('.toggle-label')
-        const optionCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
-        if (toggleIcon) toggleIcon.textContent = '−'
-        if (toggleLabel)
-            toggleLabel.textContent = `Hide ${optionCount} type options`
-    }
+    setDisclosureToggle(toggleBtn, true, 'type options')
 
     if (variantsContent) {
         variantsContent.removeAttribute('hidden')
@@ -348,29 +329,21 @@ function initOperationView(section: HTMLElement): void {
             if (!container) return
 
             const isExpanded = container.classList.contains('expanded')
-            const toggleIcon = unionGroupToggle.querySelector('.toggle-icon')
-            const toggleLabel = unionGroupToggle.querySelector('.toggle-label')
             const variantsContent = container.querySelector<HTMLElement>(
                 ':scope > .union-variants-content'
             )
-            const optionCount =
-                toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
 
             if (isExpanded) {
                 container.classList.remove('expanded')
                 container.classList.add('collapsed')
-                if (toggleIcon) toggleIcon.textContent = '+'
-                if (toggleLabel)
-                    toggleLabel.textContent = `Show ${optionCount} type options`
+                setDisclosureToggle(unionGroupToggle, false, 'type options')
                 if (variantsContent && supportsHiddenUntilFound) {
                     variantsContent.setAttribute('hidden', 'until-found')
                 }
             } else {
                 container.classList.remove('collapsed')
                 container.classList.add('expanded')
-                if (toggleIcon) toggleIcon.textContent = '−'
-                if (toggleLabel)
-                    toggleLabel.textContent = `Hide ${optionCount} type options`
+                setDisclosureToggle(unionGroupToggle, true, 'type options')
                 if (variantsContent) {
                     variantsContent.removeAttribute('hidden')
                 }
@@ -393,29 +366,21 @@ function initOperationView(section: HTMLElement): void {
 
                 const isExpanded =
                     unionVariantItem.classList.contains('expanded')
-                const toggleIcon = toggleBtn.querySelector('.toggle-icon')
-                const toggleLabel = toggleBtn.querySelector('.toggle-label')
                 const nestedProps = unionVariantItem.querySelector<HTMLElement>(
                     ':scope > .nested-properties'
                 )
-                const propCount =
-                    toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
 
                 if (isExpanded) {
                     unionVariantItem.classList.remove('expanded')
                     unionVariantItem.classList.add('collapsed')
-                    if (toggleIcon) toggleIcon.textContent = '+'
-                    if (toggleLabel)
-                        toggleLabel.textContent = `Show ${propCount} properties`
+                    setDisclosureToggle(toggleBtn, false, 'properties')
                     if (nestedProps && supportsHiddenUntilFound) {
                         nestedProps.setAttribute('hidden', 'until-found')
                     }
                 } else {
                     unionVariantItem.classList.remove('collapsed')
                     unionVariantItem.classList.add('expanded')
-                    if (toggleIcon) toggleIcon.textContent = '−'
-                    if (toggleLabel)
-                        toggleLabel.textContent = `Hide ${propCount} properties`
+                    setDisclosureToggle(toggleBtn, true, 'properties')
                     if (nestedProps) {
                         nestedProps.removeAttribute('hidden')
                     }
@@ -473,10 +438,6 @@ function initGlobalClickHandlers(): void {
             if (!container) return
 
             const isExpanded = container.classList.contains('expanded')
-            const toggleIcon =
-                responseFieldsToggle.querySelector('.toggle-icon')
-            const toggleLabel =
-                responseFieldsToggle.querySelector('.toggle-label')
             const body = container.querySelector<HTMLElement>(
                 ':scope > .response-fields-body'
             )
@@ -484,9 +445,7 @@ function initGlobalClickHandlers(): void {
             if (isExpanded) {
                 container.classList.remove('expanded')
                 container.classList.add('collapsed')
-                responseFieldsToggle.setAttribute('aria-expanded', 'false')
-                if (toggleIcon) toggleIcon.textContent = '+'
-                if (toggleLabel) toggleLabel.textContent = 'show fields'
+                setDisclosureToggle(responseFieldsToggle, false, 'fields')
                 if (body && supportsHiddenUntilFound) {
                     body.setAttribute('hidden', 'until-found')
                 } else if (body) {
@@ -512,29 +471,21 @@ function initGlobalClickHandlers(): void {
             if (!container) return
 
             const isExpanded = container.classList.contains('expanded')
-            const toggleIcon = unionGroupToggle.querySelector('.toggle-icon')
-            const toggleLabel = unionGroupToggle.querySelector('.toggle-label')
             const variantsContent = container.querySelector<HTMLElement>(
                 ':scope > .union-variants-content'
             )
-            const optionCount =
-                toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
 
             if (isExpanded) {
                 container.classList.remove('expanded')
                 container.classList.add('collapsed')
-                if (toggleIcon) toggleIcon.textContent = '+'
-                if (toggleLabel)
-                    toggleLabel.textContent = `Show ${optionCount} type options`
+                setDisclosureToggle(unionGroupToggle, false, 'type options')
                 if (variantsContent && supportsHiddenUntilFound) {
                     variantsContent.setAttribute('hidden', 'until-found')
                 }
             } else {
                 container.classList.remove('collapsed')
                 container.classList.add('expanded')
-                if (toggleIcon) toggleIcon.textContent = '−'
-                if (toggleLabel)
-                    toggleLabel.textContent = `Hide ${optionCount} type options`
+                setDisclosureToggle(unionGroupToggle, true, 'type options')
                 if (variantsContent) {
                     variantsContent.removeAttribute('hidden')
                 }
@@ -557,29 +508,21 @@ function initGlobalClickHandlers(): void {
 
                 const isExpanded =
                     unionVariantItem.classList.contains('expanded')
-                const toggleIcon = toggleBtn.querySelector('.toggle-icon')
-                const toggleLabel = toggleBtn.querySelector('.toggle-label')
                 const nestedProps = unionVariantItem.querySelector<HTMLElement>(
                     ':scope > .nested-properties'
                 )
-                const propCount =
-                    toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
 
                 if (isExpanded) {
                     unionVariantItem.classList.remove('expanded')
                     unionVariantItem.classList.add('collapsed')
-                    if (toggleIcon) toggleIcon.textContent = '+'
-                    if (toggleLabel)
-                        toggleLabel.textContent = `Show ${propCount} properties`
+                    setDisclosureToggle(toggleBtn, false, 'properties')
                     if (nestedProps && supportsHiddenUntilFound) {
                         nestedProps.setAttribute('hidden', 'until-found')
                     }
                 } else {
                     unionVariantItem.classList.remove('collapsed')
                     unionVariantItem.classList.add('expanded')
-                    if (toggleIcon) toggleIcon.textContent = '−'
-                    if (toggleLabel)
-                        toggleLabel.textContent = `Hide ${propCount} properties`
+                    setDisclosureToggle(toggleBtn, true, 'properties')
                     if (nestedProps) {
                         nestedProps.removeAttribute('hidden')
                     }
@@ -599,32 +542,21 @@ function initGlobalClickHandlers(): void {
             if (!propertyItem) return
 
             const isExpanded = propertyItem.classList.contains('expanded')
-            const toggleIcon = toggleBtn.querySelector('.toggle-icon')
-            const toggleLabel = toggleBtn.querySelector('.toggle-label')
             const nestedProps = propertyItem.querySelector<HTMLElement>(
                 ':scope > .nested-properties'
             )
-            const propCount = toggleLabel?.textContent?.match(/\d+/)?.[0] || ''
 
             if (isExpanded) {
                 propertyItem.classList.remove('expanded')
                 propertyItem.classList.add('collapsed')
-                toggleBtn.setAttribute('aria-expanded', 'false')
-                if (toggleIcon) toggleIcon.textContent = '+'
-                if (toggleLabel)
-                    toggleLabel.textContent = `Show ${propCount} properties`
-                // Set hidden="until-found" for find-in-page searchability
+                setDisclosureToggle(toggleBtn, false, 'properties')
                 if (nestedProps && supportsHiddenUntilFound) {
                     nestedProps.setAttribute('hidden', 'until-found')
                 }
             } else {
                 propertyItem.classList.remove('collapsed')
                 propertyItem.classList.add('expanded')
-                toggleBtn.setAttribute('aria-expanded', 'true')
-                if (toggleIcon) toggleIcon.textContent = '−'
-                if (toggleLabel)
-                    toggleLabel.textContent = `Hide ${propCount} properties`
-                // Remove hidden attribute when expanding
+                setDisclosureToggle(toggleBtn, true, 'properties')
                 if (nestedProps) {
                     nestedProps.removeAttribute('hidden')
                 }
