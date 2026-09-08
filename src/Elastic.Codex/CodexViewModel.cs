@@ -6,7 +6,6 @@ using Elastic.Codex.Navigation;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
@@ -81,7 +80,7 @@ public abstract class CodexViewModel(CodexRenderContext context)
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
-			Features = new FeatureFlags([]),
+			Features = BuildContext.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			CodexBreadcrumbs = codexBreadcrumbs

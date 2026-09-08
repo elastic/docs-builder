@@ -1,18 +1,31 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Landing.ApiCatalogViewModel>
 @using Elastic.ApiExplorer.Landing;
-@implements IUsesLayout<Elastic.ApiExplorer._Layout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
+@implements IUsesLayout<Elastic.ApiExplorer._CatalogLayout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
-<section id="elastic-docs-v3">
-	<h1>@ApiCatalog.PageTitle</h1>
-	<ul class="api-url-listing">
-		@foreach (var entry in Model.Entries.OrderBy(e => e.Key))
+<section id="elastic-docs-v3" class="api-catalog">
+	<header class="api-catalog-header">
+		<h1>@ApiCatalog.PageTitle</h1>
+		<p class="api-catalog-lede">Choose a product to open its API reference.</p>
+	</header>
+	<ul class="api-catalog-grid">
+		@foreach (var tile in Model.Tiles)
 		{
-			<li class="api-url-list-item">
-				<a href="@entry.Url">@entry.Title <code>@entry.Key</code></a>
-				<a href="@ApiOutputPaths.JsonUrl(entry.Url)" download>JSON</a>
-				<a href="@ApiOutputPaths.YamlUrl(entry.Url)" download>YAML</a>
+			<li>
+				<a class="api-catalog-card" href="@tile.Url">
+					<div class="api-catalog-card-head">
+						@if (tile.IconSvg is not null)
+						{
+							<span class="api-catalog-card-icon">@(new HtmlString(tile.IconSvg))</span>
+						}
+						<h2 class="api-catalog-card-title">@tile.Title</h2>
+					</div>
+					@if (!string.IsNullOrWhiteSpace(tile.Description))
+					{
+						<p class="api-catalog-card-desc line-clamp-3">@tile.Description</p>
+					}
+				</a>
 			</li>
 		}
 	</ul>

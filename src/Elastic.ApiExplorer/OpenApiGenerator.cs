@@ -151,7 +151,7 @@ public class OpenApiGenerator(
 		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main") ?? versionedDocuments[0];
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
 		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
-		return new ApiCatalogEntry(prefix, title, url);
+		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description);
 	}
 
 	/// <summary>

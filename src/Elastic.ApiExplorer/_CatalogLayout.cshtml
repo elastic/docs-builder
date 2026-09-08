@@ -20,23 +20,11 @@ else
 	@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 }
 <div id="main-container" class="flex flex-col items-center">
-	<div class="max-w-(--max-layout-width) w-full h-full grid
-			grid-cols-1
-			md:grid-cols-[var(--max-sidebar-width)_1fr]
-		">
-		<div class="lg:grid lg:grid-cols-[1fr_var(--max-sidebar-width)] md:order-2">
-			<div class="justify-center px-6 lg:px-0">
-				<main id="content-container" class="w-full flex flex-col relative pb-12 overflow-x-hidden">
-					<article id="markdown-content" class="content-container markdown-content md:px-4">
-						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-						@await RenderBodyAsync()
-					</article>
-					@await RenderPartialAsync(_PageFeedback.Create(Model))
-				</main>
-			</div>
-			@await RenderPartialAsync(_ApiToc.Create(Model))
-		</div>
-		@await RenderPartialAsync(_ApiPagesNav.Create(Model))
+	<div class="max-w-(--max-layout-width) w-full px-6">
+		<main id="content-container" class="w-full pb-12">
+			@await RenderBodyAsync()
+			@await RenderPartialAsync(_PageFeedback.Create(Model))
+		</main>
 	</div>
 </div>
 @if (Model.BuildType == BuildType.Assembler)

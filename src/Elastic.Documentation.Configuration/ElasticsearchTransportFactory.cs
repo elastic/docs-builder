@@ -2,15 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Configuration;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 
-namespace Elastic.Markdown.Exporters.Elasticsearch;
+namespace Elastic.Documentation.Configuration;
 
-/// <summary>
-/// Factory for creating Elasticsearch transport from endpoint configuration.
-/// </summary>
 public static class ElasticsearchTransportFactory
 {
 	public static DistributedTransport Create(ElasticsearchEndpoint endpoint)
@@ -28,10 +24,10 @@ public static class ElasticsearchTransportFactory
 			ProxyUsername = endpoint.ProxyUsername,
 			ServerCertificateValidationCallback = endpoint.DisableSslVerification
 				? CertificateValidations.AllowAll
-				: endpoint.Certificate is { } cert
+				: endpoint.Certificate is { } certificate
 					? endpoint.CertificateIsNotRoot
-						? CertificateValidations.AuthorityPartOfChain(cert)
-						: CertificateValidations.AuthorityIsRoot(cert)
+						? CertificateValidations.AuthorityPartOfChain(certificate)
+						: CertificateValidations.AuthorityIsRoot(certificate)
 					: null
 		};
 
