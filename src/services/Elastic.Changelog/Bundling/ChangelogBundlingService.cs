@@ -525,16 +525,16 @@ public partial class ChangelogBundlingService(
 		if (!featureHidingResult.IsValid)
 			return false;
 
-		// Build bundle
+		// products[].repo is the checkout's GitHub name (filename convention), not products.yml
+		// repository:. Keep input.Repo intact so combined owner/repo still supplies the CDN owner.
 		var bundleBuilder = new BundleBuilder();
 		var buildResult = bundleBuilder.BuildBundle(
 			collector,
 			filteredEntries,
 			input.OutputProducts,
-			input.Repo,
+			BundleOutputNaming.ResolveRepo(_fileSystem, input.Config, _env, input.Repo),
 			input.Owner,
-			featureHidingResult.FeatureIdsToHide,
-			configurationContext?.ProductsConfiguration
+			featureHidingResult.FeatureIdsToHide
 		);
 
 		if (!buildResult.IsValid || buildResult.Data == null)

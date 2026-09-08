@@ -2,11 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -3214,6 +3217,96 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
 		bundleContent.Should().Contain("repo: elasticsearch", "bundle-level repo should be applied when profile omits repo");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_ServerlessProfile_WritesAuthoringRepoNotCatalogRepository()
+	{
+		// products.yml maps cloud-serverless → repository: cloud (docs catalog). The bundle must
+		// still stamp the authoring checkout (elasticsearch) for PR/issue defaults.
+		var versions = ConfigurationContext.VersionsConfiguration;
+		var cloudServerless = new Product
+		{
+			Id = "cloud-serverless",
+			DisplayName = "Elastic Cloud Serverless",
+			VersioningSystem = versions.GetVersioningSystem(VersioningSystemId.Stack),
+			Repository = "cloud"
+		};
+		var productsConfiguration = new ProductsConfiguration
+		{
+			Products = new Dictionary<string, Product> { ["cloud-serverless"] = cloudServerless }.ToFrozenDictionary(),
+			PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
+			ProductDisplayNames = new Dictionary<string, string> { ["cloud-serverless"] = cloudServerless.DisplayName }.ToFrozenDictionary()
+		};
+		var catalogContext = new ConfigurationContext
+		{
+			Endpoints = ConfigurationContext.Endpoints,
+			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
+			VersionsConfiguration = versions,
+			ProductsConfiguration = productsConfiguration,
+			SearchConfiguration = ConfigurationContext.SearchConfiguration,
+			LegacyUrlMappings = ConfigurationContext.LegacyUrlMappings
+		};
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, catalogContext);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: elasticsearch
+			  owner: elastic
+			  profiles:
+			    serverless-release:
+			      products: "cloud-serverless {version} *"
+			      output_products: "cloud-serverless {version}"
+			""";
+
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/158340
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "158340.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "serverless-release",
+			ProfileArgument = "2026-09-08",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().NotContain("repo: cloud");
 	}
 
 	[Fact]

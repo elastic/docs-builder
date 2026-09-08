@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -21,30 +20,23 @@ public class BundleBuilder
 	/// <param name="collector">The diagnostics collector.</param>
 	/// <param name="entries">Matched changelog files to bundle.</param>
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
-	/// <param name="repo">Fallback GitHub repository name when a product cannot be resolved from <paramref name="productsConfiguration"/>.</param>
+	/// <param name="repo">GitHub repository for link generation.</param>
 	/// <param name="owner">GitHub owner for link generation.</param>
 	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
-	/// <param name="productsConfiguration">Optional product catalogue used to resolve per-product repository names.</param>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo = null,
 		string? owner = null,
-		HashSet<string>? hideFeatures = null,
-		ProductsConfiguration? productsConfiguration = null
+		HashSet<string>? hideFeatures = null
 	)
 	{
-		// Build products list
-		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner, productsConfiguration);
-
-		// Build entries list
+		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
 		var bundledEntries = BuildResolvedEntries(collector, entries);
 
 		if (bundledEntries == null)
-		{
 			return new BundleBuildResult { IsValid = false, Data = null };
-		}
 
 		var bundledData = new Bundle
 		{
@@ -61,8 +53,7 @@ public class BundleBuilder
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
 		string? repo,
-		string? owner,
-		ProductsConfiguration? productsConfiguration
+		string? owner
 	)
 	{
 		List<BundledProduct> bundledProducts;
@@ -79,7 +70,7 @@ public class BundleBuilder
 						ProductId = p.Product ?? "",
 						Target = p.Target == "*" ? null : p.Target,
 						Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
-						Repo = ResolveProductRepo(p.Product, productsConfiguration, repo),
+						Repo = repo,
 						Owner = owner
 					}
 				)
@@ -112,7 +103,7 @@ public class BundleBuilder
 						pv.product,
 						string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
 						pv.lifecycle,
-						ResolveProductRepo(pv.product, productsConfiguration, repo),
+						repo,
 						owner
 					)
 				)
@@ -121,7 +112,6 @@ public class BundleBuilder
 		else
 			bundledProducts = [];
 
-		// Check for products with same product ID but different versions
 		var productsByProductId = bundledProducts
 			.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
 			.Where(g => g.Count() > 1)
@@ -143,25 +133,6 @@ public class BundleBuilder
 		}
 
 		return bundledProducts;
-	}
-
-	/// <summary>
-	/// Resolves the GitHub repository name for a product. Looks up the product in
-	/// <paramref name="productsConfiguration"/> and returns its <c>Repository</c> field
-	/// (which is already defaulted to the product ID when not explicitly set). Falls back
-	/// to <paramref name="bundleRepo"/> when the product is not found in the catalogue.
-	/// </summary>
-	private static string? ResolveProductRepo(string? productId, ProductsConfiguration? productsConfiguration, string? bundleRepo)
-	{
-		if (string.IsNullOrWhiteSpace(productId) || productsConfiguration == null)
-			return bundleRepo;
-
-		// product.Repository is the authoritative per-product repo when explicitly set in products.yml.
-		// When null (product created without an explicit repository: field), fall back to the bundle-level value.
-		if (productsConfiguration.Products.TryGetValue(productId, out var product))
-			return product.Repository ?? bundleRepo;
-
-		return bundleRepo;
 	}
 
 	private static Lifecycle? ParseLifecycle(string? value)
@@ -207,7 +178,6 @@ public class BundleBuilder
 			return false;
 		}
 
-		// Validate type is not Invalid (missing or unrecognized)
 		if (data.Type == ChangelogEntryType.Invalid)
 		{
 			collector.EmitError(entry.FilePath, "Changelog file is missing required field: type");
@@ -220,7 +190,6 @@ public class BundleBuilder
 			return false;
 		}
 
-		// Validate products have required fields
 		if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.ProductId)))
 		{
 			collector.EmitError(entry.FilePath, "Changelog file has product entry missing required field: product");
