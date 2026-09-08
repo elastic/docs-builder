@@ -30,10 +30,14 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 		});
 
 		html.Should().Contain("class=\"page-actions\"");
-		html.Should().Contain("Report a docs issue");
-		html.Should().Contain("Edit this page");
+		html.Should().Contain("Edit page");
+		html.Should().Contain("Report issue");
 		html.Should().Contain("href=\"https://github.com/elastic/docs/edit/main/page.md\"");
-		html.Should().NotContain("text-sm hidden");
+		html.Should().NotContain("page-actions__action hidden");
+		html
+			.IndexOf("Edit page", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("Report issue", StringComparison.Ordinal), "the edit button comes first");
 	}
 
 	[Fact]
@@ -41,8 +45,8 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 	{
 		var html = await Render(new PageActionsScenario { GithubEditUrl = "https://github.com/elastic/docs/edit/main/page.md" });
 
-		html.Should().NotContain("Report a docs issue");
-		html.Should().Contain("Edit this page");
+		html.Should().NotContain("Report issue");
+		html.Should().Contain("Edit page");
 	}
 
 	[Fact]
@@ -55,8 +59,8 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 			GithubEditUrl = "https://github.com/elastic/docs/edit/main/page.md"
 		});
 
-		html.Should().NotContain("Report a docs issue");
-		html.Should().Contain("Edit this page");
+		html.Should().NotContain("Report issue");
+		html.Should().Contain("Edit page");
 	}
 
 	[Fact]
@@ -64,8 +68,8 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 	{
 		var html = await Render(new PageActionsScenario { PrimaryNavEnabled = true });
 
-		html.Should().Contain("Report a docs issue");
-		html.Should().NotContain("Edit this page");
+		html.Should().Contain("Report issue");
+		html.Should().NotContain("Edit page");
 	}
 
 	[Fact]
@@ -79,7 +83,7 @@ public class PageActionsRenderingTests(ITestOutputHelper output) : Documentation
 		});
 
 		// main.ts reveals every ".edit-this-page.hidden" when ?edit is present, so the class pair matters.
-		html.Should().Contain("edit-this-page link text-sm hidden");
+		html.Should().Contain("edit-this-page page-actions__action hidden");
 	}
 
 	[Fact]
