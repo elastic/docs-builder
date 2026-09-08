@@ -17,22 +17,19 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 {
 	private readonly string[] _knownKeys =
 	[
-		"stack",
-		"deployment",
-		"serverless",
-		"product", // Applicability categories
-
-		"ece",
-		"eck",
-		"ess",
-		"ech",
-		"self", // Deployment options ("ech" aliasing to "ess")
-
-		"elasticsearch",
-		"observability",
-		"security",
-		"vectordb", // Serverless flavors
-
+		ApplicabilityKeys.Stack,
+		ApplicabilityKeys.Deployment,
+		ApplicabilityKeys.Serverless,
+		ApplicabilityKeys.Product,
+		ApplicabilityKeys.Ece,
+		ApplicabilityKeys.Eck,
+		ApplicabilityKeys.Ess,
+		ApplicabilityKeys.Ech,
+		ApplicabilityKeys.Self,
+		ApplicabilityKeys.Elasticsearch,
+		ApplicabilityKeys.Observability,
+		ApplicabilityKeys.Security,
+		ApplicabilityKeys.VectorDb,
 		.. productKeys
 	];
 
@@ -135,7 +132,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (unknownKeys.Count > 0)
 			diagnostics.Add((Severity.Warning, $"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}"));
 
-		if (TryGetApplicabilityOverTime(dictionary, "stack", diagnostics, out var stackAvailability))
+		if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Stack, diagnostics, out var stackAvailability))
 			applicableTo.Stack = stackAvailability;
 
 		AssignProduct(dictionary, applicableTo, diagnostics);
@@ -176,7 +173,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		List<(Severity, string)> diagnostics
 	)
 	{
-		if (!dictionary.TryGetValue("deployment", out var deploymentType))
+		if (!dictionary.TryGetValue(ApplicabilityKeys.Deployment, out var deploymentType))
 			return;
 
 		if (deploymentType is null || (deploymentType is string s && string.IsNullOrWhiteSpace(s)))
@@ -185,7 +182,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			var applies = AppliesCollection.TryParse(deploymentTypeString, diagnostics, out var a) ? a : null;
 			if (applies is not null)
-				ValidateApplicabilityCollection("ess", applies, diagnostics);
+				ValidateApplicabilityCollection(ApplicabilityKeys.Ess, applies, diagnostics);
 			applicableTo.Deployment = new DeploymentApplicability { Ece = applies, Eck = applies, Ess = applies, Self = applies };
 		}
 		else if (deploymentType is Dictionary<object, object?> deploymentDictionary)
@@ -201,13 +198,13 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		List<(Severity, string)> diagnostics
 	)
 	{
-		if (!dictionary.TryGetValue("product", out var productValue))
+		if (!dictionary.TryGetValue(ApplicabilityKeys.Product, out var productValue))
 			return;
 
 		// This handles string, null, and empty string cases.
 		if (productValue is not Dictionary<object, object?> productDictionary)
 		{
-			if (TryGetApplicabilityOverTime(dictionary, "product", diagnostics, out var productAvailability))
+			if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Product, diagnostics, out var productAvailability))
 				applicableTo.Product = productAvailability;
 			return;
 		}
@@ -223,7 +220,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		List<(Severity, string)> diagnostics
 	)
 	{
-		if (!dictionary.TryGetValue("serverless", out var serverless))
+		if (!dictionary.TryGetValue(ApplicabilityKeys.Serverless, out var serverless))
 			return;
 
 		if (serverless is null || (serverless is string s && string.IsNullOrWhiteSpace(s)))
@@ -232,7 +229,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			var applies = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
 			if (applies is not null)
-				ValidateApplicabilityCollection("serverless", applies, diagnostics);
+				ValidateApplicabilityCollection(ApplicabilityKeys.Serverless, applies, diagnostics);
 			applicableTo.Serverless = new ServerlessProjectApplicability
 			{
 				Elasticsearch = applies,
@@ -258,8 +255,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		var d = new DeploymentApplicability();
 		var assigned = false;
 
-		var hasEss = dictionary.ContainsKey("ess");
-		var hasEch = dictionary.ContainsKey("ech");
+		var hasEss = dictionary.ContainsKey(ApplicabilityKeys.Ess);
+		var hasEch = dictionary.ContainsKey(ApplicabilityKeys.Ech);
 		if (hasEss && hasEch)
 			diagnostics.Add(
 				(Severity.Warning, "Both 'ess' and 'ech' are defined. Move 'ess' content into 'ech' to avoid information loss.")
@@ -267,11 +264,11 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
-			{ "ece", a => d.Ece = a },
-			{ "eck", a => d.Eck = a },
-			{ "ess", a => d.Ess = a },
-			{ "ech", a => d.Ess = a },
-			{ "self", a => d.Self = a }
+			{ ApplicabilityKeys.Ece, a => d.Ece = a },
+			{ ApplicabilityKeys.Eck, a => d.Eck = a },
+			{ ApplicabilityKeys.Ess, a => d.Ess = a },
+			{ ApplicabilityKeys.Ech, a => d.Ess = a },
+			{ ApplicabilityKeys.Self, a => d.Self = a }
 		};
 
 		foreach (var (key, action) in mapping)
@@ -300,10 +297,10 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
-			["elasticsearch"] = a => serverlessAvailability.Elasticsearch = a,
-			["observability"] = a => serverlessAvailability.Observability = a,
-			["security"] = a => serverlessAvailability.Security = a,
-			["vectordb"] = a => serverlessAvailability.VectorDatabase = a
+			[ApplicabilityKeys.Elasticsearch] = a => serverlessAvailability.Elasticsearch = a,
+			[ApplicabilityKeys.Observability] = a => serverlessAvailability.Observability = a,
+			[ApplicabilityKeys.Security] = a => serverlessAvailability.Security = a,
+			[ApplicabilityKeys.VectorDb] = a => serverlessAvailability.VectorDatabase = a
 		};
 
 		foreach (var (key, action) in mapping)
@@ -374,13 +371,13 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static readonly HashSet<string> VersionlessKeys =
 	[
-		"ess",
-		"ech",
-		"serverless",
-		"elasticsearch",
-		"observability",
-		"security",
-		"vectordb"
+		ApplicabilityKeys.Ess,
+		ApplicabilityKeys.Ech,
+		ApplicabilityKeys.Serverless,
+		ApplicabilityKeys.Elasticsearch,
+		ApplicabilityKeys.Observability,
+		ApplicabilityKeys.Security,
+		ApplicabilityKeys.VectorDb
 	];
 
 	private static bool TryGetApplicabilityOverTime(

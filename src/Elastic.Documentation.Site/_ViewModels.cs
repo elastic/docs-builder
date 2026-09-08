@@ -108,6 +108,8 @@ public record GlobalLayoutViewModel
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	public string PageFeedbackSurface { get; init; } = "docs";
+
 	public bool RenderHamburgerIcon { get; init; } = true;
 
 	/// <summary>Whether the git remote belongs to the <c>elastic</c> GitHub organization.</summary>

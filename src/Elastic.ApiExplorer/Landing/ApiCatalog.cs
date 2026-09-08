@@ -13,7 +13,10 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public sealed record ApiCatalogEntry(string Key, string Title, string Url);
+public sealed record ApiCatalogEntry(string Key, string Title, string Url, string? ProductId = null, string? Description = null)
+{
+	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+}
 
 public class ApiCatalog : IApiGroupingModel
 {
@@ -23,7 +26,7 @@ public class ApiCatalog : IApiGroupingModel
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new ApiCatalogViewModel(context) { Entries = Entries };
+		var viewModel = ApiCatalogViewModel.FromEntries(context, Entries);
 		await ApiCatalogView.Create(viewModel).RenderAsync(stream, cancellationToken: ctx);
 	}
 

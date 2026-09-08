@@ -32,7 +32,9 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		+ "      repository: <org/repo> # optional; only needed if the spec is published from a\n"
 		+ "                              # different repo than the current checkout\n"
 		+ "      children:          # optional\n"
-		+ "        - file: getting-started.md";
+		+ "        - file: getting-started.md\n"
+		+ "      catalog:           # optional; category chips on the API catalog\n"
+		+ "        categories: [self, ece, ess, serverless]";
 
 	public bool Accepts(Type type) => type == typeof(ApiProductSequence) || type == typeof(ApiProductEntry);
 
@@ -128,6 +130,9 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 				case "children":
 					entry.Children = ReadChildren(parser);
 					break;
+				case "catalog":
+					entry.Catalog = ReadCatalog(parser);
+					break;
 				case "file":
 					throw new YamlException(
 						key.Start,
@@ -142,6 +147,53 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		}
 		_ = parser.MoveNext(); // consume MappingEnd
 		return entry;
+	}
+
+	private static ApiCatalogSettings? ReadCatalog(IParser parser)
+	{
+		if (parser.Current is not MappingStart)
+		{
+			parser.SkipThisAndNestedEvents();
+			return null;
+		}
+
+		var start = parser.Current.Start;
+		_ = parser.MoveNext();
+		var catalog = new ApiCatalogSettings { Line = (int)start.Line, Column = (int)start.Column };
+		while (parser.Current is not MappingEnd)
+		{
+			var key = parser.Consume<Scalar>();
+			if (key.Value == "categories")
+				catalog.Categories = ReadStringSequence(parser);
+			else
+				parser.SkipThisAndNestedEvents();
+		}
+		_ = parser.MoveNext();
+		return catalog;
+	}
+
+	private static List<string> ReadStringSequence(IParser parser)
+	{
+		var values = new List<string>();
+		if (parser.Current is not SequenceStart)
+		{
+			parser.SkipThisAndNestedEvents();
+			return values;
+		}
+
+		_ = parser.MoveNext();
+		while (parser.Current is not SequenceEnd)
+		{
+			if (parser.Current is Scalar scalar)
+			{
+				values.Add(scalar.Value);
+				_ = parser.MoveNext();
+			}
+			else
+				parser.SkipThisAndNestedEvents();
+		}
+		_ = parser.MoveNext();
+		return values;
 	}
 
 	private static List<ApiEntryChild> ReadChildren(IParser parser)

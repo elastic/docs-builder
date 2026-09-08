@@ -179,30 +179,34 @@ journey('navigation test', ({ page, params }) => {
     })
 
     step(
-        'Island click swaps heading and Overview, back restores them',
+        'Sidebar click reaches Elasticsearch and back restores Reference',
         async () => {
-            await expect(
-                page.locator('#pages-nav .pages-nav-v2__heading-text')
-            ).toHaveText('Reference')
             await page
                 .locator('#pages-nav a[href$="/reference/elasticsearch"]')
                 .first()
                 .click()
             await expect(page).toHaveURL(/\/reference\/elasticsearch/)
             await expect(
-                page.locator('#pages-nav .pages-nav-v2__heading-text')
-            ).toHaveText('Elasticsearch')
-            await expect(
-                page.locator('#pages-nav .nav-v2-nav-text').first()
-            ).toHaveText('Overview')
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
+                )
+            ).toBeVisible()
+
+            // The hub page itself has no row in the tree, so nothing is
+            // current after back; the tree is visible and the old current
+            // marker is gone.
             await page.goBack()
             await expect(page).toHaveURL(/\/reference\/?$/)
             await expect(
-                page.locator('#pages-nav .pages-nav-v2__heading-text')
-            ).toHaveText('Reference')
+                page
+                    .locator('#pages-nav a[href$="/reference/elasticsearch"]')
+                    .first()
+            ).toBeVisible()
             await expect(
-                page.locator('#pages-nav .nav-v2-nav-text').first()
-            ).toHaveText('Overview')
+                page.locator(
+                    '#pages-nav a.sidebar-link.current[href*="/reference/elasticsearch"]'
+                )
+            ).toHaveCount(0)
         }
     )
 
