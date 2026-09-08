@@ -166,7 +166,7 @@ describe('initListing DOM behaviour', () => {
         expect(visible[0].dataset.listingGroup).toBe('draft')
     })
 
-    it('allows selecting multiple group chips independently', () => {
+    it('replaces the selection when another chip is clicked', () => {
         const acceptedChip = document.querySelector<HTMLButtonElement>(
             '[data-group="accepted"]'
         )!
@@ -176,10 +176,30 @@ describe('initListing DOM behaviour', () => {
         acceptedChip.click()
         draftChip.click()
 
-        // Both groups visible, ungrouped hidden
+        const visible = visibleCards()
+        expect(visible).toHaveLength(1)
+        expect(visible[0].dataset.listingGroup).toBe('draft')
+        expect(acceptedChip.getAttribute('aria-pressed')).toBe('false')
+        expect(draftChip.getAttribute('aria-pressed')).toBe('true')
+    })
+
+    it('adds a chip when clicked with Cmd or Ctrl', () => {
+        const acceptedChip = document.querySelector<HTMLButtonElement>(
+            '[data-group="accepted"]'
+        )!
+        const draftChip = document.querySelector<HTMLButtonElement>(
+            '[data-group="draft"]'
+        )!
+        acceptedChip.click()
+        draftChip.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, metaKey: true })
+        )
+
         const visible = visibleCards()
         expect(visible).toHaveLength(3)
         expect(visible.every((c) => c.dataset.listingGroup !== '')).toBe(true)
+        expect(acceptedChip.getAttribute('aria-pressed')).toBe('true')
+        expect(draftChip.getAttribute('aria-pressed')).toBe('true')
     })
 
     it('deselects a chip by clicking it again', () => {

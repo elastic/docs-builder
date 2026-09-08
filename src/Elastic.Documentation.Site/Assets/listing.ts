@@ -7,8 +7,9 @@
  *
  * Supports:
  * - Text input: hides cards whose `data-listing-title` does not include the query.
- * - Group chips: independent toggles; a card is visible when any of its groups is in
- *   the active set (or when no groups are selected = show all). "All" clears the set.
+ * - Group chips: a click selects one group. Cmd or Ctrl click adds or
+ *   removes groups. A card is visible when any of its groups is in the active
+ *   set (or when no groups are selected = show all). "All" clears the set.
  * - One card may belong to several groups via space-separated
  *   `data-listing-groups` or a single `data-listing-group`.
  * - Hides group headings when all their cards are hidden.
@@ -119,17 +120,37 @@ function initListingRoot(root: HTMLElement) {
     })
 
     groupChips.forEach((chip) => {
-        chip.addEventListener('click', () => {
+        chip.addEventListener('click', (event) => {
             const group = chip.dataset.group ?? ''
-            if (state.activeGroups.has(group)) {
-                state.activeGroups.delete(group)
-            } else {
-                state.activeGroups.add(group)
-            }
+            selectGroup(state, group, isMultiSelectModifier(event))
             updateChipStyles(allChip, groupChips, state)
             applyFilter(root, state)
         })
     })
+}
+
+function isMultiSelectModifier(event: MouseEvent): boolean {
+    return event.metaKey || event.ctrlKey
+}
+
+function selectGroup(
+    state: ListingFilterState,
+    group: string,
+    additive: boolean
+) {
+    if (additive) {
+        if (state.activeGroups.has(group)) state.activeGroups.delete(group)
+        else state.activeGroups.add(group)
+        return
+    }
+
+    if (state.activeGroups.size === 1 && state.activeGroups.has(group)) {
+        state.activeGroups.clear()
+        return
+    }
+
+    state.activeGroups.clear()
+    state.activeGroups.add(group)
 }
 
 export function initListing() {

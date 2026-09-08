@@ -9,25 +9,14 @@
 		<h1>@ApiCatalog.PageTitle</h1>
 		<p class="api-catalog-lede">Choose a product to open its API reference.</p>
 	</header>
-	@if (Model.Tiles.Count > 0)
+	@if (Model.FilterChips.Count > 0)
 	{
-		<div class="listing-filter-bar mt-4 mb-6">
-			<input
-				type="search"
-				class="listing-filter-input w-full border border-grey-20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-elastic"
-				placeholder="Filter @Model.Tiles.Count API@(Model.Tiles.Count == 1 ? "" : "s")…"
-				aria-label="Filter APIs"
-			/>
-			@if (Model.FilterChips.Count > 0)
+		<div class="listing-filter-bar listing-group-chips flex flex-wrap items-center gap-2 mt-4 mb-6">
+			<button type="button" class="listing-chip listing-chip-all listing-chip-active px-3 py-1 text-xs rounded-full border border-blue-elastic text-blue-elastic" data-group="" aria-pressed="true">All</button>
+			<span class="text-grey-20 select-none">|</span>
+			@foreach (var chip in Model.FilterChips)
 			{
-				<div class="listing-group-chips flex flex-wrap items-center gap-2 mt-3">
-					<button type="button" class="listing-chip listing-chip-all listing-chip-active px-3 py-1 text-xs rounded-full border border-blue-elastic text-blue-elastic" data-group="" aria-pressed="true">All</button>
-					<span class="text-grey-20 select-none">|</span>
-					@foreach (var chip in Model.FilterChips)
-					{
-						<button type="button" class="listing-chip px-3 py-1 text-xs rounded-full border border-grey-20 text-ink-light hover:border-blue-elastic hover:text-blue-elastic" data-group="@chip.Key" aria-pressed="false">@chip.Label</button>
-					}
-				</div>
+				<button type="button" class="listing-chip px-3 py-1 text-xs rounded-full border border-grey-20 text-ink-light hover:border-blue-elastic hover:text-blue-elastic" data-group="@chip.Key" aria-pressed="false">@chip.Label</button>
 			}
 		</div>
 	}

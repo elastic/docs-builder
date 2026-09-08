@@ -74,7 +74,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().Contain("<h1>API catalog</h1>");
 		html.Should().Contain("api-catalog-grid");
 		html.Should().Contain("listing-root");
-		html.Should().Contain("listing-filter-input");
+		html.Should().NotContain("listing-filter-input");
 		html.Should().NotContain("hub-card");
 		html.Should().NotContain("hub-page");
 		html.Should().Contain("<a class=\"api-catalog-card-main\" href=\"/docs/api/doc/elasticsearch/\">");

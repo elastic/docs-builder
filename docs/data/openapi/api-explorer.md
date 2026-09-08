@@ -13,7 +13,7 @@ The API Explorer turns an OpenAPI spec into HTML pages. If you add an `api:` ent
 
 The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page and includes REST and category badges plus JSON and YAML downloads. The card shows `info.description`, clamped to three lines.
 
-The catalog reuses the listing search field and filter chips. Categories are discovery labels only. They do not claim versioned availability. An API with no `catalog.categories` appears only when **All** is selected. The filter bar shows only categories that at least one API uses. Filter state is not stored in the URL.
+The catalog reuses listing filter chips. A click selects one category. Cmd or Ctrl click adds or removes categories. Categories are discovery labels only. They do not claim versioned availability. An API with no `catalog.categories` appears only when **All** is selected. The filter bar shows only categories that at least one API uses. Filter state is not stored in the URL.
 
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
