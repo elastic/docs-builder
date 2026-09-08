@@ -253,7 +253,7 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 - **Landing page**: An overview of the API grouped by tag
 - **Tag landing pages**: One page per tag that lists operations in that tag, with the tag's display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
-- **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
+- **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`. On operation pages, those properties link to that page.
 
 ## OpenAPI extensions
 
@@ -309,8 +309,32 @@ Each non-empty string becomes one item in the prerequisites list (leading and tr
 
 
 When prerequisites are present, **Prerequisites** also appears in the on-page table of contents (after **Paths**).
+When the section has more than one item, it renders collapsed with a one-line name summary (same accordion as Query Parameters).
 When the extension is missing, empty, or not a JSON array, the section is omitted.
 Malformed values are skipped and the build may log a warning.
+
+`x-req-auth` is independent of OpenAPI `security` / `securitySchemes`. Privilege lines go in **Prerequisites**; HTTP schemes go in **Authorization**.
+
+### Authorization
+
+The API Explorer reads OpenAPI `security` on the operation, or the document-level `security` when the operation omits the field.
+An empty operation `security: []` is an explicit override to none and hides the section.
+
+Each listed scheme is resolved against `components.securitySchemes`. Only these labels are shown, in first-seen order and de-duplicated:
+
+| OpenAPI scheme | Label |
+|---|---|
+| `type: apiKey` | `Api key` |
+| `type: http`, `scheme: basic` | `Basic` |
+| `type: http`, `scheme: bearer` | `Bearer` |
+
+Other scheme types (`oauth2`, `openIdConnect`, `mutualTLS`, HTTP digest, unknown HTTP schemes) are omitted.
+OpenAPI treats items in the `security` array as OR and keys inside one object as AND; the page flattens those groups into a unique label list.
+
+When schemes are present, **Authorization** appears as a section heading (same visual weight as **Prerequisites**) and in the on-page table of contents.
+When the section has more than one scheme, it renders collapsed with a one-line name summary.
+
+The same accordion applies to **Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
 
 ### Tag labels [x-displayname]
 

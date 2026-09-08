@@ -27,9 +27,9 @@ internal static class OperationCommonMark
 		WriteServers(markdown, page);
 		WritePaths(markdown, apiOperation, page);
 		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
+		WriteSecurity(markdown, page);
 		WritePathParameters(markdown, page, apiBaseUrl);
 		WriteDescription(markdown, page, apiBaseUrl);
-		WriteSecurity(markdown, page);
 		WriteQueryParameters(markdown, page, apiBaseUrl);
 		WriteRequestBody(markdown, apiOperation, page, apiBaseUrl);
 		WriteResponses(markdown, page, apiBaseUrl);
@@ -136,7 +136,10 @@ internal static class OperationCommonMark
 		if (page.AuthSchemes.Count == 0)
 			return;
 
-		ApiCommonMark.Paragraph(markdown, "Authorization: " + string.Join(", ", page.AuthSchemes.Select(scheme => scheme.Label)));
+		ApiCommonMark.Heading(markdown, 2, "Authorization");
+		foreach (var scheme in page.AuthSchemes)
+			_ = markdown.AppendLine($"- `{scheme.Label}`");
+		_ = markdown.AppendLine();
 	}
 
 	private static void WriteQueryParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)

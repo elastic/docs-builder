@@ -79,6 +79,71 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 	}
 
 	[Fact]
+	public async Task Operation_Authorization_RendersCollapsedWhenMultipleSchemes()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"authorization\"");
+		html.Should().Contain("id=\"authorization-list\"");
+		html.Should().Contain("aria-controls=\"authorization-list\"");
+		html.Should().Contain("api-param-section-title\">Authorization</span>");
+		html.Should().Contain("auth-scheme-item");
+		html.Should().Contain("Api key");
+		html.Should().Contain("Basic");
+		html.Should().Contain("Bearer");
+		html.Should().NotContain("security-requirements");
+	}
+
+	[Fact]
+	public async Task Operation_Prerequisites_RendersCollapsedWhenMultipleItems()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"prerequisites\"");
+		html.Should().Contain("id=\"prerequisites-list\"");
+		html.Should().Contain("aria-controls=\"prerequisites-list\"");
+		html.Should().Contain("api-param-section-title\">Prerequisites</span>");
+	}
+
+	[Fact]
+	public async Task Operation_PathParameters_SingleItem_RendersWithoutCollapse()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"parameters\"");
+		html.Should().NotContain("id=\"parameters-list\"");
+		html.Should().NotContain("aria-controls=\"parameters-list\"");
+	}
+
+	[Fact]
+	public async Task Operation_NestedProperties_UseShowPropertiesDisclosure()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("toggle-label\">show properties</span>");
+		html.Should().NotContain("toggle-label\">Show ");
+		html.Should().NotContain("toggle-label\">Hide ");
+	}
+
+	[Fact]
+	public async Task Operation_Request_RendersCollapsedWithNameSummaryAndNoJsonBadge()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"request-body\"");
+		html.Should().Contain("id=\"request-body-list\"");
+		html.Should().Contain("aria-controls=\"request-body-list\"");
+		html.Should().Contain("api-param-section-title\">Request</span>");
+		html.Should().Contain("req-query");
+		html.Should().NotContain("content-type-badge");
+	}
+
+	[Fact]
 	public async Task Operation_EmptySpecDescription_ShowsSupplemental()
 	{
 		var src = SearchOperation();

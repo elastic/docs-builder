@@ -23,6 +23,9 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			Operation.Operation.OperationId
 		);
 
+	public IReadOnlyList<string> PrerequisiteNames =>
+		[.. (Prerequisites ?? []).Select(static r => r.Label).Where(static l => l.Length > 0)];
+
 	protected override string BreadcrumbCurrentTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
 
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
@@ -32,6 +35,9 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 
 		if (Prerequisites is { Count: > 0 })
 			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
+
+		if (Page.AuthSchemes.Count > 0)
+			tocItems.Add(new ApiTocItem("Authorization", "authorization"));
 
 		if (Page.QueryParameters.Count > 0)
 			tocItems.Add(new ApiTocItem("Query Parameters", "query-params"));

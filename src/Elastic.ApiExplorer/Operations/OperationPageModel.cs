@@ -144,6 +144,8 @@ public partial record OperationPageModel
 	public IReadOnlyList<string> PathParameterNames => NamesOf(PathParameters.Select(static p => p.Name));
 
 	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Select(static q => q.Parameter.Name));
+
+	public IReadOnlyList<string> RequestPropertyNames => NamesOf((RequestProperties?.Items ?? []).Select(static p => p.Name));
 	public required string? DescriptionMarkdown { get; init; }
 	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
 	public required string RequestContentType { get; init; }
@@ -162,6 +164,8 @@ public partial record OperationPageModel
 
 	/// <summary>Effective auth scheme badges. Empty when the spec declares no schemes.</summary>
 	public required IReadOnlyList<AuthSchemeBadge> AuthSchemes { get; init; }
+
+	public IReadOnlyList<string> AuthSchemeNames => NamesOf(AuthSchemes.Select(static s => s.Label));
 
 	public static OperationPageModel Create(ApiOperation apiOperation, ApiRenderContext context)
 	{

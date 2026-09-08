@@ -7,6 +7,9 @@
 		aria-controls="@Model.Anchor-list">
 		<span class="api-param-chevron" aria-hidden="true"></span>
 		<span class="api-param-section-title">@Model.Title</span>
-		@(await RenderPartialAsync<_ParamSummary, IReadOnlyList<string>>(Model.Names))
+		@if (Model.Names.Count > 0)
+		{
+			@(await RenderPartialAsync<_ParamSummary, IReadOnlyList<string>>(Model.Names))
+		}
 	</button>
 </h4>

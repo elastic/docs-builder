@@ -101,7 +101,17 @@
 	}
 	@if (prerequisites is { Count: > 0 })
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Prerequisites", "prerequisites")))
+		var collapsePrereq = ParamSectionHeader.ShouldCollapse(prerequisites.Count);
+		<div @ParamSectionHeader.WrapAttributes(collapsePrereq)>
+		@if (collapsePrereq)
+		{
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Prerequisites", "prerequisites", Model.PrerequisiteNames)))
+		}
+		else
+		{
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Prerequisites", "prerequisites")))
+		}
+		<div @ParamSectionHeader.BodyAttributes(collapsePrereq, "prerequisites-list")>
 		<dl class="property-list">
 		@foreach (var row in prerequisites)
 		{
@@ -120,18 +130,55 @@
 			</div>
 		}
 		</dl>
+		</div>
+		</div>
+	}
+	@if (pageModel.AuthSchemes.Count > 0)
+	{
+		var collapseAuth = ParamSectionHeader.ShouldCollapse(pageModel.AuthSchemes.Count);
+		<div @ParamSectionHeader.WrapAttributes(collapseAuth)>
+		@if (collapseAuth)
+		{
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authorization", "authorization", pageModel.AuthSchemeNames)))
+		}
+		else
+		{
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Authorization", "authorization")))
+		}
+		<div @ParamSectionHeader.BodyAttributes(collapseAuth, "authorization-list")>
+		<dl class="property-list">
+		@foreach (var scheme in pageModel.AuthSchemes)
+		{
+			<div class="auth-scheme-item">
+				<dt>
+					<code>@scheme.Label</code>
+				</dt>
+			</div>
+		}
+		</dl>
+		</div>
+		</div>
 	}
 	@if (pageModel.PathParameters.Count > 0)
 	{
-		<div class="api-param-section collapsed" data-param-section>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Parameters", "parameters", pageModel.PathParameterNames)))
-		<div class="api-param-section-body" id="parameters-list" hidden="until-found">
+		var collapsePath = ParamSectionHeader.ShouldCollapse(pageModel.PathParameterNames.Count);
+		<div @ParamSectionHeader.WrapAttributes(collapsePath)>
+		@if (collapsePath)
+		{
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Parameters", "parameters", pageModel.PathParameterNames)))
+		}
+		else
+		{
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Parameters", "parameters")))
+		}
+		<div @ParamSectionHeader.BodyAttributes(collapsePath, "parameters-list")>
 		<dl class="property-list">
 		@foreach (var path in pageModel.PathParameters)
 		{
 			<div class="path-param @(path.Deprecated is true ? "deprecated" : "")">
 				<dt id="path-@path.Name">
-					<a href="#path-@path.Name">
+					<a class="property-anchor" href="#path-@path.Name">
+						<span class="property-anchor-icon" aria-hidden="true"></span>
 						<code>@path.Name</code>
 						@if (path.Required)
 						{
@@ -151,45 +198,41 @@
 		</div>
 	}
 
-	@if (pageModel.AuthSchemes.Count > 0)
-	{
-		<div class="security-requirements">
-			<span class="security-label">Authorization:</span>
-			@foreach (var scheme in pageModel.AuthSchemes)
-			{
-				<span class="security-scheme">
-					<span class="security-scheme-badge">@scheme.Label</span>
-				</span>
-			}
-		</div>
-	}
-
 	@if (pageModel.QueryParameters.Count > 0)
 	{
-		<div class="api-param-section collapsed" data-param-section>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query Parameters", "query-params", pageModel.QueryParameterNames)))
-		<div class="api-param-section-body" id="query-params-list" hidden="until-found">
+		var collapseQuery = ParamSectionHeader.ShouldCollapse(pageModel.QueryParameterNames.Count);
+		<div @ParamSectionHeader.WrapAttributes(collapseQuery)>
+		@if (collapseQuery)
+		{
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Query Parameters", "query-params", pageModel.QueryParameterNames)))
+		}
+		else
+		{
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Query Parameters", "query-params")))
+		}
+		<div @ParamSectionHeader.BodyAttributes(collapseQuery, "query-params-list")>
 		<dl class="property-list">
 			@foreach (var qp in pageModel.QueryParameters)
 			{
 				var qs = qp.Parameter;
 				<div class="query-param @(qs.Deprecated == true ? "deprecated" : "")">
 					<dt id="query-@qs.Name">
-						<a href="#query-@qs.Name">
+						<a class="property-anchor" href="#query-@qs.Name">
+							<span class="property-anchor-icon" aria-hidden="true"></span>
 							<code>@qs.Name</code>
-							@if (qp.Type is not null)
-							{
-								@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(qp.Type))
-							}
-							@if (qs.Required)
-							{
-								<span class="required type-status">required</span>
-							}
-							@if (qs.Deprecated == true)
-							{
-								<span class="deprecated-badge type-status">deprecated</span>
-							}
 						</a>
+						@if (qp.Type is not null)
+						{
+							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(qp.Type))
+						}
+						@if (qs.Required)
+						{
+							<span class="required type-status">required</span>
+						}
+						@if (qs.Deprecated == true)
+						{
+							<span class="deprecated-badge type-status">deprecated</span>
+						}
 					</dt>
 					<dd>@qp.DescriptionHtml</dd>
 				@if (qp.UnionOptions.Count > 0 && qp.EnumValues.Count == 0)
@@ -225,13 +268,23 @@
 	}
 	@if (operation.RequestBody is not null)
 	{
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Request", "request-body", ContentTypeBadge: pageModel.RequestContentType)))
-		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
+		var collapseRequest = ParamSectionHeader.ShouldCollapse(pageModel.RequestPropertyNames.Count);
+		<div @ParamSectionHeader.WrapAttributes(collapseRequest)>
+		@if (collapseRequest)
+		{
+			@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames)))
+		}
+		else
+		{
+			@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Request", "request-body")))
+		}
+		<div @ParamSectionHeader.BodyAttributes(collapseRequest, "request-body-list")>
+		@if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
 		}
 
-		if (pageModel.RequestProperties is not null)
+		@if (pageModel.RequestProperties is not null)
 		{
 			@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
 		}
@@ -239,6 +292,8 @@
 		{
 			<p>Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(pageModel.RequestType))</p>
 		}
+		</div>
+		</div>
 	}
 
 	@if (pageModel.Responses.Count > 0)
