@@ -4,7 +4,7 @@ import * as React from 'react'
 import { FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 const COMMENT_MAX_LENGTH = 2000
-const REASON_SET_VERSION = 1
+const REASON_SET_VERSION = 2
 const REACTION_SAVE_DELAY = 400
 const DRAFT_STORAGE_PREFIX = 'docs-page-feedback:'
 
@@ -15,10 +15,12 @@ type Reason =
     | 'solvedProblem'
     | 'easyToUnderstand'
     | 'helpfulExamples'
+    | 'easyToFind'
     | 'inaccurate'
     | 'missingInformation'
     | 'hardToUnderstand'
     | 'codeSampleErrors'
+    | 'outOfDate'
     | 'anotherReason'
 
 interface ReasonOption {
@@ -28,7 +30,9 @@ interface ReasonOption {
 }
 
 const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
-    accurate: { description: 'Matches the real API.' },
+    accurate: {
+        description: 'The reference is correct about how the API works.',
+    },
     solvedProblem: {
         description: 'Helped me call the endpoint or use the schema.',
     },
@@ -38,7 +42,12 @@ const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
     helpfulExamples: {
         description: 'The request or response examples helped.',
     },
-    inaccurate: { description: 'Does not match the real API.' },
+    easyToFind: {
+        description: 'I found the endpoint or schema I needed quickly.',
+    },
+    inaccurate: {
+        description: 'The reference is wrong about how the API works.',
+    },
     missingInformation: {
         description: 'Missing a parameter, field, status, or auth detail.',
     },
@@ -46,14 +55,12 @@ const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
         label: 'Example errors',
         description: 'A request or response example is wrong.',
     },
+    outOfDate: {
+        description: 'The reference describes an older version of the API.',
+    },
 }
 
 const POSITIVE_REASONS: ReasonOption[] = [
-    {
-        value: 'accurate',
-        label: 'Accurate',
-        description: 'Accurately describes the product or feature.',
-    },
     {
         value: 'solvedProblem',
         label: 'Solved my problem',
@@ -65,23 +72,28 @@ const POSITIVE_REASONS: ReasonOption[] = [
         description: 'Clear and easy to follow.',
     },
     {
+        value: 'accurate',
+        label: 'Accurate',
+        description: 'The page is correct about how the product works.',
+    },
+    {
         value: 'helpfulExamples',
         label: 'Helpful examples',
         description: 'The examples helped me complete my task.',
+    },
+    {
+        value: 'easyToFind',
+        label: 'Easy to find',
+        description: 'I found the information I was looking for quickly.',
     },
     { value: 'anotherReason', label: 'Another reason' },
 ]
 
 const NEGATIVE_REASONS: ReasonOption[] = [
     {
-        value: 'inaccurate',
-        label: 'Inaccurate',
-        description: "Doesn't accurately describe the product or feature.",
-    },
-    {
-        value: 'missingInformation',
-        label: "Couldn't find what I needed",
-        description: 'Missing important information.',
+        value: 'outOfDate',
+        label: 'Out of date',
+        description: 'The page describes an older version of the product.',
     },
     {
         value: 'hardToUnderstand',
@@ -89,9 +101,19 @@ const NEGATIVE_REASONS: ReasonOption[] = [
         description: 'Too complicated or unclear.',
     },
     {
+        value: 'inaccurate',
+        label: 'Technically incorrect',
+        description: 'The page is wrong about how the product works.',
+    },
+    {
         value: 'codeSampleErrors',
         label: 'Code sample errors',
         description: 'One or more code samples are incorrect.',
+    },
+    {
+        value: 'missingInformation',
+        label: "Couldn't find what I needed",
+        description: 'Missing important information.',
     },
     { value: 'anotherReason', label: 'Another reason' },
 ]
@@ -109,8 +131,8 @@ const REASON_VALUES = new Set<Reason>([
 interface FeedbackDraft {
     feedbackId: string
     reaction: Reaction
-    reason: Reason | null
-    comments: Partial<Record<Reason, string>>
+    reasons: Reason[]
+    comment: string
 }
 
 const draftKey = (pageUrl: string) => `${DRAFT_STORAGE_PREFIX}${pageUrl}`
@@ -128,17 +150,11 @@ const readDraft = (pageUrl: string): FeedbackDraft | null => {
             return null
         }
 
-        const comments: Partial<Record<Reason, string>> = {}
-        if (parsed.comments && typeof parsed.comments === 'object') {
-            for (const [value, comment] of Object.entries(parsed.comments)) {
-                if (
-                    REASON_VALUES.has(value as Reason) &&
-                    typeof comment === 'string'
-                ) {
-                    comments[value as Reason] = comment.slice(
-                        0,
-                        COMMENT_MAX_LENGTH
-                    )
+        const reasons: Reason[] = []
+        if (Array.isArray(parsed.reasons)) {
+            for (const value of parsed.reasons) {
+                if (REASON_VALUES.has(value as Reason)) {
+                    reasons.push(value as Reason)
                 }
             }
         }
@@ -146,11 +162,11 @@ const readDraft = (pageUrl: string): FeedbackDraft | null => {
         return {
             feedbackId: parsed.feedbackId,
             reaction: parsed.reaction,
-            reason:
-                parsed.reason && REASON_VALUES.has(parsed.reason)
-                    ? parsed.reason
-                    : null,
-            comments,
+            reasons,
+            comment:
+                typeof parsed.comment === 'string'
+                    ? parsed.comment.slice(0, COMMENT_MAX_LENGTH)
+                    : '',
         }
     } catch {
         return null
@@ -183,7 +199,7 @@ interface PageFeedbackPayload {
     pageUrl: string
     pageTitle: string
     reaction: Reaction
-    reason?: Reason
+    reasons?: Reason[]
     reasonSetVersion?: number
     comment?: string
 }
@@ -247,12 +263,8 @@ export const PageFeedback = ({
     const [reaction, setReaction] = useState<Reaction | null>(
         () => draft?.reaction ?? null
     )
-    const [reason, setReason] = useState<Reason | null>(
-        () => draft?.reason ?? null
-    )
-    const [comments, setComments] = useState<Partial<Record<Reason, string>>>(
-        () => draft?.comments ?? {}
-    )
+    const [reasons, setReasons] = useState<Reason[]>(() => draft?.reasons ?? [])
+    const [comment, setComment] = useState<string>(() => draft?.comment ?? '')
     const [isSaving, setIsSaving] = useState(false)
     const [showThanks, setShowThanks] = useState(false)
     const [error, setError] = useState(false)
@@ -269,8 +281,8 @@ export const PageFeedback = ({
 
     useEffect(() => {
         if (showThanks || !reaction) return
-        writeDraft(pageUrl, { feedbackId, reaction, reason, comments })
-    }, [pageUrl, feedbackId, reaction, reason, comments, showThanks])
+        writeDraft(pageUrl, { feedbackId, reaction, reasons, comment })
+    }, [pageUrl, feedbackId, reaction, reasons, comment, showThanks])
 
     useEffect(() => () => pendingReactionSaveRef.current?.(false), [])
 
@@ -290,14 +302,10 @@ export const PageFeedback = ({
         if (nextReaction === reaction) return
 
         setReaction(nextReaction)
-        setReason(
-            reason &&
-                (nextReaction === 'thumbsUp'
-                    ? POSITIVE_REASONS
-                    : NEGATIVE_REASONS
-                ).some((option) => option.value === reason)
-                ? reason
-                : null
+        const validSet =
+            nextReaction === 'thumbsUp' ? POSITIVE_REASONS : NEGATIVE_REASONS
+        setReasons((prev) =>
+            prev.filter((r) => validSet.some((o) => o.value === r))
         )
         setError(false)
         pendingReactionSaveRef.current?.(false)
@@ -325,16 +333,25 @@ export const PageFeedback = ({
         })
     }
 
+    const toggleReason = (value: Reason) => {
+        setReasons((prev) =>
+            prev.includes(value)
+                ? prev.filter((r) => r !== value)
+                : [...prev, value]
+        )
+        setError(false)
+    }
+
     const submitDetails = async (event: FormEvent) => {
         event.preventDefault()
-        if (!reaction || !reason || isSaving) return
-        const trimmedComment = (comments[reason] ?? '').trim()
+        if (!reaction || reasons.length === 0 || isSaving) return
+        const trimmedComment = comment.trim()
 
         const payload: PageFeedbackPayload = {
             pageUrl,
             pageTitle,
             reaction,
-            reason,
+            reasons,
             reasonSetVersion: REASON_SET_VERSION,
             ...(trimmedComment ? { comment: trimmedComment } : {}),
         }
@@ -423,90 +440,77 @@ export const PageFeedback = ({
                             reaction === 'thumbsUp'
                                 ? POSITIVE_REASONS
                                 : NEGATIVE_REASONS
-                        ).map((option, index) => {
-                            const optionComment = comments[option.value] ?? ''
-                            return (
-                                <div
-                                    key={option.value}
-                                    className="page-feedback__option"
-                                >
-                                    <label className="page-feedback__reason">
-                                        <input
-                                            ref={
-                                                index === 0
-                                                    ? firstReasonRef
-                                                    : undefined
-                                            }
-                                            type="radio"
-                                            name={`${questionId}-reason`}
-                                            value={option.value}
-                                            checked={reason === option.value}
-                                            onChange={() => {
-                                                setReason(option.value)
-                                                setError(false)
-                                            }}
-                                        />
-                                        <span>
-                                            <span className="page-feedback__reason-label">
-                                                {option.label}
-                                            </span>
-                                            {option.description && (
-                                                <span className="page-feedback__reason-description">
-                                                    {option.description}
-                                                </span>
-                                            )}
+                        ).map((option, index) => (
+                            <div
+                                key={option.value}
+                                className="page-feedback__option"
+                            >
+                                <label className="page-feedback__reason">
+                                    <input
+                                        ref={
+                                            index === 0
+                                                ? firstReasonRef
+                                                : undefined
+                                        }
+                                        type="checkbox"
+                                        name={`${questionId}-reason`}
+                                        value={option.value}
+                                        checked={reasons.includes(option.value)}
+                                        onChange={() =>
+                                            toggleReason(option.value)
+                                        }
+                                    />
+                                    <span>
+                                        <span className="page-feedback__reason-label">
+                                            {option.label}
                                         </span>
-                                    </label>
-                                    {reason === option.value && (
-                                        <div className="page-feedback__details">
-                                            <label
-                                                className="sr-only"
-                                                htmlFor={`${questionId}-comment-${option.value}`}
-                                            >
-                                                Tell us more (optional)
-                                            </label>
-                                            <textarea
-                                                id={`${questionId}-comment-${option.value}`}
-                                                className="page-feedback__textarea"
-                                                value={optionComment}
-                                                maxLength={COMMENT_MAX_LENGTH}
-                                                placeholder="Tell us more (optional)"
-                                                aria-describedby={guidanceId}
-                                                disabled={isSaving}
-                                                onChange={(event) =>
-                                                    setComments((current) => ({
-                                                        ...current,
-                                                        [option.value]:
-                                                            event.target.value,
-                                                    }))
-                                                }
-                                            />
-                                            <div className="page-feedback__form-footer">
-                                                <p
-                                                    id={guidanceId}
-                                                    className="page-feedback__guidance"
-                                                >
-                                                    Don&apos;t include
-                                                    passwords, API keys, or
-                                                    other sensitive information.
-                                                </p>
-                                                <span className="page-feedback__count">
-                                                    {optionComment.length}/
-                                                    {COMMENT_MAX_LENGTH}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })}
+                                        {option.description && (
+                                            <span className="page-feedback__reason-description">
+                                                {option.description}
+                                            </span>
+                                        )}
+                                    </span>
+                                </label>
+                            </div>
+                        ))}
                     </fieldset>
+
+                    <div className="page-feedback__details">
+                        <label
+                            className="sr-only"
+                            htmlFor={`${questionId}-comment`}
+                        >
+                            Tell us more (optional)
+                        </label>
+                        <textarea
+                            id={`${questionId}-comment`}
+                            className="page-feedback__textarea"
+                            value={comment}
+                            maxLength={COMMENT_MAX_LENGTH}
+                            placeholder="Tell us more (optional)"
+                            aria-describedby={guidanceId}
+                            disabled={isSaving}
+                            onChange={(event) => setComment(event.target.value)}
+                        />
+                        <div className="page-feedback__form-footer">
+                            <p
+                                id={guidanceId}
+                                className="page-feedback__guidance"
+                            >
+                                Don&apos;t include passwords, API keys, or other
+                                sensitive information.
+                            </p>
+                            <span className="page-feedback__count">
+                                {comment.length}/{COMMENT_MAX_LENGTH}
+                            </span>
+                        </div>
+                    </div>
 
                     <div className="page-feedback__actions">
                         <button
                             type="submit"
                             className="page-feedback__submit"
-                            disabled={isSaving || !reason}
+                            disabled={isSaving || reasons.length === 0}
                         >
                             {isSaving
                                 ? 'Sending…'

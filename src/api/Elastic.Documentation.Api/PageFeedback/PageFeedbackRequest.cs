@@ -10,7 +10,7 @@ public record PageFeedbackRequest(
 	string PageUrl,
 	string PageTitle,
 	PageFeedbackReaction Reaction,
-	PageFeedbackReason? Reason,
+	IReadOnlyList<PageFeedbackReason>? Reasons,
 	int? ReasonSetVersion,
 	string? Comment
 );
@@ -43,6 +43,9 @@ public enum PageFeedbackReason
 	[JsonStringEnumMemberName("helpfulExamples")]
 	HelpfulExamples,
 
+	[JsonStringEnumMemberName("easyToFind")]
+	EasyToFind,
+
 	[JsonStringEnumMemberName("inaccurate")]
 	Inaccurate,
 
@@ -54,6 +57,9 @@ public enum PageFeedbackReason
 
 	[JsonStringEnumMemberName("codeSampleErrors")]
 	CodeSampleErrors,
+
+	[JsonStringEnumMemberName("outOfDate")]
+	OutOfDate,
 
 	[JsonStringEnumMemberName("anotherReason")]
 	AnotherReason

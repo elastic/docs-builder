@@ -150,8 +150,6 @@ page-feedback + #prev-next-nav {
 .page-feedback__details {
 	display: grid;
 	gap: 0.625rem;
-	margin-left: 1.625rem;
-	animation: page-feedback-content-reveal 180ms ease-out both;
 }
 
 .page-feedback__textarea {
@@ -268,7 +266,6 @@ page-feedback + #prev-next-nav {
 
 @media (prefers-reduced-motion: reduce) {
 	.page-feedback__choice,
-	.page-feedback__details,
 	.page-feedback__form,
 	.page-feedback__submit,
 	.page-feedback__thanks {

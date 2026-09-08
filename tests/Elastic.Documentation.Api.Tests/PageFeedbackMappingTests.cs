@@ -28,7 +28,7 @@ public class PageFeedbackMappingTests
 		properties.GetProperty("page_url").GetProperty("ignore_above").GetInt32().Should().Be(2048);
 		properties.GetProperty("page_title").GetProperty("ignore_above").GetInt32().Should().Be(500);
 		properties.GetProperty("reaction").GetProperty("type").GetString().Should().Be("keyword");
-		properties.GetProperty("reason").GetProperty("type").GetString().Should().Be("keyword");
+		properties.GetProperty("reasons").GetProperty("type").GetString().Should().Be("keyword");
 		properties.GetProperty("reason_set_version").GetProperty("type").GetString().Should().Be("integer");
 		properties.GetProperty("comment").GetProperty("type").GetString().Should().Be("text");
 		properties.GetProperty("euid").GetProperty("ignore_above").GetInt32().Should().Be(256);
@@ -44,7 +44,7 @@ public class PageFeedbackMappingTests
 			PageUrl = "/docs/test-page",
 			PageTitle = "Test page",
 			Reaction = PageFeedbackReaction.ThumbsUp,
-			Reason = PageFeedbackReason.HelpfulExamples,
+			Reasons = [PageFeedbackReason.HelpfulExamples, PageFeedbackReason.EasyToFind],
 			ReasonSetVersion = 2,
 			Timestamp = DateTimeOffset.UtcNow
 		};
@@ -52,7 +52,10 @@ public class PageFeedbackMappingTests
 		var json = JsonSerializer.Serialize(document, PageFeedbackJsonContext.Default.PageFeedbackDocument);
 		using var serialized = JsonDocument.Parse(json);
 
-		serialized.RootElement.GetProperty("reason").GetString().Should().Be("helpfulExamples");
+		var reasonsArray = serialized.RootElement.GetProperty("reasons");
+		reasonsArray.GetArrayLength().Should().Be(2);
+		reasonsArray[0].GetString().Should().Be("helpfulExamples");
+		reasonsArray[1].GetString().Should().Be("easyToFind");
 		serialized.RootElement.GetProperty("reason_set_version").GetInt32().Should().Be(2);
 	}
 }

@@ -28,9 +28,9 @@ public sealed record PageFeedbackDocument
 	public required PageFeedbackReaction Reaction { get; init; }
 
 	[Keyword]
-	[JsonPropertyName("reason")]
+	[JsonPropertyName("reasons")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public PageFeedbackReason? Reason { get; init; }
+	public IReadOnlyList<PageFeedbackReason>? Reasons { get; init; }
 
 	[JsonPropertyName("reason_set_version")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -54,6 +54,7 @@ public sealed record PageFeedbackDocument
 [JsonSerializable(typeof(PageFeedbackDocument))]
 [JsonSerializable(typeof(PageFeedbackReaction))]
 [JsonSerializable(typeof(PageFeedbackReason))]
+[JsonSerializable(typeof(List<PageFeedbackReason>))]
 internal sealed partial class PageFeedbackJsonContext : JsonSerializerContext;
 
 [ElasticsearchMappingContext(JsonContext = typeof(PageFeedbackJsonContext))]
