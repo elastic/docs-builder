@@ -4,29 +4,66 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 }
-<section id="elastic-docs-v3" class="api-catalog">
+<section id="elastic-docs-v3" class="api-catalog listing-root" data-listing-total="@Model.Tiles.Count">
 	<header class="api-catalog-header">
 		<h1>@ApiCatalog.PageTitle</h1>
 		<p class="api-catalog-lede">Choose a product to open its API reference.</p>
 	</header>
+	@if (Model.Tiles.Count > 0)
+	{
+		<div class="listing-filter-bar mt-4 mb-6">
+			<input
+				type="search"
+				class="listing-filter-input w-full border border-grey-20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-elastic"
+				placeholder="Filter @Model.Tiles.Count API@(Model.Tiles.Count == 1 ? "" : "s")…"
+				aria-label="Filter APIs"
+			/>
+			@if (Model.FilterChips.Count > 0)
+			{
+				<div class="listing-group-chips flex flex-wrap items-center gap-2 mt-3">
+					<button type="button" class="listing-chip listing-chip-all listing-chip-active px-3 py-1 text-xs rounded-full border border-blue-elastic text-blue-elastic" data-group="" aria-pressed="true">All</button>
+					<span class="text-grey-20 select-none">|</span>
+					@foreach (var chip in Model.FilterChips)
+					{
+						<button type="button" class="listing-chip px-3 py-1 text-xs rounded-full border border-grey-20 text-ink-light hover:border-blue-elastic hover:text-blue-elastic" data-group="@chip.Key" aria-pressed="false">@chip.Label</button>
+					}
+				</div>
+			}
+		</div>
+	}
 	<ul class="api-catalog-grid">
 		@foreach (var tile in Model.Tiles)
 		{
-			<li>
-				<a class="api-catalog-card" href="@tile.Url">
-					<div class="api-catalog-card-head">
-						@if (tile.IconSvg is not null)
+			<li data-listing-title="@($"{tile.Title} {tile.Key}".ToLowerInvariant())" data-listing-groups="@string.Join(' ', tile.Categories.Select(c => c.Key))">
+				<article class="api-catalog-card">
+					<a class="api-catalog-card-main" href="@tile.Url">
+						<div class="api-catalog-card-head">
+							@if (tile.IconSvg is not null)
+							{
+								<span class="api-catalog-card-icon">@(new HtmlString(tile.IconSvg))</span>
+							}
+							<h2 class="api-catalog-card-title">@tile.Title</h2>
+						</div>
+						<code class="api-catalog-card-key">@tile.Key</code>
+						<div class="api-catalog-card-badges">
+							<span class="api-catalog-badge api-catalog-badge-rest">REST</span>
+							@foreach (var category in tile.Categories)
+							{
+								<span class="api-catalog-badge">@category.Label</span>
+							}
+						</div>
+						@if (!string.IsNullOrWhiteSpace(tile.Description))
 						{
-							<span class="api-catalog-card-icon">@(new HtmlString(tile.IconSvg))</span>
+							<p class="api-catalog-card-desc line-clamp-3">@tile.Description</p>
 						}
-						<h2 class="api-catalog-card-title">@tile.Title</h2>
+					</a>
+					<div class="api-catalog-card-actions">
+						<a href="@tile.JsonUrl" download>JSON</a>
+						<a href="@tile.YamlUrl" download>YAML</a>
 					</div>
-					@if (!string.IsNullOrWhiteSpace(tile.Description))
-					{
-						<p class="api-catalog-card-desc line-clamp-3">@tile.Description</p>
-					}
-				</a>
+				</article>
 			</li>
 		}
 	</ul>
+	<p class="listing-no-results hidden text-sm text-ink-light mt-4">No APIs match your filter.</p>
 </section>
