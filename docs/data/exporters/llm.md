@@ -17,7 +17,8 @@ When a request arrives with an `Accept: text/markdown` header (or appends `.md` 
 The exporter generates:
 
 - **Per-page `.md` files** — one for every HTML page, placed alongside it in the output directory. For `section/page.html` → `section/page.md`. For `section/index.html` → `section.md` (so appending `.md` to the URL path works naturally).
-- **`llms.txt`** — an index file following the [llms.txt specification](https://llmstxt.org/) that lists all available pages with titles, descriptions, and URLs.
+- **`llms.txt`** — an index file following the [llms.txt specification](https://llmstxt.org/) that lists all available pages with titles, descriptions, and URLs. When `ASSEMBLER_API_EXPLORER` is on, the assembler appends an **APIs** section that links to each published API landing `.md` file.
+- **`docs/api/llms.txt`** — a hub index of those same API landing pages. The assembler writes this file next to the API catalog when the flag is on.
 - **`llm.zip`** — a compressed archive containing `llms.txt` and all per-page Markdown files for bulk download.
 
 ## What changes from source

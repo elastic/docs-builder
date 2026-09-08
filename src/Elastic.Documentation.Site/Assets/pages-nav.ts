@@ -4,6 +4,17 @@ import { $optional, $$optional } from 'select-dom'
 
 const NAV_STATE_KEY = 'nav-expanded'
 
+/** Folder clips and height animation follow the preview shell, not a body class. */
+function isNavigationPreview(node?: ParentNode | EventTarget | null) {
+    const doc =
+        node instanceof Document
+            ? node
+            : node instanceof Node
+              ? node.ownerDocument
+              : document
+    return Boolean(doc?.querySelector('.pages-nav-v2-shell'))
+}
+
 function expandedStorageKey(nav: ParentNode) {
     return `${NAV_STATE_KEY}:${navSurfaceKey(nav)}`
 }
@@ -80,6 +91,9 @@ function clearNavState(nav: ParentNode) {
 }
 
 export function ensureSubtreeClips(nav: HTMLElement) {
+    if (!isNavigationPreview(nav)) {
+        return
+    }
     $$optional('li.nav-folder > ul.nav-subtree', nav).forEach((ul) => {
         if (!(ul instanceof HTMLElement)) {
             return
@@ -219,6 +233,9 @@ export function syncFolderPanels(
     root: ParentNode,
     options?: { detachClosed?: boolean }
 ) {
+    if (!isNavigationPreview(root)) {
+        return
+    }
     if (root instanceof HTMLElement) {
         ensureSubtreeClips(root)
     }
@@ -366,6 +383,9 @@ function playFolderClose(input: HTMLInputElement, nav: HTMLElement) {
 }
 
 function onFolderCheckboxChange(input: HTMLInputElement) {
+    if (!isNavigationPreview(input)) {
+        return
+    }
     const nav = navFromInput(input)
     if (!nav) {
         return
@@ -873,27 +893,69 @@ export function shouldRetargetArticleSwap(
     )
 }
 
+/** API pages swap the content+examples column so `#pages-nav` is not remounted. */
+export function shouldRetargetApiContentSwap(
+    current: Element | null,
+    responseHtml: string
+): boolean {
+    if (
+        !(current instanceof HTMLElement) ||
+        current.id !== 'api-content-grid'
+    ) {
+        return false
+    }
+    return (
+        responseHtml.includes('id="api-content-grid"') ||
+        responseHtml.includes("id='api-content-grid'")
+    )
+}
+
+type HtmxSwapDetail = {
+    target?: EventTarget
+    selectOverride?: string
+    serverResponse?: string
+    xhr?: { response?: string }
+}
+
+function tryRetargetSwap(
+    detail: HtmxSwapDetail,
+    html: string,
+    id: string,
+    shouldRetarget: (current: Element | null, responseHtml: string) => boolean
+): boolean {
+    const current = document.getElementById(id)
+    if (!shouldRetarget(current, html) || !current) {
+        return false
+    }
+    detail.target = current
+    detail.selectOverride = `#${id}`
+    return true
+}
+
 function retargetArticleSwap(event: Event) {
-    const detail = (event as CustomEvent).detail as
-        | {
-              target?: EventTarget
-              selectOverride?: string
-              serverResponse?: string
-              xhr?: { response?: string }
-          }
-        | undefined
+    const detail = (event as CustomEvent).detail as HtmxSwapDetail | undefined
     if (!detail) {
         return
     }
     const html =
         (typeof detail.xhr?.response === 'string' ? detail.xhr.response : '') ||
         (typeof detail.serverResponse === 'string' ? detail.serverResponse : '')
-    const current = document.getElementById('content-container')
-    if (!shouldRetargetArticleSwap(current, html) || !current) {
+    if (
+        tryRetargetSwap(
+            detail,
+            html,
+            'content-container',
+            shouldRetargetArticleSwap
+        )
+    ) {
         return
     }
-    detail.target = current
-    detail.selectOverride = '#content-container'
+    tryRetargetSwap(
+        detail,
+        html,
+        'api-content-grid',
+        shouldRetargetApiContentSwap
+    )
 }
 
 function responseHtmlFromSwap(event: Event): string {
@@ -941,7 +1003,11 @@ function onAfterSwap(event: Event) {
         const replaced = html ? syncPagesNavFromResponse(html) : false
         if (!replaced) {
             keepLiveNav()
+            return
         }
+        // htmx:load already ran initNav on the pre-replace tree. The new
+        // accordion has no checked attrs, so expand the current path again.
+        initNav()
     }
     if (typeof requestAnimationFrame === 'function') {
         requestAnimationFrame(apply)

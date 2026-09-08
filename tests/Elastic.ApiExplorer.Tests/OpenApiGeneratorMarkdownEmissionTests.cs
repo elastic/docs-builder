@@ -107,11 +107,14 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		operation.Should().NotContain("<html");
 
 		catalog.Should().Contain("type: api");
-		catalog.Should().Contain("title: API Explorer");
+		catalog.Should().Contain("title: API catalog");
 		catalog.Should().Contain("description: API products in this documentation set.");
-		catalog.Should().Contain("# API Explorer");
+		catalog.Should().Contain("# API catalog");
 		catalog.Should().Contain("Fixture API");
 		catalog.Should().Contain("`elasticsearch`");
+		catalog.Should().Contain("[Markdown](/api/doc/elasticsearch.md)");
+		catalog.Should().Contain("[JSON](/api/doc/elasticsearch.json)");
+		catalog.Should().Contain("[YAML](/api/doc/elasticsearch.yaml)");
 	}
 
 	[Fact]
@@ -144,9 +147,11 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			);
 
 		html.Should().Contain("""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch.md" title="Markdown export"/>""");
+		html.Should().Contain("View as Markdown");
 		operationHtml.Should().Contain(
 			"""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch/operation/operation-search.md" title="Markdown export"/>"""
 		);
+		operationHtml.Should().Contain("View as Markdown");
 	}
 
 	[Fact]

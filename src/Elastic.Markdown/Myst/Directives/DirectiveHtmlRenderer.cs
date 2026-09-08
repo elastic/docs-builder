@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Site.Icons;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
@@ -475,14 +476,13 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (string.IsNullOrEmpty(block.Url))
 			return;
 
-		var prefix = block.Build.UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
 		var slice = AgentSkillView.Create(new AgentSkillViewModel
 		{
 			DirectiveBlock = block,
 			Url = block.Url,
 			InstallCommand = block.InstallCommand,
 			HasBody = block.Count > 0,
-			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills#available-skills"
+			LearnMoreUrl = "https://www.elastic.co/docs/explore-analyze/ai-features/agent-skills#available-skills"
 		});
 		RenderRazorSlice(slice, renderer);
 	}

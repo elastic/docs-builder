@@ -37,13 +37,22 @@ public record BundleConfiguration
 
 	/// <summary>
 	/// Default GitHub repository name applied to all profiles that do not specify their own.
-	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
+	/// <para>
+	/// <b>Deprecated.</b> The repository is now derived automatically from the <c>GITHUB_REPOSITORY</c>
+	/// environment variable or the git remote origin, so this field is redundant in almost every case.
+	/// Remove it from <c>changelog.yml</c> unless the repo name genuinely differs from the derived value.
+	/// Setting it to a <em>different</em> repository than where the command runs is a hard error, because
+	/// it would silently repoint the S3 upload pool and GitHub API calls.
+	/// </para>
 	/// </summary>
+	[Obsolete("Derived automatically. Remove bundle.repo from changelog.yml; a mismatch with the running repo is a hard error.")]
 	public string? Repo { get; init; }
 
 	/// <summary>
 	/// Default GitHub repository owner applied to all profiles that do not specify their own.
+	/// <para><b>Deprecated.</b> Derived automatically alongside <c>bundle.repo</c>. Remove from <c>changelog.yml</c>.</para>
 	/// </summary>
+	[Obsolete("Derived automatically. Remove bundle.owner from changelog.yml.")]
 	public string? Owner { get; init; }
 
 	/// <summary>
@@ -118,14 +127,20 @@ public record BundleProfile
 
 	/// <summary>
 	/// GitHub repository name stored on each product in the bundle output.
-	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
+	/// <para>
+	/// <b>Deprecated.</b> Per-product repo is now resolved from <c>products.yml</c> via the
+	/// product's <c>repository:</c> field, making the bundle-level override redundant.
+	/// Remove from profile config; a mismatch with the running repository is a hard error.
+	/// </para>
 	/// </summary>
+	[Obsolete("Derived from products.yml repository field. Remove from profile config.")]
 	public string? Repo { get; init; }
 
 	/// <summary>
 	/// GitHub repository owner stored on each product in the bundle output.
-	/// Used for generating correct PR/issue links. Defaults to "elastic" when not specified.
+	/// <para><b>Deprecated.</b> Derived automatically alongside <c>repo</c>. Remove from profile config.</para>
 	/// </summary>
+	[Obsolete("Derived automatically. Remove from profile config.")]
 	public string? Owner { get; init; }
 
 	/// <summary>

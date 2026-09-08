@@ -33,16 +33,33 @@ public record ProductsConfiguration : IProductNameLookup
 	public FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> DisplayNameLookup =>
 		_displayNameLookup ??= ProductDisplayNames.GetAlternateLookup<ReadOnlySpan<char>>();
 
-	public Product? GetProductByRepositoryName(string repository)
+	/// <summary>
+	/// Returns every product that maps to <paramref name="repository"/>.
+	/// A product matches when its ID equals the repo name, or when its explicit
+	/// <c>repository:</c> field equals the repo name (case-insensitive).
+	/// One repo → many products is valid (e.g., <c>cloud</c> → cloud-hosted / cloud-serverless / cloud-enterprise).
+	/// </summary>
+	public IReadOnlyList<Product> GetProductsByRepositoryName(string repository)
 	{
 		var tokens = repository.Split('/');
 		var repositoryName = tokens.Last();
-		if (Products.TryGetValue(repositoryName, out var product))
-			return product;
-		var match = Products.Values.SingleOrDefault(
-			p => p.Repository is not null && p.Repository.Equals(repositoryName, StringComparison.OrdinalIgnoreCase)
-		);
-		return match;
+		if (Products.TryGetValue(repositoryName, out var direct))
+			return [direct];
+		return Products
+			.Values
+			.Where(p => p.Repository is not null && p.Repository.Equals(repositoryName, StringComparison.OrdinalIgnoreCase))
+			.ToList();
+	}
+
+	/// <summary>
+	/// Returns the single product that maps to <paramref name="repository"/>, or <c>null</c>
+	/// when there is no match or more than one match. Use <see cref="GetProductsByRepositoryName"/>
+	/// when a repo may host multiple products.
+	/// </summary>
+	public Product? GetProductByRepositoryName(string repository)
+	{
+		var matches = GetProductsByRepositoryName(repository);
+		return matches.Count == 1 ? matches[0] : null;
 	}
 
 	/// <summary>

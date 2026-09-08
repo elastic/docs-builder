@@ -27,9 +27,9 @@ internal static class OperationCommonMark
 		WriteServers(markdown, page);
 		WritePaths(markdown, apiOperation, page);
 		WritePrerequisites(markdown, prerequisites, apiBaseUrl);
+		WriteSecurity(markdown, page);
 		WritePathParameters(markdown, page, apiBaseUrl);
 		WriteDescription(markdown, page, apiBaseUrl);
-		WriteSecurity(markdown, operation);
 		WriteQueryParameters(markdown, page, apiBaseUrl);
 		WriteRequestBody(markdown, apiOperation, page, apiBaseUrl);
 		WriteResponses(markdown, page, apiBaseUrl);
@@ -131,20 +131,15 @@ internal static class OperationCommonMark
 			ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(docs.LinkText, docs.Url));
 	}
 
-	private static void WriteSecurity(StringBuilder markdown, OpenApiOperation operation)
+	private static void WriteSecurity(StringBuilder markdown, OperationPageModel page)
 	{
-		if (operation.Security is not { Count: > 0 })
+		if (page.AuthSchemes.Count == 0)
 			return;
 
-		var schemes = operation
-			.Security
-			.SelectMany(requirement => requirement)
-			.Select(scheme =>
-			{
-				var name = $"`{scheme.Key.Name}`";
-				return scheme.Value is { Count: > 0 } ? $"{name} ({string.Join(", ", scheme.Value)})" : name;
-			});
-		ApiCommonMark.Paragraph(markdown, "Authorization: " + string.Join(", ", schemes));
+		ApiCommonMark.Heading(markdown, 2, "Authorization");
+		foreach (var scheme in page.AuthSchemes)
+			_ = markdown.AppendLine($"- `{scheme.Label}`");
+		_ = markdown.AppendLine();
 	}
 
 	private static void WriteQueryParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
@@ -162,12 +157,6 @@ internal static class OperationCommonMark
 			var description = ApiMarkdown.Prepare(query.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");
-
-			foreach (var constraint in query.Constraints)
-			{
-				var text = constraint.Code is null ? constraint.Text : $"{constraint.Text}`{constraint.Code}`";
-				_ = markdown.AppendLine($"  {text}");
-			}
 
 			if (query.UnionOptions.Count > 0 && query.EnumValues.Count == 0)
 				_ = markdown.AppendLine("  One of: " + string.Join(" or ", query.UnionOptions.Select(o => $"`{o.Text}`")));

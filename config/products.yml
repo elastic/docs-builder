@@ -47,15 +47,18 @@ products:
   cloud-enterprise:
     display: 'Elastic Cloud Enterprise'
     versioning: 'ece'
+    repository: 'cloud'
   cloud-hosted:
     display: 'Elastic Cloud Hosted'
     versioning: 'ech'
+    repository: 'cloud'
   cloud-kubernetes:
     display: 'Elastic Cloud on Kubernetes'
     versioning: 'eck'
   cloud-serverless:
     display: 'Elastic Cloud Serverless'
     versioning: 'serverless'
+    repository: 'cloud'
   cloud-terraform:
     display: 'Elastic Cloud Terraform Provider'
     versioning: 'cloud-terraform'

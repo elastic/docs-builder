@@ -13,15 +13,20 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
-public sealed record ApiCatalogEntry(string Key, string Title, string Url);
+public sealed record ApiCatalogEntry(string Key, string Title, string Url, string? ProductId = null, string? Description = null)
+{
+	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+}
 
 public class ApiCatalog : IApiGroupingModel
 {
+	public const string PageTitle = "API catalog";
+
 	public required IReadOnlyList<ApiCatalogEntry> Entries { get; init; }
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new ApiCatalogViewModel(context) { Entries = Entries };
+		var viewModel = ApiCatalogViewModel.FromEntries(context, Entries);
 		await ApiCatalogView.Create(viewModel).RenderAsync(stream, cancellationToken: ctx);
 	}
 
@@ -47,7 +52,7 @@ public class ApiCatalogNavigationItem : IRootNavigationItem<ApiCatalog, INavigat
 		NavigationRoot = this;
 		Id = ShortId.Create("api-catalog");
 		var catalog = new ApiCatalog { Entries = entries };
-		Index = new ApiIndexLeafNavigation<ApiCatalog>(catalog, url, "API Explorer", this);
+		Index = new ApiIndexLeafNavigation<ApiCatalog>(catalog, url, ApiCatalog.PageTitle, this);
 	}
 
 	/// <inheritdoc />

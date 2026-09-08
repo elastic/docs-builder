@@ -60,9 +60,87 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 
 		html.Should().Contain("SUPP_OP_DESCRIPTION");
 		html.Should().NotContain(SpecOperationDescription);
-		html.Should().Contain("Query String Parameters");
+		html.Should().Contain("Query Parameters");
 		html.Should().Contain("id=\"responses\"");
 		html.Should().Contain(SpecQueryQDescription);
+	}
+
+	[Fact]
+	public async Task Operation_QueryParameters_RenderCollapsedWithNameSummary()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("data-param-section");
+		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("id=\"query-params-list\"");
+		html.Should().Contain("api-param-summary");
+		html.Should().Contain("data-param-item");
+	}
+
+	[Fact]
+	public async Task Operation_Authorization_RendersCollapsedWhenMultipleSchemes()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"authorization\"");
+		html.Should().Contain("id=\"authorization-list\"");
+		html.Should().Contain("aria-controls=\"authorization-list\"");
+		html.Should().Contain("api-param-section-title\">Authorization</span>");
+		html.Should().Contain("auth-scheme-item");
+		html.Should().Contain("Api key");
+		html.Should().Contain("Basic");
+		html.Should().Contain("Bearer");
+		html.Should().NotContain("security-requirements");
+	}
+
+	[Fact]
+	public async Task Operation_Prerequisites_RendersCollapsedWhenMultipleItems()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"prerequisites\"");
+		html.Should().Contain("id=\"prerequisites-list\"");
+		html.Should().Contain("aria-controls=\"prerequisites-list\"");
+		html.Should().Contain("api-param-section-title\">Prerequisites</span>");
+	}
+
+	[Fact]
+	public async Task Operation_PathParameters_SingleItem_RendersWithoutCollapse()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"parameters\"");
+		html.Should().NotContain("id=\"parameters-list\"");
+		html.Should().NotContain("aria-controls=\"parameters-list\"");
+	}
+
+	[Fact]
+	public async Task Operation_NestedProperties_UseShowPropertiesDisclosure()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("toggle-label\">show properties</span>");
+		html.Should().NotContain("toggle-label\">Show ");
+		html.Should().NotContain("toggle-label\">Hide ");
+	}
+
+	[Fact]
+	public async Task Operation_Request_RendersCollapsedWithNameSummaryAndNoJsonBadge()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"request-body\"");
+		html.Should().Contain("id=\"request-body-list\"");
+		html.Should().Contain("aria-controls=\"request-body-list\"");
+		html.Should().Contain("api-param-section-title\">Request</span>");
+		html.Should().Contain("req-query");
+		html.Should().NotContain("content-type-badge");
 	}
 
 	[Fact]
@@ -290,6 +368,17 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			.IndexOf("id=\"getting-started\"", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("api-overview", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task Tag_OverviewRows_LinkTheTitleNotTheMethodPath()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(nav.Index.Model, nav);
+
+		html.Should().Contain("api-overview-title");
+		html.Should().Contain("api-url-row");
+		html.Should().NotContain("api-url-list-item-landing");
 	}
 
 	[Fact]

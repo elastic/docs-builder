@@ -7,8 +7,11 @@
  *
  * Supports:
  * - Text input: hides cards whose `data-listing-title` does not include the query.
- * - Group chips: independent toggles; a card is visible when its group is in the
- *   active set (or when no groups are selected = show all). "All" clears the set.
+ * - Group chips: a click selects one group. Cmd or Ctrl click adds or
+ *   removes groups. A card is visible when any of its groups is in the active
+ *   set (or when no groups are selected = show all). "All" clears the set.
+ * - One card may belong to several groups via space-separated
+ *   `data-listing-groups` or a single `data-listing-group`.
  * - Hides group headings when all their cards are hidden.
  * - Shows a "No pages match" notice when no card is visible.
  */
@@ -18,28 +21,36 @@ export interface ListingFilterState {
     activeGroups: Set<string> // empty = all groups shown
 }
 
+function parseListingGroups(raw: string): string[] {
+    return raw.split(/\s+/).filter(Boolean)
+}
+
 /** Returns true when a card should be visible given the current filter state. */
 export function cardIsVisible(
     cardTitle: string,
     cardGroup: string,
     state: ListingFilterState
 ): boolean {
-    if (state.activeGroups.size > 0 && !state.activeGroups.has(cardGroup))
-        return false
+    if (state.activeGroups.size > 0) {
+        const groups = parseListingGroups(cardGroup)
+        if (!groups.some((group) => state.activeGroups.has(group))) return false
+    }
     if (state.query !== '' && !cardTitle.includes(state.query.toLowerCase()))
         return false
     return true
 }
 
+function cardGroupAttribute(card: HTMLElement): string {
+    return card.dataset.listingGroups ?? card.dataset.listingGroup ?? ''
+}
+
 function applyFilter(root: HTMLElement, state: ListingFilterState) {
-    const cards = root.querySelectorAll<HTMLAnchorElement>(
-        'a[data-listing-title]'
-    )
+    const cards = root.querySelectorAll<HTMLElement>('[data-listing-title]')
     let visibleCount = 0
 
     cards.forEach((card) => {
         const title = card.dataset.listingTitle ?? ''
-        const group = card.dataset.listingGroup ?? ''
+        const group = cardGroupAttribute(card)
         const visible = cardIsVisible(title, group, state)
         card.style.display = visible ? '' : 'none'
         if (visible) visibleCount++
@@ -49,9 +60,7 @@ function applyFilter(root: HTMLElement, state: ListingFilterState) {
     root.querySelectorAll<HTMLElement>('[data-group-key]').forEach(
         (groupEl) => {
             const visibleInGroup = Array.from(
-                groupEl.querySelectorAll<HTMLAnchorElement>(
-                    'a[data-listing-title]'
-                )
+                groupEl.querySelectorAll<HTMLElement>('[data-listing-title]')
             ).some((c) => c.style.display !== 'none')
             groupEl.style.display = visibleInGroup ? '' : 'none'
         }
@@ -76,6 +85,7 @@ function updateChipStyles(
         allChip.classList.toggle('text-blue-elastic', noneSelected)
         allChip.classList.toggle('border-grey-20', !noneSelected)
         allChip.classList.toggle('text-ink-light', !noneSelected)
+        allChip.setAttribute('aria-pressed', noneSelected ? 'true' : 'false')
     }
 
     groupChips.forEach((chip) => {
@@ -85,6 +95,7 @@ function updateChipStyles(
         chip.classList.toggle('text-blue-elastic', active)
         chip.classList.toggle('border-grey-20', !active)
         chip.classList.toggle('text-ink-light', !active)
+        chip.setAttribute('aria-pressed', active ? 'true' : 'false')
     })
 }
 
@@ -109,17 +120,37 @@ function initListingRoot(root: HTMLElement) {
     })
 
     groupChips.forEach((chip) => {
-        chip.addEventListener('click', () => {
+        chip.addEventListener('click', (event) => {
             const group = chip.dataset.group ?? ''
-            if (state.activeGroups.has(group)) {
-                state.activeGroups.delete(group)
-            } else {
-                state.activeGroups.add(group)
-            }
+            selectGroup(state, group, isMultiSelectModifier(event))
             updateChipStyles(allChip, groupChips, state)
             applyFilter(root, state)
         })
     })
+}
+
+function isMultiSelectModifier(event: MouseEvent): boolean {
+    return event.metaKey || event.ctrlKey
+}
+
+function selectGroup(
+    state: ListingFilterState,
+    group: string,
+    additive: boolean
+) {
+    if (additive) {
+        if (state.activeGroups.has(group)) state.activeGroups.delete(group)
+        else state.activeGroups.add(group)
+        return
+    }
+
+    if (state.activeGroups.size === 1 && state.activeGroups.has(group)) {
+        state.activeGroups.clear()
+        return
+    }
+
+    state.activeGroups.clear()
+    state.activeGroups.add(group)
 }
 
 export function initListing() {
