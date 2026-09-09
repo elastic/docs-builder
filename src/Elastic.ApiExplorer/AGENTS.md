@@ -1,6 +1,6 @@
 # Elastic.ApiExplorer
 
-Renders API reference documentation (landing, operation, and schema type pages) from OpenAPI
+Renders API reference documentation (landing, authentication, servers, operation, and schema type pages) from OpenAPI
 specifications, using Microsoft.OpenAPI's normalized object model as input and RazorSlices for HTML.
 
 ## Structure
@@ -28,6 +28,7 @@ Components/              Reusable View+ViewModel widgets embedded by more than o
     _Partials/           Its templates: _PropertyItem, _PropertyList, _UnionOptions, _SchemaType.
 
 Landing/                 Slice: product landing, tag landing and intro/outro markdown pages.
+Structural/              Slice: Bump.sh-compatible /authentication and /servers pages.
 Operations/              Slice: operation pages (ApiOperation/ApiEndpoint, page model, view).
 Types/                   Slice: schema type pages under /api/{product}/types/.
 

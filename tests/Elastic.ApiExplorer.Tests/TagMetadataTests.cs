@@ -400,8 +400,6 @@ public class TagMetadataTests
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "charlie", "Fruit Store"
-		navigation.NavigationItems.Should().HaveCount(3);
-
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
