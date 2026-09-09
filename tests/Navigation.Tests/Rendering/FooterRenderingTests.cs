@@ -18,9 +18,21 @@ namespace Elastic.Documentation.Navigation.Tests.Rendering;
 public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
 {
 	[Fact]
-	public async Task AssemblerFooter_RendersIubendaPrivacyChoiceLinks()
+	public async Task AssemblerFooter_FlagOff_OmitsIubendaPrivacyChoiceLinks()
 	{
-		var html = await RenderAssemblerFooter();
+		var html = await RenderAssemblerFooter(privacyConsentEnabled: false);
+
+		html.Should().Contain("privacy-statement");
+		html.Should().NotContain("iubenda-cs-uspr-link");
+		html.Should().NotContain("Notice at Collection");
+		html.Should().NotContain("iubenda-cs-preferences-link");
+		html.Should().NotContain("Your Privacy Choices");
+	}
+
+	[Fact]
+	public async Task AssemblerFooter_FlagOn_RendersIubendaPrivacyChoiceLinks()
+	{
+		var html = await RenderAssemblerFooter(privacyConsentEnabled: true);
 
 		html.Should().Contain("iubenda-cs-uspr-link");
 		html.Should().Contain("Notice at Collection");
@@ -28,7 +40,7 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 		html.Should().Contain("Your Privacy Choices");
 	}
 
-	private async Task<string> RenderAssemblerFooter()
+	private async Task<string> RenderAssemblerFooter(bool privacyConsentEnabled)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -46,7 +58,7 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = new FeatureFlags([]),
+			Features = new FeatureFlags(privacyConsentEnabled ? new Dictionary<string, bool> { ["privacy-consent"] = true } : []),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),

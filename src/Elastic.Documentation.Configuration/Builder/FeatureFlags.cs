@@ -44,6 +44,8 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 
 	public bool PageFeedbackEnabled { get => IsEnabled("page-feedback"); set => _featureFlags["page-feedback"] = value; }
 
+	public bool PrivacyConsentEnabled { get => IsEnabled("privacy-consent"); set => _featureFlags["privacy-consent"] = value; }
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";

@@ -100,6 +100,7 @@ public class UseNavigationPreviewTests
 		flags.WebsiteSearchEnabled.Should().BeFalse();
 		flags.AirGappedEnabled.Should().BeFalse();
 		flags.PrimaryNavEnabled.Should().BeFalse();
+		flags.PrivacyConsentEnabled.Should().BeFalse();
 	}
 
 	[Fact]
