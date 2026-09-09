@@ -153,14 +153,16 @@ The example shows prose in Features and Highlights, and hides it in Enhancements
 
 #### `:dropdowns:` [dropdowns]
 
-Controls how the "separated" entry types (`breaking-change`, `deprecation`, `known-issue`, and entries flagged `highlight: true`) are rendered. This option only affects these types; features, enhancements, security, bug fixes, documentation, regressions, and other changes are always rendered as flat bulleted lists.
+Controls how breaking changes, deprecations, features, highlights, and known issues are rendered. Enhancements, security, bug fixes, documentation, regressions, and other changes stay flat bulleted lists.
 
 | Mode | Behavior |
 |------|----------|
 | (omitted, default) | Flattened: each entry renders as a bullet with its title, links, and (when present) `Impact:` / `Action:` lines as indented continuation. |
 | `:dropdowns:` | Dropdowns: each entry renders as an expandable `{dropdown}` with the title as the summary and description, links, `**Impact**`, and `**Action**` inside. |
 
-Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release notes where the list itself is the primary content.
+Use dropdowns when breaking changes, deprecations, features, or highlights have long `description`, `impact`, or `action` prose that benefits from being collapsed by default.
+Use the flattened default for compact release notes where the list itself is the primary content.
+`:dropdowns:` does not group entries by area; use [`:subsections:`](#subsections) for that.
 
 Entry titles may contain inline markdown markers from changelog YAML (for example, `` `setting.name` ``). Dropdown titles are plain text; see [Plain-text titles](/syntax/dropdowns.md#plain-text-titles).
 
@@ -190,11 +192,12 @@ Use this option for semver or agent releases where an explicit release date adds
 
 This is **render-time** control only. To include or omit `release-date` in bundle YAML at build time, use `bundle.release_dates` in `changelog.yml` or the `--release-date` / `--no-release-date` flags on [`changelog bundle`](/cli/changelog/bundle.md) (option-based mode). The `changelog render` command does not provide an equivalent flag; it always renders release dates when present in the bundle.
 
-#### `:subsections:`
+#### `:subsections:` [subsections]
 
 When enabled, entries are grouped by "area" within each section.
 By default, entries are listed without area grouping.
 If a changelog has multiple area values, only the first one is used.
+This option is independent of [`:dropdowns:`](#dropdowns).
 
 #### `:config:`
 
@@ -421,27 +424,33 @@ Each changelog entry may have its own `description` field in YAML (shown as body
 
 | Section | Entry type | Rendering |
 |---------|------------|-----------|
-| Features | `feature` | Grouped by area |
-| Enhancements | `enhancement` | Grouped by area |
-| Fixes | `bug-fix`, `security` | Grouped by area |
-| Documentation | `docs` | Grouped by area |
-| Regressions | `regression` | Grouped by area |
-| Other changes | `other` | Grouped by area |
+| Features | `feature` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Enhancements | `enhancement` | Flattened bullets |
+| Fixes | `bug-fix` | Flattened bullets |
+| Security | `security` | Flattened bullets |
+| Documentation | `docs` | Flattened bullets |
+| Regressions | `regression` | Flattened bullets |
+| Other changes | `other` | Flattened bullets |
 | Breaking changes | `breaking-change` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 | Highlights | Entries with `highlight: true` | Dedicated section only when [`:highlights:`](#highlights) is set; flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 | Deprecations | `deprecation` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 | Known issues | `known-issue` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 
-**Note about highlights:**
+Use [`:subsections:`](#subsections) to group entries by area within a section. Area grouping is off by default and is independent of `:dropdowns:`.
+
+:::{admonition} Highlights
 
 - The highlights section appears only when [`:highlights:`](#highlights) is set and at least one entry has `highlight: true`
-- When the section is shown, highlighted entries appear in **both** the highlights section and their original type section (for example, both the "highlights" and "features" sections)
+- When the section is shown, highlighted entries appear in both the highlights section and their original type section (for example, both the "highlights" and "features" sections)
 - When `:highlights:` is omitted, flagged entries still appear under their type sections (inline only)
 - You can combine `:highlights:` with the default type filter (no `:type:`) to show highlights alongside features and fixes without including breaking changes, deprecations, or known issues
 
+:::
+
 Sections with no entries of that type are omitted from the output. Releases with no entries after the `:type:` filter are omitted entirely, except on general release notes (`:type: all` or default) when the bundle has a `description`.
 
-Section heading anchors use `-features` and `-enhancements` suffixes. Pages that previously linked to `-features-enhancements` need those links updated.
+Section heading anchors use `-features` and `-enhancements` suffixes.
+Pages that previously linked to `-features-enhancements` need those links updated.
 
 ## Error behavior for invalid entries [changelog-missing-files]
 

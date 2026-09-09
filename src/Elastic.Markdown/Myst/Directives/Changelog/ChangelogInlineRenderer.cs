@@ -319,6 +319,7 @@ public static class ChangelogInlineRenderer
 					groupBySubtype: true,
 					hideLinks,
 					hideEntryDescriptions,
+					subsections,
 					publishBlocker
 				);
 			else
@@ -338,6 +339,7 @@ public static class ChangelogInlineRenderer
 					groupBySubtype: false,
 					hideLinks,
 					hideHighlightDescriptions,
+					subsections,
 					publishBlocker
 				);
 			else
@@ -389,7 +391,20 @@ public static class ChangelogInlineRenderer
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features [{repo}-{titleSlug}-features]");
-			RenderEntriesByArea(sb, features, repo, owner, subsections, hideLinks, hideFeatureDescriptions, publishBlocker);
+			if (dropdownsEnabled)
+				RenderDetailedEntries(
+					sb,
+					features,
+					repo,
+					owner,
+					groupBySubtype: false,
+					hideLinks,
+					hideFeatureDescriptions,
+					subsections,
+					publishBlocker
+				);
+			else
+				RenderEntriesByArea(sb, features, repo, owner, subsections, hideLinks, hideFeatureDescriptions, publishBlocker);
 		}
 
 		if (enhancements.Count > 0)
@@ -528,12 +543,11 @@ public static class ChangelogInlineRenderer
 		bool groupBySubtype,
 		bool hideLinks,
 		bool hideEntryDescriptions,
+		bool subsections,
 		PublishBlocker? publishBlocker
 	)
 	{
-		var grouped = groupBySubtype
-			? entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
+		var grouped = GroupDetailedEntries(entries, groupBySubtype, subsections, publishBlocker);
 
 		foreach (var group in grouped)
 		{
@@ -549,6 +563,22 @@ public static class ChangelogInlineRenderer
 			foreach (var entry in group)
 				RenderDetailedEntry(sb, entry, repo, owner, hideLinks, hideEntryDescriptions);
 		}
+	}
+
+	private static List<IGrouping<string, ChangelogEntry>> GroupDetailedEntries(
+		List<ChangelogEntry> entries,
+		bool groupBySubtype,
+		bool subsections,
+		PublishBlocker? publishBlocker
+	)
+	{
+		if (groupBySubtype)
+			return entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList();
+
+		if (!subsections)
+			return entries.GroupBy(_ => string.Empty).ToList();
+
+		return entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
 	}
 
 	private static void RenderDetailedEntriesFlattened(
@@ -831,7 +861,7 @@ public static class ChangelogInlineRenderer
 	{
 		if (dropdownsEnabled)
 		{
-			RenderDetailedEntries(sb, entries, repo, owner, groupBySubtype, hideLinks, hideEntryDescriptions, publishBlocker);
+			RenderDetailedEntries(sb, entries, repo, owner, groupBySubtype, hideLinks, hideEntryDescriptions, subsections, publishBlocker);
 			return;
 		}
 
