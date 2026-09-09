@@ -138,7 +138,32 @@ const addCopyButtonToCodeCells = (
             }
         }
 
-        codeCell.insertAdjacentElement('afterend', clipboardButton)
+        // API example cards: mount copy in the card header (right), not over the code.
+        const responseActions = codeCell
+            .closest('.example-block--response')
+            ?.querySelector('.example-block-actions')
+        const codeSampleActions = codeCell
+            .closest('[data-api-code-sample]')
+            ?.querySelector('.api-code-sample-actions')
+        if (responseActions) {
+            clipboardButton.classList.add('copybtn--in-header')
+            const panel = codeCell.closest('.example-response-panel')
+            if (panel instanceof HTMLElement && panel.dataset.status) {
+                clipboardButton.dataset.status = panel.dataset.status
+                clipboardButton.hidden = panel.hasAttribute('hidden')
+            }
+            responseActions.appendChild(clipboardButton)
+        } else if (codeSampleActions) {
+            clipboardButton.classList.add('copybtn--in-header')
+            const panel = codeCell.closest('.api-code-sample-panel')
+            if (panel instanceof HTMLElement && panel.dataset.lang) {
+                clipboardButton.dataset.lang = panel.dataset.lang
+                clipboardButton.hidden = panel.hasAttribute('hidden')
+            }
+            codeSampleActions.appendChild(clipboardButton)
+        } else {
+            codeCell.insertAdjacentElement('afterend', clipboardButton)
+        }
     })
 
     function escapeRegExp(str: string) {

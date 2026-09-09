@@ -106,7 +106,8 @@ public class ChangelogGithubCommentService(
 		var isNoLabel = IsNoLabel(metadata.Status);
 
 		// Success but cannot commit (fork or comment-only strategy): comment-only informational body.
-		if (isSuccess && !metadata.CanCommit)
+		// The Entries gate never stages a YAML file, so CanCommit is irrelevant there.
+		if (isSuccess && !metadata.CanCommit && metadata.Gate is not ValidationGate.Entries)
 		{
 			_logger.LogInformation("Rendering comment-only/no-commit body for PR #{PrNumber}", metadata.PrNumber);
 			var (yamlContent, yamlFilename) = ReadStagedYaml(metadataDir);
@@ -117,6 +118,27 @@ public class ChangelogGithubCommentService(
 				metadata.IsFork,
 				commitFailed: false
 			);
+		}
+
+		// Pre-flight (onboarding gate): repository not registered in products.yml.
+		if (metadata.Gate == ValidationGate.Onboarding)
+		{
+			_logger.LogInformation("Rendering repository-not-onboarded body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderRepositoryNotOnboarded(repo);
+		}
+
+		// Step 2 (entry gate): changelog entry file content has validation errors.
+		if (metadata.Gate == ValidationGate.Entries && metadata.EntryFindings is { Count: > 0 })
+		{
+			_logger.LogInformation("Rendering entries-invalid body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderEntriesInvalid(metadata.EntryFindings, owner, repo, metadata.DefaultBranch);
+		}
+
+		// Step 2 (file gate): changelog file missing (require-changelog-file failure).
+		if (metadata.Gate == ValidationGate.File && string.Equals(metadata.Status, "missing-entry", StringComparison.OrdinalIgnoreCase))
+		{
+			_logger.LogInformation("Rendering missing-entry body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderMissingEntry(metadata.ChangelogDir, metadata.PrNumber);
 		}
 
 		// Step 1 (label gate): labels are missing — tell the author which ones to add.

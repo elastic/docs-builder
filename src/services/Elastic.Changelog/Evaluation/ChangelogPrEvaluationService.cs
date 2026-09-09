@@ -235,6 +235,8 @@ public class ChangelogPrEvaluationService(
 					"Add a changelog entry file to the PR or disable the require-changelog-file gate."
 			);
 			_ = await SetOutputs(PrEvaluationResult.MissingEntry, changelogDir: changelogDir);
+			// Write metadata so the github-comment step can render a missing-entry body.
+			await WriteDecisionMetadataAsync(input, "missing-entry", changelogDir: changelogDir, defaultBranch: defaultBranch, ctx: ctx);
 			return false;
 		}
 

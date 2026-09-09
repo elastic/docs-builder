@@ -17,10 +17,10 @@ public record ExternalDocLink(string Url, bool IsElasticDocs)
 	public string LinkText => IsElasticDocs ? "Read the reference documentation" : "External documentation";
 }
 
-/// <summary>A "See X type →" link to a schema type's dedicated page.</summary>
+/// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
 public record TypePageLink(string TypeName, string? Url);
 
-/// <summary>A single validation constraint line, e.g. <c>min length: 5</c> or <c>default: &lt;code&gt;true&lt;/code&gt;</c>.</summary>
+/// <summary>A single validation constraint, e.g. <c>min: 5</c> or <c>default: 10</c>.</summary>
 public record ConstraintDisplay(string Text, string? Code = null);
 
 /// <summary>How a union renders inline on a property row.</summary>
@@ -126,13 +126,14 @@ public record ApiProperty
 	public required bool IsLast { get; init; }
 	public required bool IsRecursive { get; init; }
 
-	/// <summary>Whether the row shows the <c>required</c>/<c>optional</c> tag for request or response context.</summary>
+	/// <summary>Whether the row is in a request body (vs response); kept for callers that branch on context.</summary>
 	public required bool IsRequest { get; init; }
 
 	public required TypeAnnotation Type { get; init; }
 
 	/// <summary>Markdown-rendered description; empty when the schema has none.</summary>
 	public required HtmlString DescriptionHtml { get; init; }
+	public required string? DescriptionMarkdown { get; init; }
 	public bool HasDescription => DescriptionHtml.Value is { Length: > 0 };
 
 	public required bool ShowDeprecatedBadge { get; init; }

@@ -1,0 +1,71 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text.Json.Serialization;
+
+namespace Elastic.Documentation.Api.PageFeedback;
+
+public record PageFeedbackRequest(
+	string PageUrl,
+	string PageTitle,
+	PageFeedbackReaction Reaction,
+	IReadOnlyList<PageFeedbackReason>? Reasons,
+	int? ReasonSetVersion,
+	string? Comment
+);
+
+[JsonConverter(typeof(JsonStringEnumConverter<PageFeedbackReaction>))]
+public enum PageFeedbackReaction
+{
+	[JsonStringEnumMemberName("unspecified")]
+	Unspecified,
+
+	[JsonStringEnumMemberName("thumbsUp")]
+	ThumbsUp,
+
+	[JsonStringEnumMemberName("thumbsDown")]
+	ThumbsDown
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter<PageFeedbackReason>))]
+public enum PageFeedbackReason
+{
+	[JsonStringEnumMemberName("accurate")]
+	Accurate,
+
+	[JsonStringEnumMemberName("solvedProblem")]
+	SolvedProblem,
+
+	[JsonStringEnumMemberName("easyToUnderstand")]
+	EasyToUnderstand,
+
+	[JsonStringEnumMemberName("helpfulExamples")]
+	HelpfulExamples,
+
+	[JsonStringEnumMemberName("easyToFind")]
+	EasyToFind,
+
+	[JsonStringEnumMemberName("inaccurate")]
+	Inaccurate,
+
+	[JsonStringEnumMemberName("missingInformation")]
+	MissingInformation,
+
+	[JsonStringEnumMemberName("hardToUnderstand")]
+	HardToUnderstand,
+
+	[JsonStringEnumMemberName("codeSampleErrors")]
+	CodeSampleErrors,
+
+	// Retired in reason set 3, folded into Inaccurate. Kept so historical documents stay readable
+	// and a cached browser bundle still submits successfully. Do not remove.
+	[JsonStringEnumMemberName("outOfDate")]
+	OutOfDate,
+
+	[JsonStringEnumMemberName("siteProblem")]
+	SiteProblem,
+
+	[JsonStringEnumMemberName("anotherReason")]
+	AnotherReason
+}

@@ -51,7 +51,22 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 		html.Should().NotContain("data-testid=\"docs-version-dropdown\"");
 	}
 
-	private async Task<string> Render(BuildType buildType, bool showVersionDropdown, bool navigationPreviewEnabled)
+	[Fact]
+	public async Task PrimaryNavOn_OmitsLearnHowToContribute()
+	{
+		var html = await Render(BuildType.Assembler, showVersionDropdown: false, navigationPreviewEnabled: false, primaryNavEnabled: true);
+
+		html.Should().Contain("Report a docs issue");
+		html.Should().NotContain("Learn how to contribute");
+		html.Should().NotContain("contribute-docs");
+	}
+
+	private async Task<string> Render(
+		BuildType buildType,
+		bool showVersionDropdown,
+		bool navigationPreviewEnabled,
+		bool primaryNavEnabled = false
+	)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -70,9 +85,11 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = navigationPreviewEnabled
-				? new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
-				: new FeatureFlags([]),
+			Features = new FeatureFlags(new Dictionary<string, bool>
+			{
+				["navigation-preview"] = navigationPreviewEnabled,
+				["primary-nav"] = primaryNavEnabled
+			}),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),

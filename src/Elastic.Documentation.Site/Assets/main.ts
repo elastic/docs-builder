@@ -9,6 +9,7 @@ import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initPrivacyConsent } from './privacy-consent'
 import { initSecondaryNav } from './secondary-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
@@ -31,7 +32,7 @@ import {
 } from './web-components/shared/htmx/utils'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import { $, $optional, $$optional } from 'select-dom'
+import { $, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
 // Injected at build time from MinVer
@@ -92,7 +93,10 @@ async function runInitSteps(
 function applyEditParam() {
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.has('edit')) {
-        $optional('.edit-this-page.hidden')?.classList.remove('hidden')
+        // Two copies exist: the right-rail CTA and the bottom-of-page one. Reveal both.
+        $$optional('.edit-this-page.hidden').forEach((el) =>
+            el.classList.remove('hidden')
+        )
     }
 }
 
@@ -238,6 +242,7 @@ function handleCtaActivation(event: MouseEvent) {
     logCtaEvent('cta_clicked', cta)
 }
 document.addEventListener('click', handleCtaActivation)
+initPrivacyConsent()
 initSecondaryNav()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
@@ -307,9 +312,13 @@ document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
     const target = event.target
     if (
         target === document.body ||
-        (target instanceof Element && target.id === 'main-container')
+        (target instanceof Element &&
+            (target.id === 'main-container' ||
+                target.id === 'content-container'))
     ) {
-        window.scrollTo(0, 0)
+        if (window.scrollY !== 0) {
+            window.scrollTo(0, 0)
+        }
     }
 })
 

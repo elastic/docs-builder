@@ -163,10 +163,10 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		);
 		Collector.Errors.Should().Be(0);
 
-		// No profile output pattern → the standardized {product}-{version}.yaml convention applies.
+		// No profile output pattern → {repo}-{product}-{version}.yaml when bundle.repo is set.
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle();
-		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("cloud-hosted-2026-08-13.yaml");
+		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
@@ -336,7 +336,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 	public async Task Plan_GitRefProfileWithoutOutputPattern_ResolvesConventionalPathAndNetworkNeeds()
 	{
 		// The bundle-create CI action relies on --plan's output_path to locate the generated file,
-		// so the plan must mirror the {product}-{version}.yaml convention of the real run.
+		// so the plan must mirror the {repo}-{product}-{version}.yaml convention of the real run.
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 		var configPath = await WriteProfileConfig(outputDir);
@@ -358,7 +358,7 @@ public class BundleGitRefTests(ITestOutputHelper output) : ChangelogTestBase(out
 		plan.NeedsNetwork.Should().BeTrue();
 		plan.NeedsGithubToken.Should().BeTrue();
 		plan.OutputPath.Should().NotBeNull();
-		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("cloud-hosted-2026-08-13.yaml");
+		FileSystem.Path.GetFileName(plan.OutputPath).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 	}
 
 	[Fact]

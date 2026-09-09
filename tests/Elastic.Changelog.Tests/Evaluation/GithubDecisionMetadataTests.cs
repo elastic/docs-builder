@@ -161,6 +161,61 @@ public class GithubDecisionMetadataTests
 	}
 
 	[Fact]
+	public void SerializationRoundTrip_WithEntryFindings_PreservesFindings()
+	{
+		var metadata = new GithubDecisionMetadata
+		{
+			PrNumber = 42,
+			HeadRef = "feature/test",
+			HeadSha = "abc123",
+			Status = "entries-invalid",
+			IsFork = false,
+			CanCommit = true,
+			MaintainerCanModify = false,
+			Gate = ValidationGate.Entries,
+			EntryFindings =
+			[
+				new EntryFinding { File = "docs/changelog/42.yaml", Severity = "Error", Message = "title is required" },
+				new EntryFinding { File = "docs/changelog/43.yaml", Severity = "Warning", Message = "title exceeds 80 characters" }
+			]
+		};
+
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+		var deserialized = JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+
+		deserialized.Should().NotBeNull();
+		deserialized.Gate.Should().Be(ValidationGate.Entries);
+		deserialized.EntryFindings.Should().HaveCount(2);
+		deserialized.EntryFindings![0].File.Should().Be("docs/changelog/42.yaml");
+		deserialized.EntryFindings[0].Severity.Should().Be("Error");
+		deserialized.EntryFindings[0].Message.Should().Be("title is required");
+		deserialized.EntryFindings[1].Severity.Should().Be("Warning");
+	}
+
+	[Fact]
+	public void Deserialization_OldMetadataWithoutEntryFindings_EntryFindingsNull()
+	{
+		const string legacyJson =
+			"""
+			{
+			  "pr_number": 7,
+			  "head_ref": "fix/typo",
+			  "head_sha": "cafebabe",
+			  "status": "no-label",
+			  "is_fork": false,
+			  "can_commit": true,
+			  "maintainer_can_modify": false
+			}
+			""";
+
+		var deserialized = JsonSerializer.Deserialize(legacyJson, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+
+		deserialized.Should().NotBeNull();
+		deserialized.EntryFindings.Should().BeNull();
+		deserialized.Gate.Should().BeNull();
+	}
+
+	[Fact]
 	public void Deserialization_OldMetadataWithoutCommitOutcomeFields_Succeeds()
 	{
 		// Verify wire-safety: a metadata.json written before the CommitOutcome/CommittedFile

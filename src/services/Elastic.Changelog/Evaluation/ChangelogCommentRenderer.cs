@@ -126,9 +126,10 @@ internal static class ChangelogCommentRenderer
 	)
 	{
 		var configFileName = string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile;
-		var configRef = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
-			? $"[{configFileName}](https://github.com/{owner}/{repo}/blob/{defaultBranch ?? "main"}/{configFileName})"
-			: WrapInlineCode(configFileName);
+		var configUrl = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
+			? $"https://github.com/{owner}/{repo}/blob/{defaultBranch ?? "main"}/{configFileName}"
+			: null;
+		var configRef = configUrl != null ? $"[{configFileName}]({configUrl})" : WrapInlineCode(configFileName);
 
 		var hasAmbiguousType = !string.IsNullOrWhiteSpace(ambiguousTypeLabels);
 		var hasTypeIssue = !string.IsNullOrWhiteSpace(labelTable);
@@ -183,7 +184,10 @@ internal static class ChangelogCommentRenderer
 		allParts.AddRange(sections);
 		allParts.Add(skipSection);
 		allParts.Add("");
-		allParts.Add($"📄 See {configRef} for the full changelog configuration.");
+		var configFooter = configUrl != null
+			? $"📄 Inspect the [current changelog configuration]({configUrl})."
+			: $"📄 Inspect the current changelog configuration: {configRef}.";
+		allParts.Add(configFooter);
 
 		return Truncate(string.Join("\n", allParts));
 	}
@@ -200,6 +204,93 @@ internal static class ChangelogCommentRenderer
 	/// </summary>
 	internal static string RenderSkipped() =>
 		string.Join("\n", Title, "", "⏭️ **Excluded from release notes** — this PR will not appear in the changelog.");
+
+	/// <summary>
+	/// Renders the Step 2 (entry gate) body: one section per file listing errors first, then
+	/// warnings, each finding as a bullet. Files link to their GitHub blob URLs.
+	/// </summary>
+	internal static string RenderEntriesInvalid(IReadOnlyList<EntryFinding> findings, string? owner, string? repo, string? defaultBranch)
+	{
+		var branch = defaultBranch ?? "main";
+		var parts = new List<string> { Title, "", "📋 **Changelog entry file validation failed** — fix the issues below and push again." };
+
+		// Group by file, errors before warnings within each group
+		var byFile = findings.GroupBy(f => f.File).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+		foreach (var group in byFile)
+		{
+			var filePath = group.Key;
+			var fileRef = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
+				? $"[{WrapInlineCode(filePath)}](https://github.com/{owner}/{repo}/blob/{branch}/{string.Join("/", filePath.Split('/').Select(Uri.EscapeDataString))})"
+				: WrapInlineCode(filePath);
+
+			parts.Add("");
+			parts.Add($"**{fileRef}**");
+
+			foreach (var finding in group.OrderBy(f => f.Severity))
+			{
+				var icon = finding.Severity == "Error" ? "❌" : "⚠️";
+				parts.Add($"- {icon} {finding.Message}");
+			}
+		}
+
+		return Truncate(string.Join("\n", parts));
+	}
+
+	/// <summary>
+	/// Renders the Step 2 (file gate) body: informs the author that no changelog entry file
+	/// was found for their PR and suggests the expected file path.
+	/// </summary>
+	internal static string RenderMissingEntry(string? changelogDir, int prNumber)
+	{
+		var dir = changelogDir ?? "docs/changelog";
+		var expectedPath = $"{dir}/{prNumber}.yaml";
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"📋 **Changelog entry file required** — no entry file was found for PR #{prNumber}.",
+				"",
+				$"Add {WrapInlineCode(expectedPath)} to the PR branch, or disable the {WrapInlineCode("require-changelog-file")} gate in your {WrapInlineCode("release-notes.yml")} workflow."
+			)
+		);
+	}
+
+	/// <summary>
+	/// Renders the "repository not onboarded" body: actionable error with copy-pasteable
+	/// <c>products.yml</c> snippet so the repository owner can self-serve registration.
+	/// </summary>
+	internal static string RenderRepositoryNotOnboarded(string repo)
+	{
+		var safeRepo = WrapInlineCode(repo);
+		var snippet =
+			$"""
+			  {repo}:
+			    display: '<human-readable name>'
+			    repository: '{repo}'
+			    features:
+			      release-notes: true
+			""";
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"⚠️ **Repository {safeRepo} is not registered in `products.yml`** — the changelog pipeline cannot run until it is.",
+				"",
+				"Add a product entry to `config/products.yml` in `elastic/docs-builder` and wait for the next release:",
+				"",
+				WrapCodeFence(snippet, "yaml"),
+				"",
+				"See [`docs/documentation/catalog/products.md`](https://github.com/elastic/docs-builder/blob/main/docs/documentation/catalog/products.md) for the full product configuration reference.",
+				"",
+				"> **Note:** `config/products.yml` is embedded in the `docs-builder` binary. The change takes effect on the next `docs-builder` release, typically picked up by `release-notes.yml` workflows within a day."
+			)
+		);
+	}
 
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)

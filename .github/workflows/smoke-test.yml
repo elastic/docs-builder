@@ -6,6 +6,9 @@ on:
 permissions:
   contents: read
 
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
 jobs:
   build:
     runs-on: ubuntu-latest

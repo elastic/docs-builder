@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
+using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Search;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +25,7 @@ public static class MappingsExtension
 		MapNavigationSearch(group);
 		MapFullSearch(group);
 		MapChanges(group);
+		MapPageFeedback(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -58,8 +60,7 @@ public static class MappingsExtension
 			var inputMessages = new[] { new InputMessage("user", [new MessagePart("text", askAiRequest.Message)]) };
 			var inputMessagesJson = JsonSerializer.Serialize(inputMessages, ApiJsonContext.Default.InputMessageArray);
 			_ = activity?.SetTag("gen_ai.input.messages", inputMessagesJson);
-			var sanitizedMessage = askAiRequest.Message?.Replace("\r", "").Replace("\n", "");
-			logger.LogInformation("AskAI input message: <{ask_ai.input.message}>", sanitizedMessage);
+			logger.LogInformation("AskAI input message: <{ask_ai.input.message}>", SanitizeForLog(askAiRequest.Message));
 			logger.LogInformation("Streaming AskAI response");
 
 			var response = await askAiService.AskAi(askAiRequest, ctx);
@@ -86,8 +87,7 @@ public static class MappingsExtension
 			Cancel ctx
 		) =>
 		{
-			// Extract euid cookie for user tracking
-			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+			var euid = TryGetEuid(context);
 
 			var feedbackActivitySource = new ActivitySource(TelemetryConstants.AskAiFeedbackSourceName);
 			using var activity = feedbackActivitySource.StartActivity("record message-feedback", ActivityKind.Internal);
@@ -173,4 +173,87 @@ public static class MappingsExtension
 			var response = await changesService.GetChangesAsync(request, ctx);
 			return Results.Ok(response);
 		});
+
+	private static void MapPageFeedback(IEndpointRouteBuilder group)
+	{
+		_ = group.MapPut("/page-feedback/{feedbackId:guid}", async (
+			Guid feedbackId,
+			PageFeedbackRequest request,
+			HttpContext context,
+			IPageFeedbackService feedbackService,
+			ILogger<Program> logger,
+			Cancel ctx
+		) =>
+		{
+			if (!IsValidPageFeedback(request))
+				return Results.BadRequest();
+
+			var record = PageFeedbackRecord.From(feedbackId, request, TryGetEuid(context));
+			var pageUrlForLog = SanitizeForLog(request.PageUrl);
+			if (!await feedbackService.UpsertFeedbackAsync(record, ctx))
+			{
+				logger.LogWarning("Failed to record page feedback {FeedbackId} for {PageUrl}", feedbackId, pageUrlForLog);
+				return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+			}
+
+			logger.LogDebug("Recorded page feedback {FeedbackId} for {PageUrl}", feedbackId, pageUrlForLog);
+			return Results.NoContent();
+		}).DisableAntiforgery();
+
+		_ = group.MapDelete("/page-feedback/{feedbackId:guid}", async (
+			Guid feedbackId,
+			IPageFeedbackService feedbackService,
+			ILogger<Program> logger,
+			Cancel ctx
+		) =>
+		{
+			if (!await feedbackService.DeleteFeedbackAsync(feedbackId, ctx))
+			{
+				logger.LogWarning("Failed to delete page feedback {FeedbackId}", feedbackId);
+				return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+			}
+
+			logger.LogInformation("Deleted page feedback {FeedbackId}", feedbackId);
+			return Results.NoContent();
+		}).DisableAntiforgery();
+	}
+
+	private static bool IsValidPageFeedback(PageFeedbackRequest request) =>
+		!string.IsNullOrWhiteSpace(request.PageUrl)
+			&& request.PageUrl.Length <= 2048
+			&& request.PageUrl.StartsWith('/')
+			&& !request.PageUrl.StartsWith("//", StringComparison.Ordinal)
+			&& Uri.TryCreate(request.PageUrl, UriKind.Relative, out _)
+			&& !string.IsNullOrWhiteSpace(request.PageTitle)
+			&& request.PageTitle.Length <= 500
+			&& request.Reaction is PageFeedbackReaction.ThumbsUp or PageFeedbackReaction.ThumbsDown
+			&& (request.Comment is null || request.Comment.Length <= 2000)
+			&& IsValidFeedbackDetails(request);
+
+	private static bool IsValidFeedbackDetails(PageFeedbackRequest request)
+	{
+		if (request.Reasons is null or [])
+			return request.ReasonSetVersion is null && string.IsNullOrWhiteSpace(request.Comment);
+
+		return request.ReasonSetVersion is > 0
+			&& request.Reasons.All(r => Enum.IsDefined(r) && IsReasonValidForReaction(request.Reaction, r));
+	}
+
+	private static bool IsReasonValidForReaction(PageFeedbackReaction reaction, PageFeedbackReason reason) => reaction switch
+	{
+		PageFeedbackReaction.ThumbsUp =>
+			reason is PageFeedbackReason.Accurate or PageFeedbackReason.SolvedProblem or PageFeedbackReason.EasyToUnderstand or PageFeedbackReason.HelpfulExamples or PageFeedbackReason.EasyToFind or PageFeedbackReason.AnotherReason,
+		PageFeedbackReaction.ThumbsDown =>
+			reason is PageFeedbackReason.Inaccurate or PageFeedbackReason.MissingInformation or PageFeedbackReason.HardToUnderstand or PageFeedbackReason.CodeSampleErrors or PageFeedbackReason.OutOfDate or PageFeedbackReason.SiteProblem or PageFeedbackReason.AnotherReason,
+		_ => false
+	};
+
+	private static string? TryGetEuid(HttpContext context)
+	{
+		_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+		return euid;
+	}
+
+	private static string? SanitizeForLog(string? value) =>
+		value?.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal);
 }

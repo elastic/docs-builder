@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -135,7 +136,109 @@ internal static partial class ContentStackMapper
 		if (!string.IsNullOrWhiteSpace(v5Notes))
 			return v5Notes;
 
+		// Strategy 7: main_content.content_l10n (tutorial, tutorial_page, tutorial_chapter,
+		// labs_integration) or main_content.body.content_l10n (blog_v3) — a rich-text JSON AST
+		// (ProseMirror-style { type, children, text }), not an HTML string like the strategies above.
+		var richTextBody = ExtractRichTextBody(data);
+		if (!string.IsNullOrWhiteSpace(richTextBody))
+			return richTextBody;
+
+		// Strategy 8: main_content.markdown_l10n (reports, threat_command) — plain Markdown, not the
+		// ProseMirror JSON AST from strategy 7. Security Labs authors these in Markdown directly.
+		var markdownBody = GetNestedString(data, "main_content", "markdown_l10n");
+		if (!string.IsNullOrWhiteSpace(markdownBody))
+			return RenderMarkdown(markdownBody);
+
 		return null;
+	}
+
+	private static string? ExtractRichTextBody(JsonElement data)
+	{
+		if (!data.TryGetProperty("main_content", out var mainContent) || mainContent.ValueKind != JsonValueKind.Object)
+			return null;
+
+		if (mainContent.TryGetProperty("content_l10n", out var direct) && direct.ValueKind == JsonValueKind.Object)
+			return RenderRichTextRoot(direct);
+
+		if (
+			mainContent.TryGetProperty("body", out var body)
+			&& body.ValueKind == JsonValueKind.Object
+			&& body.TryGetProperty("content_l10n", out var nested)
+			&& nested.ValueKind == JsonValueKind.Object
+		)
+			return RenderRichTextRoot(nested);
+
+		return null;
+	}
+
+	/// <summary>
+	/// Renders a ContentStack rich-text (ProseMirror-style) JSON AST — <c>{ type, children: [...], text? }</c>
+	/// — into a lightweight HTML-ish string so it flows through the same <see cref="StripHtml"/> /
+	/// <see cref="ExtractHeadings"/> regex pipeline as the legacy HTML-string strategies above, instead of
+	/// needing a parallel JSON-aware text/heading extractor.
+	/// </summary>
+	private static string RenderRichText(JsonElement node)
+	{
+		if (node.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
+			return textProp.GetString() ?? "";
+
+		if (!node.TryGetProperty("children", out var children) || children.ValueKind != JsonValueKind.Array)
+			return "";
+
+		var inner = string.Concat(children.EnumerateArray().Select(RenderRichText));
+		var type = GetString(node, "type");
+
+		return type switch
+		{
+			"h1" or "h2" or "h3" or "h4" or "h5" or "h6" or "p" or "li" or "ul" or "ol" => $"<{type}>{inner}</{type}>",
+			_ => inner
+		};
+	}
+
+	private static string? RenderRichTextRoot(JsonElement root)
+	{
+		var rendered = RenderRichText(root);
+		return string.IsNullOrWhiteSpace(StripHtml(rendered)) ? null : rendered;
+	}
+
+	/// <summary>
+	/// Renders ContentStack's plain-Markdown <c>main_content.markdown_l10n</c> (reports, threat_command)
+	/// into the same lightweight HTML-ish string the ProseMirror rich-text strategy produces above, so it
+	/// flows through the same <see cref="StripHtml"/>/<see cref="ExtractHeadings"/> pipeline. Fenced code
+	/// blocks and images are dropped — not useful for search snippets/headings — and links keep their
+	/// visible text but drop the URL.
+	/// </summary>
+	private static string RenderMarkdown(string markdown)
+	{
+		var withoutCodeFences = MarkdownCodeFenceRegex().Replace(markdown, " ");
+
+		var sb = new StringBuilder();
+		foreach (var rawLine in withoutCodeFences.Split('\n'))
+		{
+			var line = rawLine.TrimEnd('\r');
+			var heading = MarkdownHeadingRegex().Match(line);
+			if (heading.Success)
+			{
+				var level = heading.Groups[1].Value.Length;
+				_ = sb.Append($"<h{level}>{StripMarkdownInlineSyntax(heading.Groups[2].Value)}</h{level}>");
+				continue;
+			}
+
+			_ = sb.Append(StripMarkdownInlineSyntax(line)).Append(' ');
+		}
+
+		return sb.ToString();
+	}
+
+	private static string StripMarkdownInlineSyntax(string line)
+	{
+		var text = MarkdownBlockquoteRegex().Replace(line, "");
+		text = MarkdownListBulletRegex().Replace(text, "");
+		text = MarkdownImageRegex().Replace(text, "");
+		text = MarkdownLinkRegex().Replace(text, "$1");
+		text = MarkdownInlineCodeRegex().Replace(text, "$1");
+		text = MarkdownBoldRegex().Replace(text, "$1$2");
+		return MarkdownItalicRegex().Replace(text, "$1$2");
 	}
 
 	private static string? ExtractModularBlocks(JsonElement data)
@@ -227,6 +330,49 @@ internal static partial class ContentStackMapper
 		var intro = GetNestedString(data, "introduction", "paragraph_l10n");
 		if (!string.IsNullOrWhiteSpace(intro))
 			return StripHtml(intro);
+
+		// description_l10n (notebook, series, labs_category, labs_homepage, glossary, examples_landing) —
+		// a plain string on most content types, but a nested rich-text object on labs_integration, so this
+		// simply returns null there (GetString ignores non-string values) and falls through below.
+		var descriptionL10n = GetString(data, "description_l10n");
+		if (!string.IsNullOrWhiteSpace(descriptionL10n))
+			return descriptionL10n;
+
+		// description_l10n.content_simple_l10n (labs_integration)
+		var richDescription = GetNestedRichText(data, "description_l10n", "content_simple_l10n");
+		if (!string.IsNullOrWhiteSpace(richDescription))
+			return StripHtml(richDescription);
+
+		// page_info.subheading_l10n (tutorials_landing, integrations_landing, blog_landing)
+		var subheading = GetNestedString(data, "page_info", "subheading_l10n");
+		if (!string.IsNullOrWhiteSpace(subheading))
+			return subheading;
+
+		// page_info.description.content_simple_l10n (tutorials_landing; often empty on other landing pages)
+		if (data.TryGetProperty("page_info", out var pageInfo) && pageInfo.ValueKind == JsonValueKind.Object)
+		{
+			var pageInfoRichDescription = GetNestedRichText(pageInfo, "description", "content_simple_l10n");
+			if (!string.IsNullOrWhiteSpace(pageInfoRichDescription))
+				return StripHtml(pageInfoRichDescription);
+		}
+
+		// summary_l10n (blog_v3, reports, threat_command)
+		var summary = GetString(data, "summary_l10n");
+		if (!string.IsNullOrWhiteSpace(summary))
+			return summary;
+
+		// subheading_l10n — top-level, not nested under page_info (reports_landing, threat_command_landing)
+		var topLevelSubheading = GetString(data, "subheading_l10n");
+		if (!string.IsNullOrWhiteSpace(topLevelSubheading))
+			return topLevelSubheading;
+
+		// page_description_l10n / blog_description_l10n (security_labs_homepage, observability_labs_homepage)
+		var pageDescription = GetString(data, "page_description_l10n");
+		if (!string.IsNullOrWhiteSpace(pageDescription))
+			return pageDescription;
+		var blogDescription = GetString(data, "blog_description_l10n");
+		if (!string.IsNullOrWhiteSpace(blogDescription))
+			return blogDescription;
 
 		// SEO description fallback
 		return GetSeoString(data, "seo_description_l10n") ?? GetSeoString(data, "seo_description");
@@ -346,6 +492,17 @@ internal static partial class ContentStackMapper
 
 	internal static string GetNavigationSection(string url, string? contentTypeUid = null)
 	{
+		// Search/Security/Observability Labs are sourced from Contentstack. Must come before the
+		// generic "/security" and "/observability" catch-alls below, which would otherwise swallow
+		// these as substring matches.
+		if (url.Contains("/search-labs", StringComparison.OrdinalIgnoreCase))
+			return "search-labs";
+		if (url.Contains("/security-labs", StringComparison.OrdinalIgnoreCase))
+			return "security-labs";
+		if (url.Contains("/observability-labs", StringComparison.OrdinalIgnoreCase))
+			return "observability-labs";
+		if (url.Contains("/glossary", StringComparison.OrdinalIgnoreCase))
+			return "glossary";
 		if (url.Contains("/blog/", StringComparison.OrdinalIgnoreCase))
 			return "blog";
 		if (url.Contains("/what-is/", StringComparison.OrdinalIgnoreCase))
@@ -454,6 +611,19 @@ internal static partial class ContentStackMapper
 		return null;
 	}
 
+	/// <summary>
+	/// Reads a rich-text (ProseMirror-style) JSON AST nested at <c>el.{parent}.{child}</c> — e.g.
+	/// <c>description_l10n.content_simple_l10n</c> — and renders it via <see cref="RenderRichText"/>.
+	/// </summary>
+	private static string? GetNestedRichText(JsonElement el, string parent, string child)
+	{
+		if (!el.TryGetProperty(parent, out var p) || p.ValueKind != JsonValueKind.Object)
+			return null;
+		if (!p.TryGetProperty(child, out var richTextRoot) || richTextRoot.ValueKind != JsonValueKind.Object)
+			return null;
+		return RenderRichTextRoot(richTextRoot);
+	}
+
 	private static string? GetSeoString(JsonElement data, string field)
 	{
 		if (data.TryGetProperty("seo", out var seo) && seo.ValueKind == JsonValueKind.Object)
@@ -479,4 +649,31 @@ internal static partial class ContentStackMapper
 
 	[GeneratedRegex(@"<h[1-6][^>]*>(.*?)</h[1-6]>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
 	private static partial Regex HeadingRegex();
+
+	[GeneratedRegex(@"```[\s\S]*?```")]
+	private static partial Regex MarkdownCodeFenceRegex();
+
+	[GeneratedRegex(@"^(#{1,6})\s+(.+)$")]
+	private static partial Regex MarkdownHeadingRegex();
+
+	[GeneratedRegex(@"^>\s?")]
+	private static partial Regex MarkdownBlockquoteRegex();
+
+	[GeneratedRegex(@"^(\s*)([-*+]|\d+\.)\s+")]
+	private static partial Regex MarkdownListBulletRegex();
+
+	[GeneratedRegex(@"!\[[^\]]*\]\([^)]*\)")]
+	private static partial Regex MarkdownImageRegex();
+
+	[GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
+	private static partial Regex MarkdownLinkRegex();
+
+	[GeneratedRegex("`([^`]*)`")]
+	private static partial Regex MarkdownInlineCodeRegex();
+
+	[GeneratedRegex(@"\*\*([^*]+)\*\*|__([^_]+)__")]
+	private static partial Regex MarkdownBoldRegex();
+
+	[GeneratedRegex(@"\*([^*]+)\*|_([^_]+)_")]
+	private static partial Regex MarkdownItalicRegex();
 }

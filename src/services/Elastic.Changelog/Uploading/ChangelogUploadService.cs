@@ -98,25 +98,22 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var directory = args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend
-			? await ResolveBundleDirectory(collector, args, ctx)
-			: await ResolveChangelogDirectory(collector, args, ctx);
+		var directories = args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend
+			? await ResolveBundleScanDirectories(collector, args, ctx)
+			: [await ResolveChangelogDirectory(collector, args, ctx) ?? "docs/changelog"];
 
-		if (directory == null)
-			return false;
-
-		if (!_fileSystem.Directory.Exists(directory))
+		var existing = directories.Where(d => !string.IsNullOrWhiteSpace(d) && _fileSystem.Directory.Exists(d)).ToList();
+		if (existing.Count == 0)
 		{
-			_logger.LogInformation("{ArtifactType} directory {Directory} does not exist; nothing to upload", args.ArtifactType, directory);
+			_logger.LogInformation(
+				"{ArtifactType} directory {Directory} does not exist; nothing to upload",
+				args.ArtifactType,
+				string.Join(", ", directories.Where(d => !string.IsNullOrWhiteSpace(d)))
+			);
 			return true;
 		}
 
-		var targets = args.ArtifactType switch
-		{
-			ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
-			ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
-			_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch)
-		};
+		var targets = DiscoverTargets(collector, args, existing);
 
 		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
 		// unscoped and a silent skip would look like "nothing to upload".
@@ -125,7 +122,11 @@ public class ChangelogUploadService(
 
 		if (targets.Count == 0)
 		{
-			_logger.LogInformation("No {ArtifactType} files found to upload in {Directory}", args.ArtifactType, directory);
+			_logger.LogInformation(
+				"No {ArtifactType} files found to upload in {Directory}",
+				args.ArtifactType,
+				string.Join(", ", existing)
+			);
 			return true;
 		}
 
@@ -133,7 +134,7 @@ public class ChangelogUploadService(
 			"Found {Count} {ArtifactType} upload target(s) from {Directory}",
 			targets.Count,
 			args.ArtifactType,
-			directory
+			string.Join(", ", existing)
 		);
 
 		using var defaultClient = s3Client == null ? new AmazonS3Client() : null;
@@ -439,6 +440,74 @@ public class ChangelogUploadService(
 		}
 	}
 
+	private IReadOnlyList<UploadTarget> DiscoverTargets(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		IReadOnlyList<string> directories
+	)
+	{
+		var targets = new List<UploadTarget>();
+		foreach (var directory in directories)
+		{
+			var found = args.ArtifactType switch
+			{
+				ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
+				ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
+				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch)
+			};
+			targets.AddRange(found);
+		}
+
+		return targets;
+	}
+
+	/// <summary>
+	/// Directories to scan for bundle/amend YAML: explicit <c>--directory</c>, else
+	/// <c>bundle.output_directory</c> plus each profile <c>output_directory</c>, else
+	/// <c>bundle.directory</c>, else <c>docs/releases</c>. Each directory is scanned
+	/// <see cref="SearchOption.TopDirectoryOnly"/>.
+	/// </summary>
+	internal static IReadOnlyList<string> CollectBundleScanDirectories(string? explicitDirectory, ChangelogConfiguration? config)
+	{
+		if (!string.IsNullOrWhiteSpace(explicitDirectory))
+			return [explicitDirectory];
+
+		var dirs = new List<string>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		AddUnique(dirs, seen, config?.Bundle?.OutputDirectory);
+		if (config?.Bundle?.Profiles != null)
+		{
+			foreach (var profile in config.Bundle.Profiles.Values)
+				AddUnique(dirs, seen, profile.OutputDirectory);
+		}
+
+		if (dirs.Count == 0)
+			AddUnique(dirs, seen, config?.Bundle?.Directory);
+		if (dirs.Count == 0)
+			AddUnique(dirs, seen, "docs/releases");
+		return dirs;
+	}
+
+	private static void AddUnique(List<string> dirs, HashSet<string> seen, string? directory)
+	{
+		if (string.IsNullOrWhiteSpace(directory) || !seen.Add(directory))
+			return;
+		dirs.Add(directory);
+	}
+
+	private async Task<IReadOnlyList<string>> ResolveBundleScanDirectories(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		Cancel ctx
+	)
+	{
+		if (!string.IsNullOrWhiteSpace(args.Directory) || _configLoader == null)
+			return CollectBundleScanDirectories(args.Directory, null);
+
+		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx).ConfigureAwait(false);
+		return CollectBundleScanDirectories(null, config);
+	}
+
 	private async Task<string?> ResolveChangelogDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
 		if (!string.IsNullOrWhiteSpace(args.Directory))
@@ -449,17 +518,5 @@ public class ChangelogUploadService(
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
 		return config?.Bundle?.Directory ?? "docs/changelog";
-	}
-
-	private async Task<string?> ResolveBundleDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
-	{
-		if (!string.IsNullOrWhiteSpace(args.Directory))
-			return args.Directory;
-
-		if (_configLoader == null)
-			return "docs/releases";
-
-		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
-		return config?.Bundle?.OutputDirectory ?? config?.Bundle?.Directory ?? "docs/releases";
 	}
 }
