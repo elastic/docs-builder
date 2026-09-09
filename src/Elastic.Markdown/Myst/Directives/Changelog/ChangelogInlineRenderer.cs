@@ -198,14 +198,25 @@ public static class ChangelogInlineRenderer
 		string bundleRepo,
 		HashSet<string> privateRepositories,
 		ChangelogDescriptionVisibility visibility
-	) => visibility switch
+	)
 	{
-		ChangelogDescriptionVisibility.HideDescriptions => true,
-		ChangelogDescriptionVisibility.KeepHighlightDescriptions => true,
-		ChangelogDescriptionVisibility.KeepDescriptions => false,
-		ChangelogDescriptionVisibility.Auto => !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories),
-		_ => !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories)
-	};
+		if (visibility.HasFlag(ChangelogDescriptionVisibility.KeepDescriptions))
+			return false;
+
+		if (visibility.HasFlag(ChangelogDescriptionVisibility.HideDescriptions))
+			return true;
+
+		if (visibility.HasFlag(ChangelogDescriptionVisibility.Auto))
+			return !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories);
+
+		if (
+			visibility.HasFlag(ChangelogDescriptionVisibility.KeepHighlightDescriptions)
+			|| visibility.HasFlag(ChangelogDescriptionVisibility.KeepFeatureDescriptions)
+		)
+			return true;
+
+		return !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories);
+	}
 
 	/// <summary>
 	/// True when merged <paramref name="bundleRepo"/> (<c>elasticsearch+kibana</c>-style) has at least one
@@ -242,7 +253,9 @@ public static class ChangelogInlineRenderer
 		var subsections = options.Subsections;
 		var hideLinks = model.HideLinks;
 		var hideEntryDescriptions = model.HideEntryDescriptions;
-		var hideHighlightDescriptions = options.DescriptionVisibility is not ChangelogDescriptionVisibility.KeepHighlightDescriptions
+		var hideHighlightDescriptions = !options.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepHighlightDescriptions)
+			&& hideEntryDescriptions;
+		var hideFeatureDescriptions = !options.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepFeatureDescriptions)
 			&& hideEntryDescriptions;
 		var dropdownsEnabled = options.DropdownsEnabled;
 		var typeFilter = options.TypeFilter;
@@ -372,12 +385,18 @@ public static class ChangelogInlineRenderer
 			);
 		}
 
-		if (features.Count > 0 || enhancements.Count > 0)
+		if (features.Count > 0)
 		{
 			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
-			var combined = features.Concat(enhancements).ToList();
-			RenderEntriesByArea(sb, combined, repo, owner, subsections, hideLinks, hideEntryDescriptions, publishBlocker);
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features [{repo}-{titleSlug}-features]");
+			RenderEntriesByArea(sb, features, repo, owner, subsections, hideLinks, hideFeatureDescriptions, publishBlocker);
+		}
+
+		if (enhancements.Count > 0)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Enhancements [{repo}-{titleSlug}-enhancements]");
+			RenderEntriesByArea(sb, enhancements, repo, owner, subsections, hideLinks, hideEntryDescriptions, publishBlocker);
 		}
 
 		if (bugFixes.Count > 0)

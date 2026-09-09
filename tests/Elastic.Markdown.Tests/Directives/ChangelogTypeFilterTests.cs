@@ -89,7 +89,7 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 	[Fact]
 	public void DefaultBehaviorShowsFeatures()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("New feature");
 	}
 
@@ -199,7 +199,7 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 	[Fact]
 	public void ShowsAllEntryTypes()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("New feature");
 		Html.Should().Contain(">Fixes<");
 		Html.Should().Contain("Bug fix");
@@ -303,7 +303,7 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 	[Fact]
 	public void ExcludesOtherTypes()
 	{
-		Html.Should().NotContain("Features and enhancements");
+		Html.Should().NotContain("Features");
 		Html.Should().NotContain("New feature");
 		Html.Should().NotContain("Known issues");
 		Html.Should().NotContain("Known issue");
@@ -379,7 +379,7 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 	[Fact]
 	public void ExcludesOtherTypes()
 	{
-		Html.Should().NotContain("Features and enhancements");
+		Html.Should().NotContain("Features");
 		Html.Should().NotContain("New feature");
 	}
 }
@@ -453,7 +453,7 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 	[Fact]
 	public void ExcludesOtherTypes()
 	{
-		Html.Should().NotContain("Features and enhancements");
+		Html.Should().NotContain("Features");
 		Html.Should().NotContain("New feature");
 	}
 }
@@ -511,7 +511,7 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 	[Fact]
 	public void DefaultBehaviorIsApplied()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("New feature");
 		Html.Should().NotContain("Breaking changes");
 	}
@@ -567,7 +567,7 @@ public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBl
 	[Fact]
 	public void ShowsAllTypes()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Breaking changes");
 	}
 }
@@ -638,7 +638,7 @@ public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBl
 	[Fact]
 	public void ShowsAllTypesWithSubsections()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Search feature");
 		Html.Should().Contain("Indexing feature");
 		Html.Should().Contain("Breaking changes");
@@ -695,7 +695,7 @@ public class ChangelogTypeFilterGeneratedAnchorsTests : DirectiveTest<ChangelogB
 		var anchors = Block!.GeneratedAnchors.ToList();
 
 		anchors.Should().NotContain(a => a.Contains("breaking-changes"));
-		anchors.Should().NotContain(a => a.Contains("features-enhancements"));
+		anchors.Should().NotContain(a => a.Contains("features"));
 	}
 }
 
@@ -750,7 +750,7 @@ public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBl
 
 		tocItems.Should().NotContain(t => t.Heading == "Deprecations");
 		tocItems.Should().Contain(t => t.Heading == "9.3.0" && t.Level == 2);
-		tocItems.Should().NotContain(t => t.Heading == "Features and enhancements");
+		tocItems.Should().NotContain(t => t.Heading == "Features");
 	}
 }
 

@@ -2,7 +2,7 @@ products:
   - product: docs-builder
     target: 0.100.0
 entries:
-  # Features and enhancements
+  # Features
   - type: feature
     title: Add PR label blockers to changelog creation
     products:
