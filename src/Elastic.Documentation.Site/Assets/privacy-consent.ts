@@ -1,6 +1,5 @@
 type IubendaApi = {
     openPreferences?: () => void
-    showBanner?: () => void
 }
 
 type IubendaRoot = {
@@ -17,10 +16,9 @@ declare global {
 
 export function iubendaActionFor(
     target: EventTarget | null
-): 'preferences' | 'uspr' | null {
+): 'preferences' | null {
     if (!(target instanceof Element)) return null
     if (target.closest('.iubenda-cs-preferences-link')) return 'preferences'
-    if (target.closest('.iubenda-cs-uspr-link')) return 'uspr'
     return null
 }
 
@@ -29,15 +27,10 @@ function iubendaApi(): IubendaApi | undefined {
 }
 
 export function handlePrivacyConsentClick(event: Event): void {
-    const action = iubendaActionFor(event.target)
-    if (!action) return
+    if (iubendaActionFor(event.target) !== 'preferences') return
 
     event.preventDefault()
-    const api = iubendaApi()
-    if (!api) return
-
-    if (action === 'preferences') api.openPreferences?.()
-    else api.showBanner?.()
+    iubendaApi()?.openPreferences?.()
 }
 
 export function initPrivacyConsent(): void {

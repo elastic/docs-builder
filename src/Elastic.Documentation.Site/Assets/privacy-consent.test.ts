@@ -19,11 +19,11 @@ describe('iubendaActionFor', () => {
         expect(iubendaActionFor(event.target)).toBe('preferences')
     })
 
-    it('maps the notice-at-collection link', () => {
+    it('leaves the notice-at-collection link alone', () => {
         const event = clickOn(
             '<a class="iubenda-cs-uspr-link" href="#">Notice at Collection</a>'
         )
-        expect(iubendaActionFor(event.target)).toBe('uspr')
+        expect(iubendaActionFor(event.target)).toBeNull()
     })
 
     it('ignores other links', () => {
@@ -61,5 +61,17 @@ describe('handlePrivacyConsentClick', () => {
         handlePrivacyConsentClick(event)
 
         expect(event.preventDefault).toHaveBeenCalled()
+    })
+
+    it('does not intercept Notice at Collection', () => {
+        window._iub = { cs: { api: { openPreferences: jest.fn() } } }
+        const event = clickOn(
+            '<a class="iubenda-cs-uspr-link" href="#">Notice at Collection</a>'
+        )
+
+        handlePrivacyConsentClick(event)
+
+        expect(event.preventDefault).not.toHaveBeenCalled()
+        expect(window._iub.cs?.api?.openPreferences).not.toHaveBeenCalled()
     })
 })
