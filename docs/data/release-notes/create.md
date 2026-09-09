@@ -108,7 +108,7 @@ For content guidelines, go to [Changelogs](https://www.elastic.co/docs/contribut
 Some of the fields in the schema accept only a specific set of values:
 
 - Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
-- Type, subtype, and lifecycle values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs), [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs), and [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) respectively.
+- Type, subtype, and lifecycle values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs), [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntrySubtype.cs), and [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) respectively.
 
 You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 :::

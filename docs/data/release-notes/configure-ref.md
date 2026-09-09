@@ -264,7 +264,7 @@ Also controls how the `changelog add` command maps GitHub labels to various chan
 :::
 
 :::{note}
-Type and subtype values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs) and [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs).
+Type and subtype values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs) and [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntrySubtype.cs).
 :::
 
 The following example demonstrates some GitHub label mappings in the `pivot` section of the changelog configuration file:
