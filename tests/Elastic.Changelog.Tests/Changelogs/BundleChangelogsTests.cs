@@ -1989,9 +1989,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithoutRepoOption_OmitsRepoFieldInOutput()
+	public async Task BundleChangelogs_WithoutRepoOption_UsesResolvedAuthoringRepoInOutput()
 	{
-		// Arrange - Test that without --repo option, no repo field is written to the bundle
+		// Arrange - Test that without --repo option, the resolved authoring repo is written to the bundle
 
 		// language=yaml
 		var changelog1 =
@@ -2024,9 +2024,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
-		// Verify that no repo field is written when not specified
+		// Verify that the resolved authoring repo is written when not explicitly specified
 		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().NotContain("repo:");
+		bundleContent.Should().Contain("repo: docs-builder");
 	}
 
 	[Fact]
@@ -3375,10 +3375,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithProfile_NoRepoOwner_PreservesExistingFallbackBehavior()
+	public async Task BundleChangelogs_WithProfile_NoRepoOwner_UsesResolvedAuthoringRepoFallback()
 	{
-		// Arrange - when profile has no repo/owner, the bundle products have no repo field
-		// (existing fallback: product ID is used at render time if no repo is present)
+		// Arrange - when profile has no repo/owner, the bundle still resolves the authoring repo
+		// while leaving owner unset.
 
 		// language=yaml
 		var configContent =
@@ -3424,7 +3424,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert — succeeds without error; no repo field written to products
+		// Assert — succeeds without error; resolved authoring repo is written to products
 		result.Should().BeTrue(
 			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
 		);
@@ -3434,7 +3434,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
-		bundleContent.Should().NotContain("repo:", "No repo field should be present when profile omits repo");
+		bundleContent.Should().Contain("repo: docs-builder", "resolved authoring repo should be present when profile omits repo");
 		bundleContent.Should().NotContain("owner:", "No owner field should be present when profile omits owner");
 	}
 
