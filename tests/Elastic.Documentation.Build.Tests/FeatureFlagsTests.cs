@@ -82,4 +82,45 @@ public class FeatureFlagsTests
 			features.Set(key, value);
 		features.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
+
+	[Fact]
+	public void PrivacyConsentEnabled_DefaultsToFalse()
+	{
+		var flags = new FeatureFlags([]);
+
+		flags.PrivacyConsentEnabled.Should().BeFalse();
+	}
+
+	[Fact]
+	public void StagingEnvironment_EnablesPrivacyConsent()
+	{
+		var config = AssemblyConfiguration.Create(
+			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
+		);
+		var environment = config.Environments["staging"];
+
+		environment.FeatureFlags.Should().ContainKey("PRIVACY_CONSENT").WhoseValue.Should().BeTrue();
+
+		var features = new FeatureFlags([]);
+		foreach (var (key, value) in environment.FeatureFlags)
+			features.Set(key, value);
+		features.PrivacyConsentEnabled.Should().BeTrue();
+		features.AssemblerApiExplorerEnabled.Should().BeTrue();
+	}
+
+	[Fact]
+	public void ProdEnvironment_DoesNotEnablePrivacyConsent()
+	{
+		var config = AssemblyConfiguration.Create(
+			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
+		);
+		var prod = config.Environments["prod"];
+
+		prod.FeatureFlags.Should().NotContainKey("PRIVACY_CONSENT");
+
+		var features = new FeatureFlags([]);
+		foreach (var (key, value) in prod.FeatureFlags)
+			features.Set(key, value);
+		features.PrivacyConsentEnabled.Should().BeFalse();
+	}
 }
