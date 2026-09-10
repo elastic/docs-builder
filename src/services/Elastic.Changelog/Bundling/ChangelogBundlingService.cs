@@ -527,12 +527,13 @@ public partial class ChangelogBundlingService(
 
 		// products[].repo is the checkout's GitHub name (filename convention), not products.yml
 		// repository:. Keep input.Repo intact so combined owner/repo still supplies the CDN owner.
+		var productRepo = BundleOutputNaming.ResolveRepo(_fileSystem, input.Config, _env, input.Repo);
 		var bundleBuilder = new BundleBuilder();
 		var buildResult = bundleBuilder.BuildBundle(
 			collector,
 			filteredEntries,
 			input.OutputProducts,
-			BundleOutputNaming.ResolveRepo(_fileSystem, input.Config, _env, input.Repo),
+			productRepo,
 			input.Owner,
 			featureHidingResult.FeatureIdsToHide
 		);
@@ -549,7 +550,7 @@ public partial class ChangelogBundlingService(
 					bundleData,
 					input.LinkAllowRepos,
 					input.Owner ?? "elastic",
-					input.Repo,
+					productRepo,
 					out var sanitizedBundle,
 					out _
 				)
@@ -583,7 +584,7 @@ public partial class ChangelogBundlingService(
 			var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
 				?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
 			var owner = input.Owner ?? "elastic";
-			var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
+			var repo = productRepo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
 
 			try
 			{

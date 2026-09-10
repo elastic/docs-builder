@@ -129,9 +129,10 @@ public record BundleProfile
 	/// GitHub repository name for link and file name generation.
 	/// <para>
 	/// <b>Deprecated.</b> Derived from <c>GITHUB_REPOSITORY</c> or git <c>origin</c> when omitted.
+	/// <c>--repo</c> and <c>bundle.repo</c> still override when set.
 	/// </para>
 	/// </summary>
-	[Obsolete("Derived from the git checkout. Remove from profile config.")]
+	[Obsolete("Derived from GITHUB_REPOSITORY or git origin when omitted. Remove from profile config.")]
 	public string? Repo { get; init; }
 
 	/// <summary>
