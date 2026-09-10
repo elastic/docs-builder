@@ -84,9 +84,40 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().Contain("<code class=\"api-catalog-card-key\">elasticsearch</code>");
 		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.json\" download");
 		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.yaml\" download");
+		html.Should().Contain("view-transition-name: api-icon-elasticsearch");
+		html.Should().Contain("view-transition-name: api-title-elasticsearch");
+		html.Should().Contain("@view-transition");
 		html.Should().NotContain("listing-group-chips");
 		html.Should().NotContain("markdown-content");
 		html.Should().NotContain("id=\"pages-nav\"");
+	}
+
+	[Fact]
+	public async Task GenerateProducts_LandingHeading_ShowsSpecTitleAndProductMark()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(SpecDocument("Elasticsearch main"));
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+
+		_ = await generator.GenerateProducts(ctx: TestContext.Current.CancellationToken);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
+		html.Should().Contain("api-landing-heading");
+		html.Should().Contain("<h1 style=\"view-transition-name: api-title-elasticsearch\">Elasticsearch main</h1>");
+		html.Should().Contain("<svg");
+		html.Should().Contain("view-transition-name: api-icon-elasticsearch");
+		html.Should().Contain("@view-transition");
 	}
 
 	[Fact]
