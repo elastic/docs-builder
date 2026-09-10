@@ -38,7 +38,12 @@ bundle:
       output_directory: docs/releases/cloud-serverless
 ```
 
-The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument. For example, `docs-builder changelog bundle elasticsearch-release 9.2.0` writes `docs/releases/elasticsearch-elasticsearch-9.2.0.yaml`. A profile `output_directory` replaces `bundle.output_directory` for that profile (the same as option-mode `--output` when it is a directory): `docs-builder changelog bundle serverless-release 2026-08-31` writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-2026-08-31.yaml`. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
+The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the GitHub repository (determined by `--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument.
+For example, `docs-builder changelog bundle elasticsearch-release 9.2.0` writes `docs/releases/elasticsearch-elasticsearch-9.2.0.yaml`.
+If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`.
+Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
+
+A profile `output_directory` overrides `bundle.output_directory` (the same as option-mode `--output` when it is a directory): `docs-builder changelog bundle serverless-release 2026-08-31` writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-2026-08-31.yaml`.
 
 ## Option-based mode
 

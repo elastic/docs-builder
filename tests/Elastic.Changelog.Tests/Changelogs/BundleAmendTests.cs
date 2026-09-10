@@ -101,7 +101,7 @@ public class BundleAmendTests : ChangelogTestBase
 		// Reset collector for the amend operation
 		var amendCollector = new TestDiagnosticsCollector(Output);
 
-		var input = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile] };
+		var input = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -131,7 +131,7 @@ public class BundleAmendTests : ChangelogTestBase
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		var amendCollector = new TestDiagnosticsCollector(Output);
 
-		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile] };
+		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -156,11 +156,11 @@ public class BundleAmendTests : ChangelogTestBase
 		var newFile = await CreateNewChangelogFile(ct);
 
 		var addCollector = new TestDiagnosticsCollector(Output);
-		var addInput = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile] };
+		var addInput = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile], ForceLocal = true };
 		(await Service.AmendBundle(addCollector, addInput, ct)).Should().BeTrue();
 
 		var removeCollector = new TestDiagnosticsCollector(Output);
-		var removeInput = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [newFile] };
+		var removeInput = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [newFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(removeCollector, removeInput, ct);
 
@@ -197,7 +197,7 @@ public class BundleAmendTests : ChangelogTestBase
 		);
 
 		var amendCollector = new TestDiagnosticsCollector(Output);
-		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile] };
+		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -214,7 +214,13 @@ public class BundleAmendTests : ChangelogTestBase
 		var addFile = await CreateNewChangelogFile(ct);
 
 		var amendCollector = new TestDiagnosticsCollector(Output);
-		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [removeFile], AddFiles = [addFile] };
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [removeFile],
+			AddFiles = [addFile],
+			ForceLocal = true
+		};
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 

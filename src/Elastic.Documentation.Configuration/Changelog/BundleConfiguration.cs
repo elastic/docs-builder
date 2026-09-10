@@ -126,14 +126,13 @@ public record BundleProfile
 	public string? Description { get; init; }
 
 	/// <summary>
-	/// GitHub repository name stored on each product in the bundle output.
+	/// GitHub repository name for link and file name generation.
 	/// <para>
-	/// <b>Deprecated.</b> Per-product repo is now resolved from <c>products.yml</c> via the
-	/// product's <c>repository:</c> field, making the bundle-level override redundant.
-	/// Remove from profile config; a mismatch with the running repository is a hard error.
+	/// <b>Deprecated.</b> Derived from <c>GITHUB_REPOSITORY</c> or git <c>origin</c> when omitted.
+	/// <c>--repo</c> and <c>bundle.repo</c> still override when set.
 	/// </para>
 	/// </summary>
-	[Obsolete("Derived from products.yml repository field. Remove from profile config.")]
+	[Obsolete("Derived from GITHUB_REPOSITORY or git origin when omitted. Remove from profile config.")]
 	public string? Repo { get; init; }
 
 	/// <summary>

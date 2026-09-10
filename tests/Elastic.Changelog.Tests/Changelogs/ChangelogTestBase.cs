@@ -176,9 +176,18 @@ public abstract class ChangelogTestBase : IDisposable
 	/// </summary>
 	protected static readonly IEnvironmentVariables EmptyEnvironment = new EmptyEnvironmentVariablesImpl();
 
+	protected static IEnvironmentVariables GithubRepositoryEnvironment(string githubRepository) =>
+		new GithubRepositoryEnvironmentImpl(githubRepository);
+
 	private sealed class EmptyEnvironmentVariablesImpl : IEnvironmentVariables
 	{
 		public string? GetEnvironmentVariable(string name) => null;
+		public bool IsRunningOnCI => false;
+	}
+
+	private sealed class GithubRepositoryEnvironmentImpl(string githubRepository) : IEnvironmentVariables
+	{
+		public string? GetEnvironmentVariable(string name) => name == "GITHUB_REPOSITORY" ? githubRepository : null;
 		public bool IsRunningOnCI => false;
 	}
 }
