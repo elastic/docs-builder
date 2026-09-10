@@ -27,11 +27,13 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 		html.Should().Contain("iubenda-cs-preferences-link");
 		html.Should().Contain("Your Privacy Choices");
 		html.Should().Contain("privacy-statement");
+		html.Should().Contain("Elasticsearch is a trademark");
 
-		html
-			.IndexOf("Elasticsearch is a trademark", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("Notice at Collection", StringComparison.Ordinal));
+		var trademark = html.IndexOf("Elasticsearch is a trademark", StringComparison.Ordinal);
+		var notice = html.IndexOf("Notice at Collection", StringComparison.Ordinal);
+		trademark.Should().BeGreaterThan(-1);
+		notice.Should().BeGreaterThan(-1);
+		trademark.Should().BeLessThan(notice);
 		html.IndexOf("</ul>", StringComparison.Ordinal).Should().BeLessThan(html.IndexOf("Notice at Collection", StringComparison.Ordinal));
 
 		var preferences = html.IndexOf("iubenda-cs-preferences-link", StringComparison.Ordinal);
