@@ -416,7 +416,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Comment handbook preview links on PR
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
           ALL_CHANGED_FILES: ${{ needs.check.outputs.all_changed_files }}
