@@ -3443,6 +3443,70 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithProfile_OmittedRepoOwner_DescriptionUsesResolvedCheckout()
+	{
+		var env = GithubRepositoryEnvironment("elastic/elasticsearch");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, env: env);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "Release from {owner}/{repo}"
+			""";
+
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268131-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("Release from elastic/elasticsearch");
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().NotContain("owner:", "description default must not stamp owner onto YAML");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithProfileMode_MissingConfig_ReturnsErrorWithAdvice()
 	{
 		// Arrange - no config file exists at ./changelog.yml or ./docs/changelog.yml.

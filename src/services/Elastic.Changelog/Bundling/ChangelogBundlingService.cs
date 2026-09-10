@@ -741,7 +741,9 @@ public partial class ChangelogBundlingService(
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
-			// Handle profile-specific description with placeholder substitution
+			// Handle profile-specific description with placeholder substitution.
+			// Checkout fallback is for {repo}/{owner} text only — keep returned Repo/Owner as
+			// config/CLI so combined owner/repo still supplies the CDN owner.
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
 			if (!string.IsNullOrEmpty(descriptionTemplate))
 			{
@@ -759,7 +761,19 @@ public partial class ChangelogBundlingService(
 					return null;
 				}
 
-				if (hasOwnerRepoPlaceholder && (string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo)))
+#pragma warning disable CS0618
+				var descriptionRepo = BundleOutputNaming.ResolveRepo(
+					_fileSystem,
+					input.Config,
+					_env,
+					input.Repo,
+					profile.Repo,
+					config.Bundle.Repo
+				);
+#pragma warning restore CS0618
+				var descriptionOwner = owner ?? "elastic";
+
+				if (hasOwnerRepoPlaceholder && (string.IsNullOrEmpty(descriptionOwner) || string.IsNullOrEmpty(descriptionRepo)))
 				{
 					collector.EmitError(
 						string.Empty,
@@ -773,8 +787,8 @@ public partial class ChangelogBundlingService(
 					descriptionTemplate,
 					filterResult.Version,
 					resolvedLifecycle,
-					owner,
-					repo
+					descriptionOwner,
+					descriptionRepo
 				);
 			}
 		}
