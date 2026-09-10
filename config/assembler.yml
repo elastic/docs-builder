@@ -25,7 +25,6 @@ environments:
       ASSEMBLER_API_EXPLORER: true
       NAVIGATION_PREVIEW: false
       PAGE_FEEDBACK: true
-      PRIVACY_CONSENT: true
     website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
   edge:
     uri: https://d34ipnu52o64md.cloudfront.net
