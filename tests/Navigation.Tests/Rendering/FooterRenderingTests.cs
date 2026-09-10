@@ -37,10 +37,16 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 		html.IndexOf("</ul>", StringComparison.Ordinal).Should().BeLessThan(html.IndexOf("Notice at Collection", StringComparison.Ordinal));
 
 		var preferences = html.IndexOf("iubenda-cs-preferences-link", StringComparison.Ordinal);
-		var choices = html.IndexOf("Your Privacy Choices", preferences, StringComparison.Ordinal);
-		var svg = html.IndexOf("<svg", preferences, StringComparison.Ordinal);
-		choices.Should().BeGreaterThan(-1);
-		svg.Should().BeGreaterThan(choices);
+		preferences.Should().BeGreaterThan(-1);
+		var anchorEnd = html.IndexOf("</a>", preferences, StringComparison.Ordinal);
+		anchorEnd.Should().BeGreaterThan(preferences);
+		var preferencesLink = html[preferences..anchorEnd];
+		preferencesLink.Should().Contain("Your Privacy Choices");
+		preferencesLink.Should().Contain("<svg");
+		preferencesLink
+			.IndexOf("Your Privacy Choices", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(preferencesLink.IndexOf("<svg", StringComparison.Ordinal));
 	}
 
 	private async Task<string> RenderAssemblerFooter()
