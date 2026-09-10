@@ -7,13 +7,6 @@
 		if (name == GlobalSections.Head)
 		{
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
-			<style>
-				@@media (prefers-reduced-motion: no-preference) {
-					@@view-transition {
-						navigation: auto;
-					}
-				}
-			</style>
 		}
 		return Task.CompletedTask;
 	}

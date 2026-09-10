@@ -22,7 +22,6 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 	public string YamlUrl { get; } = ApiOutputPaths.YamlUrl(context.CurrentNavigation.Url);
 
 	public string? IconSvg { get; } = ProductIcons.Get(context.Product?.Id ?? context.CurrentApiKey);
-	public string? ApiKey { get; } = context.CurrentApiKey;
 
 	protected override string BreadcrumbCurrentTitle => ApiInfo.Title ?? CurrentNavigationItem.NavigationTitle;
 }

@@ -12,9 +12,9 @@
 	<div class="api-landing-heading">
 		@if (Model.IconSvg is not null)
 		{
-			<span class="api-landing-icon" style="view-transition-name: api-icon-@Model.ApiKey">@(new HtmlString(Model.IconSvg))</span>
+			<span class="api-landing-icon">@(new HtmlString(Model.IconSvg))</span>
 		}
-		<h1 style="view-transition-name: api-title-@Model.ApiKey">@Model.ApiInfo.Title</h1>
+		<h1>@Model.ApiInfo.Title</h1>
 	</div>
 	<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
 	<p>License: @Model.ApiInfo.License?.Name</p>

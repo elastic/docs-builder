@@ -29,9 +29,9 @@
 						<div class="api-catalog-card-head">
 							@if (tile.IconSvg is not null)
 							{
-								<span class="api-catalog-card-icon" style="view-transition-name: api-icon-@tile.Key">@(new HtmlString(tile.IconSvg))</span>
+								<span class="api-catalog-card-icon">@(new HtmlString(tile.IconSvg))</span>
 							}
-							<h2 class="api-catalog-card-title" style="view-transition-name: api-title-@tile.Key">@tile.Title</h2>
+							<h2 class="api-catalog-card-title">@tile.Title</h2>
 						</div>
 						<code class="api-catalog-card-key">@tile.Key</code>
 						<div class="api-catalog-card-badges">
