@@ -10,7 +10,6 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Tests.Isolation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -37,15 +36,13 @@ public class LandingLayoutRenderingTests(ITestOutputHelper output) : Documentati
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var siteRoot = new MockSiteNavigationRoot(new TopNavRenderModel([new TopNavLinkItem("Reference", "/docs/reference/", false)]));
-		var currentNavItem = new StubNavigationItem("/docs/") { Parent = siteRoot };
 
 		var model = new MarkdownLayoutViewModel
 		{
 			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
-			CurrentNavigationItem = currentNavItem,
+			CurrentNavigationItem = new StubNavigationItem("/docs/"),
 			Previous = null,
 			Next = null,
 			NavigationHtml = "",
@@ -68,7 +65,6 @@ public class LandingLayoutRenderingTests(ITestOutputHelper output) : Documentati
 			Breadcrumbs = [],
 			PageTocItems = [],
 			Layout = MarkdownPageLayout.LandingPage,
-			RenderHamburgerIcon = false,
 			VersioningSystem = new VersioningSystem
 			{
 				Id = VersioningSystemId.Stack,
@@ -88,21 +84,5 @@ public class LandingLayoutRenderingTests(ITestOutputHelper output) : Documentati
 		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 		public bool Hidden => false;
 		public int NavigationIndex { get; set; }
-	}
-
-	private sealed class MockSiteNavigationRoot(
-		TopNavRenderModel? topNav
-	) : INodeNavigationItem<INavigationModel, INavigationItem>, ISiteNavigationRoot
-	{
-		public TopNavRenderModel? TopNav { get; } = topNav;
-		public string Id => "mock-site";
-		public string Url => "/";
-		public string NavigationTitle => "Mock Site";
-		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => null!;
-		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-		public bool Hidden => false;
-		public int NavigationIndex { get; set; }
-		public ILeafNavigationItem<INavigationModel> Index => null!;
-		public IReadOnlyCollection<INavigationItem> NavigationItems => [];
 	}
 }
