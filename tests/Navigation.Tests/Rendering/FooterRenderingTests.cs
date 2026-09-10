@@ -18,29 +18,30 @@ namespace Elastic.Documentation.Navigation.Tests.Rendering;
 public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
 {
 	[Fact]
-	public async Task AssemblerFooter_FlagOff_OmitsIubendaPrivacyChoiceLinks()
+	public async Task AssemblerFooter_RendersIubendaLinksAfterTrademarkCopy()
 	{
-		var html = await RenderAssemblerFooter(privacyConsentEnabled: false);
-
-		html.Should().Contain("privacy-statement");
-		html.Should().NotContain("iubenda-cs-uspr-link");
-		html.Should().NotContain("Notice at Collection");
-		html.Should().NotContain("iubenda-cs-preferences-link");
-		html.Should().NotContain("Your Privacy Choices");
-	}
-
-	[Fact]
-	public async Task AssemblerFooter_FlagOn_RendersIubendaPrivacyChoiceLinks()
-	{
-		var html = await RenderAssemblerFooter(privacyConsentEnabled: true);
+		var html = await RenderAssemblerFooter();
 
 		html.Should().Contain("iubenda-cs-uspr-link");
 		html.Should().Contain("Notice at Collection");
 		html.Should().Contain("iubenda-cs-preferences-link");
 		html.Should().Contain("Your Privacy Choices");
+		html.Should().Contain("privacy-statement");
+
+		html
+			.IndexOf("Elasticsearch is a trademark", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("Notice at Collection", StringComparison.Ordinal));
+		html.IndexOf("</ul>", StringComparison.Ordinal).Should().BeLessThan(html.IndexOf("Notice at Collection", StringComparison.Ordinal));
+
+		var preferences = html.IndexOf("iubenda-cs-preferences-link", StringComparison.Ordinal);
+		var choices = html.IndexOf("Your Privacy Choices", preferences, StringComparison.Ordinal);
+		var svg = html.IndexOf("<svg", preferences, StringComparison.Ordinal);
+		choices.Should().BeGreaterThan(-1);
+		svg.Should().BeGreaterThan(choices);
 	}
 
-	private async Task<string> RenderAssemblerFooter(bool privacyConsentEnabled)
+	private async Task<string> RenderAssemblerFooter()
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -58,7 +59,7 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = new FeatureFlags(privacyConsentEnabled ? new Dictionary<string, bool> { ["privacy-consent"] = true } : []),
+			Features = new FeatureFlags([]),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
