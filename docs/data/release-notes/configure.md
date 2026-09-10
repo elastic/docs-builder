@@ -9,7 +9,7 @@ You can then set up a changelog configuration file to make the content workflow 
 
 1. Optional: Choose the GitHub labels that you'll use to automatically derive some changelog fields.
 
-    1. Create labels for _types_. The supported types are defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs). At a minimum, add labels for the `feature`, `bug-fix`, and `breaking-change` types.
+    1. Create labels for _types_. The supported types are defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs). At a minimum, add labels for the `feature`, `bug-fix`, and `breaking-change` types.
 
     1. Create labels for _products_. If your repo only pertains to a single product or you don't want to use labels to accomplish this classification, this step is not required.
 
