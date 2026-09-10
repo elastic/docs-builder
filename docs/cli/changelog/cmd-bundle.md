@@ -119,7 +119,7 @@ docs-builder changelog bundle serverless-release 2026-08-13 \
 
 ## Bundles are self-contained
 
-Every bundle embeds the full content of each changelog entry (`title`, `type`, `products`, and so on), plus a `file` block recording the source file name and checksum for provenance. Rendering — via the `{changelog}` directive, `changelog render`, or the CDN pipeline — never reads the original changelog files, so you can clean them up with `docs-builder changelog remove` immediately after bundling.
+Every bundle embeds the full content of each changelog entry (`title`, `type`, `products`, and so on), plus a `file` block recording the source file name and checksum for provenance. Rendering — via the `{changelog}` directive, `changelog render`, or the CDN pipeline — never reads the original changelog files, so you can clean them up with `docs-builder changelog remove` immediately after bundling. To recreate changelog files later, use [`changelog unpack`](/cli/changelog/unpack.md). Unpack does not restore the original checksums. Public bundles produced by the upload scrubber are less likely to unpack because private PRs and issues may have been removed.
 
 When you bundle from a PR list or GitHub release and the command is sourcing from the CDN, it also adds uploaded changelogs whose `products[].versions` include that version (from `output_products`). Those files are appended to the same `entries` list; `rules.bundle` applies to them too. This automatic add does not apply to git-range bundles or `--force-local`. For more detail, see [Bundle changelogs](/data/release-notes/bundle.md).
 

@@ -214,6 +214,54 @@ public class ChangelogCreationService(
 		}
 	}
 
+	/// <summary>
+	/// Writes a single changelog from fully populated fields without GitHub fetches or splitting
+	/// multi-PR inputs into one file per PR. Used by <c>changelog unpack</c> so a shipped bundle
+	/// entry round-trips as one add-shaped file.
+	/// </summary>
+	public async Task<bool> CreatePreparedChangelog(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
+	{
+		try
+		{
+			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			if (config == null)
+			{
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
+				return false;
+			}
+
+			input = ApplyConfigDefaults(input, config) with { ExtractReleaseNotes = false, ExtractIssues = false };
+
+			if (input.Prs is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultiplePrFormat(collector, input.Prs, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidatePrFormat(collector, input.Prs?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			if (input.Issues is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultipleIssueFormat(collector, input.Issues, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidateIssueFormat(collector, input.Issues?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			return await WriteValidatedChangelog(collector, input, config, ctx);
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error creating changelog: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
 	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config) =>
 		// Filename strategy is always Pr now; UsePrNumber is kept for backward compat but is effectively always true.
 		input with
@@ -390,7 +438,17 @@ public class ChangelogCreationService(
 		else if (!string.IsNullOrWhiteSpace(prUrl))
 			_logger.LogInformation("All required fields already provided, skipping PR API fetch for {PrUrl}", prUrl);
 
-		// If still no products, fall back to products.default or repo name inference
+		return await WriteValidatedChangelog(collector, input, config, ctx, prFetchFailed);
+	}
+
+	private async Task<bool> WriteValidatedChangelog(
+		IDiagnosticsCollector collector,
+		CreateChangelogArguments input,
+		ChangelogConfiguration config,
+		Cancel ctx,
+		bool prFetchFailed = false
+	)
+	{
 		if (input.Products.Count == 0)
 		{
 			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
@@ -398,19 +456,15 @@ public class ChangelogCreationService(
 				input = input with { Products = inferredProducts };
 		}
 
-		// Validate required fields
 		if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
 			return false;
 
-		// Entries must not carry version targets; applicability comes from the origin branch
 		if (!_validator.ValidateNoVersionTarget(collector, input))
 			return false;
 
-		// Validate against configuration
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
 			return false;
 
-		// Write changelog file
 		return await _fileWriter.WriteChangelogAsync(
 			collector,
 			input,
