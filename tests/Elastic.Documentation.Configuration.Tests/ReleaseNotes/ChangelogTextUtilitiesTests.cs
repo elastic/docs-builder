@@ -228,4 +228,21 @@ public class ChangelogTextUtilitiesTests
 
 		result.Should().BeTrue();
 	}
+
+	[Theory]
+	[InlineData("# PRIVATE: https://github.com/elastic/elasticsearch-serverless/pull/7606", "https://github.com/elastic/elasticsearch-serverless/pull/7606")]
+	[InlineData("https://github.com/elastic/elasticsearch/pull/1", "https://github.com/elastic/elasticsearch/pull/1")]
+	[InlineData("  # PRIVATE: elastic/repo#12  ", "elastic/repo#12")]
+	public void StripPrivateReferenceSentinel_UnwrapsSentinel(string input, string expected) =>
+		ChangelogTextUtilities.StripPrivateReferenceSentinel(input).Should().Be(expected);
+
+	[Fact]
+	public void StripPrivateReferenceSentinels_DropsEmptyAfterStrip()
+	{
+		var result = ChangelogTextUtilities.StripPrivateReferenceSentinels([
+			"# PRIVATE: ",
+			"https://github.com/elastic/elasticsearch/pull/1"
+		]);
+		result.Should().Equal("https://github.com/elastic/elasticsearch/pull/1");
+	}
 }

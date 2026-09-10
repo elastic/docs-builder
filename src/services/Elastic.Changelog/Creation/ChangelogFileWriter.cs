@@ -74,7 +74,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		if (!fileSystem.Directory.Exists(outputDir))
 			_ = fileSystem.Directory.CreateDirectory(outputDir);
 
-		var filename = GenerateNoteFilename(input.NoteName, input.Title);
+		var filename = GetNoteFileName(input.NoteName, input.Title);
 		var filePath = fileSystem.Path.Join(outputDir, filename);
 
 		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
@@ -83,7 +83,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return true;
 	}
 
-	private static string GenerateNoteFilename(string? noteName, string? title)
+	internal static string GetNoteFileName(string? noteName, string? title)
 	{
 		var source = !string.IsNullOrWhiteSpace(noteName) ? noteName : title;
 		if (string.IsNullOrWhiteSpace(source))
@@ -116,29 +116,36 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
 	private const int MaxFilenameLength = 200;
 
+	internal static string? TryGetChangelogFileName(CreateChangelogArguments input)
+	{
+		if (input.Prs is not { Length: > 0 })
+			return null;
+
+		var numbers = input
+			.Prs
+			.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
+			.Where(n => n.HasValue)
+			.Select(n => n!.Value)
+			.Distinct()
+			.OrderBy(n => n)
+			.ToList();
+
+		if (numbers.Count == 0)
+			return null;
+
+		var joined = $"{string.Join("-", numbers)}.yaml";
+		if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
+
+			return joined;
+
+		return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
+	}
+
 	private string? GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
-		if (input.Prs is { Length: > 0 })
-		{
-			var numbers = input
-				.Prs
-				.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
-				.Where(n => n.HasValue)
-				.Select(n => n!.Value)
-				.Distinct()
-				.OrderBy(n => n)
-				.ToList();
-
-			if (numbers.Count > 0)
-			{
-				var joined = $"{string.Join("-", numbers)}.yaml";
-				if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
-
-					return joined;
-				// Too many PRs: use compact format to avoid path-too-long errors
-				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
-			}
-		}
+		var filename = TryGetChangelogFileName(input);
+		if (filename != null)
+			return filename;
 
 		collector.EmitError(
 			string.Empty,

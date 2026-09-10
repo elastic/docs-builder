@@ -66,9 +66,17 @@ If you already have automated release notes for GitHub releases, you can use the
     Any command strings that contain special characters (such as backquotes) must be preceded with a backslash escape character (`\`).
     :::
 
-    For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/add.md) and [](/cli/changelog/note.md).
+     For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/add.md) and [](/cli/changelog/note.md).
 
 1. [Review the output file](#review).
+
+## Recreate changelog files from a bundle [unpack]
+
+If the original changelog files were deleted after bundling, you can recreate them from a bundle with [`changelog unpack`](/cli/changelog/unpack.md). The command maps each entry onto `changelog add` or `changelog note`; it does not restore original checksums or comments.
+
+:::{tip}
+Use local bundles or bundles downloaded from the private CDN. Bundles scrubbed during [`changelog upload`](/cli/changelog/upload.md) drop private PRs and issues, which means the `unpack` command will generate incomplete changelogs.
+:::
 
 ## Create changelogs from GitHub actions [github-actions]
 
