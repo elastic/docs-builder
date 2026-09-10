@@ -112,7 +112,8 @@ public class OpenApiGeneratorCatalogSplitTests
 			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
 		html.Should().Contain("api-landing-heading");
 		html.Should().Contain("<h1>Elasticsearch main</h1>");
-		html.Should().Contain("<svg");
+		html.Should().Contain("<span class=\"api-landing-icon\">");
+		html.Should().Contain("viewBox=\"8 4.9995 47.7276 54.001\"");
 	}
 
 	[Fact]
