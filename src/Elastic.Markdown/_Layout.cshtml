@@ -92,6 +92,30 @@
 		</div>
 	}
 
+	private async Task RenderLanding()
+	{
+		<div class="relative">
+			@if (Model.HasMobilePagesNavContent)
+			{
+				<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+				<label role="button" class="absolute left-4 top-3 z-10 md:hidden cursor-pointer" for="pages-nav-hamburger">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+					     stroke="currentColor" class="size-6">
+						<path stroke-linecap="round" stroke-linejoin="round"
+						      d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+					</svg>
+				</label>
+			}
+			@await RenderPartialAsync(_LandingPage.Create(Model))
+			@if (Model.HasMobilePagesNavContent)
+			{
+				<div class="md:hidden">
+					@await RenderPartialAsync(_PagesNav.Create(Model))
+				</div>
+			}
+		</div>
+	}
+
 }
 
 @if (RenderHeaderAndFooter)
@@ -113,7 +137,7 @@
 		await RenderPartialAsync(_NotFound.Create(Model));
 		break;
 	case MarkdownPageLayout.LandingPage:
-		await RenderPartialAsync(_LandingPage.Create(Model));
+		await RenderLanding();
 		break;
 	case MarkdownPageLayout.Archive:
 		await RenderPartialAsync(_Archive.Create(Model));

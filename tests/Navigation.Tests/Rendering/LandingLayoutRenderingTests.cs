@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Tests.Isolation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -24,32 +25,47 @@ public class LandingLayoutRenderingTests(ITestOutputHelper output) : Documentati
 	[Fact]
 	public async Task LandingPage_OmitsEmptyMobileHamburger()
 	{
-		var html = await RenderLanding();
+		var html = await RenderLanding(navigationPreviewEnabled: false);
 
 		html.Should().Contain("Elastic Docs");
 		html.Should().NotContain("pages-nav-hamburger");
 		html.Should().NotContain("id=\"pages-nav\"");
 	}
 
-	private async Task<string> RenderLanding()
+	[Fact]
+	public async Task LandingPage_WithNavigationPreview_RendersMobileDrawer()
+	{
+		var html = await RenderLanding(navigationPreviewEnabled: true);
+
+		html.Should().Contain("pages-nav-hamburger");
+		html.Should().Contain("id=\"pages-nav\"");
+		html.Should().Contain("secondary-nav-mobile-menu");
+		html.Should().Contain("<version-dropdown");
+	}
+
+	private async Task<string> RenderLanding(bool navigationPreviewEnabled)
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
+		var siteRoot = new MockSiteNavigationRoot(new TopNavRenderModel([new TopNavLinkItem("Reference", "/docs/reference/", false)]));
+		var currentNavItem = new StubNavigationItem("/docs/") { Parent = siteRoot };
 
 		var model = new MarkdownLayoutViewModel
 		{
 			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
-			CurrentNavigationItem = new StubNavigationItem("/docs/"),
+			CurrentNavigationItem = currentNavItem,
 			Previous = null,
 			Next = null,
 			NavigationHtml = "",
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = new FeatureFlags([]),
+			Features = navigationPreviewEnabled
+				? new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
+				: new FeatureFlags([]),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
@@ -84,5 +100,21 @@ public class LandingLayoutRenderingTests(ITestOutputHelper output) : Documentati
 		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 		public bool Hidden => false;
 		public int NavigationIndex { get; set; }
+	}
+
+	private sealed class MockSiteNavigationRoot(
+		TopNavRenderModel? topNav
+	) : INodeNavigationItem<INavigationModel, INavigationItem>, ISiteNavigationRoot
+	{
+		public TopNavRenderModel? TopNav { get; } = topNav;
+		public string Id => "mock-site";
+		public string Url => "/";
+		public string NavigationTitle => "Mock Site";
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => null!;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+		public ILeafNavigationItem<INavigationModel> Index => null!;
+		public IReadOnlyCollection<INavigationItem> NavigationItems => [];
 	}
 }
