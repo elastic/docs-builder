@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Configuration;
@@ -152,15 +153,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			}
 		}
 
+		finalNavigationItems.AddRange(StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation));
+
 		// Add existing navigation items (OpenAPI generated content)
 		if (topLevelNavigationItems.Count > 0)
 			finalNavigationItems.AddRange(topLevelNavigationItems);
 		else if (rootNavigation.NavigationItems.Count > 0)
 			finalNavigationItems.AddRange(rootNavigation.NavigationItems);
 
-		// Set the final navigation items
-		if (finalNavigationItems.Count > 0)
-			rootNavigation.NavigationItems = finalNavigationItems;
+		rootNavigation.NavigationItems = finalNavigationItems;
 
 		return rootNavigation;
 	}

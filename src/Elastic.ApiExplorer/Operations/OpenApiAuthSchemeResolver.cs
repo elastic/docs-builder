@@ -43,11 +43,14 @@ public static class OpenApiAuthSchemeResolver
 		return scheme;
 	}
 
-	private static string? LabelFor(IOpenApiSecurityScheme? scheme) => scheme?.Type switch
+	internal static string? LabelFor(IOpenApiSecurityScheme? scheme) => scheme?.Type switch
 	{
 		SecuritySchemeType.ApiKey => "Api key",
 		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) => "Basic",
 		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "bearer", StringComparison.OrdinalIgnoreCase) => "Bearer",
+		SecuritySchemeType.Http when !string.IsNullOrEmpty(scheme.Scheme) => scheme.Scheme,
+		SecuritySchemeType.OAuth2 => "OAuth 2.0",
+		SecuritySchemeType.OpenIdConnect => "OpenID Connect",
 		_ => null
 	};
 }
