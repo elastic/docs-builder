@@ -11,6 +11,7 @@ Specify at least one of `--add` or `--remove`.
 
 To create a bundle, use [](/cli/changelog/bundle.md).
 For details and examples, go to [](/data/release-notes/bundle.md).
+For changelog notes (`note-*.yml`) after a bundle has shipped, go to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship). `--add` and `--remove` accept those files like any other changelog YAML. Don't use `--add` for a late note: upload the file and let the scrubber write `{parent}.amend-notes.yaml`. `--remove` does not unpublish the pool file.
 
 ## Output
 
@@ -124,6 +125,14 @@ docs-builder changelog bundle-amend \
 
 The CLI computes the checksum of the sourced YAML and matches it against the effective bundle (parent plus any existing amend files).
 If the bundle contains the file with a different checksum, or no YAML can be sourced (for example a git-ref entry that exists only in the bundle), the command fails unless you pass `--force` to remove by file name only.
+
+`--remove` works the same for a changelog note (`note-*.yml`). That does not unpublish the pool file. For late notes and the scrubber-owned `.amend-notes` sidecar, refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/changelog/bundles/9.3.0.yaml \
+  --remove /changelog/elastic/kibana/main/note-known-issue-aggregations.yml
+```
 
 ### Add multiple changelogs to a bundle
 

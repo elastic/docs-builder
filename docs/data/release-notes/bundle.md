@@ -327,11 +327,48 @@ Don't explicitly list the amend bundles in the `--input` option of the `docs-bui
 
 For more details and examples, go to [](/cli/changelog/bundle-amend.md).
 
+### Add or remove notes after a bundle ships [changelog-bundle-notes-after-ship]
+
+A changelog *note* is a `note-*.yml` file from [`changelog note`](/cli/changelog/note.md). Each product lists `products[].versions`. That file kind is not an entry `type` (notes still use types such as `known-issue` or `security`).
+
+When you create a release bundle from a PR list or GitHub release and the command is sourcing from the CDN, matching notes are already included. That automatic add does not apply to git-range bundles or `--force-local`. To build a bundle that contains only notes, use a [path list](/cli/changelog/bundle.md#changelog-bundle-files) (profile third argument or `--files`).
+
+#### Add a note after the bundle shipped
+
+1. Create the file with [`changelog note`](/cli/changelog/note.md).
+2. Upload it with [`changelog upload --artifact-type changelog`](/cli/changelog/upload.md), using the same path and credentials as any other changelog YAML.
+3. Stop. Don't run `changelog bundle-amend --add` for this file.
+
+The changelog scrubber writes `{parent}.amend-notes.yaml` (for example `9.3.0.amend-notes.yaml`) and merges it when the bundle is rendered. That suffix is reserved; you must not create, edit, or delete those files.
+
+#### Remove a note
+
+What you can do depends on where the note lives:
+
+| Where it is | What you can do today |
+| --- | --- |
+| Local file only; the bundle is not uploaded | [`changelog remove`](/cli/changelog/remove.md) or re-run `changelog bundle`. That never changes a published bundle. |
+| Embedded in the parent bundle (or added with numbered `--add`) | `bundle-amend --remove` on the `note-*.yml` path, then upload `{parent}.amend-N.yaml` with [`changelog upload --artifact-type bundle`](/cli/changelog/upload.md). |
+| Only in `.amend-notes` (uploaded after the bundle shipped) | No `changelog` command removes it from the published pool or that sidecar. Don't create, edit, or delete `.amend-notes` files. |
+
+Example of excluding a note that is already in the parent:
+
+```sh
+docs-builder changelog bundle-amend \
+  /bundle/kibana/9.3.0.yaml \
+  --remove /changelog/elastic/kibana/main/note-known-issue-aggregations.yml \
+  --output ./docs/releases
+```
+
+:::{warning}
+`changelog bundle-amend --remove` does not unpublish the note YAML from the changelog pool. If that file is still published, the scrubber can treat it as a late note and write it back into `.amend-notes`. A checksum-strict `--remove` may not hide that restored copy. There is no docs-builder command that unpublishes a pool file.
+:::
+
 ## Remove changelog files [changelog-remove]
 
 A single changelog file might be applicable to multiple releases (for example, it might be delivered in both Stack and {{serverless-short}} releases or {{ech}} and Enterprise releases on different timelines).
 After it has been included in all of the relevant bundles, it is reasonable to delete the changelog to keep your repository clean.
-Because bundles are self-contained, deleting changelog files never affects existing bundles or the docs built from them.
+Because bundles are self-contained, deleting changelog files never affects existing bundles or the docs built from them. That includes changelog notes (`note-*.yml`): [`changelog remove`](/cli/changelog/remove.md) never drops a note from a published bundle or from a `.amend-notes` sidecar. Refer to [](#changelog-bundle-notes-after-ship).
 
 You can use the `docs-builder changelog remove` command to remove changelogs.
 If you created profiles, you can use them like this:
