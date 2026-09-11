@@ -78,7 +78,7 @@ public class ChangelogHighlightsOptionDefaultOffTests : DirectiveTest<ChangelogB
 	[Fact]
 	public void StillRendersHighlightedEntryUnderTypeSection()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Highlighted feature");
 		Html.Should().Contain("Regular feature");
 		Html.Should().Contain("Fixes");
@@ -118,7 +118,7 @@ public class ChangelogHighlightsOptionEnabledTests : DirectiveTest<ChangelogBloc
 	[Fact]
 	public void DuplicatesHighlightedEntryInTypeSection()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Highlighted feature");
 		Html.Should().Contain("Regular feature");
 	}
@@ -157,7 +157,7 @@ public class ChangelogHighlightsOptionWithTypeAllTests : DirectiveTest<Changelog
 	{
 		Html.Should().Contain("Highlights");
 		Html.Should().Contain("Breaking changes");
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 	}
 }
 
@@ -218,7 +218,7 @@ public class ChangelogHighlightsLegacyTypeHighlightTests : DirectiveTest<Changel
 	[Fact]
 	public void RendersDefaultTypeSectionsNotHighlightsOnly()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Highlighted feature");
 		Html.Should().NotContain("id=\"elasticsearch-9.3.0-highlights\"");
 	}
@@ -300,7 +300,7 @@ public class ChangelogKeepHighlightDescriptionsTests : DirectiveTest<ChangelogBl
 	[Fact]
 	public void StillRendersTitlesInTypeSections()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Highlighted feature");
 		Html.Should().Contain("Regular feature");
 	}

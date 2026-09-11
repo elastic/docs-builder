@@ -94,7 +94,7 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 	public void TocIncludesFeaturesSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
+		tocItems.Should().Contain(t => t.Heading == "Features");
 	}
 
 	[Fact]
@@ -123,7 +123,7 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 	{
 		Html.Should().Contain("Documentation");
 		Html.Should().Contain("Other changes");
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 	}
 }
 
@@ -193,7 +193,7 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 	public void TocRetainsVisibleFeaturesSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
+		tocItems.Should().Contain(t => t.Heading == "Features");
 	}
 
 	[Fact]
@@ -207,7 +207,7 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 	public void AnchorsRetainVisibleFeaturesSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
-		anchors.Should().Contain(a => a.Contains("features-enhancements"));
+		anchors.Should().Contain(a => a.Contains("features"));
 	}
 
 	[Fact]
@@ -215,7 +215,7 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 	{
 		Html.Should().NotContain("Other changes");
 		Html.Should().NotContain("Hidden other change");
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Visible feature");
 	}
 }
@@ -371,7 +371,7 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 	public void TocRetainsUnfilteredSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
+		tocItems.Should().Contain(t => t.Heading == "Features");
 	}
 
 	[Fact]
@@ -385,7 +385,7 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 	[Fact]
 	public void HtmlMatchesTocAndAnchors()
 	{
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Visible feature");
 		Html.Should().Contain("Documentation");
 		Html.Should().Contain("Docs entry blocked by type");
@@ -483,7 +483,7 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 	public void TocIncludesFeaturesSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
+		tocItems.Should().Contain(t => t.Heading == "Features");
 	}
 
 	[Fact]
@@ -492,7 +492,7 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 		var anchors = Block!.GeneratedAnchors.ToList();
 		anchors.Should().Contain(a => a.Contains("-docs"));
 		anchors.Should().Contain(a => a.EndsWith("-other"));
-		anchors.Should().Contain(a => a.Contains("features-enhancements"));
+		anchors.Should().Contain(a => a.Contains("features"));
 	}
 }
 
@@ -658,7 +658,7 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 	public void FirstVersionRetainsFeaturesInToc()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
+		tocItems.Should().Contain(t => t.Heading == "Features");
 	}
 
 	[Fact]

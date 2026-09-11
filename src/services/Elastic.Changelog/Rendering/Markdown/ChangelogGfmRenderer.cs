@@ -71,16 +71,18 @@ public class ChangelogGfmRenderer(IChangelogFileSystem fileSystem) : MarkdownRen
 			_ = sb.AppendLine();
 		}
 
-		// Features and enhancements
-		if (features.Count > 0 || enhancements.Count > 0)
+		if (features.Count > 0 && !AllEntriesHidden(features))
 		{
-			var combined = features.Concat(enhancements).ToList();
-			if (!AllEntriesHidden(combined))
-			{
-				_ = sb.AppendLine("### Features and enhancements");
-				RenderEntriesByArea(sb, combined, context);
-				_ = sb.AppendLine();
-			}
+			_ = sb.AppendLine("### Features");
+			RenderEntriesByArea(sb, features, context);
+			_ = sb.AppendLine();
+		}
+
+		if (enhancements.Count > 0 && !AllEntriesHidden(enhancements))
+		{
+			_ = sb.AppendLine("### Enhancements");
+			RenderEntriesByArea(sb, enhancements, context);
+			_ = sb.AppendLine();
 		}
 
 		// Breaking changes

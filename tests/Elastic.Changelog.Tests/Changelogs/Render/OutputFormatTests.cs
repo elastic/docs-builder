@@ -141,8 +141,8 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		// Verify valid asciidoc format elements
 		asciidocContent.Should().Contain("[[release-notes-", "should contain anchor");
 		asciidocContent.Should().Contain("== 9.2.0", "should contain section header");
-		asciidocContent.Should().Contain("[[features-enhancements-", "should contain features section anchor");
-		asciidocContent.Should().Contain("=== New features and enhancements", "should contain features section header");
+		asciidocContent.Should().Contain("[[features-", "should contain features section anchor");
+		asciidocContent.Should().Contain("=== Features", "should contain features section header");
 		asciidocContent.Should().Contain("* Test feature", "should contain changelog entry");
 		asciidocContent.Should().Contain("This is a test feature", "should contain description");
 
@@ -247,8 +247,8 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		asciidocContent.Should().Contain("[float]", "should contain float attribute");
 		asciidocContent.Should().Contain("=== Bug fixes", "should contain bug fixes header");
 
-		asciidocContent.Should().Contain("[[features-enhancements-9.2.0]]", "should contain features anchor");
-		asciidocContent.Should().Contain("=== New features and enhancements", "should contain features header");
+		asciidocContent.Should().Contain("[[features-9.2.0]]", "should contain features anchor");
+		asciidocContent.Should().Contain("=== Features", "should contain features header");
 
 		asciidocContent.Should().Contain("[[breaking-changes-9.2.0]]", "should contain breaking changes anchor");
 		asciidocContent.Should().Contain("=== Breaking changes", "should contain breaking changes header");

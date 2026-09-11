@@ -89,7 +89,7 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 	}
 
 	[Fact]
-	public void RendersFeaturesSection() => Html.Should().Contain("Features and enhancements");
+	public void RendersFeaturesSection() => Html.Should().Contain("Features");
 
 	[Fact]
 	public void RendersDeprecationsSection() => Html.Should().Contain("Deprecations");

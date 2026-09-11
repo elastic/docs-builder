@@ -198,14 +198,25 @@ public static class ChangelogInlineRenderer
 		string bundleRepo,
 		HashSet<string> privateRepositories,
 		ChangelogDescriptionVisibility visibility
-	) => visibility switch
+	)
 	{
-		ChangelogDescriptionVisibility.HideDescriptions => true,
-		ChangelogDescriptionVisibility.KeepHighlightDescriptions => true,
-		ChangelogDescriptionVisibility.KeepDescriptions => false,
-		ChangelogDescriptionVisibility.Auto => !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories),
-		_ => !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories)
-	};
+		if (visibility.HasFlag(ChangelogDescriptionVisibility.KeepDescriptions))
+			return false;
+
+		if (visibility.HasFlag(ChangelogDescriptionVisibility.HideDescriptions))
+			return true;
+
+		if (visibility.HasFlag(ChangelogDescriptionVisibility.Auto))
+			return !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories);
+
+		if (
+			visibility.HasFlag(ChangelogDescriptionVisibility.KeepHighlightDescriptions)
+			|| visibility.HasFlag(ChangelogDescriptionVisibility.KeepFeatureDescriptions)
+		)
+			return true;
+
+		return !HasAnyPrivateRepoConstituent(bundleRepo, privateRepositories);
+	}
 
 	/// <summary>
 	/// True when merged <paramref name="bundleRepo"/> (<c>elasticsearch+kibana</c>-style) has at least one
@@ -242,7 +253,9 @@ public static class ChangelogInlineRenderer
 		var subsections = options.Subsections;
 		var hideLinks = model.HideLinks;
 		var hideEntryDescriptions = model.HideEntryDescriptions;
-		var hideHighlightDescriptions = options.DescriptionVisibility is not ChangelogDescriptionVisibility.KeepHighlightDescriptions
+		var hideHighlightDescriptions = !options.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepHighlightDescriptions)
+			&& hideEntryDescriptions;
+		var hideFeatureDescriptions = !options.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepFeatureDescriptions)
 			&& hideEntryDescriptions;
 		var dropdownsEnabled = options.DropdownsEnabled;
 		var typeFilter = options.TypeFilter;
@@ -306,6 +319,7 @@ public static class ChangelogInlineRenderer
 					groupBySubtype: true,
 					hideLinks,
 					hideEntryDescriptions,
+					subsections,
 					publishBlocker
 				);
 			else
@@ -325,6 +339,7 @@ public static class ChangelogInlineRenderer
 					groupBySubtype: false,
 					hideLinks,
 					hideHighlightDescriptions,
+					subsections,
 					publishBlocker
 				);
 			else
@@ -372,12 +387,31 @@ public static class ChangelogInlineRenderer
 			);
 		}
 
-		if (features.Count > 0 || enhancements.Count > 0)
+		if (features.Count > 0)
 		{
 			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features and enhancements [{repo}-{titleSlug}-features-enhancements]");
-			var combined = features.Concat(enhancements).ToList();
-			RenderEntriesByArea(sb, combined, repo, owner, subsections, hideLinks, hideEntryDescriptions, publishBlocker);
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Features [{repo}-{titleSlug}-features]");
+			if (dropdownsEnabled)
+				RenderDetailedEntries(
+					sb,
+					features,
+					repo,
+					owner,
+					groupBySubtype: false,
+					hideLinks,
+					hideFeatureDescriptions,
+					subsections,
+					publishBlocker
+				);
+			else
+				RenderEntriesByArea(sb, features, repo, owner, subsections, hideLinks, hideFeatureDescriptions, publishBlocker);
+		}
+
+		if (enhancements.Count > 0)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Enhancements [{repo}-{titleSlug}-enhancements]");
+			RenderEntriesByArea(sb, enhancements, repo, owner, subsections, hideLinks, hideEntryDescriptions, publishBlocker);
 		}
 
 		if (bugFixes.Count > 0)
@@ -509,12 +543,11 @@ public static class ChangelogInlineRenderer
 		bool groupBySubtype,
 		bool hideLinks,
 		bool hideEntryDescriptions,
+		bool subsections,
 		PublishBlocker? publishBlocker
 	)
 	{
-		var grouped = groupBySubtype
-			? entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
+		var grouped = GroupDetailedEntries(entries, groupBySubtype, subsections, publishBlocker);
 
 		foreach (var group in grouped)
 		{
@@ -530,6 +563,22 @@ public static class ChangelogInlineRenderer
 			foreach (var entry in group)
 				RenderDetailedEntry(sb, entry, repo, owner, hideLinks, hideEntryDescriptions);
 		}
+	}
+
+	private static List<IGrouping<string, ChangelogEntry>> GroupDetailedEntries(
+		List<ChangelogEntry> entries,
+		bool groupBySubtype,
+		bool subsections,
+		PublishBlocker? publishBlocker
+	)
+	{
+		if (groupBySubtype)
+			return entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList();
+
+		if (!subsections)
+			return entries.GroupBy(_ => string.Empty).ToList();
+
+		return entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
 	}
 
 	private static void RenderDetailedEntriesFlattened(
@@ -812,7 +861,7 @@ public static class ChangelogInlineRenderer
 	{
 		if (dropdownsEnabled)
 		{
-			RenderDetailedEntries(sb, entries, repo, owner, groupBySubtype, hideLinks, hideEntryDescriptions, publishBlocker);
+			RenderDetailedEntries(sb, entries, repo, owner, groupBySubtype, hideLinks, hideEntryDescriptions, subsections, publishBlocker);
 			return;
 		}
 

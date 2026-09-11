@@ -10,9 +10,9 @@ namespace Elastic.Markdown.Tests.Directives;
 
 /// <summary>
 /// Tests for the :dropdowns: parameter on the changelog directive.
-/// By default (omitted), separated types (breaking changes, deprecations, known issues, highlights) 
-/// are rendered as flattened bulleted lists.
-/// With :dropdowns:, they render as Myst dropdown sections.
+/// By default (omitted), separated types (breaking changes, deprecations, known issues, highlights)
+/// are rendered as flattened bulleted lists; Features stay flat bullets.
+/// With :dropdowns:, those types and Features render as Myst dropdown sections.
 /// </summary>
 public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 {
@@ -408,15 +408,12 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 	[Fact]
 	public void ExplicitDropdownsRendersMixedTypesCorrectly()
 	{
-		// Regular types should still render as bulleted lists (unchanged behavior)
-		Html.Should().Contain("Feature addition."); // Regular feature type (in <li> tags)
-
-		// Separated types should render as dropdowns (explicit :dropdowns:)
 		Html.Should().Contain("<details class=\"dropdown\">");
+		Html.Should().Contain("Feature addition.");
 		Html.Should().Contain("Breaking API change.");
 		Html.Should().Contain("Known issue with search.");
 
-		// Should NOT contain flattened format for separated types (check they're in dropdown, not flat list)
+		Html.Should().NotContain("<li><p>Feature addition.");
 		Html.Should().NotContain("<li><p>Breaking API change.");
 		Html.Should().NotContain("<li><p>Known issue with search.");
 	}
@@ -466,5 +463,257 @@ public class ChangelogDropdownsPlainTextTitleTests : DirectiveTest<ChangelogBloc
 	{
 		Html.Should().Contain("The ElasticAgentVersion parameter is malformed.");
 		Html.Should().NotContain("`ElasticAgentVersion`");
+	}
+}
+
+public class ChangelogDropdownsDefaultFeaturesStayListTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDropdownsDefaultFeaturesStayListTests(ITestOutputHelper output) : base(
+			output,
+			"""
+		:::{changelog}
+		:description-visibility: keep-descriptions
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature addition
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: FEATURE_FLAT_BODY
+		  prs:
+		  - "111111"
+		"""
+			)
+		);
+
+	[Fact]
+	public void FeaturesStayBulletsWithoutDropdownsOption()
+	{
+		Html.Should().NotContain("<details class=\"dropdown\">");
+		Html.Should().Contain("<li>");
+		Html.Should().Contain("Feature addition");
+		Html.Should().Contain("FEATURE_FLAT_BODY");
+	}
+}
+
+public class ChangelogDropdownsFeaturesNotEnhancementsTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDropdownsFeaturesNotEnhancementsTests(ITestOutputHelper output) : base(
+			output,
+			"""
+		:::{changelog}
+		:dropdowns:
+		:description-visibility: keep-feature-descriptions
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature addition
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: FEATURE_DROPDOWN_BODY
+		  prs:
+		  - "111111"
+		- title: Faster existing query
+		  type: enhancement
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: ENHANCEMENT_LIST_BODY
+		  prs:
+		  - "222222"
+		"""
+			)
+		);
+
+	[Fact]
+	public void FeaturesRenderAsDropdowns()
+	{
+		Html.Should().Contain("<details class=\"dropdown\">");
+		Html.Should().Contain("Feature addition");
+		Html.Should().Contain("FEATURE_DROPDOWN_BODY");
+		Html.Should().NotContain("<li><p>Feature addition");
+	}
+
+	[Fact]
+	public void EnhancementsStayBullets()
+	{
+		Html.Should().Contain("Faster existing query");
+		Html.Should().NotContain("ENHANCEMENT_LIST_BODY");
+	}
+}
+
+public class ChangelogDropdownsFeaturesAutoHidesDescriptionTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDropdownsFeaturesAutoHidesDescriptionTests(ITestOutputHelper output) : base(
+			output,
+			"""
+		:::{changelog}
+		:dropdowns:
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature addition
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: FEATURE_AUTO_HIDDEN_BODY
+		  prs:
+		  - "111111"
+		"""
+			)
+		);
+
+	[Fact]
+	public void RendersFeatureDropdownWithoutDescription()
+	{
+		Html.Should().Contain("<details class=\"dropdown\">");
+		Html.Should().Contain("Feature addition");
+		Html.Should().Contain("#111111");
+		Html.Should().NotContain("FEATURE_AUTO_HIDDEN_BODY");
+	}
+}
+
+public class ChangelogDropdownsWithoutSubsectionsOmitsAreaHeadersTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDropdownsWithoutSubsectionsOmitsAreaHeadersTests(ITestOutputHelper output) : base(
+			output,
+			"""
+		:::{changelog}
+		:dropdowns:
+		:description-visibility: keep-feature-descriptions
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature in Search
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Search
+		  description: Search feature body
+		  prs:
+		  - "111111"
+		- title: Feature in Indexing
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Indexing
+		  description: Indexing feature body
+		  prs:
+		  - "222222"
+		"""
+			)
+		);
+
+	[Fact]
+	public void RendersDropdowns() => Html.Should().Contain("<details class=\"dropdown\">");
+
+	[Fact]
+	public void OmitsAreaHeaders()
+	{
+		Html.Should().NotContain("<strong>Search</strong>");
+		Html.Should().NotContain("<strong>Indexing</strong>");
+	}
+
+	[Fact]
+	public void StillRendersFeatureTitles()
+	{
+		Html.Should().Contain("Feature in Search");
+		Html.Should().Contain("Feature in Indexing");
+	}
+}
+
+public class ChangelogDropdownsWithSubsectionsRendersAreaHeadersTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDropdownsWithSubsectionsRendersAreaHeadersTests(ITestOutputHelper output) : base(
+			output,
+			"""
+		:::{changelog}
+		:dropdowns:
+		:subsections:
+		:description-visibility: keep-feature-descriptions
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature in Search
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Search
+		  description: Search feature body
+		  prs:
+		  - "111111"
+		- title: Feature in Indexing
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  areas:
+		  - Indexing
+		  description: Indexing feature body
+		  prs:
+		  - "222222"
+		"""
+			)
+		);
+
+	[Fact]
+	public void RendersDropdowns() => Html.Should().Contain("<details class=\"dropdown\">");
+
+	[Fact]
+	public void RendersAreaHeaders()
+	{
+		Html.Should().Contain("<strong>Search</strong>");
+		Html.Should().Contain("<strong>Indexing</strong>");
 	}
 }
