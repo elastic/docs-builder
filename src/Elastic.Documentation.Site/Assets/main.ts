@@ -32,7 +32,7 @@ import {
 } from './web-components/shared/htmx/utils'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import { $, $optional, $$optional } from 'select-dom'
+import { $optional, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
 // Injected at build time from MinVer
@@ -329,36 +329,6 @@ document.body.addEventListener(
         // On previews, a generic 404 page is shown.
         if (event.detail.xhr.status === 404) {
             window.location.assign(event.detail.pathInfo.requestPath)
-        }
-    }
-)
-
-// We add a query string to the get request to make sure the requested page is up to date
-const docsBuilderVersion = $('body').dataset.docsBuilderVersion
-document.body.addEventListener(
-    'htmx:configRequest',
-    function (event: HtmxEvent) {
-        if (event.detail.verb === 'get' && docsBuilderVersion) {
-            event.detail.parameters['v'] = docsBuilderVersion
-        }
-    }
-)
-
-// Here we need to strip the v parameter from the URL so
-// that the browser doesn't show the v parameter in the address bar
-document.body.addEventListener(
-    'htmx:beforeHistoryUpdate',
-    function (event: HtmxEvent) {
-        const params = new URLSearchParams(
-            event.detail.history.path.split('?')[1] ?? ''
-        )
-        params.delete('v')
-        const pathWithoutQueryString = event.detail.history.path.split('?')[0]
-        if (params.size === 0) {
-            event.detail.history.path = pathWithoutQueryString
-        } else {
-            event.detail.history.path =
-                pathWithoutQueryString + '?' + params.toString()
         }
     }
 )
