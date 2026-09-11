@@ -70,6 +70,10 @@
 
 	.applies.applies-block {
 		@apply border-b-grey-20 flex flex-wrap gap-2 border-b-1 pb-4;
+		/* One badge row before applies-to-popover hydrates (border-box). */
+		min-height: calc(
+			1.875rem + 1rem + 1px
+		); /* 30px badge + pb-4 + border */
 	}
 
 	.applies.applies-inline {
