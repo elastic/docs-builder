@@ -58,6 +58,7 @@ If you already have automated release notes for GitHub releases, you can use the
 
      These files don't have `prs` and thus don't appear in a release's PR list.
      The `products[].versions` are used to add these files to release bundles automatically.
+     After you upload a note, if that product version's bundle has already shipped, the scrubber attaches it without `changelog bundle-amend --add`. Taking a note off a published bundle is incomplete: there is no command that unpublishes the pool file. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
      :::
 
      Title, type, and products (including version or date) are the minimal details required when you are not deriving details from a PR.
