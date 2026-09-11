@@ -90,6 +90,33 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Fact]
+	public async Task GenerateProducts_LandingHeading_ShowsSpecTitleAndProductMark()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateSequentialReader(SpecDocument("Elasticsearch main"));
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+
+		_ = await generator.GenerateProducts(ctx: TestContext.Current.CancellationToken);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
+		html.Should().Contain("api-landing-heading");
+		html.Should().Contain("<h1>Elasticsearch main</h1>");
+		html.Should().Contain("<span class=\"api-landing-icon\">");
+		html.Should().Contain("viewBox=\"8 4.9995 47.7276 54.001\"");
+	}
+
+	[Fact]
 	public async Task Generate_StillWritesProductsAndCatalog()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");

@@ -9,7 +9,13 @@
 	var apiHxAttrs = LayoutModel.HxAttributes;
 }
 <section id="elastic-docs-v3">
-	<h1>@Model.ApiInfo.Title</h1>
+	<div class="api-landing-heading">
+		@if (Model.IconSvg is not null)
+		{
+			<span class="api-landing-icon">@(new HtmlString(Model.IconSvg))</span>
+		}
+		<h1>@Model.ApiInfo.Title</h1>
+	</div>
 	<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
 	<p>License: @Model.ApiInfo.License?.Name</p>
 	<p>Download source: <a href="@Model.JsonUrl" download>JSON</a> <a href="@Model.YamlUrl" download>YAML</a></p>
