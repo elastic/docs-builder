@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Mcp.Remote;
+using Elastic.Documentation.Mcp.Remote.Health;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
@@ -29,6 +30,10 @@ try
 				(_, t) => t.WithElasticDefaults().AddSource(McpToolTelemetry.McpToolSourceName).AddProcessor(new McpSpanRenameProcessor()),
 			Metrics = (_, m) => m.WithElasticDefaults().AddMeter(McpToolTelemetry.McpMeterName)
 		});
+
+	// Readiness check: pings Elasticsearch so /health returns 503 during an ES outage.
+	// Excluded from /alive (liveness) to avoid pod crash-loops.
+	_ = builder.Services.AddHealthChecks().AddCheck<ElasticsearchHealthCheck>("elasticsearch", tags: ["ready"]);
 
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
