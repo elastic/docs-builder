@@ -32,7 +32,7 @@ import {
 } from './web-components/shared/htmx/utils'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import { $, $$optional } from 'select-dom'
+import { $, $optional, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
 // Injected at build time from MinVer
@@ -93,10 +93,7 @@ async function runInitSteps(
 function applyEditParam() {
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.has('edit')) {
-        // Two copies exist: the right-rail CTA and the bottom-of-page one. Reveal both.
-        $$optional('.edit-this-page.hidden').forEach((el) =>
-            el.classList.remove('hidden')
-        )
+        $optional('.edit-this-page.hidden')?.classList.remove('hidden')
     }
 }
 

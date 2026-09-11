@@ -4,7 +4,7 @@ import * as React from 'react'
 import { FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 const COMMENT_MAX_LENGTH = 2000
-const REASON_SET_VERSION = 3
+const REASON_SET_VERSION = 2
 const REACTION_SAVE_DELAY = 400
 const DRAFT_STORAGE_PREFIX = 'docs-page-feedback:'
 
@@ -20,7 +20,7 @@ type Reason =
     | 'missingInformation'
     | 'hardToUnderstand'
     | 'codeSampleErrors'
-    | 'siteProblem'
+    | 'outOfDate'
     | 'anotherReason'
 
 interface ReasonOption {
@@ -46,8 +46,7 @@ const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
         description: 'I found the endpoint or schema I needed quickly.',
     },
     inaccurate: {
-        description:
-            'The reference is wrong about how the API works, or describes an older version.',
+        description: 'The reference is wrong about how the API works.',
     },
     missingInformation: {
         description: 'Missing a parameter, field, status, or auth detail.',
@@ -55,6 +54,9 @@ const API_COPY: Partial<Record<Reason, Partial<ReasonOption>>> = {
     codeSampleErrors: {
         label: 'Example errors',
         description: 'A request or response example is wrong.',
+    },
+    outOfDate: {
+        description: 'The reference describes an older version of the API.',
     },
 }
 
@@ -89,6 +91,11 @@ const POSITIVE_REASONS: ReasonOption[] = [
 
 const NEGATIVE_REASONS: ReasonOption[] = [
     {
+        value: 'outOfDate',
+        label: 'Out of date',
+        description: 'The page describes an older version of the product.',
+    },
+    {
         value: 'hardToUnderstand',
         label: 'Hard to understand',
         description: 'Too complicated or unclear.',
@@ -96,7 +103,7 @@ const NEGATIVE_REASONS: ReasonOption[] = [
     {
         value: 'inaccurate',
         label: 'Technically incorrect',
-        description: 'The page is wrong or describes an older version.',
+        description: 'The page is wrong about how the product works.',
     },
     {
         value: 'codeSampleErrors',
@@ -107,12 +114,6 @@ const NEGATIVE_REASONS: ReasonOption[] = [
         value: 'missingInformation',
         label: "Couldn't find what I needed",
         description: 'Missing important information.',
-    },
-    {
-        value: 'siteProblem',
-        label: 'Something is broken',
-        description:
-            'A link, button, search, or other part of the site does not work.',
     },
     { value: 'anotherReason', label: 'Another reason' },
 ]
