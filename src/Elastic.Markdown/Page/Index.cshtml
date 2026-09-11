@@ -1,7 +1,6 @@
 @using System.Text.Json
 @using Elastic.Documentation
 @using Elastic.Documentation.Configuration
-@using Elastic.Documentation.Extensions
 @using Elastic.Documentation.Site
 @using Elastic.Markdown
 @using Elastic.Markdown.Myst.Components
@@ -12,7 +11,6 @@
 @functions {
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
-		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
 		DocSetName = Model.DocSetName,

@@ -7,7 +7,6 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
@@ -81,7 +80,6 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 		return new()
 		{
-			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
 			Description = "",
 			Title = documentTitle,

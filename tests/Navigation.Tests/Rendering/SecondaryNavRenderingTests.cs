@@ -302,7 +302,6 @@ public class SecondaryNavRenderingTests(ITestOutputHelper output) : Documentatio
 
 		var model = new GlobalLayoutViewModel
 		{
-			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
 			CurrentNavigationItem = currentNavItem,
