@@ -97,8 +97,6 @@ public class ChangelogArtifactEvaluationService(
 		);
 
 		var shouldCommit = statusParsed && metadataStatus == PrEvaluationResult.Success && metadata.CanCommit;
-		var shouldCommentSuccess = statusParsed && metadataStatus == PrEvaluationResult.Success && !metadata.CanCommit;
-		var shouldCommentFailure = statusParsed && metadataStatus == PrEvaluationResult.NoLabel;
 
 		// All artifact-derived outputs flow through OutputSanitizer to strip
 		// control characters and enforce per-field length caps. metadata.json
@@ -135,16 +133,8 @@ public class ChangelogArtifactEvaluationService(
 			OutputSanitizer.SanitizeForOutput(metadata.SkipLabels, OutputSanitizer.LabelsMaxLength)
 		);
 		await coreService.SetOutputAsync("should-commit", shouldCommit ? "true" : "false");
-		await coreService.SetOutputAsync("should-comment-success", shouldCommentSuccess ? "true" : "false");
-		await coreService.SetOutputAsync("should-comment-failure", shouldCommentFailure ? "true" : "false");
 
-		_logger.LogInformation(
-			"Artifact evaluation complete: status={Status}, commit={Commit}, commentSuccess={CommentSuccess}, commentFailure={CommentFailure}",
-			metadata.Status,
-			shouldCommit,
-			shouldCommentSuccess,
-			shouldCommentFailure
-		);
+		_logger.LogInformation("Artifact evaluation complete: status={Status}, commit={Commit}", metadata.Status, shouldCommit);
 
 		return true;
 	}
