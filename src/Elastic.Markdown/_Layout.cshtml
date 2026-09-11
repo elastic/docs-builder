@@ -95,10 +95,9 @@
 	private async Task RenderLanding()
 	{
 		<div class="relative">
-			<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-			@if (!string.IsNullOrWhiteSpace(Model.NavigationHtml) || Model.TopNav is not null || Model.ShowVersionDropdown)
+			@if (Model.HasMobilePagesNavContent)
 			{
-				@* ReSharper disable once Html.IdNotResolved *@
+				<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 				<label role="button" class="absolute left-4 top-3 z-10 md:hidden cursor-pointer" for="pages-nav-hamburger">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
 					     stroke="currentColor" class="size-6">
@@ -108,11 +107,15 @@
 				</label>
 			}
 			@await RenderPartialAsync(_LandingPage.Create(Model))
-			<div class="md:hidden">
-				@await RenderPartialAsync(_PagesNav.Create(Model))
-			</div>
+			@if (Model.HasMobilePagesNavContent)
+			{
+				<div class="md:hidden">
+					@await RenderPartialAsync(_PagesNav.Create(Model))
+				</div>
+			}
 		</div>
 	}
+
 }
 
 @if (RenderHeaderAndFooter)

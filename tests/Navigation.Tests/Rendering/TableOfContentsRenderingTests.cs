@@ -29,7 +29,9 @@ public class TableOfContentsRenderingTests(ITestOutputHelper output) : Documenta
 
 		html.Should().Contain("<version-dropdown");
 		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
-		html.Should().Contain("<div class=\"mb-4\">");
+		html.Should().Contain("flex-row-reverse");
+		html.Should().Contain("justify-between");
+		html.Should().Contain("<div class=\"lg:mb-4\">");
 		html.Should().NotContain("hidden md:block");
 	}
 

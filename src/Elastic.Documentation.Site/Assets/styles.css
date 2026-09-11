@@ -129,10 +129,13 @@ body {
 				max-height 0.3s ease;
 		}
 
+		#toc-nav.sidebar-nav {
+			box-sizing: border-box;
+			padding-top: 24px;
+		}
+
 		@media (width >= 1280px) {
 			#toc-nav.sidebar-nav {
-				box-sizing: border-box;
-				padding-top: 24px;
 				padding-bottom: 24px;
 			}
 		}

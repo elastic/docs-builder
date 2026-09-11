@@ -72,6 +72,23 @@ public record GlobalLayoutViewModel
 		}
 	}
 
+	/// <summary>
+	/// True when the mobile pages drawer has something to show: a nav tree,
+	/// or (with <c>navigation-preview</c>) section tabs or a version picker.
+	/// </summary>
+	public bool HasMobilePagesNavContent
+	{
+		get
+		{
+			if (!string.IsNullOrWhiteSpace(NavigationHtml))
+				return true;
+			if (!Features.NavigationPreviewEnabled)
+				return false;
+			var hasTopNavLinks = TopNav?.Items.OfType<TopNavLinkItem>().Any() == true;
+			return hasTopNavLinks || ShowVersionDropdown;
+		}
+	}
+
 	public string? VersionDropdownSerializedModel { get; init; }
 
 	public string? CurrentVersion { get; init; }
