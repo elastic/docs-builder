@@ -5117,7 +5117,15 @@
               "name": "skip-etag-check",
               "type": "boolean",
               "required": false,
-              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
+              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Mutually exclusive with --no-overwrite.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "no-overwrite",
+              "type": "boolean",
+              "required": false,
+              "summary": "When a remote object already exists with different content, skip PutObject, warn with the existing YAML, and exit non-zero. New keys are still uploaded. Mutually exclusive with --skip-etag-check.",
               "defaultValue": "false"
             },
             {
