@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Security.Cryptography;
+using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
 using AwesomeAssertions;
@@ -45,7 +46,10 @@ public class S3IncrementalUploaderTests
 		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(1);
+		result.New.Should().Be(1);
+		result.Replaced.Should().Be(0);
 		result.Skipped.Should().Be(0);
+		result.NotOverwritten.Should().Be(0);
 		result.Failed.Should().Be(0);
 
 		A.CallTo(
@@ -74,7 +78,10 @@ public class S3IncrementalUploaderTests
 		var result = await uploader.Upload([new UploadTarget(path, "kibana/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(0);
+		result.New.Should().Be(0);
+		result.Replaced.Should().Be(0);
 		result.Skipped.Should().Be(1);
+		result.NotOverwritten.Should().Be(0);
 		result.Failed.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
@@ -100,10 +107,12 @@ public class S3IncrementalUploaderTests
 		var result = await uploader.Upload([new UploadTarget(path, "kibana/changelog/entry.yaml")], skipEtagCheck: true, ctx: ct);
 
 		result.Uploaded.Should().Be(1);
+		result.New.Should().Be(0);
+		result.Replaced.Should().Be(1);
 		result.Skipped.Should().Be(0);
 		result.Failed.Should().Be(0);
 
-		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).MustNotHaveHappened();
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
 
 		A.CallTo(
 			() => _s3Client.PutObjectAsync(
@@ -131,6 +140,8 @@ public class S3IncrementalUploaderTests
 		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(1);
+		result.New.Should().Be(0);
+		result.Replaced.Should().Be(1);
 		result.Skipped.Should().Be(0);
 		result.Failed.Should().Be(0);
 	}
@@ -193,6 +204,8 @@ public class S3IncrementalUploaderTests
 		);
 
 		result.Uploaded.Should().Be(1);
+		result.New.Should().Be(1);
+		result.Replaced.Should().Be(0);
 		result.Skipped.Should().Be(1);
 		result.Failed.Should().Be(0);
 	}
@@ -205,7 +218,152 @@ public class S3IncrementalUploaderTests
 		var result = await uploader.Upload([], ctx: ct);
 
 		result.Uploaded.Should().Be(0);
+		result.New.Should().Be(0);
+		result.Replaced.Should().Be(0);
 		result.Skipped.Should().Be(0);
+		result.NotOverwritten.Should().Be(0);
 		result.Failed.Should().Be(0);
+		result.Conflicts.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task Upload_ChangedFile_WithNoOverwrite_SkipsPutAndRecordsRemoteContent()
+	{
+		var path = UniquePath("entry.yaml");
+		_fileSystem.AddFile(path, new MockFileData("local cloud-serverless"u8.ToArray()));
+		const string remoteYaml = "title: existing\nproducts:\n  - product: elasticsearch\n";
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
+		{
+			ETag = "\"stale-etag\""
+		});
+
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
+		{
+			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(remoteYaml))
+		});
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(path, "changelog/elastic/elasticsearch/main/entry.yaml")],
+			new S3UploadOptions { NoOverwrite = true },
+			ctx: ct
+		);
+
+		result.Uploaded.Should().Be(0);
+		result.NotOverwritten.Should().Be(1);
+		result.Failed.Should().Be(0);
+		result.Conflicts.Should().ContainSingle();
+		result.Conflicts[0].S3Key.Should().Be("changelog/elastic/elasticsearch/main/entry.yaml");
+		result.Conflicts[0].LocalPath.Should().Be(path);
+		result.Conflicts[0].RemoteContent.Should().Be(remoteYaml);
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_NewFile_WithNoOverwrite_Uploads()
+	{
+		var path = UniquePath("entry.yaml");
+		_fileSystem.AddFile(path, new MockFileData("new changelog"u8.ToArray()));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Throws(new AmazonS3Exception(
+			"Not Found"
+		)
+		{ StatusCode = HttpStatusCode.NotFound });
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
+			new S3UploadOptions { NoOverwrite = true },
+			ctx: ct
+		);
+
+		result.New.Should().Be(1);
+		result.NotOverwritten.Should().Be(0);
+		result.Failed.Should().Be(0);
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task Upload_NoOverwrite_WhenGetObjectFails_StillRefusesPut()
+	{
+		var path = UniquePath("entry.yaml");
+		_fileSystem.AddFile(path, new MockFileData("local"u8.ToArray()));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
+		{
+			ETag = "\"stale-etag\""
+		});
+
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Throws(new AmazonS3Exception("Access Denied")
+		{
+			StatusCode = HttpStatusCode.Forbidden
+		});
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
+			new S3UploadOptions { NoOverwrite = true },
+			ctx: ct
+		);
+
+		result.NotOverwritten.Should().Be(1);
+		result.Conflicts[0].RemoteContent.Should().BeNull();
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_InlineMarker_WithNoOverwriteWhenExists_SkipsPut()
+	{
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
+		{
+			ETag = "\"marker-etag\""
+		});
+
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).Returns(new GetObjectResponse
+		{
+			ResponseStream = new MemoryStream("link: 100"u8.ToArray())
+		});
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", "link: 100")],
+			new S3UploadOptions { NoOverwrite = true },
+			ctx: ct
+		);
+
+		result.NotOverwritten.Should().Be(1);
+		result.Conflicts[0].RemoteContent.Should().Be("link: 100");
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_InlineMarker_MissingKey_UploadsAsNew()
+	{
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Throws(new AmazonS3Exception(
+			"Not Found"
+		)
+		{ StatusCode = HttpStatusCode.NotFound });
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", "link: 100")],
+			ctx: ct
+		);
+
+		result.New.Should().Be(1);
+		result.Replaced.Should().Be(0);
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 }
