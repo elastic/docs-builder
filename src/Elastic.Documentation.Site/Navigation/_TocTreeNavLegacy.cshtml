@@ -6,6 +6,7 @@
 	{
 		<li class="flex group/li pr-8 @(item.IsTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a href="@item.Url" class="sidebar-link nav-link">
+				@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 				<span>@item.NavigationTitle</span>
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 			</a>
@@ -32,6 +33,7 @@
 		<li class="nav-folder @(item.IsTopLevel ? "mt-6" : "mt-4")">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
 				<a href="@item.Url" class="sidebar-link nav-folder-link@(item.IsTopLevel ? " font-semibold" : "")">
+					@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
 					<span>@item.NavigationTitle</span>
 					@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 				</a>

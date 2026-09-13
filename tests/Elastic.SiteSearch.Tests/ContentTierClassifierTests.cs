@@ -9,8 +9,8 @@ using Elastic.SiteSearch.Cli.Elasticsearch;
 namespace Elastic.SiteSearch.Tests;
 
 /// <summary>
-/// Verifies the shared essc content_tier classification used by both ContentStackMapper
-/// (site) and LabsHtmlExtractor (labs) — see <see cref="ContentTierClassifier"/>.
+/// Verifies the shared essc content_tier classification used by ContentStackMapper —
+/// see <see cref="ContentTierClassifier"/>.
 /// </summary>
 public class ContentTierClassifierTests
 {

@@ -2,6 +2,8 @@
 
 Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory and uploads only files whose content hash changed since the last run. Changelog entries are uploaded once under `changelog/{org}/{repo}/{branch}/{file}`, keyed by the authoring owner, repository, and branch; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
 
+A downstream scrubber copies published objects to the public bucket and removes pull request and issue links that are not on the allowlist (unlike bundle-time `# PRIVATE:` sentinels on the private side). Those public bundles are less likely to work with [`changelog unpack`](/cli/changelog/unpack.md).
+
 To create bundles first, use [](/cli/changelog/bundle.md).
 For the end-to-end workflow, see [](/data/release-notes/bundle.md).
 
@@ -74,12 +76,12 @@ Use `--artifact-type` to choose what to upload:
 
 | Value | Uploads | Default directory |
 | ----- | ------- | ----------------- |
-| `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml`, or `docs/releases` |
+| `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml`, each profile's `output_directory` when set, or `docs/releases` |
 | `changelog` | Individual changelog entry YAML files | `bundle.directory` from `changelog.yml`, or `docs/changelog` |
 
 Keying differs by artifact type:
 
-- **Changelog entries** are uploaded **once** under the authoring owner/repo/branch, regardless of how many products they list (or none). The owner is resolved from `--owner`, then `bundle.owner` in `changelog.yml`, then the git remote origin; the repo from `--repo`, then `bundle.repo`, then the git remote origin; the branch from `--branch`, then the current checkout's branch. The branch is stored verbatim, so a branch name containing `/` (for example `feature/foo`) becomes additional key segments.
+- **Changelog entries** are uploaded once under the authoring owner/repo/branch, regardless of how many products they list (or none). The owner is resolved from `--owner`, then `bundle.owner` in `changelog.yml`, then the git remote origin; the repo from `--repo`, then `bundle.repo`, then the git remote origin; the branch from `--branch`, then the current checkout's branch. The branch is stored verbatim, so a branch name containing `/` (for example `feature/foo`) becomes additional key segments.
 - **Bundles** are uploaded once per product listed in the bundle's `products[].product` field (a bundle that declares multiple products is written under each product prefix). Amend sidecars produced from a CDN parent (`changelog bundle-amend /bundle/{product}/{file}.yaml`) are uploaded like any other bundle YAML.
 
 ## Upload targets
@@ -109,7 +111,7 @@ reconciled from public bucket state on the S3 events each upload emits; the
 objects that only older CLI versions still write. See
 [Changelog bundle registry](/development/changelog-bundle-registry.md).
 
-When several repositories publish bundles for the same shared product (for example `cloud-serverless`), use a `{repo}-{dateOrVersion}.yaml` bundle filename convention so they don't overwrite each other under `bundle/{product}/`.
+Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.yaml` (for example `kibana-cloud-serverless-2026-08-27.yaml` and `elasticsearch-cloud-serverless-2026-08-27.yaml`) so several repositories can publish the same product and version without overwriting each other under `bundle/{product}/`. In option mode, an explicit `--output` file path (a path ending in `.yml` or `.yaml`) is used as-is. When `--output` is omitted, that `{repo}-{product}-{version}.yaml` name is written under `bundle.output_directory`. When `--output` is a directory (any path that does not end in `.yml` or `.yaml`), the file is written in that directory. If the authoring repo cannot be resolved, the command warns and falls back to `{product}-{version}.yaml`, which can collide. If product or version cannot be resolved, the command warns and writes `changelog-bundle.yaml`.
 
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files are skipped. Re-running the same command is safe and idempotent.
@@ -126,9 +128,11 @@ If it's necessary to re-trigger downstream scrubbers without changing file conte
 
 Directory resolution order:
 
-1. `--directory` — explicit override for this run
-2. `changelog.yml` — `bundle.output_directory` (bundles) or `bundle.directory` (changelog entries)
+1. `--directory` — explicit override for this run (that folder only)
+2. `changelog.yml` — for bundles, `bundle.output_directory` plus each profile `output_directory`; for changelog entries, `bundle.directory`
 3. Built-in default — `docs/releases` (bundles) or `docs/changelog` (changelog entries)
+
+Each bundle directory is scanned non-recursively. A profile that writes under `docs/releases/cloud-serverless` is included because that path is listed as the profile's `output_directory`, not because the global folder is walked.
 
 Use `--config` to point at a `changelog.yml` file other than `docs/changelog.yml`.
 

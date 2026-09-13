@@ -112,6 +112,10 @@ public class ChangelogCreationService(
 				input = input with { Description = null };
 			}
 
+			// CLI-supplied products must not carry versions; fail before any GitHub fetches.
+			if (input.Products.Count > 0 && !_validator.ValidateNoVersionTarget(collector, input))
+				return false;
+
 			// Multiple PRs: one changelog per PR (--use-pr-number uses PR number as each filename)
 			if (input.Prs != null && input.Prs.Length > 1)
 				return await CreateChangelogsForMultiplePrsAsync(collector, input, config, ctx);
@@ -210,6 +214,54 @@ public class ChangelogCreationService(
 		}
 	}
 
+	/// <summary>
+	/// Writes a single changelog from fully populated fields without GitHub fetches or splitting
+	/// multi-PR inputs into one file per PR. Used by <c>changelog unpack</c> so a shipped bundle
+	/// entry round-trips as one add-shaped file.
+	/// </summary>
+	public async Task<bool> CreatePreparedChangelog(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
+	{
+		try
+		{
+			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			if (config == null)
+			{
+				collector.EmitError(string.Empty, "Failed to load changelog configuration");
+				return false;
+			}
+
+			input = ApplyConfigDefaults(input, config) with { ExtractReleaseNotes = false, ExtractIssues = false };
+
+			if (input.Prs is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultiplePrFormat(collector, input.Prs, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidatePrFormat(collector, input.Prs?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			if (input.Issues is { Length: > 1 })
+			{
+				if (!_validator.ValidateMultipleIssueFormat(collector, input.Issues, input.Owner, input.Repo))
+					return false;
+			}
+			else if (!_validator.ValidateIssueFormat(collector, input.Issues?.FirstOrDefault(), input.Owner, input.Repo))
+				return false;
+
+			return await WriteValidatedChangelog(collector, input, config, ctx);
+		}
+		catch (IOException ioEx)
+		{
+			collector.EmitError(string.Empty, $"IO error creating changelog: {ioEx.Message}", ioEx);
+			return false;
+		}
+		catch (UnauthorizedAccessException uaEx)
+		{
+			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
+			return false;
+		}
+	}
+
 	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config) =>
 		// Filename strategy is always Pr now; UsePrNumber is kept for backward compat but is effectively always true.
 		input with
@@ -240,14 +292,40 @@ public class ChangelogCreationService(
 		}
 
 		// Second, try inference from the --repo argument (or bundle.repo from config)
-		var product = repoName != null ? _productInferService.InferProductFromRepository(repoName) : null;
-		if (product == null)
+		if (repoName == null)
 		{
-			_logger.LogDebug("Could not infer product from repository");
+			_logger.LogDebug("Could not infer product: no repo name available");
 			return null;
 		}
 
-		_logger.LogInformation("Inferred product '{ProductId}' from repository", product.Id);
+		var candidates = _productInferService.InferProductsFromRepository(repoName);
+		if (candidates.Count == 0)
+		{
+			_logger.LogDebug("Could not infer product from repository '{Repo}'", repoName);
+			return null;
+		}
+
+		// When the repo maps to multiple products (e.g., elastic/cloud → cloud-hosted/cloud-serverless/cloud-enterprise),
+		// intersect with products.available to narrow to one. If still ambiguous, don't infer — ask the user.
+		if (candidates.Count > 1 && productsConfig?.Available is { Count: > 0 })
+		{
+			var available = productsConfig.Available.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			candidates = candidates.Where(p => available.Contains(p.Id)).ToList();
+		}
+
+		if (candidates.Count != 1)
+		{
+			_logger.LogDebug(
+				"Ambiguous product inference for '{Repo}': {Count} candidates ({Ids}) — specify --products explicitly",
+				repoName,
+				candidates.Count,
+				string.Join(", ", candidates.Select(p => p.Id))
+			);
+			return null;
+		}
+
+		var product = candidates[0];
+		_logger.LogInformation("Inferred product '{ProductId}' from repository '{Repo}'", product.Id, repoName);
 		return [new ProductArgument { Product = product.Id, Lifecycle = "ga" }];
 	}
 
@@ -267,7 +345,7 @@ public class ChangelogCreationService(
 
 		var successCount = 0;
 		var skippedCount = 0;
-		var fetchFailedCount = 0;
+		var fetchFailedAndWritten = 0;
 
 		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()).Where(prTrimmed => !string.IsNullOrWhiteSpace(prTrimmed)))
 		{
@@ -288,33 +366,38 @@ public class ChangelogCreationService(
 				continue;
 			}
 
-			// A null prInfo here means the GitHub fetch failed: this PR bypasses rules.create
-			// label filtering and is written without a derived title/type. Track it so the failure
-			// is surfaced as a single summary rather than buried among per-PR warnings.
-			if (prInfo == null)
-				fetchFailedCount++;
-
 			// Create a copy of input for this PR
 			var prInput = CreateInputForSinglePr(input, prTrimmed);
 
 			// Process this PR (treat as single PR); the loop owns fetch-failure reporting
 			var result = await CreateSingleChangelogAsync(collector, prInput, config, ctx, reportFetchFailure: false);
-			if (result)
-				successCount++;
+			if (!result)
+				continue;
+
+			successCount++;
+			// A null prInfo here means the GitHub fetch failed: this PR bypasses rules.create
+			// label filtering and is written without a derived title/type. Only count it when a
+			// file was actually written so the summary does not claim creation after a later error.
+			if (prInfo == null)
+				fetchFailedAndWritten++;
 		}
 
-		ReportBulkFetchFailures(collector, fetchFailedCount, input.Prs.Length, input.StrictFetch, "pull request");
+		ReportBulkFetchFailures(collector, fetchFailedAndWritten, input.Prs.Length, input.StrictFetch, "pull request");
 
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation(
-			"Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched",
-			successCount,
-			skippedCount,
-			fetchFailedCount
-		);
-		return successCount > 0;
+		if (successCount > 0)
+		{
+			_logger.LogInformation(
+				"Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched",
+				successCount,
+				skippedCount,
+				fetchFailedAndWritten
+			);
+		}
+
+		return successCount > 0 || skippedCount > 0;
 	}
 
 	private async Task<bool> CreateSingleChangelogAsync(
@@ -355,7 +438,17 @@ public class ChangelogCreationService(
 		else if (!string.IsNullOrWhiteSpace(prUrl))
 			_logger.LogInformation("All required fields already provided, skipping PR API fetch for {PrUrl}", prUrl);
 
-		// If still no products, fall back to products.default or repo name inference
+		return await WriteValidatedChangelog(collector, input, config, ctx, prFetchFailed);
+	}
+
+	private async Task<bool> WriteValidatedChangelog(
+		IDiagnosticsCollector collector,
+		CreateChangelogArguments input,
+		ChangelogConfiguration config,
+		Cancel ctx,
+		bool prFetchFailed = false
+	)
+	{
 		if (input.Products.Count == 0)
 		{
 			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
@@ -363,19 +456,15 @@ public class ChangelogCreationService(
 				input = input with { Products = inferredProducts };
 		}
 
-		// Validate required fields
 		if (!_validator.ValidateRequiredFields(collector, input, prFetchFailed))
 			return false;
 
-		// Entries must not carry version targets; applicability comes from the origin branch
 		if (!_validator.ValidateNoVersionTarget(collector, input))
 			return false;
 
-		// Validate against configuration
 		if (!_validator.ValidateAgainstConfiguration(collector, input, config))
 			return false;
 
-		// Write changelog file
 		return await _fileWriter.WriteChangelogAsync(
 			collector,
 			input,
@@ -401,7 +490,7 @@ public class ChangelogCreationService(
 
 		var successCount = 0;
 		var skippedCount = 0;
-		var fetchFailedCount = 0;
+		var fetchFailedAndWritten = 0;
 
 		foreach (var issueUrl in input.Issues.Select(i => i.Trim()).Where(i => !string.IsNullOrWhiteSpace(i)))
 		{
@@ -421,29 +510,35 @@ public class ChangelogCreationService(
 				continue;
 			}
 
-			// A null issueInfo means the GitHub fetch failed: the entry bypasses rules.create
-			// filtering and is written without a derived title/type. Track it for a summary report.
-			if (issueInfo == null)
-				fetchFailedCount++;
-
 			var issueInput = input with { Issues = [issueUrl] };
 			var result = await CreateSingleChangelogFromIssueAsync(collector, issueInput, config, ctx, reportFetchFailure: false);
-			if (result)
-				successCount++;
+			if (!result)
+				continue;
+
+			successCount++;
+			// A null issueInfo means the GitHub fetch failed: the entry bypasses rules.create
+			// filtering and is written without a derived title/type. Only count it when a file
+			// was actually written so the summary does not claim creation after a later error.
+			if (issueInfo == null)
+				fetchFailedAndWritten++;
 		}
 
-		ReportBulkFetchFailures(collector, fetchFailedCount, input.Issues.Length, input.StrictFetch, "issue");
+		ReportBulkFetchFailures(collector, fetchFailedAndWritten, input.Issues.Length, input.StrictFetch, "issue");
 
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation(
-			"Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched",
-			successCount,
-			skippedCount,
-			fetchFailedCount
-		);
-		return successCount > 0;
+		if (successCount > 0)
+		{
+			_logger.LogInformation(
+				"Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched",
+				successCount,
+				skippedCount,
+				fetchFailedAndWritten
+			);
+		}
+
+		return successCount > 0 || skippedCount > 0;
 	}
 
 	private async Task<bool> CreateSingleChangelogFromIssueAsync(

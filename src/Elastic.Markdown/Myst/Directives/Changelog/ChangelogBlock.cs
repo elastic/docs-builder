@@ -484,9 +484,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	{
 		try
 		{
-			// Try to load assembler configuration to get private repositories
+			// Try to load assembler configuration to get private repositories.
+			// Use AllPrivateRepositoryNames rather than PrivateRepositories.Keys: PrivateRepositories
+			// excludes skip:true entries (because the cross-link fetcher has no link index for them),
+			// but skip:true means "does not publish docs", not "is public". Repos like kibana-team
+			// (private:true, skip:true) must still have their links hidden at render time.
 			var assemblerConfig = AssemblyConfiguration.Create(Build.ConfigurationFileProvider);
-			foreach (var repoName in assemblerConfig.PrivateRepositories.Keys)
+			foreach (var repoName in assemblerConfig.AllPrivateRepositoryNames)
 				_ = PrivateRepositories.Add(repoName);
 		}
 		catch

@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
+using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Tests.Exporters;
 
@@ -45,7 +47,7 @@ public class OkfMarkdownExporterTests
 	[Fact]
 	public void DeriveType_UrlWithPrefixAndSection_ReturnsFirstSegmentAfterPrefix()
 	{
-		var type = OkfMarkdownExporter.DeriveType("/docs/reference/query-languages/eql", "/docs");
+		var type = OkfMarkdownExporter.DeriveType("/docs/reference/query-languages/eql", "/docs", isSectionLandingPage: false);
 
 		type.Should().Be("reference");
 	}
@@ -53,7 +55,7 @@ public class OkfMarkdownExporterTests
 	[Fact]
 	public void DeriveType_NoPrefixConfigured_ReturnsFirstSegment()
 	{
-		var type = OkfMarkdownExporter.DeriveType("/solutions/search", urlPathPrefix: "");
+		var type = OkfMarkdownExporter.DeriveType("/solutions/search", urlPathPrefix: "", isSectionLandingPage: false);
 
 		type.Should().Be("solutions");
 	}
@@ -61,9 +63,36 @@ public class OkfMarkdownExporterTests
 	[Fact]
 	public void DeriveType_RootUrl_ReturnsDocumentationFallback()
 	{
-		var type = OkfMarkdownExporter.DeriveType("/", urlPathPrefix: "");
+		var type = OkfMarkdownExporter.DeriveType("/", urlPathPrefix: "", isSectionLandingPage: true);
 
 		type.Should().Be("documentation");
+	}
+
+	[Fact]
+	public void DeriveType_RootLevelLeafPage_ReturnsDocumentationRatherThanFileStem()
+	{
+		// A page at the bundle root has no section above it, so its one segment names the page itself —
+		// typing it "colon" would make every root-level page its own singleton `okf search --type` value.
+		var type = OkfMarkdownExporter.DeriveType("/colon", urlPathPrefix: "", isSectionLandingPage: false);
+
+		type.Should().Be("documentation");
+	}
+
+	[Fact]
+	public void DeriveType_SectionLandingPage_ReturnsItsOwnSegment()
+	{
+		// "/reference" is also a single segment, but it is backed by a "reference/" directory in the bundle.
+		var type = OkfMarkdownExporter.DeriveType("/docs/reference", urlPathPrefix: "/docs", isSectionLandingPage: true);
+
+		type.Should().Be("reference");
+	}
+
+	[Fact]
+	public void IsSectionLandingPage_NodeIndexVersusLeaf_SeparatesSectionFromRootLevelPage()
+	{
+		// GetNavigationFor resolves a folder's index page to the node itself rather than to a leaf.
+		OkfMarkdownExporter.IsSectionLandingPage(new FakeNodeNavigationItem()).Should().BeTrue();
+		OkfMarkdownExporter.IsSectionLandingPage(new FakeLeafNavigationItem()).Should().BeFalse();
 	}
 
 	[Fact]
@@ -242,5 +271,107 @@ public class OkfMarkdownExporterTests
 
 		content.Should().Contain("* [foo](foo/)");
 		content.Should().NotContain("* [foo](foo/) -");
+	}
+
+	[Theory]
+	// The reproduction from https://github.com/elastic/docs-builder/issues/3999 — a `": "` in prose.
+	[InlineData("What each entry point exports. Types: PrimitiveDefinition, PrimitiveNode.")]
+	[InlineData("Last updated: May 3, 2026")]
+	[InlineData("A description with \"double quotes\" in it")]
+	[InlineData(@"A Windows path C:\Users\foo and a trailing backslash \")]
+	[InlineData("A description\nspanning two lines")]
+	[InlineData("#leading indicator characters *&!|>%@`")]
+	[InlineData("true")]
+	[InlineData("{not: a, flow: mapping}")]
+	[InlineData("")]
+	public void RenderFrontMatter_ArbitraryProseDescription_RoundTripsVerbatim(string description)
+	{
+		var rendered = OkfMarkdownExporter.RenderFrontMatter(FrontMatter(description: description));
+
+		ParseFrontMatter(rendered)["description"].Should().Be(description);
+	}
+
+	[Fact]
+	public void RenderFrontMatter_AppliesToTags_RoundTripAsStringsNotMappings()
+	{
+		// GetAppliesToItems formats every tag as "{displayName}: {availability}" — unquoted that is valid
+		// YAML, which makes this the quieter half of the bug: the sequence entry parses as a mapping.
+		string[] tags = ["Elastic Stack: Available", "Serverless: Planned, GA"];
+
+		var rendered = OkfMarkdownExporter.RenderFrontMatter(FrontMatter(tags: tags));
+
+		ParseFrontMatter(rendered)["tags"].Should().BeEquivalentTo(tags);
+	}
+
+	[Fact]
+	public void RenderFrontMatter_TitleContainingColon_RoundTripsVerbatim()
+	{
+		var rendered = OkfMarkdownExporter.RenderFrontMatter(FrontMatter(title: "Kibana: getting started"));
+
+		var parsed = ParseFrontMatter(rendered);
+		parsed["title"].Should().Be("Kibana: getting started");
+		parsed["resource"].Should().Be("https://www.elastic.co/docs/reference/foo");
+	}
+
+	[Fact]
+	public void RenderFrontMatter_NavigationTitleEmpty_KeyIsOmitted()
+	{
+		var rendered = OkfMarkdownExporter.RenderFrontMatter(FrontMatter());
+
+		ParseFrontMatter(rendered).Should().NotContainKey("navigation_title");
+		ParseFrontMatter(OkfMarkdownExporter.RenderFrontMatter(FrontMatter(navigationTitle: "Foo: short")))["navigation_title"]
+			.Should()
+			.Be("Foo: short");
+	}
+
+	[Theory]
+	[InlineData("First line.\nSecond line: with a colon.", "First line. Second line: with a colon.")]
+	// A `description: |` block with a blank line would otherwise terminate the index list it is rendered into.
+	[InlineData("Para one.\n\nPara two.", "Para one. Para two.")]
+	// DescriptionGenerator pads each block it appends with a trailing space.
+	[InlineData("A generated description. ", "A generated description.")]
+	[InlineData("  padded\tand\r\nragged  ", "padded and ragged")]
+	[InlineData("", "")]
+	public void NormalizeDescription_MultiLineOrPaddedProse_CollapsesToASingleLine(string description, string expected) =>
+		OkfMarkdownExporter.NormalizeDescription(description).Should().Be(expected);
+
+	private static OkfMarkdownExporter.ConceptFrontMatter FrontMatter(
+		string title = "Foo",
+		string? navigationTitle = null,
+		string description = "A description",
+		IReadOnlyCollection<string>? tags = null
+	) => new("reference", title, navigationTitle, description, "https://www.elastic.co/docs/reference/foo", tags ?? []);
+
+	/// <summary>Parses the emitted block as YAML, the only assertion that proves arbitrary prose survives escaping.</summary>
+	private static Dictionary<string, object> ParseFrontMatter(string rendered)
+	{
+		var lines = rendered.Split('\n');
+		lines.First().Should().Be("---");
+		var body = string.Join('\n', lines.Skip(1).TakeWhile(l => l != "---"));
+		return new DeserializerBuilder().Build().Deserialize<Dictionary<string, object>>(body);
+	}
+
+	private sealed class FakeNavigationModel : INavigationModel;
+
+	private abstract class FakeNavigationItemBase : INavigationItem
+	{
+		public string Url => "/reference";
+		public string NavigationTitle => "Reference";
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => null!;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+	}
+
+	private sealed class FakeLeafNavigationItem : FakeNavigationItemBase, ILeafNavigationItem<INavigationModel>
+	{
+		public INavigationModel Model { get; } = new FakeNavigationModel();
+	}
+
+	private sealed class FakeNodeNavigationItem : FakeNavigationItemBase, INodeNavigationItem<INavigationModel, INavigationItem>
+	{
+		public string Id => NavigationTitle;
+		public ILeafNavigationItem<INavigationModel> Index => null!;
+		public IReadOnlyCollection<INavigationItem> NavigationItems => [];
 	}
 }

@@ -169,4 +169,25 @@ public abstract class ChangelogTestBase : IDisposable
 		).ToList();
 		return Documentation.Configuration.ReleaseNotes.ReleaseNotesSerialization.SerializeBundle(bundle with { Entries = entries });
 	}
+
+	/// <summary>
+	/// Environment with no variables set — prevents <c>GITHUB_REPOSITORY</c> from leaking
+	/// into repo-resolution logic under test.
+	/// </summary>
+	protected static readonly IEnvironmentVariables EmptyEnvironment = new EmptyEnvironmentVariablesImpl();
+
+	protected static IEnvironmentVariables GithubRepositoryEnvironment(string githubRepository) =>
+		new GithubRepositoryEnvironmentImpl(githubRepository);
+
+	private sealed class EmptyEnvironmentVariablesImpl : IEnvironmentVariables
+	{
+		public string? GetEnvironmentVariable(string name) => null;
+		public bool IsRunningOnCI => false;
+	}
+
+	private sealed class GithubRepositoryEnvironmentImpl(string githubRepository) : IEnvironmentVariables
+	{
+		public string? GetEnvironmentVariable(string name) => name == "GITHUB_REPOSITORY" ? githubRepository : null;
+		public bool IsRunningOnCI => false;
+	}
 }

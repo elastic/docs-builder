@@ -89,6 +89,24 @@ describe('initSecondaryNav', () => {
         raf.mockRestore()
     })
 
+    it('closes a nav-select dropdown when clicking outside of it', () => {
+        document.body.innerHTML = `
+            <details class="nav-select-dropdown" id="versions">
+                <summary class="nav-select">9.x</summary>
+                <div class="nav-select-menu"><a class="nav-select-option" href="/v8/">8.x</a></div>
+            </details>
+            <main><p id="outside">page</p></main>
+        `
+        const versions =
+            document.querySelector<HTMLDetailsElement>('#versions')!
+        const outside = document.querySelector<HTMLElement>('#outside')!
+        versions.open = true
+
+        outside.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+        expect(versions.open).toBe(false)
+    })
+
     it('keeps is-closing on the panel until the EUI exit motion finishes', () => {
         jest.useFakeTimers()
         const { products, outside } = renderNav()
@@ -139,6 +157,21 @@ describe('syncSecondaryNavActive', () => {
         )
         expect(products.classList.contains('secondary-nav-item--active')).toBe(
             false
+        )
+    })
+
+    it('previews the clicked tab as active before the swap', () => {
+        const { guides, reference } = renderTabs()
+
+        reference.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, button: 0 })
+        )
+
+        expect(guides.classList.contains('secondary-nav-item--active')).toBe(
+            false
+        )
+        expect(reference.classList.contains('secondary-nav-item--active')).toBe(
+            true
         )
     })
 

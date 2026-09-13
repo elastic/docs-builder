@@ -397,6 +397,170 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 		return [.. prs];
 	}
 
+	/// <inheritdoc />
+	public async Task<IReadOnlyList<string>?> FetchChangedFilesAsync(
+		string owner,
+		string repo,
+		int prNumber,
+		CancellationToken ctx = default
+	)
+	{
+		try
+		{
+			var files = new List<string>();
+			var page = 1;
+			while (true)
+			{
+				var url = $"https://api.github.com/repos/{owner}/{repo}/pulls/{prNumber}/files?per_page=100&page={page}";
+				_logger.LogDebug("Fetching PR changed files page {Page}: {Url}", page, url);
+
+				using var response = await _transport.GetAsync(url, ctx);
+				if (!response.IsSuccessStatusCode)
+				{
+					_logger.LogWarning("Failed to fetch PR files. Status: {StatusCode}", response.StatusCode);
+					return null;
+				}
+
+				var json = await response.Content.ReadAsStringAsync(ctx);
+				var items = JsonSerializer.Deserialize(json, GitHubPrJsonContext.Default.ListGitHubPrFileItem);
+				if (items is null or { Count: 0 })
+					break;
+
+				foreach (var item in items)
+				{
+					if (item.Filename is not null && (item.Status == "added" || item.Status == "modified"))
+						files.Add(item.Filename);
+				}
+
+				if (items.Count < 100)
+					break;
+				page++;
+			}
+			return files;
+		}
+		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+		{
+			_logger.LogWarning(ex, "Error fetching PR changed files for PR #{PrNumber}", prNumber);
+			return null;
+		}
+	}
+
+	private const int PrExistenceBatchSize = 50;
+
+	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
+	private static partial Regex SafeGraphQlIdentifierRegex();
+
+	/// <inheritdoc />
+	public async Task<IReadOnlyDictionary<int, bool>> CheckPullRequestsExistAsync(
+		string owner,
+		string repo,
+		IReadOnlyList<int> numbers,
+		CancellationToken ctx = default
+	)
+	{
+		if (numbers.Count == 0)
+			return new Dictionary<int, bool>();
+
+		var token = _transport.ResolveToken();
+		if (string.IsNullOrWhiteSpace(token))
+		{
+			_logger.LogWarning("No GITHUB_TOKEN — skipping PR existence check for {Count} numbers", numbers.Count);
+			return new Dictionary<int, bool>();
+		}
+
+		if (!SafeGraphQlIdentifierRegex().IsMatch(owner) || !SafeGraphQlIdentifierRegex().IsMatch(repo))
+		{
+			_logger.LogWarning("Invalid owner/repo for GraphQL: {Owner}/{Repo}", owner, repo);
+			return new Dictionary<int, bool>();
+		}
+
+		var result = new Dictionary<int, bool>();
+
+		for (var batchStart = 0; batchStart < numbers.Count; batchStart += PrExistenceBatchSize)
+		{
+			var batch = numbers.Skip(batchStart).Take(PrExistenceBatchSize).ToList();
+			var batchResult = await CheckPrBatchAsync(owner, repo, batch, ctx);
+			foreach (var (num, exists) in batchResult)
+				result[num] = exists;
+		}
+
+		return result;
+	}
+
+	private async Task<IReadOnlyDictionary<int, bool>> CheckPrBatchAsync(
+		string owner,
+		string repo,
+		IReadOnlyList<int> numbers,
+		CancellationToken ctx
+	)
+	{
+		var query = BuildPrExistenceQuery(owner, repo, numbers);
+		var requestJson = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, GitHubPrJsonContext.Default.GraphQlRequest);
+
+		try
+		{
+			using var response = await _transport.PostGraphQlAsync(requestJson, ctx);
+			var responseJson = await response.Content.ReadAsStringAsync(ctx);
+
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogWarning("GraphQL PR existence check failed. Status: {StatusCode}", response.StatusCode);
+				return new Dictionary<int, bool>();
+			}
+
+			var parsed = JsonSerializer.Deserialize(responseJson, GitHubPrJsonContext.Default.PrExistenceGraphQlResponse);
+			if (parsed?.Data?.Repository is null)
+			{
+				_logger.LogWarning("GraphQL PR existence response had no repository data");
+				return new Dictionary<int, bool>();
+			}
+
+			// Build a set of numbers that had NOT_FOUND errors
+			var notFoundErrors = new HashSet<int>();
+			if (parsed.Errors is { Count: > 0 })
+			{
+				// Errors reference path like ["repository", "p1234"] — extract the index
+				foreach (var error in parsed.Errors)
+				{
+					if (error.Path is { Count: >= 2 } && error.Path[1] is string alias && alias.StartsWith('p'))
+					{
+						if (int.TryParse(alias[1..], out var idx) && idx >= 0 && idx < numbers.Count)
+							_ = notFoundErrors.Add(numbers[idx]);
+					}
+				}
+			}
+
+			var result = new Dictionary<int, bool>();
+			for (var i = 0; i < numbers.Count; i++)
+			{
+				var num = numbers[i];
+				var alias = $"p{i}";
+				if (parsed.Data.Repository.TryGetValue(alias, out var node))
+					result[num] = node is not null;
+				else
+					// alias not present in response — treat as unknown (omit)
+					_logger.LogDebug("PR #{Number} not present in GraphQL response; skipping", num);
+			}
+
+			return result;
+		}
+		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+		{
+			_logger.LogWarning(ex, "Error during GraphQL PR existence batch check");
+			return new Dictionary<int, bool>();
+		}
+	}
+
+	private static string BuildPrExistenceQuery(string owner, string repo, IReadOnlyList<int> numbers)
+	{
+		var sb = new System.Text.StringBuilder();
+		_ = sb.Append("query { repository(owner: \"").Append(owner).Append("\", name: \"").Append(repo).Append("\") {");
+		for (var i = 0; i < numbers.Count; i++)
+			_ = sb.Append(" p").Append(i).Append(": pullRequest(number: ").Append(numbers[i]).Append(") { number }");
+		_ = sb.Append(" } }");
+		return sb.ToString();
+	}
+
 	private sealed class GitHubPrResponse
 	{
 		public string Title { get; set; } = string.Empty;
@@ -447,6 +611,51 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 		public GitHubCommitAuthor? Author { get; set; }
 	}
 
+	private sealed class GitHubPrFileItem
+	{
+		[JsonPropertyName("filename")]
+		public string? Filename { get; set; }
+
+		[JsonPropertyName("status")]
+		public string? Status { get; set; }
+	}
+
+	private sealed class GraphQlRequest
+	{
+		[JsonPropertyName("query")]
+		public string Query { get; set; } = string.Empty;
+	}
+
+	private sealed class PrExistenceGraphQlResponse
+	{
+		[JsonPropertyName("data")]
+		public PrExistenceData? Data { get; set; }
+
+		[JsonPropertyName("errors")]
+		public List<PrExistenceError>? Errors { get; set; }
+	}
+
+	private sealed class PrExistenceData
+	{
+		[JsonPropertyName("repository")]
+		public Dictionary<string, PrExistenceNode?>? Repository { get; set; }
+	}
+
+	private sealed class PrExistenceNode
+	{
+		[JsonPropertyName("number")]
+		public int Number { get; set; }
+	}
+
+	private sealed class PrExistenceError
+	{
+		[JsonPropertyName("message")]
+		public string? Message { get; set; }
+
+		[JsonPropertyName("path")]
+		public List<string>? Path { get; set; }
+	}
+
 	[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
 	[JsonSerializable(typeof(GitHubPrResponse))]
 	[JsonSerializable(typeof(GitHubIssueResponse))]
@@ -458,6 +667,15 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 	[JsonSerializable(typeof(GitHubCommitAuthor))]
 	[JsonSerializable(typeof(GitHubCommitListItem))]
 	[JsonSerializable(typeof(List<GitHubCommitListItem>))]
+	[JsonSerializable(typeof(GitHubPrFileItem))]
+	[JsonSerializable(typeof(List<GitHubPrFileItem>))]
+	[JsonSerializable(typeof(GraphQlRequest))]
+	[JsonSerializable(typeof(PrExistenceGraphQlResponse))]
+	[JsonSerializable(typeof(PrExistenceData))]
+	[JsonSerializable(typeof(Dictionary<string, PrExistenceNode?>))]
+	[JsonSerializable(typeof(PrExistenceNode))]
+	[JsonSerializable(typeof(PrExistenceError))]
+	[JsonSerializable(typeof(List<PrExistenceError>))]
 	private sealed partial class GitHubPrJsonContext : JsonSerializerContext;
 
 	[GeneratedRegex(@"https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/pull/(\d+)", RegexOptions.IgnoreCase

@@ -297,7 +297,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			if (matchingLabel != null)
 			{
-				collector.EmitWarning(
+				collector.EmitHint(
 					string.Empty,
 					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
 				);
@@ -317,7 +317,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (!hasMatch)
 			{
 				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitWarning(
+				collector.EmitHint(
 					string.Empty,
 					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
 				);
@@ -410,6 +410,15 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		labels.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null).FirstOrDefault(
 			mappedType => mappedType != null
 		);
+
+	/// <summary>
+	/// Returns every label in <paramref name="labels"/> that has a mapping in
+	/// <paramref name="labelToTypeMapping"/>. More than one result means the PR carries conflicting
+	/// type labels; callers should surface this as an actionable error rather than silently picking
+	/// the first match.
+	/// </summary>
+	internal static IReadOnlyList<string> MatchingTypeLabels(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) =>
+		labels.Where(labelToTypeMapping.ContainsKey).ToList();
 
 	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{

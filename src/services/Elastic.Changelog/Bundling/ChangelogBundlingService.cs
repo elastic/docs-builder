@@ -56,6 +56,12 @@ public record BundleChangelogsArguments
 	public string? Repo { get; init; }
 
 	/// <summary>
+	/// GitHub release tag from CLI <c>--release-version</c>, used only for option-mode default
+	/// file naming when product targets are not set. Filter PRs are already expanded by the CLI.
+	/// </summary>
+	public string? ReleaseVersion { get; init; }
+
+	/// <summary>
 	/// Branch whose CDN changelog pool (<c>changelog/{org}/{repo}/{branch}/…</c>) entries are sourced from.
 	/// null = use config <c>bundle.branch</c>, then the default branch (<c>main</c>).
 	/// </summary>
@@ -158,6 +164,13 @@ public record BundlePlanResult
 	/// filters). Consumed by the bundle-PR action to poll for and download the scrubbed copy.
 	/// </summary>
 	public string? CdnUrl { get; init; }
+
+	/// <summary>
+	/// Resolved release mode: <c>gh-release</c> when <c>bundle.profiles</c> is absent in the config
+	/// (the action should run <c>changelog gh-release</c>); <c>bundle</c> for profile-based bundling.
+	/// Null in legacy plan calls that do not query the config for mode resolution.
+	/// </summary>
+	public string? Mode { get; init; }
 }
 
 /// <summary>
@@ -170,11 +183,13 @@ public partial class ChangelogBundlingService(
 	IGitHubReleaseService? releaseService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
-	IGitHubCommitRangeService? commitRangeService = null
+	IGitHubCommitRangeService? commitRangeService = null,
+	IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
+	private readonly IEnvironmentVariables? _env = env;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
@@ -357,8 +372,7 @@ public partial class ChangelogBundlingService(
 			// Directory is resolved by ApplyConfigDefaults (never null at this point)
 			var directory = input.Directory!;
 
-			// Determine output path
-			var outputPath = input.Output ?? _fileSystem.Path.Join(directory, "changelog-bundle.yaml");
+			var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
 			// Build filter criteria
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
@@ -511,13 +525,15 @@ public partial class ChangelogBundlingService(
 		if (!featureHidingResult.IsValid)
 			return false;
 
-		// Build bundle
+		// products[].repo is the checkout's GitHub name (filename convention), not products.yml
+		// repository:. Keep input.Repo intact so combined owner/repo still supplies the CDN owner.
+		var productRepo = BundleOutputNaming.ResolveRepo(_fileSystem, input.Config, _env, input.Repo);
 		var bundleBuilder = new BundleBuilder();
 		var buildResult = bundleBuilder.BuildBundle(
 			collector,
 			filteredEntries,
 			input.OutputProducts,
-			input.Repo,
+			productRepo,
 			input.Owner,
 			featureHidingResult.FeatureIdsToHide
 		);
@@ -534,7 +550,7 @@ public partial class ChangelogBundlingService(
 					bundleData,
 					input.LinkAllowRepos,
 					input.Owner ?? "elastic",
-					input.Repo,
+					productRepo,
 					out var sanitizedBundle,
 					out _
 				)
@@ -568,7 +584,7 @@ public partial class ChangelogBundlingService(
 			var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
 				?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
 			var owner = input.Owner ?? "elastic";
-			var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
+			var repo = productRepo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
 
 			try
 			{
@@ -667,20 +683,28 @@ public partial class ChangelogBundlingService(
 			// For all other profile types, infer it from the base version string.
 			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
 
-			// Bundle output names follow the standardized {product}-{version}.yaml convention (B2 —
-			// elastic/docs-builder#3774), derived from the profile's primary output product and the
-			// version argument. When either is unavailable (e.g. a report/list invocation without a
-			// version) the default changelog-bundle.yaml naming applies downstream.
+			// Bundle output names follow {repo}-{product}-{version}.yaml when an authoring repo
+			// resolves (B2 — elastic/docs-builder#3774). When product or version is unavailable
+			// (e.g. a report/list invocation without a version) changelog-bundle.yaml applies downstream.
 			var primaryProduct = ResolvePrimaryProduct(profile, input);
 			if (!string.IsNullOrWhiteSpace(primaryProduct) && filterResult.Version != "unknown")
 			{
-				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
-				// → bundle.directory → CWD
-				var outputDir = config.Bundle.OutputDirectory
-					?? input.OutputDirectory
-					?? config.Bundle.Directory
-					?? _fileSystem.Directory.GetCurrentDirectory();
-				outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{filterResult.Version}.yaml").OptionalWindowsReplace();
+				var fileName = BundleOutputNaming.ResolveFileName(
+					collector,
+					_fileSystem,
+#pragma warning disable CS0618
+					new BundleOutputNameRequest(
+						primaryProduct,
+						filterResult.Version,
+						input.Repo,
+						profile.Repo,
+						config.Bundle.Repo,
+						input.Config,
+						_env
+					)
+#pragma warning restore CS0618
+				);
+				outputPath = JoinProfileOutputPath(config, input, fileName);
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -709,13 +733,17 @@ public partial class ChangelogBundlingService(
 			}
 
 			// Profile-level repo/owner/branch takes precedence; fall back to bundle-level defaults
+#pragma warning disable CS0618
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
+#pragma warning restore CS0618
 			branch = profile.Branch ?? config.Bundle.Branch;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
-			// Handle profile-specific description with placeholder substitution
+			// Handle profile-specific description with placeholder substitution.
+			// Checkout fallback is for {repo}/{owner} text only — keep returned Repo/Owner as
+			// config/CLI so combined owner/repo still supplies the CDN owner.
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
 			if (!string.IsNullOrEmpty(descriptionTemplate))
 			{
@@ -733,7 +761,19 @@ public partial class ChangelogBundlingService(
 					return null;
 				}
 
-				if (hasOwnerRepoPlaceholder && (string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo)))
+#pragma warning disable CS0618
+				var descriptionRepo = BundleOutputNaming.ResolveRepo(
+					_fileSystem,
+					input.Config,
+					_env,
+					input.Repo,
+					profile.Repo,
+					config.Bundle.Repo
+				);
+#pragma warning restore CS0618
+				var descriptionOwner = owner ?? "elastic";
+
+				if (hasOwnerRepoPlaceholder && (string.IsNullOrEmpty(descriptionOwner) || string.IsNullOrEmpty(descriptionRepo)))
 				{
 					collector.EmitError(
 						string.Empty,
@@ -747,8 +787,8 @@ public partial class ChangelogBundlingService(
 					descriptionTemplate,
 					filterResult.Version,
 					resolvedLifecycle,
-					owner,
-					repo
+					descriptionOwner,
+					descriptionRepo
 				);
 			}
 		}
@@ -924,7 +964,7 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		var directory = input.Directory!;
-		var outputPath = input.Output ?? _fileSystem.Path.Join(directory, "changelog-bundle.yaml");
+		var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
 		var candidates = sourcing.UseCdn
 			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, ctx)
@@ -1008,14 +1048,15 @@ public partial class ChangelogBundlingService(
 		if (config?.Bundle == null)
 			return input with { Directory = directory, LinkAllowRepos = null };
 
-		// Apply output default when --output not specified: use bundle.output_directory if set
+		// File name is resolved later in ResolveResolvedOutputPath so option-mode can use the
+		// conventional {repo}-{product}-{version}.yaml name. Keep a directory --output as-is.
 		var output = input.Output;
-		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
-			output = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
 
 		// Apply repo/owner/branch: CLI takes precedence; fall back to bundle-level config defaults.
+#pragma warning disable CS0618
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
+#pragma warning restore CS0618
 		var branch = input.Branch ?? config.Bundle.Branch;
 
 		// Apply description: CLI takes precedence; fall back to bundle-level config default
@@ -1102,7 +1143,9 @@ public partial class ChangelogBundlingService(
 		// local sourcing, and a CDN base is configured.
 		var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false) || input.ForceLocal;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
+#pragma warning disable CS0618
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
+#pragma warning restore CS0618
 		if (
 			ChangelogEntrySourcing.ShouldSourceFromCdn(
 				authoringRepo,
@@ -1112,12 +1155,11 @@ public partial class ChangelogBundlingService(
 		)
 			needsNetwork = true;
 
-		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults: the
-		// standardized {product}-{version}.yaml convention when the profile's primary product and a
-		// plain version argument resolve, else the changelog-bundle.yaml default.
-		var outputPath = input.Output;
+		// Resolve output path — mirrors ProcessProfile (profile convention) and
+		// ResolveResolvedOutputPath (option-mode convention or changelog-bundle.yaml).
+		string? outputPath;
 		if (
-			string.IsNullOrWhiteSpace(outputPath)
+			!BundleOutputNaming.IsYamlFilePath(input.Output)
 			&& profileDef != null
 			&& !string.IsNullOrWhiteSpace(input.ProfileArgument)
 			&& PlanVersionArgumentRegex().IsMatch(input.ProfileArgument)
@@ -1133,16 +1175,25 @@ public partial class ChangelogBundlingService(
 			var planVersion = string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
 				? ChangelogTextUtilities.ExtractBaseVersion(input.ProfileArgument)
 				: input.ProfileArgument;
-			// Same precedence as ProcessProfile: config.Bundle.OutputDirectory > input.OutputDirectory
-			// (programmatic override, e.g. a CI-provided --output-directory) > config.Bundle.Directory > cwd.
-			var outputDir = config?.Bundle?.OutputDirectory
-				?? input.OutputDirectory
-				?? config?.Bundle?.Directory
-				?? _fileSystem.Directory.GetCurrentDirectory();
-			outputPath = _fileSystem.Path.Join(outputDir, $"{primaryProduct}-{planVersion}.yaml").OptionalWindowsReplace();
+			var fileName = BundleOutputNaming.ResolveFileName(
+				collector,
+				_fileSystem,
+#pragma warning disable CS0618
+				new BundleOutputNameRequest(
+					primaryProduct,
+					planVersion,
+					input.Repo,
+					profileDef.Repo,
+					config?.Bundle?.Repo,
+					input.Config,
+					_env
+				)
+#pragma warning restore CS0618
+			);
+			outputPath = JoinProfileOutputPath(config, input, fileName);
 		}
-		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
-			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
+		else
+			outputPath = ResolveResolvedOutputPath(collector, input, config);
 
 		return new BundlePlanResult
 		{
@@ -1176,7 +1227,7 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// The first concrete (non-wildcard) product that scopes the bundle, used for the conventional
-	/// <c>{product}-{version}.yaml</c> name and the bundle's CDN URL.
+	/// file name and the bundle's CDN URL.
 	/// From the profile <c>output_products</c>/<c>products</c> pattern, else the first explicit product argument.
 	/// </summary>
 	private static string? ResolvePrimaryProduct(BundleProfile? profileDef, BundleChangelogsArguments input)
@@ -1198,6 +1249,73 @@ public partial class ChangelogBundlingService(
 		return null;
 	}
 
+	/// <summary>
+	/// Explicit <c>.yml</c>/<c>.yaml</c> <c>--output</c> wins. A directory <c>--output</c> (or
+	/// omitted) joins the conventional name, or <see cref="BundleOutputNaming.FallbackFileName"/>
+	/// when product/version cannot be resolved. Profile mode that already missed convention keeps
+	/// the fallback name without a second product/version warning.
+	/// </summary>
+	private string ResolveResolvedOutputPath(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		ChangelogConfiguration? config
+	)
+	{
+		if (BundleOutputNaming.IsYamlFilePath(input.Output))
+			return input.Output!.OptionalWindowsReplace();
+
+		var outputDir = !string.IsNullOrWhiteSpace(input.Output)
+			? input.Output
+			: ResolveConfiguredOutputDirectory(config, input)
+				?? input.OutputDirectory
+				?? input.Directory
+				?? config?.Bundle?.Directory
+				?? _fileSystem.Directory.GetCurrentDirectory();
+
+		if (!string.IsNullOrWhiteSpace(input.Profile))
+			return _fileSystem.Path.Join(outputDir, BundleOutputNaming.FallbackFileName).OptionalWindowsReplace();
+
+		var product = ResolvePrimaryProduct(null, input) ?? "";
+		var version = BundleOutputNaming.ResolveVersion(input.OutputProducts, input.InputProducts, input.ReleaseVersion) ?? "";
+		var fileName = BundleOutputNaming.ResolveFileNameOrFallback(
+			collector,
+			_fileSystem,
+#pragma warning disable CS0618
+			new BundleOutputNameRequest(product, version, input.Repo, null, config?.Bundle?.Repo, input.Config, _env)
+#pragma warning restore CS0618
+		);
+		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
+	}
+
+	/// <summary>
+	/// Profile <c>output_directory</c> replaces <c>bundle.output_directory</c> (same as option-mode
+	/// <c>--output</c> as a directory). Then <c>input.OutputDirectory</c>, <c>bundle.directory</c>, CWD.
+	/// </summary>
+	private string JoinProfileOutputPath(ChangelogConfiguration? config, BundleChangelogsArguments input, string fileName)
+	{
+		var outputDir = ResolveConfiguredOutputDirectory(config, input)
+			?? input.OutputDirectory
+			?? config?.Bundle?.Directory
+			?? _fileSystem.Directory.GetCurrentDirectory();
+		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
+	}
+
+	/// <summary>
+	/// Profile <c>output_directory</c> when the invoked profile sets it; otherwise
+	/// <c>bundle.output_directory</c>.
+	/// </summary>
+	private static string? ResolveConfiguredOutputDirectory(ChangelogConfiguration? config, BundleChangelogsArguments input)
+	{
+		if (
+			!string.IsNullOrWhiteSpace(input.Profile)
+			&& config?.Bundle?.Profiles?.TryGetValue(input.Profile, out var profile) == true
+			&& !string.IsNullOrWhiteSpace(profile.OutputDirectory)
+		)
+			return profile.OutputDirectory;
+
+		return config?.Bundle?.OutputDirectory;
+	}
+
 	/// <summary>The first concrete product id from a profile's <c>output_products</c>/<c>products</c> pattern.</summary>
 	private static string? ResolvePrimaryProductFromProfile(BundleProfile profileDef)
 	{
@@ -1211,10 +1329,10 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// B2 (elastic/docs-builder#3774): bundle output names are standardized by convention as
-	/// <c>{product}-{version}.yaml</c>. Any profile still setting an explicit <c>output</c> pattern
-	/// is a hard error, and two profiles sharing the same primary output product would collide on
-	/// the same conventional target for any given version, so that is rejected as well.
+	/// B2 (elastic/docs-builder#3774): bundle output names are standardized as
+	/// <c>{repo}-{product}-{version}.yaml</c> when a repo resolves. Any profile still setting an
+	/// explicit <c>output</c> pattern is a hard error, and two profiles sharing the same primary
+	/// output product would collide on the same conventional target, so that is rejected as well.
 	/// </summary>
 	private static bool ValidateProfileOutputs(IDiagnosticsCollector collector, ChangelogConfiguration? config)
 	{
@@ -1225,15 +1343,27 @@ public partial class ChangelogBundlingService(
 		foreach (var (name, profile) in profiles)
 		{
 #pragma warning disable CS0618 // intentionally reading the obsolete field to reject profiles that still set it
-			if (string.IsNullOrWhiteSpace(profile.Output))
-				continue;
+			if (!string.IsNullOrWhiteSpace(profile.Output))
 #pragma warning restore CS0618
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
-					"as '{product}-{version}.yaml' from the profile's output_products."
-			);
-			valid = false;
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Profile '{name}': 'output' is no longer supported. Remove it — bundle output names are now derived by convention " +
+						$"as '{BundleOutputNaming.PrefixedConvention}' from the profile's output_products and authoring repo."
+				);
+				valid = false;
+			}
+
+			if (BundleOutputNaming.IsYamlFilePath(profile.OutputDirectory))
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Profile '{name}': 'output_directory' must be a directory, not a file path. " +
+						$"The bundle file name is derived by convention as '{BundleOutputNaming.PrefixedConvention}'. " +
+						"To choose a folder, set output_directory the same way option-mode --output does when it is a directory."
+				);
+				valid = false;
+			}
 		}
 
 		var collisions = profiles
@@ -1247,8 +1377,8 @@ public partial class ChangelogBundlingService(
 			var names = string.Join("', '", group.Select(p => p.Name).Order(StringComparer.Ordinal));
 			collector.EmitError(
 				string.Empty,
-				$"Profiles '{names}' all resolve to the same '{group.Key}-{{version}}.yaml' bundle target for any given version. " +
-					"Bundle names are derived by convention from the profile's primary output product, so each profile must target a distinct product."
+				$"Profiles '{names}' all resolve to the same '{{repo}}-{group.Key}-{{version}}.yaml' bundle target for any given version. " +
+					"Bundle names are derived by convention from the authoring repo and the profile's primary output product, so each profile must target a distinct product."
 			);
 			valid = false;
 		}

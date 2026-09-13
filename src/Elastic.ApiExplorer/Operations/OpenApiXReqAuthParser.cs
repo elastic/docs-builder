@@ -11,9 +11,47 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
+/// <summary>One Prerequisites row: a mono label plus optional type-style badge (from <c>Label: `value`</c>).</summary>
+public sealed record PrerequisiteRow(string Label, string? Badge);
+
 public static class OpenApiXReqAuthParser
 {
 	public const string ExtensionKey = "x-req-auth";
+
+	public static IReadOnlyList<PrerequisiteRow>? TryGetPrerequisiteRows(
+		OpenApiOperation operation,
+		ILogger? log,
+		string? route,
+		string? operationId
+	)
+	{
+		var lines = TryGetPrerequisiteLines(operation, log, route, operationId);
+		if (lines is null)
+			return null;
+
+		var rows = new List<PrerequisiteRow>(lines.Count);
+		foreach (var line in lines)
+			rows.Add(ParsePrerequisiteRow(line));
+		return rows;
+	}
+
+	internal static PrerequisiteRow ParsePrerequisiteRow(string line)
+	{
+		var trimmed = line.Trim();
+		var colon = trimmed.IndexOf(':');
+		if (colon <= 0)
+			return new PrerequisiteRow(trimmed, null);
+
+		var rest = trimmed[(colon + 1)..].Trim();
+		if (rest.Length < 3 || rest[0] != '`' || rest[^1] != '`')
+			return new PrerequisiteRow(trimmed, null);
+
+		var badge = rest[1..^1];
+		if (badge.Length == 0 || badge.Contains('`', StringComparison.Ordinal))
+			return new PrerequisiteRow(trimmed, null);
+
+		return new PrerequisiteRow(trimmed[..colon].Trim(), badge);
+	}
 
 	public static IReadOnlyList<string>? TryGetPrerequisiteLines(
 		OpenApiOperation operation,

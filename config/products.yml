@@ -47,15 +47,18 @@ products:
   cloud-enterprise:
     display: 'Elastic Cloud Enterprise'
     versioning: 'ece'
+    repository: 'cloud'
   cloud-hosted:
     display: 'Elastic Cloud Hosted'
     versioning: 'ech'
+    repository: 'cloud'
   cloud-kubernetes:
     display: 'Elastic Cloud on Kubernetes'
     versioning: 'eck'
   cloud-serverless:
     display: 'Elastic Cloud Serverless'
     versioning: 'serverless'
+    repository: 'cloud'
   cloud-terraform:
     display: 'Elastic Cloud Terraform Provider'
     versioning: 'cloud-terraform'
@@ -69,6 +72,16 @@ products:
     repository: 'docs-builder'
     features:
       public-reference: false
+  docs-playground-release-notes-changelogs:
+    display: 'Release Notes Playground (Changelogs)'
+    features:
+      public-reference: false
+      release-notes: prestage
+  docs-playground-release-notes-tagged:
+    display: 'Release Notes Playground (Tagged)'
+    features:
+      public-reference: false
+      release-notes: on-release
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:

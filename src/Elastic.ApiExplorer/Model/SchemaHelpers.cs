@@ -22,80 +22,111 @@ public static class SchemaHelpers
 	/// <summary>
 	/// Types that are known to be value types (resolve to primitives like string).
 	/// </summary>
-	public static readonly HashSet<string> KnownValueTypes =
-	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"Field",
-		"Fields",
-		"Id",
-		"Ids",
-		"IndexName",
-		"Indices",
-		"Name",
-		"Names",
-		"Routing",
-		"VersionNumber",
-		"SequenceNumber",
-		"PropertyName",
-		"RelationName",
-		"TaskId",
-		"ScrollId",
-		"SuggestionName",
-		"Duration",
-		"DateMath",
-		"Fuzziness",
-		"GeoHashPrecision",
-		"Distance",
-		"TimeOfDay",
-		"MinimumShouldMatch",
-		"Script",
-		"ByteSize",
-		"Percentage",
-		"Stringifiedboolean",
-		"ExpandWildcards",
-		"float",
-		"Stringifiedinteger",
-		// Numeric value types
-		"uint",
-		"ulong",
-		"long",
-		"int",
-		"short",
-		"ushort",
-		"byte",
-		"sbyte",
-		"double",
-		"decimal"
-	];
+	public static readonly HashSet<string> KnownValueTypes = new(
+		[
+			"Field",
+			"Fields",
+			"Id",
+			"Ids",
+			"IndexName",
+			"Indices",
+			"Name",
+			"Names",
+			"Routing",
+			"VersionNumber",
+			"SequenceNumber",
+			"PropertyName",
+			"RelationName",
+			"TaskId",
+			"ScrollId",
+			"SuggestionName",
+			"Duration",
+			"DateMath",
+			"Fuzziness",
+			"GeoHashPrecision",
+			"Distance",
+			"TimeOfDay",
+			"MinimumShouldMatch",
+			"Script",
+			"ByteSize",
+			"Percentage",
+			"Stringifiedboolean",
+			"ExpandWildcards",
+			"float",
+			"Stringifiedinteger",
+			"uint",
+			"ulong",
+			"long",
+			"int",
+			"short",
+			"ushort",
+			"byte",
+			"sbyte",
+			"double",
+			"decimal"
+		],
+		StringComparer.OrdinalIgnoreCase
+	);
 
 	/// <summary>
 	/// Types that have dedicated pages we can link to.
 	/// Only container types get their own pages - individual queries/aggregations are rendered inline.
 	/// </summary>
-	public static readonly HashSet<string> LinkedTypes =
-	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"QueryContainer",
-		"AggregationContainer",
-		"Aggregate"
-	];
+	public static readonly HashSet<string> LinkedTypes = new(
+		["QueryContainer", "AggregationContainer", "Aggregate"],
+		StringComparer.OrdinalIgnoreCase
+	);
 
 	/// <summary>
 	/// Primitive/generic type names that are not named schema types.
 	/// These should not be considered for recursive type detection since they
 	/// represent generic types rather than specific schema references.
 	/// </summary>
-	public static readonly HashSet<string> PrimitiveTypeNames =
-	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"boolean",
-		"number",
-		"string",
-		"integer",
-		"object",
-		"null",
-		"array"
-	];
+	public static readonly HashSet<string> PrimitiveTypeNames = new(
+		["boolean", "number", "string", "integer", "object", "null", "array"],
+		StringComparer.OrdinalIgnoreCase
+	);
+
+	/// <summary>CSS class for group-1 primitive atoms (<c>string</c>, <c>number</c>, …).</summary>
+	public const string PrimitiveCssClass = "type-primitive";
+
+	/// <summary>CSS class for group-2 value types (<c>string Field</c>, <c>number uint</c>, …).</summary>
+	public const string ValueCssClass = "type-value";
+
+	/// <summary>Group-2 class on the primitive keyword inside a value-type pair.</summary>
+	public const string ValueKeywordCssClass = "type-value value-type-keyword";
+
+	/// <summary>CSS class for group-3 named objects (<c>FieldCollapse</c>, <c>TaskSettings</c>, …).</summary>
+	public const string ObjectCssClass = "type-object";
+
+	/// <summary>CSS class for group-4 linked containers (<c>QueryContainer</c>, …).</summary>
+	public const string LinkedCssClass = "type-linked";
+
+	/// <summary>CSS class for group-5 wrappers (<c>array of</c>, <c>map</c>, <c>enum</c>, <c>{}</c>, …).</summary>
+	public const string WrapperCssClass = "type-wrapper";
+
+	public const string WrapperArrayKeywordCssClass = "type-wrapper array-keyword";
+	public const string WrapperMapKeywordCssClass = "type-wrapper map-keyword";
+	public const string WrapperEnumCssClass = "type-wrapper enum-icon";
+	public const string WrapperUnionCssClass = "type-wrapper union-icon";
+	public const string WrapperObjectIconCssClass = "type-wrapper object-icon";
+	public const string WrapperArrayIconCssClass = "type-wrapper array-icon";
+
+	/// <summary>CSS class for group-6 status chips (<c>required</c>, <c>deprecated</c>, <c>beta</c>).</summary>
+	public const string StatusCssClass = "type-status";
+
+	/// <summary>Inline constraint atom inside the type chip (<c>min: 1</c>, <c>default: 10</c>).</summary>
+	public const string ConstraintCssClass = "type-constraint";
+
+	private static readonly HashSet<string> PrimitiveDisplayNames = new(
+		["boolean", "number", "string", "integer", "object", "null", "array", "booleans", "numbers", "strings", "integers", "objects"],
+		StringComparer.OrdinalIgnoreCase
+	);
+
+	private static readonly HashSet<string> NonObjectDisplayNames = new(
+		["unknown", "oneof", "anyof", "allof"],
+		StringComparer.OrdinalIgnoreCase
+	);
 
 	/// <summary>
 	/// Gets the URL for a container type's dedicated page under the given API root
@@ -173,6 +204,41 @@ public static class SchemaHelpers
 	/// Primitive types like "object", "string", etc. should not be used for recursive type detection.
 	/// </summary>
 	public static bool IsPrimitiveTypeName(string typeName) => PrimitiveTypeNames.Contains(typeName);
+
+	/// <summary>True for JSON primitives and their plural array labels (<c>strings</c>, …).</summary>
+	public static bool IsPrimitiveDisplayName(string? name) => !string.IsNullOrEmpty(name) && PrimitiveDisplayNames.Contains(name);
+
+	public static string? PrimitiveCssClassOrNull(string? name) => IsPrimitiveDisplayName(name) ? PrimitiveCssClass : null;
+
+	public static string? ValueCssClassOrNull(string? name) => !string.IsNullOrEmpty(name) && IsValueType(name) ? ValueCssClass : null;
+
+	public static string? LinkedCssClassOrNull(string? name) =>
+		!string.IsNullOrEmpty(name) && LinkedTypes.Contains(name) ? LinkedCssClass : null;
+
+	public static string? ObjectCssClassOrNull(string? name)
+	{
+		if (string.IsNullOrEmpty(name) || NonObjectDisplayNames.Contains(name) || IsCompoundTypeName(name))
+			return null;
+		if (IsPrimitiveDisplayName(name) || IsValueType(name) || LinkedTypes.Contains(name))
+			return null;
+		return ObjectCssClass;
+	}
+
+	public static bool IsCompoundTypeName(string? name) =>
+		!string.IsNullOrEmpty(name) && (name.Contains('|') || name.Contains(' ') || name.EndsWith("[]", StringComparison.Ordinal));
+
+	/// <summary>Group class for a type atom: primitive → value → linked → named object.</summary>
+	public static string? TypeAtomCssClassOrNull(string? name) =>
+		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? LinkedCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
+
+	public static string UnionOptionClasses(bool isTypeOption, string text)
+	{
+		var kind = isTypeOption ? "union-type-option" : "union-option";
+		if (!isTypeOption)
+			return kind;
+		var atom = TypeAtomCssClassOrNull(text);
+		return atom is null ? kind : $"{kind} {atom}";
+	}
 
 	/// <summary>
 	/// Gets the primitive type base for a value type schema.

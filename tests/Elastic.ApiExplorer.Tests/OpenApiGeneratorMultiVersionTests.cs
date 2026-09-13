@@ -272,12 +272,51 @@ public class OpenApiGeneratorMultiVersionTests
 		await generator.Generate(TestContext.Current.CancellationToken);
 
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "authentication", "index.html"))
+			.Should()
+			.BeTrue();
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "servers", "index.html"))
+			.Should()
+			.BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9", "index.html")).Should().BeTrue();
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9", "authentication", "index.html"))
+			.Should()
+			.BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
 		context
 			.WriteFileSystem
 			.File
+			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "authentication", "index.html"))
+			.Should()
+			.BeTrue();
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "servers", "index.html"))
+			.Should()
+			.BeTrue();
+		context
+			.WriteFileSystem
+			.File
 			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping", "index.html"))
+			.Should()
+			.BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9.md")).Should().BeTrue();
+		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8.md")).Should().BeTrue();
+		context
+			.WriteFileSystem
+			.File
+			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping.md"))
 			.Should()
 			.BeTrue();
 	}

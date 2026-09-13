@@ -54,6 +54,7 @@ jobs:
       # Required for `actions/attest-build-provenance`
       id-token: write
       attestations: write
+      artifact-metadata: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}

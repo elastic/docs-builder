@@ -17,7 +17,7 @@ Files are named `note-{slug}.yml`. Each product lists `products[].versions` — 
   A short, user-facing headline (max 80 characters). Required.
 
 : `--type`
-  The type of change. For valid values, see [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs). Required.
+  The type of change. For valid values, see [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs). Required.
 
 : `--description`
   Additional information (max 600 characters). Optional.

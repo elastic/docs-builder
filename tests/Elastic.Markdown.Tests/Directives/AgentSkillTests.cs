@@ -50,7 +50,7 @@ A regular paragraph.
 	public void RendersLearnMoreLink()
 	{
 		Html.Should().Contain("Learn more about agent skills for Elastic");
-		Html.Should().Contain("href=\"/explore-analyze/ai-features/agent-skills#available-skills\"");
+		Html.Should().Contain("href=\"https://www.elastic.co/docs/explore-analyze/ai-features/agent-skills#available-skills\"");
 	}
 
 	[Fact]

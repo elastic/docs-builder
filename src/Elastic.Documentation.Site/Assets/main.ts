@@ -9,6 +9,7 @@ import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initPrivacyConsent } from './privacy-consent'
 import { initSecondaryNav } from './secondary-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
@@ -238,6 +239,7 @@ function handleCtaActivation(event: MouseEvent) {
     logCtaEvent('cta_clicked', cta)
 }
 document.addEventListener('click', handleCtaActivation)
+initPrivacyConsent()
 initSecondaryNav()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
@@ -307,9 +309,13 @@ document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
     const target = event.target
     if (
         target === document.body ||
-        (target instanceof Element && target.id === 'main-container')
+        (target instanceof Element &&
+            (target.id === 'main-container' ||
+                target.id === 'content-container'))
     ) {
-        window.scrollTo(0, 0)
+        if (window.scrollY !== 0) {
+            window.scrollTo(0, 0)
+        }
     }
 })
 

@@ -197,7 +197,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Output file should be named using the clean version
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().NotBeEmpty();
-		outputFiles.Should().Contain(f => f.EndsWith("elasticsearch-9.2.0.yaml"), "Output filename should use clean version");
+		outputFiles.Should().Contain(
+			f => f.EndsWith("elasticsearch-elasticsearch-9.2.0.yaml"),
+			"Output filename should use repo, product, and clean version"
+		);
 
 		// Bundle products should use inferred lifecycle "ga"
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
@@ -599,7 +602,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		// Output filename should use the clean base version, not the full pre-release tag
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		outputFiles.Should().Contain(f => f.EndsWith("elasticsearch-9.2.0.yaml"), "Output filename should use clean base version");
+		outputFiles.Should().Contain(
+			f => f.EndsWith("elasticsearch-elasticsearch-9.2.0.yaml"),
+			"Output filename should use repo, product, and clean base version"
+		);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("target: 9.2.0", "target should be the clean base version");
@@ -675,7 +681,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		outputFiles.Should().Contain(f => f.EndsWith("apm-agent-dotnet-1.34.1.yaml"), "Output filename should use clean base version");
+		outputFiles.Should().Contain(
+			f => f.EndsWith("apm-agent-dotnet-apm-agent-dotnet-1.34.1.yaml"),
+			"Output filename should use repo, product, and clean base version"
+		);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("target: 1.34.1", "target should be the clean base version");

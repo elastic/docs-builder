@@ -11,6 +11,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
@@ -643,6 +644,86 @@ public class ChangelogUploadServiceTests
 		targets.Should().HaveCount(1);
 		targets[0].S3Key.Should().Be("bundle/elasticsearch/elasticsearch-9.2.0.yaml");
 		_collector.Errors.Should().Be(0);
+	}
+
+	[Fact]
+	public void CollectBundleScanDirectories_IncludesGlobalAndProfileDirectories()
+	{
+		var config = new ChangelogConfiguration
+		{
+			Bundle = new BundleConfiguration
+			{
+				OutputDirectory = "docs/releases",
+				Profiles = new Dictionary<string, BundleProfile>
+				{
+					["kibana-release"] = new(),
+					["serverless-release"] = new() { OutputDirectory = "docs/releases/cloud-serverless" }
+				}
+			}
+		};
+
+		ChangelogUploadService.CollectBundleScanDirectories(null, config).Should().Equal("docs/releases", "docs/releases/cloud-serverless");
+	}
+
+	[Fact]
+	public void CollectBundleScanDirectories_ExplicitDirectory_IgnoresConfig()
+	{
+		var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { OutputDirectory = "docs/releases" } };
+
+		ChangelogUploadService.CollectBundleScanDirectories("custom/out", config).Should().Equal("custom/out");
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_ProfileSubdirectory_IsFoundWhenThatDirectoryIsScanned()
+	{
+		var root = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var globalDir = _mockFileSystem.Path.Join(root, "docs", "releases");
+		var profileDir = _mockFileSystem.Path.Join(globalDir, "cloud-serverless");
+		_mockFileSystem.Directory.CreateDirectory(globalDir);
+		_mockFileSystem.Directory.CreateDirectory(profileDir);
+
+		// language=yaml
+		const string bundleYaml =
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2026-08-27
+			entries: []
+			""";
+		var nestedPath = _mockFileSystem.Path.Join(profileDir, "kibana-cloud-serverless-2026-08-27.yaml");
+		_mockFileSystem.AddFile(nestedPath, new MockFileData(bundleYaml));
+		_mockFileSystem.AddFile(
+			_mockFileSystem.Path.Join(globalDir, "kibana-kibana-9.3.0.yaml"),
+			new MockFileData(
+				"""
+				products:
+				  - product: kibana
+				    target: 9.3.0
+				entries: []
+				"""
+			)
+		);
+
+		_service
+			.DiscoverBundleUploadTargets(_collector, globalDir)
+			.Should()
+			.ContainSingle(t => t.S3Key.Contains("kibana-kibana-9.3.0.yaml"));
+		_service.DiscoverBundleUploadTargets(_collector, globalDir).Should().NotContain(t => t.LocalPath == nestedPath);
+
+		var config = new ChangelogConfiguration
+		{
+			Bundle = new BundleConfiguration
+			{
+				OutputDirectory = globalDir,
+				Profiles = new Dictionary<string, BundleProfile> { ["serverless-release"] = new() { OutputDirectory = profileDir } }
+			}
+		};
+		var scanDirs = ChangelogUploadService.CollectBundleScanDirectories(null, config);
+		var targets = scanDirs.SelectMany(d => _service.DiscoverBundleUploadTargets(_collector, d)).ToList();
+
+		targets.Should().Contain(t => t.LocalPath == nestedPath);
+		targets.Should().Contain(t => t.S3Key == "bundle/cloud-serverless/kibana-cloud-serverless-2026-08-27.yaml");
+		targets.Should().Contain(t => t.S3Key == "bundle/kibana/kibana-kibana-9.3.0.yaml");
 	}
 
 	[Fact]

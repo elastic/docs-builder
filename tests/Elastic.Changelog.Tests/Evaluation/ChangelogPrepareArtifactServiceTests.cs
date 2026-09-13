@@ -78,10 +78,10 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await FileSystem.File.WriteAllTextAsync(configPath, MinimalConfig);
 	}
 
-	private ChangelogArtifactMetadata ReadMetadata()
+	private GithubDecisionMetadata ReadMetadata()
 	{
 		var json = FileSystem.File.ReadAllText(Path.Join(OutputDir, "metadata.json"));
-		return JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata)!;
+		return JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata)!;
 	}
 
 	[Fact]
@@ -127,7 +127,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		result.Should().BeTrue();
 		RunnerTempFileSystem.File.Exists(Path.Join(artifactsOutput, "42.yaml")).Should().BeTrue();
 		var json = RunnerTempFileSystem.File.ReadAllText(Path.Join(artifactsOutput, "metadata.json"));
-		var metadata = JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata)!;
+		var metadata = JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata)!;
 		metadata.Status.Should().Be("success");
 		metadata.ChangelogFilename.Should().Be("42.yaml");
 	}

@@ -5,14 +5,18 @@
 using System.IO.Abstractions;
 #if DEBUG
 using Elastic.Documentation.Api;
+using Elastic.Documentation.Api.PageFeedback;
 #endif
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Http;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -38,6 +42,7 @@ public class StaticWebHost
 		_ = builder.AddDocumentationServiceDefaults();
 #if DEBUG
 		builder.Services.AddElasticDocsApiServices("dev");
+		builder.Services.Replace(ServiceDescriptor.Singleton<IPageFeedbackService, DebugPageFeedbackService>());
 #endif
 
 		_ = builder
@@ -115,7 +120,7 @@ public class StaticWebHost
 		return Task.FromResult(Results.Redirect("docs"));
 	}
 
-	private async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
+	private async Task<IResult> ServeDocumentationFile(string slug, HttpContext http, Cancel _)
 	{
 		// from the injected top level navigation which expects us to run on elastic.co
 		if (slug.StartsWith("static-res/"))
@@ -129,7 +134,19 @@ public class StaticWebHost
 		var fileInfo = new FileInfo(localPath);
 		var directoryInfo = new DirectoryInfo(localPath);
 		if (directoryInfo.Exists)
+		{
+			if (MarkdownAccept.PrefersMarkdown(http.Request.Headers.Accept))
+			{
+				var markdownPath = ApiMarkdownRequest.SiblingOfDirectory(directoryInfo.FullName);
+				if (
+					markdownPath.StartsWith(contentRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+					&& File.Exists(markdownPath)
+				)
+					return Results.File(markdownPath, "text/markdown; charset=utf-8");
+			}
+
 			fileInfo = new FileInfo(Path.Join(directoryInfo.FullName, "index.html"));
+		}
 
 		if (fileInfo.Exists)
 		{
@@ -147,7 +164,8 @@ public class StaticWebHost
 				".txt" => "text/plain",
 				".xml" => "text/xml",
 				".yml" => "text/yaml",
-				".md" => "text/markdown",
+				".yaml" => "text/yaml",
+				".md" => "text/markdown; charset=utf-8",
 				_ => "text/html"
 			};
 			return Results.File(fileInfo.FullName, mimetype);

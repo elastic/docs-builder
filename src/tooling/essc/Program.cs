@@ -7,10 +7,10 @@ using Elastic.SiteSearch.Cli;
 using Elastic.SiteSearch.Cli.Commands;
 using Elastic.SiteSearch.Cli.ContentStack;
 using Elastic.SiteSearch.Cli.Elasticsearch;
-using Elastic.SiteSearch.Cli.LabsCrawl;
 using Elastic.SiteSearch.Cli.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Nullean.Argh.Hosting;
@@ -54,38 +54,22 @@ csHttpClient.AddStandardResilienceHandler(o =>
 	o.Retry.UseJitter = true;
 	o.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
 	o.Retry.Delay = TimeSpan.FromSeconds(2);
+	// Contentstack's sync endpoint intermittently returns a transient 422 (Unprocessable Entity)
+	// under load — not handled by the default transient-status predicate — which otherwise aborts
+	// the whole sync run before FinalizeAsync. See production run 32113750025.
+	o.Retry.ShouldHandle =
+		args => ValueTask.FromResult(
+			HttpClientResiliencePredicates.IsTransient(
+				args.Outcome
+			) || args.Outcome.Result?.StatusCode == HttpStatusCode.UnprocessableEntity
+		);
 });
 csHttpClient.AddHttpMessageHandler(() => RateLimitingHandler.CreateForContentStack());
-
-builder.Services.AddSingleton<CrawlerSettings>();
-builder.Services.AddSingleton<CrawlerRateLimiter>();
-
-static void ConfigureLabsCrawlHttp(IHttpClientBuilder b)
-{
-	_ = b.ConfigurePrimaryHttpMessageHandler(
-		() => new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
-	);
-	_ = b.AddStandardResilienceHandler(o =>
-	{
-		o.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
-		o.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(30);
-		o.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(120);
-		o.CircuitBreaker.MinimumThroughput = 20;
-		o.Retry.MaxRetryAttempts = 8;
-		o.Retry.UseJitter = true;
-		o.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
-		o.Retry.Delay = TimeSpan.FromSeconds(2);
-	});
-}
-
-ConfigureLabsCrawlHttp(builder.Services.AddHttpClient<ISitemapParser, SitemapParser>());
-ConfigureLabsCrawlHttp(builder.Services.AddHttpClient<IAdaptiveCrawler, AdaptiveCrawler>());
 
 builder.Services.AddSingleton<SyncCommand>();
 builder.Services.AddSingleton<ContentTypesCommand>();
 builder.Services.AddSingleton<DumpSamplesCommand>();
 builder.Services.AddSingleton<FindUrlCommand>();
-builder.Services.AddSingleton<LabsCommands>();
 builder.Services.AddSingleton<IndicesCommands>();
 
 builder.Services.AddArgh(args, argh =>
@@ -94,7 +78,6 @@ builder.Services.AddArgh(args, argh =>
 		"Elastic Site Search CLI — tooling to ingest and enrich data published on elastic.co (not the Elastic documentation site)."
 	);
 	_ = argh.MapNamespace<ContentStackCommands>("contentstack");
-	_ = argh.MapNamespace<LabsCommands>("labs");
 	_ = argh.MapNamespace<IndicesCommands>("indices");
 });
 

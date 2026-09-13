@@ -88,7 +88,7 @@ public class ChangelogPrepareArtifactService(
 		// `bool` fields. Treating "unspecified" as `false` keeps downstream
 		// consumers (apply step) failing closed: an unrecognised or omitted
 		// CLI flag never grants commit permission.
-		var metadata = new ChangelogArtifactMetadata
+		var metadata = new GithubDecisionMetadata
 		{
 			PrNumber = input.PrNumber,
 			HeadRef = input.HeadRef,
@@ -108,7 +108,7 @@ public class ChangelogPrepareArtifactService(
 		};
 
 		var metadataPath = _fileSystem.Path.Combine(input.OutputDir, "metadata.json");
-		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 		await _fileSystem.File.WriteAllTextAsync(metadataPath, json, ctx);
 		_logger.LogInformation("Wrote artifact metadata to {Path}", metadataPath);
 

@@ -354,7 +354,7 @@ docs/
 └── release-notes.md          # Page with :::{changelog}
 ```
 
-The `bundle.directory` and `bundle.output_directory` settings in `changelog.yml` apply to the `changelog bundle` and `changelog gh-release` CLI commands. The directive's bundles folder is controlled by its first argument or defaults to `changelog/bundles/` relative to the docset root.
+The `bundle.directory` and `bundle.output_directory` settings in `changelog.yml` apply to the `changelog bundle` and `changelog gh-release` CLI commands. A profile `output_directory` replaces the global bundle output folder for that profile only. The directive's bundles folder is independent: it is the first argument, or `changelog/bundles/` relative to the docset root, and it is **not** recursive. Point the directive at the same folder the profile writes to (for example `docs/releases/cloud-serverless`) so the page only loads that product's bundles.
 
 ## Version ordering
 
