@@ -124,6 +124,28 @@ public class PageTitleTests(ITestOutputHelper output)
 		html.Should().NotContain("| Elastic Docs</title>");
 	}
 
+	[Fact]
+	public async Task GenerateAll_HeadingLikeContentBeforeH1_UsesParsedH1()
+	{
+		var html = await Generate(
+			BuildType.Assembler,
+			markdown: """
+				---
+				description: |
+				  # Internal note
+				---
+
+				```text
+				# Code example
+				```
+
+				# Real page title
+				"""
+		);
+
+		html.Should().Contain("<title>Real page title | Elastic Docs</title>");
+	}
+
 	private async Task<string> Generate(BuildType buildType, string markdown, bool branded = false, string? docsetProduct = null)
 	{
 		var branding = branded ? """

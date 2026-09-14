@@ -52,7 +52,15 @@ public class HtmlWriter(
 
 	/// <inheritdoc />
 	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
-		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
+		RenderPreservingFirstHeadingWithTitle(markdown, source).Html;
+
+	/// <inheritdoc />
+	public MarkdownRenderResult RenderPreservingFirstHeadingWithTitle(string markdown, IFileInfo? source)
+	{
+		source ??= DocumentationSet.Context.ConfigurationPath;
+		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		return new(MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: false), MarkdownFile.ReadTitle(parsed));
+	}
 
 	/// <inheritdoc />
 	public string RenderApiDescription(string markdown, IFileInfo? source) =>

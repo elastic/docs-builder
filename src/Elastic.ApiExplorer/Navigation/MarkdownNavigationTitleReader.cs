@@ -24,13 +24,11 @@ public static class MarkdownNavigationTitleReader
 			var frontMatter = ReadFrontMatter(content);
 			var navigationTitle = ReadScalar(frontMatter, "navigation_title");
 			var metaTitle = ReadScalar(frontMatter, "meta_title");
-			var heading = content.Split('\n').FirstOrDefault(static line => line.StartsWith("# ", StringComparison.Ordinal))?[2..].Trim();
-			var pageTitle = string.IsNullOrWhiteSpace(heading) ? navigationTitle ?? fallback : heading;
-			return new ApiMarkdownPageMetadata(navigationTitle ?? fallback, pageTitle, metaTitle);
+			return new ApiMarkdownPageMetadata(navigationTitle ?? fallback, metaTitle);
 		}
 		catch
 		{
-			return new ApiMarkdownPageMetadata(fallback, fallback, null);
+			return new ApiMarkdownPageMetadata(fallback, null);
 		}
 	}
 
@@ -76,4 +74,4 @@ public static class MarkdownNavigationTitleReader
 			.Aggregate((current, next) => $"{current} {next}");
 }
 
-public sealed record ApiMarkdownPageMetadata(string NavigationTitle, string PageTitle, string? MetaTitle);
+public sealed record ApiMarkdownPageMetadata(string NavigationTitle, string? MetaTitle);

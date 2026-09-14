@@ -173,12 +173,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return string.IsNullOrWhiteSpace(heroTitle) ? null : heroTitle;
 	}
 
+	internal static string? ReadTitle(MarkdownDocument document) =>
+		(document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string
+			?? FindNestedTitle(document))?.StripMarkdown();
+
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
-		Title = document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string ?? Title;
-
-		if (Title == RelativePath)
-			Title = FindNestedTitle(document) ?? Title;
+		Title = ReadTitle(document) ?? Title;
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;

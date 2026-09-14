@@ -34,8 +34,31 @@ public class SimpleMarkdownNavigationItemTests
 		var metadata = MarkdownNavigationTitleReader.GetMetadata(fileSystem, file);
 
 		metadata.NavigationTitle.Should().Be("Short title");
-		metadata.PageTitle.Should().Be("Search APIs");
 		metadata.MetaTitle.Should().Be("Search APIs - Elasticsearch");
+	}
+
+	[Fact]
+	public void GetMetadata_WithHeadingLikeFrontMatterContent_DoesNotTreatItAsPageTitle()
+	{
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			["/docs/intro.md"] = new(
+				"""
+					---
+					description: |
+					  # Internal note
+					---
+
+					# Real page title
+					"""
+			)
+		});
+		var file = fileSystem.FileInfo.New("/docs/intro.md");
+
+		var metadata = MarkdownNavigationTitleReader.GetMetadata(fileSystem, file);
+
+		metadata.NavigationTitle.Should().Be("Intro");
+		metadata.MetaTitle.Should().BeNull();
 	}
 
 	[Theory]

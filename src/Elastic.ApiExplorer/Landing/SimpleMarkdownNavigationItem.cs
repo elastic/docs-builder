@@ -28,7 +28,6 @@ public class SimpleMarkdownNavigationItem(
 {
 	public string Url { get; } = url;
 	public string NavigationTitle { get; } = metadata.NavigationTitle;
-	public string PageTitle { get; } = metadata.PageTitle;
 	public string? MetaTitle { get; } = metadata.MetaTitle;
 	public IFileInfo FileInfo { get; } = fileInfo;
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = navigationRoot;
@@ -68,12 +67,12 @@ public class SimpleMarkdownNavigationItem(
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx);
-		var htmlContent = context.MarkdownRenderer.RenderPreservingFirstHeading(markdownContent, FileInfo);
+		var rendered = context.MarkdownRenderer.RenderPreservingFirstHeadingWithTitle(markdownContent, FileInfo);
 		var viewModel = new MarkdownPageViewModel(context)
 		{
-			PageTitle = PageTitle,
+			PageTitle = rendered.Title ?? NavigationTitle,
 			MetaTitle = MetaTitle,
-			BodyHtml = new HtmlString(htmlContent ?? string.Empty)
+			BodyHtml = new HtmlString(rendered.Html)
 		};
 		var slice = MarkdownPageView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
