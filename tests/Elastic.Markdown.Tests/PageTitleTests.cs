@@ -31,9 +31,7 @@ public class PageTitleTests(ITestOutputHelper output)
 
 		html.Should().Contain("<title>Elasticsearch query language | Elastic Docs</title>");
 		html.Should().Contain("<meta property=\"og:title\" content=\"Elasticsearch query language | Elastic Docs\"");
-		html.Should().Contain(
-			"<meta data-pagefind-meta=\"title[content]\" content=\"Elasticsearch query language | Elastic Docs\""
-		);
+		html.Should().Contain("<meta data-pagefind-meta=\"title[content]\" content=\"Elasticsearch query language | Elastic Docs\"");
 		html.Should().Contain("<h1>Query DSL</h1>");
 	}
 

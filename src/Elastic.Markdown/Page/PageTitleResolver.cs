@@ -12,12 +12,8 @@ internal readonly record struct PageTitleOptions(BuildType BuildType, BrandingCo
 
 internal static class PageTitleResolver
 {
-	public static string Resolve(
-		string title,
-		string? overrideTitle,
-		IReadOnlyCollection<Product> products,
-		PageTitleOptions options
-	) => string.IsNullOrWhiteSpace(overrideTitle) ? Resolve(title, products, options) : AddSuffix(overrideTitle, options);
+	public static string Resolve(string title, string? overrideTitle, IReadOnlyCollection<Product> products, PageTitleOptions options) =>
+		string.IsNullOrWhiteSpace(overrideTitle) ? Resolve(title, products, options) : AddSuffix(overrideTitle, options);
 
 	public static string Resolve(string title, IReadOnlyCollection<Product> products, PageTitleOptions options)
 	{
