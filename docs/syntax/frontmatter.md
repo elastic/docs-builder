@@ -39,7 +39,7 @@ See [](./titles.md)
 
 Use `meta_title` as a last-resort override when the automatic page title needs different wording.
 By default, the page title comes from the level-one heading and appends the display name of a single
-frontmatter product when the heading does not already contain it. The public Elastic Docs site then
+resolved product when the heading does not already contain it. The public Elastic Docs site then
 appends `| Elastic Docs`.
 
 ```yaml
