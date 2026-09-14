@@ -14,19 +14,9 @@ namespace Elastic.Markdown.Tests;
 public class PageTitleTests(ITestOutputHelper output)
 {
 	[Fact]
-	public async Task GenerateAll_SingleProductMissingFromH1_AppendsProductName()
+	public async Task GenerateAll_DocsetProductMissingFromH1_AppendsInferredProductName()
 	{
-		var html = await Generate(
-			BuildType.Assembler,
-			"""
-			---
-			products:
-			  - id: elasticsearch
-			---
-
-			# Query DSL
-			"""
-		);
+		var html = await Generate(BuildType.Assembler, "# Query DSL", docsetProduct: "elasticsearch");
 
 		html.Should().Contain("<title>Query DSL - Elasticsearch | Elastic Docs</title>");
 		html.Should().Contain("<meta property=\"og:title\" content=\"Query DSL - Elasticsearch | Elastic Docs\"");
@@ -110,18 +100,25 @@ public class PageTitleTests(ITestOutputHelper output)
 		html.Should().NotContain("| Elastic Docs</title>");
 	}
 
-	private async Task<string> Generate(BuildType buildType, string markdown, bool branded = false)
+	private async Task<string> Generate(BuildType buildType, string markdown, bool branded = false, string? docsetProduct = null)
 	{
 		var branding = branded ? """
 			branding:
 			  icon: assets/logo.svg
 			""" : string.Empty;
+		var products = docsetProduct is null
+			? string.Empty
+			: $"""
+				products:
+				  - id: {docsetProduct}
+				""";
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
 			{
 				["docs/docset.yml"] = new(
 					$"""
 					project: test
+					{products}
 					toc:
 					- file: index.md
 					{branding}

@@ -10,6 +10,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Page;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using Pagefind.Net;
@@ -55,7 +56,23 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		var parents = navigation.GetParentsOfMarkdownFile(file).Reverse().ToArray();
 		var breadcrumbsMeta = BuildBreadcrumbsMeta(parents, fileContext.BuildContext.CanonicalBaseUrl);
 
-		var meta = new Dictionary<string, string> { ["title"] = file.Title ?? url };
+		var inference = fileContext.InferenceService.InferForMarkdown(
+			fileContext.BuildContext.Git.RepositoryName,
+			file.YamlFrontMatter?.MappedPages,
+			fileContext.DocumentationSet.Configuration.Products,
+			file.YamlFrontMatter?.Products,
+			file.YamlFrontMatter?.AppliesTo
+		);
+		var title = PageTitleResolver.Resolve(
+			file.Title ?? url,
+			inference.RelatedProducts,
+			new(
+				fileContext.BuildContext.BuildType,
+				fileContext.DocumentationSet.Configuration.Branding,
+				fileContext.DocumentationSet.Navigation.NavigationTitle
+			)
+		);
+		var meta = new Dictionary<string, string> { ["title"] = title };
 		if (!string.IsNullOrEmpty(breadcrumbsMeta))
 			meta["breadcrumbs"] = breadcrumbsMeta;
 

@@ -15,8 +15,10 @@ Each page must define a level-one heading.
 The heading supplies the visible page title, link text, and the default HTML page title.
 For public Elastic Docs builds, the builder appends `| Elastic Docs` to the HTML title.
 
-When frontmatter identifies exactly one product and the heading does not already contain
-that product's display name, the builder adds the product name automatically:
+When the page resolves to exactly one product and the heading does not already contain
+that product's display name, the builder adds the product name automatically. Product
+resolution merges page frontmatter with docset, repository, `applies_to`, and `mapped_pages`
+metadata:
 
 ```markdown
 ---
