@@ -30,8 +30,9 @@ Standard Markdown works as you'd expect:
 #### Deep heading (h4)
 ```
 
-Every page must start with exactly one `#` heading. This becomes the default page title.
-Use [`meta_title`](../syntax/frontmatter.md#meta-title) when the browser title needs more context.
+Every page must start with exactly one `#` heading. This becomes the default page title, with a
+single frontmatter product added automatically when needed. Use
+[`meta_title`](../syntax/frontmatter.md#meta-title) only when the automatic title needs different wording.
 
 ### Links
 

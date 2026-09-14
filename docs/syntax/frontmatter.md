@@ -37,14 +37,19 @@ See [](./titles.md)
 
 ## Meta title
 
-Use `meta_title` when the page title must be different from the level-one heading.
-The public Elastic Docs site appends `| Elastic Docs` to this value.
-If you omit `meta_title`, the page uses the level-one heading.
+Use `meta_title` as a last-resort override when the automatic page title needs different wording.
+By default, the page title comes from the level-one heading and appends the display name of a single
+frontmatter product when the heading does not already contain it. The public Elastic Docs site then
+appends `| Elastic Docs`.
 
 ```yaml
 ---
-meta_title: Query DSL - Elasticsearch
+meta_title: Search across clusters
+products:
+  - id: elasticsearch
 ---
+
+# Cross-cluster search in Elasticsearch
 ```
 
 ## Description
