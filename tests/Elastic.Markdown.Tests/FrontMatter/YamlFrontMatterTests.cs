@@ -12,6 +12,7 @@ public class YamlFrontMatterTests(ITestOutputHelper output) : DirectiveTest(
 	"""
 ---
 navigation_title: "Documentation Guide"
+meta_title: "Elastic Docs for {{key}}"
 sub:
   key: "value"
 ---
@@ -25,6 +26,9 @@ sub:
 
 	[Fact]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide");
+
+	[Fact]
+	public void ReadsMetaTitle() => File.MetaTitle.Should().Be("Elastic Docs for value");
 
 	[Fact]
 	public void ReadsSubstitutions()

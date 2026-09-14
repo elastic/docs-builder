@@ -187,10 +187,10 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName);
 
 		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix)}/{slug}/";
-		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
+		var metadata = MarkdownNavigationTitleReader.GetMetadata(context.ReadFileSystem, markdownFile);
 
 		// Create simple navigation item - will be handled by regular documentation system
-		var navItem = new SimpleMarkdownNavigationItem(url, title, markdownFile, rootNavigation) { Parent = parent };
+		var navItem = new SimpleMarkdownNavigationItem(url, metadata, markdownFile, rootNavigation) { Parent = parent };
 
 		return navItem;
 	}

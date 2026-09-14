@@ -25,7 +25,8 @@ public class IndexViewModel
 	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }
-	public string PageTitle => PageTitleResolver.Resolve(Title, Products, new(BuildType, Branding, SiteName));
+	public string PageTitle =>
+		PageTitleResolver.Resolve(Title, CurrentDocument.MetaTitle, Products, new(BuildType, Branding, SiteName));
 	public required string Description { get; init; }
 	public required string TitleRaw { get; init; }
 	public required string MarkdownHtml { get; init; }

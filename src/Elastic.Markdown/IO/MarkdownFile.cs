@@ -81,6 +81,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	}
 
 	public string? Description { get; private set; }
+	public string? MetaTitle { get; private set; }
 
 	[field: AllowNull, MaybeNull]
 	public virtual string NavigationTitle
@@ -196,6 +197,14 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			Description = yamlFrontMatter.Description;
 
 		var subs = GetSubstitutions();
+
+		if (!string.IsNullOrWhiteSpace(yamlFrontMatter.MetaTitle))
+		{
+			var metaTitle = yamlFrontMatter.MetaTitle;
+			if (metaTitle.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
+				metaTitle = replacement;
+			MetaTitle = metaTitle.StripMarkdown();
+		}
 
 		if (!string.IsNullOrEmpty(NavigationTitle))
 		{

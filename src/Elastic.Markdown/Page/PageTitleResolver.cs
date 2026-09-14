@@ -12,6 +12,13 @@ internal readonly record struct PageTitleOptions(BuildType BuildType, BrandingCo
 
 internal static class PageTitleResolver
 {
+	public static string Resolve(
+		string title,
+		string? overrideTitle,
+		IReadOnlyCollection<Product> products,
+		PageTitleOptions options
+	) => string.IsNullOrWhiteSpace(overrideTitle) ? Resolve(title, products, options) : AddSuffix(overrideTitle, options);
+
 	public static string Resolve(string title, IReadOnlyCollection<Product> products, PageTitleOptions options)
 	{
 		if (products is { Count: 1 })
@@ -21,6 +28,11 @@ internal static class PageTitleResolver
 				title = $"{title} - {productName}";
 		}
 
+		return AddSuffix(title, options);
+	}
+
+	private static string AddSuffix(string title, PageTitleOptions options)
+	{
 		var suffix = options.BuildType == BuildType.Assembler && options.Branding is null ? "Elastic Docs" : options.SiteName;
 		return $"{title} | {suffix}";
 	}

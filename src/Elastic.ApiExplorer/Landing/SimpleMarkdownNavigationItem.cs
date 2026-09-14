@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
@@ -20,13 +21,15 @@ namespace Elastic.ApiExplorer.Landing;
 /// </summary>
 public class SimpleMarkdownNavigationItem(
 	string url,
-	string title,
+	ApiMarkdownPageMetadata metadata,
 	IFileInfo fileInfo,
 	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot
 ) : INavigationItem, IApiModel, ILeafNavigationItem<IApiModel>
 {
 	public string Url { get; } = url;
-	public string NavigationTitle { get; } = title;
+	public string NavigationTitle { get; } = metadata.NavigationTitle;
+	public string PageTitle { get; } = metadata.PageTitle;
+	public string? MetaTitle { get; } = metadata.MetaTitle;
 	public IFileInfo FileInfo { get; } = fileInfo;
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = navigationRoot;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
@@ -68,7 +71,8 @@ public class SimpleMarkdownNavigationItem(
 		var htmlContent = context.MarkdownRenderer.RenderPreservingFirstHeading(markdownContent, FileInfo);
 		var viewModel = new MarkdownPageViewModel(context)
 		{
-			PageTitle = NavigationTitle,
+			PageTitle = PageTitle,
+			MetaTitle = MetaTitle,
 			BodyHtml = new HtmlString(htmlContent ?? string.Empty)
 		};
 		var slice = MarkdownPageView.Create(viewModel);

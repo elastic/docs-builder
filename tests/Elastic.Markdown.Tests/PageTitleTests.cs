@@ -14,6 +14,30 @@ namespace Elastic.Markdown.Tests;
 public class PageTitleTests(ITestOutputHelper output)
 {
 	[Fact]
+	public async Task GenerateAll_MetaTitle_OverridesAutomaticProductTitle()
+	{
+		var html = await Generate(
+			BuildType.Assembler,
+			"""
+			---
+			meta_title: Elasticsearch query language
+			products:
+			  - id: elasticsearch
+			---
+
+			# Query DSL
+			"""
+		);
+
+		html.Should().Contain("<title>Elasticsearch query language | Elastic Docs</title>");
+		html.Should().Contain("<meta property=\"og:title\" content=\"Elasticsearch query language | Elastic Docs\"");
+		html.Should().Contain(
+			"<meta data-pagefind-meta=\"title[content]\" content=\"Elasticsearch query language | Elastic Docs\""
+		);
+		html.Should().Contain("<h1>Query DSL</h1>");
+	}
+
+	[Fact]
 	public async Task GenerateAll_DocsetProductMissingFromH1_AppendsInferredProductName()
 	{
 		var html = await Generate(BuildType.Assembler, "# Query DSL", docsetProduct: "elasticsearch");
