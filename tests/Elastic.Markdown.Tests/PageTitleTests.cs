@@ -30,6 +30,7 @@ public class PageTitleTests(ITestOutputHelper output)
 
 		html.Should().Contain("<title>Query DSL - Elasticsearch | Elastic Docs</title>");
 		html.Should().Contain("<meta property=\"og:title\" content=\"Query DSL - Elasticsearch | Elastic Docs\"");
+		html.Should().Contain("<meta data-pagefind-meta=\"title[content]\" content=\"Query DSL - Elasticsearch | Elastic Docs\"");
 		html.Should().Contain("<h1>Query DSL</h1>");
 	}
 
