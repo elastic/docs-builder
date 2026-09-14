@@ -116,7 +116,7 @@ Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files are skipped. Re-running the same command is safe and idempotent.
 If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
-The completion log reports how many objects were **new** versus **replaced**. Pass `--no-overwrite` to refuse replacements: the command skips those Puts, warns with the existing remote YAML, and exits non-zero. `--no-overwrite` cannot be combined with `--skip-etag-check`.
+The completion log reports how many objects were **new** versus **replaced**. Pass `--no-overwrite` to refuse replacements: the command skips those Puts, warns with the existing remote YAML, and exits non-zero. New objects are written with `If-None-Match: *` so a concurrent upload cannot overwrite a key that appears between HeadObject and PutObject. `--no-overwrite` cannot be combined with `--skip-etag-check`.
 :::
 
 ## Options
@@ -124,7 +124,7 @@ The completion log reports how many objects were **new** versus **replaced**. Pa
 | Option | Purpose |
 | ------ | ------- |
 | `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Mutually exclusive with `--no-overwrite`. |
-| `--no-overwrite` | When a remote object already exists with different content, do not replace it. New keys are still uploaded. The command warns with the existing remote YAML, reports `not overwritten` in the summary, and exits non-zero. Unchanged (ETag match) files are still skipped. A changelog that lists more than one PR also writes PR-alias markers (`link:` pointers at the extra PR numbers); `--no-overwrite` treats those markers as existing objects too, and the warning says they are pointers rather than full changelogs. Mutually exclusive with `--skip-etag-check`. |
+| `--no-overwrite` | When a remote object already exists with different content, do not replace it. New keys are still uploaded, using a create-only S3 precondition (`If-None-Match: *`). The command warns with the existing remote YAML, reports `not overwritten` in the summary, and exits non-zero. Unchanged (ETag match) files are still skipped. A changelog that lists more than one PR also writes PR-alias markers (`link:` pointers at the extra PR numbers); `--no-overwrite` treats those markers as existing objects too, and the warning says they are pointers rather than full changelogs. Mutually exclusive with `--skip-etag-check`. |
 
 ## Configuration
 
