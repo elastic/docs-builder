@@ -63,14 +63,14 @@ jobs:
           persist-credentials: false
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       - name: Restore npm dependencies
         working-directory: src/Elastic.Documentation.Site
         run: npm ci
 
       - name: Check shai-hulud supply-chain hashes
-        uses: ./.github/actions/check-shai-hulud
+        uses: $/.github/actions/check-shai-hulud
         with:
           path: src/Elastic.Documentation.Site
 
@@ -136,7 +136,7 @@ jobs:
       contents: read
     needs: 
       - release-drafter
-    uses: ./.github/workflows/build-link-index-updater-lambda.yml
+    uses: $/.github/workflows/build-link-index-updater-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -145,7 +145,7 @@ jobs:
       contents: read
     needs:
       - release-drafter
-    uses: ./.github/workflows/build-changelog-scrubber-lambda.yml
+    uses: $/.github/workflows/build-changelog-scrubber-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -154,7 +154,7 @@ jobs:
       contents: read
     needs:
       - release-drafter
-    uses: ./.github/workflows/build-openapi-index-lambda.yml
+    uses: $/.github/workflows/build-openapi-index-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -312,7 +312,7 @@ jobs:
 
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       - name: Publish Binaries
         run: ./build.sh publishzip

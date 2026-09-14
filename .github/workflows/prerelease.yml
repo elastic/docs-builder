@@ -66,7 +66,7 @@ jobs:
 
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       # Restore npm dependencies explicitly for supply-chain checks
       - name: Restore npm dependencies
@@ -74,7 +74,7 @@ jobs:
         run: npm ci
 
       - name: Check shai-hulud supply-chain hashes
-        uses: ./.github/actions/check-shai-hulud
+        uses: $/.github/actions/check-shai-hulud
         with:
           path: src/Elastic.Documentation.Site
 

@@ -33,7 +33,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Bootstrap Action Workspace
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
         
       - uses: actions/checkout@v7.0.1
         with:
