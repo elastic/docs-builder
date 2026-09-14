@@ -26,6 +26,17 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	public IReadOnlyList<string> PrerequisiteNames =>
 		[.. (Prerequisites ?? []).Select(static r => r.Label).Where(static l => l.Length > 0)];
 
+	protected override string? LayoutPageTitle
+	{
+		get
+		{
+			var title = string.IsNullOrWhiteSpace(Operation.Operation.Summary)
+				? CurrentNavigationItem.NavigationTitle
+				: Operation.Operation.Summary;
+			return RenderContext.Product?.DisplayName is { Length: > 0 } product ? $"{title} - {product} API" : title;
+		}
+	}
+
 	protected override string BreadcrumbCurrentTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
 
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()

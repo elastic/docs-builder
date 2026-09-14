@@ -16,7 +16,7 @@
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
 		DocSetName = Model.DocSetName,
-		Title = $"{Model.Title} | {Model.SiteName}",
+		Title = Model.PageTitle,
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is
 			{

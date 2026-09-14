@@ -25,6 +25,22 @@ public class IndexViewModel
 	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }
+	public string PageTitle
+	{
+		get
+		{
+			var title = Title;
+			if (CurrentDocument.YamlFrontMatter?.Products is { Count: 1 } products)
+			{
+				var productName = products.First().DisplayName;
+				if (!title.Contains(productName, StringComparison.OrdinalIgnoreCase))
+					title = $"{title} - {productName}";
+			}
+
+			var suffix = BuildType == BuildType.Assembler && Branding is null ? "Elastic Docs" : SiteName;
+			return $"{title} | {suffix}";
+		}
+	}
 	public required string Description { get; init; }
 	public required string TitleRaw { get; init; }
 	public required string MarkdownHtml { get; init; }
