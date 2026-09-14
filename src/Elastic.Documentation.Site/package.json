@@ -83,7 +83,7 @@
     "@types/lodash": "^4.17.25",
     "@types/testing-library__jest-dom": "6.0.0",
     "babel-jest": "30.5.0",
-    "eslint": "10.8.1",
+    "eslint": "10.9.1",
     "globals": "17.11.0",
     "identity-obj-proxy": "3.0.0",
     "jest": "30.5.0",
