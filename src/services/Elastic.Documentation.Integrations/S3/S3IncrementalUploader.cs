@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Net;
 using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -123,21 +124,29 @@ public class S3IncrementalUploader(
 	private async Task PutClassified(UploadTarget target, bool exists, UploadRun run, bool inline)
 	{
 		var kind = exists ? "replace" : "new";
-		if (inline)
+		try
 		{
-			_logger.LogInformation("Uploading inline marker → s3://{Bucket}/{S3Key} ({Kind})", bucketName, target.S3Key, kind);
-			await PutInlineObject(target.S3Key, target.InlineContent!, run.Ctx).ConfigureAwait(false);
+			if (inline)
+			{
+				_logger.LogInformation("Uploading inline marker → s3://{Bucket}/{S3Key} ({Kind})", bucketName, target.S3Key, kind);
+				await PutInlineObject(target.S3Key, target.InlineContent!, run).ConfigureAwait(false);
+			}
+			else
+			{
+				_logger.LogInformation(
+					"Uploading {LocalPath} → s3://{Bucket}/{S3Key} ({Kind})",
+					target.LocalPath,
+					bucketName,
+					target.S3Key,
+					kind
+				);
+				await PutObject(target, run).ConfigureAwait(false);
+			}
 		}
-		else
+		catch (AmazonS3Exception ex) when (run.Options.NoOverwrite && IsConditionalWriteConflict(ex))
 		{
-			_logger.LogInformation(
-				"Uploading {LocalPath} → s3://{Bucket}/{S3Key} ({Kind})",
-				target.LocalPath,
-				bucketName,
-				target.S3Key,
-				kind
-			);
-			await PutObject(target, run.Ctx).ConfigureAwait(false);
+			await RefuseOverwrite(target, run).ConfigureAwait(false);
+			return;
 		}
 
 		if (exists)
@@ -187,7 +196,7 @@ public class S3IncrementalUploader(
 		}
 	}
 
-	private async Task PutObject(UploadTarget target, Cancel ctx)
+	private async Task PutObject(UploadTarget target, UploadRun run)
 	{
 		await using var stream = fileSystem.FileStream.New(target.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
 		var request = new PutObjectRequest
@@ -197,14 +206,26 @@ public class S3IncrementalUploader(
 			InputStream = stream,
 			ChecksumAlgorithm = ChecksumAlgorithm.SHA256
 		};
-		_ = await s3Client.PutObjectAsync(request, ctx).ConfigureAwait(false);
+		ApplyCreateOnlyPrecondition(request, run);
+		_ = await s3Client.PutObjectAsync(request, run.Ctx).ConfigureAwait(false);
 	}
 
-	private async Task PutInlineObject(string key, string content, Cancel ctx)
+	private async Task PutInlineObject(string key, string content, UploadRun run)
 	{
 		var request = new PutObjectRequest { BucketName = bucketName, Key = key, ContentBody = content, ContentType = "application/yaml" };
-		_ = await s3Client.PutObjectAsync(request, ctx).ConfigureAwait(false);
+		ApplyCreateOnlyPrecondition(request, run);
+		_ = await s3Client.PutObjectAsync(request, run.Ctx).ConfigureAwait(false);
 	}
+
+	private static void ApplyCreateOnlyPrecondition(PutObjectRequest request, UploadRun run)
+	{
+		if (run.Options.NoOverwrite)
+			request.IfNoneMatch = "*";
+	}
+
+	// 412 = conditional-request loss; 409 = concurrent conditional writers on the same key.
+	private static bool IsConditionalWriteConflict(AmazonS3Exception ex) =>
+		ex.StatusCode is HttpStatusCode.PreconditionFailed or HttpStatusCode.Conflict;
 
 	private sealed class UploadRun(S3UploadOptions options, Cancel ctx)
 	{
