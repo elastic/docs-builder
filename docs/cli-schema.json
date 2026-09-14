@@ -4922,6 +4922,114 @@
           "path": [
             "changelog"
           ],
+          "name": "unpack",
+          "summary": "Recreate individual changelog YAML files from a bundle using changelog add and changelog note.",
+          "notes": "Writes one file per bundle entry through the same writers as changelog add (PR-anchored)\nand changelog note (no PR, or products with versions). Filenames follow add and note rules,\nnot the bundle file.name provenance. Checksums are not reproduced.\nBundles that were scrubbed during changelog upload (public-bucket copies) have their\nprivate PRs and issues removed, so they are less likely to unpack successfully. Prefer the\nprivate-side bundle YAML.",
+          "usage": "docs-builder changelog unpack \u003Cbundle\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "positional",
+              "name": "bundle",
+              "type": "string",
+              "required": true,
+              "summary": "Local bundle or amend YAML file to unpack. The file must exist on disk; CDN locators such as /bundle/{product}/{file}.yaml are not accepted. A parent bundle is merged with sibling .amend-* bundles first (same as changelog render). An amend bundle unpacks only that file\u0027s entries; exclude-entries are skipped.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config",
+              "type": "string",
+              "required": false,
+              "summary": "Path to changelog.yml. Defaults to docs/changelog.yml. Type and area validation uses this configuration.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "yml",
+                    "yaml"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "output",
+              "type": "string",
+              "required": false,
+              "summary": "Directory for written changelog files. Defaults to bundle.directory in changelog.yml, then the current directory."
+            },
+            {
+              "role": "flag",
+              "name": "concise",
+              "type": "boolean",
+              "required": false,
+              "summary": "Omit schema reference comments from generated YAML, matching changelog add --concise.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
           "name": "upload",
           "summary": "Upload changelog entries or bundle artifacts to S3 or Elasticsearch.",
           "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{org}/{repo}/{branch}/{file}, keyed by the\nauthoring owner (--owner \u003E bundle.owner \u003E git remote), repository (--repo\n\u003E bundle.repo \u003E git remote), and branch (--branch \u003E the current checkout\u0027s\nbranch). The branch is stored verbatim, so a branch\u0027s / become real key separators. Bundles\nare uploaded under bundle/{product}/{file}, product-scoped from the bundle YAML, and do not\nrequire an owner/repo/branch.",

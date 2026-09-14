@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Navigation;
 
@@ -99,6 +100,14 @@ public static class ApiOverviewBuilder
 						Kind = OverviewRowKind.MarkdownPage,
 						Title = markdownPage.NavigationTitle,
 						Url = markdownPage.Url
+					});
+					break;
+				case StructuralNavigationItem structuralPage:
+					rows.Add(new ApiOverviewRow
+					{
+						Kind = OverviewRowKind.MarkdownPage,
+						Title = structuralPage.NavigationTitle,
+						Url = structuralPage.Url
 					});
 					break;
 				default:

@@ -2,11 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using AwesomeAssertions;
+using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Bundling;
@@ -30,110 +28,63 @@ public class BundleBuilderPerProductRepoTests(ITestOutputHelper output)
 			}
 		};
 
-	private static ProductsConfiguration MakeProducts(params (string id, string? repository)[] products)
-	{
-		var dict = products.ToDictionary(p => p.id, p => new Product { Id = p.id, DisplayName = p.id, Repository = p.repository ?? p.id });
-		return new ProductsConfiguration
-		{
-			Products = dict.ToFrozenDictionary(),
-			PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
-			ProductDisplayNames = dict.ToDictionary(kv => kv.Key, kv => kv.Value.DisplayName).ToFrozenDictionary()
-		};
-	}
-
 	[Fact]
-	public void BuildBundle_WithProductsConfiguration_UsesPerProductRepo()
+	public void BuildBundle_StampsAuthoringRepoOnEveryProduct()
 	{
 		var entries = new[] { MakeEntry("cloud-hosted"), MakeEntry("cloud-serverless") };
-		var productsConfig = MakeProducts(("cloud-hosted", "cloud"), ("cloud-serverless", "cloud"));
 
-		var result = _builder.BuildBundle(
-			_collector,
-			entries,
-			outputProducts: null,
-			repo: "bundle-level-repo",
-			owner: "elastic",
-			productsConfiguration: productsConfig
-		);
+		var result = _builder.BuildBundle(_collector, entries, outputProducts: null, repo: "elasticsearch", owner: "elastic");
 
 		result.IsValid.Should().BeTrue();
 		var products = result.Data!.Products;
 		products.Should().HaveCount(2);
-		products.All(p => p.Repo == "cloud").Should().BeTrue("each product resolves to its repository: cloud");
+		products.All(p => p.Repo == "elasticsearch").Should().BeTrue("products[].repo is the authoring repo, not products.yml");
 	}
 
 	[Fact]
-	public void BuildBundle_ProductNotInCatalogue_FallsBackToBundleRepo()
+	public void BuildBundle_CloudServerless_UsesAuthoringRepoNotCatalogCloud()
 	{
-		var entries = new[] { MakeEntry("unknown-product") };
-		var productsConfig = MakeProducts(("elasticsearch", null));
+		var entries = new[] { MakeEntry("cloud-serverless") };
 
-		var result = _builder.BuildBundle(
-			_collector,
-			entries,
-			outputProducts: null,
-			repo: "fallback-repo",
-			owner: "elastic",
-			productsConfiguration: productsConfig
-		);
-
-		result.IsValid.Should().BeTrue();
-		result.Data!.Products[0].Repo.Should().Be("fallback-repo");
-	}
-
-	[Fact]
-	public void BuildBundle_WithoutProductsConfiguration_UsesPassedRepo()
-	{
-		var entries = new[] { MakeEntry("elasticsearch") };
-
-		var result = _builder.BuildBundle(
-			_collector,
-			entries,
-			outputProducts: null,
-			repo: "elasticsearch",
-			owner: "elastic",
-			productsConfiguration: null
-		);
+		var result = _builder.BuildBundle(_collector, entries, outputProducts: null, repo: "elasticsearch", owner: "elastic");
 
 		result.IsValid.Should().BeTrue();
 		result.Data!.Products[0].Repo.Should().Be("elasticsearch");
 	}
 
 	[Fact]
-	public void BuildBundle_ProductWithExplicitRepository_UsesThatRepository()
+	public void BuildBundle_CloudServerless_KibanaAuthoringRepo()
 	{
 		var entries = new[] { MakeEntry("cloud-serverless") };
-		var productsConfig = MakeProducts(("cloud-serverless", "cloud"));
 
-		var result = _builder.BuildBundle(
-			_collector,
-			entries,
-			outputProducts: null,
-			repo: "different-repo",
-			owner: "elastic",
-			productsConfiguration: productsConfig
-		);
+		var result = _builder.BuildBundle(_collector, entries, outputProducts: null, repo: "kibana", owner: "elastic");
 
 		result.IsValid.Should().BeTrue();
-		result.Data!.Products[0].Repo.Should().Be("cloud", "the product's repository field takes precedence over the bundle-level repo");
+		result.Data!.Products[0].Repo.Should().Be("kibana");
 	}
 
 	[Fact]
-	public void BuildBundle_ProductWithNoExplicitRepository_UsesProductId()
+	public void BuildBundle_WithoutAuthoringRepo_OmitsRepo()
 	{
-		var entries = new[] { MakeEntry("elasticsearch") };
-		var productsConfig = MakeProducts(("elasticsearch", null));
+		var entries = new[] { MakeEntry("cloud-serverless") };
 
-		var result = _builder.BuildBundle(
-			_collector,
-			entries,
-			outputProducts: null,
-			repo: "bundle-repo",
-			owner: "elastic",
-			productsConfiguration: productsConfig
-		);
+		var result = _builder.BuildBundle(_collector, entries, outputProducts: null, repo: null, owner: "elastic");
 
 		result.IsValid.Should().BeTrue();
-		result.Data!.Products[0].Repo.Should().Be("elasticsearch", "product.Repository defaults to the product ID when not explicitly set");
+		result.Data!.Products[0].Repo.Should().BeNull();
+	}
+
+	[Fact]
+	public void BuildBundle_OutputProducts_StampsAuthoringRepo()
+	{
+		var entries = new[] { MakeEntry("elasticsearch") };
+		var outputProducts = new[] { new ProductArgument { Product = "cloud-serverless", Target = "2026-09-08" } };
+
+		var result = _builder.BuildBundle(_collector, entries, outputProducts, repo: "elasticsearch", owner: "elastic");
+
+		result.IsValid.Should().BeTrue();
+		result.Data!.Products.Should().ContainSingle();
+		result.Data.Products[0].ProductId.Should().Be("cloud-serverless");
+		result.Data.Products[0].Repo.Should().Be("elasticsearch");
 	}
 }

@@ -2,11 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -1986,9 +1989,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithoutRepoOption_OmitsRepoFieldInOutput()
+	public async Task BundleChangelogs_WithoutRepoOption_UsesResolvedAuthoringRepoInOutput()
 	{
-		// Arrange - Test that without --repo option, no repo field is written to the bundle
+		// Arrange - Test that without --repo option, the resolved authoring repo is written to the bundle
+		var env = GithubRepositoryEnvironment("elastic/docs-builder");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, env: env);
 
 		// language=yaml
 		var changelog1 =
@@ -2014,16 +2019,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
-		// Verify that no repo field is written when not specified
+		// Verify that the resolved authoring repo is written when not explicitly specified
 		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().NotContain("repo:");
+		bundleContent.Should().Contain("repo: docs-builder");
 	}
 
 	[Fact]
@@ -3217,6 +3222,96 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_ServerlessProfile_WritesAuthoringRepoNotCatalogRepository()
+	{
+		// products.yml maps cloud-serverless → repository: cloud (docs catalog). The bundle must
+		// still stamp the authoring checkout (elasticsearch) for PR/issue defaults.
+		var versions = ConfigurationContext.VersionsConfiguration;
+		var cloudServerless = new Product
+		{
+			Id = "cloud-serverless",
+			DisplayName = "Elastic Cloud Serverless",
+			VersioningSystem = versions.GetVersioningSystem(VersioningSystemId.Stack),
+			Repository = "cloud"
+		};
+		var productsConfiguration = new ProductsConfiguration
+		{
+			Products = new Dictionary<string, Product> { ["cloud-serverless"] = cloudServerless }.ToFrozenDictionary(),
+			PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
+			ProductDisplayNames = new Dictionary<string, string> { ["cloud-serverless"] = cloudServerless.DisplayName }.ToFrozenDictionary()
+		};
+		var catalogContext = new ConfigurationContext
+		{
+			Endpoints = ConfigurationContext.Endpoints,
+			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
+			VersionsConfiguration = versions,
+			ProductsConfiguration = productsConfiguration,
+			SearchConfiguration = ConfigurationContext.SearchConfiguration,
+			LegacyUrlMappings = ConfigurationContext.LegacyUrlMappings
+		};
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, catalogContext);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: elasticsearch
+			  owner: elastic
+			  profiles:
+			    serverless-release:
+			      products: "cloud-serverless {version} *"
+			      output_products: "cloud-serverless {version}"
+			""";
+
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/158340
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "158340.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "serverless-release",
+			ProfileArgument = "2026-09-08",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().NotContain("repo: cloud");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithProfile_ProfileRepoOverridesBundleRepo()
 	{
 		// Arrange - both bundle-level and profile-level repo are set; profile-level wins
@@ -3282,10 +3377,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithProfile_NoRepoOwner_PreservesExistingFallbackBehavior()
+	public async Task BundleChangelogs_WithProfile_NoRepoOwner_UsesResolvedAuthoringRepoFallback()
 	{
-		// Arrange - when profile has no repo/owner, the bundle products have no repo field
-		// (existing fallback: product ID is used at render time if no repo is present)
+		// Arrange - when profile has no repo/owner, the bundle still resolves the authoring repo
+		// while leaving owner unset.
+		var env = GithubRepositoryEnvironment("elastic/docs-builder");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, env: env);
 
 		// language=yaml
 		var configContent =
@@ -3329,9 +3426,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert — succeeds without error; no repo field written to products
+		// Assert — succeeds without error; resolved authoring repo is written to products
 		result.Should().BeTrue(
 			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
 		);
@@ -3341,8 +3438,72 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
 
-		bundleContent.Should().NotContain("repo:", "No repo field should be present when profile omits repo");
+		bundleContent.Should().Contain("repo: docs-builder", "resolved authoring repo should be present when profile omits repo");
 		bundleContent.Should().NotContain("owner:", "No owner field should be present when profile omits owner");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfile_OmittedRepoOwner_DescriptionUsesResolvedCheckout()
+	{
+		var env = GithubRepositoryEnvironment("elastic/elasticsearch");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, env: env);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "Release from {owner}/{repo}"
+			""";
+
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268131-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("Release from elastic/elasticsearch");
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().NotContain("owner:", "description default must not stamp owner onto YAML");
 	}
 
 	[Fact]
@@ -6084,6 +6245,103 @@ public class BundleChangelogsTests : ChangelogTestBase
 			"Release includes 9.2.0 with ga features from elastic/elasticsearch",
 			"placeholders should be substituted correctly"
 		);
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_OptionModeOmittedRepo_DescriptionUsesResolvedRepoNotProductId()
+	{
+		// Omitting --repo still stamps products[].repo from GITHUB_REPOSITORY; {repo} must
+		// match that checkout name, not the output product id.
+		var env = GithubRepositoryEnvironment("elastic/elasticsearch");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, env: env);
+
+		var changelogDir = CreateChangelogDir();
+		var changelog =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/158340
+			""";
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "158340.yaml"),
+			changelog,
+			TestContext.Current.CancellationToken
+		);
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Output = outputPath,
+			OutputProducts = [new() { Product = "cloud-serverless", Target = "2026-09-08", Lifecycle = "ga" }],
+			Description = "Release from {owner}/{repo}",
+			Owner = "elastic"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().Contain("Release from elastic/elasticsearch");
+		bundleContent.Should().NotContain("elastic/cloud-serverless");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_OptionModeOmittedRepo_SanitizerUsesResolvedRepoForBarePrs()
+	{
+		var env = GithubRepositoryEnvironment("elastic/elasticsearch");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, env: env);
+
+		var changelogDir = CreateChangelogDir();
+		var changelog =
+			"""
+			title: Feature with bare PR
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			prs:
+			  - "158340"
+			""";
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "158340.yaml"),
+			changelog,
+			TestContext.Current.CancellationToken
+		);
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Output = outputPath,
+			OutputProducts = [new() { Product = "cloud-serverless", Target = "2026-09-08", Lifecycle = "ga" }],
+			LinkAllowRepos = ["elastic/elasticsearch"]
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().Contain("158340");
+		bundleContent.Should().NotContain("# PRIVATE:");
 	}
 
 	[Fact]

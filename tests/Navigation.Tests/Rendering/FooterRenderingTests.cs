@@ -18,29 +18,38 @@ namespace Elastic.Documentation.Navigation.Tests.Rendering;
 public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
 {
 	[Fact]
-	public async Task AssemblerFooter_FlagOff_OmitsIubendaPrivacyChoiceLinks()
+	public async Task AssemblerFooter_RendersIubendaLinksAfterTrademarkCopy()
 	{
-		var html = await RenderAssemblerFooter(privacyConsentEnabled: false);
-
-		html.Should().Contain("privacy-statement");
-		html.Should().NotContain("iubenda-cs-uspr-link");
-		html.Should().NotContain("Notice at Collection");
-		html.Should().NotContain("iubenda-cs-preferences-link");
-		html.Should().NotContain("Your Privacy Choices");
-	}
-
-	[Fact]
-	public async Task AssemblerFooter_FlagOn_RendersIubendaPrivacyChoiceLinks()
-	{
-		var html = await RenderAssemblerFooter(privacyConsentEnabled: true);
+		var html = await RenderAssemblerFooter();
 
 		html.Should().Contain("iubenda-cs-uspr-link");
 		html.Should().Contain("Notice at Collection");
 		html.Should().Contain("iubenda-cs-preferences-link");
 		html.Should().Contain("Your Privacy Choices");
+		html.Should().Contain("privacy-statement");
+		html.Should().Contain("Elasticsearch is a trademark");
+
+		var trademark = html.IndexOf("Elasticsearch is a trademark", StringComparison.Ordinal);
+		var notice = html.IndexOf("Notice at Collection", StringComparison.Ordinal);
+		trademark.Should().BeGreaterThan(-1);
+		notice.Should().BeGreaterThan(-1);
+		trademark.Should().BeLessThan(notice);
+		html.IndexOf("</ul>", StringComparison.Ordinal).Should().BeLessThan(html.IndexOf("Notice at Collection", StringComparison.Ordinal));
+
+		var preferences = html.IndexOf("iubenda-cs-preferences-link", StringComparison.Ordinal);
+		preferences.Should().BeGreaterThan(-1);
+		var anchorEnd = html.IndexOf("</a>", preferences, StringComparison.Ordinal);
+		anchorEnd.Should().BeGreaterThan(preferences);
+		var preferencesLink = html[preferences..anchorEnd];
+		preferencesLink.Should().Contain("Your Privacy Choices");
+		preferencesLink.Should().Contain("<svg");
+		preferencesLink
+			.IndexOf("Your Privacy Choices", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(preferencesLink.IndexOf("<svg", StringComparison.Ordinal));
 	}
 
-	private async Task<string> RenderAssemblerFooter(bool privacyConsentEnabled)
+	private async Task<string> RenderAssemblerFooter()
 	{
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
@@ -58,7 +67,7 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = new FeatureFlags(privacyConsentEnabled ? new Dictionary<string, bool> { ["privacy-consent"] = true } : []),
+			Features = new FeatureFlags([]),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),

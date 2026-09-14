@@ -1573,6 +1573,52 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
+	/// <summary>Recreate individual changelog YAML files from a bundle using changelog add and changelog note.</summary>
+	/// <remarks>
+	/// Writes one file per bundle entry through the same writers as <c>changelog add</c> (PR-anchored)
+	/// and <c>changelog note</c> (no PR, or products with versions). Filenames follow add and note rules,
+	/// not the bundle <c>file.name</c> provenance. Checksums are not reproduced.
+	/// Bundles that were scrubbed during <c>changelog upload</c> (public-bucket copies) have their
+	/// private PRs and issues removed, so they are less likely to unpack successfully. Prefer the
+	/// private-side bundle YAML.
+	/// </remarks>
+	/// <param name="bundle">Local bundle or amend YAML file to unpack. The file must exist on disk; CDN locators such as /bundle/{product}/{file}.yaml are not accepted. A parent bundle is merged with sibling <c>.amend-*</c> bundles first (same as changelog render). An amend bundle unpacks only that file's <c>entries</c>; <c>exclude-entries</c> are skipped.</param>
+	/// <param name="config">Path to changelog.yml. Defaults to docs/changelog.yml. Type and area validation uses this configuration.</param>
+	/// <param name="output">Directory for written changelog files. Defaults to bundle.directory in changelog.yml, then the current directory.</param>
+	/// <param name="concise">Omit schema reference comments from generated YAML, matching changelog add --concise.</param>
+	/// <param name="ct">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> Unpack(
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundle,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		string? output = null,
+		bool concise = false,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem).LoadChangelogConfiguration(
+			collector,
+			config?.FullName,
+			ctx
+		);
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? NormalizePath(output) : bundleConfig?.Bundle?.Directory;
+
+		var service = new ChangelogUnpackService(logFactory, _fileSystem, configurationContext);
+		var input = new UnpackBundleArguments
+		{
+			BundleFile = bundle.FullName,
+			Output = resolvedOutput,
+			Config = config?.FullName,
+			Concise = concise
+		};
+
+		serviceInvoker.AddCommand(service, input, static async (s, c, state, token) => await s.UnpackBundle(c, state, token));
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
 	/// <summary>Create changelog entries from the PRs referenced in a GitHub release.</summary>
 	/// <param name="repo">Optional: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch"). When omitted, falls back to bundle.repo in changelog.yml, then the GITHUB_REPOSITORY env var, then the git remote origin.</param>
 	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>

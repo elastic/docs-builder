@@ -525,16 +525,17 @@ public partial class ChangelogBundlingService(
 		if (!featureHidingResult.IsValid)
 			return false;
 
-		// Build bundle
+		// products[].repo is the checkout's GitHub name (filename convention), not products.yml
+		// repository:. Keep input.Repo intact so combined owner/repo still supplies the CDN owner.
+		var productRepo = BundleOutputNaming.ResolveRepo(_fileSystem, input.Config, _env, input.Repo);
 		var bundleBuilder = new BundleBuilder();
 		var buildResult = bundleBuilder.BuildBundle(
 			collector,
 			filteredEntries,
 			input.OutputProducts,
-			input.Repo,
+			productRepo,
 			input.Owner,
-			featureHidingResult.FeatureIdsToHide,
-			configurationContext?.ProductsConfiguration
+			featureHidingResult.FeatureIdsToHide
 		);
 
 		if (!buildResult.IsValid || buildResult.Data == null)
@@ -549,7 +550,7 @@ public partial class ChangelogBundlingService(
 					bundleData,
 					input.LinkAllowRepos,
 					input.Owner ?? "elastic",
-					input.Repo,
+					productRepo,
 					out var sanitizedBundle,
 					out _
 				)
@@ -583,7 +584,7 @@ public partial class ChangelogBundlingService(
 			var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
 				?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
 			var owner = input.Owner ?? "elastic";
-			var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
+			var repo = productRepo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
 
 			try
 			{
@@ -740,7 +741,9 @@ public partial class ChangelogBundlingService(
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
-			// Handle profile-specific description with placeholder substitution
+			// Handle profile-specific description with placeholder substitution.
+			// Checkout fallback is for {repo}/{owner} text only — keep returned Repo/Owner as
+			// config/CLI so combined owner/repo still supplies the CDN owner.
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
 			if (!string.IsNullOrEmpty(descriptionTemplate))
 			{
@@ -758,7 +761,19 @@ public partial class ChangelogBundlingService(
 					return null;
 				}
 
-				if (hasOwnerRepoPlaceholder && (string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo)))
+#pragma warning disable CS0618
+				var descriptionRepo = BundleOutputNaming.ResolveRepo(
+					_fileSystem,
+					input.Config,
+					_env,
+					input.Repo,
+					profile.Repo,
+					config.Bundle.Repo
+				);
+#pragma warning restore CS0618
+				var descriptionOwner = owner ?? "elastic";
+
+				if (hasOwnerRepoPlaceholder && (string.IsNullOrEmpty(descriptionOwner) || string.IsNullOrEmpty(descriptionRepo)))
 				{
 					collector.EmitError(
 						string.Empty,
@@ -772,8 +787,8 @@ public partial class ChangelogBundlingService(
 					descriptionTemplate,
 					filterResult.Version,
 					resolvedLifecycle,
-					owner,
-					repo
+					descriptionOwner,
+					descriptionRepo
 				);
 			}
 		}

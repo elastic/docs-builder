@@ -46,6 +46,8 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		var write = context.WriteFileSystem.File;
 		write.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "authentication.md")).Should().BeTrue();
+		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "servers.md")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "group", "endpoint-search.md")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search.md")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "types", "_types-query_dsl-querycontainer.md")).Should().BeTrue();

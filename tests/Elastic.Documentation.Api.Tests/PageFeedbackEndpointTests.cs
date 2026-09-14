@@ -71,8 +71,6 @@ public class PageFeedbackEndpointTests
 		recorded.Comment.Should().BeNull();
 	}
 
-	// Also the guard for retired reasons: reason set 3 stopped offering outOfDate, but a browser
-	// running a cached bundle still sends it and must still get a 204.
 	[Fact]
 	public async Task Put_MultipleReasons_RecordsAllReasons()
 	{
@@ -101,37 +99,6 @@ public class PageFeedbackEndpointTests
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		recorded.Should().NotBeNull();
 		recorded.Reasons.Should().BeEquivalentTo([PageFeedbackReason.Inaccurate, PageFeedbackReason.OutOfDate]);
-	}
-
-	[Fact]
-	public async Task Put_SiteProblemReason_RecordsSiteProblem()
-	{
-		var feedbackService = A.Fake<IPageFeedbackService>();
-		PageFeedbackRecord? recorded = null;
-		A
-			.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
-			.Invokes((PageFeedbackRecord record, CancellationToken _) => recorded = record)
-			.Returns(Task.FromResult(true));
-		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
-		using var client = factory.CreateClient();
-		const string payload = /*lang=json,strict*/
-			"""
-			{
-				"pageUrl": "/docs/test-page",
-				"pageTitle": "Test page",
-				"reaction": "thumbsDown",
-				"reasons": ["siteProblem"],
-				"reasonSetVersion": 3
-			}
-			""";
-		using var request = CreateRequest(Guid.NewGuid(), payload);
-
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
-
-		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-		recorded.Should().NotBeNull();
-		recorded.Reasons.Should().ContainSingle(r => r == PageFeedbackReason.SiteProblem);
-		recorded.ReasonSetVersion.Should().Be(3);
 	}
 
 	[Fact]
@@ -169,17 +136,6 @@ public class PageFeedbackEndpointTests
 			"reaction": "thumbsUp",
 			"reasons": ["inaccurate"],
 			"reasonSetVersion": 2
-		}
-		""")]
-	[InlineData(
-	/*lang=json,strict*/
-	"""
-		{
-			"pageUrl": "/docs/test-page",
-			"pageTitle": "Test page",
-			"reaction": "thumbsUp",
-			"reasons": ["siteProblem"],
-			"reasonSetVersion": 3
 		}
 		""")]
 	[InlineData(
