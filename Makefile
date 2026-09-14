@@ -14,7 +14,7 @@ help:
 	@echo "  make serve-detached  Serve docs in the background"
 	@echo "  make stop            Stop the development server"
 	@echo "  make test            Run the unit-test suite in Docker"
-	@echo "  make test-area AREA=authoring  Run one test area in Docker"
+	@echo "  make test-area AREA=markdown   Run one test area in Docker (authoring, markdown, configuration, navigation, indexing, api-explorer, legacy-migration, site-search, deploying)"
 	@echo "  make test-markdown   Run Markdown tests in Docker"
 	@echo "  make clean           Stop Compose services and remove containers"
 
@@ -62,7 +62,9 @@ test-area:
 		indexing) project="tests/Elastic.Documentation.Indexing.Tests/Elastic.Documentation.Indexing.Tests.csproj" ;; \
 		api-explorer) project="tests/Elastic.ApiExplorer.Tests/Elastic.ApiExplorer.Tests.csproj" ;; \
 		legacy-migration) project="tests/Elastic.LegacyDocs.Migration.Tests/Elastic.LegacyDocs.Migration.Tests.csproj" ;; \
-		*) echo "Unknown AREA='$(AREA)'. Use authoring, markdown, configuration, navigation, indexing, api-explorer, or legacy-migration." >&2; exit 2 ;; \
+		site-search) project="tests/Elastic.SiteSearch.Tests/Elastic.SiteSearch.Tests.csproj" ;; \
+		deploying) project="tests/Elastic.Documentation.Deploying.Tests/Elastic.Documentation.Deploying.Tests.csproj" ;; \
+		*) echo "Unknown AREA='$(AREA)'. Use authoring, markdown, configuration, navigation, indexing, api-explorer, legacy-migration, site-search, or deploying." >&2; exit 2 ;; \
 	esac; \
 	$(COMPOSE) run --rm tests dotnet test -c Release "$$project" $(TEST_ARGS)
 

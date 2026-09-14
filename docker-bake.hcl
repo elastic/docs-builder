@@ -7,7 +7,7 @@ variable "IMAGE_TAG" {
 }
 
 # Set CACHE_REPOSITORY in CI to share BuildKit cache between runners, for
-# example: ghcr.io/akira28/docs-builder-buildcache.
+# example: ghcr.io/elastic/docs-builder-buildcache.
 variable "CACHE_REPOSITORY" {
   default = ""
 }
