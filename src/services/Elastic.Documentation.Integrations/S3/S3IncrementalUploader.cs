@@ -14,8 +14,8 @@ namespace Elastic.Documentation.Integrations.S3;
 /// <summary>Describes a file to upload: its local path and intended S3 key.</summary>
 /// <remarks>
 /// When <see cref="InlineContent"/> is non-null the object is uploaded from that string
-/// directly (skipping ETag comparison) and <see cref="LocalPath"/> is ignored. Used for
-/// machine-generated marker objects that have no on-disk counterpart.
+/// and <see cref="LocalPath"/> is ignored. Used for machine-generated marker objects that
+/// have no on-disk counterpart. Unchanged markers are skipped by ETag, same as files.
 /// </remarks>
 public record UploadTarget(string LocalPath, string S3Key, string? InlineContent = null);
 
@@ -86,7 +86,20 @@ public class S3IncrementalUploader(
 
 	private async Task ProcessInline(UploadTarget target, UploadRun run)
 	{
-		var exists = await GetRemoteEtag(target.S3Key, run.Ctx).ConfigureAwait(false) != null;
+		var remoteEtag = await GetRemoteEtag(target.S3Key, run.Ctx).ConfigureAwait(false);
+		var exists = remoteEtag != null;
+
+		if (!run.Options.SkipEtagCheck && remoteEtag != null)
+		{
+			var localEtag = etagCalculator.CalculateS3ETag(Encoding.UTF8.GetBytes(target.InlineContent!));
+			if (localEtag == remoteEtag)
+			{
+				_logger.LogDebug("Skipping {S3Key} (ETag match)", target.S3Key);
+				run.Skipped++;
+				return;
+			}
+		}
+
 		if (exists && run.Options.NoOverwrite)
 		{
 			await RefuseOverwrite(target, run).ConfigureAwait(false);
