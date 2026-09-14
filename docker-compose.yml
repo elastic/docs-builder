@@ -21,7 +21,7 @@ services:
 
   # Run the development server with dotnet watch. Code changes restart the
   # CLI, while Markdown and static-file changes use the existing live reload.
-  # Build the image with `make serve` and open http://localhost:3000.
+  # Build the image with `make serve` and open http://localhost:3000
   serve:
     image: docs-builder:tooling
     working_dir: /src
