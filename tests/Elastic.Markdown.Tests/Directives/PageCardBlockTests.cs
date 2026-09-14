@@ -63,6 +63,34 @@ public class PageCardRehomedDocsetLinkTests(ITestOutputHelper output) : Directiv
 	public void EmitsNoErrors() => Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Error);
 }
 
+/// <summary>
+/// An anchored link must still resolve through the navigation lookup: the anchor is not part of
+/// the file path, so it has to be split off before probing and re-appended afterwards.
+/// </summary>
+public class PageCardRehomedAnchoredLinkTests(ITestOutputHelper output) : DirectiveTest<PageCardBlock>(
+	output,
+	"""
+	:::{page-card} [Install](./other-page.md#install)
+	:::
+	"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile("docs/other-page.md", new MockFileData("# Other Page\n\n## Install\n\nContent."));
+
+	public override async ValueTask InitializeAsync()
+	{
+		((INavigationHomeAccessor)Set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", Set.Navigation);
+		await base.InitializeAsync();
+	}
+
+	[Fact]
+	public void ResolvesUrlWithRehomedPrefixAndAnchor() => Block!.ResolvedUrl.Should().Be("/reference/rehomed/other-page#install");
+
+	[Fact]
+	public void EmitsNoErrors() => Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Error);
+}
+
 /// <summary>Namespace-style link (no .md extension) probes for /index.md variant.</summary>
 public class PageCardRelativeFolderLinkTests(ITestOutputHelper output) : DirectiveTest<PageCardBlock>(
 	output,

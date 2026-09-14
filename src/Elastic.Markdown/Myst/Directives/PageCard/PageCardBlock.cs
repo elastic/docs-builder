@@ -51,7 +51,10 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 			return;
 		}
 
-		var normalized = NormalizeToDocsetRoot(validated, context);
+		// The anchor is not part of the file path, so split it off before probing and re-append
+		// it to whichever URL wins.
+		var (path, anchor) = DirectiveLinkValidator.SplitAnchor(validated);
+		var normalized = NormalizeToDocsetRoot(path, context);
 
 		// Use the navigation lookup when available so assembled builds get the correct URL.
 		// In assembled mode a docset may be rehomed at a path_prefix (e.g. reference/elastic-cli/),
@@ -71,11 +74,11 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 			var sitePrefix = context.Build.UrlPathPrefix ?? string.Empty;
 			if (!string.IsNullOrWhiteSpace(sitePrefix) && !navUrl.StartsWith(sitePrefix, StringComparison.OrdinalIgnoreCase))
 				navUrl = $"{sitePrefix.TrimEnd('/')}{navUrl}";
-			ResolvedUrl = navUrl;
+			ResolvedUrl = navUrl + anchor;
 			return;
 		}
 
-		ResolvedUrl = DirectiveLinkValidator.ToHref(normalized, context.Build.UrlPathPrefix) ?? validated;
+		ResolvedUrl = DirectiveLinkValidator.ToHref(normalized + anchor, context.Build.UrlPathPrefix) ?? validated;
 	}
 
 	private static string NormalizeToDocsetRoot(string url, ParserContext context)
