@@ -240,6 +240,35 @@ public static partial class ChangelogTextUtilities
 	private const string PrivateReferenceSentinelPrefix = "# PRIVATE:";
 
 	/// <summary>
+	/// Unwraps a <c># PRIVATE:</c> sentinel to the underlying PR or issue reference.
+	/// Returns the trimmed original when the value is not a sentinel.
+	/// </summary>
+	public static string? StripPrivateReferenceSentinel(string? reference)
+	{
+		if (string.IsNullOrWhiteSpace(reference))
+			return null;
+
+		var trimmed = reference.Trim();
+		if (!trimmed.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			return trimmed;
+
+		var underlying = trimmed[PrivateReferenceSentinelPrefix.Length..].Trim();
+		return string.IsNullOrWhiteSpace(underlying) ? null : underlying;
+	}
+
+	/// <summary>
+	/// Unwraps <c># PRIVATE:</c> sentinels in a reference list. Empty after stripping are omitted.
+	/// </summary>
+	public static string[]? StripPrivateReferenceSentinels(IReadOnlyList<string>? references)
+	{
+		if (references is not { Count: > 0 })
+			return null;
+
+		var stripped = references.Select(StripPrivateReferenceSentinel).Where(r => !string.IsNullOrWhiteSpace(r)).Select(r => r!).ToArray();
+		return stripped.Length == 0 ? null : stripped;
+	}
+
+	/// <summary>
 	/// Returns the first repository segment from a bundle <paramref name="repo"/> string
 	/// (e.g. <c>elasticsearch+kibana</c> → <c>elasticsearch</c>) for defaulting bare numeric PR/issue refs.
 	/// </summary>

@@ -9,6 +9,7 @@ import {
     incomingNavSurfaceKey,
     pinPagesNavScroll,
     shouldRetargetArticleSwap,
+    shouldRetargetApiContentSwap,
     syncPagesNavFromResponse,
 } from './pages-nav'
 
@@ -770,6 +771,28 @@ describe('shouldRetargetArticleSwap', () => {
             shouldRetargetArticleSwap(
                 document.getElementById('content-container'),
                 '<div class="w-full" id="hero"></div>'
+            )
+        ).toBe(false)
+    })
+})
+
+describe('shouldRetargetApiContentSwap', () => {
+    it('retargets when both pages are API content columns', () => {
+        document.body.innerHTML = '<div id="api-content-grid"></div>'
+        expect(
+            shouldRetargetApiContentSwap(
+                document.getElementById('api-content-grid'),
+                '<div id="api-content-grid" class="api-content-grid"></div>'
+            )
+        ).toBe(true)
+    })
+
+    it('keeps the full swap when leaving an API page', () => {
+        document.body.innerHTML = '<div id="api-content-grid"></div>'
+        expect(
+            shouldRetargetApiContentSwap(
+                document.getElementById('api-content-grid'),
+                '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
             )
         ).toBe(false)
     })

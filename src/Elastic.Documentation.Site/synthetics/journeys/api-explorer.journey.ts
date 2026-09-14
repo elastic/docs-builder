@@ -57,22 +57,16 @@ if (isAssemblerApiExplorerEnabled()) {
             const switcher = page.locator('#api-version-switcher')
             await expect(switcher).toBeVisible()
 
-            const optionCount = await switcher.locator('option').count()
-            expect(optionCount).toBeGreaterThan(1)
-
-            const currentValue = await switcher.inputValue()
-            const targetValue = await switcher.evaluate((select, current) => {
-                const option = Array.from(select.options).find(
-                    (entry) => entry.value !== current
-                )
-                return option?.value ?? null
-            }, currentValue)
-            expect(targetValue).toBeTruthy()
+            await switcher.locator('summary').click()
+            const target = switcher
+                .locator('.nav-select-option[href][aria-selected="false"]')
+                .first()
+            await expect(target).toBeVisible()
 
             const currentUrl = page.url()
             await Promise.all([
                 page.waitForURL((url) => url.href !== currentUrl),
-                switcher.selectOption(targetValue!),
+                target.click(),
             ])
 
             await expect(page).toHaveURL(

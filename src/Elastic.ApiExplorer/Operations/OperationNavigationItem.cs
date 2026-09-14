@@ -19,8 +19,10 @@ public record ApiOperation(
 	string Route,
 	IOpenApiPathItem Path,
 	string ApiName
-) : IApiModel
+) : IApiModel, IHttpMethodNavigationModel
 {
+	string IHttpMethodNavigationModel.HttpMethod => OperationType.Method.ToLowerInvariant();
+
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var viewModel = new OperationViewModel(context) { Operation = this, Page = OperationPageModel.Create(this, context) };

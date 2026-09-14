@@ -38,7 +38,12 @@ bundle:
       output_directory: docs/releases/cloud-serverless
 ```
 
-The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument. For example, `docs-builder changelog bundle elasticsearch-release 9.2.0` writes `docs/releases/elasticsearch-elasticsearch-9.2.0.yaml`. A profile `output_directory` replaces `bundle.output_directory` for that profile (the same as option-mode `--output` when it is a directory): `docs-builder changelog bundle serverless-release 2026-08-31` writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-2026-08-31.yaml`. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
+The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the GitHub repository (determined by `--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument.
+For example, `docs-builder changelog bundle elasticsearch-release 9.2.0` writes `docs/releases/elasticsearch-elasticsearch-9.2.0.yaml`.
+If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`.
+Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
+
+A profile `output_directory` overrides `bundle.output_directory` (the same as option-mode `--output` when it is a directory): `docs-builder changelog bundle serverless-release 2026-08-31` writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-2026-08-31.yaml`.
 
 ## Option-based mode
 
@@ -119,7 +124,7 @@ docs-builder changelog bundle serverless-release 2026-08-13 \
 
 ## Bundles are self-contained
 
-Every bundle embeds the full content of each changelog entry (`title`, `type`, `products`, and so on), plus a `file` block recording the source file name and checksum for provenance. Rendering — via the `{changelog}` directive, `changelog render`, or the CDN pipeline — never reads the original changelog files, so you can clean them up with `docs-builder changelog remove` immediately after bundling.
+Every bundle embeds the full content of each changelog entry (`title`, `type`, `products`, and so on), plus a `file` block recording the source file name and checksum for provenance. Rendering — via the `{changelog}` directive, `changelog render`, or the CDN pipeline — never reads the original changelog files, so you can clean them up with `docs-builder changelog remove` immediately after bundling. To recreate changelog files later, use [`changelog unpack`](/cli/changelog/unpack.md). Unpack does not restore the original checksums. Public bundles produced by the upload scrubber are less likely to unpack because private PRs and issues may have been removed.
 
 When you bundle from a PR list or GitHub release and the command is sourcing from the CDN, it also adds uploaded changelogs whose `products[].versions` include that version (from `output_products`). Those files are appended to the same `entries` list; `rules.bundle` applies to them too. This automatic add does not apply to git-range bundles or `--force-local`. For more detail, see [Bundle changelogs](/data/release-notes/bundle.md).
 

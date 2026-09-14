@@ -151,7 +151,10 @@ public class OpenApiGenerator(
 		var canonical = versionedDocuments.FirstOrDefault(v => v.Version.Moniker == "main") ?? versionedDocuments[0];
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
 		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix)}/";
-		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description);
+		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)
+		{
+			CatalogCategories = apiConfig.CatalogCategories
+		};
 	}
 
 	/// <summary>
@@ -284,7 +287,11 @@ public class OpenApiGenerator(
 		);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", generation.Document.Info?.Title ?? "<no title>");
 
-		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(
+			context,
+			navigation,
+			MapVersionSwitcher(generation.VersionSwitcherItems)
+		);
 
 		var operations = ApiSupplementalDoc.Load(discovery.Operations);
 		var tags = ApiSupplementalDoc.Load(discovery.Tags);
@@ -347,6 +354,9 @@ public class OpenApiGenerator(
 		await using var stream = _writeFileSystem.FileStream.New(file.FullName, FileMode.Create);
 		await write(stream, ctx).ConfigureAwait(false);
 	}
+
+	private static IReadOnlyList<NavigationSelectOption> MapVersionSwitcher(IReadOnlyList<ApiVersionSwitcherItem> items) =>
+		items.Count <= 1 ? [] : [.. items.Select(static i => new NavigationSelectOption(i.Label, i.Url, i.Selected))];
 
 	/// <summary>
 	/// Associates <c>op-*.md</c> / <c>tag-*.md</c> files under <c>api/&lt;key&gt;/</c> with this

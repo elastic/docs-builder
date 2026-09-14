@@ -12,7 +12,7 @@
  * navigations swap body innerHTML and would leave a body data-* attribute stale.
  */
 
-const DROPDOWN = 'details.secondary-nav-dropdown'
+const DROPDOWN = 'details.secondary-nav-dropdown, details.nav-select-dropdown'
 const ACTIVE = 'secondary-nav-item--active'
 const OPEN = 'is-open'
 const CLOSING = 'is-closing'

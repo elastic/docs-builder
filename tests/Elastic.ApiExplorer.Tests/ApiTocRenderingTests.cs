@@ -66,6 +66,7 @@ public class ApiTocRenderingTests
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),
 			TocItems = tocItems,
 			MarkdownUrl = "/api/doc/elasticsearch/v9.md",
+			Breadcrumbs = ApiBreadcrumbTrail.Empty,
 		};
 
 		return await _ApiToc.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);

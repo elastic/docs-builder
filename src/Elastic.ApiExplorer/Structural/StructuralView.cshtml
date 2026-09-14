@@ -1,0 +1,50 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Structural.StructuralViewModel>
+@using Elastic.ApiExplorer.Structural
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
+@functions {
+	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+}
+<section id="elastic-docs-v3">
+	<h1>@Model.Page.Title</h1>
+	@if (Model.Page.Kind == ApiStructuralKind.Authentication)
+	{
+		if (Model.Schemes.Count == 0)
+		{
+			<p>@Model.EmptyMessage</p>
+		}
+		else
+		{
+			foreach (var scheme in Model.Schemes)
+			{
+				<h2 id="@scheme.Slug">@scheme.Heading</h2>
+				@if (scheme.DescriptionHtml is not null)
+				{
+					@scheme.DescriptionHtml
+				}
+				@if (!string.IsNullOrEmpty(scheme.CredentialExample))
+				{
+					@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-http", scheme.CredentialExample)))
+				}
+			}
+		}
+	}
+	else if (Model.Servers.Count == 0)
+	{
+		<p>@Model.EmptyMessage</p>
+	}
+	else
+	{
+		<ul class="api-server-list">
+			@foreach (var server in Model.Servers)
+			{
+				<li>
+					<code>@server.Url</code>
+					@if (!string.IsNullOrEmpty(server.Description))
+					{
+						<span class="server-description">(@server.Description)</span>
+					}
+				</li>
+			}
+		</ul>
+	}
+</section>

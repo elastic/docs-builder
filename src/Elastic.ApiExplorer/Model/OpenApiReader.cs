@@ -120,7 +120,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 			return;
 		}
 
-		if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+		if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number))
 		{
 			writer.WriteNumberValue(number);
 			return;
