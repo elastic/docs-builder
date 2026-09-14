@@ -398,6 +398,32 @@ public class S3IncrementalUploaderTests
 	}
 
 	[Fact]
+	public async Task Upload_InlineMarker_WithNoOverwriteWhenUnchanged_SkipsPut()
+	{
+		const string marker = "link: 100";
+		var localEtag = Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(marker)));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
+		{
+			ETag = $"\"{localEtag}\""
+		});
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", marker)],
+			new S3UploadOptions { NoOverwrite = true },
+			ctx: ct
+		);
+
+		result.Skipped.Should().Be(1);
+		result.NotOverwritten.Should().Be(0);
+		result.Conflicts.Should().BeEmpty();
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
 	public async Task Upload_InlineMarker_WithNoOverwriteWhenExists_SkipsPut()
 	{
 		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
@@ -419,8 +445,58 @@ public class S3IncrementalUploaderTests
 		);
 
 		result.NotOverwritten.Should().Be(1);
+		result.Skipped.Should().Be(0);
 		result.Conflicts[0].RemoteContent.Should().Be("link: 100");
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_InlineMarker_Unchanged_SkipsUpload()
+	{
+		const string marker = "link: 100";
+		var localEtag = Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(marker)));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
+		{
+			ETag = $"\"{localEtag}\""
+		});
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", marker)],
+			ctx: ct
+		);
+
+		result.Skipped.Should().Be(1);
+		result.Uploaded.Should().Be(0);
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_InlineMarker_Unchanged_WithSkipEtagCheck_Uploads()
+	{
+		const string marker = "link: 100";
+		var localEtag = Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(marker)));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
+		{
+			ETag = $"\"{localEtag}\""
+		});
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).Returns(new PutObjectResponse());
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", marker)],
+			skipEtagCheck: true,
+			ctx: ct
+		);
+
+		result.Replaced.Should().Be(1);
+		result.Skipped.Should().Be(0);
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
