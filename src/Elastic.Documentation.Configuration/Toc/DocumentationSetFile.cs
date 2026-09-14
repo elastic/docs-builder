@@ -691,7 +691,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			fullVirtualRoot,
 			pathRelativeToContainer,
 			context,
-			resolvedChildren
+			resolvedChildren,
+			cliRef.AppliesTo
 		);
 	}
 
