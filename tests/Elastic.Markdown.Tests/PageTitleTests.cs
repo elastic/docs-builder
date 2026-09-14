@@ -147,6 +147,15 @@ public class PageTitleTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public async Task GenerateAll_FormattedH1_PreservesVisibleFormatting()
+	{
+		var html = await Generate(BuildType.Assembler, markdown: "# Install `ecctl` *quickly*");
+
+		html.Should().Contain("<title>Install ecctl quickly | Elastic Docs</title>");
+		html.Should().Contain("<h1>Install <code>ecctl</code> <em>quickly</em></h1>");
+	}
+
+	[Fact]
 	public async Task RenderPreservingFirstHeadingWithMetadata_NormalizesMetaTitle()
 	{
 		const string markdown =

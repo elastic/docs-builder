@@ -177,8 +177,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	}
 
 	internal static string? ReadTitle(MarkdownDocument document) =>
-		(document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string
-			?? FindNestedTitle(document))?.StripMarkdown();
+		document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string ?? FindNestedTitle(document);
 
 	internal static string? ReadMetaTitle(MarkdownDocument document, BuildContext build, IFileInfo source)
 	{

@@ -14,6 +14,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Page;
 using Markdig.Syntax;
@@ -61,7 +62,7 @@ public class HtmlWriter(
 		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
 		return new(
 			MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: false),
-			MarkdownFile.ReadTitle(parsed),
+			MarkdownFile.ReadTitle(parsed)?.StripMarkdown(),
 			MarkdownFile.ReadMetaTitle(parsed, DocumentationSet.Context, source)
 		);
 	}
