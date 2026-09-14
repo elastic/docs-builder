@@ -11,7 +11,7 @@ Specify at least one of `--add` or `--remove`.
 
 To create a bundle, use [](/cli/changelog/bundle.md).
 For details and examples, go to [](/data/release-notes/bundle.md).
-For changelog notes (`note-*.yml`) after a bundle has shipped, go to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship). `--add` and `--remove` accept those files like any other changelog YAML. Don't use `--add` for a late note: upload the file and let the scrubber write `{parent}.amend-notes.yaml`. `--remove` does not unpublish the pool file.
+For changelog notes (`note-*.yml`) after a bundle has shipped, go to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
 
 ## Output
 

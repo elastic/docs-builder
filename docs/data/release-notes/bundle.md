@@ -348,7 +348,7 @@ What you can do depends on where the note lives:
 | Where it is | What you can do today |
 | --- | --- |
 | Local file only; the bundle is not uploaded | [`changelog remove`](/cli/changelog/remove.md) or re-run `changelog bundle`. That never changes a published bundle. |
-| Embedded in the parent bundle (or added with numbered `--add`) | `bundle-amend --remove` on the `note-*.yml` path, then upload `{parent}.amend-N.yaml` with [`changelog upload --artifact-type bundle`](/cli/changelog/upload.md). |
+| Already in the parent or a numbered `amend-N` sidecar | `bundle-amend --remove` on the `note-*.yml` path, then upload `{parent}.amend-N.yaml` with [`changelog upload --artifact-type bundle`](/cli/changelog/upload.md). |
 | Only in `.amend-notes` (uploaded after the bundle shipped) | No `changelog` command removes it from the published pool or that sidecar. Don't create, edit, or delete `.amend-notes` files. |
 
 Example of excluding a note that is already in the parent:
