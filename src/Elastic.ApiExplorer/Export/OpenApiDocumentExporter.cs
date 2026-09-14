@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
@@ -23,9 +24,7 @@ namespace Elastic.ApiExplorer.Export;
 /// <summary>
 /// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
 /// </summary>
-public partial class OpenApiDocumentExporter(
-	VersionsConfiguration versionsConfiguration,
-	IDocumentInferrerService? documentInferrer = null)
+public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
 {
 	private static readonly HttpClient HttpClient = new();
 
@@ -44,7 +43,10 @@ public partial class OpenApiDocumentExporter(
 	/// <param name="limitPerSource">Optional limit of documents to return per source (Elasticsearch and Kibana)</param>
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>Enumerable of DocumentationDocument instances for all endpoints</returns>
-	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(int? limitPerSource = null, [EnumeratorCancellation] Cancel ctx = default)
+	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
+		int? limitPerSource = null,
+		[EnumeratorCancellation] Cancel ctx = default
+	)
 	{
 		// Process Elasticsearch API
 		var elasticsearchCount = 0;
@@ -70,10 +72,7 @@ public partial class OpenApiDocumentExporter(
 	/// <summary>
 	/// Fetches OpenAPI spec from a URL and converts it to DocumentationDocument instances.
 	/// </summary>
-	private async IAsyncEnumerable<DocumentationDocument> ExportFromUrl(
-		string url,
-		string product,
-		[EnumeratorCancellation] Cancel ctx)
+	private async IAsyncEnumerable<DocumentationDocument> ExportFromUrl(string url, string product, [EnumeratorCancellation] Cancel ctx)
 	{
 		var openApiDocument = await FetchOpenApiDocument(url, ctx);
 		if (openApiDocument == null)
@@ -112,6 +111,8 @@ public partial class OpenApiDocumentExporter(
 	/// </summary>
 	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
 	{
+		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
+
 		foreach (var path in openApiDocument.Paths)
 		{
 			if (path.Value.Operations == null)
@@ -125,7 +126,8 @@ public partial class OpenApiDocumentExporter(
 				if (!ShouldIncludeOperation(operation.Value))
 					continue;
 
-				var url = $"/docs/api/doc/{product}/operation/operation-{operationId.ToLowerInvariant()}";
+				var operationMoniker = ApiUrlBuilder.OperationMoniker(operationId, path.Key);
+				var url = $"{productUrl}/operation/{operationMoniker}";
 
 				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
 				// Trim: spec summaries occasionally carry stray leading/trailing whitespace or a
@@ -165,11 +167,8 @@ public partial class OpenApiDocumentExporter(
 				var body = bodyBuilder.ToString();
 
 				// Extract tags as headings
-				var headings = operation.Value.Tags?
-					.Select(t => t.Name)
-					.Where(n => !string.IsNullOrEmpty(n))
-					.OfType<string>()
-					.ToArray() ?? [];
+				var headings = operation.Value.Tags?.Select(t => t.Name).Where(n => !string.IsNullOrEmpty(n)).OfType<string>().ToArray()
+					?? [];
 
 				// Extract ApplicableTo from x-state
 				var applies = ExtractApplicableTo(operation.Value);
@@ -191,15 +190,14 @@ public partial class OpenApiDocumentExporter(
 					Parents =
 					[
 						new ParentDocument { Title = "API Reference", Path = "/docs/api" },
-						new ParentDocument { Title = product, Path = $"/docs/api/doc/{product}" }
+						new ParentDocument { Title = product, Path = productUrl }
 					],
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
-						? inference.RelatedProducts.Select(p => new IndexedProduct
-						{
-							Id = p.Id,
-							Repository = p.Repository ?? inference.Repository
-						}).ToArray()
+						? inference
+							.RelatedProducts
+							.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
+							.ToArray()
 						: null
 				};
 			}
@@ -273,20 +271,13 @@ public partial class OpenApiDocumentExporter(
 		var version = ParseVersion(stateValue);
 
 		// Create Applicability instance
-		var applicability = new Applicability
-		{
-			Lifecycle = lifecycle,
-			Version = version
-		};
+		var applicability = new Applicability { Lifecycle = lifecycle, Version = version };
 
 		// Create AppliesCollection
 		var appliesCollection = new AppliesCollection([applicability]);
 
 		// Return ApplicableTo with Stack set
-		return new ApplicableTo
-		{
-			Stack = appliesCollection
-		};
+		return new ApplicableTo { Stack = appliesCollection };
 	}
 
 	/// <summary>

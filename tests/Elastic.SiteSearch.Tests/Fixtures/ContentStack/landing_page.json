@@ -1,0 +1,27 @@
+{
+  "title": "Tutorials",
+  "title_l10n": "Tutorials",
+  "url": "/search-labs/tutorials",
+  "locale": "en-us",
+  "page_info": {
+    "subheading_l10n": "Long-form guides to get you started",
+    "description": {
+      "content_simple_l10n": {
+        "type": "doc",
+        "children": [
+          {
+            "type": "p",
+            "children": [
+              { "text": "Get started combining Elastic's search capabilities with machine learning." }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "seo": {
+    "seo_title_l10n": "Elasticsearch tutorials",
+    "seo_description_l10n": ""
+  },
+  "publish_details": { "locale": "en-us" }
+}

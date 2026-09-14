@@ -9,6 +9,7 @@ using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Components;
@@ -135,19 +136,35 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	}
 
 	/// <summary>
-	/// Derives the OKF <c>type</c> from the page's top-level navigation section (the first URL path
-	/// segment after any configured <see cref="Elastic.Documentation.Configuration.BuildContext.UrlPathPrefix"/>),
-	/// e.g. <c>/reference/query-languages/eql</c> -> <c>reference</c>.
+	/// Derives the OKF <c>type</c> — a query dimension for <c>okf search --type</c> — from the page's top-level
+	/// navigation section: the first URL path segment after any configured
+	/// <see cref="Elastic.Documentation.Configuration.BuildContext.UrlPathPrefix"/>, e.g.
+	/// <c>/reference/query-languages/eql</c> -> <c>reference</c>. A page sitting at the bundle root has no section
+	/// above it, so its single segment names the page itself rather than a section and would make every root-level
+	/// page its own singleton type; those fall back to <c>documentation</c>, matching the bundle root's own index.
+	/// <paramref name="isSectionLandingPage"/> keeps a section's landing page (<c>/reference</c>, one segment but
+	/// backed by a <c>reference/</c> directory) typed as its section.
 	/// </summary>
-	internal static string DeriveType(string navigationUrl, string? urlPathPrefix)
+	internal static string DeriveType(string navigationUrl, string? urlPathPrefix, bool isSectionLandingPage)
 	{
 		var prefix = urlPathPrefix ?? string.Empty;
 		var url = navigationUrl;
 		if (prefix.Length > 0 && url.StartsWith(prefix, StringComparison.Ordinal))
 			url = url[prefix.Length..];
 		var segments = url.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		return segments.Length > 0 ? segments[0] : "documentation";
+		if (segments.Length == 0 || (segments.Length == 1 && !isSectionLandingPage))
+			return "documentation";
+		return segments[0];
 	}
+
+	/// <summary>
+	/// True when the page is a navigation node's index, i.e. a section landing page with a sibling <c>{folder}/</c>
+	/// directory in the bundle. <c>GetNavigationFor</c> resolves an index page to its node rather than to a leaf
+	/// (see <c>ListSubPagesBlock</c>), the only signal separating <c>/reference</c> from a root-level page like
+	/// <c>/colon</c> — the two are indistinguishable by URL shape.
+	/// </summary>
+	internal static bool IsSectionLandingPage(INavigationItem navigationItem) =>
+		navigationItem is INodeNavigationItem<INavigationModel, INavigationItem>;
 
 	/// <summary>
 	/// Rewrites an already-resolved link URL to its bundle-relative form via <see cref="ComputeBundlePath"/>.
@@ -162,10 +179,12 @@ public class OkfMarkdownExporter : IMarkdownExporter
 		if (string.IsNullOrEmpty(url))
 			return url;
 
-		if (canonicalBaseUrl is not null
+		if (
+			canonicalBaseUrl is not null
 			&& Uri.TryCreate(url, UriKind.Absolute, out var absolute)
 			&& string.Equals(absolute.Scheme, canonicalBaseUrl.Scheme, StringComparison.OrdinalIgnoreCase)
-			&& string.Equals(absolute.Host, canonicalBaseUrl.Host, StringComparison.OrdinalIgnoreCase))
+			&& string.Equals(absolute.Host, canonicalBaseUrl.Host, StringComparison.OrdinalIgnoreCase)
+		)
 			url = absolute.PathAndQuery + absolute.Fragment;
 
 		if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
@@ -200,47 +219,122 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	{
 		var urlPathPrefix = context.BuildContext.UrlPathPrefix;
 		var canonicalBaseUrl = context.BuildContext.CanonicalBaseUrl;
-		var body = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context.BuildContext, url => RewriteLinkUrl(url, urlPathPrefix, canonicalBaseUrl), context.Document, static (renderer, document) =>
+		var body = DocumentationObjectPoolProvider.UseLlmMarkdownRenderer(context.BuildContext, url => RewriteLinkUrl(
+			url,
+			urlPathPrefix,
+			canonicalBaseUrl
+		), context.Document, static (renderer, document) =>
 		{
 			_ = renderer.Render(document);
 		});
 
 		var sourceFile = context.SourceFile;
-		var frontMatter = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		var frontMatter = new ConceptFrontMatter(
+			DeriveType(context.NavigationItem.Url, context.BuildContext.UrlPathPrefix, IsSectionLandingPage(context.NavigationItem)),
+			sourceFile.Title,
+			sourceFile.YamlFrontMatter?.NavigationTitle,
+			GetDescription(context),
+			GetResourceUrl(context),
+			GetTags(context)
+		);
+
+		var content = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 		try
 		{
-			_ = frontMatter.AppendLine("---");
-			_ = frontMatter.AppendLine($"type: {DeriveType(context.NavigationItem.Url, context.BuildContext.UrlPathPrefix)}");
-			_ = frontMatter.AppendLine($"title: {sourceFile.Title}");
-			if (!string.IsNullOrEmpty(sourceFile.YamlFrontMatter?.NavigationTitle))
-				_ = frontMatter.AppendLine($"navigation_title: {sourceFile.YamlFrontMatter.NavigationTitle}");
-			_ = frontMatter.AppendLine($"description: {GetDescription(context)}");
-			_ = frontMatter.AppendLine($"resource: {GetResourceUrl(context)}");
-
-			var tags = GetTags(context);
-			if (tags.Count > 0)
-			{
-				_ = frontMatter.AppendLine("tags:");
-				foreach (var tag in tags)
-					_ = frontMatter.AppendLine($"  - {tag}");
-			}
-			_ = frontMatter.AppendLine("---");
-			_ = frontMatter.AppendLine();
-			_ = frontMatter.AppendLine($"# {sourceFile.Title}");
-			_ = frontMatter.Append(body);
+			_ = content.Append(RenderFrontMatter(frontMatter));
+			_ = content.AppendLine();
+			_ = content.AppendLine($"# {sourceFile.Title}");
+			_ = content.Append(body);
 			// AppendLine uses Environment.NewLine — normalize so bundle content is identical regardless of the OS the build runs on.
-			return frontMatter.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
+			return content.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
 		}
 		finally
 		{
-			DocumentationObjectPoolProvider.StringBuilderPool.Return(frontMatter);
+			DocumentationObjectPoolProvider.StringBuilderPool.Return(content);
+		}
+	}
+
+	internal static string RenderFrontMatter(ConceptFrontMatter frontMatter)
+	{
+		var sb = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		try
+		{
+			_ = sb.AppendLine("---");
+			_ = sb.AppendLine($"type: {YamlScalar(frontMatter.Type)}");
+			_ = sb.AppendLine($"title: {YamlScalar(frontMatter.Title)}");
+			if (!string.IsNullOrEmpty(frontMatter.NavigationTitle))
+				_ = sb.AppendLine($"navigation_title: {YamlScalar(frontMatter.NavigationTitle)}");
+			_ = sb.AppendLine($"description: {YamlScalar(frontMatter.Description)}");
+			_ = sb.AppendLine($"resource: {YamlScalar(frontMatter.Resource)}");
+
+			if (frontMatter.Tags.Count > 0)
+			{
+				_ = sb.AppendLine("tags:");
+				foreach (var tag in frontMatter.Tags)
+					_ = sb.AppendLine($"  - {YamlScalar(tag)}");
+			}
+			_ = sb.AppendLine("---");
+			// AppendLine uses Environment.NewLine — normalize so bundle content is identical regardless of the OS the build runs on.
+			return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
+		}
+		finally
+		{
+			DocumentationObjectPoolProvider.StringBuilderPool.Return(sb);
+		}
+	}
+
+	/// <summary>
+	/// Renders a value as a double-quoted YAML scalar. Every value in this frontmatter derives from page prose, so a
+	/// plain scalar is never safe: a description containing <c>": "</c> makes the concept file unparseable, while a tag
+	/// like <c>Elastic Stack: Available</c> parses — as a mapping rather than a string. Quoting also keeps values that
+	/// YAML would otherwise retype (<c>true</c>, <c>1.2</c>) or reject for a leading indicator character.
+	/// </summary>
+	internal static string YamlScalar(string? value)
+	{
+		if (string.IsNullOrEmpty(value))
+			return "\"\"";
+
+		var sb = DocumentationObjectPoolProvider.StringBuilderPool.Get();
+		try
+		{
+			_ = sb.Append('"');
+			foreach (var c in value)
+			{
+				_ = c switch
+				{
+					'\\' => sb.Append("\\\\"),
+					'"' => sb.Append("\\\""),
+					'\n' => sb.Append("\\n"),
+					'\r' => sb.Append("\\r"),
+					'\t' => sb.Append("\\t"),
+					// char.IsControl covers only U+0000-U+001F and U+007F-U+009F, all representable as \xNN.
+					_ when char.IsControl(c) => sb.Append("\\x").Append(((int)c).ToString("x2")),
+					_ => sb.Append(c)
+				};
+			}
+			_ = sb.Append('"');
+			return sb.ToString();
+		}
+		finally
+		{
+			DocumentationObjectPoolProvider.StringBuilderPool.Return(sb);
 		}
 	}
 
 	private static string GetDescription(MarkdownExportFileContext context) =>
-		!string.IsNullOrEmpty(context.SourceFile.YamlFrontMatter?.Description)
-			? context.SourceFile.YamlFrontMatter.Description
-			: new DescriptionGenerator().GenerateDescription(context.Document);
+		NormalizeDescription(
+			!string.IsNullOrEmpty(context.SourceFile.YamlFrontMatter?.Description)
+				? context.SourceFile.YamlFrontMatter.Description
+				: new DescriptionGenerator().GenerateDescription(context.Document)
+		);
+
+	/// <summary>
+	/// Collapses a description to a single line: an authored <c>description: |</c> block keeps its newlines, and a
+	/// blank line among them terminates the markdown lists <see cref="RenderIndexContent"/> renders. Also drops the
+	/// trailing space <see cref="DescriptionGenerator"/> pads each block with, which a quoted scalar would preserve.
+	/// </summary>
+	internal static string NormalizeDescription(string description) =>
+		string.Join(' ', description.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
 	private static string GetResourceUrl(MarkdownExportFileContext context) =>
 		context.BuildContext.CanonicalBaseUrl is { } baseUrl
@@ -297,9 +391,11 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	/// </summary>
 	private async Task WriteIndexFilesAsync(IFileSystem fs, IDirectoryInfo staging, Cancel ctx)
 	{
-		var byDirectory = _entries
-			.GroupBy(e => GetDirectory(e.BundlePath), StringComparer.Ordinal)
-			.ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
+		var byDirectory = _entries.GroupBy(e => GetDirectory(e.BundlePath), StringComparer.Ordinal).ToDictionary(
+			g => g.Key,
+			g => g.ToList(),
+			StringComparer.Ordinal
+		);
 
 		var directories = new HashSet<string>(byDirectory.Keys, StringComparer.Ordinal) { "" };
 		foreach (var directory in byDirectory.Keys)
@@ -343,7 +439,8 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	internal static string RenderIndexContent(
 		string directory,
 		IReadOnlyCollection<ConceptEntry> concepts,
-		IReadOnlyCollection<string> subdirectories)
+		IReadOnlyCollection<string> subdirectories
+	)
 	{
 		var sb = DocumentationObjectPoolProvider.StringBuilderPool.Get();
 		try
@@ -388,4 +485,13 @@ public class OkfMarkdownExporter : IMarkdownExporter
 	}
 
 	internal sealed record ConceptEntry(string BundlePath, string Title, string Description);
+
+	internal sealed record ConceptFrontMatter(
+		string Type,
+		string Title,
+		string? NavigationTitle,
+		string Description,
+		string Resource,
+		IReadOnlyCollection<string> Tags
+	);
 }

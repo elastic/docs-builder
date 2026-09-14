@@ -16,10 +16,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 	public async Task RenderChangelogs_DefaultBehavior_IncludesDescriptionsInMarkdown()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with description
+		// Create test changelog entry with description
 		// language=yaml
 		var changelog1 =
 			"""
@@ -33,34 +30,28 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			description: This is a detailed description of the test feature that should be visible by default.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
-			HideDescriptions = false // Default behavior
+			HideDescriptions =
+				false // Default behavior
 		};
 
 		// Act
@@ -83,10 +74,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 	public async Task RenderChangelogs_NoDescriptionsFlag_HidesDescriptionsInMarkdown()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with description
+		// Create test changelog entry with description
 		// language=yaml
 		var changelog1 =
 			"""
@@ -100,34 +88,28 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			description: This description should be hidden when --no-descriptions flag is used.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
-			HideDescriptions = true // Hide descriptions
+			HideDescriptions =
+				true // Hide descriptions
 		};
 
 		// Act
@@ -154,10 +136,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 	public async Task RenderChangelogs_NoDescriptionsFlag_HidesDescriptionsInAsciidoc()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with description
+		// Create test changelog entry with description
 		// language=yaml
 		var changelog1 =
 			"""
@@ -171,34 +150,28 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			description: This description should be hidden in asciidoc format when --no-descriptions is used.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Asciidoc,
-			HideDescriptions = true // Hide descriptions
+			HideDescriptions =
+				true // Hide descriptions
 		};
 
 		// Act
@@ -225,9 +198,6 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 	public async Task RenderChangelogs_NoDescriptionsFlag_PreservesImpactAndActionForBreakingChanges()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create breaking change with description, impact, and action
 		// language=yaml
 		var changelog1 =
@@ -244,35 +214,29 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			action: This is the action section that should always be visible.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "breaking-change.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: breaking-change.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("breaking-change.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
 			HideDescriptions = true,
-			Dropdowns = false // Test flattened mode
+			Dropdowns =
+				false // Test flattened mode
 		};
 
 		// Act
@@ -303,9 +267,6 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 	public async Task RenderChangelogs_NoDescriptionsFlag_WorksWithDropdownsMode()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create breaking change with description
 		// language=yaml
 		var changelog1 =
@@ -322,35 +283,29 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			action: Action visible in dropdown mode.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "breaking-change.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: breaking-change.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("breaking-change.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
 			HideDescriptions = true,
-			Dropdowns = true // Test dropdown mode
+			Dropdowns =
+				true // Test dropdown mode
 		};
 
 		// Act
@@ -385,10 +340,7 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 	public async Task RenderChangelogs_NoDescriptionsFlag_PreservesBundleDescription()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with description
+		// Create test changelog entry with description
 		// language=yaml
 		var changelog1 =
 			"""
@@ -400,34 +352,28 @@ public class DescriptionVisibilityTests(ITestOutputHelper output) : RenderChange
 			description: This entry description should be hidden.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file with bundle-level description
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			description: |
 			  This is the bundle-level description that should always be visible
 			  regardless of the --no-descriptions flag.
-			entries:
-			  - file:
-			      name: test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			FileType = ChangelogFileType.Markdown,
 			HideDescriptions = true

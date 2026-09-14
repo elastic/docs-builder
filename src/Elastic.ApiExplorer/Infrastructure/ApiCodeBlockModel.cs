@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+
 namespace Elastic.ApiExplorer.Infrastructure;
 
 /// <summary>Model for the API Explorer code block partial (Myst-style highlight wrappers and copy support).</summary>

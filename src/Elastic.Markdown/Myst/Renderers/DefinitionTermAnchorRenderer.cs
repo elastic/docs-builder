@@ -69,8 +69,7 @@ public partial class DefinitionListAnchorRenderer : HtmlDefinitionListRenderer
 					}
 
 					var nextTerm = i + 1 < definitionItem.Count ? definitionItem[i + 1] : null;
-					var isSimpleParagraph = (nextTerm is null || nextTerm is DefinitionItem) &&
-											countdd == 0 && node is ParagraphBlock;
+					var isSimpleParagraph = (nextTerm is null || nextTerm is DefinitionItem) && countdd == 0 && node is ParagraphBlock;
 					var saveImplicit = renderer.ImplicitParagraph;
 					if (isSimpleParagraph)
 					{
@@ -93,8 +92,7 @@ public partial class DefinitionListAnchorRenderer : HtmlDefinitionListRenderer
 		_ = renderer.WriteLine("</dl>");
 	}
 
-	private static bool HasCodeInline(DefinitionTerm term) =>
-		term.Inline?.Any(i => i is CodeInline) ?? false;
+	private static bool HasCodeInline(DefinitionTerm term) => term.Inline?.Any(i => i is CodeInline) ?? false;
 
 	/// <summary>
 	/// Extracts a clean anchor id from a parameter term:

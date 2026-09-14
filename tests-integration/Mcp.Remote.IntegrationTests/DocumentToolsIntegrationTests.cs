@@ -26,7 +26,8 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		// Act - use a URL that is likely to exist
 		var resultJson = await documentTools.GetDocumentByUrl(
 			"/docs/reference/elasticsearch",
-			cancellationToken: TestContext.Current.CancellationToken);
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -61,7 +62,8 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		// Act - use a URL that should not exist
 		var resultJson = await documentTools.GetDocumentByUrl(
 			"/docs/this-document-definitely-does-not-exist-12345",
-			cancellationToken: TestContext.Current.CancellationToken);
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -70,6 +72,33 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		errorResponse.Should().NotBeNull();
 		errorResponse!.Error.Should().Contain("not found");
 		Output.WriteLine($"Error message: {errorResponse.Error}");
+	}
+
+	[Fact]
+	public async Task GetDocumentByUrl_SourceUrlIsGitHubBlobUrlWhenPresent()
+	{
+		// Arrange
+		var (documentTools, clientAccessor) = CreateDocumentTools();
+		Assert.SkipUnless(documentTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
+		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
+		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
+
+		// Act
+		var resultJson = await documentTools.GetDocumentByUrl(
+			"/docs/reference/elasticsearch",
+			cancellationToken: TestContext.Current.CancellationToken
+		);
+
+		if (resultJson.Contains("\"error\""))
+			Assert.Skip("Test document not found in index");
+
+		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.DocumentResponse);
+		response.Should().NotBeNull();
+		Output.WriteLine($"sourceUrl: {response!.SourceUrl ?? "(null — document predates indexing of this field)"}");
+
+		// sourceUrl is null for docs indexed before this field was added; when present it must be a GitHub blob URL
+		response.SourceUrl?.Should().StartWith("https://github.com/").And.Contain("/blob/");
 	}
 
 	[Fact]
@@ -85,7 +114,8 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		// Act - use a URL that is likely to exist
 		var resultJson = await documentTools.AnalyzeDocumentStructure(
 			"/docs/reference/elasticsearch",
-			cancellationToken: TestContext.Current.CancellationToken);
+			cancellationToken: TestContext.Current.CancellationToken
+		);
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");

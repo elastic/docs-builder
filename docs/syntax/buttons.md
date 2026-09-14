@@ -28,10 +28,13 @@ A button wraps a standard Markdown link with button styling:
 
 ## Button types
 
-Two button variants are available:
+Three button variants are available:
 
-- **Primary** (default): Filled blue background with white text, used for main calls to action.
-- **Secondary**: Blue border with transparent background, used for secondary actions.
+- **Primary** (default): Filled blue background with white text. Use it for the main call to action.
+- **Secondary**: Blue border on a transparent background. Use it for a supporting action that still needs the Elastic accent color.
+- **Neutral**: Grey border and dark text on a transparent background. Use it where the blue variants compete with each other, for example a cluster of peer navigation links, or where a page already carries an accent elsewhere.
+
+Use one primary button per cluster. Pair it with secondary or neutral buttons, not both.
 
 :::::::{tab-set}
 ::::::{tab-item} Output
@@ -42,6 +45,10 @@ Two button variants are available:
 :::{button}
 :type: secondary
 [Syntax Guide](index.md)
+:::
+:::{button}
+:type: neutral
+[Links](links.md)
 :::
 ::::
 ::::::
@@ -55,6 +62,52 @@ Two button variants are available:
 :::{button}
 :type: secondary
 [Secondary Action](/secondary)
+:::
+:::{button}
+:type: neutral
+[Neutral Action](/neutral)
+:::
+::::
+```
+::::::
+:::::::
+
+### Neutral buttons in a group
+
+Neutral buttons work well as a set of peer destinations, where no single link outranks the others:
+
+:::::::{tab-set}
+::::::{tab-item} Output
+::::{button-group}
+:::{button}
+:type: neutral
+[Admonitions](admonitions.md)
+:::
+:::{button}
+:type: neutral
+[Dropdowns](dropdowns.md)
+:::
+:::{button}
+:type: neutral
+[Tabs](tabs.md)
+:::
+::::
+::::::
+
+::::::{tab-item} Markdown
+```markdown
+::::{button-group}
+:::{button}
+:type: neutral
+[Admonitions](/admonitions)
+:::
+:::{button}
+:type: neutral
+[Dropdowns](/dropdowns)
+:::
+:::{button}
+:type: neutral
+[Tabs](/tabs)
 :::
 ::::
 ```
@@ -222,7 +275,7 @@ Cross-links are resolved at build time to their target URLs in the documentation
 | Property | Required | Default | Description |
 |----------|----------|---------|-------------|
 | (content) | Yes | - | A Markdown link `[text](url)` that becomes the button. |
-| `:type:` | No | `primary` | Button variant: `primary` (filled) or `secondary` (outlined). |
+| `:type:` | No | `primary` | Button variant: `primary` (filled), `secondary` (outlined, blue), or `neutral` (outlined, monochrome). |
 | `:align:` | No | `left` | Horizontal alignment for standalone buttons: `left`, `center`, or `right`. |
 
 ### Button group properties

@@ -7,10 +7,34 @@ updates:
       interval: 'weekly'
       day: 'monday'
       time: '08:00'
+    groups:
+      # Batch routine updates, but keep unrelated major upgrades isolated.
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      github-actions-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      github-actions-major-by-dependency:
+        applies-to: version-updates
+        group-by: dependency-name
+        update-types:
+          - 'major'
     labels:
       - chore
     cooldown:
       default-days: 14
+    # Elastic actions intentionally use floating major tags such as @v1.
+    ignore:
+      - dependency-name: 'elastic/*'
+        update-types:
+          - 'version-update:semver-minor'
+          - 'version-update:semver-patch'
   - package-ecosystem: npm
     directories:
       - '**/*'
@@ -29,11 +53,32 @@ updates:
       eui:
         patterns:
           - '@elastic/eui*'
+      # Keep the Tailwind toolchain compatible across dependency types.
       tailwindcss:
         patterns:
           - 'tailwindcss'
           - '@tailwindcss/postcss'
           - 'prettier-plugin-tailwindcss'
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      npm-development-minor-patch:
+        applies-to: version-updates
+        dependency-type: development
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      npm-production-minor-patch:
+        applies-to: version-updates
+        dependency-type: production
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
     labels:
       - chore
   - package-ecosystem: nuget
@@ -42,11 +87,23 @@ updates:
       interval: 'weekly'
       day: 'monday'
       time: '08:00'
-    groups: 
+    groups:
+      # The core package and testing helpers must update together.
       system-io-abstractions:
         patterns:
           - 'System.IO.Abstractions'
           - 'System.IO.Abstractions.*'
+      nuget-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      nuget-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
     labels:
       - chore
     cooldown:

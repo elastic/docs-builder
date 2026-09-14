@@ -19,9 +19,6 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithOnlyPrivateLinks_DoesNotRenderIncompleteForMoreInformationSentence()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create deprecation entry with only private links (matching Cloud scenario)
 		// language=yaml
 		var changelog =
@@ -38,33 +35,27 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 			action: Follow the migration guide.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "153728-deprecate-costs-api-v1.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
 			    repo: elasticsearch
 			    owner: elastic
-			entries:
-			  - file:
-			      name: 153728-deprecate-costs-api-v1.yaml
-			      checksum: {ComputeSha1(changelog)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("153728-deprecate-costs-api-v1.yaml", changelog));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.3.0"
 		};
@@ -97,9 +88,6 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithMixedPrivateAndPublicLinks_RendersOnlyPublicLinks()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create entry with mix of private and public links
 		// language=yaml
 		var changelog =
@@ -120,33 +108,27 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 			action: Follow upgrade guide.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "123456-mixed-links.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
 			    repo: elasticsearch
 			    owner: elastic
-			entries:
-			  - file:
-			      name: 123456-mixed-links.yaml
-			      checksum: {ComputeSha1(changelog)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("123456-mixed-links.yaml", changelog));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.3.0"
 		};

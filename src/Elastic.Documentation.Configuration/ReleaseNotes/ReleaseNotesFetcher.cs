@@ -40,11 +40,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 
 	public async Task<FetchedReleaseNotes> FetchAsync(IDiagnosticsCollector collector, IReadOnlyCollection<string> products, Cancel ctx)
 	{
-		var declared = products
-			.Where(p => !string.IsNullOrWhiteSpace(p))
-			.Select(p => p.Trim())
-			.Distinct(StringComparer.Ordinal)
-			.ToArray();
+		var declared = products.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.Trim()).Distinct(StringComparer.Ordinal).ToArray();
 
 		if (declared.Length == 0)
 			return FetchedReleaseNotes.Empty;
@@ -54,8 +50,10 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 		var baseUri = ChangelogCdn.ResolveBaseUri();
 		if (baseUri is null)
 		{
-			collector.EmitError(string.Empty,
-				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+			collector.EmitError(
+				string.Empty,
+				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL."
+			);
 			return new FetchedReleaseNotes
 			{
 				BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,
@@ -75,7 +73,8 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 				version: null,
 				msg => collector.EmitError(string.Empty, msg),
 				msg => collector.EmitWarning(string.Empty, msg),
-				ctx).ConfigureAwait(false);
+				ctx
+			).ConfigureAwait(false);
 			return (product, bundles);
 		});
 

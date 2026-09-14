@@ -17,14 +17,19 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogYearMonthAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogYearMonthAnchorNavigationTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/2025-11.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-11.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-hosted
 			  target: 2025-11
@@ -43,7 +48,9 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 			    target: 2025-11
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
 	public void VersionHeadingTocSlugIsSlugifiedDisplayName()
@@ -63,8 +70,10 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionItem = toc.Single(t => t.Level == 2);
 
-		Html.Should().Contain($"id=\"{versionItem.Slug}\"",
-			$"heading-wrapper id must match TOC slug '{versionItem.Slug}' so the right-nav link scrolls to the section");
+		Html.Should().Contain(
+			$"id=\"{versionItem.Slug}\"",
+			$"heading-wrapper id must match TOC slug '{versionItem.Slug}' so the right-nav link scrolls to the section"
+		);
 	}
 
 	[Fact]
@@ -73,8 +82,10 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc.Where(t => t.Level == 3))
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"sub-section TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"sub-section TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 
@@ -84,8 +95,10 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id in the rendered HTML");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id in the rendered HTML"
+			);
 		}
 	}
 
@@ -97,8 +110,7 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 		// sub-section slugs must contain "2025-11", not "november-2025".
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc.Where(t => t.Level == 3))
-			item.Slug.Should().Contain("2025-11",
-				$"sub-section slug for a yyyy-MM bundle should retain the original date key");
+			item.Slug.Should().Contain("2025-11", $"sub-section slug for a yyyy-MM bundle should retain the original date key");
 	}
 }
 
@@ -110,14 +122,19 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 /// </summary>
 public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogFullDateAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogFullDateAnchorNavigationTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-05
@@ -139,7 +156,9 @@ public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlo
 			  action: Take action.
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
 	public void VersionHeadingTocSlugIsSlugifiedDisplayName()
@@ -158,8 +177,7 @@ public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlo
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionItem = toc.Single(t => t.Level == 2);
 
-		Html.Should().Contain($"id=\"{versionItem.Slug}\"",
-			$"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
+		Html.Should().Contain($"id=\"{versionItem.Slug}\"", $"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
 	}
 
 	[Fact]
@@ -168,8 +186,10 @@ public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlo
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 }
@@ -184,14 +204,19 @@ public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlo
 /// </summary>
 public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSemverAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSemverAnchorNavigationTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -220,7 +245,9 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 			  action: Do this.
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
 	public void VersionHeadingTocSlugMatchesDisplayVersion()
@@ -239,8 +266,7 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionItem = toc.Single(t => t.Level == 2);
 
-		Html.Should().Contain($"id=\"{versionItem.Slug}\"",
-			$"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
+		Html.Should().Contain($"id=\"{versionItem.Slug}\"", $"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
 	}
 
 	[Fact]
@@ -248,8 +274,7 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc.Where(t => t.Level == 3))
-			item.Slug.Should().Contain("9.3.0",
-				$"sub-section slug should contain the version string — Slugify.Core preserves dots");
+			item.Slug.Should().Contain("9.3.0", $"sub-section slug should contain the version string — Slugify.Core preserves dots");
 	}
 
 	[Fact]
@@ -257,8 +282,10 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 	}
 
 	[Fact]
@@ -267,8 +294,7 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 		// Slugify.Core preserves dots, so sub-section anchors retain "9.3.0".
 		var anchors = Block!.GeneratedAnchors.ToList();
 		foreach (var anchor in anchors)
-			anchor.Should().Contain("9.3.0",
-				$"generated anchor '{anchor}' should contain the semver version string");
+			anchor.Should().Contain("9.3.0", $"generated anchor '{anchor}' should contain the semver version string");
 	}
 }
 
@@ -281,14 +307,19 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 /// </summary>
 public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogRawVersionAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogRawVersionAnchorNavigationTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/release-alpha.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/release-alpha.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: experimental
 			  target: release-alpha
@@ -300,7 +331,9 @@ public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogB
 			    target: release-alpha
 			  prs:
 			  - "111111"
-			"""));
+			"""
+			)
+		);
 
 	[Fact]
 	public void VersionHeadingTocSlugMatchesRawVersion()
@@ -318,8 +351,7 @@ public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogB
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionItem = toc.Single(t => t.Level == 2);
 
-		Html.Should().Contain($"id=\"{versionItem.Slug}\"",
-			$"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
+		Html.Should().Contain($"id=\"{versionItem.Slug}\"", $"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
 	}
 
 	[Fact]
@@ -328,8 +360,10 @@ public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogB
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 }
@@ -343,16 +377,20 @@ public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogB
 /// </summary>
 public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMultiVersionAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMultiVersionAnchorNavigationTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -364,11 +402,15 @@ public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<Changelo
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-11.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-11.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 2025-11
@@ -380,7 +422,9 @@ public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<Changelo
 			    target: 2025-11
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -389,8 +433,10 @@ public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<Changelo
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 

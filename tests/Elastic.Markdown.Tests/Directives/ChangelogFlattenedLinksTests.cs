@@ -14,15 +14,20 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogFlattenedLinksTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogFlattenedLinksTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -37,7 +42,9 @@ public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 		  - "202446"
 		  issues:
 		  - "199001"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void FlattenedDeprecationRendersMultipleLinksWithoutOuterBrackets()

@@ -49,6 +49,5 @@ public record CliAliasFile : IO.MarkdownFile
 		return Task.FromResult(MarkdownParser.ParseStringAsync(markdown, SourceFile, null));
 	}
 
-	private string BuildMarkdown() =>
-		CliMarkdownGenerator.AliasPage(_shortcut, _binaryName, _canonicalRelativePath);
+	private string BuildMarkdown() => CliMarkdownGenerator.AliasPage(_shortcut, _binaryName, _canonicalRelativePath);
 }

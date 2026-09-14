@@ -153,8 +153,9 @@ const ReferenceItem = ({
                     margin-top: ${euiTheme.size.s};
                     text-decoration: none;
                     &:hover {
-                        background-color: ${euiTheme.colors
-                            .backgroundBaseSubdued};
+                        background-color: ${
+                            euiTheme.colors.backgroundBaseSubdued
+                        };
                     }
                     &:hover .reference-title {
                         text-decoration: underline;

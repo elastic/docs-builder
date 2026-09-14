@@ -15,7 +15,7 @@ public record PrepareArtifactArguments
 	public required string HeadRef { get; init; }
 	public required string HeadSha { get; init; }
 	// Nullable bool mirrors the CLI surface: null = "flag not specified",
-	// normalized to false when serialized into ChangelogArtifactMetadata.
+	// normalized to false when serialized into GithubDecisionMetadata.
 	// Using non-nullable bool here would force every call site to choose
 	// between true/false and lose the "not specified" signal, which is what
 	// allowed --can-commit "false" to silently set CanCommit = true at the

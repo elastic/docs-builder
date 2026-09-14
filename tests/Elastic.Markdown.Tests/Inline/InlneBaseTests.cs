@@ -10,66 +10,62 @@ using Elastic.Markdown.IO;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest(output, content)
-	where TDirective : LeafInline
+public abstract class LeafTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : InlineTest(
+	output,
+	content
+) where TDirective : LeafInline
 {
 	protected TDirective? Block { get; private set; }
 
 	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
-		Block = Document
-			.Descendants<TDirective>()
-			.FirstOrDefault();
+		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
 	[Fact]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
-
 }
 
-public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest(output, content, new Dictionary<string, string> { { "a-variable", "This is a variable" } })
-	where TDirective : Block
+public abstract class BlockTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content) : InlineTest(
+	output,
+	content,
+	new Dictionary<string, string> { { "a-variable", "This is a variable" } }
+) where TDirective : Block
 {
 	protected TDirective? Block { get; private set; }
 
 	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
-		Block = Document
-			.Descendants<TDirective>()
-			.FirstOrDefault();
+		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
 	[Fact]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
-
 }
 
-public abstract class InlineTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content, Dictionary<string, string>? globalVariables = null)
-	: InlineTest(output, content, globalVariables)
-	where TDirective : ContainerInline
+public abstract class InlineTest<TDirective>(
+	ITestOutputHelper output,
+	[LanguageInjection("markdown")] string content,
+	Dictionary<string, string>? globalVariables = null
+) : InlineTest(output, content, globalVariables) where TDirective : ContainerInline
 {
 	protected TDirective? Block { get; private set; }
 
 	public override async ValueTask InitializeAsync()
 	{
 		await base.InitializeAsync();
-		Block = Document
-			.Descendants<TDirective>()
-			.FirstOrDefault();
+		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
 	[Fact]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
-
 }
+
 public abstract class InlineTest : IAsyncLifetime
 {
 	protected MarkdownFile File { get; }
@@ -84,32 +80,32 @@ public abstract class InlineTest : IAsyncLifetime
 	protected InlineTest(
 		ITestOutputHelper output,
 		[LanguageInjection("markdown")] string content,
-		Dictionary<string, string>? globalVariables = null)
+		Dictionary<string, string>? globalVariables = null
+	)
 	{
 		var logger = new TestLoggerFactory(output);
 		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
 
-		var documentContents = TestingFullDocument ? content :
-// language=markdown
-$"""
+		var documentContents = TestingFullDocument
+			? content
+			:
+			// language=markdown
+			$"""
  # Test Document
 
  {content}
  """;
 
-		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "docs/index.md", new MockFileData(documentContents) }
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName,
-		});
+		FileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData> { { "docs/index.md", new MockFileData(documentContents) } },
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName, }
+		);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
 		var baseRootPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-		 ? Paths.WorkingDirectoryRoot.FullName.Replace('\\', '/')
-		 : Paths.WorkingDirectoryRoot.FullName;
+			? Paths.WorkingDirectoryRoot.FullName.Replace('\\', '/')
+			: Paths.WorkingDirectoryRoot.FullName;
 		var root = FileSystem.DirectoryInfo.New($"{baseRootPath}/docs/");
 		FileSystem.GenerateDocSetYaml(root, globalVariables);
 
@@ -132,11 +128,8 @@ $"""
 	protected virtual BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
-		{
-			UrlPathPrefix = "/docs"
-		};
+		IConfigurationContext configurationContext
+	) => new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext) { UrlPathPrefix = "/docs" };
 
 	public virtual async ValueTask InitializeAsync()
 	{

@@ -18,6 +18,7 @@
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="GitHubActionsTestLogger" />
+    <PackageReference Include="Microsoft.Testing.Platform" />
 
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="JetBrains.Annotations" />

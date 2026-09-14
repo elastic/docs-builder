@@ -18,12 +18,11 @@ public class IsolatedBuildEnvironmentUriResolver : IUriEnvironmentResolver
 	public Uri Resolve(Uri crossLinkUri, string path) =>
 		new(BaseUri, $"elastic/{crossLinkUri.Scheme}/tree/{GetBranch(crossLinkUri)}/{path}");
 
-	public static string GetBranch(Uri crossLinkUri) =>
-		crossLinkUri.Scheme switch
-		{
-			"cloud" => "master",
-			_ => "main"
-		};
+	public static string GetBranch(Uri crossLinkUri) => crossLinkUri.Scheme switch
+	{
+		"cloud" => "master",
+		_ => "main"
+	};
 }
 
 /// <summary>

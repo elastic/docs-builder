@@ -15,22 +15,9 @@ namespace Elastic.Documentation.Search.Contract;
 /// including analysis settings, mapping extensions, and AI enrichment configuration.
 /// </summary>
 [ElasticsearchMappingContext]
-[Index<DocumentationDocument>(
-	NameTemplate = "docs-{type}.lexical-{env}",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(DocumentationLexicalConfig)
-)]
-[Index<DocumentationDocument>(
-	NameTemplate = "docs-{type}.semantic-{env}",
-	Variant = "Semantic",
-	DatePattern = "yyyy.MM.dd.HHmmss",
-	Configuration = typeof(DocumentationSemanticConfig)
-)]
-[AiEnrichment<DocumentationDocument>(
-	Role = "Expert technical writer creating search metadata for Elastic documentation (Elasticsearch, Kibana, Beats, Logstash). Audience: developers, DevOps, data engineers.",
-	MatchField = "url",
-	IndexVariant = "Semantic"
-)]
+[Index<DocumentationDocument>(NameTemplate = "docs-{type}.lexical-{env}", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(DocumentationLexicalConfig))]
+[Index<DocumentationDocument>(NameTemplate = "docs-{type}.semantic-{env}", Variant = "Semantic", DatePattern = "yyyy.MM.dd.HHmmss", Configuration = typeof(DocumentationSemanticConfig))]
+[AiEnrichment<DocumentationDocument>(Role = "Expert technical writer creating search metadata for Elastic documentation (Elasticsearch, Kibana, Beats, Logstash). Audience: developers, DevOps, data engineers.", MatchField = "url", IndexVariant = "Semantic")]
 public static partial class DocumentationMappingContext;
 
 public class DocumentationLexicalConfig : IConfigureElasticsearch<DocumentationDocument>

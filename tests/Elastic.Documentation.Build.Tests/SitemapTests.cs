@@ -54,10 +54,7 @@ public class SitemapTests
 		var fs = new MockFileSystem();
 		var outputDir = fs.DirectoryInfo.New("/nonexistent/output");
 
-		var entries = new Dictionary<string, DateTimeOffset>
-		{
-			["/docs/test"] = DateTimeOffset.UtcNow,
-		};
+		var entries = new Dictionary<string, DateTimeOffset> { ["/docs/test"] = DateTimeOffset.UtcNow, };
 
 		// Act
 		SitemapBuilder.Generate(entries, fs, outputDir);
@@ -75,12 +72,7 @@ public class SitemapTests
 		fs.Directory.CreateDirectory("/output");
 
 		var now = DateTimeOffset.UtcNow;
-		var entries = new Dictionary<string, DateTimeOffset>
-		{
-			["/docs/z-last"] = now,
-			["/docs/a-first"] = now,
-			["/docs/m-middle"] = now,
-		};
+		var entries = new Dictionary<string, DateTimeOffset> { ["/docs/z-last"] = now, ["/docs/a-first"] = now, ["/docs/m-middle"] = now, };
 
 		// Act
 		SitemapBuilder.Generate(entries, fs, outputDir);
@@ -101,11 +93,7 @@ public class SitemapTests
 		var fs = new MockFileSystem();
 		var outputDir = fs.DirectoryInfo.New("/output");
 		var now = DateTimeOffset.UtcNow;
-		var entries = new Dictionary<string, DateTimeOffset>
-		{
-			["/docs/page-1"] = now,
-			["/docs/page-2"] = now,
-		};
+		var entries = new Dictionary<string, DateTimeOffset> { ["/docs/page-1"] = now, ["/docs/page-2"] = now, };
 
 		// Act
 		var result = SitemapBuilder.Generate(entries, fs, outputDir);
@@ -122,15 +110,13 @@ public class SitemapTests
 		var fs = new MockFileSystem();
 		var outputDir = fs.DirectoryInfo.New("/output");
 		var now = DateTimeOffset.UtcNow;
-		var entries = Enumerable.Range(0, SitemapBuilder.MaxEntries + 1)
-			.ToDictionary(i => $"/docs/page-{i}", _ => now);
+		var entries = Enumerable.Range(0, SitemapBuilder.MaxEntries + 1).ToDictionary(i => $"/docs/page-{i}", _ => now);
 
 		// Act
 		var act = () => SitemapBuilder.Generate(entries, fs, outputDir);
 
 		// Assert
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*exceeds the sitemap protocol limit*");
+		act.Should().Throw<InvalidOperationException>().WithMessage("*exceeds the sitemap protocol limit*");
 	}
 
 	[Fact]
@@ -140,8 +126,7 @@ public class SitemapTests
 		var fs = new MockFileSystem();
 		var outputDir = fs.DirectoryInfo.New("/output");
 		var now = DateTimeOffset.UtcNow;
-		var entries = Enumerable.Range(0, SitemapBuilder.MaxEntries)
-			.ToDictionary(i => $"/docs/page-{i}", _ => now);
+		var entries = Enumerable.Range(0, SitemapBuilder.MaxEntries).ToDictionary(i => $"/docs/page-{i}", _ => now);
 
 		// Act
 		var act = () => SitemapBuilder.Generate(entries, fs, outputDir);

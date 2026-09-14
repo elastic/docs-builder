@@ -8,8 +8,8 @@ using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation.Assembler.Indexing;
@@ -27,24 +27,28 @@ public class AssemblerIndexService(
 	/// <summary>Index assembled documentation to Elasticsearch.</summary>
 	public async Task<bool> Index(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
+		CheckoutsFileSystem fileSystem,
 		ElasticsearchIndexOptions es,
 		string? environment = null,
 		Cancel ctx = default
 	)
 	{
 		var cfg = _configurationContext.Endpoints.Elasticsearch;
-		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, readFs, ctx);
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
 
-		return await BuildAll(collector, new AssemblerBuildOptions
-		{
-			Strict = false,
-			Environment = environment,
-			MetadataOnly = true,
-			ShowHints = false,
-			Exporters = new HashSet<Exporter> { Elasticsearch },
-			AssumeBuild = false
-		}, readFs, writeFs, ctx);
+		return await BuildAll(
+			collector,
+			new AssemblerBuildOptions
+			{
+				Strict = false,
+				Environment = environment,
+				MetadataOnly = true,
+				ShowHints = false,
+				Exporters = new HashSet<Exporter> { Elasticsearch },
+				AssumeBuild = false
+			},
+			fileSystem,
+			ctx
+		);
 	}
 }

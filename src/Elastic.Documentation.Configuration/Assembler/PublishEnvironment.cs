@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Builder;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Assembler;
@@ -34,4 +35,17 @@ public record PublishEnvironment
 
 	[YamlMember(Alias = "website_search_url")]
 	public string? WebsiteSearchScriptUrl { get; set; }
+
+	/// <summary>
+	/// Returns a normalized, env-var-overridable <see cref="FeatureFlags"/> view of <see cref="FeatureFlags"/>.
+	/// Use this rather than accessing the raw dictionary so that key normalization and env-var overrides
+	/// are applied consistently with how docset-level flags are processed.
+	/// </summary>
+	public Builder.FeatureFlags ToFeatureFlags()
+	{
+		var flags = new Builder.FeatureFlags([]);
+		foreach (var (key, value) in FeatureFlags)
+			flags.Set(key, value);
+		return flags;
+	}
 }
