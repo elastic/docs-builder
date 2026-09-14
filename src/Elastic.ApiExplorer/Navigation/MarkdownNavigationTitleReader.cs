@@ -15,27 +15,24 @@ namespace Elastic.ApiExplorer.Navigation;
 /// </summary>
 public static class MarkdownNavigationTitleReader
 {
-	public static ApiMarkdownPageMetadata GetMetadata(IFileSystem readFileSystem, IFileInfo markdownFile)
+	public static string GetNavigationTitle(IFileSystem readFileSystem, IFileInfo markdownFile)
 	{
-		var fallback = TitleCaseFromFileName(markdownFile.Name);
 		try
 		{
-			var content = readFileSystem.File.ReadAllText(markdownFile.FullName).ReplaceLineEndings("\n");
-			var frontMatter = ReadFrontMatter(content);
-			var navigationTitle = ReadScalar(frontMatter, "navigation_title");
-			var metaTitle = ReadScalar(frontMatter, "meta_title");
-			return new ApiMarkdownPageMetadata(navigationTitle ?? fallback, metaTitle);
+			var content = readFileSystem.File.ReadAllText(markdownFile.FullName);
+			var title = ReadFrontMatterNavigationTitle(content);
+			if (!string.IsNullOrEmpty(title))
+				return title;
 		}
 		catch
 		{
-			return new ApiMarkdownPageMetadata(fallback, null);
+			// Fall back to filename-based title if reading or parsing fails
 		}
+
+		return TitleCaseFromFileName(markdownFile.Name);
 	}
 
-	public static string GetNavigationTitle(IFileSystem readFileSystem, IFileInfo markdownFile) =>
-		GetMetadata(readFileSystem, markdownFile).NavigationTitle;
-
-	private static YamlMappingNode? ReadFrontMatter(string content)
+	private static string? ReadFrontMatterNavigationTitle(string content)
 	{
 		if (!content.StartsWith("---"))
 			return null;
@@ -47,17 +44,13 @@ public static class MarkdownNavigationTitleReader
 		// YamlStream is reflection-free and therefore native-AOT safe
 		var yaml = new YamlStream();
 		yaml.Load(new StringReader(content[3..end]));
-		return yaml.Documents.Count == 0 ? null : yaml.Documents[0].RootNode as YamlMappingNode;
-	}
-
-	private static string? ReadScalar(YamlMappingNode? mapping, string keyName)
-	{
-		if (mapping is null)
+		if (yaml.Documents.Count == 0 || yaml.Documents[0].RootNode is not YamlMappingNode mapping)
 			return null;
+
 		foreach (var (key, value) in mapping.Children)
 		{
-			if (key is YamlScalarNode { Value: var yamlKey } && yamlKey == keyName && value is YamlScalarNode scalar)
-				return string.IsNullOrWhiteSpace(scalar.Value) ? null : scalar.Value;
+			if (key is YamlScalarNode { Value: "navigation_title" } && value is YamlScalarNode scalar)
+				return scalar.Value;
 		}
 
 		return null;
@@ -73,5 +66,3 @@ public static class MarkdownNavigationTitleReader
 			.Select(word => char.ToUpper(word[0]) + word[1..].ToLower())
 			.Aggregate((current, next) => $"{current} {next}");
 }
-
-public sealed record ApiMarkdownPageMetadata(string NavigationTitle, string? MetaTitle);

@@ -148,10 +148,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return document;
 	}
 
-	private IReadOnlyDictionary<string, string> GetSubstitutions()
+	private IReadOnlyDictionary<string, string> GetSubstitutions() => GetSubstitutions(_globalSubstitutions, YamlFrontMatter?.Properties);
+
+	private static IReadOnlyDictionary<string, string> GetSubstitutions(
+		IReadOnlyDictionary<string, string> globalSubstitutions,
+		IReadOnlyDictionary<string, string>? fileSubstitutions
+	)
 	{
-		var globalSubstitutions = _globalSubstitutions;
-		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
 			return globalSubstitutions;
 
@@ -177,6 +180,31 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		(document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string
 			?? FindNestedTitle(document))?.StripMarkdown();
 
+	internal static string? ReadMetaTitle(MarkdownDocument document, BuildContext build, IFileInfo source)
+	{
+		if (document.FirstOrDefault() is not YamlFrontMatterBlock yaml)
+			return null;
+
+		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
+		var frontMatter = ReadYamlFrontMatter(raw, build.ProductsConfiguration, build.Collector, source.FullName);
+		var substitutions = GetSubstitutions(build.Configuration.Substitutions, frontMatter.Properties);
+		return NormalizeMetaTitle(frontMatter.MetaTitle, substitutions, build.Collector);
+	}
+
+	private static string? NormalizeMetaTitle(
+		string? metaTitle,
+		IReadOnlyDictionary<string, string> substitutions,
+		IDiagnosticsCollector collector
+	)
+	{
+		if (string.IsNullOrWhiteSpace(metaTitle))
+			return null;
+
+		if (metaTitle.AsSpan().ReplaceSubstitutions(substitutions, collector, out var replacement))
+			metaTitle = replacement;
+		return metaTitle.StripMarkdown();
+	}
+
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
 		Title = ReadTitle(document) ?? Title;
@@ -199,13 +227,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 		var subs = GetSubstitutions();
 
-		if (!string.IsNullOrWhiteSpace(yamlFrontMatter.MetaTitle))
-		{
-			var metaTitle = yamlFrontMatter.MetaTitle;
-			if (metaTitle.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
-				metaTitle = replacement;
-			MetaTitle = metaTitle.StripMarkdown();
-		}
+		MetaTitle = NormalizeMetaTitle(yamlFrontMatter.MetaTitle, subs, Collector);
 
 		if (!string.IsNullOrEmpty(NavigationTitle))
 		{
@@ -455,20 +477,27 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return fm;
 	}
 
-	private YamlFrontMatter ReadYamlFrontMatter(string raw)
+	private YamlFrontMatter ReadYamlFrontMatter(string raw) => ReadYamlFrontMatter(raw, Products, Collector, FilePath);
+
+	private static YamlFrontMatter ReadYamlFrontMatter(
+		string raw,
+		ProductsConfiguration products,
+		IDiagnosticsCollector collector,
+		string filePath
+	)
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, Products);
+			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, products);
 		}
 		catch (InvalidProductException e)
 		{
-			Collector.EmitError(FilePath, "Invalid product in yaml front matter.", e);
+			collector.EmitError(filePath, "Invalid product in yaml front matter.", e);
 			return new YamlFrontMatter();
 		}
 		catch (Exception e)
 		{
-			Collector.EmitError(FilePath, "Failed to parse yaml front matter block.", e);
+			collector.EmitError(filePath, "Failed to parse yaml front matter block.", e);
 			return new YamlFrontMatter();
 		}
 	}

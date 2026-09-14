@@ -6,61 +6,12 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
-using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class SimpleMarkdownNavigationItemTests
 {
-	[Fact]
-	public void GetMetadata_WithTitleFields_SeparatesPageAndNavigationTitles()
-	{
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			["/docs/intro.md"] = new(
-				"""
-					---
-					navigation_title: Short title
-					meta_title: Search APIs - Elasticsearch
-					---
-
-					# Search APIs
-					"""
-			)
-		});
-		var file = fileSystem.FileInfo.New("/docs/intro.md");
-
-		var metadata = MarkdownNavigationTitleReader.GetMetadata(fileSystem, file);
-
-		metadata.NavigationTitle.Should().Be("Short title");
-		metadata.MetaTitle.Should().Be("Search APIs - Elasticsearch");
-	}
-
-	[Fact]
-	public void GetMetadata_WithHeadingLikeFrontMatterContent_DoesNotTreatItAsPageTitle()
-	{
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			["/docs/intro.md"] = new(
-				"""
-					---
-					description: |
-					  # Internal note
-					---
-
-					# Real page title
-					"""
-			)
-		});
-		var file = fileSystem.FileInfo.New("/docs/intro.md");
-
-		var metadata = MarkdownNavigationTitleReader.GetMetadata(fileSystem, file);
-
-		metadata.NavigationTitle.Should().Be("Intro");
-		metadata.MetaTitle.Should().BeNull();
-	}
-
 	[Theory]
 	[InlineData("intro.md", "intro")]
 	[InlineData("getting-started.md", "getting-started")]

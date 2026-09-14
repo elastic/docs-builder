@@ -21,14 +21,13 @@ namespace Elastic.ApiExplorer.Landing;
 /// </summary>
 public class SimpleMarkdownNavigationItem(
 	string url,
-	ApiMarkdownPageMetadata metadata,
+	string title,
 	IFileInfo fileInfo,
 	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot
 ) : INavigationItem, IApiModel, ILeafNavigationItem<IApiModel>
 {
 	public string Url { get; } = url;
-	public string NavigationTitle { get; } = metadata.NavigationTitle;
-	public string? MetaTitle { get; } = metadata.MetaTitle;
+	public string NavigationTitle { get; } = title;
 	public IFileInfo FileInfo { get; } = fileInfo;
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = navigationRoot;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
@@ -67,11 +66,11 @@ public class SimpleMarkdownNavigationItem(
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx);
-		var rendered = context.MarkdownRenderer.RenderPreservingFirstHeadingWithTitle(markdownContent, FileInfo);
+		var rendered = context.MarkdownRenderer.RenderPreservingFirstHeadingWithMetadata(markdownContent, FileInfo);
 		var viewModel = new MarkdownPageViewModel(context)
 		{
 			PageTitle = rendered.Title ?? NavigationTitle,
-			MetaTitle = MetaTitle,
+			MetaTitle = rendered.MetaTitle,
 			BodyHtml = new HtmlString(rendered.Html)
 		};
 		var slice = MarkdownPageView.Create(viewModel);

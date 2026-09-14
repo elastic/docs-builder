@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 
 namespace Elastic.Documentation;
 
-public readonly record struct MarkdownRenderResult(string Html, string? Title);
+public readonly record struct MarkdownRenderResult(string Html, string? Title, string? MetaTitle);
 
 public interface IMarkdownStringRenderer
 {
@@ -18,10 +18,10 @@ public interface IMarkdownStringRenderer
 	string RenderPreservingFirstHeading(string markdown, IFileInfo? source) => Render(markdown, source);
 
 	/// <summary>
-	/// Renders markdown without removing the first level-1 heading and returns that heading as the document title.
+	/// Renders markdown without removing the first level-1 heading and returns its page metadata.
 	/// </summary>
-	MarkdownRenderResult RenderPreservingFirstHeadingWithTitle(string markdown, IFileInfo? source) =>
-		new(RenderPreservingFirstHeading(markdown, source), null);
+	MarkdownRenderResult RenderPreservingFirstHeadingWithMetadata(string markdown, IFileInfo? source) =>
+		new(RenderPreservingFirstHeading(markdown, source), null, null);
 
 	/// <summary>
 	/// Renders OpenAPI description fragments without docset link or code-block validation.

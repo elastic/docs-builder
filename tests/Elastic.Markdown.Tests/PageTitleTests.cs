@@ -146,6 +146,38 @@ public class PageTitleTests(ITestOutputHelper output)
 		html.Should().Contain("<title>Real page title | Elastic Docs</title>");
 	}
 
+	[Fact]
+	public async Task RenderPreservingFirstHeadingWithMetadata_NormalizesMetaTitle()
+	{
+		const string markdown =
+			"""
+				---
+				meta_title: "Search {{product}} *API*"
+				sub:
+				  product: Elasticsearch
+				---
+
+				# Search APIs
+				""";
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData> { ["docs/docset.yml"] = new("project: test"), ["docs/index.md"] = new(markdown) },
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
+		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
+		var set = new DocumentationSet(context, new TestLoggerFactory(output), new TestCrossLinkResolver());
+		var generator = new DocumentationGenerator(set, new TestLoggerFactory(output));
+
+		var result = generator.MarkdownStringRenderer.RenderPreservingFirstHeadingWithMetadata(
+			markdown,
+			fileSystem.FileInfo.New("docs/index.md")
+		);
+
+		result.Title.Should().Be("Search APIs");
+		result.MetaTitle.Should().Be("Search Elasticsearch API");
+	}
+
 	private async Task<string> Generate(BuildType buildType, string markdown, bool branded = false, string? docsetProduct = null)
 	{
 		var branding = branded ? """

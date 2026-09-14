@@ -201,8 +201,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			"kibana-api-overview.md"
 		);
 		var file = new FileSystem().FileInfo.New(introPath);
-		var metadata = new ApiMarkdownPageMetadata("Spaces", null);
-		var item = new SimpleMarkdownNavigationItem("/api/doc/kibana/kibana-api-overview", metadata, file, fixture.Navigation);
+		var item = new SimpleMarkdownNavigationItem("/api/doc/kibana/kibana-api-overview", "Spaces", file, fixture.Navigation);
 		var renderContext = new ApiRenderContext(
 			fixture.Context,
 			fixture.Document,
