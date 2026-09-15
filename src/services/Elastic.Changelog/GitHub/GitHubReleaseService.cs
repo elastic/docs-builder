@@ -5,6 +5,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.GitHub;
@@ -134,43 +135,271 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 	/// <inheritdoc />
 	public async Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default)
 	{
-		try
-		{
-			var url = $"https://api.github.com/repos/{owner}/{repo}/releases/generate-notes";
-			var body = JsonSerializer.Serialize(
-				new GenerateNotesRequest { TagName = currentTag },
-				GitHubReleaseJsonContext.Default.GenerateNotesRequest
-			);
-			_logger.LogDebug("Generating release notes to resolve previous tag: POST {ApiUrl}", url);
+		var (currentPrefix, currentMajor, currentIsPreRelease) = ParseTagIdentity(currentTag);
+		var currentVersion = ParseTagVersion(currentTag);
 
-			using var response = await _transport.PostAsync(url, body, ctx);
+		var result = await ScanReleasesForPreviousTagAsync(
+			owner,
+			repo,
+			currentTag,
+			currentPrefix,
+			currentMajor,
+			currentIsPreRelease,
+			currentVersion,
+			ctx
+		);
+		if (result is not null)
+			return result;
+
+		_logger.LogDebug("Releases API yielded no predecessor for {CurrentTag}; trying git tags API", currentTag);
+		return await ScanTagsApiForPreviousTagAsync(
+			owner,
+			repo,
+			currentTag,
+			currentPrefix,
+			currentMajor,
+			currentIsPreRelease,
+			currentVersion,
+			ctx
+		);
+	}
+
+	private async Task<string?> ScanReleasesForPreviousTagAsync(
+		string owner,
+		string repo,
+		string currentTag,
+		string currentPrefix,
+		int currentMajor,
+		bool currentIsPreRelease,
+		SemVer? currentVersion,
+		CancellationToken ctx
+	)
+	{
+		const int pageSize = 100;
+		var page = 1;
+		var foundCurrent = false;
+		string? bestMatch = null;
+		SemVer? bestSemver = null;
+
+		while (true)
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/releases?per_page={pageSize}&page={page}";
+			_logger.LogDebug("Scanning release list for previous tag (page {Page}): GET {ApiUrl}", page, url);
+
+			using var response = await _transport.GetAsync(url, ctx);
 			if (!response.IsSuccessStatusCode)
-			{
-				_logger.LogDebug(
-					"generate-notes returned {StatusCode} for {Owner}/{Repo}@{Tag}",
-					response.StatusCode,
-					owner,
-					repo,
-					currentTag
-				);
-				return null;
-			}
+				break;
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
-			var data = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GenerateNotesResponse);
-			return data?.PreviousTagName;
+			var releases = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray);
+			if (releases == null || releases.Length == 0)
+				break;
+
+			foreach (var r in releases)
+			{
+				var tagName = r.TagName ?? string.Empty;
+
+				if (currentVersion is null)
+				{
+					// Non-semver: find the current tag first, then return the first prefix match after it.
+					if (!foundCurrent)
+					{
+						if (string.Equals(tagName, currentTag, StringComparison.OrdinalIgnoreCase))
+							foundCurrent = true;
+						continue;
+					}
+					var (candidatePrefix, _, _) = ParseTagIdentity(tagName);
+					if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
+						continue;
+					return r.TagName;
+				}
+
+				// Semver: accumulate the highest candidate strictly below the current version.
+				if (!IsSemverCandidate(tagName, currentTag, currentPrefix, currentMajor, currentIsPreRelease, out var candidateVersion))
+					continue;
+				if (candidateVersion.Value.CompareTo(currentVersion.Value) >= 0)
+					continue;
+
+				if (bestSemver is null || candidateVersion.Value.CompareTo(bestSemver.Value) > 0)
+				{
+					bestSemver = candidateVersion;
+					bestMatch = r.TagName;
+				}
+			}
+
+			if (releases.Length < pageSize)
+				break;
+			page++;
 		}
-		catch (HttpRequestException ex)
+
+		return bestMatch;
+	}
+
+	private async Task<string?> ScanTagsApiForPreviousTagAsync(
+		string owner,
+		string repo,
+		string currentTag,
+		string currentPrefix,
+		int currentMajor,
+		bool currentIsPreRelease,
+		SemVer? currentVersion,
+		CancellationToken ctx
+	)
+	{
+		const int pageSize = 100;
+		var page = 1;
+		var foundCurrent = false;
+		string? bestMatch = null;
+		SemVer? bestSemver = null;
+
+		while (true)
 		{
-			_logger.LogWarning(ex, "HTTP error calling generate-notes for {Owner}/{Repo}@{Tag}", owner, repo, currentTag);
-			return null;
+			var url = $"https://api.github.com/repos/{owner}/{repo}/tags?per_page={pageSize}&page={page}";
+			_logger.LogDebug("Scanning tags API for previous tag (page {Page}): GET {ApiUrl}", page, url);
+
+			using var response = await _transport.GetAsync(url, ctx);
+			if (!response.IsSuccessStatusCode)
+				break;
+
+			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
+			var tags = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubTagResponseArray);
+			if (tags == null || tags.Length == 0)
+				break;
+
+			foreach (var t in tags)
+			{
+				var tagName = t.Name ?? string.Empty;
+
+				if (currentVersion is null)
+				{
+					if (!foundCurrent)
+					{
+						if (string.Equals(tagName, currentTag, StringComparison.OrdinalIgnoreCase))
+							foundCurrent = true;
+						continue;
+					}
+					var (candidatePrefix, _, _) = ParseTagIdentity(tagName);
+					if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
+						continue;
+					return t.Name;
+				}
+
+				if (!IsSemverCandidate(tagName, currentTag, currentPrefix, currentMajor, currentIsPreRelease, out var candidateVersion))
+					continue;
+				if (candidateVersion.Value.CompareTo(currentVersion.Value) >= 0)
+					continue;
+
+				if (bestSemver is null || candidateVersion.Value.CompareTo(bestSemver.Value) > 0)
+				{
+					bestSemver = candidateVersion;
+					bestMatch = t.Name;
+				}
+			}
+
+			if (tags.Length < pageSize)
+				break;
+			page++;
 		}
-		catch (TaskCanceledException)
+
+		return bestMatch;
+	}
+
+	/// <summary>
+	/// Returns true if <paramref name="tagName"/> qualifies as a candidate predecessor for the current tag.
+	/// Filters by prefix, major version, and prerelease boundary; also skips the current tag itself.
+	/// Sets <paramref name="candidateVersion"/> when true.
+	/// </summary>
+	private static bool IsSemverCandidate(
+		string tagName,
+		string currentTag,
+		string currentPrefix,
+		int currentMajor,
+		bool currentIsPreRelease,
+		[System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out SemVer? candidateVersion
+	)
+	{
+		candidateVersion = null;
+		if (string.Equals(tagName, currentTag, StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		var (cPrefix, cMajor, cIsPreRelease) = ParseTagIdentity(tagName);
+		if (!string.Equals(cPrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
+			return false;
+		if (currentMajor >= 0 && cMajor >= 0 && cMajor != currentMajor)
+			return false;
+		if (!currentIsPreRelease && cIsPreRelease)
+			return false;
+
+		candidateVersion = ParseTagVersion(tagName);
+		return candidateVersion is not null;
+	}
+
+	/// <summary>
+	/// Extracts the non-numeric prefix, semver major version, and pre-release flag from a release tag.
+	/// <list type="bullet">
+	///   <item>Semver tags ("v2.3.1"): prefix="v", major=2, isPreRelease=false.</item>
+	///   <item>Semver pre-release tags ("v1.2.0-beta.1"): prefix="v", major=1, isPreRelease=true.</item>
+	///   <item>Non-semver tags ("release-20260901"): prefix="release-", major=-1, isPreRelease=false.</item>
+	///   <item>Bare-digit tags ("20260901"): prefix="", major=-1, isPreRelease=false.</item>
+	/// </list>
+	/// When major = -1, callers skip the major-version filter and match on prefix only.
+	/// A pre-release tag is one whose semver base (X.Y.Z) is immediately followed by a hyphen.
+	/// </summary>
+	private static (string Prefix, int Major, bool IsPreRelease) ParseTagIdentity(string tag)
+	{
+		var semverMatch = SemverTagRegex().Match(tag);
+		if (semverMatch.Success)
 		{
-			_logger.LogWarning("Request timeout calling generate-notes for {Owner}/{Repo}@{Tag}", owner, repo, currentTag);
+			var prefix = semverMatch.Groups["prefix"].Value;
+			var major = int.Parse(semverMatch.Groups["major"].Value, System.Globalization.CultureInfo.InvariantCulture);
+			var isPreRelease = semverMatch.Length < tag.Length && tag[semverMatch.Length] == '-';
+			return (prefix, major, isPreRelease);
+		}
+
+		var prefixMatch = NonSemverPrefixRegex().Match(tag);
+		return (prefixMatch.Success ? prefixMatch.Groups["prefix"].Value : string.Empty, -1, false);
+	}
+
+	private static SemVer? ParseTagVersion(string tag)
+	{
+		var m = SemverTagRegex().Match(tag);
+		if (!m.Success)
 			return null;
+		var major = int.Parse(m.Groups["major"].Value, System.Globalization.CultureInfo.InvariantCulture);
+		var minor = int.Parse(m.Groups["minor"].Value, System.Globalization.CultureInfo.InvariantCulture);
+		var patch = int.Parse(m.Groups["patch"].Value, System.Globalization.CultureInfo.InvariantCulture);
+		var isPreRelease = m.Length < tag.Length && tag[m.Length] == '-';
+		var suffix = isPreRelease ? tag[(m.Length + 1)..] : string.Empty;
+		return new SemVer(major, minor, patch, isPreRelease, suffix);
+	}
+
+	private readonly record struct SemVer(int Major, int Minor, int Patch, bool IsPreRelease, string PreReleaseSuffix) : IComparable<SemVer>
+	{
+		public int CompareTo(SemVer other)
+		{
+			var c = Major.CompareTo(other.Major);
+			if (c != 0)
+				return c;
+			c = Minor.CompareTo(other.Minor);
+			if (c != 0)
+				return c;
+			c = Patch.CompareTo(other.Patch);
+			if (c != 0)
+				return c;
+			// stable (no prerelease) ranks higher than any prerelease on the same X.Y.Z
+			if (!IsPreRelease && other.IsPreRelease)
+				return 1;
+			if (IsPreRelease && !other.IsPreRelease)
+				return -1;
+			return string.Compare(PreReleaseSuffix, other.PreReleaseSuffix, StringComparison.OrdinalIgnoreCase);
 		}
 	}
+
+	[GeneratedRegex(@"^(?<prefix>.*?)(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)", RegexOptions.None)]
+	private static partial Regex SemverTagRegex();
+
+	[GeneratedRegex(@"^(?<prefix>[^\d]+)", RegexOptions.None)]
+	private static partial Regex NonSemverPrefixRegex();
 
 	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
 	{
@@ -218,18 +447,6 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 				: []
 		};
 
-	private sealed class GenerateNotesRequest
-	{
-		[JsonPropertyName("tag_name")]
-		public required string TagName { get; set; }
-	}
-
-	private sealed class GenerateNotesResponse
-	{
-		[JsonPropertyName("previous_tag_name")]
-		public string? PreviousTagName { get; set; }
-	}
-
 	private sealed class GitHubReleaseAssetResponse
 	{
 		[JsonPropertyName("name")]
@@ -266,9 +483,14 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 		public List<GitHubReleaseAssetResponse>? Assets { get; set; }
 	}
 
+	private sealed class GitHubTagResponse
+	{
+		[JsonPropertyName("name")]
+		public string? Name { get; set; }
+	}
+
 	[JsonSerializable(typeof(GitHubReleaseResponse))]
 	[JsonSerializable(typeof(GitHubReleaseResponse[]))]
-	[JsonSerializable(typeof(GenerateNotesRequest))]
-	[JsonSerializable(typeof(GenerateNotesResponse))]
+	[JsonSerializable(typeof(GitHubTagResponse[]))]
 	private sealed partial class GitHubReleaseJsonContext : JsonSerializerContext;
 }
