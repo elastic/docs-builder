@@ -224,8 +224,15 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 				{
 					bestSemver = candidateVersion;
 					bestMatch = r.TagName;
+					// Definitive exact predecessor found — no tag can rank higher and still be below current.
+					if (IsDefiniteExactPredecessor(candidateVersion.Value, currentVersion.Value))
+						return bestMatch;
 				}
 			}
+
+			// Stop paginating once the best candidate so far is already in the expected range.
+			if (currentVersion is not null && CanBailAfterPage(bestSemver, currentVersion.Value))
+				break;
 
 			if (releases.Length < pageSize)
 				break;
@@ -293,8 +300,13 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 				{
 					bestSemver = candidateVersion;
 					bestMatch = t.Name;
+					if (IsDefiniteExactPredecessor(bestSemver.Value, currentVersion.Value))
+						return bestMatch;
 				}
 			}
+
+			if (currentVersion is not null && CanBailAfterPage(bestSemver, currentVersion.Value))
+				break;
 
 			if (tags.Length < pageSize)
 				break;
@@ -332,6 +344,43 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 
 		candidateVersion = ParseTagVersion(tagName);
 		return candidateVersion is not null;
+	}
+
+	/// <summary>
+	/// Returns true when <paramref name="candidate"/> is definitively the best possible predecessor
+	/// for a stable <paramref name="current"/> tag with <c>Patch &gt; 0</c>. Because semver patch
+	/// increments by one, no stable tag can exist between <c>Patch-1</c> and <c>Patch</c>.
+	/// </summary>
+	private static bool IsDefiniteExactPredecessor(SemVer candidate, SemVer current) =>
+		!current.IsPreRelease
+			&& current.Patch > 0
+			&& candidate.Major == current.Major
+			&& candidate.Minor == current.Minor
+			&& candidate.Patch == current.Patch - 1
+			&& !candidate.IsPreRelease;
+
+	/// <summary>
+	/// Returns true when the best candidate found so far is already in the expected predecessor range
+	/// for a stable <paramref name="current"/> tag, so further pages cannot improve the result.
+	/// <list type="bullet">
+	///   <item><c>X.Y.Z</c> (Z &gt; 0): exact previous patch found.</item>
+	///   <item><c>X.Y.0</c> (Y &gt; 0): any candidate from the previous minor found.</item>
+	///   <item><c>X.0.0</c>: first in major — always needs a full scan.</item>
+	/// </list>
+	/// Not applied to pre-release tags; their predecessor sets are complex enough to require a full scan.
+	/// </summary>
+	private static bool CanBailAfterPage(SemVer? bestSoFar, SemVer current)
+	{
+		if (bestSoFar is null || current.IsPreRelease)
+			return false;
+		var best = bestSoFar.Value;
+
+		// Stable patch release: the definitive predecessor is (Major, Minor, Patch-1, stable).
+		if (current.Patch > 0 && best.Major == current.Major && best.Minor == current.Minor && best.Patch == current.Patch - 1)
+			return true;
+
+		// Stable minor release: bail after finding any candidate in the previous minor.
+		return current.Patch == 0 && current.Minor > 0 && best.Major == current.Major && best.Minor == current.Minor - 1;
 	}
 
 	/// <summary>

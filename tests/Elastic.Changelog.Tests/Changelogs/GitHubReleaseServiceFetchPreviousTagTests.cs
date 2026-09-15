@@ -261,8 +261,9 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	[Fact]
 	public async Task FetchPreviousTag_Pagination_StopsWhenPageIsNotFull()
 	{
-		// Page 1: full 100 items; page 2: 5 items (partial) → algorithm stops after page 2.
-		// Must not fetch page 3 or the tags API (a match was found in releases).
+		// Page 1: full 100 items; v1.100.0 is current, v1.99.0 is the first previous-minor candidate.
+		// The bail optimisation fires after page 1 (v1.99.* found in expected range).
+		// Page 2 is never fetched.
 		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v1.{100 - i}.0").ToArray();
 		var page2Tags = new[] { "v1.0.4", "v1.0.3", "v1.0.2", "v1.0.1", "v1.0.0" };
 
@@ -270,13 +271,15 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		var handler = new StubHandler(req =>
 		{
 			requestCount++;
-			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri.Query);
 			return query["page"] == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
 		});
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.100.0");
 		result.Should().Be("v1.99.0");
-		requestCount.Should().Be(2, "stops after the first partial page — never fetches page 3 or the tags fallback");
+		requestCount.Should().Be(1, "bail optimisation stops after page 1 finds the expected previous-minor candidate");
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -369,21 +372,25 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	[Fact]
 	public async Task FetchPreviousTag_OutOfOrder_AcrossPages()
 	{
-		// Page 1 has v4.1.0 (a plausible but not the best match); page 2 has v4.1.1 (the correct one).
-		// Both pages must be read to ensure the highest candidate wins.
-		var page1Tags = Enumerable.Range(0, 100).Select(i => i == 0 ? "v4.2.0" : i == 1 ? "v4.1.0" : $"v3.{99 - i}.0").ToArray();
-		var page2Tags = new[] { "v4.1.1", "v3.0.0" };
+		// Realistic maintenance-branch scenario: v4.1.1 was backported (created after v4.2.0),
+		// so it appears earlier in the creation-date list than v4.1.0. Both land on page 1.
+		// The bail optimisation fires after page 1 (a v4.1.* candidate was found) — page 2 is never fetched.
+		var page1Tags = new[] { "v4.1.1", "v4.2.0", "v4.1.0" }.Concat(
+			Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")
+		).ToArray(); // 100 items — full page
 
+		var requestCount = 0;
 		var handler = new StubHandler(req =>
 		{
+			requestCount++;
 			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
 				return Json("[]");
-			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
-			return query["page"] == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
+			return Json(ReleasesJson(page1Tags));
 		});
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
 		result.Should().Be("v4.1.1");
+		requestCount.Should().Be(1, "bail optimisation stops after page 1 finds a v4.1.* candidate");
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -491,6 +498,215 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		// v2.0.0 is the first v2 release; no prior v2.x → null even though v1.9.0 exists.
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v2.0.0");
 		result.Should().BeNull();
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Early-bail optimisation — releases API
+	// ─────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task FetchPreviousTag_EarlyBail_ExactPatch_BailsMidPageOnExactPredecessor()
+	{
+		// v4.1.7 → exact predecessor is v4.1.6. Once found, the algorithm returns immediately
+		// without scanning further items on the same page or fetching more pages.
+		var page1Tags = new[] { "v4.1.7", "v4.1.6", "v4.1.5", "v4.1.4" };
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson(page1Tags));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.1.7");
+		result.Should().Be("v4.1.6");
+		requestCount.Should().Be(1, "bails as soon as v4.1.6 is found — no further pages needed");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_EarlyBail_ExactPatch_OnSecondPage_BailsImmediately()
+	{
+		// v4.1.7 is current; v4.1.6 is on page 2. Page 1 has no v4.1.* candidates at all.
+		// Once v4.1.6 is encountered on page 2, the algorithm returns without finishing the page.
+		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray();
+		var page2Tags = new[] { "v4.1.6", "v4.1.5", "v4.1.4" };
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			return query["page"] == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.1.7");
+		result.Should().Be("v4.1.6");
+		requestCount.Should().Be(2, "fetches page 1 (no match) then page 2 (exact predecessor found)");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_EarlyBail_PreviousMinor_BailsAfterPageContainingFirstCandidate()
+	{
+		// v4.2.0 → bail after the page that first contains a v4.1.* candidate.
+		// Page 1 is full (100 items) and contains v4.1.0 and v4.1.1 — bail fires after page 1.
+		var page1Tags = new[] { "v4.2.0", "v4.1.0", "v4.1.1" }.Concat(Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")).ToArray();
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson(page1Tags));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().Be("v4.1.1");
+		requestCount.Should().Be(1, "bail fires after page 1 — both v4.1.* candidates are on the same page");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_EarlyBail_PreviousMinor_CandidateOnPage2_BailsAfterPage2()
+	{
+		// v4.2.0 → page 1 has no v4.1.* (all v3.*); page 2 has v4.1.1 and v4.1.0. Bail after page 2.
+		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray();
+		var page2Tags = new[] { "v4.1.1", "v4.1.0" };
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			return query["page"] == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().Be("v4.1.1");
+		requestCount.Should().Be(2, "fetches page 1 (no match) and page 2 (bail fires after v4.1.* found)");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_EarlyBail_FirstInMajor_FullScan()
+	{
+		// v4.0.0 is first in its major — no previous v4.x exists. Full scan required.
+		// Both release pages and the tags fallback are exhausted before returning null.
+		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray();
+		var page2Tags = new[] { "v3.0.1", "v3.0.0" };
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]"); // tags also exhausted
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			if (query["page"] == "2")
+				return Json(ReleasesJson(page2Tags));
+			return Json(ReleasesJson(page1Tags));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.0.0");
+		result.Should().BeNull();
+		// Requests: releases page 1, releases page 2 (partial → stop), tags page 1 (empty → stop)
+		requestCount.Should().Be(3, "full scan: no bail fires for X.0.0 — all release pages and tags checked");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_EarlyBail_PreRelease_NoEarlyBail_FullScan()
+	{
+		// Pre-release tags never trigger early bail. v4.2.0-rc.2's predecessor is v4.2.0-rc.1
+		// (same X.Y.Z, earlier prerelease) — the full list must be scanned.
+		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray();
+		var page2Tags = new[] { "v4.2.0-rc.1", "v4.1.0" };
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			return query["page"] == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0-rc.2");
+		result.Should().Be("v4.2.0-rc.1");
+		requestCount.Should().Be(2, "no early bail for prerelease — scans all pages to find the best candidate");
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Early-bail optimisation — tags API fallback
+	// ─────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_EarlyBail_ExactPatch_BailsMidPage()
+	{
+		// No releases. Tags API: v4.1.7 current, v4.1.6 exact predecessor found → bail mid-page.
+		var tagList = new[] { "v4.1.7", "v4.1.6", "v4.1.5" };
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/releases"))
+				return Json("[]");
+			return Json(TagsJson(tagList));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.1.7");
+		result.Should().Be("v4.1.6");
+		// 1 releases page (empty) + 1 tags page (bail on exact match)
+		requestCount.Should().Be(2);
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_EarlyBail_PreviousMinor_BailsAfterPage()
+	{
+		// No releases. Tags API page 1 (full) contains v4.1.0 and v4.1.1 — bail after page 1.
+		var tagsPage1 = new[] { "v4.2.0", "v4.1.0", "v4.1.1" }.Concat(Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")).ToArray();
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/releases"))
+				return Json("[]");
+			return Json(TagsJson(tagsPage1));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().Be("v4.1.1");
+		// 1 releases page (empty) + 1 tags page (bail after v4.1.* found)
+		requestCount.Should().Be(2);
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_EarlyBail_FirstInMajor_FullScan()
+	{
+		// No releases. Tags API: v4.0.0 is first in major — full scan, no bail.
+		var tagsPage1 = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray();
+		var tagsPage2 = new[] { "v3.0.0" };
+
+		var requestCount = 0;
+		var handler = new StubHandler(req =>
+		{
+			requestCount++;
+			if (req.RequestUri!.PathAndQuery.Contains("/releases"))
+				return Json("[]");
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			return query["page"] == "2" ? Json(TagsJson(tagsPage2)) : Json(TagsJson(tagsPage1));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.0.0");
+		result.Should().BeNull();
+		// 1 releases page (empty) + 2 tags pages (full scan, no bail)
+		requestCount.Should().Be(3);
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
