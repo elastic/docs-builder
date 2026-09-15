@@ -3833,14 +3833,6 @@
             },
             {
               "role": "flag",
-              "name": "warn-on-type-mismatch",
-              "type": "boolean",
-              "required": false,
-              "summary": "Optional: Warn when the type inferred from release notes section headers doesn\u0027t match the type derived from PR labels. Defaults to true",
-              "defaultValue": "false"
-            },
-            {
-              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
