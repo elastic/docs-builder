@@ -261,9 +261,9 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	[Fact]
 	public async Task FetchPreviousTag_Pagination_StopsWhenPageIsNotFull()
 	{
-		// Page 1: full 100 items; v1.100.0 is current, v1.99.0 is the first previous-minor candidate.
-		// The bail optimisation fires after page 1 (v1.99.* found in expected range).
-		// Page 2 is never fetched.
+		// Page 1: full 100 items (v1.100.0 is current; v1.99.0 through v1.1.0 are candidates).
+		// Page 2: 5 items — not a full page, so pagination stops naturally after page 2.
+		// X.Y.0 lookups require a full scan (no early bail), but pagination ends on a partial page.
 		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v1.{100 - i}.0").ToArray();
 		var page2Tags = new[] { "v1.0.4", "v1.0.3", "v1.0.2", "v1.0.1", "v1.0.0" };
 
@@ -279,7 +279,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.100.0");
 		result.Should().Be("v1.99.0");
-		requestCount.Should().Be(1, "bail optimisation stops after page 1 finds the expected previous-minor candidate");
+		requestCount.Should().Be(2, "page 1 is full so pagination continues; page 2 is partial so it stops naturally");
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -372,12 +372,13 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	[Fact]
 	public async Task FetchPreviousTag_OutOfOrder_AcrossPages()
 	{
-		// Realistic maintenance-branch scenario: v4.1.1 was backported (created after v4.2.0),
-		// so it appears earlier in the creation-date list than v4.1.0. Both land on page 1.
-		// The bail optimisation fires after page 1 (a v4.1.* candidate was found) — page 2 is never fetched.
-		var page1Tags = new[] { "v4.1.1", "v4.2.0", "v4.1.0" }.Concat(
-			Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")
+		// Backport scenario: v4.1.2 was backported (created most recently) and appears on page 1,
+		// but v4.1.9 (the true highest patch in v4.1.*) was created earlier and lands on page 2.
+		// X.Y.0 lookups do a full scan so that no candidate on a later page is missed.
+		var page1Tags = new[] { "v4.2.0", "v4.1.2" }.Concat(
+			Enumerable.Range(0, 98).Select(i => $"v3.{97 - i}.0")
 		).ToArray(); // 100 items — full page
+		var page2Tags = new[] { "v4.1.9", "v4.1.0" }; // partial — scan stops naturally here
 
 		var requestCount = 0;
 		var handler = new StubHandler(req =>
@@ -385,12 +386,13 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 			requestCount++;
 			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
 				return Json("[]");
-			return Json(ReleasesJson(page1Tags));
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			return query["page"] == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
 		});
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
-		result.Should().Be("v4.1.1");
-		requestCount.Should().Be(1, "bail optimisation stops after page 1 finds a v4.1.* candidate");
+		result.Should().Be("v4.1.9", "full scan finds the highest semver even when a lower backport appears first");
+		requestCount.Should().Be(2, "page 1 is full so scan continues; page 2 is partial so it stops naturally");
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -607,10 +609,11 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public async Task FetchPreviousTag_EarlyBail_PreviousMinor_BailsAfterPageContainingFirstCandidate()
+	public async Task FetchPreviousTag_PreviousMinor_FullScan_FindsHighestInPreviousMinor()
 	{
-		// v4.2.0 → bail after the page that first contains a v4.1.* candidate.
-		// Page 1 is full (100 items) and contains v4.1.0 and v4.1.1 — bail fires after page 1.
+		// v4.2.0 → X.Y.0 lookup requires a full scan (no early bail), because backport patches
+		// may appear on later pages. Page 1 is full (100 items) and contains v4.1.0 and v4.1.1.
+		// Page 2 is empty — scan ends naturally.
 		var page1Tags = new[] { "v4.2.0", "v4.1.0", "v4.1.1" }.Concat(Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")).ToArray();
 
 		var requestCount = 0;
@@ -619,18 +622,20 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 			requestCount++;
 			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
 				return Json("[]");
-			return Json(ReleasesJson(page1Tags));
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			return query["page"] == "2" ? Json(ReleasesJson()) : Json(ReleasesJson(page1Tags));
 		});
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
 		result.Should().Be("v4.1.1");
-		requestCount.Should().Be(1, "bail fires after page 1 — both v4.1.* candidates are on the same page");
+		requestCount.Should().Be(2, "page 1 is full so scan continues; page 2 is empty so it stops naturally");
 	}
 
 	[Fact]
-	public async Task FetchPreviousTag_EarlyBail_PreviousMinor_CandidateOnPage2_BailsAfterPage2()
+	public async Task FetchPreviousTag_PreviousMinor_CandidateOnPage2_FullScanFindsIt()
 	{
-		// v4.2.0 → page 1 has no v4.1.* (all v3.*); page 2 has v4.1.1 and v4.1.0. Bail after page 2.
+		// v4.2.0 → page 1 has no v4.1.* (all v3.*); page 2 has v4.1.1 and v4.1.0.
+		// X.Y.0 requires full scan — page 2 is partial so pagination stops naturally after page 2.
 		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray();
 		var page2Tags = new[] { "v4.1.1", "v4.1.0" };
 
@@ -646,7 +651,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
 		result.Should().Be("v4.1.1");
-		requestCount.Should().Be(2, "fetches page 1 (no match) and page 2 (bail fires after v4.1.* found)");
+		requestCount.Should().Be(2, "fetches page 1 (no match), then page 2 (partial — stops naturally)");
 	}
 
 	[Fact]
@@ -724,9 +729,10 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public async Task FetchPreviousTag_TagsApiFallback_EarlyBail_PreviousMinor_BailsAfterPage()
+	public async Task FetchPreviousTag_TagsApiFallback_PreviousMinor_FullScan_FindsHighestInPreviousMinor()
 	{
-		// No releases. Tags API page 1 (full) contains v4.1.0 and v4.1.1 — bail after page 1.
+		// No releases. Tags API page 1 (full) contains v4.1.0 and v4.1.1; page 2 is empty.
+		// X.Y.0 lookups do a full scan — pagination ends on the empty page 2.
 		var tagsPage1 = new[] { "v4.2.0", "v4.1.0", "v4.1.1" }.Concat(Enumerable.Range(0, 97).Select(i => $"v3.{96 - i}.0")).ToArray();
 
 		var requestCount = 0;
@@ -735,13 +741,14 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 			requestCount++;
 			if (req.RequestUri!.PathAndQuery.Contains("/releases"))
 				return Json("[]");
-			return Json(TagsJson(tagsPage1));
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			return query["page"] == "2" ? Json(TagsJson()) : Json(TagsJson(tagsPage1));
 		});
 
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
 		result.Should().Be("v4.1.1");
-		// 1 releases page (empty) + 1 tags page (bail after v4.1.* found)
-		requestCount.Should().Be(2);
+		// 1 releases page (empty) + 1 tags page 1 (full) + 1 tags page 2 (empty — stops naturally)
+		requestCount.Should().Be(3);
 	}
 
 	[Fact]

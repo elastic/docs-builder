@@ -374,26 +374,23 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 
 	/// <summary>
 	/// Returns true when the best candidate found so far is already in the expected predecessor range
-	/// for a stable <paramref name="current"/> tag, so further pages cannot improve the result.
-	/// <list type="bullet">
-	///   <item><c>X.Y.Z</c> (Z &gt; 0): exact previous patch found.</item>
-	///   <item><c>X.Y.0</c> (Y &gt; 0): any candidate from the previous minor found.</item>
-	///   <item><c>X.0.0</c>: first in major — always needs a full scan.</item>
-	/// </list>
+	/// for a stable <paramref name="current"/> tag with <c>Patch &gt; 0</c>, so further pages cannot
+	/// improve the result. Only safe for patch releases: the definitive predecessor is exactly
+	/// <c>(Major, Minor, Patch-1, stable)</c>, and no higher patch in the same minor can exist.
+	/// <para>
+	/// X.Y.0 lookups require a full scan because backport patches (e.g. v4.1.2 created after v4.1.9)
+	/// mean the highest semver in the previous minor may appear on a later page.
+	/// </para>
 	/// Not applied to pre-release tags; their predecessor sets are complex enough to require a full scan.
 	/// </summary>
 	private static bool CanBailAfterPage(SemVer? bestSoFar, SemVer current)
 	{
-		if (bestSoFar is null || current.IsPreRelease)
+		if (bestSoFar is null || current.IsPreRelease || current.Patch == 0)
 			return false;
 		var best = bestSoFar.Value;
 
 		// Stable patch release: the definitive predecessor is (Major, Minor, Patch-1, stable).
-		if (current.Patch > 0 && best.Major == current.Major && best.Minor == current.Minor && best.Patch == current.Patch - 1)
-			return true;
-
-		// Stable minor release: bail after finding any candidate in the previous minor.
-		return current.Patch == 0 && current.Minor > 0 && best.Major == current.Major && best.Minor == current.Minor - 1;
+		return best.Major == current.Major && best.Minor == current.Minor && best.Patch == current.Patch - 1;
 	}
 
 	/// <summary>
