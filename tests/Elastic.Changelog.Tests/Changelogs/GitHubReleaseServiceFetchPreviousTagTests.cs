@@ -579,6 +579,23 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		);
 	}
 
+	[Fact]
+	public async Task FetchPreviousTag_FourComponentVersion_RejectedAsNonSemver()
+	{
+		// A tag like v1.2.4.99 must not be parsed as v1.2.4 (partial regex match).
+		// The regex anchors the patch component with (?=$|[-+]) so anything other than
+		// end-of-string, '-', or '+' after X.Y.Z causes the tag to be rejected entirely.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			// v1.2.4.99 appears first; without anchoring it would match as v1.2.4 and be returned.
+			return Json(ReleasesJson("v1.2.4.99", "v1.2.4"));
+		});
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.5");
+		result.Should().Be("v1.2.4", "v1.2.4.99 has a fourth version component and must be rejected, not parsed as v1.2.4");
+	}
+
 	// ─────────────────────────────────────────────────────────────────────────
 	// Error handling — transport failures return null, not exceptions
 	// ─────────────────────────────────────────────────────────────────────────

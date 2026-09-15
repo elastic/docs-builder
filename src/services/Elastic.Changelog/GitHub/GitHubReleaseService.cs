@@ -545,7 +545,7 @@ public partial class GitHubReleaseService(
 		}
 	}
 
-	[GeneratedRegex(@"^(?<prefix>.*?)(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)", RegexOptions.None)]
+	[GeneratedRegex(@"^(?<prefix>.*?)(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?=$|[-+])", RegexOptions.None)]
 	private static partial Regex SemverTagRegex();
 
 	[GeneratedRegex(@"^(?<prefix>[^\d]+)", RegexOptions.None)]
