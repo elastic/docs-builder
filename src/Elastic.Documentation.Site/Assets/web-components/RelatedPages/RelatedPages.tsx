@@ -134,10 +134,13 @@ export const RelatedPages = ({
                                     <div
                                         css={css`
                                             margin-bottom: ${euiTheme.size.xs};
-                                            color: ${euiTheme.colors
-                                                .subduedText};
-                                            font-size: ${euiTheme.font.scale
-                                                .xs * euiTheme.base}px;
+                                            color: ${
+                                                euiTheme.colors.subduedText
+                                            };
+                                            font-size: ${
+                                                euiTheme.font.scale.xs *
+                                                euiTheme.base
+                                            }px;
                                         `}
                                     >
                                         {result.parents
