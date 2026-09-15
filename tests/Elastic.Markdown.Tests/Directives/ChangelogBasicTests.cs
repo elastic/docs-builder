@@ -77,7 +77,7 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 	public void RendersMarkdownContent()
 	{
 		Html.Should().Contain("9.3.0");
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Features");
 		Html.Should().Contain("Add new feature");
 		Html.Should().Contain("Fixes");
 		Html.Should().Contain("Fix important bug");
@@ -490,7 +490,7 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 	public void RendersCdnBundleBody()
 	{
 		Html.Should().Contain("9.4.0");
-		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Enhancements");
 		Html.Should().Contain("Faster vector search on the CDN");
 	}
 }
@@ -1002,7 +1002,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 	public void BreakingChangesAppearsFirst()
 	{
 		var breakingIdx = Html.IndexOf("Breaking changes", StringComparison.Ordinal);
-		var featuresIdx = Html.IndexOf("Features and enhancements", StringComparison.Ordinal);
+		var featuresIdx = Html.IndexOf("Features", StringComparison.Ordinal);
 		var fixesIdx = Html.IndexOf(">Fixes<", StringComparison.Ordinal);
 
 		breakingIdx.Should().BeLessThan(featuresIdx, "Breaking changes should appear before Features");
@@ -1013,7 +1013,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 	public void SecurityAppearsBeforeFeatures()
 	{
 		var securityIdx = Html.IndexOf(">Security<", StringComparison.Ordinal);
-		var featuresIdx = Html.IndexOf("Features and enhancements", StringComparison.Ordinal);
+		var featuresIdx = Html.IndexOf("Features", StringComparison.Ordinal);
 
 		securityIdx.Should().BeLessThan(featuresIdx, "Security should appear before Features");
 	}
@@ -1022,7 +1022,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 	public void KnownIssuesAppearsBeforeFeatures()
 	{
 		var knownIssuesIdx = Html.IndexOf("Known issues", StringComparison.Ordinal);
-		var featuresIdx = Html.IndexOf("Features and enhancements", StringComparison.Ordinal);
+		var featuresIdx = Html.IndexOf("Features", StringComparison.Ordinal);
 
 		knownIssuesIdx.Should().BeLessThan(featuresIdx, "Known issues should appear before Features");
 	}
@@ -1031,7 +1031,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 	public void DeprecationsAppearsBeforeFeatures()
 	{
 		var deprecationsIdx = Html.IndexOf("Deprecations", StringComparison.Ordinal);
-		var featuresIdx = Html.IndexOf("Features and enhancements", StringComparison.Ordinal);
+		var featuresIdx = Html.IndexOf("Features", StringComparison.Ordinal);
 
 		deprecationsIdx.Should().BeLessThan(featuresIdx, "Deprecations should appear before Features");
 	}

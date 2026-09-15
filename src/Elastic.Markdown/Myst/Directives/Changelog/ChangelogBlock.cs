@@ -284,23 +284,74 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (string.IsNullOrWhiteSpace(value))
 			return ChangelogDescriptionVisibility.Auto;
 
-		return value.ToLowerInvariant() switch
-		{
-			"auto" => ChangelogDescriptionVisibility.Auto,
-			"keep-descriptions" => ChangelogDescriptionVisibility.KeepDescriptions,
-			"keep-highlight-descriptions" => ChangelogDescriptionVisibility.KeepHighlightDescriptions,
-			"hide-descriptions" => ChangelogDescriptionVisibility.HideDescriptions,
-			_ => EmitInvalidDescriptionVisibilityWarning(value)
-		};
+		var result = ChangelogDescriptionVisibility.None;
+		var sawBase = false;
+		var hadValid = false;
+
+		foreach (var raw in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+			hadValid |= TryAccumulateDescriptionVisibilityToken(raw, ref result, ref sawBase);
+
+		return hadValid ? result : ChangelogDescriptionVisibility.Auto;
 	}
 
-	private ChangelogDescriptionVisibility EmitInvalidDescriptionVisibilityWarning(string value)
+	private bool TryAccumulateDescriptionVisibilityToken(string raw, ref ChangelogDescriptionVisibility result, ref bool sawBase)
 	{
-		this.EmitWarning(
-			$"Invalid :description-visibility: value '{value}'. Valid values are: auto, keep-descriptions, keep-highlight-descriptions, hide-descriptions. Using auto."
-		);
-		return ChangelogDescriptionVisibility.Auto;
+		if (!TryMapDescriptionVisibilityToken(raw, out var token, out var isBase))
+		{
+			EmitInvalidDescriptionVisibilityWarning(raw);
+			return false;
+		}
+
+		if (isBase && sawBase)
+		{
+			this.EmitWarning(
+				$"Multiple :description-visibility: base values; ignoring '{raw}'. Valid base values are: auto, keep-descriptions, hide-descriptions."
+			);
+			return true;
+		}
+
+		if (isBase)
+			sawBase = true;
+
+		result |= token;
+		return true;
 	}
+
+	private static bool TryMapDescriptionVisibilityToken(string raw, out ChangelogDescriptionVisibility token, out bool isBase)
+	{
+		switch (raw.ToLowerInvariant())
+		{
+			case "auto":
+				token = ChangelogDescriptionVisibility.Auto;
+				isBase = true;
+				return true;
+			case "keep-descriptions":
+				token = ChangelogDescriptionVisibility.KeepDescriptions;
+				isBase = true;
+				return true;
+			case "hide-descriptions":
+				token = ChangelogDescriptionVisibility.HideDescriptions;
+				isBase = true;
+				return true;
+			case "keep-highlight-descriptions":
+				token = ChangelogDescriptionVisibility.KeepHighlightDescriptions;
+				isBase = false;
+				return true;
+			case "keep-feature-descriptions":
+				token = ChangelogDescriptionVisibility.KeepFeatureDescriptions;
+				isBase = false;
+				return true;
+			default:
+				token = ChangelogDescriptionVisibility.None;
+				isBase = false;
+				return false;
+		}
+	}
+
+	private void EmitInvalidDescriptionVisibilityWarning(string value) =>
+		this.EmitWarning(
+			$"Invalid :description-visibility: value '{value}'. Valid values are: auto, keep-descriptions, keep-highlight-descriptions, keep-feature-descriptions, hide-descriptions. Using auto when no valid tokens remain."
+		);
 
 	/// <summary>
 	/// Parses and validates the :type: option.
@@ -663,12 +714,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			)
 				yield return $"{repo}-{anchorSlug}-deprecations";
 
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Feature) && entriesByType.ContainsKey(ChangelogEntryType.Feature))
+				yield return $"{repo}-{anchorSlug}-features";
+
 			if (
-				!dedicatedPage
-				&& shouldInclude(ChangelogEntryType.Feature)
-				&& (entriesByType.ContainsKey(ChangelogEntryType.Feature) || entriesByType.ContainsKey(ChangelogEntryType.Enhancement))
+				!dedicatedPage && shouldInclude(ChangelogEntryType.Enhancement) && entriesByType.ContainsKey(ChangelogEntryType.Enhancement)
 			)
-				yield return $"{repo}-{anchorSlug}-features-enhancements";
+				yield return $"{repo}-{anchorSlug}-enhancements";
 
 			if (!dedicatedPage && shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
 				yield return $"{repo}-{anchorSlug}-fixes";
@@ -755,16 +807,11 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			if (shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
 				yield return new PageTocItem { Heading = "Deprecations", Slug = SectionSlug("deprecations"), Level = 3 };
 
-			if (
-				shouldInclude(ChangelogEntryType.Feature)
-				&& (entriesByType.ContainsKey(ChangelogEntryType.Feature) || entriesByType.ContainsKey(ChangelogEntryType.Enhancement))
-			)
-				yield return new PageTocItem
-				{
-					Heading = "Features and enhancements",
-					Slug = SectionSlug("features-enhancements"),
-					Level = 3
-				};
+			if (shouldInclude(ChangelogEntryType.Feature) && entriesByType.ContainsKey(ChangelogEntryType.Feature))
+				yield return new PageTocItem { Heading = "Features", Slug = SectionSlug("features"), Level = 3 };
+
+			if (shouldInclude(ChangelogEntryType.Enhancement) && entriesByType.ContainsKey(ChangelogEntryType.Enhancement))
+				yield return new PageTocItem { Heading = "Enhancements", Slug = SectionSlug("enhancements"), Level = 3 };
 
 			if (shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
 				yield return new PageTocItem { Heading = "Fixes", Slug = SectionSlug("fixes"), Level = 3 };

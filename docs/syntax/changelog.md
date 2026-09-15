@@ -25,7 +25,7 @@ The directive supports the following options:
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
 | `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
-| `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
+| `:description-visibility: value[, value…]` | Visibility of changelog descriptions (YAML `description` on each entry). Comma-separated tokens are combined. | `auto` |
 | `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
 | `:highlights:` | Emit a dedicated highlights section for entries with `highlight: true` (entries still appear under their type sections) | false |
 | `:release-dates:` | Render the bundle `release-date` field as _Released: …_ after the version heading | false |
@@ -124,27 +124,45 @@ This aligns with the `changelog render` command's link visibility controls.
 
 #### `:description-visibility:`
 
-Controls whether the **`description`** text on each **changelog record** appears in output (bullet body text under each item, or the first paragraph inside a breaking-change, deprecation, known-issue, or highlight entry when [`:dropdowns:`](#dropdowns) is enabled). This is **different** from the optional **bundle** `description` field (release intro prose after `_Released:_`), which is always shown when present. See [Rendered output](#rendered-output).
+Controls whether the `description` text for each changelog appears in the output (bullet body text under each item, or the first paragraph inside a breaking-change, deprecation, known-issue, or highlight entry when [`:dropdowns:`](#dropdowns) is enabled).
+This is different from the optional bundle `description` field (release intro prose after `_Released:_`), which is always shown when present. 
+See [Rendered output](#rendered-output).
+
+Pass one or more comma-separated tokens.
+There is at most one _base token_ (`auto`, `keep-descriptions`, or `hide-descriptions`).
+_Overlay tokens_ (`keep-highlight-descriptions`, `keep-feature-descriptions`) combine with each other and with a base.
 
 | Value | Behavior |
 |-------|----------|
-| `auto` | When **every** constituent repository in the bundle’s resolved repo identity is **public** (same private-repo detection as `:link-visibility:` from `assembler.yml`, including `repo1+repo2` merged bundles), **omit** record `description` bodies. When **any** constituent is marked **private**, **show** those bodies. In standalone builds without `assembler.yml`, every repo is treated as public ⇒ changelog descriptions are omitted under `auto`. |
+| `auto` | When every constituent repository in the bundle’s resolved repo identity is public (same private-repo detection as `:link-visibility:` from `assembler.yml`, including `repo1+repo2` merged bundles), omit record `description` bodies. When any constituent is marked private, show those bodies. In standalone builds without `assembler.yml`, every repo is treated as public ⇒ changelog descriptions are omitted under `auto`. Overlay tokens still show descriptions in their sections. |
 | `keep-descriptions` | Always render changelog descriptions when present in the bundle source. Use this on pages such as deprecations or breaking changes when you still want full release-note prose alongside public repos. |
-| `keep-highlight-descriptions` | Show changelog descriptions **only** in the [`:highlights:`](#highlights) section. Hide them in every other section, including the type-section copy of a highlighted entry. When `:highlights:` is omitted, descriptions are hidden everywhere. |
-| `hide-descriptions` | Always omit changelog descriptions (titles, PR/issue links, impact, and action sections and bundle-level intros are unaffected). |
+| `keep-highlight-descriptions` | Overlay: always show changelog descriptions in the [Highlights](#highlights) section. When used alone, hide them in every other section, including the type-section copy of a highlighted entry. When `:highlights:` is omitted, the overlay has no visible effect. |
+| `keep-feature-descriptions` | Overlay: always show changelog descriptions in the "Features" section. When used alone, hide them in every other section. |
+| `hide-descriptions` | Omit changelog descriptions in unmarked sections (titles, PR/issue links, impact, and action sections and bundle-level intros are unaffected). Overlay tokens still show descriptions in their sections. |
 
-**Contrast with `:link-visibility:`:** `:link-visibility: auto` hides **links** when a repo is **private**. `:description-visibility: auto` **shows** richer record **description** prose when **any** source repo is **private**, and hides that prose for bundles that resolve to **only public** repositories.
+```markdown
+:::{changelog}
+:highlights:
+:description-visibility: keep-feature-descriptions, keep-highlight-descriptions
+:::
+```
+
+The example shows prose in Features and Highlights, and hides it in Enhancements, Fixes, and other type sections.
+
+**Contrast with `:link-visibility:`:** `:link-visibility: auto` hides **links** when a repo is **private**. `:description-visibility: auto` **shows** richer record **description** prose when **any** source repo is **private**, and hides that prose for bundles that resolve to **only public** repositories (except where an overlay token applies).
 
 #### `:dropdowns:` [dropdowns]
 
-Controls how the "separated" entry types (`breaking-change`, `deprecation`, `known-issue`, and entries flagged `highlight: true`) are rendered. This option only affects these types; features, enhancements, security, bug fixes, documentation, regressions, and other changes are always rendered as flat bulleted lists.
+Controls how breaking changes, deprecations, features, highlights, and known issues are rendered. Enhancements, security, bug fixes, documentation, regressions, and other changes stay flat bulleted lists.
 
 | Mode | Behavior |
 |------|----------|
 | (omitted, default) | Flattened: each entry renders as a bullet with its title, links, and (when present) `Impact:` / `Action:` lines as indented continuation. |
 | `:dropdowns:` | Dropdowns: each entry renders as an expandable `{dropdown}` with the title as the summary and description, links, `**Impact**`, and `**Action**` inside. |
 
-Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release notes where the list itself is the primary content.
+Use dropdowns when breaking changes, deprecations, features, or highlights have long `description`, `impact`, or `action` prose that benefits from being collapsed by default.
+Use the flattened default for compact release notes where the list itself is the primary content.
+`:dropdowns:` does not group entries by area; use [`:subsections:`](#subsections) for that.
 
 Entry titles may contain inline markdown markers from changelog YAML (for example, `` `setting.name` ``). Dropdown titles are plain text; see [Plain-text titles](/syntax/dropdowns.md#plain-text-titles).
 
@@ -154,12 +172,12 @@ Controls whether entries with `highlight: true` get a dedicated **Highlights** s
 
 | Mode | Behavior |
 |------|----------|
-| (omitted, default) | Inline only: highlighted entries appear under their normal type sections (for example Features and enhancements). No `### Highlights` section. |
+| (omitted, default) | Inline only: highlighted entries appear under their normal type sections (for example Features). No `### Highlights` section. |
 | `:highlights:` | Section: emit a `### Highlights` section and keep those entries under their type sections. |
 
 Use `:highlights:` on general release notes when you want a highlights section alongside features, enhancements, and bug fixes — without requiring `:type: all` (which also pulls in breaking changes, deprecations, and known issues).
 
-Changelog descriptions follow [`:description-visibility:`](#description-visibility). Use `keep-descriptions` to show prose in every section, or `keep-highlight-descriptions` to show prose only in the highlights section.
+Changelog descriptions follow [`:description-visibility:`](#description-visibility). Use `keep-descriptions` to show prose in every section, `keep-highlight-descriptions` for Highlights only, `keep-feature-descriptions` for Features only, or combine overlays: `keep-feature-descriptions, keep-highlight-descriptions`.
 
 #### `:release-dates:` [release-dates]
 
@@ -174,11 +192,12 @@ Use this option for semver or agent releases where an explicit release date adds
 
 This is **render-time** control only. To include or omit `release-date` in bundle YAML at build time, use `bundle.release_dates` in `changelog.yml` or the `--release-date` / `--no-release-date` flags on [`changelog bundle`](/cli/changelog/bundle.md) (option-based mode). The `changelog render` command does not provide an equivalent flag; it always renders release dates when present in the bundle.
 
-#### `:subsections:`
+#### `:subsections:` [subsections]
 
 When enabled, entries are grouped by "area" within each section.
 By default, entries are listed without area grouping.
 If a changelog has multiple area values, only the first one is used.
+This option is independent of [`:dropdowns:`](#dropdowns).
 
 #### `:config:`
 
@@ -379,13 +398,15 @@ This release includes new features and bug fixes.
 
 Download the release binaries: https://github.com/elastic/elasticsearch/releases/tag/v0.100.0
 
-### Features and enhancements
+### Features
+...
+### Enhancements
 ...
 ### Fixes
 ...
 
 ## 2025-08-05
-### Features and enhancements
+### Features
 ...
 ```
 
@@ -403,24 +424,33 @@ Each changelog entry may have its own `description` field in YAML (shown as body
 
 | Section | Entry type | Rendering |
 |---------|------------|-----------|
-| Features and enhancements | `feature`, `enhancement` | Grouped by area |
-| Fixes | `bug-fix`, `security` | Grouped by area |
-| Documentation | `docs` | Grouped by area |
-| Regressions | `regression` | Grouped by area |
-| Other changes | `other` | Grouped by area |
+| Features | `feature` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Enhancements | `enhancement` | Flattened bullets |
+| Fixes | `bug-fix` | Flattened bullets |
+| Security | `security` | Flattened bullets |
+| Documentation | `docs` | Flattened bullets |
+| Regressions | `regression` | Flattened bullets |
+| Other changes | `other` | Flattened bullets |
 | Breaking changes | `breaking-change` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 | Highlights | Entries with `highlight: true` | Dedicated section only when [`:highlights:`](#highlights) is set; flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 | Deprecations | `deprecation` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 | Known issues | `known-issue` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 
-**Note about highlights:**
+Use [`:subsections:`](#subsections) to group entries by area within a section. Area grouping is off by default and is independent of `:dropdowns:`.
+
+:::{admonition} Highlights
 
 - The highlights section appears only when [`:highlights:`](#highlights) is set and at least one entry has `highlight: true`
-- When the section is shown, highlighted entries appear in **both** the highlights section and their original type section (for example, both the "highlights" and "features and enhancements" sections)
+- When the section is shown, highlighted entries appear in both the highlights section and their original type section (for example, both the "highlights" and "features" sections)
 - When `:highlights:` is omitted, flagged entries still appear under their type sections (inline only)
 - You can combine `:highlights:` with the default type filter (no `:type:`) to show highlights alongside features and fixes without including breaking changes, deprecations, or known issues
 
+:::
+
 Sections with no entries of that type are omitted from the output. Releases with no entries after the `:type:` filter are omitted entirely, except on general release notes (`:type: all` or default) when the bundle has a `description`.
+
+Section heading anchors use `-features` and `-enhancements` suffixes.
+Pages that previously linked to `-features-enhancements` need those links updated.
 
 ## Error behavior for invalid entries [changelog-missing-files]
 

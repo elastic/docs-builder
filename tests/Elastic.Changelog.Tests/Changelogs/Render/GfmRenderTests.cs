@@ -70,13 +70,13 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 
 		var content = await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current.CancellationToken);
 		content.Should().Contain("## 9.2.0");
-		content.Should().Contain("### Features and enhancements");
+		content.Should().Contain("### Features");
 		content.Should().Contain("Test feature");
 		content.Should().Contain("[#100](https://github.com/elastic/elasticsearch/pull/100)");
 
 		// Should NOT contain anchor brackets in headings
 		content.Should().NotContain("## 9.2.0 [");
-		content.Should().NotContain("### Features and enhancements [");
+		content.Should().NotContain("### Features [");
 	}
 
 	[Fact]
@@ -175,7 +175,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		var content = await FileSystem.File.ReadAllTextAsync(outputChangelogPath, TestContext.Current.CancellationToken);
 
 		// Should include all section types in the proper order
-		content.Should().Contain("### Features and enhancements");
+		content.Should().Contain("### Features");
 		content.Should().Contain("### Breaking changes");
 		content.Should().Contain("### Deprecations");
 		content.Should().Contain("### Bug fixes");
@@ -189,7 +189,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		content.Should().Contain("Known issue");
 
 		// Check section ordering (features should come before breaking changes)
-		var featuresIndex = content.IndexOf("### Features and enhancements", StringComparison.Ordinal);
+		var featuresIndex = content.IndexOf("### Features", StringComparison.Ordinal);
 		var breakingIndex = content.IndexOf("### Breaking changes", StringComparison.Ordinal);
 		var deprecationIndex = content.IndexOf("### Deprecations", StringComparison.Ordinal);
 		var bugFixIndex = content.IndexOf("### Bug fixes", StringComparison.Ordinal);
@@ -266,11 +266,11 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 
 		// Should include highlights section first
 		content.Should().Contain("### Highlights");
-		content.Should().Contain("### Features and enhancements");
+		content.Should().Contain("### Features");
 
 		// Highlights should come first
 		var highlightsIndex = content.IndexOf("### Highlights", StringComparison.Ordinal);
-		var featuresIndex = content.IndexOf("### Features and enhancements", StringComparison.Ordinal);
+		var featuresIndex = content.IndexOf("### Features", StringComparison.Ordinal);
 		highlightsIndex.Should().BeLessThan(featuresIndex);
 
 		// Both features should be present
