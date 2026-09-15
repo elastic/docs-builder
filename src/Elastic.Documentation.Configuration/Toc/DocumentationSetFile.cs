@@ -151,7 +151,8 @@ public class DocumentationSetFile : TableOfContentsFile
 	public HashSet<string> FolderExcludedFiles { get; private set; } = [];
 
 	/// <summary>
-	/// Pages registered with a default CTA via <c>default_cta</c> on <c>docset.yml</c> or nested <c>toc.yml</c> files.
+	/// Pages registered with a default CTA via <c>default_cta</c> on <c>docset.yml</c>, nested <c>toc.yml</c> files,
+	/// or individual <c>file:</c> / <c>folder:</c> entries.
 	/// Keys are docset-root-relative markdown paths; values are template names from the docset's <c>cta</c> map.
 	/// </summary>
 	[YamlIgnore]
@@ -469,9 +470,10 @@ public class DocumentationSetFile : TableOfContentsFile
 			// Preserve specific types even when there are no children
 			return fileRef switch
 			{
-				FolderIndexFileRef => new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context),
-				IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context),
-				_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context)
+				FolderIndexFileRef =>
+					new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
+				IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
+				_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta)
 			};
 		}
 
@@ -532,9 +534,11 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Preserve the specific type when creating the resolved reference
 		return fileRef switch
 		{
-			FolderIndexFileRef => new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context),
-			IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context),
-			_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context)
+			FolderIndexFileRef =>
+				new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta),
+			IndexFileRef =>
+				new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta),
+			_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta)
 		};
 	}
 
@@ -772,7 +776,14 @@ public class DocumentationSetFile : TableOfContentsFile
 				suppressDiagnostics
 			);
 			// Exclude is intentionally not passed through — it only applies to auto-discovery
-			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.Sort);
+			return new FolderRef(
+				fullPath,
+				pathRelativeToContainer,
+				resolvedChildren,
+				context,
+				folderRef.Sort,
+				DefaultCta: folderRef.DefaultCta
+			);
 		}
 
 		// No children defined - auto-discover .md files in the folder
@@ -788,7 +799,15 @@ public class DocumentationSetFile : TableOfContentsFile
 			explicitSortOrder,
 			folderRef.Exclude
 		);
-		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort, folderRef.Exclude);
+		return new FolderRef(
+			fullPath,
+			pathRelativeToContainer,
+			autoDiscoveredChildren,
+			context,
+			folderRef.Sort,
+			folderRef.Exclude,
+			folderRef.DefaultCta
+		);
 	}
 
 	/// <summary>
@@ -859,7 +878,8 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	/// <summary>
 	/// Traverses the resolved TOC and collects pages registered with a <c>default_cta</c> from
-	/// <c>docset.yml</c> or nested <c>toc.yml</c> files.
+	/// <c>docset.yml</c>, nested <c>toc.yml</c> files, or individual <c>file:</c> / <c>folder:</c> entries.
+	/// The nearest declaration wins.
 	/// </summary>
 	private static FrozenDictionary<string, string> CollectTocDefaultCtas(
 		IDiagnosticsCollector collector,
@@ -884,16 +904,16 @@ public class DocumentationSetFile : TableOfContentsFile
 			switch (item)
 			{
 				case FileRef file:
-					RegisterTocDefaultCta(collector, file.PathRelativeToDocumentationSet, inheritedDefault, file.Context, defaults);
+					var fileDefault = file.DefaultCta ?? inheritedDefault;
+					RegisterTocDefaultCta(collector, file.PathRelativeToDocumentationSet, fileDefault, file.Context, defaults);
 					if (file.Children.Count > 0)
-						CollectTocDefaultCtas(collector, file.Children, inheritedDefault, defaults);
+						CollectTocDefaultCtas(collector, file.Children, fileDefault, defaults);
 					break;
 				case IsolatedTableOfContentsRef toc:
-					var activeDefault = toc.DefaultCta ?? inheritedDefault;
-					CollectTocDefaultCtas(collector, toc.Children, activeDefault, defaults);
+					CollectTocDefaultCtas(collector, toc.Children, toc.DefaultCta ?? inheritedDefault, defaults);
 					break;
 				case FolderRef folder:
-					CollectTocDefaultCtas(collector, folder.Children, inheritedDefault, defaults);
+					CollectTocDefaultCtas(collector, folder.Children, folder.DefaultCta ?? inheritedDefault, defaults);
 					break;
 				case CrossLinkRef crossLink when crossLink.Children.Count > 0:
 					CollectTocDefaultCtas(collector, crossLink.Children, inheritedDefault, defaults);
