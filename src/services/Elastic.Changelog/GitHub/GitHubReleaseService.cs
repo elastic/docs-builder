@@ -137,7 +137,10 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 		try
 		{
 			var url = $"https://api.github.com/repos/{owner}/{repo}/releases/generate-notes";
-			var body = $"{{\"tag_name\":\"{currentTag}\"}}";
+			var body = JsonSerializer.Serialize(
+				new GenerateNotesRequest { TagName = currentTag },
+				GitHubReleaseJsonContext.Default.GenerateNotesRequest
+			);
 			_logger.LogDebug("Generating release notes to resolve previous tag: POST {ApiUrl}", url);
 
 			using var response = await _transport.PostAsync(url, body, ctx);
@@ -215,6 +218,12 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 				: []
 		};
 
+	private sealed class GenerateNotesRequest
+	{
+		[JsonPropertyName("tag_name")]
+		public required string TagName { get; set; }
+	}
+
 	private sealed class GenerateNotesResponse
 	{
 		[JsonPropertyName("previous_tag_name")]
@@ -259,6 +268,7 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 
 	[JsonSerializable(typeof(GitHubReleaseResponse))]
 	[JsonSerializable(typeof(GitHubReleaseResponse[]))]
+	[JsonSerializable(typeof(GenerateNotesRequest))]
 	[JsonSerializable(typeof(GenerateNotesResponse))]
 	private sealed partial class GitHubReleaseJsonContext : JsonSerializerContext;
 }

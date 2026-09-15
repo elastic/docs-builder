@@ -914,7 +914,16 @@ internal sealed partial class ChangelogCommands(
 					},
 					ctx
 				);
-				if (resolution == null || resolution.PullRequests.Count == 0)
+				if (resolution == null)
+				{
+					collector.EmitError(
+						string.Empty,
+						$"Failed to resolve PR list from commit range {previousTag}..{release.TagName} for {resolvedOwner}/{resolvedRepo}."
+					);
+					return 1;
+				}
+
+				if (resolution.PullRequests.Count == 0)
 				{
 					collector.EmitWarning(
 						string.Empty,
@@ -1371,7 +1380,16 @@ internal sealed partial class ChangelogCommands(
 				new CommitRangeArguments { Owner = resolvedOwner, Repo = resolvedRepo, StartRef = previousTag, EndRef = release.TagName },
 				ctx
 			);
-			if (resolution == null || resolution.PullRequests.Count == 0)
+			if (resolution == null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Failed to resolve PR list from commit range {previousTag}..{release.TagName} for {resolvedOwner}/{resolvedRepo}."
+				);
+				return 1;
+			}
+
+			if (resolution.PullRequests.Count == 0)
 			{
 				collector.EmitWarning(
 					string.Empty,
