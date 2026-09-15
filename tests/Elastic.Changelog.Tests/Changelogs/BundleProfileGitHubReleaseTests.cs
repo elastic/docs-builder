@@ -17,16 +17,50 @@ namespace Elastic.Changelog.Tests.Changelogs;
 public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 {
 	private readonly IGitHubReleaseService _mockReleaseService;
+	private readonly IGitHubCommitRangeService _mockCommitRangeService;
 	private readonly ChangelogBundlingService _service;
 	private readonly string _changelogDir;
 
 	public BundleProfileGitHubReleaseTests(ITestOutputHelper output) : base(output)
 	{
 		_mockReleaseService = A.Fake<IGitHubReleaseService>();
-		_service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, _mockReleaseService);
+		_mockCommitRangeService = A.Fake<IGitHubCommitRangeService>();
+		_service = new ChangelogBundlingService(
+			LoggerFactory,
+			FileSystem,
+			ConfigurationContext,
+			_mockReleaseService,
+			commitRangeService: _mockCommitRangeService
+		);
 
 		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
+	}
+
+	/// <summary>Stubs release and commit-range fakes for a tag that follows <paramref name="currentTag"/>.</summary>
+	private void ArrangeCommitRange(string owner, string repo, string currentTag, string previousTag, params string[] prUrls)
+	{
+		A.CallTo(() => _mockReleaseService.FetchReleasesAsync(owner, repo, 10, A<Cancel>._)).Returns(new GitHubReleaseInfo[]
+		{
+			new() { TagName = currentTag, Name = currentTag.TrimStart('v'), Body = "" },
+			new() { TagName = previousTag, Name = previousTag.TrimStart('v'), Body = "" }
+		});
+
+		var prs = prUrls.Select((url, i) =>
+		{
+			var number = int.TryParse(url.Split('/').Last(), out var n) ? n : i + 1;
+			return new CommitRangePullRequest { Number = number, Url = url, CommitShas = ["abc123"] };
+		}).ToList();
+
+		A.CallTo(
+			() => _mockCommitRangeService.ResolvePullRequestsAsync(
+				A<IDiagnosticsCollector>._,
+				A<CommitRangeArguments>.That.Matches(
+					a => a.Owner == owner && a.Repo == repo && a.StartRef == previousTag && a.EndRef == currentTag
+				),
+				A<Cancel>._
+			)
+		).Returns(new CommitRangeResolution { TotalCommits = prs.Count, PullRequests = prs, CommitsWithoutPullRequest = [] });
 	}
 
 	private async Task<string> CreateConfigAsync(string configContent)
@@ -102,7 +136,15 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		A.CallTo(
 			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "" });
+		ArrangeCommitRange(
+			"elastic",
+			"elasticsearch",
+			"v9.2.0",
+			"v9.1.0",
+			"https://github.com/elastic/elasticsearch/pull/100",
+			"https://github.com/elastic/elasticsearch/pull/200"
+		);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -174,7 +216,8 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		// Return a tag with a "v" prefix to verify that ExtractBaseVersion strips it
 		A.CallTo(
 			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "" });
+		ArrangeCommitRange("elastic", "elasticsearch", "v9.2.0", "v9.1.0", "https://github.com/elastic/elasticsearch/pull/100");
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -248,10 +291,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-some-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var releaseBody = "* Some feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
 		A.CallTo(
 			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", TestContext.Current.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "" });
+		ArrangeCommitRange("elastic", "elasticsearch", "v9.2.0", "v9.1.0", "https://github.com/elastic/elasticsearch/pull/100");
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -307,11 +350,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 
 		var configPath = await CreateConfigAsync(configContent);
 
-		var releaseBody = "No pull requests in this release.";
-
 		A.CallTo(
 			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "" });
+		ArrangeCommitRange("elastic", "elasticsearch", "v9.2.0", "v9.1.0" /* no PR URLs → empty commit range */ );
 
 		var input = new BundleChangelogsArguments { Profile = "es-gh-release", ProfileArgument = "9.2.0", Config = configPath };
 
@@ -323,7 +365,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		Collector
 			.Diagnostics
 			.Should()
-			.Contain(d => d.Message.Contains("no PR references found"), "Should emit a warning about missing PR references");
+			.Contain(d => d.Message.Contains("no PRs found"), "Should emit a warning about missing PR references");
 	}
 
 	[Fact]
@@ -397,11 +439,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-latest-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var releaseBody = "* Latest feature by @user in https://github.com/elastic/elasticsearch/pull/999\n";
-
 		A.CallTo(
 			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "" });
+		ArrangeCommitRange("elastic", "elasticsearch", "v9.2.0", "v9.1.0", "https://github.com/elastic/elasticsearch/pull/999");
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -576,11 +617,10 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-beta-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var releaseBody = "* Beta feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
-
 		A.CallTo(
 			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0-beta.1", TestContext.Current.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0-beta.1", Name = "9.2.0 beta 1", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0-beta.1", Name = "9.2.0 beta 1", Body = "" });
+		ArrangeCommitRange("elastic", "elasticsearch", "v9.2.0-beta.1", "v9.1.0", "https://github.com/elastic/elasticsearch/pull/100");
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -651,8 +691,6 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-preview-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var releaseBody = "* Preview feature by @user in https://github.com/elastic/apm-agent-dotnet/pull/42\n";
-
 		A.CallTo(
 			() => _mockReleaseService.FetchReleaseAsync(
 				"elastic",
@@ -660,7 +698,14 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 				"v1.34.1-preview.1",
 				TestContext.Current.CancellationToken
 			)
-		).Returns(new GitHubReleaseInfo { TagName = "v1.34.1-preview.1", Name = "1.34.1 preview 1", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v1.34.1-preview.1", Name = "1.34.1 preview 1", Body = "" });
+		ArrangeCommitRange(
+			"elastic",
+			"apm-agent-dotnet",
+			"v1.34.1-preview.1",
+			"v1.34.0",
+			"https://github.com/elastic/apm-agent-dotnet/pull/42"
+		);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -730,12 +775,11 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-some-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var releaseBody = "* Some feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
-
 		// Expect the call to use bundle-level repo "elasticsearch" and owner "elastic"
 		A.CallTo(
 			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken)
-		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
+		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "" });
+		ArrangeCommitRange("elastic", "elasticsearch", "v9.2.0", "v9.1.0", "https://github.com/elastic/elasticsearch/pull/100");
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
