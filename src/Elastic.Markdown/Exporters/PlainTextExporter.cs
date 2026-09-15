@@ -25,4 +25,13 @@ public static class PlainTextExporter
 		{
 			_ = renderer.Render(doc);
 		});
+
+	/// <summary>
+	/// Converts a single markdown block to plain text suitable for search indexing.
+	/// </summary>
+	public static string ConvertBlockToPlainText(Block block, IDocumentationConfigurationContext context) =>
+		DocumentationObjectPoolProvider.UsePlainTextRenderer(context, block, static (renderer, b) =>
+		{
+			_ = renderer.Render(b);
+		});
 }

@@ -1,0 +1,38 @@
+@inherits RazorSlice<ApiCodeSampleModel>
+@{
+	var selectId = $"{Model.IdPrefix}-lang";
+	var initialLanguage = Model.Samples[0].Language;
+}
+<div class="api-code-sample" data-api-code-sample>
+	<div class="api-code-sample-header">
+		<span class="api-code-sample-label">@initialLanguage</span>
+		<div class="api-code-sample-actions">
+			@if (Model.Samples.Count > 1)
+			{
+				<select id="@selectId" class="api-code-sample-lang" data-sync-group="api-language" aria-label="Language">
+					@for (var i = 0; i < Model.Samples.Count; i++)
+					{
+						var sample = Model.Samples[i];
+						if (i == 0)
+						{
+							<option value="@sample.Language" selected>@sample.Language</option>
+						}
+						else
+						{
+							<option value="@sample.Language">@sample.Language</option>
+						}
+					}
+				</select>
+			}
+		</div>
+	</div>
+	<div class="api-code-sample-body">
+		@for (var i = 0; i < Model.Samples.Count; i++)
+		{
+			var sample = Model.Samples[i];
+			<div class="api-code-sample-panel" data-lang="@sample.Language" hidden="@(i == 0 ? null : "hidden")">
+				@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source)))
+			</div>
+		}
+	</div>
+</div>

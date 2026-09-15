@@ -4,8 +4,7 @@
 
 namespace Elastic.Markdown.Myst.Directives.CliModifiers;
 
-public class CliModifiersBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class CliModifiersBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "cli-modifiers";
 

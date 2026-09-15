@@ -4,13 +4,13 @@
 		<div class="text-center">
 			<p class="font-sans font-semibold text-blue-elastic">404</p>
 			<h1 class="mt-2 text-4xl font-sans font-semibold">Page not found</h1>
-			@if (Model.Features.RelatedPagesEnabled)
-			{
-				<p class="mt-4 text-lg text-ink-light">
-					The page might have moved or the link might be outdated.
-					Try one of the suggested pages below.
-				</p>
-			}
+			<p class="mt-4 text-lg text-ink-light">
+				The page might have moved or the link might be outdated.
+				@if (Model.Features.RelatedPagesEnabled)
+				{
+					<text>Try one of the suggested pages below.</text>
+				}
+			</p>
 		</div>
 
 		@if (Model.Features.RelatedPagesEnabled)
@@ -18,14 +18,14 @@
 			<div class="mt-10">
 				<related-pages></related-pages>
 			</div>
-			<div class="mt-10 flex flex-wrap justify-center gap-6">
-				<a href="@Model.Link("/")" class="link">
-					Go to docs home
-					<svg class="link-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-					</svg>
-				</a>
-			</div>
 		}
+		<div class="mt-10 flex flex-wrap justify-center gap-6">
+			<a href="@Model.Link("/")" class="link">
+				Go to docs home
+				<svg class="link-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
+				</svg>
+			</a>
+		</div>
 	</div>
 </main>

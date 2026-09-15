@@ -50,8 +50,5 @@ public static class Utf8TextNormalization
 	/// <param name="bytes">The byte span to check.</param>
 	/// <returns>True if the span starts with the UTF-8 BOM sequence, false otherwise.</returns>
 	public static bool HasUtf8Bom(ReadOnlySpan<byte> bytes) =>
-		bytes.Length >= 3 &&
-		bytes[0] == 0xEF &&
-		bytes[1] == 0xBB &&
-		bytes[2] == 0xBF;
+		bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
 }

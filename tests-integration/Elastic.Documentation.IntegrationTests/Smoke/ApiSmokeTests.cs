@@ -56,11 +56,14 @@ public class ApiSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 		Assert.NotNull(body);
 		Assert.SkipUnless(body.TotalResults > 0 && body.Results.Count > 0, "search index has no data, skipping result assertions");
 		_ = body.Results.Should().NotBeEmpty("search for 'elasticsearch' should return results when the index is populated");
-		body.Results.Should().AllSatisfy(r =>
-		{
-			_ = r.Url.Should().NotBeNullOrEmpty();
-			_ = r.Title.Should().NotBeNullOrEmpty();
-		});
+		body
+			.Results
+			.Should()
+			.AllSatisfy(r =>
+			{
+				_ = r.Url.Should().NotBeNullOrEmpty();
+				_ = r.Title.Should().NotBeNullOrEmpty();
+			});
 	}
 
 	[Fact]
@@ -69,8 +72,10 @@ public class ApiSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 		using var client = fixture.CreateApiClient();
 		var since = Uri.EscapeDataString("2020-01-01T00:00:00Z");
 		// The changes endpoint requires open_point_in_time privilege. CI uses a read-only API key that lacks it.
-		Assert.SkipUnless(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")),
-			"Skipping: CI read-only API key lacks open_point_in_time privilege required by the changes endpoint");
+		Assert.SkipUnless(
+			string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")),
+			"Skipping: CI read-only API key lacks open_point_in_time privilege required by the changes endpoint"
+		);
 
 		var response = await client.GetAsync($"/docs/_api/v1/changes?since={since}", TestContext.Current.CancellationToken);
 		if (!response.IsSuccessStatusCode)

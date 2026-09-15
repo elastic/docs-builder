@@ -14,30 +14,26 @@ public class RelatedPagesService(IFullSearchService searchService) : IRelatedPag
 		if (query.Length == 0)
 			return new RelatedPagesResponse { Query = query, Results = [] };
 
-		var response = await searchService.SearchAsync(new FullSearchRequest
-		{
-			Query = query,
-			PageSize = ResultCount + 1,
-			IncludeHighlighting = false,
-			ForceSemantic = true
-		}, ctx);
+		var response = await searchService.SearchAsync(
+			new FullSearchRequest { Query = query, PageSize = ResultCount + 1, IncludeHighlighting = false, ForceSemantic = true },
+			ctx
+		);
 
 		var normalizedPath = NormalizePath(path);
-		var results = response.Results
+		var results = response
+			.Results
 			.Where(result => !string.Equals(NormalizePath(result.Url), normalizedPath, StringComparison.OrdinalIgnoreCase))
 			.Where(result => result.Score > 0)
 			.Take(ResultCount)
-			.Select(result => new RelatedPage
-			{
-				Url = result.Url,
-				Title = result.Title,
-				Description = result.AiShortSummary ?? result.Description,
-				Parents = result.Parents.Select(parent => new RelatedPageParent
+			.Select(
+				result => new RelatedPage
 				{
-					Title = parent.Title,
-					Url = parent.Url
-				}).ToArray()
-			})
+					Url = result.Url,
+					Title = result.Title,
+					Description = result.AiShortSummary ?? result.Description,
+					Parents = result.Parents.Select(parent => new RelatedPageParent { Title = parent.Title, Url = parent.Url }).ToArray()
+				}
+			)
 			.ToArray();
 
 		return new RelatedPagesResponse { Query = query, Results = results };

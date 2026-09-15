@@ -6,12 +6,12 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Services;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Indexing;
 
@@ -34,8 +34,7 @@ public class AssemblerAiEnrichService(
 	/// </param>
 	public async Task<bool> AiEnrich(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
+		CheckoutsFileSystem fileSystem,
 		ElasticsearchIndexOptions es,
 		string? environment,
 		bool bootstrapOnly,
@@ -43,12 +42,12 @@ public class AssemblerAiEnrichService(
 	)
 	{
 		var cfg = configurationContext.Endpoints.Elasticsearch;
-		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, readFs, ctx);
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
 
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, readFs, writeFs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
 
 		using var exporter = new ElasticsearchMarkdownExporter(logFactory, collector, assembleContext.Endpoints, assembleContext);
 		if (!exporter.AiEnrichmentEnabled)
@@ -75,7 +74,12 @@ public class AssemblerAiEnrichService(
 			{
 				_logger.LogInformation(
 					"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",
-					p.Phase, p.Enriched, p.Failed, p.TotalCandidates, p.Message is not null ? $" — {p.Message}" : "");
+					p.Phase,
+					p.Enriched,
+					p.Failed,
+					p.TotalCandidates,
+					p.Message is not null ? $" — {p.Message}" : ""
+				);
 				last = p;
 			}
 		}
@@ -87,7 +91,10 @@ public class AssemblerAiEnrichService(
 		if (last is not null)
 			_logger.LogInformation(
 				"AI enrichment complete: {Enriched} enriched, {Failed} failed, {Candidates} candidates",
-				last.Enriched, last.Failed, last.TotalCandidates);
+				last.Enriched,
+				last.Failed,
+				last.TotalCandidates
+			);
 
 		// Intentionally does not call exporter.StopAsync(): completing a zero-write incremental sync
 		// would delete every document that wasn't re-written this run.

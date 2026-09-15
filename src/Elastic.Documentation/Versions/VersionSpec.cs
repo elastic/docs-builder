@@ -8,9 +8,7 @@ namespace Elastic.Documentation.Versions;
 
 public sealed class AllVersionsSpec : VersionSpec
 {
-	private AllVersionsSpec() : base(AllVersions.Instance, null, VersionSpecKind.GreaterThanOrEqual)
-	{
-	}
+	private AllVersionsSpec() : base(AllVersions.Instance, null, VersionSpecKind.GreaterThanOrEqual) { }
 
 	public static AllVersionsSpec Instance { get; } = new();
 
@@ -20,8 +18,9 @@ public sealed class AllVersionsSpec : VersionSpec
 public enum VersionSpecKind
 {
 	GreaterThanOrEqual, // x.x, x.x+, x.x.x, x.x.x+
-	Range,              // x.x-y.y, x.x.x-y.y.y
-	Exact               // =x.x, =x.x.x
+	Range, // x.x-y.y, x.x.x-y.y.y
+	Exact // =x.x, =x.x.x
+
 }
 
 /// <summary>
@@ -82,7 +81,8 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 	/// <summary>
 	/// Creates a GreaterThanOrEqual version spec from a SemVersion.
 	/// </summary>
-	public static VersionSpec GreaterThanOrEqual(SemVersion min, bool showPatch = false) => new(min, null, VersionSpecKind.GreaterThanOrEqual, showPatch);
+	public static VersionSpec GreaterThanOrEqual(SemVersion min, bool showPatch = false) =>
+		new(min, null, VersionSpecKind.GreaterThanOrEqual, showPatch);
 
 	/// <summary>
 	/// Tries to parse a version specification string.
@@ -136,8 +136,7 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 			if (maxPart.EndsWith('+'))
 				maxPart = maxPart[..^1];
 
-			if (!TryParseVersion(minPart, out var minVersion) ||
-				!TryParseVersion(maxPart, out var maxVersion))
+			if (!TryParseVersion(minPart, out var minVersion) || !TryParseVersion(maxPart, out var maxVersion))
 				return false;
 
 			spec = new(minVersion, maxVersion, VersionSpecKind.Range, showMinPatch, showMaxPatch);
@@ -225,24 +224,16 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 	/// </summary>
 	public override string ToString() => Kind switch
 	{
-		VersionSpecKind.Exact => ShowMinPatch
-			? $"={Min.Major}.{Min.Minor}.{Min.Patch}!"
-			: $"={Min.Major}.{Min.Minor}",
+		VersionSpecKind.Exact => ShowMinPatch ? $"={Min.Major}.{Min.Minor}.{Min.Patch}!" : $"={Min.Major}.{Min.Minor}",
 		VersionSpecKind.Range => FormatRangeToString(),
-		VersionSpecKind.GreaterThanOrEqual => ShowMinPatch
-			? $"{Min.Major}.{Min.Minor}.{Min.Patch}!+"
-			: $"{Min.Major}.{Min.Minor}+",
+		VersionSpecKind.GreaterThanOrEqual => ShowMinPatch ? $"{Min.Major}.{Min.Minor}.{Min.Patch}!+" : $"{Min.Major}.{Min.Minor}+",
 		_ => throw new ArgumentOutOfRangeException(nameof(Kind), Kind, null)
 	};
 
 	private string FormatRangeToString()
 	{
-		var minPart = ShowMinPatch
-			? $"{Min.Major}.{Min.Minor}.{Min.Patch}!"
-			: $"{Min.Major}.{Min.Minor}";
-		var maxPart = ShowMaxPatch
-			? $"{Max!.Major}.{Max.Minor}.{Max.Patch}!"
-			: $"{Max!.Major}.{Max.Minor}";
+		var minPart = ShowMinPatch ? $"{Min.Major}.{Min.Minor}.{Min.Patch}!" : $"{Min.Major}.{Min.Minor}";
+		var maxPart = ShowMaxPatch ? $"{Max!.Major}.{Max.Minor}.{Max.Patch}!" : $"{Max!.Major}.{Max.Minor}";
 		return $"{minPart}-{maxPart}";
 	}
 
@@ -273,10 +264,11 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 		if (ReferenceEquals(this, other))
 			return true;
 
-		return Kind == other.Kind && Min.Equals(other.Min) &&
-			   (Max?.Equals(other.Max) ?? (other.Max is null)) &&
-			   ShowMinPatch == other.ShowMinPatch &&
-			   ShowMaxPatch == other.ShowMaxPatch;
+		return Kind == other.Kind
+			&& Min.Equals(other.Min)
+			&& (Max?.Equals(other.Max) ?? (other.Max is null))
+			&& ShowMinPatch == other.ShowMinPatch
+			&& ShowMaxPatch == other.ShowMaxPatch;
 	}
 
 	public override bool Equals(object? obj) => obj is VersionSpec other && Equals(other);
@@ -292,17 +284,13 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 
 	public static bool operator !=(VersionSpec? left, VersionSpec? right) => !(left == right);
 
-	public static bool operator <(VersionSpec? left, VersionSpec? right) =>
-		left is null ? right is not null : left.CompareTo(right) < 0;
+	public static bool operator <(VersionSpec? left, VersionSpec? right) => left is null ? right is not null : left.CompareTo(right) < 0;
 
-	public static bool operator <=(VersionSpec? left, VersionSpec? right) =>
-		left is null || left.CompareTo(right) <= 0;
+	public static bool operator <=(VersionSpec? left, VersionSpec? right) => left is null || left.CompareTo(right) <= 0;
 
-	public static bool operator >(VersionSpec? left, VersionSpec? right) =>
-		left is not null && left.CompareTo(right) > 0;
+	public static bool operator >(VersionSpec? left, VersionSpec? right) => left is not null && left.CompareTo(right) > 0;
 
-	public static bool operator >=(VersionSpec? left, VersionSpec? right) =>
-		left is null ? right is null : left.CompareTo(right) >= 0;
+	public static bool operator >=(VersionSpec? left, VersionSpec? right) => left is null ? right is null : left.CompareTo(right) >= 0;
 
 	/// <summary>
 	/// Explicit conversion from string to VersionSpec

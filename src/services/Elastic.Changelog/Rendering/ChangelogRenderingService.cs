@@ -9,12 +9,12 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
-using Nullean.ScopedFileSystem;
 using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Rendering;
@@ -33,16 +33,14 @@ public record RenderChangelogsArguments
 	public string? Config { get; init; }
 	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
 	public bool HideDescriptions { get; init; }
-
 }
 
 /// <summary>
-/// Input for a single bundle file with optional directory, repo, and link visibility
+/// Input for a single bundle file with optional repo and link visibility
 /// </summary>
 public record BundleInput
 {
 	public required string BundleFile { get; init; }
-	public string? Directory { get; init; }
 	public string? Repo { get; init; }
 	/// <summary>
 	/// Whether to hide PR/issue links for entries from this bundle.
@@ -71,18 +69,14 @@ public enum ChangelogFileType
 /// </summary>
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
-	IConfigurationContext? configurationContext = null,
-	ScopedFileSystem? fileSystem = null
+	IChangelogFileSystem fileSystem,
+	IConfigurationContext? configurationContext = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealWrite;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 
-	public async Task<bool> RenderChangelogs(
-		IDiagnosticsCollector collector,
-		RenderChangelogsArguments input,
-		Cancel ctx
-	)
+	public async Task<bool> RenderChangelogs(IDiagnosticsCollector collector, RenderChangelogsArguments input, Cancel ctx)
 	{
 		try
 		{
@@ -101,8 +95,8 @@ public class ChangelogRenderingService(
 				return false;
 
 			// Merge phase: Resolve all entries from validated bundles
-			var resolver = new BundleDataResolver(_fileSystem);
-			var resolvedResult = await resolver.ResolveEntriesAsync(validationResult.Bundles, ctx);
+			var resolver = new BundleDataResolver();
+			var resolvedResult = resolver.ResolveEntries(validationResult.Bundles);
 
 			if (resolvedResult.Entries.Count == 0)
 			{
@@ -140,7 +134,8 @@ public class ChangelogRenderingService(
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
 			// Extract descriptions from bundles for MVP support
-			var bundleDescriptions = validationResult.Bundles
+			var bundleDescriptions = validationResult
+				.Bundles
 				.Select(b => b.Data.Description)
 				.Where(d => !string.IsNullOrEmpty(d))
 				.Distinct()
@@ -150,9 +145,11 @@ public class ChangelogRenderingService(
 			string? renderDescription = null;
 			if (bundleDescriptions.Count > 1)
 			{
-				collector.EmitWarning(string.Empty,
+				collector.EmitWarning(
+					string.Empty,
 					$"Multiple bundles contain descriptions ({bundleDescriptions.Count} found). " +
-					"Multi-bundle description support is not yet implemented. Descriptions will be skipped.");
+						"Multi-bundle description support is not yet implemented. Descriptions will be skipped."
+				);
 			}
 			else if (bundleDescriptions.Count == 1)
 			{
@@ -160,7 +157,8 @@ public class ChangelogRenderingService(
 			}
 
 			// Extract release dates from bundles for MVP support
-			var bundleReleaseDates = validationResult.Bundles
+			var bundleReleaseDates = validationResult
+				.Bundles
 				.Select(b => b.Data.ReleaseDate)
 				.Where(d => d.HasValue)
 				.Select(d => d!.Value)
@@ -170,9 +168,11 @@ public class ChangelogRenderingService(
 			DateOnly? renderReleaseDate = null;
 			if (bundleReleaseDates.Count > 1)
 			{
-				collector.EmitWarning(string.Empty,
+				collector.EmitWarning(
+					string.Empty,
 					$"Multiple bundles contain release dates ({bundleReleaseDates.Count} found). " +
-					"Multi-bundle release date support is not yet implemented. Release dates will be skipped.");
+						"Multi-bundle release date support is not yet implemented. Release dates will be skipped."
+				);
 			}
 			else if (bundleReleaseDates.Count == 1)
 			{
@@ -180,7 +180,15 @@ public class ChangelogRenderingService(
 			}
 
 			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription, renderReleaseDate);
+			var context = BuildRenderContext(
+				input,
+				outputSetup,
+				resolvedResult,
+				combinedHideFeatures,
+				config,
+				renderDescription,
+				renderReleaseDate
+			);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -212,7 +220,8 @@ public class ChangelogRenderingService(
 	private OutputSetup SetupOutput(
 		IDiagnosticsCollector collector,
 		RenderChangelogsArguments input,
-		IReadOnlySet<(string product, string target)> allProducts)
+		IReadOnlySet<(string product, string target)> allProducts
+	)
 	{
 		// Determine output directory
 		var outputDir = input.Output ?? _fileSystem.Directory.GetCurrentDirectory();
@@ -220,16 +229,17 @@ public class ChangelogRenderingService(
 			_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
 		// Extract version from products (use first product's target if available, or "unknown")
-		var version = allProducts.Count > 0
-			? allProducts.OrderBy(p => p.product).ThenBy(p => p.target).First().target
-			: "unknown";
+		var version = allProducts.Count > 0 ? allProducts.OrderBy(p => p.product).ThenBy(p => p.target).First().target : "unknown";
 
 		if (string.IsNullOrWhiteSpace(version))
 			version = "unknown";
 
 		// Warn if --title was not provided and version defaults to "unknown"
 		if (string.IsNullOrWhiteSpace(input.Title) && version == "unknown")
-			collector.EmitWarning(string.Empty, "No --title option provided and bundle files do not contain 'target' values. Output folder and markdown titles will default to 'unknown'. Consider using --title to specify a custom title.");
+			collector.EmitWarning(
+				string.Empty,
+				"No --title option provided and bundle files do not contain 'target' values. Output folder and markdown titles will default to 'unknown'. Consider using --title to specify a custom title."
+			);
 
 		// Determine title and slug
 		string title;
@@ -255,20 +265,25 @@ public class ChangelogRenderingService(
 	private static void EmitHiddenEntryWarnings(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<ResolvedEntry> entries,
-		HashSet<string> featureIdsToHide)
+		HashSet<string> featureIdsToHide
+	)
 	{
 		// Track hidden entries for warnings
 		foreach (var resolved in entries)
 		{
 			if (!string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) && featureIdsToHide.Contains(resolved.Entry.FeatureId))
-				collector.EmitWarning(string.Empty, $"Changelog entry '{resolved.Entry.Title}' with feature-id '{resolved.Entry.FeatureId}' will be commented out in markdown output");
+				collector.EmitWarning(
+					string.Empty,
+					$"Changelog entry '{resolved.Entry.Title}' with feature-id '{resolved.Entry.FeatureId}' will be commented out in markdown output"
+				);
 		}
 	}
 
 	private static bool ValidateEntryTypes(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<ResolvedEntry> entries,
-		IReadOnlyList<string> availableTypes)
+		IReadOnlyList<string> availableTypes
+	)
 	{
 		var isValid = true;
 
@@ -277,13 +292,17 @@ public class ChangelogRenderingService(
 		if (invalidEntries.Count > 0)
 		{
 			foreach (var entry in invalidEntries)
-				collector.EmitError(string.Empty, $"Changelog entry '{entry.Entry.Title}' has an invalid or unrecognized type. Valid types are: {string.Join(", ", availableTypes)}.");
+				collector.EmitError(
+					string.Empty,
+					$"Changelog entry '{entry.Entry.Title}' has an invalid or unrecognized type. Valid types are: {string.Join(", ", availableTypes)}."
+				);
 			isValid = false;
 		}
 
 		// All valid enum values (except Invalid) are handled in rendering
 		var handledTypes = new HashSet<ChangelogEntryType>(
-			ChangelogEntryTypeExtensions.GetValues().Where(t => t != ChangelogEntryType.Invalid));
+			ChangelogEntryTypeExtensions.GetValues().Where(t => t != ChangelogEntryType.Invalid)
+		);
 		var availableTypesSet = new HashSet<string>(availableTypes, StringComparer.OrdinalIgnoreCase);
 
 		var entriesByType = entries
@@ -295,7 +314,10 @@ public class ChangelogRenderingService(
 		{
 			var typeString = entryType.ToStringFast(true);
 			if (availableTypesSet.Contains(typeString) && !handledTypes.Contains(entryType))
-				collector.EmitWarning(string.Empty, $"Changelog type '{typeString}' is valid according to configuration but is not handled in rendering output. {count} entry/entries of this type will not be included in the generated markdown files.");
+				collector.EmitWarning(
+					string.Empty,
+					$"Changelog type '{typeString}' is valid according to configuration but is not handled in rendering output. {count} entry/entries of this type will not be included in the generated markdown files."
+				);
 		}
 
 		return isValid;
@@ -308,10 +330,12 @@ public class ChangelogRenderingService(
 		HashSet<string> featureIdsToHide,
 		ChangelogConfiguration? config,
 		string? description = null,
-		DateOnly? releaseDate = null)
+		DateOnly? releaseDate = null
+	)
 	{
 		// Group entries by type
-		var entriesByType = resolved.Entries
+		var entriesByType = resolved
+			.Entries
 			.Select(e => e.Entry)
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => (IReadOnlyCollection<ChangelogEntry>)g.ToArray().AsReadOnly())

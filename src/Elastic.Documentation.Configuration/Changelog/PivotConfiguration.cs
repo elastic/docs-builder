@@ -41,6 +41,14 @@ public record PivotConfiguration
 	public Dictionary<string, string?>? Products { get; init; }
 
 	/// <summary>
+	/// Feature ID definitions with labels mapped to feature-id values.
+	/// Keys are feature-id strings (e.g., "feature:new-search-api").
+	/// Values are label strings (e.g., "feature-flag:new-search-api").
+	/// When a PR has labels matching a feature entry, that feature-id is set on the changelog entry.
+	/// </summary>
+	public Dictionary<string, string?>? Features { get; init; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (comma-separated string).
 	/// When a PR has any of these labels, highlight is set to true.
 	/// Example: ">highlight, >release-highlight"

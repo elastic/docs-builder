@@ -1,5 +1,0 @@
-# Highlights
-
-:::{changelog}
-:type: highlight
-:::

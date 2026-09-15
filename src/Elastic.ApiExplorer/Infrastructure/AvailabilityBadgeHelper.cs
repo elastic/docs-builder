@@ -56,7 +56,8 @@ public static partial class AvailabilityBadgeHelper
 
 	private static AvailabilityBadgeData? FromExtensions(
 		IDictionary<string, IOpenApiExtension>? extensions,
-		VersionsConfiguration? versionsConfig)
+		VersionsConfiguration? versionsConfig
+	)
 	{
 		if (extensions is null || !extensions.TryGetValue("x-state", out var stateExtension))
 			return null;
@@ -64,9 +65,11 @@ public static partial class AvailabilityBadgeHelper
 		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
 			return null;
 
-		if (jsonNodeExtension.Node is not JsonValue jsonValue
+		if (
+			jsonNodeExtension.Node is not JsonValue jsonValue
 			|| !jsonValue.TryGetValue<string>(out var stateValue)
-			|| string.IsNullOrEmpty(stateValue))
+			|| string.IsNullOrEmpty(stateValue)
+		)
 			return null;
 
 		var lifecycleString = ProjectToLifecycleFormat(stateValue);
@@ -109,9 +112,7 @@ public static partial class AvailabilityBadgeHelper
 		return lifecycle;
 	}
 
-	private static AvailabilityBadgeData? BuildBadgeData(
-		ApplicableTo applicableTo,
-		VersionsConfiguration? versionsConfig)
+	private static AvailabilityBadgeData? BuildBadgeData(ApplicableTo applicableTo, VersionsConfiguration? versionsConfig)
 	{
 		if (applicableTo.Stack is null)
 			return null;
@@ -181,9 +182,7 @@ public static partial class AvailabilityBadgeHelper
 	private static string FormatVersion(VersionSpec versionSpec)
 	{
 		var min = versionSpec.Min;
-		var minVersion = versionSpec.ShowMinPatch
-			? $"{min.Major}.{min.Minor}.{min.Patch}"
-			: $"{min.Major}.{min.Minor}";
+		var minVersion = versionSpec.ShowMinPatch ? $"{min.Major}.{min.Minor}.{min.Patch}" : $"{min.Major}.{min.Minor}";
 
 		return versionSpec.Kind switch
 		{

@@ -24,7 +24,8 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	private static readonly string OutputDir = Path.Join(Root, "output");
 	private static readonly string ConfigPath = Path.Join(Root, "config/changelog.yml");
 
-	private const string MinimalConfig = """
+	private const string MinimalConfig =
+		"""
 		pivot:
 		  types:
 		    feature: "type:feature"
@@ -42,8 +43,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		    exclude: "changelog:skip"
 		""";
 
-	private ChangelogPrepareArtifactService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, _mockCore, FileSystem);
+	private ChangelogPrepareArtifactService CreateService() => new(LoggerFactory, ConfigurationContext, _mockCore, RunnerTempFileSystem);
 
 	private PrepareArtifactArguments DefaultArgs(
 		string evaluateStatus = "proceed",
@@ -78,10 +78,10 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await FileSystem.File.WriteAllTextAsync(configPath, MinimalConfig);
 	}
 
-	private ChangelogArtifactMetadata ReadMetadata()
+	private GithubDecisionMetadata ReadMetadata()
 	{
 		var json = FileSystem.File.ReadAllText(Path.Join(OutputDir, "metadata.json"));
-		return JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata)!;
+		return JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata)!;
 	}
 
 	[Fact]
@@ -104,19 +104,41 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		A.CallTo(() => _mockCore.SetOutputAsync("status", "success")).MustHaveHappened();
 	}
 
+	// Regression: docs-actions stages under `.artifacts/...` inside the checkout.
+	// Those paths are descendants of the working root (not added as extra roots), so
+	// RunnerTempFileSystem must allow the `.artifacts` hidden folder or prepare-artifact
+	// fails with "path must not traverse hidden directories" (elastic/cloud changelog-submit).
+	[Fact]
+	public async Task PrepareArtifact_DotArtifactsPaths_CopiesYamlAndWritesMetadata()
+	{
+		var artifactsStaging = Path.Join(Root, ".artifacts", "changelog-staging");
+		var artifactsOutput = Path.Join(Root, ".artifacts", "changelog-artifact");
+
+		var ct = TestContext.Current.CancellationToken;
+		RunnerTempFileSystem.Directory.CreateDirectory(artifactsStaging);
+		await RunnerTempFileSystem.File.WriteAllTextAsync(Path.Join(artifactsStaging, "42.yaml"), "title: test changelog", ct);
+		await SetupConfig();
+
+		var service = CreateService();
+		var args = DefaultArgs() with { StagingDir = artifactsStaging, OutputDir = artifactsOutput };
+
+		var result = await service.PrepareArtifact(Collector, args, ct);
+
+		result.Should().BeTrue();
+		RunnerTempFileSystem.File.Exists(Path.Join(artifactsOutput, "42.yaml")).Should().BeTrue();
+		var json = RunnerTempFileSystem.File.ReadAllText(Path.Join(artifactsOutput, "metadata.json"));
+		var metadata = JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata)!;
+		metadata.Status.Should().Be("success");
+		metadata.ChangelogFilename.Should().Be("42.yaml");
+	}
+
 	[Fact]
 	public async Task PrepareArtifact_ForkFields_PersistedInMetadata()
 	{
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = true,
-			HeadRepo = "contributor/repo",
-			CanCommit = true,
-			MaintainerCanModify = true
-		};
+		var args = DefaultArgs() with { IsFork = true, HeadRepo = "contributor/repo", CanCommit = true, MaintainerCanModify = true };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -133,13 +155,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = true,
-			HeadRepo = "contributor/repo",
-			CanCommit = false,
-			MaintainerCanModify = false
-		};
+		var args = DefaultArgs() with { IsFork = true, HeadRepo = "contributor/repo", CanCommit = false, MaintainerCanModify = false };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -161,13 +177,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = null,
-			CanCommit = null,
-			MaintainerCanModify = null,
-			HeadRepo = null
-		};
+		var args = DefaultArgs() with { IsFork = null, CanCommit = null, MaintainerCanModify = null, HeadRepo = null };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -183,11 +193,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			ProductLabelTable = "| Label | Product |\n| --- | --- |",
-			SkipLabels = "changelog:skip,skip-ci"
-		};
+		var args = DefaultArgs() with { ProductLabelTable = "| Label | Product |\n| --- | --- |", SkipLabels = "changelog:skip,skip-ci" };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -300,7 +306,8 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		FileSystem.Directory.CreateDirectory(StagingDir);
 
 		// Create YAML with BOM prefix
-		const string yamlContent = """
+		const string yamlContent =
+			"""
 			title: Test changelog
 			type: feature
 			products:
@@ -318,11 +325,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		ChangelogUtf8Normalization.HasUtf8Bom(stagingBytes).Should().BeTrue("staging file should contain BOM");
 
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			EvaluateStatus = "proceed",
-			GenerateOutcome = "success"
-		};
+		var args = DefaultArgs() with { EvaluateStatus = "proceed", GenerateOutcome = "success" };
 
 		// Act
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);

@@ -9,16 +9,47 @@
 
 <body
 	hx-history="false"
-	hx-indicator="#htmx-indicator"
-	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())@(Model.Features.AirGappedEnabled ? " air-gapped" : "")"
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())@(Model.Features.AirGappedEnabled ? " air-gapped" : "")@(Model.Features.NavigationPreviewEnabled ? " navigation-preview" : "")"
 	hx-ext="preload, head-support"
 	data-docs-builder-version="@Model.DocsBuilderVersion"
-	hx-boost="true" hx-push-url="true" hx-indicator="#htmx-indicator"
+	hx-boost="true"
+	hx-push-url="true"
+	hx-target="#main-container"
+	hx-select="#main-container"
+	hx-swap="outerHTML show:none"
 	>
 <svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
 	<defs>
-		<symbol id="icon-chevron-down" viewBox="0 0 24 24">
-			<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+		<symbol id="icon-chevron-down" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z"/>
+		</symbol>
+		<symbol id="icon-chevron-limit-right" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M8.293 8 2.646 2.354l.708-.708L9.707 8l-6.353 6.354-.708-.707L8.293 8ZM12 13V3h1v10h-1Z"/>
+		</symbol>
+		<symbol id="icon-documentation" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+		</symbol>
+		<symbol id="icon-code" viewBox="0 0 16 16">
+			<path fill="currentColor" d="m7.492 13.59 2-11-.984-.18-2 11 .984.18ZM4.854 5.354 2.207 8l2.647 2.646-.707.708L.793 8l3.354-3.354.707.708ZM15.207 8l-3.353-3.354-.707.708L13.793 8l-2.646 2.646.707.708L15.207 8Z"/>
+		</symbol>
+		<symbol id="icon-external" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 2h2.293L6.646 8.646l.708.708L14 2.707V5h1V1h-4v1Z"/>
+			<path fill="currentColor" d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7h-1v6H3V3h6V2H3Z"/>
+		</symbol>
+		<symbol id="icon-grid" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M6 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4h-4v4ZM6 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4ZM2 6h4V2H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4Zm-4 5h4V2h-4v4Z"/>
+		</symbol>
+		<symbol id="icon-list-bullet" viewBox="0 0 16 16" shape-rendering="crispEdges">
+			<path fill="currentColor" d="M4 13H1v-1h3v1Zm11 0H6v-1h9v1ZM4 8.5H1v-1h3v1Zm11 0H6v-1h9v1ZM4 4H1V3h3v1Zm11 0H6V3h9v1Z"/>
+		</symbol>
+		<symbol id="icon-wrench" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M13.121 7.121a3 3 0 0 0 .874-2.287L11.707 7.12 8.878 4.293l2.288-2.288A3 3 0 0 0 8.173 6.01l.106.298-5.986 5.986a1 1 0 0 0 1.414 1.414l5.986-5.986.298.105a3 3 0 0 0 3.13-.705m.707.708a4 4 0 0 1-3.863 1.034l-5.55 5.551a2 2 0 1 1-2.83-2.828l5.552-5.551a3.997 3.997 0 0 1 4.328-5.008l.143.028a.88.88 0 0 1 .62.628.97.97 0 0 1-.258.933l-1.677 1.677 1.414 1.414 1.677-1.677a.97.97 0 0 1 .933-.26c.29.079.54.3.628.622l.027.143.02.22a4 4 0 0 1-1.164 3.074"/>
+		</symbol>
+		<symbol id="icon-refresh-time" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 9h1v2h2v1h-3V9Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7.754 13.995a4.5 4.5 0 1 1 7.491-4.99 4.5 4.5 0 0 1-7.49 4.99ZM15 11.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"/>
+			<path fill="currentColor" d="M7.222 14.957a5.501 5.501 0 0 1-.713-1.144A6.003 6.003 0 0 1 3.757 3.757l.007-.007.003-.002.013-.014A4.337 4.337 0 0 1 4 3.525V6h1V2H1v1h2.1l-.03.03-.018.019-.004.004a7.001 7.001 0 0 0 4.175 11.904Zm7.735-7.735A7.001 7.001 0 0 0 8 1v1a6.003 6.003 0 0 1 5.813 4.509c.412.19.796.431 1.144.713Z"/>
 		</symbol>
 	</defs>
 </svg>
@@ -26,18 +57,6 @@
 {
 	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
 	                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-}
-
-@* Assembler (non-air-gapped) renders #htmx-indicator anchored to the secondary nav
-   in _SecondaryNav.cshtml instead of this viewport-fixed variant. *@
-@if (Model.BuildType != BuildType.Assembler || Model.Features.AirGappedEnabled)
-{
-	<div class="w-full fixed top-(--offset-top) left-0 right-0 htmx-indicator" id="htmx-indicator" role="status" hx-preserve>
-		<div class="h-px w-full overflow-hidden">
-			<div class="progress w-full h-full bg-pink-70 left-right"></div>
-		</div>
-		<div class="sr-only">Loading</div>
-	</div>
 }
 
 @(await RenderBodyAsync())

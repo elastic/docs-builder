@@ -47,7 +47,6 @@ public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTra
 						yield return new RenamedGitChange(parts[0], parts[1], GitChangeType.Renamed);
 				}
 			}
-
 		}
 	}
 }

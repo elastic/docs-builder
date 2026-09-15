@@ -10,12 +10,7 @@ namespace Elastic.ApiExplorer.Model;
 /// <summary>
 /// Represents a union option with full schema information.
 /// </summary>
-public record UnionOption(
-	string Name,
-	string? Ref,
-	bool IsObject,
-	IOpenApiSchema? Schema
-);
+public record UnionOption(string Name, string? Ref, bool IsObject, IOpenApiSchema? Schema);
 
 /// <summary>
 /// Unified type information record used by both OperationView and SchemaView.

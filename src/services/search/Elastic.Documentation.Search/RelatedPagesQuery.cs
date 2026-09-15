@@ -13,10 +13,9 @@ public static partial class RelatedPagesQuery
 	private const int MaximumQueryTerms = 12;
 
 	private static readonly FrozenSet<string> IgnoredTerms = FrozenSet.ToFrozenSet<string>(
-	[
-		"docs", "doc", "guide", "guides", "current", "latest", "html", "htm",
-		"en", "en-us", "de", "fr", "ja", "ko", "zh", "es", "pt"
-	], StringComparer.OrdinalIgnoreCase);
+		["docs", "doc", "guide", "guides", "current", "latest", "html", "htm", "en", "en-us", "de", "fr", "ja", "ko", "zh", "es", "pt"],
+		StringComparer.OrdinalIgnoreCase
+	);
 
 	public static string FromPath(string path)
 	{

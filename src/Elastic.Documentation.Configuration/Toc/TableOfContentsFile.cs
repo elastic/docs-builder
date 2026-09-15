@@ -17,11 +17,27 @@ public class TableOfContentsFile
 	public TableOfContents TableOfContents { get; set; } = [];
 
 	/// <summary>
+	/// When <c>true</c>, this table of contents is rendered as an island in the navigation tree.
+	/// In isolated builds the root docset is never an island (it has no parent); in assembled builds
+	/// the node is re-parented under <c>SiteNavigation</c> and the flag takes effect.
+	/// </summary>
+	[YamlMember(Alias = "island")]
+	public bool Island { get; set; }
+
+	/// <summary>
 	/// Set of diagnostic hint types to suppress. Deserialized directly from YAML list of strings.
 	/// Valid values: "DeepLinkingVirtualFile", "FolderFileNameMismatch"
 	/// </summary>
 	[YamlMember(Alias = "suppress")]
 	public HashSet<HintType> SuppressDiagnostics { get; set; } = [];
+
+	/// <summary>
+	/// Optional name of a <c>cta</c> template (declared in <c>docset.yml</c>) applied to every page
+	/// listed in this navigation file unless the page selects one explicitly via frontmatter.
+	/// Nested <c>toc.yml</c> files may override the value inherited from a parent navigation file.
+	/// </summary>
+	[YamlMember(Alias = "default_cta")]
+	public string? DefaultCta { get; set; }
 
 	public static TableOfContentsFile Deserialize(string json) =>
 		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsFile>(json);

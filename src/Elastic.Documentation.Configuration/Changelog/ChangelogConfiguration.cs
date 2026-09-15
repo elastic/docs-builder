@@ -15,18 +15,18 @@ public record ChangelogConfiguration
 	/// <summary>
 	/// Default types for changelog entries (derived from ChangelogEntryType enum)
 	/// </summary>
-	public static IReadOnlyList<string> DefaultTypes { get; } =
-		ChangelogEntryTypeExtensions.GetValues()
-			.Select(t => t.ToStringFast(true))
-			.ToList();
+	public static IReadOnlyList<string> DefaultTypes { get; } = ChangelogEntryTypeExtensions
+		.GetValues()
+		.Select(t => t.ToStringFast(true))
+		.ToList();
 
 	/// <summary>
 	/// Default subtypes for breaking changes (derived from ChangelogEntrySubtype enum)
 	/// </summary>
-	public static IReadOnlyList<string> DefaultSubtypes { get; } =
-		ChangelogEntrySubtypeExtensions.GetValues()
-			.Select(s => s.ToStringFast(true))
-			.ToList();
+	public static IReadOnlyList<string> DefaultSubtypes { get; } = ChangelogEntrySubtypeExtensions
+		.GetValues()
+		.Select(s => s.ToStringFast(true))
+		.ToList();
 
 	/// <summary>
 	/// Required types that must be present in the configuration.
@@ -99,6 +99,13 @@ public record ChangelogConfiguration
 	public IReadOnlyDictionary<string, string>? LabelToProducts { get; init; }
 
 	/// <summary>
+	/// Mapping from GitHub label names to feature-id values (computed from Pivot.Features).
+	/// Each label maps to a feature-id string (e.g., "feature:new-search-api").
+	/// When a PR has labels matching multiple distinct feature-ids, the first match is used.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? LabelToFeatures { get; init; }
+
+	/// <summary>
 	/// Rules configuration for create and publish blockers
 	/// </summary>
 	public RulesConfiguration? Rules { get; init; }
@@ -117,7 +124,7 @@ public record ChangelogConfiguration
 	/// Filename strategy for generated changelog files.
 	/// Controls how files created by 'changelog add' are named.
 	/// </summary>
-	public FilenameStrategy Filename { get; init; } = FilenameStrategy.Timestamp;
+	public FilenameStrategy Filename { get; init; } = FilenameStrategy.Pr;
 
 	/// <summary>
 	/// Bundle configuration with profiles and defaults.

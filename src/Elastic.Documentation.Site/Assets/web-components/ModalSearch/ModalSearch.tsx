@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import '../../eui-icons-cache'
 import { ElasticAiAssistantButton } from '../AskAi/ElasticAiAssistantButton'
 import { InfoBanner } from '../AskAi/InfoBanner'
@@ -209,7 +210,7 @@ const ModalSearchContent = ({
 
             {<EuiHorizontalRule margin="none" />}
 
-            {searchTerm && (
+            {config.buildType !== 'isolated' && searchTerm && (
                 <div
                     css={css`
                         padding-inline: ${euiTheme.size.base};
@@ -251,7 +252,7 @@ const ModalSearchContent = ({
                 </div>
             )}
 
-            <InfoBanner />
+            {config.buildType !== 'isolated' && <InfoBanner />}
             <KeyboardShortcutsFooter shortcuts={SEARCH_KEYBOARD_SHORTCUTS} />
         </div>
     )
@@ -311,6 +312,10 @@ const ModalSearchTrigger = ({
                 color: ${euiTheme.colors.textDisabled};
                 cursor: pointer;
 
+                @media (max-width: 768px) {
+                    padding-right: ${euiTheme.size.s};
+                }
+
                 &:hover {
                     border-color: ${euiTheme.colors.borderBasePlain};
                 }
@@ -344,6 +349,9 @@ const ModalSearchTrigger = ({
                     right: ${euiTheme.size.m};
                     color: ${euiTheme.colors.textDisabled};
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                    @media (max-width: 768px) {
+                        display: none;
+                    }
                 `}
             >
                 {isMac ? '⌘K' : 'Ctrl+K'}

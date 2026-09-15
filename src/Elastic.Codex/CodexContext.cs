@@ -7,7 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Codex;
 
@@ -16,8 +16,8 @@ namespace Elastic.Codex;
 /// </summary>
 public class CodexContext : IDocsSyncContext
 {
-	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
+	public CheckoutsFileSystem ReadFileSystem { get; }
+	public DocumentationWriteFileSystem WriteFileSystem { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public CodexConfiguration Configuration { get; }
 	public IFileInfo ConfigurationPath { get; }
@@ -37,23 +37,23 @@ public class CodexContext : IDocsSyncContext
 		CodexConfiguration configuration,
 		IFileInfo configurationPath,
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFileSystem,
-		ScopedFileSystem writeFileSystem,
-		string? checkoutDirectory,
-		string? outputDirectory)
+		CheckoutsFileSystem fileSystem,
+		string? checkoutDirectory = null,
+		string? outputDirectory = null
+	)
 	{
 		Configuration = configuration;
 		ConfigurationPath = configurationPath;
 		Collector = collector;
-		ReadFileSystem = readFileSystem;
-		WriteFileSystem = writeFileSystem;
+		ReadFileSystem = fileSystem;
+		WriteFileSystem = fileSystem.Write;
 
 		EnvironmentName = string.IsNullOrEmpty(configuration.Environment) ? "codex" : configuration.Environment;
 
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
 		CheckoutDirectory = checkoutDirectory is null
-			? FileSystemFactory.AppData.DirectoryInfo.New(defaultCheckoutDirectory)
-			: ReadFileSystem.DirectoryInfo.New(checkoutDirectory);
+			? fileSystem.DirectoryInfo.New(defaultCheckoutDirectory)
+			: fileSystem.DirectoryInfo.New(checkoutDirectory);
 
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
 		OutputDirectory = WriteFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);

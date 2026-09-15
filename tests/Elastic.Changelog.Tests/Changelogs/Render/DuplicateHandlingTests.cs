@@ -16,12 +16,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 	public async Task RenderChangelogs_WithDuplicateFileName_EmitsWarning()
 	{
 		// Arrange
-		var changelogDir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		var changelogDir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir1);
-		FileSystem.Directory.CreateDirectory(changelogDir2);
-
-		// Create same changelog file in both directories
+		// Same changelog entry bundled under the same file name in two bundles
 		// language=yaml
 		var changelog =
 			"""
@@ -35,52 +30,31 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			""";
 
 		var fileName = "1755268130-duplicate.yaml";
-		var file1 = FileSystem.Path.Join(changelogDir1, fileName);
-		var file2 = FileSystem.Path.Join(changelogDir2, fileName);
-		await FileSystem.File.WriteAllTextAsync(file1, changelog, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog, TestContext.Current.CancellationToken);
 
 		// Create bundle files
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
 		// language=yaml
-		var bundleContent1 =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: {fileName}
-			      checksum: {ComputeSha1(changelog)}
 			""";
+
+		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
+		var bundleContent1 = CreateResolvedBundleContent(bundleHeader, (fileName, changelog));
 		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current.CancellationToken);
 
 		var bundle2 = FileSystem.Path.Join(bundleDir, "bundle2.yaml");
-		// language=yaml
-		var bundleContent2 =
-			$"""
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			entries:
-			  - file:
-			      name: {fileName}
-			      checksum: {ComputeSha1(changelog)}
-			""";
+		var bundleContent2 = CreateResolvedBundleContent(bundleHeader, (fileName, changelog));
 		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles =
-			[
-				new BundleInput { BundleFile = bundle1, Directory = changelogDir1 },
-				new BundleInput { BundleFile = bundle2, Directory = changelogDir2 }
-			],
+			Bundles = [new BundleInput { BundleFile = bundle1 }, new BundleInput { BundleFile = bundle2 }],
 			Output = outputDir
 		};
 
@@ -91,19 +65,13 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("appears in multiple bundles"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
 	}
 
 	[Fact]
 	public async Task RenderChangelogs_WithDuplicateFileNameInSameBundle_EmitsWarning()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create changelog file
 		// language=yaml
 		var changelog =
 			"""
@@ -117,40 +85,24 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			""";
 
 		var fileName = "1755268130-test-feature.yaml";
-		var changelogFile = FileSystem.Path.Join(changelogDir, fileName);
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
-		// Create bundle file with the same file referenced twice
+		// Create bundle file with the same file name inlined twice
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: {fileName}
-			      checksum: {ComputeSha1(changelog)}
-			  - file:
-			      name: {fileName}
-			      checksum: {ComputeSha1(changelog)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, (fileName, changelog), (fileName, changelog));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
-		var input = new RenderChangelogsArguments
-		{
-			Bundles =
-			[
-				new BundleInput { BundleFile = bundleFile, Directory = changelogDir }
-			],
-			Output = outputDir
-		};
+		var input = new RenderChangelogsArguments { Bundles = [new BundleInput { BundleFile = bundleFile }], Output = outputDir };
 
 		// Act
 		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -159,22 +111,20 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("appears multiple times in the same bundle") &&
-			d.File == bundleFile);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("appears multiple times in the same bundle") && d.File ==
+					bundleFile
+			);
 	}
 
 	[Fact]
 	public async Task RenderChangelogs_WithDuplicatePr_EmitsWarning()
 	{
 		// Arrange
-		var changelogDir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		var changelogDir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir1);
-		FileSystem.Directory.CreateDirectory(changelogDir2);
-
-		// Create changelog files with same PR
+		// Create changelog entries with same PR
 		// language=yaml
 		var changelog1 =
 			"""
@@ -198,52 +148,30 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			- "100"
 			""";
 
-		var file1 = FileSystem.Path.Join(changelogDir1, "1755268130-first.yaml");
-		var file2 = FileSystem.Path.Join(changelogDir2, "1755268140-second.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
-
 		// Create bundle files
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
 		// language=yaml
-		var bundleContent1 =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-first.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+
+		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
+		var bundleContent1 = CreateResolvedBundleContent(bundleHeader, ("1755268130-first.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current.CancellationToken);
 
 		var bundle2 = FileSystem.Path.Join(bundleDir, "bundle2.yaml");
-		// language=yaml
-		var bundleContent2 =
-			$"""
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268140-second.yaml
-			      checksum: {ComputeSha1(changelog2)}
-			""";
+		var bundleContent2 = CreateResolvedBundleContent(bundleHeader, ("1755268140-second.yaml", changelog2));
 		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles =
-			[
-				new BundleInput { BundleFile = bundle1, Directory = changelogDir1 },
-				new BundleInput { BundleFile = bundle2, Directory = changelogDir2 }
-			],
+			Bundles = [new BundleInput { BundleFile = bundle1 }, new BundleInput { BundleFile = bundle2 }],
 			Output = outputDir
 		};
 
@@ -254,8 +182,6 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("appears in multiple bundles"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("appears in multiple bundles"));
 	}
 }

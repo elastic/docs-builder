@@ -34,8 +34,7 @@ public class ReleaseNotesExtractorTests
 	{
 		// Arrange
 		// language=markdown
-		var prBody =
-			"""
+		var prBody = """
 			## Summary
 
 			Release Notes - Adds support for new aggregation types
@@ -53,8 +52,7 @@ public class ReleaseNotesExtractorTests
 	{
 		// Arrange
 		// language=markdown
-		var prBody =
-			"""
+		var prBody = """
 			## Summary
 
 			Release Note: Adds support for new aggregation types
@@ -140,8 +138,7 @@ public class ReleaseNotesExtractorTests
 	{
 		// Arrange
 		// language=markdown
-		var prBody =
-			"""
+		var prBody = """
 			## Summary
 
 			This PR adds a new feature but has no release notes section.
@@ -186,14 +183,15 @@ public class ReleaseNotesExtractorTests
 	{
 		// Arrange
 		// language=markdown
-		var prBody =
-			"""
+		var prBody = """
 			Release Notes: This is a multi-line
 			release note that spans
 			multiple lines
 
 			## Next Section
-			""".ReplaceLineEndings("\n");
+			""".ReplaceLineEndings(
+			"\n"
+		);
 
 		// Act
 		var result = ReleaseNotesExtractor.FindReleaseNote(prBody);

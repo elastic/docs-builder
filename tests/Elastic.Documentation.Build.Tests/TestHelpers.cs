@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
@@ -26,14 +27,16 @@ public static class TestHelpers
 	public static IConfigurationContext CreateConfigurationContext(
 		IFileSystem fileSystem,
 		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null)
+		ProductsConfiguration? productsConfiguration = null
+	)
 	{
 		versionsConfiguration ??= new VersionsConfiguration
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
 				{
-					VersioningSystemId.Stack, new VersioningSystem
+					VersioningSystemId.Stack,
+					new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
 						Current = new SemVersion(8, 0, 0),
@@ -48,7 +51,8 @@ public static class TestHelpers
 			var products = new Dictionary<string, Product>
 			{
 				{
-					"elasticsearch", new Product
+					"elasticsearch",
+					new Product
 					{
 						Id = "elasticsearch",
 						DisplayName = "Elasticsearch",
@@ -67,16 +71,48 @@ public static class TestHelpers
 		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
-			Endpoints = new DocumentationEndpoints
-			{
-				Elasticsearch = ElasticsearchEndpoint.Default,
-			},
-			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(null), fileSystem),
+			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
+			ConfigurationFileProvider = new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem(fileSystem)),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
 			SearchConfiguration = search,
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
+	}
+}
+
+/// <summary>
+/// A throwaway directory below <c>.artifacts</c>, removed on dispose. ScopedFileSystem only permits
+/// writes under the working directory root, so the system temp folder is not an option here.
+/// </summary>
+public sealed class ScopedTempDirectory : IDisposable
+{
+	public ScopedTempDirectory(IFileSystem fileSystem, string prefix)
+	{
+		Directory = fileSystem.DirectoryInfo.New(
+			fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-temp", $"{prefix}-{Guid.NewGuid():N}")
+		);
+		Directory.Create();
+	}
+
+	public IDirectoryInfo Directory { get; }
+
+	public string FullName => Directory.FullName;
+
+	public void Dispose()
+	{
+		try
+		{
+			Directory.Delete(recursive: true);
+		}
+		catch (IOException)
+		{
+			// a leftover directory under .artifacts must never fail a passing test
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// same
+		}
 	}
 }
 
@@ -122,6 +158,11 @@ public class TestLogger(ITestOutputHelper? output) : ILogger
 {
 	public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 	public bool IsEnabled(LogLevel logLevel) => true;
-	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-		output?.WriteLine($"[{logLevel}] {formatter(state, exception)}");
+	public void Log<TState>(
+		LogLevel logLevel,
+		EventId eventId,
+		TState state,
+		Exception? exception,
+		Func<TState, Exception?, string> formatter
+	) => output?.WriteLine($"[{logLevel}] {formatter(state, exception)}");
 }

@@ -24,14 +24,15 @@ public class NotFoundPageTests(ITestOutputHelper output) : NavigationTestsBase(o
 	}
 
 	[Fact]
-	public async Task RenderLayout_RelatedPagesDisabled_OmitsRecoveryOptions()
+	public async Task RenderLayout_RelatedPagesDisabled_KeepsBaselineRecoveryOptions()
 	{
 		var notFound = Set.MarkdownFiles.Single(file => file.RelativePath.EndsWith("404.md", StringComparison.Ordinal));
 
 		var rendered = await Generator.RenderLayout(notFound, TestContext.Current.CancellationToken);
 
 		rendered.Html.Should().NotContain("<related-pages>");
-		rendered.Html.Should().NotContain("The page might have moved");
-		rendered.Html.Should().NotContain("Go to docs home");
+		rendered.Html.Should().Contain("The page might have moved");
+		rendered.Html.Should().NotContain("Try one of the suggested pages below");
+		rendered.Html.Should().Contain("Go to docs home");
 	}
 }

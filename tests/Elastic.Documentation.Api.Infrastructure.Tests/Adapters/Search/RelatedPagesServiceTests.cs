@@ -14,27 +14,32 @@ public class RelatedPagesServiceTests
 	public async Task GetRelatedPagesAsync_MissingPath_ForcesSemanticSearchAndExcludesSamePath()
 	{
 		var search = A.Fake<IFullSearchService>();
-		A.CallTo(() => search.SearchAsync(A<FullSearchRequest>._, A<CancellationToken>._))
-			.Returns(new FullSearchResponse
-			{
-				Results =
-				[
-					Result("/docs/deploy-manage/index-lifecycle-management", "Missing page", 12),
-					Result("/docs/manage-data/lifecycle/index-lifecycle-management", "Manage index lifecycle", 10)
-				],
-				TotalResults = 2,
-				PageNumber = 1,
-				PageSize = 6
-			});
+		A.CallTo(() => search.SearchAsync(A<FullSearchRequest>._, A<CancellationToken>._)).Returns(new FullSearchResponse
+		{
+			Results =
+			[
+				Result("/docs/deploy-manage/index-lifecycle-management", "Missing page", 12),
+				Result("/docs/manage-data/lifecycle/index-lifecycle-management", "Manage index lifecycle", 10)
+			],
+			TotalResults = 2,
+			PageNumber = 1,
+			PageSize = 6
+		});
 		var service = new RelatedPagesService(search);
 
 		var response = await service.GetRelatedPagesAsync(
-			"/docs/deploy-manage/index-lifecycle-management", TestContext.Current.CancellationToken);
+			"/docs/deploy-manage/index-lifecycle-management",
+			TestContext.Current.CancellationToken
+		);
 
-		A.CallTo(() => search.SearchAsync(
-			A<FullSearchRequest>.That.Matches(request =>
-				request.ForceSemantic && !request.IncludeHighlighting && request.PageSize == 6),
-			A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => search.SearchAsync(
+				A<FullSearchRequest>.That.Matches(
+					request => request.ForceSemantic && !request.IncludeHighlighting && request.PageSize == 6
+				),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
 		response.Results.Should().ContainSingle().Which.Title.Should().Be("Manage index lifecycle");
 	}
 
@@ -50,13 +55,14 @@ public class RelatedPagesServiceTests
 		A.CallTo(() => search.SearchAsync(A<FullSearchRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	private static FullSearchResultItem Result(string url, string title, float score) => new()
-	{
-		Type = "doc",
-		Url = url,
-		Title = title,
-		Description = $"Description for {title}",
-		Parents = [],
-		Score = score
-	};
+	private static FullSearchResultItem Result(string url, string title, float score) =>
+		new()
+		{
+			Type = "doc",
+			Url = url,
+			Title = title,
+			Description = $"Description for {title}",
+			Parents = [],
+			Score = score
+		};
 }
