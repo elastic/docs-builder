@@ -51,6 +51,39 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "group", "endpoint-search.md")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search.md")).Should().BeTrue();
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "types", "_types-query_dsl-querycontainer.md")).Should().BeTrue();
+
+		var operationHtml = await write.ReadAllTextAsync(
+			Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search", "index.html"),
+			TestContext.Current.CancellationToken
+		);
+		operationHtml.Should().Contain("<title>Run a search - Elasticsearch API | Elastic Docs</title>");
+		operationHtml.Should().Contain("<meta property=\"og:title\" content=\"Run a search - Elasticsearch API | Elastic Docs\"");
+	}
+
+	[Fact]
+	public async Task Generate_IsolatedOperationPage_KeepsProductSuffix()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-title-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot, BuildType.Isolated);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(fixture.Document)
+		);
+
+		await generator.Generate(TestContext.Current.CancellationToken);
+
+		var operationHtml = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search", "index.html"),
+				TestContext.Current.CancellationToken
+			);
+		operationHtml.Should().Contain("<title>Run a search - Elasticsearch API | Fixture API</title>");
 	}
 
 	[Fact]
@@ -91,7 +124,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		landing.Should().Contain("title: Fixture API");
 		landing.Should().Contain("url: /api/doc/elasticsearch");
 		landing.Should().Contain("resource: /api/doc/elasticsearch");
-		landing.Should().Contain("  - elasticsearch");
+		landing.Should().Contain("  - Elasticsearch");
 		landing.Should().NotContain("applies_to:");
 		landing.Should().Contain("# Fixture API");
 		landing.Should().Contain("Search APIs");
@@ -190,11 +223,15 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		wrapped.Should().NotContain("<!DOCTYPE");
 	}
 
-	private static BuildContext CreateGenerateContext(string outputRoot)
+	private static BuildContext CreateGenerateContext(string outputRoot, BuildType buildType = BuildType.Assembler)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
-		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var product = TestHelpers.CreateProduct(
+			"elasticsearch",
+			stack.GetVersioningSystem(VersioningSystemId.Stack),
+			displayName: "Elasticsearch"
+		);
 		var repoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-repo-{Guid.NewGuid():N}");
 		var configPath = Path.Join(repoRoot, "docs", "docset.yml");
 		var docsetYaml =
@@ -235,7 +272,8 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 				}
 			),
 			configurationContext
-		);
+		)
+		{ BuildType = buildType };
 	}
 
 	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)

@@ -16,7 +16,7 @@
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
 		DocSetName = Model.DocSetName,
-		Title = $"{Model.Title} | {Model.SiteName}",
+		Title = Model.PageTitle,
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is
 			{
@@ -72,7 +72,7 @@
 				<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
 			}
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
-			<meta data-pagefind-meta="title[content]" content="@Model.Title"/>
+			<meta data-pagefind-meta="title[content]" content="@Model.PageTitle"/>
 			<meta data-pagefind-meta="breadcrumbs[content]" content="@Model.StructuredBreadcrumbsJson"/>
 			<script type="application/ld+json">
 	    	@(new HtmlString(Model.StructuredBreadcrumbsJson))

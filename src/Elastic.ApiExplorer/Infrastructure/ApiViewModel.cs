@@ -77,7 +77,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	{
 		var docTitle = Document.Info?.Title ?? "API Documentation";
 		var pageTitle = LayoutPageTitle;
-		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
+		var documentTitle = BuildContext.BuildType == BuildType.Assembler && BuildContext.Configuration.Branding is null
+			? $"{pageTitle ?? docTitle} | Elastic Docs"
+			: pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
 
 		return new()
 		{
