@@ -92,6 +92,15 @@ public interface IGitHubReleaseService
 	Task<IReadOnlyList<GitHubReleaseInfo>> FetchReleasesAsync(string owner, string repo, int count, CancellationToken ctx = default);
 
 	/// <summary>
+	/// Asks GitHub to generate release notes for <paramref name="currentTag"/> and returns
+	/// the tag name of the previous release as determined by GitHub's own algorithm.
+	/// Uses <c>POST /repos/{owner}/{repo}/releases/generate-notes</c> — a read-only
+	/// preview that produces no side effects.
+	/// </summary>
+	/// <returns>The previous tag name, or null if the call fails or GitHub cannot determine one.</returns>
+	Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default);
+
+	/// <summary>
 	/// Downloads a release asset's content as text
 	/// </summary>
 	/// <param name="asset">The asset to download</param>

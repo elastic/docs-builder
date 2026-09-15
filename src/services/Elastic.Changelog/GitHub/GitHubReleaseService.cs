@@ -131,6 +131,47 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 		}
 	}
 
+	/// <inheritdoc />
+	public async Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default)
+	{
+		try
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/releases/generate-notes";
+			var body = JsonSerializer.Serialize(
+				new GenerateNotesRequest { TagName = currentTag },
+				GitHubReleaseJsonContext.Default.GenerateNotesRequest
+			);
+			_logger.LogDebug("Generating release notes to resolve previous tag: POST {ApiUrl}", url);
+
+			using var response = await _transport.PostAsync(url, body, ctx);
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogDebug(
+					"generate-notes returned {StatusCode} for {Owner}/{Repo}@{Tag}",
+					response.StatusCode,
+					owner,
+					repo,
+					currentTag
+				);
+				return null;
+			}
+
+			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
+			var data = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GenerateNotesResponse);
+			return data?.PreviousTagName;
+		}
+		catch (HttpRequestException ex)
+		{
+			_logger.LogWarning(ex, "HTTP error calling generate-notes for {Owner}/{Repo}@{Tag}", owner, repo, currentTag);
+			return null;
+		}
+		catch (TaskCanceledException)
+		{
+			_logger.LogWarning("Request timeout calling generate-notes for {Owner}/{Repo}@{Tag}", owner, repo, currentTag);
+			return null;
+		}
+	}
+
 	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
 	{
 		_logger.LogDebug("Fetching release info from: {ApiUrl}", url);
@@ -177,6 +218,18 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 				: []
 		};
 
+	private sealed class GenerateNotesRequest
+	{
+		[JsonPropertyName("tag_name")]
+		public required string TagName { get; set; }
+	}
+
+	private sealed class GenerateNotesResponse
+	{
+		[JsonPropertyName("previous_tag_name")]
+		public string? PreviousTagName { get; set; }
+	}
+
 	private sealed class GitHubReleaseAssetResponse
 	{
 		[JsonPropertyName("name")]
@@ -215,5 +268,7 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 
 	[JsonSerializable(typeof(GitHubReleaseResponse))]
 	[JsonSerializable(typeof(GitHubReleaseResponse[]))]
+	[JsonSerializable(typeof(GenerateNotesRequest))]
+	[JsonSerializable(typeof(GenerateNotesResponse))]
 	private sealed partial class GitHubReleaseJsonContext : JsonSerializerContext;
 }
