@@ -1139,7 +1139,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_NoOverwrite_WhenRemoteDiffers_ReturnsFalseAndEmitsRemoteYaml()
+	public async Task Upload_WithoutOverwrite_WhenRemoteDiffers_ReturnsFalseAndEmitsRemoteYaml()
 	{
 		const string remoteYaml =
 			"""
@@ -1177,7 +1177,7 @@ public class ChangelogUploadServiceTests
 			Owner = "elastic",
 			Repo = "elasticsearch",
 			Branch = "main",
-			NoOverwrite = true
+			Overwrite = false
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -1202,7 +1202,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_NoOverwrite_MixedNewAndExisting_UploadsNewAndRefusesExisting()
+	public async Task Upload_WithoutOverwrite_MixedNewAndExisting_UploadsNewAndRefusesExisting()
 	{
 		AddChangelog(
 			"12345.yaml",
@@ -1254,7 +1254,7 @@ public class ChangelogUploadServiceTests
 			Owner = "elastic",
 			Repo = "elasticsearch",
 			Branch = "main",
-			NoOverwrite = true
+			Overwrite = false
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -1275,7 +1275,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_NoOverwrite_MultiPrMarker_ExplainsAliasNotFullChangelog()
+	public async Task Upload_WithoutOverwrite_MultiPrMarker_ExplainsAliasNotFullChangelog()
 	{
 		var localPath = AddChangelog(
 			"100.yaml",
@@ -1319,7 +1319,7 @@ public class ChangelogUploadServiceTests
 			Owner = "elastic",
 			Repo = "elasticsearch",
 			Branch = "main",
-			NoOverwrite = true
+			Overwrite = false
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -1332,7 +1332,9 @@ public class ChangelogUploadServiceTests
 			.Contain(
 				d => d.Severity == Severity.Warning && d.Message.Contains("PR-alias marker already exists") && d.Message.Contains(
 					"canonical changelog for PR 100"
-				) && d.Message.Contains(localPath) && d.Message.Contains("Existing remote marker:") && d.Message.Contains("link:")
+				) && d.Message.Contains(localPath) && d.Message.Contains("lists more than one PR") && d.Message.Contains(
+					"Existing remote marker:"
+				) && d.Message.Contains("link:")
 			);
 		A.CallTo(
 			() => _s3Client.PutObjectAsync(
@@ -1346,5 +1348,216 @@ public class ChangelogUploadServiceTests
 				A<CancellationToken>._
 			)
 		).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_WithoutOverwrite_SinglePrFullLocal_RemoteAlias_DoesNotCallLocalAnAlias()
+	{
+		var localPath = AddChangelog(
+			"200.yaml",
+			"""
+			title: Single-PR feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
+			"""
+		);
+
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)
+		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
+		{
+			ResponseStream = new MemoryStream("""
+				link: "100"
+				"""u8.ToArray())
+		});
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main",
+			Overwrite = false
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeFalse();
+		_collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("PR-alias marker already exists") && d.Message.Contains(
+					"canonical changelog for PR 100"
+				) && d.Message.Contains(localPath) && d.Message.Contains("is a full changelog") &&
+					!d.Message.Contains("lists more than one PR")
+			);
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_WithoutOverwrite_LocalAlias_RemoteFullChangelog_DoesNotCallRemoteAPointer()
+	{
+		var localPath = AddChangelog(
+			"100.yaml",
+			"""
+			title: Multi-PR feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			  - https://github.com/elastic/elasticsearch/pull/200
+			"""
+		);
+		const string remoteYaml =
+			"""
+			title: Existing canonical for 200
+			type: feature
+			products:
+			  - product: elasticsearch
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
+			""";
+
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(
+				A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/100.yaml"),
+				A<CancellationToken>._
+			)
+		).Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(
+				A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/200.yaml"),
+				A<CancellationToken>._
+			)
+		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Returns(new GetObjectResponse
+		{
+			ResponseStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(remoteYaml))
+		});
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).Returns(new PutObjectResponse());
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main",
+			Overwrite = false
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeFalse();
+		_collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("file(s) already exist"));
+		_collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("a changelog already exists") && d.Message.Contains(
+					localPath
+				) && d.Message.Contains("lists more than one PR") && d.Message.Contains("Existing remote changelog:") &&
+					!d.Message.Contains("is a pointer")
+			);
+		A.CallTo(
+			() => _s3Client.PutObjectAsync(
+				A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/200.yaml"),
+				A<CancellationToken>._
+			)
+		).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_WithoutOverwrite_WhenGetObjectFails_DoesNotClaimRemoteIsPointer()
+	{
+		AddChangelog(
+			"12345.yaml",
+			"""
+			title: Cloud serverless variant
+			type: bug-fix
+			products:
+			  - product: cloud-serverless
+			prs:
+			  - "12345"
+			"""
+		);
+
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)
+		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).Throws(new AmazonS3Exception(
+			"Access Denied"
+		)
+		{ StatusCode = HttpStatusCode.Forbidden });
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main",
+			Overwrite = false
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeFalse();
+		_collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not fetch") && !d.Message.Contains("pointer"));
+	}
+
+	[Fact]
+	public async Task Upload_Overwrite_WhenRemoteDiffers_Replaces()
+	{
+		AddChangelog(
+			"12345.yaml",
+			"""
+			title: Cloud serverless variant
+			type: bug-fix
+			products:
+			  - product: cloud-serverless
+			prs:
+			  - "12345"
+			"""
+		);
+
+		A.CallTo(
+			() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)
+		).Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).Returns(new PutObjectResponse());
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main",
+			Overwrite = true
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeTrue();
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 }

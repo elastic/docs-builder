@@ -77,11 +77,10 @@ public record ChangelogUploadArguments
 	public bool SkipEtagCheck { get; init; }
 
 	/// <summary>
-	/// When true, do not replace a remote object whose content differs from the local file.
-	/// New keys are still uploaded. Unchanged (ETag match) files are still skipped.
-	/// Mutually exclusive with <see cref="SkipEtagCheck"/>.
+	/// When true, replace a remote object whose content differs from the local file.
+	/// Default is true (replace). Unchanged (ETag match) files are still skipped.
 	/// </summary>
-	public bool NoOverwrite { get; init; }
+	public bool Overwrite { get; init; } = true;
 }
 
 public class ChangelogUploadService(
@@ -150,7 +149,7 @@ public class ChangelogUploadService(
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
 		var result = await uploader.Upload(
 			targets,
-			new S3UploadOptions { SkipEtagCheck = args.SkipEtagCheck, NoOverwrite = args.NoOverwrite },
+			new S3UploadOptions { SkipEtagCheck = args.SkipEtagCheck, Overwrite = args.Overwrite || args.SkipEtagCheck },
 			ctx
 		);
 
@@ -199,7 +198,7 @@ public class ChangelogUploadService(
 
 	private static string FormatNotOverwrittenError(UploadResult result)
 	{
-		var markerCount = result.Conflicts.Count(static c => IsPrAliasMarker(c));
+		var markerCount = result.Conflicts.Count(static c => IsRemotePrAliasMarker(c));
 		if (markerCount == result.NotOverwritten && markerCount > 0)
 			return $"{markerCount} PR-alias marker(s) already exist at the destination and were not overwritten.";
 
@@ -209,36 +208,52 @@ public class ChangelogUploadService(
 	private static string FormatNotOverwrittenWarning(string bucket, UploadConflict conflict)
 	{
 		var uri = $"s3://{bucket}/{conflict.S3Key}";
-		if (IsPrAliasMarker(conflict))
-			return FormatMarkerNotOverwrittenWarning(uri, conflict);
-
 		var local = string.IsNullOrEmpty(conflict.LocalPath) ? "local changelog" : conflict.LocalPath;
-		if (conflict.RemoteContent is { Length: > 0 } body)
-		{
-			return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Merge the products (and other fields) manually, or re-run without --no-overwrite to replace.\nExisting remote changelog:\n{body}";
-		}
-
-		return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Could not fetch the existing remote changelog. Merge manually, or re-run without --no-overwrite to replace.";
+		var remoteLink = TryMarkerLink(conflict.RemoteContent);
+		if (remoteLink is not null)
+			return FormatRemotePointerConflict(uri, local, remoteLink, conflict);
+		if (conflict.InlineContent is not null)
+			return FormatFullRemoteLocalAliasConflict(uri, local, conflict);
+		return FormatFullRemoteFullLocalConflict(uri, local, conflict);
 	}
 
-	private static string FormatMarkerNotOverwrittenWarning(string uri, UploadConflict conflict)
+	private static string FormatRemotePointerConflict(string uri, string local, string remoteLink, UploadConflict conflict)
 	{
-		var canonicalPr = TryMarkerLink(conflict.RemoteContent) ?? TryMarkerLink(conflict.InlineContent);
-		var pointer = canonicalPr is null
-			? "The remote object is a pointer to another changelog, not a full entry."
-			: $"The remote object is a pointer to the canonical changelog for PR {canonicalPr}, not a full entry.";
-		var source = string.IsNullOrEmpty(conflict.LocalPath)
-			? "Upload writes this alias because a local changelog lists more than one PR."
-			: $"Upload writes this alias because {conflict.LocalPath} lists more than one PR.";
+		var pointer = $"The remote object is a pointer to the canonical changelog for PR {remoteLink}, not a full entry.";
 		var body = conflict.RemoteContent is { Length: > 0 } remote
 			? $"\nExisting remote marker:\n{remote}"
 			: " Could not fetch the existing remote marker.";
+		if (conflict.InlineContent is not null)
+		{
+			var source = $"Upload writes this alias because {local} lists more than one PR.";
+			return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} {source} Leave the existing pointer, or re-run with --overwrite to replace it.{body}";
+		}
 
-		return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} {source} Leave the existing pointer, or re-run without --no-overwrite to replace it.{body}";
+		return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} Local file {local} is a full changelog. Leave the existing pointer, or re-run with --overwrite to replace it with the full entry.{body}";
 	}
 
-	private static bool IsPrAliasMarker(UploadConflict conflict) =>
-		conflict.InlineContent is not null || TryMarkerLink(conflict.RemoteContent) is not null;
+	private static string FormatFullRemoteLocalAliasConflict(string uri, string local, UploadConflict conflict)
+	{
+		var source = $"Upload writes an alias at this key because {local} lists more than one PR.";
+		if (conflict.RemoteContent is { Length: > 0 } body)
+		{
+			return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. {source} Merge the products (and other fields) manually, or re-run with --overwrite to replace the full entry with a pointer.\nExisting remote changelog:\n{body}";
+		}
+
+		return $"Skipped {uri}: an object already exists at this key with different content. Local file: {local}. {source} Could not fetch the existing remote object. Merge manually, or re-run with --overwrite to replace.";
+	}
+
+	private static string FormatFullRemoteFullLocalConflict(string uri, string local, UploadConflict conflict)
+	{
+		if (conflict.RemoteContent is { Length: > 0 } body)
+		{
+			return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Merge the products (and other fields) manually, or re-run with --overwrite to replace.\nExisting remote changelog:\n{body}";
+		}
+
+		return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Could not fetch the existing remote changelog. Merge manually, or re-run with --overwrite to replace.";
+	}
+
+	private static bool IsRemotePrAliasMarker(UploadConflict conflict) => TryMarkerLink(conflict.RemoteContent) is not null;
 
 	private static string? TryMarkerLink(string? yaml)
 	{

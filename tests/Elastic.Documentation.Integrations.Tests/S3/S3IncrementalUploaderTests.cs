@@ -231,7 +231,7 @@ public class S3IncrementalUploaderTests
 	}
 
 	[Fact]
-	public async Task Upload_ChangedFile_WithNoOverwrite_SkipsPutAndRecordsRemoteContent()
+	public async Task Upload_ChangedFile_WithoutOverwrite_SkipsPutAndRecordsRemoteContent()
 	{
 		var path = UniquePath("entry.yaml");
 		_fileSystem.AddFile(path, new MockFileData("local cloud-serverless"u8.ToArray()));
@@ -251,7 +251,7 @@ public class S3IncrementalUploaderTests
 		var ct = TestContext.Current.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "changelog/elastic/elasticsearch/main/entry.yaml")],
-			new S3UploadOptions { NoOverwrite = true },
+			new S3UploadOptions { Overwrite = false },
 			ctx: ct
 		);
 
@@ -267,7 +267,7 @@ public class S3IncrementalUploaderTests
 	}
 
 	[Fact]
-	public async Task Upload_NewFile_WithNoOverwrite_Uploads()
+	public async Task Upload_NewFile_WithoutOverwrite_Uploads()
 	{
 		var path = UniquePath("entry.yaml");
 		_fileSystem.AddFile(path, new MockFileData("new changelog"u8.ToArray()));
@@ -283,7 +283,7 @@ public class S3IncrementalUploaderTests
 		var ct = TestContext.Current.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
-			new S3UploadOptions { NoOverwrite = true },
+			new S3UploadOptions { Overwrite = false },
 			ctx: ct
 		);
 
@@ -300,7 +300,7 @@ public class S3IncrementalUploaderTests
 	}
 
 	[Fact]
-	public async Task Upload_NoOverwrite_WhenPutPreconditionFails_CountsAsNotOverwritten()
+	public async Task Upload_WithoutOverwrite_WhenPutPreconditionFails_CountsAsNotOverwritten()
 	{
 		var path = UniquePath("entry.yaml");
 		_fileSystem.AddFile(path, new MockFileData("new changelog"u8.ToArray()));
@@ -325,7 +325,7 @@ public class S3IncrementalUploaderTests
 		var ct = TestContext.Current.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
-			new S3UploadOptions { NoOverwrite = true },
+			new S3UploadOptions { Overwrite = false },
 			ctx: ct
 		);
 
@@ -336,7 +336,7 @@ public class S3IncrementalUploaderTests
 	}
 
 	[Fact]
-	public async Task Upload_NoOverwrite_WhenPutConflicts_CountsAsNotOverwritten()
+	public async Task Upload_WithoutOverwrite_WhenPutConflicts_CountsAsNotOverwritten()
 	{
 		var path = UniquePath("entry.yaml");
 		_fileSystem.AddFile(path, new MockFileData("new changelog"u8.ToArray()));
@@ -360,7 +360,7 @@ public class S3IncrementalUploaderTests
 		var ct = TestContext.Current.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
-			new S3UploadOptions { NoOverwrite = true },
+			new S3UploadOptions { Overwrite = false },
 			ctx: ct
 		);
 
@@ -369,7 +369,7 @@ public class S3IncrementalUploaderTests
 	}
 
 	[Fact]
-	public async Task Upload_NoOverwrite_WhenGetObjectFails_StillRefusesPut()
+	public async Task Upload_WithoutOverwrite_WhenGetObjectFails_StillRefusesPut()
 	{
 		var path = UniquePath("entry.yaml");
 		_fileSystem.AddFile(path, new MockFileData("local"u8.ToArray()));
@@ -388,7 +388,7 @@ public class S3IncrementalUploaderTests
 		var ct = TestContext.Current.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(path, "elasticsearch/changelog/entry.yaml")],
-			new S3UploadOptions { NoOverwrite = true },
+			new S3UploadOptions { Overwrite = false },
 			ctx: ct
 		);
 
@@ -398,7 +398,7 @@ public class S3IncrementalUploaderTests
 	}
 
 	[Fact]
-	public async Task Upload_InlineMarker_WithNoOverwriteWhenUnchanged_SkipsPut()
+	public async Task Upload_InlineMarker_WithoutOverwriteWhenUnchanged_SkipsPut()
 	{
 		const string marker = "link: 100";
 		var localEtag = Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(marker)));
@@ -412,7 +412,7 @@ public class S3IncrementalUploaderTests
 		var ct = TestContext.Current.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", marker)],
-			new S3UploadOptions { NoOverwrite = true },
+			new S3UploadOptions { Overwrite = false },
 			ctx: ct
 		);
 
@@ -424,7 +424,7 @@ public class S3IncrementalUploaderTests
 	}
 
 	[Fact]
-	public async Task Upload_InlineMarker_WithNoOverwriteWhenExists_SkipsPut()
+	public async Task Upload_InlineMarker_WithoutOverwriteWhenExists_SkipsPut()
 	{
 		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._)).Returns(new GetObjectMetadataResponse
 		{
@@ -440,7 +440,7 @@ public class S3IncrementalUploaderTests
 		var ct = TestContext.Current.CancellationToken;
 		var result = await uploader.Upload(
 			[new UploadTarget(string.Empty, "changelog/elastic/elasticsearch/main/200.yaml", "link: 100")],
-			new S3UploadOptions { NoOverwrite = true },
+			new S3UploadOptions { Overwrite = false },
 			ctx: ct
 		);
 

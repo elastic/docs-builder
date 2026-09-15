@@ -37,7 +37,7 @@ Your IAM policy must allow these S3 actions on the target bucket:
 | Permission | Purpose |
 | ---------- | ------- |
 | `s3:PutObject` | Upload changelog and bundle YAML files and `registry.json` manifests |
-| `s3:GetObject` | Read existing objects for ETag comparison, and with `--no-overwrite` print the remote YAML body |
+| `s3:GetObject` | Read existing objects for ETag comparison, and print the remote YAML body when a replacement is refused |
 | `s3:GetObject` (metadata) | HeadObject used to skip unchanged files and classify new versus replaced |
 
 `s3:ListBucket` is not required. The command uploads to known keys derived from local file names and product IDs — it does not enumerate the bucket.
@@ -116,15 +116,15 @@ Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
 If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
-The completion log reports how many objects were **new** versus **replaced**. Pass `--no-overwrite` to refuse replacements: the command skips those Puts, warns with the existing remote YAML, and exits non-zero. New objects are written with `If-None-Match: *` so a concurrent upload cannot overwrite a key that appears between HeadObject and PutObject. `--no-overwrite` cannot be combined with `--skip-etag-check`.
+The completion log reports how many objects were **new** versus **replaced**. Pass `--overwrite` to replace remote objects whose content differs; that is currently the default (same as omitting the flag) so docs-actions can start passing it. A later release will refuse replacements unless `--overwrite` is passed. New objects that appear between HeadObject and PutObject are still created. `--skip-etag-check` implies `--overwrite`.
 :::
 
 ## Options
 
 | Option | Purpose |
 | ------ | ------- |
-| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Mutually exclusive with `--no-overwrite`. |
-| `--no-overwrite` | When a remote object already exists with different content, do not replace it. New keys are still uploaded, using a create-only S3 precondition (`If-None-Match: *`). The command warns with the existing remote YAML, reports `not overwritten` in the summary, and exits non-zero. Unchanged (ETag match) files and PR-alias markers are still skipped. A changelog that lists more than one PR also writes PR-alias markers (`link:` pointers at the extra PR numbers); `--no-overwrite` only refuses those markers when their bytes differ from the remote object, and the warning says they are pointers rather than full changelogs. Mutually exclusive with `--skip-etag-check`. |
+| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Implies `--overwrite`. |
+| `--overwrite` | Replace remote objects whose content differs. Currently the default (same as omitting the flag). A later release will refuse replacements unless this flag is passed. Unchanged (ETag match) files and PR-alias markers are still skipped. When a replacement is refused, the warning describes the remote object from its YAML (pointer vs full changelog) and whether this run was writing an alias. |
 
 ## Configuration
 
@@ -189,14 +189,14 @@ docs-builder changelog upload \
   --config ./config/changelog.yml
 ```
 
-### Refuse overwrites of existing objects
+### Explicit overwrite (currently the default)
 
-Skip PutObject when the remote key already exists with different content (for example a `{pr}.yaml` that already lists `elasticsearch` while you are uploading a `cloud-serverless` variant). New keys still upload. The command prints the existing remote YAML and exits non-zero:
+`--overwrite` replaces remote objects whose content differs. It currently matches the default, so passing it is a no-op that lets CI adopt the flag before a later release refuses replacements unless it is set:
 
 ```sh
 docs-builder changelog upload \
   --artifact-type changelog \
   --target s3 \
   --s3-bucket-name my-changelog-bundles \
-  --no-overwrite
+  --overwrite
 ```

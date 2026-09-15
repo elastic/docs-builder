@@ -26,13 +26,14 @@ public record S3UploadOptions
 	public bool SkipEtagCheck { get; init; }
 
 	/// <summary>
-	/// When true, do not Put when the remote key already exists with different content.
+	/// When true, Put when the remote key exists with different content.
 	/// Unchanged (ETag match) files are still skipped. New keys are still uploaded.
+	/// Default is true (replace). Phase 2 will flip this to false (refuse unless requested).
 	/// </summary>
-	public bool NoOverwrite { get; init; }
+	public bool Overwrite { get; init; } = true;
 }
 
-/// <summary>A remote object that was not overwritten because <see cref="S3UploadOptions.NoOverwrite"/> was set.</summary>
+/// <summary>A remote object that was not overwritten because <see cref="S3UploadOptions.Overwrite"/> was false.</summary>
 public record UploadConflict(string S3Key, string LocalPath, string? RemoteContent, string? InlineContent = null);
 
 /// <summary>Result of an incremental upload run.</summary>
@@ -100,7 +101,7 @@ public class S3IncrementalUploader(
 			}
 		}
 
-		if (exists && run.Options.NoOverwrite)
+		if (exists && !run.Options.Overwrite)
 		{
 			await RefuseOverwrite(target, run).ConfigureAwait(false);
 			return;
@@ -125,7 +126,7 @@ public class S3IncrementalUploader(
 			}
 		}
 
-		if (exists && run.Options.NoOverwrite)
+		if (exists && !run.Options.Overwrite)
 		{
 			await RefuseOverwrite(target, run).ConfigureAwait(false);
 			return;
@@ -156,7 +157,7 @@ public class S3IncrementalUploader(
 				await PutObject(target, run).ConfigureAwait(false);
 			}
 		}
-		catch (AmazonS3Exception ex) when (run.Options.NoOverwrite && IsConditionalWriteConflict(ex))
+		catch (AmazonS3Exception ex) when (!run.Options.Overwrite && IsConditionalWriteConflict(ex))
 		{
 			await RefuseOverwrite(target, run).ConfigureAwait(false);
 			return;
@@ -232,7 +233,7 @@ public class S3IncrementalUploader(
 
 	private static void ApplyCreateOnlyPrecondition(PutObjectRequest request, UploadRun run)
 	{
-		if (run.Options.NoOverwrite)
+		if (!run.Options.Overwrite)
 			request.IfNoneMatch = "*";
 	}
 
