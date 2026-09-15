@@ -134,6 +134,25 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 	/// <inheritdoc />
 	public async Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default)
 	{
+		// Primary: POST generate-notes — GitHub determines the previous tag using its own algorithm,
+		// which handles interleaved multi-version release histories correctly.
+		var previousTag = await TryFetchPreviousTagViaGenerateNotes(owner, repo, currentTag, ctx);
+		if (previousTag != null)
+			return previousTag;
+
+		// Fallback: page through the releases list (generate-notes requires contents:write on the
+		// GITHUB_TOKEN; workflows with only contents:read fall through to this path).
+		_logger.LogDebug(
+			"generate-notes did not return a previous tag for {Owner}/{Repo}@{Tag}; falling back to release list scan",
+			owner,
+			repo,
+			currentTag
+		);
+		return await TryFetchPreviousTagViaReleaseList(owner, repo, currentTag, ctx);
+	}
+
+	private async Task<string?> TryFetchPreviousTagViaGenerateNotes(string owner, string repo, string currentTag, CancellationToken ctx)
+	{
 		try
 		{
 			var url = $"https://api.github.com/repos/{owner}/{repo}/releases/generate-notes";
@@ -158,17 +177,51 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var data = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GenerateNotesResponse);
-			return data?.PreviousTagName;
+			return string.IsNullOrWhiteSpace(data?.PreviousTagName) ? null : data.PreviousTagName;
 		}
-		catch (HttpRequestException ex)
+		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
 		{
-			_logger.LogWarning(ex, "HTTP error calling generate-notes for {Owner}/{Repo}@{Tag}", owner, repo, currentTag);
+			_logger.LogDebug(ex, "generate-notes call failed for {Owner}/{Repo}@{Tag}", owner, repo, currentTag);
 			return null;
 		}
-		catch (TaskCanceledException)
+	}
+
+	private async Task<string?> TryFetchPreviousTagViaReleaseList(string owner, string repo, string currentTag, CancellationToken ctx)
+	{
+		const int pageSize = 100;
+		var page = 1;
+		while (true)
 		{
-			_logger.LogWarning("Request timeout calling generate-notes for {Owner}/{Repo}@{Tag}", owner, repo, currentTag);
-			return null;
+			var url = $"https://api.github.com/repos/{owner}/{repo}/releases?per_page={pageSize}&page={page}";
+			_logger.LogDebug("Scanning release list for previous tag (page {Page}): GET {ApiUrl}", page, url);
+
+			using var response = await _transport.GetAsync(url, ctx);
+			if (!response.IsSuccessStatusCode)
+				return null;
+
+			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
+			var releases = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray);
+			if (releases == null || releases.Length == 0)
+				return null;
+
+			var found = false;
+			foreach (var r in releases)
+			{
+				if (!found)
+				{
+					if (string.Equals(r.TagName, currentTag, StringComparison.OrdinalIgnoreCase))
+						found = true;
+					continue;
+				}
+
+				// First release after the current tag in newest-first order is the predecessor.
+				return r.TagName;
+			}
+
+			// Reached the end of this page without finding a predecessor; try next page.
+			if (releases.Length < pageSize)
+				return null;
+			page++;
 		}
 	}
 
