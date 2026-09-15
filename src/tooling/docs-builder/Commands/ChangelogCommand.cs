@@ -893,16 +893,12 @@ internal sealed partial class ChangelogCommands(
 					return 1;
 				}
 
-				var releases = await releaseService.FetchReleasesAsync(resolvedOwner, resolvedRepo, 10, ctx);
-				var previousTag = releases
-					.SkipWhile(r => !string.Equals(r.TagName, release.TagName, StringComparison.OrdinalIgnoreCase))
-					.Skip(1)
-					.FirstOrDefault()?.TagName;
+				var previousTag = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
 				if (previousTag == null)
 				{
 					collector.EmitError(
 						string.Empty,
-						$"No previous release found before '{release.TagName}' in {resolvedOwner}/{resolvedRepo}. Cannot derive PR list from commit range."
+						$"GitHub could not determine the previous release before '{release.TagName}' in {resolvedOwner}/{resolvedRepo}. Cannot derive PR list from commit range."
 					);
 					return 1;
 				}
@@ -1360,16 +1356,12 @@ internal sealed partial class ChangelogCommands(
 				return 1;
 			}
 
-			var releases = await releaseService.FetchReleasesAsync(resolvedOwner, resolvedRepo, 10, ctx);
-			var previousTag = releases
-				.SkipWhile(r => !string.Equals(r.TagName, release.TagName, StringComparison.OrdinalIgnoreCase))
-				.Skip(1)
-				.FirstOrDefault()?.TagName;
+			var previousTag = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
 			if (previousTag == null)
 			{
 				collector.EmitError(
 					string.Empty,
-					$"No previous release found before '{release.TagName}' in {resolvedOwner}/{resolvedRepo}. Cannot derive PR list from commit range."
+					$"GitHub could not determine the previous release before '{release.TagName}' in {resolvedOwner}/{resolvedRepo}. Cannot derive PR list from commit range."
 				);
 				return 1;
 			}
