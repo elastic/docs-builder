@@ -133,7 +133,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var entryPath = FileSystem.Path.Join(outputDir, "12345.yaml");
 		FileSystem.File.Exists(entryPath).Should().BeTrue("the pool entry keeps its original file name");
 		var content = await FileSystem.File.ReadAllTextAsync(entryPath, TestContext.Current.CancellationToken);
@@ -164,7 +164,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
+		result.Success.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
 		FileSystem
 			.File
 			.Exists(FileSystem.Path.Join(outputDir, "12345.yaml"))
@@ -237,7 +237,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 
 		var result = await Service(handler).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue("both PRs must fall back to PR-metadata synthesis despite the shared unparseable pool file");
+		result.Success.Should().BeTrue("both PRs must fall back to PR-metadata synthesis despite the shared unparseable pool file");
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2, "each PR must synthesize its own entry rather than one silently disappearing");
 		var contents = await Task.WhenAll(files.Select(f => FileSystem.File.ReadAllTextAsync(f, TestContext.Current.CancellationToken)));
@@ -264,7 +264,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().ContainSingle();
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
@@ -290,7 +290,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		content.Should().Contain("https://github.com/elastic/elasticsearch/issues/999");
@@ -315,7 +315,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		content.Should().NotContain("description:");
@@ -336,7 +336,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			TestContext.Current.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var bundlesDir = FileSystem.Path.Join(outputDir, "bundles");
 		var bundleFiles = FileSystem.Directory.GetFiles(bundlesDir, "*.yml");
 		bundleFiles.Should().ContainSingle();
