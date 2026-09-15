@@ -19,8 +19,8 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	private const string Owner = "elastic";
 	private const string Repo = "elasticsearch";
 
-	private GitHubReleaseService Service(StubHandler handler) =>
-		new(new TestLoggerFactory(Output), new GitHubApiTransport(handler, "test-token"));
+	private GitHubReleaseService Service(StubHandler handler, Func<int, TimeSpan>? retryDelay = null) =>
+		new(new TestLoggerFactory(Output), new GitHubApiTransport(handler, "test-token"), retryDelay);
 
 	/// <summary>Builds a JSON releases array string (newest-first order).</summary>
 	private static string ReleasesJson(params string[] tagNames)
@@ -558,6 +558,61 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		var handler = new StubHandler(_ => throw new TaskCanceledException("timeout"));
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0");
 		result.Should().BeNull("timeouts must be caught and converted to null");
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Mid-pagination HTTP failures — must return null, not a partial best-match
+	// ─────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task FetchPreviousTag_MidPaginationFailure_ReturnsNullNotPartialResult()
+	{
+		// Page 1 succeeds with v4.1.2. Page 2 fails with 502.
+		// v4.1.9 would have been on page 2 — returning v4.1.2 would be silently wrong.
+		// The scan must return null so the caller surfaces the error rather than using an incomplete result.
+		var page1Tags = new[] { "v4.2.0", "v4.1.2" }.Concat(
+			Enumerable.Range(0, 98).Select(i => $"v3.{97 - i}.0")
+		).ToArray(); // 100 items — full page forces pagination
+
+		var noDelay = (Func<int, TimeSpan>)(_ => TimeSpan.Zero);
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return new HttpResponseMessage(HttpStatusCode.BadGateway);
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri.Query);
+			return query["page"] == "2" ? new HttpResponseMessage(HttpStatusCode.BadGateway) : Json(ReleasesJson(page1Tags));
+		});
+
+		var result = await Service(handler, noDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().BeNull("a mid-pagination failure is indeterminate — returning a partial result would be silently wrong");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TransientFailure_RetriesAndSucceeds()
+	{
+		// Page 2 fails once (502) then succeeds. The retry must recover and return the correct predecessor.
+		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray(); // full page, no match
+		var page2Tags = new[] { "v4.1.9", "v4.1.0" };
+
+		var page2Attempts = 0;
+		var noDelay = (Func<int, TimeSpan>)(_ => TimeSpan.Zero);
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			if (query["page"] != "2")
+				return Json(ReleasesJson(page1Tags));
+			page2Attempts++;
+			return page2Attempts == 1
+				? new HttpResponseMessage(HttpStatusCode.BadGateway) // first attempt fails
+
+				: Json(ReleasesJson(page2Tags)); // second attempt succeeds
+		});
+
+		var result = await Service(handler, noDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().Be("v4.1.9", "retry recovered from the transient 502 and completed the scan");
+		page2Attempts.Should().Be(2, "page 2 was attempted twice — once failing, once succeeding");
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────

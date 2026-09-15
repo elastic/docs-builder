@@ -13,10 +13,15 @@ namespace Elastic.Changelog.GitHub;
 /// <summary>
 /// Service for fetching release information from GitHub
 /// </summary>
-public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubApiTransport? transport = null) : IGitHubReleaseService
+public partial class GitHubReleaseService(
+	ILoggerFactory loggerFactory,
+	GitHubApiTransport? transport = null,
+	Func<int, TimeSpan>? retryDelay = null
+) : IGitHubReleaseService
 {
 	private readonly ILogger<GitHubReleaseService> _logger = loggerFactory.CreateLogger<GitHubReleaseService>();
 	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
+	private readonly Func<int, TimeSpan> _retryDelay = retryDelay ?? (attempt => TimeSpan.FromSeconds(1 << attempt));
 
 	/// <inheritdoc />
 	public async Task<GitHubReleaseInfo?> FetchReleaseAsync(string owner, string repo, string? version, CancellationToken ctx = default)
@@ -199,9 +204,9 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 			var url = $"https://api.github.com/repos/{owner}/{repo}/releases?per_page={pageSize}&page={page}";
 			_logger.LogDebug("Scanning release list for previous tag (page {Page}): GET {ApiUrl}", page, url);
 
-			using var response = await _transport.GetAsync(url, ctx);
-			if (!response.IsSuccessStatusCode)
-				break;
+			using var response = await GetWithRetryAsync(url, ctx);
+			if (response is null)
+				return null;
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var releases = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray);
@@ -277,9 +282,9 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 			var url = $"https://api.github.com/repos/{owner}/{repo}/tags?per_page={pageSize}&page={page}";
 			_logger.LogDebug("Scanning tags API for previous tag (page {Page}): GET {ApiUrl}", page, url);
 
-			using var response = await _transport.GetAsync(url, ctx);
-			if (!response.IsSuccessStatusCode)
-				break;
+			using var response = await GetWithRetryAsync(url, ctx);
+			if (response is null)
+				return null;
 
 			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
 			var tags = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubTagResponseArray);
@@ -391,6 +396,52 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 
 		// Stable patch release: the definitive predecessor is (Major, Minor, Patch-1, stable).
 		return best.Major == current.Major && best.Minor == current.Minor && best.Patch == current.Patch - 1;
+	}
+
+	/// <summary>
+	/// Issues a GET request with up to three retries for transient failures (HTTP 429 and 5xx).
+	/// Returns the successful <see cref="HttpResponseMessage"/> (caller must dispose), or <c>null</c>
+	/// when all attempts fail — in which case the caller should treat the result as indeterminate
+	/// rather than returning a potentially incomplete best-match.
+	/// Non-transient failures (4xx other than 429) are not retried.
+	/// </summary>
+	private async Task<HttpResponseMessage?> GetWithRetryAsync(string url, CancellationToken ctx)
+	{
+		const int maxAttempts = 3;
+		for (var attempt = 0; attempt < maxAttempts; attempt++)
+		{
+			var response = await _transport.GetAsync(url, ctx);
+			if (response.IsSuccessStatusCode)
+				return response;
+
+			var status = (int)response.StatusCode;
+			var isTransient = status is 429 or >= 500;
+			if (!isTransient || attempt == maxAttempts - 1)
+			{
+				_logger.LogWarning(
+					"GitHub API {Url} returned HTTP {StatusCode} after {Attempts} attempt(s) — " +
+						"treating predecessor lookup as indeterminate to avoid returning an incomplete result",
+					url,
+					status,
+					attempt + 1
+				);
+				response.Dispose();
+				return null;
+			}
+
+			var delay = _retryDelay(attempt);
+			_logger.LogDebug(
+				"Transient HTTP {StatusCode} from {Url}; retrying in {DelayMs}ms (attempt {Attempt}/{MaxAttempts})",
+				status,
+				url,
+				delay.TotalMilliseconds,
+				attempt + 1,
+				maxAttempts
+			);
+			response.Dispose();
+			await Task.Delay(delay, ctx);
+		}
+		return null; // unreachable — maxAttempts > 0 always exits above
 	}
 
 	/// <summary>
