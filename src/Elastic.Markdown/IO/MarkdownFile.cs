@@ -179,15 +179,21 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	internal static string? ReadTitle(MarkdownDocument document) =>
 		document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string ?? FindNestedTitle(document);
 
-	internal static string? ReadMetaTitle(MarkdownDocument document, BuildContext build, IFileInfo source)
+	internal static (string? Title, string? MetaTitle) ReadTitles(MarkdownDocument document, BuildContext build, IFileInfo source)
 	{
-		if (document.FirstOrDefault() is not YamlFrontMatterBlock yaml)
-			return null;
+		YamlFrontMatter? frontMatter = null;
+		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
+		{
+			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
+			frontMatter = ReadYamlFrontMatter(raw, build.ProductsConfiguration, build.Collector, source.FullName);
+		}
+		var substitutions = GetSubstitutions(build.Configuration.Substitutions, frontMatter?.Properties);
 
-		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-		var frontMatter = ReadYamlFrontMatter(raw, build.ProductsConfiguration, build.Collector, source.FullName);
-		var substitutions = GetSubstitutions(build.Configuration.Substitutions, frontMatter.Properties);
-		return NormalizeMetaTitle(frontMatter.MetaTitle, substitutions, build.Collector);
+		var rawTitle = ReadTitle(document);
+		if (rawTitle is not null && rawTitle.AsSpan().ReplaceSubstitutions(substitutions, build.Collector, out var replacement))
+			rawTitle = replacement;
+
+		return (rawTitle?.StripMarkdown(), NormalizeMetaTitle(frontMatter?.MetaTitle, substitutions, build.Collector));
 	}
 
 	private static string? NormalizeMetaTitle(

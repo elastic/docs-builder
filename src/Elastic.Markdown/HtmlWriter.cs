@@ -60,11 +60,8 @@ public class HtmlWriter(
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
-		return new(
-			MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: false),
-			MarkdownFile.ReadTitle(parsed)?.StripMarkdown(),
-			MarkdownFile.ReadMetaTitle(parsed, DocumentationSet.Context, source)
-		);
+		var (title, metaTitle) = MarkdownFile.ReadTitles(parsed, DocumentationSet.Context, source);
+		return new(MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: false), title, metaTitle);
 	}
 
 	/// <inheritdoc />
