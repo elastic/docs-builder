@@ -544,7 +544,16 @@ public static partial class ProfileFilterResolver
 			new CommitRangeArguments { Owner = owner, Repo = repo, StartRef = previousTag, EndRef = release.TagName },
 			ctx
 		);
-		if (resolution == null || resolution.PullRequests.Count == 0)
+		if (resolution == null)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Profile '{profileName}': failed to resolve PR list from commit range {previousTag}..{release.TagName}."
+			);
+			return null;
+		}
+
+		if (resolution.PullRequests.Count == 0)
 		{
 			collector.EmitWarning(
 				string.Empty,

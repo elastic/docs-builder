@@ -1314,7 +1314,12 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogRemoveService(logFactory, _fileSystem, configurationContext);
+		var service = new ChangelogRemoveService(
+			logFactory,
+			_fileSystem,
+			configurationContext,
+			commitRangeService: new GitHubCommitRangeService(logFactory)
+		);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
