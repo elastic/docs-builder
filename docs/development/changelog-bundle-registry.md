@@ -74,7 +74,10 @@ narrowed reconciliation to the bundle tree):
   published bundle that lists all such late notes. The Lambda rebuilds it from current state on
   every reconcile, so redelivered events never produce duplicate amends. The `.amend-notes` suffix
   is **reserved** — do not create files with that suffix manually; see
-  [](/cli/changelog/bundle-amend.md).
+  [](/cli/changelog/bundle-amend.md). Public copies track private-bucket create and delete
+  events. Authors cannot issue those deletes through docs-builder today: `changelog upload`
+  does not delete objects, and `changelog remove` is local-only. For the author-facing
+  add and exclude path, see [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
 - **Notes index** — `changelog/{org}/{repo}/notes-{version}.json`, one per version, **public
   bucket only**, produced by the scrubber Lambda's `NotesIndexReconciler`. See
   [Notes-index format](#notes-index-format) below.
@@ -143,7 +146,8 @@ For each release version that has at least one note, the scrubber Lambda writes 
 
 `bundle_seq` is derived — it is never authored and never a latch. The Lambda recomputes it on every
 reconcile by comparing the notes index against the set of entries in the published bundle and its
-amend sidecars.
+amend sidecars. Do not hand-edit `notes-{version}.json` or `.amend-notes` sidecars. Authors cannot
+delete pool objects through docs-builder today.
 
 A 404 on a notes index means "no notes published for this version". An empty `notes` array never
 appears — the index is deleted rather than emptied, following the same
