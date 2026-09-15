@@ -536,7 +536,7 @@ public partial class GitHubReleaseService(
 					return 1;
 				else
 				{
-					var sc = string.Compare(tokenA, tokenB, StringComparison.OrdinalIgnoreCase);
+					var sc = string.Compare(tokenA, tokenB, StringComparison.Ordinal);
 					if (sc != 0)
 						return sc;
 				}

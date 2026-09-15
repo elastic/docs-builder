@@ -541,6 +541,26 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public async Task FetchPreviousTag_PreRelease_MixedCase_AsciiOrderIsPreserved()
+	{
+		// SemVer 2.1 §11: non-numeric identifiers are compared using ASCII order, which is case-sensitive.
+		// Uppercase letters (65–90) sort before lowercase (97–122), so "RC" < "rc" in ASCII.
+		// v1.0.0-RC.1 and v1.0.0-RC.10 are valid lower-precedence candidates relative to v1.0.0-rc.2
+		// because "RC" < "rc" in ASCII order. The predecessor should be v1.0.0-RC.10 (highest below current).
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson("v1.0.0-rc.2", "v1.0.0-RC.10", "v1.0.0-RC.1"));
+		});
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.0.0-rc.2");
+		result.Should().Be(
+			"v1.0.0-RC.10",
+			"ASCII order is case-sensitive: RC < rc, so both RC tags are below rc.2; RC.10 is the highest of the two"
+		);
+	}
+
+	[Fact]
 	public async Task FetchPreviousTag_PreRelease_BuildMetadata_IgnoredForPrecedence()
 	{
 		// SemVer 2.0 §10: build metadata MUST be ignored for precedence.
