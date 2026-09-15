@@ -1043,7 +1043,23 @@ internal sealed partial class ChangelogCommands(
 					}
 
 					// No profiles → gh-release mode. Resolve the output path the same way gh-release would.
-					var ghReleaseOutput = bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory;
+					// When the release version and repo are known, predict the exact bundle file path so the
+					// caller (bundle-create action) can upload and reference a single .yml file instead of
+					// the whole output_directory. The format mirrors GitHubReleaseChangelogService:
+					//   {output_directory}/bundles/{version}-{product}-bundle.yml
+					var ghReleaseOutputDir = bundleConfig?.Bundle?.OutputDirectory ?? bundleConfig?.Bundle?.Directory;
+					string? ghReleaseOutput = null;
+					if (ghReleaseOutputDir != null && releaseVersion != null && !string.IsNullOrWhiteSpace(repo))
+					{
+						var products = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(repo);
+						if (products.Count == 1)
+							ghReleaseOutput = _fileSystem.Path.Join(
+								ghReleaseOutputDir,
+								"bundles",
+								$"{releaseVersion}-{products[0].Id}-bundle.yml"
+							);
+					}
+					ghReleaseOutput ??= ghReleaseOutputDir;
 
 					await githubActionsService.SetOutputAsync("mode", "gh-release");
 					await githubActionsService.SetOutputAsync("needs_network", "true");
