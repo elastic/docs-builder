@@ -317,7 +317,7 @@ public class GitHubReleaseChangelogService(
 			collector.EmitError(
 				string.Empty,
 				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo}. " +
-					"Cannot derive PR list from commit range. Ensure at least one prior release exists."
+					"Cannot derive PR list from commit range. Ensure at least one prior release exists in the same major version line."
 			);
 			return null;
 		}
