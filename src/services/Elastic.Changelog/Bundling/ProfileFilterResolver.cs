@@ -521,16 +521,12 @@ public static partial class ProfileFilterResolver
 
 		logger?.LogInformation("Fetched release {Tag} from {Owner}/{Repo}", release.TagName, owner, repo);
 
-		var releases = await releaseService.FetchReleasesAsync(owner, repo, 10, ctx);
-		var previousTag = releases
-			.SkipWhile(r => !string.Equals(r.TagName, release.TagName, StringComparison.OrdinalIgnoreCase))
-			.Skip(1)
-			.FirstOrDefault()?.TagName;
+		var previousTag = await releaseService.FetchPreviousTagAsync(owner, repo, release.TagName, ctx);
 		if (previousTag == null)
 		{
 			collector.EmitError(
 				string.Empty,
-				$"Profile '{profileName}': no previous release found before '{release.TagName}' in {owner}/{repo}. Cannot derive PR list from commit range."
+				$"Profile '{profileName}': GitHub could not determine the previous release before '{release.TagName}' in {owner}/{repo}. Cannot derive PR list from commit range."
 			);
 			return null;
 		}

@@ -547,11 +547,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			() => releaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.3.0", TestContext.Current.CancellationToken)
 		).Returns(new GitHubReleaseInfo { TagName = "v9.3.0", Name = "9.3.0", Body = "" });
 
-		A.CallTo(() => releaseService.FetchReleasesAsync("elastic", "elasticsearch", 10, A<Cancel>._)).Returns(new GitHubReleaseInfo[]
-		{
-			new() { TagName = "v9.3.0", Name = "9.3.0", Body = "" },
-			new() { TagName = "v9.2.0", Name = "9.2.0", Body = "" }
-		});
+		A.CallTo(() => releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.3.0", A<Cancel>._)).Returns("v9.2.0");
 
 		var commitRangeService = A.Fake<IGitHubCommitRangeService>();
 		A.CallTo(
