@@ -1,0 +1,59 @@
+services:
+  # Run a one-shot CLI command, for example:
+  #   make docs
+  #   docker compose run --rm docs-builder inbound-links validate-link-reference
+  docs-builder:
+    image: docs-builder:local
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+
+  # Run the repository's unit-test suite without installing the .NET SDK on
+  # the host machine. Build the image with `make build` first.
+  tests:
+    image: docs-builder:tooling
+    working_dir: /workspace/docs-builder
+    command: ["./build.sh", "unit-test"]
+    volumes:
+      - .:/workspace/docs-builder
+      - nuget-packages:/root/.nuget/packages
+      - npm-cache:/root/.npm
+
+  # Run the development server with dotnet watch. Code changes restart the
+  # CLI, while Markdown and static-file changes use the existing live reload.
+  # Build the image with `make serve` and open http://localhost:3000
+  serve:
+    image: docs-builder:tooling
+    working_dir: /src
+    command:
+      [
+        "dotnet",
+        "watch",
+        "--no-restore",
+        "--project",
+        "src/tooling/docs-builder",
+        "--configuration",
+        "Debug",
+        "--",
+        "serve",
+        "--watch",
+        "--no-hud",
+        "--port",
+        "3000",
+      ]
+    environment:
+      DOCS_BUILDER_BIND_ADDRESS: 0.0.0.0
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "1"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/src
+      - nuget-packages:/root/.nuget/packages
+      - npm-cache:/root/.npm
+      - site-node-modules:/src/src/Elastic.Documentation.Site/node_modules
+
+volumes:
+  npm-cache:
+  nuget-packages:
+  site-node-modules:
