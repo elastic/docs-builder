@@ -882,6 +882,7 @@ internal sealed partial class ChangelogCommands(
 				}
 
 				IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+				IGitHubCommitRangeService commitRangeService = new GitHubCommitRangeService(logFactory);
 				var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
 				if (release == null)
 				{
@@ -892,21 +893,41 @@ internal sealed partial class ChangelogCommands(
 					return 1;
 				}
 
-				var parsedNotes = ReleaseNoteParser.Parse(release.Body);
-				if (parsedNotes.PrReferences.Count == 0)
+				var releases = await releaseService.FetchReleasesAsync(resolvedOwner, resolvedRepo, 10, ctx);
+				var previousTag = releases
+					.SkipWhile(r => !string.Equals(r.TagName, release.TagName, StringComparison.OrdinalIgnoreCase))
+					.Skip(1)
+					.FirstOrDefault()?.TagName;
+				if (previousTag == null)
+				{
+					collector.EmitError(
+						string.Empty,
+						$"No previous release found before '{release.TagName}' in {resolvedOwner}/{resolvedRepo}. Cannot derive PR list from commit range."
+					);
+					return 1;
+				}
+
+				var resolution = await commitRangeService.ResolvePullRequestsAsync(
+					collector,
+					new CommitRangeArguments
+					{
+						Owner = resolvedOwner,
+						Repo = resolvedRepo,
+						StartRef = previousTag,
+						EndRef = release.TagName
+					},
+					ctx
+				);
+				if (resolution == null || resolution.PullRequests.Count == 0)
 				{
 					collector.EmitWarning(
 						string.Empty,
-						$"No PR references found in release notes for {resolvedOwner}/{resolvedRepo}@{release.TagName}. No bundle will be created."
+						$"No PRs found in commit range {previousTag}..{release.TagName} for {resolvedOwner}/{resolvedRepo}. No bundle will be created."
 					);
 					return 0;
 				}
 
-				// Build full PR URLs and inject them as the PR filter
-				prs = parsedNotes
-					.PrReferences
-					.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
-					.ToArray();
+				prs = resolution.PullRequests.Select(pr => pr.Url).ToArray();
 			}
 		}
 
@@ -1328,6 +1349,7 @@ internal sealed partial class ChangelogCommands(
 			}
 
 			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+			IGitHubCommitRangeService commitRangeService = new GitHubCommitRangeService(logFactory);
 			var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
 			if (release == null)
 			{
@@ -1338,18 +1360,35 @@ internal sealed partial class ChangelogCommands(
 				return 1;
 			}
 
-			var parsedNotes = ReleaseNoteParser.Parse(release.Body);
-			if (parsedNotes.PrReferences.Count == 0)
+			var releases = await releaseService.FetchReleasesAsync(resolvedOwner, resolvedRepo, 10, ctx);
+			var previousTag = releases
+				.SkipWhile(r => !string.Equals(r.TagName, release.TagName, StringComparison.OrdinalIgnoreCase))
+				.Skip(1)
+				.FirstOrDefault()?.TagName;
+			if (previousTag == null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"No previous release found before '{release.TagName}' in {resolvedOwner}/{resolvedRepo}. Cannot derive PR list from commit range."
+				);
+				return 1;
+			}
+
+			var resolution = await commitRangeService.ResolvePullRequestsAsync(
+				collector,
+				new CommitRangeArguments { Owner = resolvedOwner, Repo = resolvedRepo, StartRef = previousTag, EndRef = release.TagName },
+				ctx
+			);
+			if (resolution == null || resolution.PullRequests.Count == 0)
 			{
 				collector.EmitWarning(
 					string.Empty,
-					$"No PR references found in release notes for {resolvedOwner}/{resolvedRepo}@{release.TagName}. No changelogs will be removed."
+					$"No PRs found in commit range {previousTag}..{release.TagName} for {resolvedOwner}/{resolvedRepo}. No changelogs will be removed."
 				);
 				return 0;
 			}
 
-			// Build full PR URLs and inject them as the PR filter
-			prs = parsedNotes.PrReferences.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}").ToArray();
+			prs = resolution.PullRequests.Select(pr => pr.Url).ToArray();
 		}
 
 		var allPrs = ExpandCommaSeparated(prs);
@@ -1638,7 +1677,6 @@ internal sealed partial class ChangelogCommands(
 		string? output = null,
 		string? releaseDate = null,
 		bool stripTitlePrefix = false,
-		bool warnOnTypeMismatch = true,
 		CancellationToken ct = default
 	)
 	{
@@ -1699,7 +1737,6 @@ internal sealed partial class ChangelogCommands(
 			Config = config?.FullName,
 			Output = resolvedOutput,
 			StripTitlePrefix = stripTitlePrefixResolved,
-			WarnOnTypeMismatch = warnOnTypeMismatch,
 			Description = description,
 			ReleaseDate = releaseDate
 		};

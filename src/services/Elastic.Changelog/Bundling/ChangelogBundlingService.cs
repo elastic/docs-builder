@@ -661,7 +661,8 @@ public partial class ChangelogBundlingService(
 				_logger,
 				ctx,
 				input.ProfileReport,
-				_releaseService
+				_releaseService,
+				_commitRangeService
 			);
 
 		if (filterResult == null)
