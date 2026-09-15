@@ -118,12 +118,17 @@ public interface ITableOfContentsItem
 	string Context { get; }
 }
 
+/// <param name="DefaultCta">
+/// Optional <c>default_cta</c> declared on this entry. Applies to the file itself and every page beneath it
+/// unless a nearer entry, nested <c>toc.yml</c>, or page frontmatter selects another template.
+/// </param>
 public record FileRef(
 	string PathRelativeToDocumentationSet,
 	string PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
-	string Context
+	string Context,
+	string? DefaultCta = null
 ) : ITableOfContentsItem;
 
 public record IndexFileRef(
@@ -131,8 +136,9 @@ public record IndexFileRef(
 	string PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
-	string Context
-) : FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context);
+	string Context,
+	string? DefaultCta = null
+) : FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
 
 /// <summary>
 /// Represents a file reference created from a folder+file combination in YAML (e.g., "folder: path/to/dir, file: index.md").
@@ -143,8 +149,9 @@ public record FolderIndexFileRef(
 	string PathRelativeToContainer,
 	bool Hidden,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
-	string Context
-) : IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context);
+	string Context,
+	string? DefaultCta = null
+) : IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
 
 public record CrossLinkRef(
 	Uri CrossLinkUri,
@@ -164,13 +171,15 @@ public record CrossLinkRef(
 
 /// <param name="Sort">Raw YAML sort value, parsed and validated during resolution via <see cref="SortOrderExtensions.TryParse"/>.</param>
 /// <param name="Exclude">File names to exclude from auto-discovery (like "draft.md", "internal.md").</param>
+/// <param name="DefaultCta">Optional <c>default_cta</c> declared on this entry; applies to every page inside the folder.</param>
 public record FolderRef(
 	string PathRelativeToDocumentationSet,
 	string PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
 	string? Sort = null,
-	IReadOnlyCollection<string>? Exclude = null
+	IReadOnlyCollection<string>? Exclude = null,
+	string? DefaultCta = null
 ) : ITableOfContentsItem;
 
 /// <summary>
@@ -183,8 +192,9 @@ public record DeepLinkedFolderRef(
 	string PathRelativeToDocumentationSet,
 	string PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
-	string Context
-) : FolderRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Children, Context);
+	string Context,
+	string? DefaultCta = null
+) : FolderRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Children, Context, DefaultCta: DefaultCta);
 
 /// <param name="Island">
 /// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
