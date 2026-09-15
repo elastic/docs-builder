@@ -135,33 +135,46 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 	/// <inheritdoc />
 	public async Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default)
 	{
-		var (currentPrefix, currentMajor, currentIsPreRelease) = ParseTagIdentity(currentTag);
-		var currentVersion = ParseTagVersion(currentTag);
+		try
+		{
+			var (currentPrefix, currentMajor, currentIsPreRelease) = ParseTagIdentity(currentTag);
+			var currentVersion = ParseTagVersion(currentTag);
 
-		var result = await ScanReleasesForPreviousTagAsync(
-			owner,
-			repo,
-			currentTag,
-			currentPrefix,
-			currentMajor,
-			currentIsPreRelease,
-			currentVersion,
-			ctx
-		);
-		if (result is not null)
-			return result;
+			var result = await ScanReleasesForPreviousTagAsync(
+				owner,
+				repo,
+				currentTag,
+				currentPrefix,
+				currentMajor,
+				currentIsPreRelease,
+				currentVersion,
+				ctx
+			);
+			if (result is not null)
+				return result;
 
-		_logger.LogDebug("Releases API yielded no predecessor for {CurrentTag}; trying git tags API", currentTag);
-		return await ScanTagsApiForPreviousTagAsync(
-			owner,
-			repo,
-			currentTag,
-			currentPrefix,
-			currentMajor,
-			currentIsPreRelease,
-			currentVersion,
-			ctx
-		);
+			_logger.LogDebug("Releases API yielded no predecessor for {CurrentTag}; trying git tags API", currentTag);
+			return await ScanTagsApiForPreviousTagAsync(
+				owner,
+				repo,
+				currentTag,
+				currentPrefix,
+				currentMajor,
+				currentIsPreRelease,
+				currentVersion,
+				ctx
+			);
+		}
+		catch (HttpRequestException ex)
+		{
+			_logger.LogWarning(ex, "HTTP error scanning for previous tag of {CurrentTag}", currentTag);
+			return null;
+		}
+		catch (TaskCanceledException)
+		{
+			_logger.LogWarning("Request timeout scanning for previous tag of {CurrentTag}", currentTag);
+			return null;
+		}
 	}
 
 	private async Task<string?> ScanReleasesForPreviousTagAsync(
@@ -440,7 +453,44 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 				return 1;
 			if (IsPreRelease && !other.IsPreRelease)
 				return -1;
-			return string.Compare(PreReleaseSuffix, other.PreReleaseSuffix, StringComparison.OrdinalIgnoreCase);
+			return ComparePreReleaseSuffixes(PreReleaseSuffix, other.PreReleaseSuffix);
+		}
+
+		/// <summary>
+		/// Compares two pre-release suffix strings token-by-token per SemVer 2.0 precedence rules:
+		/// dot-separated identifiers, numeric tokens compared as integers, numeric &lt; alphanumeric,
+		/// longer wins when all leading tokens are equal.
+		/// </summary>
+		private static int ComparePreReleaseSuffixes(string a, string b)
+		{
+			var tokensA = a.Split('.');
+			var tokensB = b.Split('.');
+			var len = Math.Min(tokensA.Length, tokensB.Length);
+			for (var i = 0; i < len; i++)
+			{
+				var tokenA = tokensA[i];
+				var tokenB = tokensB[i];
+				var aIsNum = int.TryParse(tokenA, out var numA);
+				var bIsNum = int.TryParse(tokenB, out var numB);
+				if (aIsNum && bIsNum)
+				{
+					var nc = numA.CompareTo(numB);
+					if (nc != 0)
+						return nc;
+				}
+				else if (aIsNum)
+					return -1; // numeric < alphanumeric
+
+				else if (bIsNum)
+					return 1;
+				else
+				{
+					var sc = string.Compare(tokenA, tokenB, StringComparison.OrdinalIgnoreCase);
+					if (sc != 0)
+						return sc;
+				}
+			}
+			return tokensA.Length.CompareTo(tokensB.Length);
 		}
 	}
 

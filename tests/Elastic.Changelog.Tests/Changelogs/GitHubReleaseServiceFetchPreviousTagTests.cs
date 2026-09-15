@@ -501,6 +501,64 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
+	// Prerelease suffix ordering — numeric identifiers compared as integers
+	// ─────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task FetchPreviousTag_PreRelease_NumericSuffix_DoubledigitBeatsLexicallySmallerSingleDigit()
+	{
+		// rc.10 > rc.2 numerically, but lexically "rc.10" < "rc.2".
+		// The correct predecessor for v1.0.0-rc.11 is v1.0.0-rc.10, not v1.0.0-rc.2.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson("v1.0.0-rc.11", "v1.0.0-rc.10", "v1.0.0-rc.2", "v1.0.0-rc.1"));
+		});
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.0.0-rc.11");
+		result.Should().Be("v1.0.0-rc.10");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_PreRelease_NumericSuffix_NumericLessThanAlphanumeric()
+	{
+		// Per SemVer 2.0: a numeric identifier has lower precedence than an alphanumeric one.
+		// So "alpha.1" > "1" (alphanumeric > numeric). The test confirms that a plain numeric
+		// suffix (e.g. ".1") does not outrank a letter-prefixed suffix (e.g. "alpha.1")
+		// at the same position.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			// v1.0.0-alpha.1 > v1.0.0-1 (alpha > numeric per SemVer)
+			return Json(ReleasesJson("v1.0.0-alpha.1", "v1.0.0-1", "v1.0.0-rc.1"));
+		});
+		// The predecessor of v1.0.0-rc.1 should be v1.0.0-alpha.1, since alpha.1 > 1.
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.0.0-rc.1");
+		result.Should().Be("v1.0.0-alpha.1");
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Error handling — transport failures return null, not exceptions
+	// ─────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task FetchPreviousTag_HttpRequestException_ReturnsNull()
+	{
+		var handler = new StubHandler(_ => throw new HttpRequestException("network error"));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0");
+		result.Should().BeNull("HTTP errors must be caught and converted to null");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TaskCanceledException_ReturnsNull()
+	{
+		var handler = new StubHandler(_ => throw new TaskCanceledException("timeout"));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0");
+		result.Should().BeNull("timeouts must be caught and converted to null");
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
 	// Early-bail optimisation — releases API
 	// ─────────────────────────────────────────────────────────────────────────
 
