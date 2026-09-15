@@ -217,6 +217,11 @@ public class GitHubReleaseChangelogService(
 			}
 
 			_logger.LogInformation("Included {Count}/{Total} PR(s) from release {Tag}", successCount, pullRequests.Count, release.TagName);
+			if (successCount == 0 && pullRequests.Count > 0)
+				collector.EmitWarning(
+					string.Empty,
+					$"All {pullRequests.Count} PR(s) in the commit range for {release.TagName} were excluded by label rules; no changelog files created."
+				);
 
 			// 9. Optionally create bundle file if changelogs were created
 			if (input.CreateBundle && createdFiles.Count > 0)
@@ -236,7 +241,10 @@ public class GitHubReleaseChangelogService(
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
 			}
 
-			return successCount > 0 || pullRequests.Count == 0;
+			// successCount == 0 here means all PRs were intentionally skipped by label rules
+			// (ProcessPr returns false only on explicit label-rule exclusions, never on errors).
+			// Intentional skips are not failures; the warnings per-PR are already emitted above.
+			return true;
 		}
 		catch (IOException ioEx)
 		{
