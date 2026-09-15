@@ -37,8 +37,8 @@ Your IAM policy must allow these S3 actions on the target bucket:
 | Permission | Purpose |
 | ---------- | ------- |
 | `s3:PutObject` | Upload changelog and bundle YAML files and `registry.json` manifests |
-| `s3:GetObject` | Read existing `registry.json` for merge and compare remote content |
-| `s3:GetObject` (metadata) | Compare remote ETags to skip unchanged files |
+| `s3:GetObject` | Read existing objects for ETag comparison, and print the remote YAML body when a replacement is refused |
+| `s3:GetObject` (metadata) | HeadObject used to skip unchanged files and classify new versus replaced |
 
 `s3:ListBucket` is not required. The command uploads to known keys derived from local file names and product IDs — it does not enumerate the bucket.
 
@@ -114,15 +114,17 @@ objects that only older CLI versions still write. See
 Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.yaml` (for example `kibana-cloud-serverless-2026-08-27.yaml` and `elasticsearch-cloud-serverless-2026-08-27.yaml`) so several repositories can publish the same product and version without overwriting each other under `bundle/{product}/`. In option mode, an explicit `--output` file path (a path ending in `.yml` or `.yaml`) is used as-is. When `--output` is omitted, that `{repo}-{product}-{version}.yaml` name is written under `bundle.output_directory`. When `--output` is a directory (any path that does not end in `.yml` or `.yaml`), the file is written in that directory. If the authoring repo cannot be resolved, the command warns and falls back to `{product}-{version}.yaml`, which can collide. If product or version cannot be resolved, the command warns and writes `changelog-bundle.yaml`.
 
 :::{note}
-Upload uses content-hash–based incremental transfer. Unchanged files are skipped. Re-running the same command is safe and idempotent.
+Upload uses content-hash–based incremental transfer. Unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
 If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
+The completion log reports how many objects were **new** versus **replaced**. Pass `--overwrite` to replace remote objects whose content differs; that is currently the default (same as omitting the flag) so docs-actions can start passing it. A later release will refuse replacements unless `--overwrite` is passed. New objects that appear between HeadObject and PutObject are still created. `--skip-etag-check` implies `--overwrite`.
 :::
 
 ## Options
 
 | Option | Purpose |
 | ------ | ------- |
-| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. |
+| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Implies `--overwrite`. |
+| `--overwrite` | Replace remote objects whose content differs. Currently the default (same as omitting the flag). A later release will refuse replacements unless this flag is passed. Unchanged (ETag match) files and PR-alias markers are still skipped. When a replacement is refused, the warning describes the remote object from its YAML (pointer vs full changelog) and whether this run was writing an alias. |
 
 ## Configuration
 
@@ -185,4 +187,16 @@ docs-builder changelog upload \
   --target s3 \
   --s3-bucket-name my-changelog-bundles \
   --config ./config/changelog.yml
+```
+
+### Explicit overwrite (currently the default)
+
+`--overwrite` replaces remote objects whose content differs. It currently matches the default, so passing it is a no-op that lets CI adopt the flag before a later release refuses replacements unless it is set:
+
+```sh
+docs-builder changelog upload \
+  --artifact-type changelog \
+  --target s3 \
+  --s3-bucket-name my-changelog-bundles \
+  --overwrite
 ```

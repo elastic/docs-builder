@@ -75,6 +75,12 @@ public record ChangelogUploadArguments
 	/// Useful to re-trigger downstream scrubbers without changing file content.
 	/// </summary>
 	public bool SkipEtagCheck { get; init; }
+
+	/// <summary>
+	/// When true, replace a remote object whose content differs from the local file.
+	/// Default is true (replace). Unchanged (ETag match) files are still skipped.
+	/// </summary>
+	public bool Overwrite { get; init; } = true;
 }
 
 public class ChangelogUploadService(
@@ -141,22 +147,128 @@ public class ChangelogUploadService(
 		var client = s3Client ?? defaultClient!;
 		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
-		var result = await uploader.Upload(targets, args.SkipEtagCheck, ctx);
-
-		_logger.LogInformation(
-			"Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed",
-			result.Uploaded,
-			result.Skipped,
-			result.Failed
+		var result = await uploader.Upload(
+			targets,
+			new S3UploadOptions { SkipEtagCheck = args.SkipEtagCheck, Overwrite = args.Overwrite || args.SkipEtagCheck },
+			ctx
 		);
+
+		LogUploadComplete(result);
+
+		foreach (var conflict in result.Conflicts)
+			collector.EmitWarning(string.Empty, FormatNotOverwrittenWarning(args.S3BucketName, conflict));
 
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
 
+		if (result.NotOverwritten > 0)
+			collector.EmitError(string.Empty, FormatNotOverwrittenError(result));
+
 		// No registry refresh here: the scrubber Lambda is the sole producer of the public
 		// registry.json, reconciled from actual public bucket state on every S3 event this upload
 		// just emitted (elastic/docs-eng-team#688). A private-bucket registry no longer exists.
-		return result.Failed == 0;
+		return result.Failed == 0 && result.NotOverwritten == 0;
+	}
+
+	private void LogUploadComplete(UploadResult result)
+	{
+		if (result.NotOverwritten > 0)
+		{
+			_logger.LogInformation(
+				"Upload complete: {Uploaded} uploaded ({New} new, {Replaced} replaced), {Skipped} skipped, {NotOverwritten} not overwritten, {Failed} failed",
+				result.Uploaded,
+				result.New,
+				result.Replaced,
+				result.Skipped,
+				result.NotOverwritten,
+				result.Failed
+			);
+			return;
+		}
+
+		_logger.LogInformation(
+			"Upload complete: {Uploaded} uploaded ({New} new, {Replaced} replaced), {Skipped} skipped, {Failed} failed",
+			result.Uploaded,
+			result.New,
+			result.Replaced,
+			result.Skipped,
+			result.Failed
+		);
+	}
+
+	private static string FormatNotOverwrittenError(UploadResult result)
+	{
+		var markerCount = result.Conflicts.Count(static c => IsRemotePrAliasMarker(c));
+		if (markerCount == result.NotOverwritten && markerCount > 0)
+			return $"{markerCount} PR-alias marker(s) already exist at the destination and were not overwritten.";
+
+		return $"{result.NotOverwritten} file(s) already exist at the destination and were not overwritten.";
+	}
+
+	private static string FormatNotOverwrittenWarning(string bucket, UploadConflict conflict)
+	{
+		var uri = $"s3://{bucket}/{conflict.S3Key}";
+		var local = string.IsNullOrEmpty(conflict.LocalPath) ? "local changelog" : conflict.LocalPath;
+		var remoteLink = TryMarkerLink(conflict.RemoteContent);
+		if (remoteLink is not null)
+			return FormatRemotePointerConflict(uri, local, remoteLink, conflict);
+		if (conflict.InlineContent is not null)
+			return FormatFullRemoteLocalAliasConflict(uri, local, conflict);
+		return FormatFullRemoteFullLocalConflict(uri, local, conflict);
+	}
+
+	private static string FormatRemotePointerConflict(string uri, string local, string remoteLink, UploadConflict conflict)
+	{
+		var pointer = $"The remote object is a pointer to the canonical changelog for PR {remoteLink}, not a full entry.";
+		var body = conflict.RemoteContent is { Length: > 0 } remote
+			? $"\nExisting remote marker:\n{remote}"
+			: " Could not fetch the existing remote marker.";
+		if (conflict.InlineContent is not null)
+		{
+			var source = $"Upload writes this alias because {local} lists more than one PR.";
+			return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} {source} Leave the existing pointer, or re-run with --overwrite to replace it.{body}";
+		}
+
+		return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} Local file {local} is a full changelog. Leave the existing pointer, or re-run with --overwrite to replace it with the full entry.{body}";
+	}
+
+	private static string FormatFullRemoteLocalAliasConflict(string uri, string local, UploadConflict conflict)
+	{
+		var source = $"Upload writes an alias at this key because {local} lists more than one PR.";
+		if (conflict.RemoteContent is { Length: > 0 } body)
+		{
+			return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. {source} Merge the products (and other fields) manually, or re-run with --overwrite to replace the full entry with a pointer.\nExisting remote changelog:\n{body}";
+		}
+
+		return $"Skipped {uri}: an object already exists at this key with different content. Local file: {local}. {source} Could not fetch the existing remote object. Merge manually, or re-run with --overwrite to replace.";
+	}
+
+	private static string FormatFullRemoteFullLocalConflict(string uri, string local, UploadConflict conflict)
+	{
+		if (conflict.RemoteContent is { Length: > 0 } body)
+		{
+			return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Merge the products (and other fields) manually, or re-run with --overwrite to replace.\nExisting remote changelog:\n{body}";
+		}
+
+		return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Could not fetch the existing remote changelog. Merge manually, or re-run with --overwrite to replace.";
+	}
+
+	private static bool IsRemotePrAliasMarker(UploadConflict conflict) => TryMarkerLink(conflict.RemoteContent) is not null;
+
+	private static string? TryMarkerLink(string? yaml)
+	{
+		if (string.IsNullOrWhiteSpace(yaml))
+			return null;
+
+		try
+		{
+			var entry = ReleaseNotesSerialization.DeserializeEntry(yaml);
+			return entry.IsMarker ? entry.Link : null;
+		}
+		catch (Exception)
+		{
+			return null;
+		}
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(
@@ -245,7 +357,7 @@ public class ChangelogUploadService(
 			foreach (var (markerFileName, markerContent) in markerEntries)
 			{
 				var markerKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, markerFileName);
-				targets.Add(new UploadTarget(string.Empty, markerKey, markerContent));
+				targets.Add(new UploadTarget(filePath, markerKey, markerContent));
 			}
 		}
 

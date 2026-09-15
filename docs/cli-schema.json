@@ -5109,7 +5109,15 @@
               "name": "skip-etag-check",
               "type": "boolean",
               "required": false,
-              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
+              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Implies --overwrite.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "overwrite",
+              "type": "boolean",
+              "required": false,
+              "summary": "Replace remote objects whose content differs. Currently the default (same as omitting the flag). A later release will refuse replacements unless this flag is passed. Implies replace when combined with --skip-etag-check.",
               "defaultValue": "false"
             },
             {
