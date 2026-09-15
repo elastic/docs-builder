@@ -182,19 +182,32 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 
 	/// <summary>
 	/// Extracts the non-numeric prefix and semver major version from a release tag.
-	/// Returns major = -1 for non-semver tags; the entire tag is treated as prefix.
-	/// Examples: "v2.3.1" → ("v", 2); "agent-v1.0.0" → ("agent-v", 1); "1.2.3" → ("", 1).
+	/// <list type="bullet">
+	///   <item>Semver tags ("v2.3.1", "agent-v1.0.0"): prefix = text before major, major = major digit.</item>
+	///   <item>Non-semver tags ("release-20260901", "v20260901"): prefix = text before first digit, major = -1.</item>
+	///   <item>Bare-digit tags ("20260901"): prefix = "", major = -1.</item>
+	/// </list>
+	/// When major = -1, callers skip the major-version filter and match on prefix only.
 	/// </summary>
 	private static (string Prefix, int Major) ParseTagIdentity(string tag)
 	{
-		var match = SemverTagRegex().Match(tag);
-		if (!match.Success)
-			return (tag, -1);
-		return (match.Groups["prefix"].Value, int.Parse(match.Groups["major"].Value, System.Globalization.CultureInfo.InvariantCulture));
+		var semverMatch = SemverTagRegex().Match(tag);
+		if (semverMatch.Success)
+			return (semverMatch.Groups["prefix"].Value, int.Parse(
+				semverMatch.Groups["major"].Value,
+				System.Globalization.CultureInfo.InvariantCulture
+			));
+
+		// Non-semver: extract the alphabetic/punctuation prefix before the first digit run.
+		var prefixMatch = NonSemverPrefixRegex().Match(tag);
+		return (prefixMatch.Success ? prefixMatch.Groups["prefix"].Value : string.Empty, -1);
 	}
 
 	[GeneratedRegex(@"^(?<prefix>.*?)(?<major>\d+)\.\d+\.\d+", RegexOptions.None)]
 	private static partial Regex SemverTagRegex();
+
+	[GeneratedRegex(@"^(?<prefix>[^\d]+)", RegexOptions.None)]
+	private static partial Regex NonSemverPrefixRegex();
 
 	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
 	{

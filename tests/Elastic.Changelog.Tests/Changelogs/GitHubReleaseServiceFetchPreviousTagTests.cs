@@ -240,19 +240,43 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
-	// Non-semver tags — only semver is supported; non-semver tags have undefined
-	// predecessor semantics and are not a supported input.
+	// Non-semver tags — prefix extracted from text before first digit
 	// ─────────────────────────────────────────────────────────────────────────
 
 	[Fact]
-	public async Task FetchPreviousTag_NonSemverTag_ReturnsNull()
+	public async Task FetchPreviousTag_DateSuffixTag_ReturnsPredecessorWithSamePrefix()
 	{
-		// Non-semver: the whole tag becomes the "prefix" (major = -1). A candidate tag with a
-		// different non-semver string cannot match, so no predecessor is found. Callers should
-		// only pass semver tags to this method.
+		// "release-" is the prefix; major = -1 (no X.Y.Z), so no major-version filter applies.
 		var handler = new StubHandler(_ => Json(ReleasesJson("release-20260901", "release-20260801", "release-20260701")));
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "release-20260901");
-		result.Should().BeNull();
+		result.Should().Be("release-20260801");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_DateSuffixTag_DoesNotMatchDifferentPrefix()
+	{
+		// "agent-release-" does not match "release-" prefix.
+		var handler = new StubHandler(_ => Json(ReleasesJson("release-20260901", "agent-release-20260801", "release-20260801")));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "release-20260901");
+		result.Should().Be("release-20260801");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_VPrefixedDateTag_MatchesVPrefixOnly()
+	{
+		// "v20260901" → prefix = "v", major = -1; should match other "v*" non-semver tags.
+		var handler = new StubHandler(_ => Json(ReleasesJson("v20260901", "20260801", "v20260801")));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v20260901");
+		result.Should().Be("v20260801");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_BareIntTag_MatchesOtherBareIntTags()
+	{
+		// No prefix (empty string); all bare-digit tags share the empty prefix.
+		var handler = new StubHandler(_ => Json(ReleasesJson("20260901", "20260801", "20260701")));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "20260901");
+		result.Should().Be("20260801");
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
