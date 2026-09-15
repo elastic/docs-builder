@@ -580,6 +580,22 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public async Task FetchPreviousTag_OutOfRangeComponent_SkippedNotThrown()
+	{
+		// Tags whose major/minor/patch exceeds Int32.MaxValue must be skipped, not throw
+		// OverflowException. int.TryParse treats them as non-semver, returning null from
+		// ParseTagVersion so FetchPreviousTagAsync continues without surfacing an exception.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson("v2147483648.0.0", "v1.2.4", "v1.2.3"));
+		});
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.4");
+		result.Should().Be("v1.2.3", "out-of-range version components must be silently skipped, not throw OverflowException");
+	}
+
+	[Fact]
 	public async Task FetchPreviousTag_FourComponentVersion_RejectedAsNonSemver()
 	{
 		// A tag like v1.2.4.99 must not be parsed as v1.2.4 (partial regex match).

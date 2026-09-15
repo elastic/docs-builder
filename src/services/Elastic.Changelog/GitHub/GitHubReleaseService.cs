@@ -461,7 +461,15 @@ public partial class GitHubReleaseService(
 		if (semverMatch.Success)
 		{
 			var prefix = semverMatch.Groups["prefix"].Value;
-			var major = int.Parse(semverMatch.Groups["major"].Value, System.Globalization.CultureInfo.InvariantCulture);
+			if (
+				!int.TryParse(
+					semverMatch.Groups["major"].Value,
+					System.Globalization.NumberStyles.None,
+					System.Globalization.CultureInfo.InvariantCulture,
+					out var major
+				)
+			)
+				return (prefix, -1, false);
 			var isPreRelease = semverMatch.Length < tag.Length && tag[semverMatch.Length] == '-';
 			return (prefix, major, isPreRelease);
 		}
@@ -475,9 +483,33 @@ public partial class GitHubReleaseService(
 		var m = SemverTagRegex().Match(tag);
 		if (!m.Success)
 			return null;
-		var major = int.Parse(m.Groups["major"].Value, System.Globalization.CultureInfo.InvariantCulture);
-		var minor = int.Parse(m.Groups["minor"].Value, System.Globalization.CultureInfo.InvariantCulture);
-		var patch = int.Parse(m.Groups["patch"].Value, System.Globalization.CultureInfo.InvariantCulture);
+		if (
+			!int.TryParse(
+				m.Groups["major"].Value,
+				System.Globalization.NumberStyles.None,
+				System.Globalization.CultureInfo.InvariantCulture,
+				out var major
+			)
+		)
+			return null;
+		if (
+			!int.TryParse(
+				m.Groups["minor"].Value,
+				System.Globalization.NumberStyles.None,
+				System.Globalization.CultureInfo.InvariantCulture,
+				out var minor
+			)
+		)
+			return null;
+		if (
+			!int.TryParse(
+				m.Groups["patch"].Value,
+				System.Globalization.NumberStyles.None,
+				System.Globalization.CultureInfo.InvariantCulture,
+				out var patch
+			)
+		)
+			return null;
 		var isPreRelease = m.Length < tag.Length && tag[m.Length] == '-';
 		// Strip build metadata (+...) per SemVer 2.0 §10: it MUST be ignored for precedence.
 		var rawSuffix = isPreRelease ? tag[(m.Length + 1)..] : string.Empty;
