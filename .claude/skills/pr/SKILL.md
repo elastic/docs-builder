@@ -105,10 +105,12 @@ Never use `fix` (use `bug`) or `ci` (use `automation`) — both are release-draf
 ### 7. Check whether a PR already exists
 
 ```bash
-gh pr view --json number,url,baseRefName --jq '{number,url,baseRefName}' 2>/dev/null
+gh pr view --json number,url,state,baseRefName --jq '{number,url,state,baseRefName}' 2>/dev/null
 ```
 
-**If a PR exists — update it.**
+**Check `state` before doing anything.** If `state` is `"MERGED"` or `"CLOSED"`, the branch already landed; treat it as no PR and proceed to step 8 to create a new one. Never edit a merged or closed PR.
+
+**If `state` is `"OPEN"` — update it.**
 
 Rebuild the body from the cumulative diff against the PR's own base branch (not a hardcoded `main`):
 
