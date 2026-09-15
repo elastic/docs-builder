@@ -56,11 +56,18 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public async Task FetchPreviousTag_TagNotFound_ReturnsNull()
+	public async Task FetchPreviousTag_TagNotInList_StillFindsHighestBelowBySemver()
 	{
-		var handler = new StubHandler(_ => Json(ReleasesJson("v1.1.0", "v1.0.0")));
+		// v1.5.0 is not in the releases list, but the semver ordering still finds the highest
+		// version below it (v1.1.0) without requiring the current tag to be present.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson("v1.1.0", "v1.0.0"));
+		});
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.5.0");
-		result.Should().BeNull();
+		result.Should().Be("v1.1.0");
 	}
 
 	[Fact]
@@ -254,23 +261,22 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	[Fact]
 	public async Task FetchPreviousTag_Pagination_StopsWhenPageIsNotFull()
 	{
+		// Page 1: full 100 items; page 2: 5 items (partial) → algorithm stops after page 2.
+		// Must not fetch page 3 or the tags API (a match was found in releases).
 		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v1.{100 - i}.0").ToArray();
+		var page2Tags = new[] { "v1.0.4", "v1.0.3", "v1.0.2", "v1.0.1", "v1.0.0" };
 
 		var requestCount = 0;
 		var handler = new StubHandler(req =>
 		{
 			requestCount++;
 			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
-			if (query["page"] == "2")
-				return Json("[]"); // no more releases
-			return Json(ReleasesJson(page1Tags));
+			return query["page"] == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
 		});
 
-		// v1.100.0 is the current tag; should not be found since it's the first item
-		// and the predecessor v1.99.0 is on the same page.
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.100.0");
 		result.Should().Be("v1.99.0");
-		requestCount.Should().Be(1, "predecessor was found on page 1, no need to fetch page 2");
+		requestCount.Should().Be(2, "stops after the first partial page — never fetches page 3 or the tags fallback");
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -323,6 +329,168 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		var handler = new StubHandler(_ => Json(ReleasesJson("20260901", "20260801", "20260701")));
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "20260901");
 		result.Should().Be("20260801");
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Out-of-order creation dates — must pick highest semver below current,
+	// not just the first candidate encountered in API order
+	// ─────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public async Task FetchPreviousTag_OutOfOrder_ReturnsHighestBelowNotFirstBelow()
+	{
+		// API order (creation-date newest-first): v4.2.0, v3.8.5, v4.1.0, v4.1.1
+		// A naïve "first after found" would return v4.1.0, but v4.1.1 is the correct predecessor.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson("v4.2.0", "v3.8.5", "v4.1.0", "v4.1.1"));
+		});
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().Be("v4.1.1");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_OutOfOrder_MaintenanceBranchInterleaved()
+	{
+		// Maintenance branch (v4.1.x) releases created after v4.2.0 are listed first by creation date.
+		// Correct predecessor for v4.2.0 is v4.1.1, the highest v4.x below v4.2.0.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson("v4.1.1", "v4.2.0-BC_3", "v4.2.0-BC_2", "v4.2.0", "v3.8.5", "v4.2.0-BC_1", "v4.1.0", "v3.8.4"));
+		});
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().Be("v4.1.1");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_OutOfOrder_AcrossPages()
+	{
+		// Page 1 has v4.1.0 (a plausible but not the best match); page 2 has v4.1.1 (the correct one).
+		// Both pages must be read to ensure the highest candidate wins.
+		var page1Tags = Enumerable.Range(0, 100).Select(i => i == 0 ? "v4.2.0" : i == 1 ? "v4.1.0" : $"v3.{99 - i}.0").ToArray();
+		var page2Tags = new[] { "v4.1.1", "v3.0.0" };
+
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			return query["page"] == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().Be("v4.1.1");
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Tags API fallback — used when releases API yields no predecessor
+	// ─────────────────────────────────────────────────────────────────────────
+
+	/// <summary>Builds a JSON tags array string (each item has only a "name" field).</summary>
+	private static string TagsJson(params string[] tagNames)
+	{
+		var items = tagNames.Select(t => $$$"""{"name":"{{{t}}}"}""");
+		return $"[{string.Join(",", items)}]";
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_FindsPredecessorNotInReleases()
+	{
+		// Releases list has only the current tag; the predecessor exists only as a git tag.
+		var handler = new StubHandler(
+			req => req.RequestUri!.PathAndQuery.Contains("/tags")
+				? Json(TagsJson("v1.2.0", "v1.1.0", "v1.0.0"))
+				: Json(ReleasesJson("v1.2.0"))
+		);
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0");
+		result.Should().Be("v1.1.0");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_EmptyReleases_FindsInTags()
+	{
+		// No GitHub Releases at all; falls back to tags.
+		var handler = new StubHandler(
+			req => req.RequestUri!.PathAndQuery.Contains("/tags") ? Json(TagsJson("v1.2.0", "v1.1.0", "v1.0.0")) : Json("[]")
+		);
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0");
+		result.Should().Be("v1.1.0");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_HttpFailure_ReturnsNull()
+	{
+		var handler = new StubHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0");
+		result.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_EmptyTagsList_ReturnsNull()
+	{
+		var handler = new StubHandler(req => req.RequestUri!.PathAndQuery.Contains("/tags") ? Json("[]") : Json("[]"));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0");
+		result.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_OutOfOrder_ReturnsHighestBelow()
+	{
+		// Tags API (like releases) may return tags in creation-date order, not semver order.
+		// Correct answer: v1.1.1, not v1.1.0 (v1.1.1 appears later but is higher semver).
+		var handler = new StubHandler(
+			req => req.RequestUri!.PathAndQuery.Contains("/tags") ? Json(TagsJson("v1.2.0", "v1.1.0", "v1.1.1")) : Json("[]")
+		);
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0");
+		result.Should().Be("v1.1.1");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_Pagination_FindsPredecessorOnPage2()
+	{
+		// Page 1 of tags: 100 items (v1.100.0 current + v3.x wrong-major).
+		// Page 2 of tags: v1.99.0 (correct predecessor).
+		var page1Tags = Enumerable.Range(0, 100).Select(i => i == 0 ? "v1.100.0" : $"v3.{99 - i}.0").ToArray();
+		var page2Tags = new[] { "v1.99.0", "v1.98.0" };
+
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.PathAndQuery;
+			if (!path.Contains("/tags"))
+				return Json("[]"); // no releases
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri.Query);
+			return query["page"] == "2" ? Json(TagsJson(page2Tags)) : Json(TagsJson(page1Tags));
+		});
+
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.100.0");
+		result.Should().Be("v1.99.0");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_PrefixIsolation()
+	{
+		// Tags API fallback also respects prefix isolation.
+		var handler = new StubHandler(
+			req => req.RequestUri!.PathAndQuery.Contains("/tags") ? Json(TagsJson("agent-v1.2.0", "v1.1.0", "agent-v1.1.0")) : Json("[]")
+		);
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "agent-v1.2.0");
+		result.Should().Be("agent-v1.1.0");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TagsApiFallback_MajorIsolation()
+	{
+		// Tags API fallback also respects major-version isolation.
+		var handler = new StubHandler(
+			req => req.RequestUri!.PathAndQuery.Contains("/tags") ? Json(TagsJson("v2.0.0", "v1.9.0", "v1.8.0")) : Json("[]")
+		);
+		// v2.0.0 is the first v2 release; no prior v2.x → null even though v1.9.0 exists.
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v2.0.0");
+		result.Should().BeNull();
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
