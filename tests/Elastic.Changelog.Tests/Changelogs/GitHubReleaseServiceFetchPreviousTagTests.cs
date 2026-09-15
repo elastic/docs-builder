@@ -172,11 +172,59 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	// ─────────────────────────────────────────────────────────────────────────
 
 	[Fact]
-	public async Task FetchPreviousTag_PreReleaseSuffix_TreatedAsSameMajor()
+	public async Task FetchPreviousTag_FirstPreRelease_AnchorsAtPreviousStable()
 	{
-		// v1.2.0-beta.1 and v1.1.0 share major=1 and prefix="v".
+		// v1.2.0-beta.1 is the first pre-release in the v1.2.x series — no prior prerelease exists.
+		// Its predecessor is the previous stable: v1.1.0.
 		var handler = new StubHandler(_ => Json(ReleasesJson("v1.2.0-beta.1", "v1.1.0", "v1.0.0")));
 		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0-beta.1");
+		result.Should().Be("v1.1.0");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_NonFirstPreRelease_ReturnsPreviousPreRelease()
+	{
+		// v1.2.0-beta.2 has a prior prerelease v1.2.0-beta.1 — that is returned, not v1.1.0.
+		var handler = new StubHandler(_ => Json(ReleasesJson("v1.2.0-beta.2", "v1.2.0-beta.1", "v1.1.0")));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0-beta.2");
+		result.Should().Be("v1.2.0-beta.1");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_StableSkipsAllPreReleasesOfSameVersion()
+	{
+		// v1.2.1 is a stable release. Its predecessors v1.2.1-beta.2 and v1.2.1-beta.1 must be skipped.
+		var handler = new StubHandler(_ => Json(ReleasesJson("v1.2.1", "v1.2.1-beta.2", "v1.2.1-beta.1", "v1.2.0")));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.1");
+		result.Should().Be("v1.2.0");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_StableSkipsInterleavedPreReleases()
+	{
+		// Mixed interleaved releases: v2.1.0 (stable) must skip v2.1.0-rc.1 and v2.0.0-beta.1
+		// and land on v2.0.0 (the previous stable in the v2.x line).
+		var handler = new StubHandler(_ => Json(ReleasesJson("v2.1.0", "v2.1.0-rc.1", "v2.0.0-beta.1", "v2.0.0", "v1.9.0")));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v2.1.0");
+		result.Should().Be("v2.0.0");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_StableWithNoStablePredecessor_ReturnsNull()
+	{
+		// v1.0.0 is the first stable; its only candidates are prereleases — all skipped.
+		var handler = new StubHandler(_ => Json(ReleasesJson("v1.0.0", "v1.0.0-rc.2", "v1.0.0-rc.1")));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.0.0");
+		result.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_PreRelease_AcceptsStableAsFallback()
+	{
+		// v1.2.0-alpha.1 is the first pre-release; the only older same-line tag is the
+		// stable v1.1.0 — a stable candidate is accepted when no prerelease predecessor exists.
+		var handler = new StubHandler(_ => Json(ReleasesJson("v1.2.0-alpha.1", "v1.1.0")));
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.2.0-alpha.1");
 		result.Should().Be("v1.1.0");
 	}
 
@@ -187,12 +235,10 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	[Fact]
 	public async Task FetchPreviousTag_Pagination_FindsPredecessorAcrossPages()
 	{
-		// Page 1 has current tag only; page 2 has the predecessor.
-		// Simulate 100-item pages by ensuring page 1 returns exactly 100 items.
-		var page1Tags = Enumerable.Range(0, 100).Select(i => i == 0 ? "v2.0.0" : $"v1.{99 - i}.0").ToArray();
-		var page2Tags = new[] { "v1.0.0-placeholder" }; // wrong major, should be skipped
-														// Add the v2 predecessor to the beginning of page 2
-		page2Tags = ["v2.0.0-rc.1", .. page2Tags];
+		// Page 1: current tag v2.1.0 at index 0; the rest are v1.x (wrong major, skipped).
+		// Page 2: v2.0.0 — same prefix and major, non-prerelease → returned.
+		var page1Tags = Enumerable.Range(0, 100).Select(i => i == 0 ? "v2.1.0" : $"v1.{99 - i}.0").ToArray();
+		var page2Tags = new[] { "v2.0.0", "v1.0.0" };
 
 		var handler = new StubHandler(req =>
 		{
@@ -201,8 +247,8 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 			return page == "2" ? Json(ReleasesJson(page2Tags)) : Json(ReleasesJson(page1Tags));
 		});
 
-		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v2.0.0");
-		result.Should().Be("v2.0.0-rc.1");
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v2.1.0");
+		result.Should().Be("v2.0.0");
 	}
 
 	[Fact]

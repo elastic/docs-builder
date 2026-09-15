@@ -135,7 +135,7 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 	/// <inheritdoc />
 	public async Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default)
 	{
-		var (currentPrefix, currentMajor) = ParseTagIdentity(currentTag);
+		var (currentPrefix, currentMajor, currentIsPreRelease) = ParseTagIdentity(currentTag);
 		const int pageSize = 100;
 		var page = 1;
 		var found = false;
@@ -162,13 +162,18 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 					continue;
 				}
 
-				var (candidatePrefix, candidateMajor) = ParseTagIdentity(r.TagName ?? string.Empty);
+				var (candidatePrefix, candidateMajor, candidateIsPreRelease) = ParseTagIdentity(r.TagName ?? string.Empty);
 
 				if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
 					continue;
 
 				// Both semver: require same major version line.
 				if (currentMajor >= 0 && candidateMajor >= 0 && candidateMajor != currentMajor)
+					continue;
+
+				// Non-prerelease releases always have a non-prerelease predecessor.
+				// Pre-release releases accept any predecessor (prerelease or stable).
+				if (!currentIsPreRelease && candidateIsPreRelease)
 					continue;
 
 				return r.TagName;
@@ -181,26 +186,30 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 	}
 
 	/// <summary>
-	/// Extracts the non-numeric prefix and semver major version from a release tag.
+	/// Extracts the non-numeric prefix, semver major version, and pre-release flag from a release tag.
 	/// <list type="bullet">
-	///   <item>Semver tags ("v2.3.1", "agent-v1.0.0"): prefix = text before major, major = major digit.</item>
-	///   <item>Non-semver tags ("release-20260901", "v20260901"): prefix = text before first digit, major = -1.</item>
-	///   <item>Bare-digit tags ("20260901"): prefix = "", major = -1.</item>
+	///   <item>Semver tags ("v2.3.1"): prefix="v", major=2, isPreRelease=false.</item>
+	///   <item>Semver pre-release tags ("v1.2.0-beta.1"): prefix="v", major=1, isPreRelease=true.</item>
+	///   <item>Non-semver tags ("release-20260901"): prefix="release-", major=-1, isPreRelease=false.</item>
+	///   <item>Bare-digit tags ("20260901"): prefix="", major=-1, isPreRelease=false.</item>
 	/// </list>
 	/// When major = -1, callers skip the major-version filter and match on prefix only.
+	/// A pre-release tag is one whose semver base (X.Y.Z) is immediately followed by a hyphen.
 	/// </summary>
-	private static (string Prefix, int Major) ParseTagIdentity(string tag)
+	private static (string Prefix, int Major, bool IsPreRelease) ParseTagIdentity(string tag)
 	{
 		var semverMatch = SemverTagRegex().Match(tag);
 		if (semverMatch.Success)
-			return (semverMatch.Groups["prefix"].Value, int.Parse(
-				semverMatch.Groups["major"].Value,
-				System.Globalization.CultureInfo.InvariantCulture
-			));
+		{
+			var prefix = semverMatch.Groups["prefix"].Value;
+			var major = int.Parse(semverMatch.Groups["major"].Value, System.Globalization.CultureInfo.InvariantCulture);
+			var isPreRelease = semverMatch.Length < tag.Length && tag[semverMatch.Length] == '-';
+			return (prefix, major, isPreRelease);
+		}
 
 		// Non-semver: extract the alphabetic/punctuation prefix before the first digit run.
 		var prefixMatch = NonSemverPrefixRegex().Match(tag);
-		return (prefixMatch.Success ? prefixMatch.Groups["prefix"].Value : string.Empty, -1);
+		return (prefixMatch.Success ? prefixMatch.Groups["prefix"].Value : string.Empty, -1, false);
 	}
 
 	[GeneratedRegex(@"^(?<prefix>.*?)(?<major>\d+)\.\d+\.\d+", RegexOptions.None)]
