@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
-<div hx-select-oob="#main-container" hx-swap="none" class="w-full max-w-[100vw] text-ink relative text-pretty overflow-x-hidden">
+<div class="w-full max-w-[100vw] text-ink relative text-pretty overflow-x-hidden">
 	<section class="w-full bg-grey-10" id="hero">
 		<div class="container mx-auto pt-28 pb-4 min-[1024px]:pb-28 grid min-[1024px]:grid-cols-[auto_420px] min-[1024px]:justify-between items-center gap-6 min-[1024px]:gap-[74px]">
 			<div class="max-w-165">
@@ -9,8 +9,7 @@
 				<p class="mt-4"><strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")"
 					class="link">upgrade guide</a> to plan and complete your upgrade. </p>
 
-				<div class="flex md:inline-flex flex-col gap-6 mt-6">
-					<navigation-search></navigation-search>
+				<div class="flex md:inline-flex flex-col mt-6">
 					<div class="flex gap-3">
 						<a href="@Model.Link("/get-started")"
 						   class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
@@ -40,11 +39,11 @@
 				     style="border: 2px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(-65deg, #BFDBFF 17%, #E2D3FE 83%) border-box; background-clip: padding-box, border-box; background-origin: padding-box, border-box;">
 					<span class="euiBadge euiBadge--primary inline-flex items-center font-sans font-bold text-xs uppercase tracking-wide shrink-0 rounded-full px-2 py-0.5 bg-[#8144CC] text-white">NEW</span>
 					<div class="flex flex-col">
-						<p class="font-sans font-bold text-xl">Elastic skills for AI agents</p>
-						<p class="mt-2">Install official skills that teach AI coding agents how to work with Elasticsearch, Kibana, Fleet, and the rest of the Elastic stack.</p>
+						<p class="font-sans font-bold text-xl">Build with Elasticsearch Vector Database</p>
+						<p class="mt-2">Create a project, then use your preferred language to index data and run semantic and hybrid searches in 10 minutes.</p>
 						<div class="grid grid-cols-1 mt-6 gap-2 text-left">
-							<a href="@Model.Link("/explore-analyze/ai-features/agent-skills")" class="link justify-start">
-								Learn more
+							<a href="@Model.Link("/solutions/vector-database/vector-full-text-search")" class="link justify-start">
+								Start tutorial
 								<svg class="link-arrow"
 								     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
@@ -64,21 +63,31 @@
 					<a href="#solutions-use-cases">Solutions and use cases</a>
 				</h2>
 			</div>
-			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
+			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+				<div class="rounded-2xl border-1 border-grey-20 p-6 bg-white flex gap-4 items-start">
+					<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-8 shrink-0"/>
+					<div class="flex flex-col min-w-0">
 						<p class="font-sans font-bold text-xl">Elasticsearch</p>
-						<p class="mt-2">Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.</p>
+						<p class="mt-2">Build search and analytics for mixed use cases across structured data, logs, metrics, documents, and vectors.</p>
 						<div class="grid grid-cols-1 mt-6 gap-2">
 							<a href="@Model.Link("/solutions/search")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold">9.0+ (latest @Model.CurrentVersion) docs</a>
 							<a href="https://www.elastic.co/guide/en/elasticsearch/reference/index.html" class="text-sm text-grey-90 hover:text-grey-110 font-sans font-semibold" hx-disable="true">Previous versions</a>
 						</div>
 					</div>
 				</div>
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
+				<div class="rounded-2xl border-1 border-grey-20 p-6 bg-white flex gap-4 items-start">
+					<img loading="lazy" alt="Vector Database logo" src="@Model.Static("vector-database-logo-color-64px.svg")" class="size-8 shrink-0"/>
+					<div class="flex flex-col min-w-0">
+						<p class="font-sans font-bold text-xl">Vector Database</p>
+						<p class="mt-2">Build vector-centric applications for semantic search, RAG, or AI retrieval, with built-in inference and vector-optimized defaults.</p>
+						<div class="grid grid-cols-1 mt-6 gap-2">
+							<a href="@Model.Link("/solutions/vector-database")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold">View docs</a>
+						</div>
+					</div>
+				</div>
+				<div class="rounded-2xl border-1 border-grey-20 p-6 bg-white flex gap-4 items-start">
+					<img loading="lazy" alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-8 shrink-0"/>
+					<div class="flex flex-col min-w-0">
 						<p class="font-sans font-bold text-xl">Observability</p>
 						<p class="mt-2">Resolve problems with open, flexible, and unified observability powered by advanced machine learning and analytics.</p>
 						<div class="grid grid-cols-1 mt-6 gap-2">
@@ -87,9 +96,9 @@
 						</div>
 					</div>
 				</div>
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
+				<div class="rounded-2xl border-1 border-grey-20 p-6 bg-white flex gap-4 items-start">
+					<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-8 shrink-0"/>
+					<div class="flex flex-col min-w-0">
 						<p class="font-sans font-bold text-xl">Security</p>
 						<p class="mt-2">Detect, investigate, and respond to threats with AI-driven security analytics to protect your organization at scale.</p>
 						<div class="grid grid-cols-1 mt-6 gap-2">

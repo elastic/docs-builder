@@ -6,7 +6,6 @@ using Elastic.Codex.Navigation;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
@@ -58,22 +57,16 @@ public abstract class CodexViewModel(CodexRenderContext context)
 		var staticPath = $"_static/{path.TrimStart('/')}";
 		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
 
-		var fullPath = string.IsNullOrEmpty(StaticPathPrefix)
-			? $"/{staticPath}"
-			: $"{StaticPathPrefix}/{staticPath}";
+		var fullPath = string.IsNullOrEmpty(StaticPathPrefix) ? $"/{staticPath}" : $"{StaticPathPrefix}/{staticPath}";
 
-		return string.IsNullOrEmpty(contentHash)
-			? fullPath
-			: $"{fullPath}?v={contentHash}";
+		return string.IsNullOrEmpty(contentHash) ? fullPath : $"{fullPath}?v={contentHash}";
 	}
 
 	/// <summary>
 	/// Creates the global layout model for the page.
 	/// </summary>
-	public GlobalLayoutViewModel CreateGlobalLayoutModel(IReadOnlyList<CodexBreadcrumb>? codexBreadcrumbs = null)
-	{
-		var rootPath = BuildContext.SiteRootPath ?? GetDefaultRootPath(BuildContext.UrlPathPrefix);
-		return new()
+	public GlobalLayoutViewModel CreateGlobalLayoutModel(IReadOnlyList<CodexBreadcrumb>? codexBreadcrumbs = null) =>
+		new()
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = CodexNavigation.NavigationTitle,
@@ -83,23 +76,15 @@ public abstract class CodexViewModel(CodexRenderContext context)
 			Next = null,
 			NavigationHtml = NavigationHtml,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
-			Htmx = new DefaultHtmxAttributeProvider(rootPath),
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
-			Features = new FeatureFlags([]),
+			Features = BuildContext.Configuration.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			CodexBreadcrumbs = codexBreadcrumbs
 		};
-	}
-
-	private static string GetDefaultRootPath(string? urlPathPrefix)
-	{
-		var prefix = urlPathPrefix?.Trim('/') ?? "";
-		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
-	}
 
 	private static string GetCodexStaticPathPrefix(string? urlPathPrefix)
 	{

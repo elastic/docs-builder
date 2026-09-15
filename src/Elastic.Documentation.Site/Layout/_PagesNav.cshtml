@@ -1,8 +1,81 @@
+@using Elastic.Documentation.Configuration.Toc
+@using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-40 md:z-auto transition-[top,max-height] duration-300 md:order-1">
+@{
+	var topNavLinks = Model.TopNav?.Items.OfType<TopNavLinkItem>().ToArray() ?? [];
+	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
+	var activeMobileLink = topNavLinks.FirstOrDefault(item => item.IsActive(currentSectionId));
+	var mobileSummary = activeMobileLink?.Title ?? "Docs Home";
+	var navigationPreviewEnabled = Model.Features.NavigationPreviewEnabled;
+	var hasMobileDrawerControls = navigationPreviewEnabled && (topNavLinks.Length > 0 || Model.ShowVersionDropdown);
+	var asideClass = navigationPreviewEnabled
+		? "sidebar font-sans bg-white md:bg-transparent fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 md:border-0 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1 flex flex-col min-h-0"
+		: "sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1";
+	var navClass = navigationPreviewEnabled
+		? "sidebar-nav min-h-0 flex-1 flex flex-col"
+		: "sidebar-nav h-full simple-scrollbar";
+}
+<aside class="@asideClass">
 	<nav
 		id="pages-nav"
-		class="sidebar-nav h-full simple-scrollbar">
+		@(navigationPreviewEnabled ? "hx-preserve" : "")
+		class="@navClass">
+		@if (hasMobileDrawerControls)
+		{
+			<div class="md:hidden border-b border-grey-20 px-4 py-4">
+				@if (topNavLinks.Length > 0)
+				{
+					<div class="font-sans">
+						<div class="mb-2 text-xs font-bold uppercase tracking-wide text-grey-70">Section</div>
+						<details class="secondary-nav-mobile-menu">
+							<summary class="flex w-full cursor-pointer select-none items-center justify-between rounded-md border border-grey-20 bg-white px-3 py-2 text-sm font-semibold text-ink">
+								<span>@mobileSummary</span>
+								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"
+								     class="secondary-nav-mobile-chevron">
+									<path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+									      stroke-linejoin="round"/>
+								</svg>
+							</summary>
+							<div class="mt-2 rounded-md border border-grey-20 bg-white py-1 text-sm font-semibold shadow-sm">
+								<a href="@Model.Link("/")"
+								   preload="mousedown"
+								   class="block px-3 py-2 text-ink-light hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
+								@foreach (var link in topNavLinks)
+								{
+									var isActive = link.IsActive(currentSectionId);
+									var mobileStateClass = isActive ? "text-blue-elastic" : "text-ink-light hover:text-blue-elastic active:text-blue-elastic-100";
+									@if (link.IsExternal)
+									{
+										<a href="@link.Url"
+										   target="_blank"
+										   rel="noopener noreferrer"
+										   class="block px-3 py-2 @mobileStateClass">
+											@link.Title
+											<span class="sr-only">(opens in a new tab)</span>
+										</a>
+									}
+									else
+									{
+										<a href="@link.Url"
+										   preload="mousedown"
+										   class="block px-3 py-2 @mobileStateClass">@link.Title</a>
+									}
+								}
+							</div>
+						</details>
+					</div>
+				}
+				@if (Model.ShowVersionDropdown)
+				{
+					<div class="mt-4 font-sans">
+						<div class="mb-2 text-xs font-bold uppercase tracking-wide text-grey-70">Version</div>
+						<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+							<div class="h-8">@*height of dropdown button*@</div>
+						</version-dropdown>
+					</div>
+				}
+			</div>
+		}
 		@(new HtmlString(Model.NavigationHtml))
 	</nav>
 	@* ReSharper disable once Html.IdNotResolved *@
@@ -13,6 +86,6 @@
 	</label>
 </aside>
 @* ReSharper disable once Html.IdNotResolved *@
-<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-30 ">
-	
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
+
 </label>

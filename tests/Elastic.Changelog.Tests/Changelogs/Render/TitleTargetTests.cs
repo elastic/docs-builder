@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -16,10 +15,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 	public async Task RenderChangelogs_WithoutTitleAndNoTargets_EmitsWarning()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file without target
+		// Create test changelog entry without target
 		// language=yaml
 		var changelog1 =
 			"""
@@ -31,31 +27,24 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file without target
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
-			entries:
-			  - file:
-			      name: 1755268130-test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir
 			// Note: Title is not set
 		};
@@ -67,20 +56,21 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("No --title option provided") &&
-			d.Message.Contains("default to 'unknown'"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("No --title option provided") && d.Message.Contains(
+					"default to 'unknown'"
+				)
+			);
 	}
 
 	[Fact]
 	public async Task RenderChangelogs_WithTitleAndNoTargets_NoWarning()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file without target
+		// Create test changelog entry without target
 		// language=yaml
 		var changelog1 =
 			"""
@@ -92,33 +82,27 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file without target
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
-			entries:
-			  - file:
-			      name: 1755268130-test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
-			Title = "9.2.0" // Title is provided
+			Title =
+				"9.2.0" // Title is provided
 		};
 
 		// Act
@@ -128,19 +112,14 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		// Should not have warning about missing title
-		Collector.Diagnostics.Should().NotContain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("No --title option provided"));
+		Collector.Diagnostics.Should().NotContain(d => d.Severity == Severity.Warning && d.Message.Contains("No --title option provided"));
 	}
 
 	[Fact]
 	public async Task RenderChangelogs_WithIsoDateTarget_FormatsDateInHeading()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with ISO date target
+		// Create test changelog entry with ISO date target
 		// language=yaml
 		var changelog1 =
 			"""
@@ -153,32 +132,25 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file with ISO date target
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 2026-05-04
-			entries:
-			  - file:
-			      name: 1755268130-test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir
 			// Note: Title is not set, should default to formatted date
 		};
@@ -203,10 +175,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 	public async Task RenderChangelogs_WithYearMonthTarget_FormatsDateInHeading()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with year-month target
+		// Create test changelog entry with year-month target
 		// language=yaml
 		var changelog1 =
 			"""
@@ -219,32 +188,25 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file with year-month target
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 2026-05
-			entries:
-			  - file:
-			      name: 1755268130-test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir
 			// Note: Title is not set, should default to formatted date
 		};
@@ -269,10 +231,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 	public async Task RenderChangelogs_WithExplicitDateTitle_DoesNotFormatTitle()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file with ISO date target
+		// Create test changelog entry with ISO date target
 		// language=yaml
 		var changelog1 =
 			"""
@@ -285,34 +244,28 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file with ISO date target
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 2026-05-04
-			entries:
-			  - file:
-			      name: 1755268130-test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
-			Title = "2026-05-04" // Explicit title provided - should stay literal
+			Title =
+				"2026-05-04" // Explicit title provided - should stay literal
 		};
 
 		// Act

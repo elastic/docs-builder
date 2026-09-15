@@ -1,0 +1,76 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ApiBreadcrumbsView>
+@{
+	var trail = Model.Trail;
+	if (trail.IsEmpty)
+		return;
+}
+<nav class="api-breadcrumbs" aria-label="Breadcrumb">
+	<ol>
+		@for (var i = 0; i < trail.Head.Count; i++)
+		{
+			var crumb = trail.Head[i];
+			<li>
+				@if (crumb.IsCurrent)
+				{
+					<span class="api-breadcrumbs__current" aria-current="page">@crumb.Title</span>
+				}
+				else
+				{
+					<a href="@crumb.Url" @Model.HxAttributes>@crumb.Title</a>
+				}
+			</li>
+			@if (i < trail.Head.Count - 1 || trail.HasOverflow || trail.Tail.Count > 0)
+			{
+				<li class="api-breadcrumbs__sep" aria-hidden="true">/</li>
+			}
+		}
+		@if (trail.HasOverflow)
+		{
+			<li class="api-breadcrumbs__overflow">
+				<details>
+					<summary>
+						<span aria-hidden="true">…</span>
+						<svg class="api-breadcrumbs__chevron" width="12" height="12" aria-hidden="true">
+							<use href="#icon-chevron-down"/>
+						</svg>
+						<span class="sr-only">Show @trail.Overflow.Count hidden levels</span>
+					</summary>
+					<ul>
+						@foreach (var hidden in trail.Overflow)
+						{
+							<li>
+								@if (hidden.Url is not null)
+								{
+									<a href="@hidden.Url" @Model.HxAttributes>@hidden.Title</a>
+								}
+								else
+								{
+									<span>@hidden.Title</span>
+								}
+							</li>
+						}
+					</ul>
+				</details>
+			</li>
+			<li class="api-breadcrumbs__sep" aria-hidden="true">/</li>
+		}
+		@for (var i = 0; i < trail.Tail.Count; i++)
+		{
+			var crumb = trail.Tail[i];
+			<li>
+				@if (crumb.IsCurrent)
+				{
+					<span class="api-breadcrumbs__current" aria-current="page">@crumb.Title</span>
+				}
+				else
+				{
+					<a href="@crumb.Url" @Model.HxAttributes>@crumb.Title</a>
+				}
+			</li>
+			@if (i < trail.Tail.Count - 1)
+			{
+				<li class="api-breadcrumbs__sep" aria-hidden="true">/</li>
+			}
+		}
+	</ol>
+</nav>

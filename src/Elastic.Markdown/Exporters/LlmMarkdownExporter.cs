@@ -10,6 +10,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.FileSystems;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -20,10 +21,17 @@ namespace Elastic.Markdown.Exporters;
 /// <summary>
 /// Exports markdown files as LLM-optimized CommonMark using custom renderers
 /// </summary>
-public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
+/// <param name="branded">Omits Elastic boilerplate from generated <c>llms.txt</c> content when set.</param>
+/// <param name="writeFileSystem">
+/// Filesystem to write exported files to. When <see langword="null"/>, falls back to the per-file
+/// <see cref="MarkdownExportFileContext.BuildContext"/>'s write filesystem. Codex builds inject the
+/// codex-wide write filesystem here, since this exporter writes sibling <c>{folder}.md</c> files one
+/// level above a docset's own output directory, which is out of scope for a per-docset filesystem.
+/// </param>
+public class LlmMarkdownExporter(bool branded = false, DocumentationWriteFileSystem? writeFileSystem = null) : IMarkdownExporter
 {
-
-	private const string LlmsTxtTemplate = """
+	private const string LlmsTxtTemplate =
+		"""
 		# Elastic Documentation
 
 		> Elastic provides an open source search, analytics, and AI platform, and out-of-the-box solutions for observability and security. The Search AI platform combines the power of search and generative AI to provide near real-time search and analysis with relevance to reduce your time to value.
@@ -54,30 +62,40 @@ public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
 
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
+		var fs = outputFolder.FileSystem;
+		if (!outputFolder.Exists)
+			outputFolder.Create();
+
 		var outputDirectory = outputFolder.FullName;
-		var zipPath = Path.Join(outputDirectory, "llm.zip");
+		var zipPath = fs.Path.Join(outputDirectory, "llm.zip");
 
 		// Create the llms.txt file; omit Elastic boilerplate for branded builds
-		var llmsTxt = Path.Join(outputDirectory, "llms.txt");
-		await outputFolder.FileSystem.File.WriteAllTextAsync(llmsTxt, branded ? string.Empty : LlmsTxtTemplate, ctx);
+		var llmsTxt = fs.FileInfo.New(fs.Path.Join(outputDirectory, "llms.txt"));
+		await fs.File.WriteAllTextAsync(llmsTxt.FullName, branded ? string.Empty : LlmsTxtTemplate, ctx);
 
-		using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
-		var llmsTxtRelativePath = Path.GetRelativePath(outputDirectory, llmsTxt);
-		_ = zip.CreateEntryFromFile(llmsTxt, llmsTxtRelativePath);
+		await using var zipStream = fs.File.Create(zipPath);
+		using var zip = new ZipArchive(zipStream, ZipArchiveMode.Create);
+		await AddFileAsync(zip, llmsTxt, llmsTxt.Name, ctx);
 
-		var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
-
-		foreach (var file in markdownFiles)
+		foreach (var file in outputFolder.EnumerateFiles("*.md", SearchOption.AllDirectories))
 		{
-			var relativePath = Path.GetRelativePath(outputDirectory, file);
-			_ = zip.CreateEntryFromFile(file, relativePath);
+			var relativePath = fs.Path.GetRelativePath(outputDirectory, file.FullName).Replace('\\', '/');
+			await AddFileAsync(zip, file, relativePath, ctx);
 		}
 		return true;
 	}
 
+	private static async Task AddFileAsync(ZipArchive archive, IFileInfo file, string entryName, Cancel ctx)
+	{
+		var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+		await using var entryStream = entry.Open();
+		await using var sourceStream = file.FileSystem.File.OpenRead(file.FullName);
+		await sourceStream.CopyToAsync(entryStream, ctx);
+	}
+
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
-		var fs = fileContext.BuildContext.WriteFileSystem;
+		var fs = writeFileSystem ?? fileContext.BuildContext.WriteFileSystem;
 		var llmMarkdown = ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
 		var outputFile = GetLlmOutputFile(fs, fileContext);
 		if (outputFile.Directory is { Exists: false })
@@ -85,12 +103,7 @@ public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
 
 		var content = !branded && IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
 
-		await fs.File.WriteAllTextAsync(
-			outputFile.FullName,
-			content,
-			Encoding.UTF8,
-			ctx
-		);
+		await fs.File.WriteAllTextAsync(outputFile.FullName, content, Encoding.UTF8, ctx);
 		return true;
 	}
 
@@ -126,17 +139,13 @@ public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
 			// For index files: /docs/section/index.html -> /docs/section.md
 			// This allows users to append .md to any URL path
 			var folderName = defaultOutputFile.Directory!.Name;
-			return writeFileSystem.FileInfo.New(Path.Join(
-				defaultOutputFile.Directory!.Parent!.FullName,
-				$"{folderName}.md"
-			));
+			return writeFileSystem.FileInfo.New(Path.Join(defaultOutputFile.Directory!.Parent!.FullName, $"{folderName}.md"));
 		}
 		// Regular files: /docs/section/page.html -> /docs/section/page.llm.md
 		var directory = defaultOutputFile.Directory!.FullName;
 		var baseName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
 		return writeFileSystem.FileInfo.New(Path.Join(directory, $"{baseName}.md"));
 	}
-
 
 	private static string CreateLlmContentWithMetadata(MarkdownExportFileContext context, string llmMarkdown)
 	{
@@ -197,7 +206,6 @@ public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
 
 		return metadata.ToString();
 	}
-
 
 	private static List<string> GetAppliesToItems(ApplicableTo appliesTo, IDocumentationConfigurationContext buildContext)
 	{

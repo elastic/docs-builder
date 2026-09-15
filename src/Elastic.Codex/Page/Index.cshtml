@@ -2,22 +2,12 @@
 @using Elastic.Documentation
 @using Elastic.Documentation.Configuration
 @using Elastic.Documentation.Extensions
-@using Elastic.Documentation.Site
-@using Elastic.Markdown
 @using Elastic.Markdown.Myst.Components
 @using Markdig
 @using ViewModelSerializerContext = Elastic.Markdown.Page.ViewModelSerializerContext
-@inherits RazorSliceHttpResult<Elastic.Markdown.Page.IndexViewModel>
+@inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
 @implements IUsesLayout<Elastic.Codex._MarkdownLayout, MarkdownLayoutViewModel>
 @functions {
-	static string GetRootPath(string? siteRootPath, string? urlPathPrefix)
-	{
-		if (!string.IsNullOrEmpty(siteRootPath))
-			return siteRootPath;
-		var prefix = urlPathPrefix?.Trim('/') ?? "";
-		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
-	}
-
 	static bool IsDocsetRootUrl(string? navUrl, string? docsetUrl, string? urlPathPrefix)
 	{
 		if (string.IsNullOrEmpty(docsetUrl))
@@ -62,7 +52,6 @@
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
 		Breadcrumbs = Model.Breadcrumbs,
-		Htmx = new DefaultHtmxAttributeProvider(GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix)),
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
 		VersioningSystem = Model.VersioningSystem,

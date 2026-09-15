@@ -21,14 +21,27 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 {
 	private const string LinkRegistrySnapshotFileName = "link-index.snapshot.json";
 	private static readonly string[] DocsetSearchPaths = ["docs/docset.yml", "docs/_docset.yml", "docset.yml", "_docset.yml"];
+
+	// A registry mismatch on a known-path docset now triggers a recursive walk (see FindDocsetFile), so
+	// this excludes common large generated/vendor directories in addition to .git and node_modules to
+	// keep that walk cheap.
+	private static readonly string[] RecursiveSearchExcludedDirectories =
+	[
+		".git",
+		"node_modules",
+		"vendor",
+		"dist",
+		"build",
+		"target",
+		".yarn"
+	];
 	private readonly ILogger _logger = logFactory.CreateLogger<CodexCloneService>();
 
 	/// <summary>
 	/// Discovers already-cloned repositories from disk without any git/network operations.
 	/// Reads the link-index.snapshot.json written by the clone step and scans for initialized repos.
 	/// </summary>
-	public static async Task<CodexCloneResult?> DiscoverCheckouts(
-		CodexContext context, ILoggerFactory loggerFactory, Cancel ctx)
+	public static async Task<CodexCloneResult?> DiscoverCheckouts(CodexContext context, ILoggerFactory loggerFactory, Cancel ctx)
 	{
 		var logger = loggerFactory.CreateLogger<CodexCloneService>();
 		var checkoutDir = context.CheckoutDirectory;
@@ -57,21 +70,25 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			if (entry == null)
 				continue;
 
-			var docsetFile = FindDocsetFile(context.ReadFileSystem, subDir);
+			var docsetFile = FindDocsetFile(context.ReadFileSystem, subDir, context.EnvironmentName);
 			if (docsetFile == null)
 				continue;
 
 			var docSet = DocumentationSetFile.LoadMetadata(docsetFile);
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(subDir.FullName, docsDirectory.FullName);
-			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "."
-				? "."
-				: docsPath.Replace('\\', '/');
+			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "." ? "." : docsPath.Replace('\\', '/');
+			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
 
 			string currentCommit;
 			try
 			{
 				var git = new CodexGitRepository(loggerFactory, context.Collector, subDir);
+				if (!git.HasHead())
+				{
+					logger.LogWarning("Could not read commit for {Name}; skipping", repoName);
+					continue;
+				}
 				currentCommit = git.GetCurrentCommit();
 			}
 			catch (OperationCanceledException)
@@ -85,7 +102,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			}
 
 			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
-			checkouts.Add(new CodexCheckout(docSetRef, subDir, docsDirectory, currentCommit));
+			checkouts.Add(new CodexCheckout(docSetRef, subDir, docsDirectory, docsetFile, currentCommit));
 		}
 
 		return new CodexCloneResult(checkouts, linkRegistry);
@@ -94,11 +111,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 	/// <summary>
 	/// Clones all repositories defined in the link index for the codex environment.
 	/// </summary>
-	public async Task<CodexCloneResult> CloneAll(
-		CodexContext context,
-		bool fetchLatest,
-		bool assumeCloned,
-		Cancel ctx)
+	public async Task<CodexCloneResult> CloneAll(CodexContext context, bool fetchLatest, bool assumeCloned, Cancel ctx)
 	{
 		var checkouts = new List<CodexCheckout>();
 		var checkoutDir = context.CheckoutDirectory;
@@ -109,32 +122,29 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
 		var repoEntries = GetRepositoryEntries(linkRegistry);
 
-		_logger.LogInformation("Cloning {Count} documentation sets to {Directory}",
-			repoEntries.Count, checkoutDir.FullName);
+		_logger.LogInformation("Cloning {Count} documentation sets to {Directory}", repoEntries.Count, checkoutDir.FullName);
 
-		await Parallel.ForEachAsync(
-			repoEntries,
-			new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = ctx },
-			async (entry, c) =>
+		await Parallel.ForEachAsync(repoEntries, new ParallelOptions
+		{
+			MaxDegreeOfParallelism = Environment.ProcessorCount,
+			CancellationToken = ctx
+		}, async (entry, c) =>
+		{
+			var checkout = CloneRepository(context, entry, fetchLatest, assumeCloned);
+			if (checkout != null)
 			{
-				var checkout = CloneRepository(context, entry, fetchLatest, assumeCloned);
-				if (checkout != null)
-				{
-					lock (checkouts)
-						checkouts.Add(checkout);
-				}
-				await Task.CompletedTask;
-			});
+				lock (checkouts)
+					checkouts.Add(checkout);
+			}
+			await Task.CompletedTask;
+		});
 
 		if (Path.IsPathRooted(LinkRegistrySnapshotFileName))
 			throw new InvalidOperationException($"Snapshot file name '{LinkRegistrySnapshotFileName}' must be a relative path.");
 
 		var snapshotFilePath = Path.Join(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName);
 
-		await context.WriteFileSystem.File.WriteAllTextAsync(
-			snapshotFilePath,
-			LinkRegistry.Serialize(linkRegistry),
-			ctx);
+		await context.WriteFileSystem.File.WriteAllTextAsync(snapshotFilePath, LinkRegistry.Serialize(linkRegistry), ctx);
 
 		return new CodexCloneResult(checkouts, linkRegistry);
 	}
@@ -157,30 +167,34 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		return result;
 	}
 
-	private CodexCheckout? CloneRepository(CodexContext context, (string RepoName, LinkRegistryEntry Entry) repoEntry, bool fetchLatest, bool assumeCloned)
+	private CodexCheckout? CloneRepository(
+		CodexContext context,
+		(string RepoName, LinkRegistryEntry Entry) repoEntry,
+		bool fetchLatest,
+		bool assumeCloned
+	)
 	{
 		var (repoName, entry) = repoEntry;
 
 		if (Path.IsPathRooted(repoName))
 		{
-			context.Collector.EmitError(
-				context.ConfigurationPath,
-				$"Repository name '{repoName}' must be a relative path");
+			context.Collector.EmitError(context.ConfigurationPath, $"Repository name '{repoName}' must be a relative path");
 			return null;
 		}
 
-		var repoDir = context.ReadFileSystem.DirectoryInfo.New(
-			Path.Join(context.CheckoutDirectory.FullName, repoName));
+		var repoDir = context.ReadFileSystem.DirectoryInfo.New(Path.Join(context.CheckoutDirectory.FullName, repoName));
 
 		var gitUrl = GetGitUrl($"elastic/{repoName}");
 		var gitRef = fetchLatest ? entry.Branch : entry.GitReference;
 
-		_logger.LogInformation("Cloning {Name} from {Origin} at {GitRef}",
-			repoName, $"elastic/{repoName}", gitRef);
+		_logger.LogInformation("Cloning {Name} from {Origin} at {GitRef}", repoName, $"elastic/{repoName}", gitRef);
 
 		try
 		{
-			var git = new CodexGitRepository(logFactory, context.Collector, repoDir);
+			// Git command failures emit collector errors. Use a local collector so a
+			// missing clone token policy warns and skips instead of failing the job.
+			var gitCollector = new DiagnosticsCollector([]);
+			var git = new CodexGitRepository(logFactory, gitCollector, repoDir);
 
 			if (assumeCloned && git.IsInitialized())
 			{
@@ -188,8 +202,10 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 				{
 					// A failed prior clone leaves an initialized-but-empty .git dir. Treat this
 					// identically to a clone failure: warn and skip rather than error.
-					context.Collector.EmitWarning(context.ConfigurationPath,
-						$"Could not clone repository '{repoName}' (HEAD unresolvable); skipping");
+					context.Collector.EmitWarning(
+						context.ConfigurationPath,
+						$"Could not clone repository '{repoName}' (HEAD unresolvable); skipping"
+					);
 					return null;
 				}
 				_logger.LogInformation("Assuming {Name} is already cloned", repoName);
@@ -215,11 +231,13 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var currentCommit = git.GetCurrentCommit();
 
 			// Find docset.yml and read codex metadata
-			var docsetFile = FindDocsetFile(context.ReadFileSystem, repoDir);
+			var docsetFile = FindDocsetFile(context.ReadFileSystem, repoDir, context.EnvironmentName);
 			if (docsetFile == null)
 			{
-				context.Collector.EmitWarning(context.ConfigurationPath,
-					$"docset.yml or _docset.yml not found in repository '{repoName}'; skipping");
+				context.Collector.EmitWarning(
+					context.ConfigurationPath,
+					$"docset.yml or _docset.yml not found in repository '{repoName}'; skipping"
+				);
 				return null;
 			}
 
@@ -227,54 +245,87 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(repoDir.FullName, docsDirectory.FullName);
 
-			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "."
-				? "."
-				: docsPath.Replace('\\', '/');
+			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "." ? "." : docsPath.Replace('\\', '/');
+			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
 			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
 
-			return new CodexCheckout(docSetRef, repoDir, docsDirectory, currentCommit);
+			return new CodexCheckout(docSetRef, repoDir, docsDirectory, docsetFile, currentCommit);
 		}
 		catch (Exception ex)
 		{
 			// Emit warning instead of error: repos may be in the link index before the clone
 			// workflow has permission to access them. Continue with repos we can clone.
-			context.Collector.EmitWarning(context.ConfigurationPath,
-				$"Could not clone repository '{repoName}': {ex.Message}");
+			context.Collector.EmitWarning(context.ConfigurationPath, $"Could not clone repository '{repoName}': {ex.Message}");
 			_logger.LogWarning(ex, "Could not clone repository {Name}; skipping", repoName);
 			return null;
 		}
 	}
 
-	internal static IFileInfo? FindDocsetFile(IFileSystem fileSystem, IDirectoryInfo repoDir)
+	/// <summary>
+	/// Finds the docset file to use for a repository. When multiple docsets exist (for example a public
+	/// <c>docs/</c> set alongside an internal <c>docs-dev/</c> set), prefers the one whose <c>registry</c>
+	/// matches <paramref name="environment"/>, falling back to the first hit in the historical search
+	/// order (known paths, then a recursive walk) when no docset declares that registry.
+	/// </summary>
+	internal static IFileInfo? FindDocsetFile(IFileSystem fileSystem, IDirectoryInfo repoDir, string environment)
 	{
+		// A known-path candidate is re-encountered by the recursive walk below (e.g. `docs/docset.yml`
+		// lives inside `docs/`), so metadata is cached per call to avoid parsing the same file twice.
+		var metadataCache = new Dictionary<string, DocumentationSetFile>();
+
+		bool MatchesEnvironment(IFileInfo file)
+		{
+			if (!metadataCache.TryGetValue(file.FullName, out var docSet))
+			{
+				docSet = DocumentationSetFile.LoadMetadata(file);
+				metadataCache[file.FullName] = docSet;
+			}
+			return string.Equals(docSet.Registry, environment, StringComparison.OrdinalIgnoreCase);
+		}
+
+		IFileInfo? firstKnownPathFile = null;
 		foreach (var candidate in DocsetSearchPaths)
 		{
 			var path = Path.Join(repoDir.FullName, candidate);
 			var file = fileSystem.FileInfo.New(path);
-			if (file.Exists)
+			if (!file.Exists)
+				continue;
+
+			firstKnownPathFile ??= file;
+			if (MatchesEnvironment(file))
 				return file;
 		}
 
-		// Recursive search
-		return SearchForDocsetRecursive(fileSystem, repoDir);
+		IFileInfo? firstRecursiveHit = null;
+		var recursiveMatch = SearchForDocsetRecursive(fileSystem, repoDir, MatchesEnvironment, ref firstRecursiveHit);
+		return recursiveMatch ?? firstKnownPathFile ?? firstRecursiveHit;
 	}
 
-	private static IFileInfo? SearchForDocsetRecursive(IFileSystem fileSystem, IDirectoryInfo directory)
+	private static IFileInfo? SearchForDocsetRecursive(
+		IFileSystem fileSystem,
+		IDirectoryInfo directory,
+		Func<IFileInfo, bool> matchesEnvironment,
+		ref IFileInfo? firstHit
+	)
 	{
 		try
 		{
-			foreach (var file in directory.GetFiles())
+			foreach (var file in directory.EnumerateFiles())
 			{
-				if (file.Name is "docset.yml" or "_docset.yml")
+				if (file.Name is not ("docset.yml" or "_docset.yml"))
+					continue;
+
+				firstHit ??= file;
+				if (matchesEnvironment(file))
 					return file;
 			}
 
-			foreach (var subDir in directory.GetDirectories())
+			foreach (var subDir in directory.EnumerateDirectories())
 			{
-				if (subDir.Name is ".git" or "node_modules")
+				if (RecursiveSearchExcludedDirectories.Contains(subDir.Name))
 					continue;
 
-				var found = SearchForDocsetRecursive(fileSystem, subDir);
+				var found = SearchForDocsetRecursive(fileSystem, subDir, matchesEnvironment, ref firstHit);
 				if (found != null)
 					return found;
 			}
@@ -287,11 +338,33 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		return null;
 	}
 
+	/// <summary>
+	/// Warns when the docset chosen for a repository does not declare the codex environment as its
+	/// <c>registry</c> (including when <c>registry</c> is absent entirely). This only ever happens via
+	/// the fallback search order in <see cref="FindDocsetFile"/>, since a matching docset is always
+	/// preferred when one exists — so a mismatch usually means the repository has not opted in yet.
+	/// Kept as a warning rather than a hard error so existing repositories are not broken outright.
+	/// </summary>
+	private static void WarnIfRegistryMismatch(CodexContext context, string repoName, DocumentationSetFile docSet, string docsPath)
+	{
+		if (string.Equals(docSet.Registry, context.EnvironmentName, StringComparison.OrdinalIgnoreCase))
+			return;
+
+		var registryDescription = string.IsNullOrEmpty(docSet.Registry) ? "no registry" : $"registry: {docSet.Registry}";
+		context.Collector.EmitWarning(
+			context.ConfigurationPath,
+			$"Repository '{repoName}' docset '{docsPath}' declares {registryDescription}, not registry: {context.EnvironmentName}; " +
+				"using it via fallback discovery. Set 'registry' in its docset.yml to opt in explicitly."
+		);
+	}
+
 	internal static CodexDocumentationSetReference CreateDocumentationSetReference(
 		string repoName,
 		LinkRegistryEntry entry,
 		string docsPath,
-		DocumentationSetFile docSet) => new()
+		DocumentationSetFile docSet
+	) =>
+		new()
 		{
 			Name = repoName,
 			Origin = $"elastic/{repoName}",
@@ -303,16 +376,16 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 
 	private static string GetGitUrl(string origin)
 	{
-		if (origin.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-			origin.StartsWith("git@", StringComparison.OrdinalIgnoreCase))
+		if (
+			origin.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+			|| origin.StartsWith("git@", StringComparison.OrdinalIgnoreCase)
+		)
 			return origin;
 
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
 		{
 			var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-			return !string.IsNullOrEmpty(token)
-				? $"https://oauth2:{token}@github.com/{origin}.git"
-				: $"https://github.com/{origin}.git";
+			return !string.IsNullOrEmpty(token) ? $"https://oauth2:{token}@github.com/{origin}.git" : $"https://github.com/{origin}.git";
 		}
 
 		return $"git@github.com:{origin}.git";
@@ -327,8 +400,7 @@ public record CodexCloneResult(IReadOnlyList<CodexCheckout> Checkouts, LinkRegis
 	/// <summary>
 	/// Gets the documentation set references for the cloned checkouts.
 	/// </summary>
-	public IReadOnlyList<CodexDocumentationSetReference> DocumentationSetReferences =>
-		Checkouts.Select(c => c.Reference).ToList();
+	public IReadOnlyList<CodexDocumentationSetReference> DocumentationSetReferences => Checkouts.Select(c => c.Reference).ToList();
 }
 
 /// <summary>
@@ -338,4 +410,6 @@ public record CodexCheckout(
 	CodexDocumentationSetReference Reference,
 	IDirectoryInfo RepositoryDirectory,
 	IDirectoryInfo DocsDirectory,
-	string CommitHash);
+	IFileInfo DocsetFile,
+	string CommitHash
+);

@@ -24,9 +24,7 @@ public record NavigationSearchResponse
 	public required int PageNumber { get; init; }
 	public required int PageSize { get; init; }
 	public NavigationSearchAggregations Aggregations { get; init; } = new();
-	public int PageCount => TotalResults > 0
-				? (int)Math.Ceiling((double)TotalResults / PageSize)
-				: 0;
+	public int PageCount => TotalResults > 0 ? (int)Math.Ceiling((double)TotalResults / PageSize) : 0;
 }
 
 public record NavigationSearchAggregations

@@ -1,56 +1,4 @@
-// Beautiful Mermaid is loaded from local _static/ to avoid client-side CDN calls
-// The file is copied from node_modules during build (see package.json copy:mermaid)
-
-// Type declaration for beautiful-mermaid browser global
-declare global {
-    interface Window {
-        __mermaid: {
-            renderMermaid: (
-                code: string,
-                options?: {
-                    bg?: string
-                    fg?: string
-                    font?: string
-                    transparent?: boolean
-                    line?: string
-                    accent?: string
-                    muted?: string
-                    surface?: string
-                    border?: string
-                }
-            ) => Promise<string>
-        }
-    }
-}
-
-let mermaidLoaded = false
-let mermaidLoading: Promise<void> | null = null
-
-// High-contrast theme configuration
-// beautiful-mermaid generates CSS vars that don't resolve correctly in all contexts,
-// so we resolve them to actual colors during post-processing
-const colors = {
-    background: '#FFFFFF',
-    foreground: '#000000',
-    nodeFill: '#F5F5F5',
-    nodeStroke: '#000000',
-    line: '#000000',
-    innerStroke: '#333333',
-}
-
-// Map CSS variables to resolved colors
-const variableReplacements: Record<string, string> = {
-    '--_text': colors.foreground,
-    '--_text-sec': colors.foreground,
-    '--_text-muted': colors.foreground,
-    '--_text-faint': colors.foreground, // "+ ", ": ", "(no attributes)"
-    '--_line': colors.line,
-    '--_arrow': colors.foreground,
-    '--_node-fill': colors.nodeFill,
-    '--_node-stroke': colors.nodeStroke,
-    '--_inner-stroke': colors.innerStroke,
-    '--bg': colors.background,
-}
+import { fullscreenIcon } from './icons'
 
 // Zoom configuration
 const ZOOM_MIN = 0.5
@@ -66,8 +14,6 @@ const icons = {
     zoomOut: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M9 7H4V6h5v1Z"/><path d="M6.5 1a5.5 5.5 0 0 1 4.729 8.308l3.421 2.933a1 1 0 0 1 .057 1.466l-1 1a1 1 0 0 1-1.466-.057l-2.933-3.42A5.5 5.5 0 1 1 6.5 1Zm4.139 9.12a5.516 5.516 0 0 1-.52.519L13 14l1-1-3.361-2.88ZM6.5 2a4.5 4.5 0 1 0 .314 8.987c.024-.001.047-.004.07-.006.207-.017.41-.048.607-.092l.066-.016a4.41 4.41 0 0 0 .588-.185c.012-.006.026-.01.039-.015.194-.079.382-.171.562-.275l.03-.017a4.52 4.52 0 0 0 1.605-1.605c.006-.01.01-.02.017-.03.104-.18.196-.368.275-.562l.018-.048c.074-.188.134-.38.182-.58l.016-.065a4.49 4.49 0 0 0 .093-.61l.005-.067a4.544 4.544 0 0 0 .007-.545A4.5 4.5 0 0 0 6.5 2Z"/></svg>`,
     // EUI refresh icon
     reset: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8a5.98 5.98 0 0 0 1.757 4.243A5.98 5.98 0 0 0 8 14v1a6.98 6.98 0 0 1-4.95-2.05A6.98 6.98 0 0 1 1 8c0-1.79.683-3.58 2.048-4.947l.004-.004.019-.02L3.1 3H1V2h4v4H4V3.525a6.51 6.51 0 0 0-.22.21l-.013.013-.003.002-.007.007A5.98 5.98 0 0 0 2 8Zm10.243-4.243A5.98 5.98 0 0 0 8 2V1a6.98 6.98 0 0 1 4.95 2.05A6.98 6.98 0 0 1 15 8a6.98 6.98 0 0 1-2.047 4.947l-.005.004-.018.02-.03.029H15v1h-4v-4h1v2.475a6.744 6.744 0 0 0 .22-.21l.013-.013.003-.002.007-.007A5.98 5.98 0 0 0 14 8a5.98 5.98 0 0 0-1.757-4.243Z"/></svg>`,
-    // EUI fullScreen icon
-    fullscreen: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3v4h-1V4H9V3h4ZM3 3h4v1H4v3H3V3Zm10 10H9v-1h3V9h1v4ZM3 13V9h1v3h3v1H3ZM0 1.994C0 .893.895 0 1.994 0h12.012C15.107 0 16 .895 16 1.994v12.012A1.995 1.995 0 0 1 14.006 16H1.994A1.995 1.995 0 0 1 0 14.006V1.994Zm1 0v12.012c0 .548.446.994.994.994h12.012a.995.995 0 0 0 .994-.994V1.994A.995.995 0 0 0 14.006 1H1.994A.995.995 0 0 0 1 1.994Z"/></svg>`,
     // EUI cross icon
     close: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.293 8 2.646 3.354l.708-.708L8 7.293l4.646-4.647.708.708L8.707 8l4.647 4.646-.707.708L8 8.707l-4.646 4.647-.708-.707L7.293 8Z"/></svg>`,
 }
@@ -82,74 +28,6 @@ interface DiagramState {
     isDragging: boolean
     startX: number
     startY: number
-}
-
-/**
- * Resolve CSS variables to actual colors in the SVG output
- */
-function resolveVariables(svg: string): string {
-    let result = svg
-    for (const [variable, color] of Object.entries(variableReplacements)) {
-        const pattern = new RegExp(
-            `(fill|stroke)="var\\(${variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)"`,
-            'g'
-        )
-        result = result.replace(pattern, `$1="${color}"`)
-    }
-    return result
-}
-
-/**
- * Remove Google Fonts @import to avoid external network dependency
- */
-function removeGoogleFonts(svg: string): string {
-    return svg.replace(
-        /@import url\('https:\/\/fonts\.googleapis\.com[^']*'\);\s*/g,
-        ''
-    )
-}
-
-/**
- * Get the base path for _static/ assets by finding main.js script location
- */
-function getStaticBasePath(): string {
-    // Find the main.js script element to get the correct path prefix
-    const scripts = document.querySelectorAll('script[src*="main.js"]')
-    for (const script of scripts) {
-        const src = script.getAttribute('src')
-        if (src) {
-            // Extract path up to and including _static/
-            const match = src.match(/^(.*\/_static\/)/)
-            if (match) {
-                return match[1]
-            }
-        }
-    }
-    // Fallback for local development
-    return '/_static/'
-}
-
-/**
- * Lazy-load Beautiful Mermaid from local _static/ only when diagrams exist on the page
- */
-async function loadMermaid(): Promise<void> {
-    if (mermaidLoaded) return
-    if (mermaidLoading) return mermaidLoading
-
-    mermaidLoading = new Promise((resolve, reject) => {
-        const script = document.createElement('script')
-        script.src = getStaticBasePath() + 'mermaid.min.js'
-        script.async = true
-        script.onload = () => {
-            mermaidLoaded = true
-            resolve()
-        }
-        script.onerror = () =>
-            reject(new Error('Failed to load Beautiful Mermaid'))
-        document.head.appendChild(script)
-    })
-
-    return mermaidLoading
 }
 
 /**
@@ -183,7 +61,7 @@ function setupControls(
     container: HTMLElement,
     viewport: HTMLElement,
     rendered: HTMLElement,
-    svgContent: string
+    imgSrc: string
 ): void {
     const state: DiagramState = {
         zoom: 1,
@@ -214,7 +92,7 @@ function setupControls(
         'mermaid-reset'
     )
     const fullscreenBtn = createControlButton(
-        icons.fullscreen,
+        fullscreenIcon,
         'View fullscreen',
         'mermaid-fullscreen'
     )
@@ -253,7 +131,7 @@ function setupControls(
 
     // Fullscreen handler
     fullscreenBtn.addEventListener('click', () => {
-        openFullscreenModal(svgContent)
+        openFullscreenModal(imgSrc)
     })
 
     // Pan with mouse drag
@@ -322,7 +200,7 @@ function calculateFitScale(
 /**
  * Open fullscreen modal with the diagram
  */
-function openFullscreenModal(svgContent: string): void {
+function openFullscreenModal(imgSrc: string): void {
     // Create modal elements
     const modal = document.createElement('div')
     modal.className = 'mermaid-modal'
@@ -341,7 +219,10 @@ function openFullscreenModal(svgContent: string): void {
 
     const rendered = document.createElement('div')
     rendered.className = 'mermaid-rendered'
-    rendered.innerHTML = svgContent
+    const modalImg = document.createElement('img')
+    modalImg.src = imgSrc
+    modalImg.alt = 'Mermaid diagram'
+    rendered.appendChild(modalImg)
 
     viewport.appendChild(rendered)
     modalContent.appendChild(closeBtn)
@@ -487,14 +368,14 @@ function openFullscreenModal(svgContent: string): void {
 
     // Calculate and apply initial zoom to fit diagram in viewport
     requestAnimationFrame(() => {
-        const svg = rendered.querySelector('svg')
-        if (svg) {
-            const svgRect = svg.getBoundingClientRect()
+        const img = rendered.querySelector('img')
+        if (img) {
+            const imgRect = img.getBoundingClientRect()
             const viewportRect = viewport.getBoundingClientRect()
 
             initialZoom = calculateFitScale(
-                svgRect.width,
-                svgRect.height,
+                imgRect.width,
+                imgRect.height,
                 viewportRect.width,
                 viewportRect.height
             )
@@ -506,65 +387,29 @@ function openFullscreenModal(svgContent: string): void {
 }
 
 /**
- * Initialize Mermaid diagram rendering for elements with class 'mermaid'
+ * Initialize interactive controls for server-rendered Mermaid diagrams.
+ * SVGs are already rendered inline by the C# pipeline via Mermaider.
  */
-export async function initMermaid() {
-    const mermaidElements = document.querySelectorAll(
-        'pre.mermaid:not([data-mermaid-processed])'
+export function initMermaid() {
+    const containers = document.querySelectorAll(
+        '.mermaid-container:not([data-mermaid-initialized])'
     )
 
-    if (mermaidElements.length === 0) {
+    if (containers.length === 0) {
         return
     }
 
-    try {
-        // Lazy-load Beautiful Mermaid only when diagrams exist
-        await loadMermaid()
+    for (const container of containers) {
+        const el = container as HTMLElement
+        el.setAttribute('data-mermaid-initialized', 'true')
 
-        // Render each diagram individually
-        for (let i = 0; i < mermaidElements.length; i++) {
-            const element = mermaidElements[i]
-            const content = element.textContent?.trim()
+        const viewport = el.querySelector('.mermaid-viewport') as HTMLElement
+        const rendered = el.querySelector('.mermaid-rendered') as HTMLElement
 
-            if (!content) continue
+        if (!viewport || !rendered) continue
 
-            // Mark as processed to prevent double rendering
-            element.setAttribute('data-mermaid-processed', 'true')
-
-            try {
-                // Render the diagram using Beautiful Mermaid
-                let svg = await window.__mermaid.renderMermaid(content)
-
-                // Post-process the SVG
-                svg = resolveVariables(svg)
-                svg = removeGoogleFonts(svg)
-
-                // Create container structure with controls
-                const container = document.createElement('div')
-                container.className = 'mermaid-container'
-
-                const viewport = document.createElement('div')
-                viewport.className = 'mermaid-viewport'
-
-                const rendered = document.createElement('div')
-                rendered.className = 'mermaid-rendered'
-                rendered.innerHTML = svg
-
-                viewport.appendChild(rendered)
-                container.appendChild(viewport)
-
-                // Set up interactive controls
-                setupControls(container, viewport, rendered, svg)
-
-                // Replace the pre element with the new container
-                element.replaceWith(container)
-            } catch (err) {
-                console.warn('Mermaid rendering error for diagram:', err)
-                // Keep the original content as fallback
-                element.classList.add('mermaid-error')
-            }
-        }
-    } catch (error) {
-        console.warn('Mermaid initialization error:', error)
+        const img = rendered.querySelector('img')
+        const imgSrc = img?.src ?? ''
+        setupControls(el, viewport, rendered, imgSrc)
     }
 }

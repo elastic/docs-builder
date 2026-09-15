@@ -66,4 +66,10 @@ public class ElasticsearchEndpoint
 	/// When enabled, documents are enriched with summaries, search queries, and questions.
 	/// </summary>
 	public bool EnableAiEnrichment { get; set; } = true;
+
+	/// <summary>Maximum documents to enrich in the post-index AI batch per run. <see langword="null"/> uses the shared default (100).</summary>
+	public int? MaxAiDocs { get; set; }
+
+	/// <summary>Optional wall-clock limit for the post-index AI phase. <see langword="null"/> means no limit.</summary>
+	public TimeSpan? MaxAiTime { get; set; }
 }

@@ -9,25 +9,24 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Codex;
 
-/// <summary>Codex cross-links resolve to path-only URLs with htmx attributes including codex-breadcrumbs.</summary>
+/// <summary>Codex cross-links resolve to path-only URLs; navigation relies on hx-boost targeting #main-container, so links carry no per-link htmx attributes.</summary>
 public class CodexHtmxCrossLinkTests(ITestOutputHelper output) : LinkTestBase(output, "Go to [test](kibana://index.md)")
 {
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/r/codex-environments",
 			BuildType = BuildType.Codex
 		};
 
-	protected override ICrossLinkResolver CreateCrossLinkResolver() =>
-		new TestCodexCrossLinkResolver(useRelativePaths: true);
+	protected override ICrossLinkResolver CreateCrossLinkResolver() => new TestCodexCrossLinkResolver(useRelativePaths: true);
 
 	[Fact]
 	public void CrossLink_ProducesPathOnlyHref()
@@ -37,20 +36,14 @@ public class CodexHtmxCrossLinkTests(ITestOutputHelper output) : LinkTestBase(ou
 	}
 
 	[Fact]
-	public void CrossLink_HasHtmxWithCodexBreadcrumbs() =>
-		Html.Should().Contain("#codex-breadcrumbs");
-
-	[Fact]
-	public void CrossLink_HasHtmxSelectOob() =>
-		Html.Should().Contain("hx-select-oob=");
-
-	[Fact]
-	public void CrossLink_HasPreload() =>
+	public void CrossLink_HasNoSelectOobButKeepsPreload()
+	{
+		Html.Should().NotContain("hx-select-oob");
 		Html.Should().Contain("preload=\"mousedown\"");
+	}
 
 	[Fact]
-	public void CrossLink_NoTargetBlank() =>
-		Html.Should().NotContain("target=\"_blank\"");
+	public void CrossLink_NoTargetBlank() => Html.Should().NotContain("target=\"_blank\"");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
@@ -62,27 +55,24 @@ public class IsolatedCodexCrossLinkTests(ITestOutputHelper output) : LinkTestBas
 	protected override BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
-		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		IConfigurationContext configurationContext
+	) =>
+		new(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs",
 			BuildType = BuildType.Isolated
 		};
 
-	protected override ICrossLinkResolver CreateCrossLinkResolver() =>
-		new TestCodexCrossLinkResolver(useRelativePaths: false);
+	protected override ICrossLinkResolver CreateCrossLinkResolver() => new TestCodexCrossLinkResolver(useRelativePaths: false);
 
 	[Fact]
-	public void IsolatedCrossLink_HasAbsoluteHref() =>
-		Html.Should().Contain("https://codex.elastic.dev/r/kibana/");
+	public void IsolatedCrossLink_HasAbsoluteHref() => Html.Should().Contain("https://codex.elastic.dev/r/kibana/");
 
 	[Fact]
-	public void IsolatedCrossLink_HasTargetBlank() =>
-		Html.Should().Contain("target=\"_blank\"");
+	public void IsolatedCrossLink_HasTargetBlank() => Html.Should().Contain("target=\"_blank\"");
 
 	[Fact]
-	public void IsolatedCrossLink_NoHtmx() =>
-		Html.Should().NotContain("hx-select-oob");
+	public void IsolatedCrossLink_NoHtmx() => Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);

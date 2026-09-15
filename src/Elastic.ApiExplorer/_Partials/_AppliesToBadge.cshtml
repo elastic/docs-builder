@@ -1,0 +1,14 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay>
+<applies-to-popover
+	badge-key="@Model.Data.BadgeKey"
+	badge-lifecycle-text="@Model.Data.BadgeLifecycleText"
+	badge-version="@Model.Data.BadgeVersion"
+	lifecycle-class="@Model.Data.LifecycleClass"
+	lifecycle-name="@Model.Data.LifecycleName"
+	show-lifecycle-name="@Model.Data.ShowLifecycleName.ToString().ToLowerInvariant()"
+	show-version="@Model.Data.ShowVersion.ToString().ToLowerInvariant()"
+	has-multiple-lifecycles="false"
+	popover-data=""
+	show-popover="false"
+	is-inline="@Model.IsInline.ToString().ToLowerInvariant()"
+></applies-to-popover>

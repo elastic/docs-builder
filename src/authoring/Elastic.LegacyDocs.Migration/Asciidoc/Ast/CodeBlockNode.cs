@@ -1,0 +1,12 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+namespace Elastic.LegacyDocs.Migration.Asciidoc.Ast;
+
+public record CodeBlockNode : IBlockNode
+{
+	public string? Language { get; init; }
+	public required string Source { get; init; }
+	public List<string> Callouts { get; init; } = [];
+}

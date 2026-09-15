@@ -1,0 +1,16 @@
+type: bug-fix
+title: Keep links to public skip-repos when scrubbing bundles for the public CDN
+products:
+  - product: docs-builder
+    target: 1.25.0
+areas:
+  - Changelog
+prs:
+  - https://github.com/elastic/docs-builder/pull/3653
+description: |
+  The changelog scrubber Lambda excluded every `assembler.yml` reference repository
+  marked `skip: true` from its link allowlist, conflating "publishes no docs" with
+  "is private". Links to public link-only repos such as `elastic/roadmap` were
+  stripped from bundles during the private-to-public bucket transition even when
+  listed in the bundle's `link_allow_repos`. Only `private: true` now excludes a
+  repository from the allowlist.

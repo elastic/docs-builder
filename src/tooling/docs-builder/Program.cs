@@ -21,7 +21,8 @@ using Nullean.Argh.Hosting;
 await ArghApp.TryArghIntrinsicCommand(args);
 
 var argh = GlobalCliOptions.TryParseArgh(args, out var cliOptions);
-var builder = Host.CreateApplicationBuilder()
+var builder = Host
+	.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
@@ -63,6 +64,7 @@ _ = builder.Services.AddArgh(args, app =>
 		_ = g.MapNamespace<NavigationCommands>("navigation");
 		_ = g.MapNamespace<ConfigurationCommand>("config");
 		_ = g.Map<AssemblerIndexCommand>();
+		_ = g.Map<AssemblerAiEnrichCommand>();
 		_ = g.Map<AssemblerSitemapCommand>();
 	});
 

@@ -9,7 +9,6 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.Site;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -21,12 +20,10 @@ namespace Elastic.Markdown.Myst;
 public static class ParserContextExtensions
 {
 	public static ParserContext GetContext(this InlineProcessor processor) =>
-		processor.Context as ParserContext
-		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
+		processor.Context as ParserContext ?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
 
 	public static ParserContext GetContext(this BlockProcessor processor) =>
-		processor.Context as ParserContext
-		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
+		processor.Context as ParserContext ?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
 }
 
 public interface IParserResolvers
@@ -107,8 +104,6 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 	/// </summary>
 	public IFileInfo? OriginalSourcePath { get; }
 
-	public IHtmxAttributeProvider Htmx { get; }
-
 	public ParserContext(ParserState state)
 	{
 		Build = state.Build;
@@ -161,16 +156,5 @@ public class ParserContext : MarkdownParserContext, IParserResolvers
 			contextSubs["context.page_title"] = title;
 
 		ContextSubstitutions = contextSubs;
-
-		var rootPath = Build.SiteRootPath ?? GetDefaultRootPath(Build.UrlPathPrefix);
-		Htmx = Build.BuildType == BuildType.Codex
-			? new CodexHtmxAttributeProvider(rootPath)
-			: new DefaultHtmxAttributeProvider(rootPath);
-	}
-
-	private static string GetDefaultRootPath(string? urlPathPrefix)
-	{
-		var prefix = urlPathPrefix?.Trim('/') ?? "";
-		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
 	}
 }

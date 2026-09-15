@@ -11,8 +11,7 @@ namespace Elastic.Markdown.Myst.Directives.Image;
 
 public class FigureBlock(DirectiveBlockParser parser, ParserContext context) : ImageBlock(parser, context);
 
-public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class ImageBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "image";
 
@@ -68,7 +67,13 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
 
 	public string? Label { get; private set; }
 
-	private static readonly HashSet<string> AllowedUriHosts = ["epr.elastic.co"];
+	/// <summary>
+	/// External hosts that are trusted to serve images referenced from the <c>image</c> directive.
+	/// External URIs are discouraged in general, but these are Elastic-managed asset hosts:
+	/// <c>epr.elastic.co</c> is the Elastic Package Registry and <c>images.contentstack.io</c> is the
+	/// Elastic Contentstack CDN used for shared screenshots and animated GIFs.
+	/// </summary>
+	private static readonly HashSet<string> AllowedUriHosts = ["epr.elastic.co", "images.contentstack.io"];
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{

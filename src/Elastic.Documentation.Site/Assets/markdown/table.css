@@ -1,6 +1,46 @@
 @layer components {
 	.table-wrapper {
 		@apply my-4 w-full overflow-x-auto;
+		--table-edge-fade: 24px;
+		/* Scopes mix-blend-mode:multiply (used by the crosshair highlight
+		   below) to blend only with this wrapper's own scroll-shadow, not
+		   with unrelated content elsewhere on the page. */
+		isolation: isolate;
+
+		/* Scroll shadows on both edges when the table is horizontally
+		   scrollable, signalling there's more content without needing a
+		   visible scrollbar (which touch devices don't show anyway). Pure
+		   CSS: two "cover" gradients scroll with the content (local) and
+		   mask the shadows beneath, which stay fixed to the viewport edges
+		   (scroll) - so a shadow only shows on the edge you can still
+		   scroll toward. Self-adjusting: tables that don't overflow never
+		   show a shadow, since the covers already mask them at rest. */
+		background-image:
+			linear-gradient(to right, var(--color-white) 30%, transparent),
+			linear-gradient(to left, var(--color-white) 30%, transparent),
+			radial-gradient(
+				farthest-side at 0 50%,
+				rgba(0, 0, 0, 0.15),
+				transparent
+			),
+			radial-gradient(
+				farthest-side at 100% 50%,
+				rgba(0, 0, 0, 0.15),
+				transparent
+			);
+		background-repeat: no-repeat;
+		background-size:
+			var(--table-edge-fade) 100%,
+			var(--table-edge-fade) 100%,
+			10px 100%,
+			10px 100%;
+		background-position:
+			0 0,
+			100% 0,
+			0 0,
+			100% 0;
+		background-attachment: local, local, scroll, scroll;
+		background-color: var(--color-white);
 
 		&::-webkit-scrollbar {
 			@apply bg-grey-10 border-grey-20 h-2 border-b-1;
@@ -34,8 +74,171 @@
 		tbody {
 			@apply align-top;
 			tr {
-				@apply border-grey-20 hover:bg-grey-10 not-last:border-b-1;
+				@apply border-grey-20 not-last:border-b-1;
+
+				/* Same reasoning as the crosshair highlight below: a flat
+				   hover background covers the scroll-shadow instead of
+				   composing with it. grey-10 is opaque, so multiply alone
+				   (no translucent tint needed) reproduces today's look on
+				   white and darkens further over the shadow. */
+				&:hover {
+					background: var(--color-grey-10);
+					mix-blend-mode: multiply;
+				}
 			}
 		}
+	}
+
+	/* Cross-hair hover (row + column highlight): opt-in via {table} :matrix:
+	   for lookup-style tables with a row-heading first column and a header
+	   row. The class survives cloning into the fullscreen dialog, so this
+	   still applies there for matrix tables without forcing it on plain
+	   ones. Row and column share the same highlight color so they read as
+	   one crosshair rather than a faint row plus a visible column. The
+	   column is lit by an oversized pseudo-element clipped by
+	   overflow:hidden on the table. */
+	.table-matrix {
+		--crosshair-tint: color-mix(
+			in srgb,
+			var(--color-grey-30) 25%,
+			transparent
+		);
+		--row-heading-tint: color-mix(
+			in srgb,
+			var(--color-grey-30) 12%,
+			transparent
+		);
+
+		table {
+			overflow: hidden;
+		}
+
+		th,
+		td {
+			@apply relative;
+		}
+
+		/* mix-blend-mode:multiply instead of a flat background: a plain
+		   background is a descendant paint layer that always covers the
+		   wrapper's scroll-shadow beneath it, edge to edge, whether or not
+		   a shadow is actually there at that scroll position - fading the
+		   tint near the edges (tried first) fixed the overlap but then
+		   faded for no reason whenever no shadow was present. Multiply
+		   composes with whatever's beneath instead of covering it: over
+		   plain white it reads as the normal tint, and over the shadow it
+		   darkens further, so the two effects layer correctly wherever
+		   they happen to overlap without knowing scroll position at all. */
+		tbody tr:hover {
+			background: var(--crosshair-tint);
+			mix-blend-mode: multiply;
+		}
+
+		/* Skip the row-heading column and its header corner cell: they're
+		   labels, not values, so crosshairing their whole column doesn't
+		   help look anything up. Hovering a row heading still highlights
+		   its own row via tbody tr:hover; hovering a column heading (th)
+		   highlights its own column here, mirroring that. */
+		tbody td:not(:first-child):hover::after,
+		thead th:not(:first-child):hover::after {
+			content: '';
+			position: absolute;
+			left: 0;
+			top: -5000px;
+			bottom: -5000px;
+			width: 100%;
+			background: var(--crosshair-tint);
+			mix-blend-mode: multiply;
+			pointer-events: none;
+		}
+
+		/* The hovered cell itself is the answer to the lookup, so it reads
+		   stronger than the dimmed row/column highlight around it. */
+		td:hover {
+			@apply text-ink-dark font-semibold;
+		}
+	}
+
+	/* First column styled like the header row so it reads as a row heading.
+	   The tint is semi-transparent (not solid bg-grey-10) so it layers over
+	   tbody tr:hover instead of masking it - otherwise this column looks
+	   the same whether or not its row is hovered. multiply blends it with
+	   the wrapper's scroll-shadow beneath instead of covering it, same
+	   reasoning as the crosshair hover above - this column sits exactly
+	   where the left shadow lives. Only for :matrix: tables, not every
+	   table in the fullscreen dialog: the class survives cloning into the
+	   modal, so this still applies there for matrix tables without forcing
+	   the look on plain ones. */
+	.table-matrix tbody td:first-child {
+		@apply font-semibold;
+		background: var(--row-heading-tint);
+		mix-blend-mode: multiply;
+	}
+
+	/* Fullscreen view for tables that overflow the content column. The
+	   button is injected by table.ts; data-overflowing is kept in sync by
+	   a ResizeObserver. It docks onto the table's top-right corner like a
+	   tab built into the frame - flush against the table's own top border
+	   (no bottom border, no gap, no shadow, square bottom corners) rather
+	   than floating above it as a separate chip - and is always visible
+	   (not hover-revealed) so it's discoverable at a glance and reachable
+	   on touch devices, which have no hover state. Hidden below md: mobile
+	   tables already scroll full-width with native touch panning, so a
+	   fullscreen dialog on an already-small screen adds little. */
+	.table-container {
+		@apply flex flex-col items-end;
+
+		.table-expand-btn {
+			display: none;
+		}
+
+		/* Only when the button is actually showing (md and up) does it
+		   provide top spacing before the table - drop .table-wrapper's own
+		   top margin just then, otherwise the two stack into an oversized
+		   gap. A non-overflowing table, or an overflowing one on mobile
+		   where the button is hidden, needs its normal margin, same as any
+		   other paragraph-to-table gap on the page. */
+		&[data-overflowing] {
+			.table-expand-btn {
+				@apply border-grey-20 text-ink h-8 w-8 cursor-pointer items-center justify-center rounded-t-sm border-1 border-b-0 bg-white md:flex;
+			}
+
+			.table-wrapper {
+				@apply md:mt-0;
+			}
+		}
+
+		.table-expand-btn:hover {
+			@apply bg-grey-10;
+		}
+	}
+
+	dialog.table-modal {
+		@apply m-auto max-h-[90vh] max-w-[95vw] rounded-lg bg-white p-0;
+
+		&::backdrop {
+			background: rgba(0, 0, 0, 0.5);
+		}
+
+		.table-modal-content {
+			@apply flex flex-col items-end p-4;
+		}
+
+		.table-modal-close {
+			@apply text-grey-100 hover:text-ink mb-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm bg-white;
+		}
+
+		.table-wrapper {
+			@apply my-0 max-h-[calc(90vh-4rem)] overflow-auto;
+		}
+
+		thead th {
+			@apply bg-grey-10 sticky top-0 z-1;
+		}
+	}
+}
+
+@media print {
+	.table-expand-btn {
+		display: none !important;
 	}
 }

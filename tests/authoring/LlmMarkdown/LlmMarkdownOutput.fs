@@ -224,6 +224,9 @@ type ``applies_to inline role formats`` () =
         
         // Elasticsearch preview (no version - no version shown)
         ("elasticsearch: preview", "Serverless Elasticsearch projects: Preview")
+        
+        // Vector Database GA (serverless-only, unversioned)
+        ("vectordb: ga", "Serverless Elasticsearch Vector Database projects: Generally available")
     ]
     
     [<Fact>]
@@ -392,7 +395,7 @@ This is a tip admonition with applies_to information.
 This is an important admonition with applies_to information.
 :::
 :::{admonition} Custom Admonition
-:applies_to: { stack: ga, serverless: ga, elasticsearch: preview }
+:applies_to: { stack: ga, elasticsearch: preview }
 This is a custom admonition with applies_to information.
 :::
 """

@@ -1,23 +1,204 @@
+@using Elastic.Documentation.Configuration.Toc
+@using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<div class="md:sticky md:top-0 md:z-30 bg-grey-10">
-	<ask-ai></ask-ai>
-	<nav id="secondary-nav" hx-select-oob="#main-container" hx-swap="none"
+@{
+	var topNav = Model.TopNav;
+	// Active tab: compare the current page's NavigationRoot.Id against each tab's SectionId.
+	// The site root (SiteNavigation) has an Id that matches no tab, so homepage gets no active tab.
+	var currentSectionId = Model.CurrentNavigationItem.NavigationRoot?.Id;
+	var docsHomeUrl = Model.Link("/");
+	var navigationPreviewEnabled = Model.Features.NavigationPreviewEnabled;
+
+	string? IconId(string title) => title switch
+	{
+		"Guides" => "documentation",
+		"Reference" => "list-bullet",
+		"Troubleshoot" => "wrench",
+		"Products" => "grid",
+		"APIs" => "code",
+		"Release notes" => "refresh-time",
+		_ => null
+	};
+
+	IHtmlContent NavIcon(string id, string extraClass = "")
+	{
+		var cls = string.IsNullOrEmpty(extraClass) ? "secondary-nav-icon" : $"secondary-nav-icon {extraClass}";
+		return new HtmlString($"<span class=\"{cls}\" aria-hidden=\"true\"><svg viewBox=\"0 0 16 16\"><use href=\"#icon-{id}\"/></svg></span>");
+	}
+}
+@if (navigationPreviewEnabled)
+{
+<div id="secondary-nav-host" class="relative md:sticky md:top-0 md:z-30 bg-white">
+	<nav id="secondary-nav">
+		@if (topNav is not null)
+		{
+			@* navigation-preview: desktop section-driven top nav.
+			   secondary-nav-dropdown.css lets an open dropdown escape the overflow clipping. *@
+			<div class="secondary-nav-bar secondary-nav-bar--desktop">
+				<div class="secondary-nav-scroll-container">
+				<a href="@docsHomeUrl"
+				   class="secondary-nav-home"
+				   preload="mousedown">Docs</a>
+				<ul class="secondary-nav-list">
+					@foreach (var item in topNav.Items)
+					{
+						var isActive = item.IsActive(currentSectionId);
+						var itemClass = isActive ? "secondary-nav-item secondary-nav-item--active" : "secondary-nav-item";
+						var iconId = IconId(item.Title);
+						if (item is TopNavDropdownItem dropdown)
+						{
+							<li class="@itemClass">
+								<details class="secondary-nav-dropdown">
+									<summary class="secondary-nav-item__hit">
+										<span class="secondary-nav-item__content secondary-nav-item__content--dropdown">
+											@if (iconId is not null)
+											{
+												@NavIcon(iconId)
+											}
+											<span>@dropdown.Title</span>
+											@NavIcon("chevron-down", "secondary-nav-icon--sm secondary-nav-dropdown-chevron")
+										</span>
+									</summary>
+									<div class="secondary-nav-dropdown-menu" aria-label="@dropdown.Title">
+										@foreach (var group in dropdown.Groups)
+										{
+											if (group.Label is not null)
+											{
+												<div class="secondary-nav-dropdown-group-label">@group.Label</div>
+											}
+											foreach (var link in group.Links)
+											{
+												<a class="secondary-nav-dropdown-link"
+												   href="@link.Url"
+												   preload="mousedown">@link.Title</a>
+											}
+										}
+									</div>
+								</details>
+							</li>
+						}
+						else if (item is TopNavLinkItem link)
+						{
+							var sectionIdsAttr = link.SectionIds is { Count: > 0 }
+								? string.Join(" ", link.SectionIds)
+								: link.SectionId;
+							<li class="@itemClass" data-section-ids="@sectionIdsAttr">
+								@if (link.IsExternal)
+								{
+									<a href="@link.Url"
+									   target="_blank"
+									   rel="noopener noreferrer"
+									   class="secondary-nav-item__hit">
+										<span class="secondary-nav-item__content">
+											@if (iconId is not null)
+											{
+												@NavIcon(iconId)
+											}
+											<span>@link.Title</span>
+											@NavIcon("external", "secondary-nav-icon--sm secondary-nav-icon--external")
+										</span>
+										<span class="sr-only">(opens in a new tab)</span>
+									</a>
+								}
+								else
+								{
+									<a href="@link.Url"
+									   preload="mousedown"
+									   class="secondary-nav-item__hit">
+										<span class="secondary-nav-item__content">
+											@if (iconId is not null)
+											{
+												@NavIcon(iconId)
+											}
+											<span>@link.Title</span>
+										</span>
+									</a>
+								}
+							</li>
+						}
+					}
+				</ul>
+				</div>
+				@if (Model.ShowVersionDropdown)
+				{
+					<div class="secondary-nav-actions">
+						<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+							<div class="h-8">@*height of dropdown button*@</div>
+						</version-dropdown>
+					</div>
+				}
+			</div>
+		}
+		else
+		{
+			@* Built-in links: flag on but no section: entries defined. *@
+			<div class="secondary-nav-bar secondary-nav-bar--desktop">
+				<a href="@docsHomeUrl"
+				   class="secondary-nav-home"
+				   preload="mousedown">Docs</a>
+				<ul class="secondary-nav-list">
+					<li class="secondary-nav-item">
+						<a href="@Model.Link("/release-notes/")"
+						   preload="mousedown"
+						   class="secondary-nav-item__hit">
+							<span class="secondary-nav-item__content">
+								@NavIcon("refresh-time")
+								<span>Release notes</span>
+							</span>
+						</a>
+					</li>
+					<li class="secondary-nav-item">
+						<a href="@Model.Link("/troubleshoot/")"
+						   preload="mousedown"
+						   class="secondary-nav-item__hit">
+							<span class="secondary-nav-item__content">
+								@NavIcon("wrench")
+								<span>Troubleshoot</span>
+							</span>
+						</a>
+					</li>
+					<li class="secondary-nav-item">
+						<a href="@Model.Link("/reference/")"
+						   preload="mousedown"
+						   class="secondary-nav-item__hit">
+							<span class="secondary-nav-item__content">
+								@NavIcon("list-bullet")
+								<span>Reference</span>
+							</span>
+						</a>
+					</li>
+				</ul>
+				@if (Model.ShowVersionDropdown)
+				{
+					<div class="secondary-nav-actions">
+						<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
+							<div class="h-8">@*height of dropdown button*@</div>
+						</version-dropdown>
+					</div>
+				}
+			</div>
+		}
+	</nav>
+</div>
+}
+else
+{
+<div class="relative md:sticky md:top-0 md:z-30 bg-grey-10">
+	<nav id="secondary-nav"
 	     class="bg-grey-10 border-b border-grey-20">
 		<div class="
 					w-full
 					max-w-(--max-layout-width) flex mx-auto justify-between items-center
 					px-4 py-6">
 			<div class="flex gap-2 flex-nowrap items-center font-sans font-semibold text-sm text-ink-light md:text-base">
-				<a href="@Model.Link("/")"
+				<a href="@docsHomeUrl"
 				   class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
 			</div>
 			<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<a
 						href="@Model.Link("/release-notes/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
+						preload="mousedown"
 					>
 						Release notes
 					</a>
@@ -25,9 +206,7 @@
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<a
 						href="@Model.Link("/troubleshoot/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
+						preload="mousedown"
 					>
 						Troubleshoot
 					</a>
@@ -35,9 +214,7 @@
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<a
 						href="@Model.Link("/reference/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
+						preload="mousedown"
 					>
 						Reference
 					</a>
@@ -46,3 +223,4 @@
 		</div>
 	</nav>
 </div>
+}

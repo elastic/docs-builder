@@ -15,7 +15,7 @@ public class BundlePlanTests : ChangelogTestBase
 	private ChangelogBundlingService Service { get; }
 
 	public BundlePlanTests(ITestOutputHelper output) : base(output) =>
-		Service = new(LoggerFactory, ConfigurationContext, FileSystem);
+		Service = new(LoggerFactory, FileSystem, ConfigurationContext, env: EmptyEnvironment);
 
 	private async Task<string> CreateConfigAsync(string configContent)
 	{
@@ -66,25 +66,53 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeFalse();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 		// The bundle-PR action polls this URL for the scrubbed copy: {base}/bundle/{product}/{file}.
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-elasticsearch-9.2.0.yaml");
+	}
+
+	[Fact]
+	public async Task Plan_ProfileOutputDirectory_JoinsConventionalName()
+	{
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  repo: kibana
+			  profiles:
+			    serverless-release:
+			      output_products: "cloud-serverless {version}"
+			      output_directory: docs/releases/cloud-serverless
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments { Profile = "serverless-release", ProfileArgument = "2026-08-27", Config = configPath };
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().NotBeNull();
+		result
+			.OutputPath
+			.Should()
+			.EndWith(
+				FileSystem
+					.Path
+					.Join("docs", "releases", "cloud-serverless", "kibana-cloud-serverless-2026-08-27.yaml")
+					.OptionalWindowsReplace()
+			);
 	}
 
 	[Fact]
@@ -101,22 +129,20 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a repository name"));
 	}
 
 	[Fact]
@@ -132,21 +158,15 @@ public class BundlePlanTests : ChangelogTestBase
 			    serverless:
 			      products: "cloud-serverless {version} *"
 			      output_products: "cloud-serverless {version} *"
-			      output: "serverless-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "serverless",
-			ProfileArgument = "2026-03",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "serverless", ProfileArgument = "2026-03", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/serverless-2026-03.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/cloud-serverless-2026-03.yaml");
 	}
 
 	[Fact]
@@ -162,16 +182,10 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
@@ -192,28 +206,31 @@ public class BundlePlanTests : ChangelogTestBase
 			    es-release:
 			      source: github_release
 			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
+			      output_products: "elasticsearch {version}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-release",
-			ProfileArgument = "v9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "v9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeTrue();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-v9.2.0.yaml").OptionalWindowsReplace());
+		// 'source: github_release' names the bundle from ExtractBaseVersion(release.TagName) at run time
+		// (leading 'v' stripped), not the raw CLI argument — plan must mirror that so output_path matches
+		// the file 'bundle' actually writes.
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
-	public async Task Plan_ProfileMode_LifecycleSubstitution_ResolvesCorrectly()
+	public async Task Plan_ProfileMode_ConventionalName_UsesPrimaryOutputProduct()
 	{
+		// Output names follow {repo}-{product}-{version}.yaml; lifecycle only affects
+		// product metadata (output_products), never the file name.
 		// language=yaml
 		var configContent =
 			"""
@@ -223,29 +240,28 @@ public class BundlePlanTests : ChangelogTestBase
 			    dotnet-release:
 			      source: github_release
 			      repo: apm-agent-dotnet
-			      output: "dotnet-{version}-{lifecycle}.yaml"
+			      output_products: "apm-agent-dotnet {version} {lifecycle}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "dotnet-release",
-			ProfileArgument = "1.0.0-beta.1",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "dotnet-release", ProfileArgument = "1.0.0-beta.1", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "dotnet-1.0.0-beta.1-beta.yaml").OptionalWindowsReplace());
+		// ExtractBaseVersion strips the pre-release suffix at run time too, so plan's file name must
+		// drop "-beta.1" the same way to stay in sync with the bundle 'run' actually writes.
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-apm-agent-dotnet-1.0.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
 	public async Task Plan_NoOutput_FallsBackToConfigOutputDirectory()
 	{
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  output_directory: docs/releases
 			""";
@@ -257,6 +273,31 @@ public class BundlePlanTests : ChangelogTestBase
 
 		result.Should().NotBeNull();
 		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "changelog-bundle.yaml").OptionalWindowsReplace());
+	}
+
+	[Fact]
+	public async Task Plan_OptionMode_OutputProducts_UsesConventionalName()
+	{
+		var configContent = """
+			bundle:
+			  output_directory: docs/releases
+			  repo: kibana
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Config = configPath,
+			OutputProducts = [new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" }]
+		};
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().NotBeNull();
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
@@ -272,17 +313,11 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "nonexistent-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "nonexistent-profile", ProfileArgument = "9.2.0", Config = configPath };
 
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 	}
-
 }

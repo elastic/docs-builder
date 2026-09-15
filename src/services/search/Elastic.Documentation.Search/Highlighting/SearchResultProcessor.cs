@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Clients.Elasticsearch.Core.Search;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 
 namespace Elastic.Documentation.Search.Highlighting;
 
@@ -18,8 +18,8 @@ public static class SearchResultProcessor
 		Hit<TDocument> hit,
 		string searchQuery,
 		IReadOnlyDictionary<string, string[]> synonyms,
-		HighlightOptions? highlightOptions = null)
-		where TDocument : SearchDocumentBase
+		HighlightOptions? highlightOptions = null
+	) where TDocument : SearchDocumentBase
 	{
 		var options = highlightOptions ?? HighlightOptions.Default;
 		var doc = hit.Source!;
@@ -35,7 +35,7 @@ public static class SearchResultProcessor
 
 		if (highlights != null)
 		{
-			if (highlights.TryGetValue(QueryFieldNames.StrippedBody, out var bodyHighlights) && bodyHighlights.Count > 0)
+			if (highlights.TryGetValue(QueryFieldNames.Body, out var bodyHighlights) && bodyHighlights.Count > 0)
 				highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 
 			if (highlights.TryGetValue(QueryFieldNames.Title, out var titleHighlights) && titleHighlights.Count > 0)
@@ -61,7 +61,8 @@ public static class SearchResultProcessor
 
 	public static IReadOnlyDictionary<string, long> ExtractTermsAggregation<TDocument>(
 		Clients.Elasticsearch.SearchResponse<TDocument> response,
-		string aggregationName)
+		string aggregationName
+	)
 	{
 		var aggregations = new Dictionary<string, long>();
 		var terms = response.Aggregations?.GetStringTerms(aggregationName);
@@ -76,7 +77,8 @@ public static class SearchResultProcessor
 	public static IReadOnlyDictionary<string, long> ExtractNestedTermsAggregation<TDocument>(
 		Clients.Elasticsearch.SearchResponse<TDocument> response,
 		string nestedAggregationName,
-		string innerTermsAggregationName)
+		string innerTermsAggregationName
+	)
 	{
 		var aggregations = new Dictionary<string, long>();
 		var nested = response.Aggregations?.GetNested(nestedAggregationName);

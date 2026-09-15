@@ -86,9 +86,6 @@ public class IndexViewModel
 	/// <summary>Codex sub-header breadcrumb trail (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; set; }
 
-	/// <summary>Pre-computed site root path for HTMX. When set (codex builds), used as data-root-path.</summary>
-	public string? SiteRootPath { get; set; }
-
 	/// <summary>When set, the page performs a client-side redirect to this URL (used for alias pages).</summary>
 	public string? RedirectUrl { get; init; }
 
@@ -127,13 +124,18 @@ public class VersionDropDownItemViewModel
 					Name = versionGroup.Key,
 					Href = null,
 					IsDisabled = false,
-					Children = versionGroup.Value.Select(v => new VersionDropDownItemViewModel
-					{
-						Name = v,
-						Href = legacyPageMappings.First(x => x.Version == v).ToString(),
-						IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
-						Children = null
-					}).ToArray()
+					Children = versionGroup
+						.Value
+						.Select(
+							v => new VersionDropDownItemViewModel
+							{
+								Name = v,
+								Href = legacyPageMappings.First(x => x.Version == v).ToString(),
+								IsDisabled = !legacyPageMappings.First(x => x.Version == v).Exists,
+								Children = null
+							}
+						)
+						.ToArray()
 				});
 			}
 			else

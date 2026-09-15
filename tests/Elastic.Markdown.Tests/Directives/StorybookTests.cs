@@ -15,15 +15,14 @@ public abstract class StorybookRegistryTest(ITestOutputHelper output, string con
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/docs_registry.json", new MockFileData(RegistryJson));
 
-	protected override string? GetDocsetExtraYaml() =>
-"""
+	protected override string? GetDocsetExtraYaml() => """
 storybook:
   registry: docs_registry.json
 """;
 
 	private const string RegistryJson =
-							 /*lang=json,strict*/
-							 """
+		/*lang=json,strict*/
+		"""
 		{
 		  "schemaVersion": 1,
 		  "producer": "kibana-storybook",
@@ -78,8 +77,9 @@ storybook:
 		""";
 }
 
-public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
 :title: AI Button / Default story
@@ -95,7 +95,10 @@ public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistr
 		Block.DocsId.Should().Be("ai-components-aibutton--default");
 		Block.StoryId.Should().Be("ai-components-aibutton--default");
 		Block.InlineEntry.Should().Be("http://127.0.0.1:6007/storybook-docs/shared_ux/registry.js");
-		Block.StoryUrl.Should().Be("http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=ai-components-aibutton--default&viewMode=story");
+		Block
+			.StoryUrl
+			.Should()
+			.Be("http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=ai-components-aibutton--default&viewMode=story");
 		Block.Height.Should().Be(360);
 	}
 
@@ -116,18 +119,16 @@ internal sealed class TestEnvironmentVariables : IEnvironmentVariables
 {
 	private readonly Dictionary<string, string?> _variables = [with(StringComparer.Ordinal)];
 
-	public string? this[string name]
-	{
-		set => _variables[name] = value;
-	}
+	public string? this[string name] { set => _variables[name] = value; }
 
 	public string? GetEnvironmentVariable(string name) => _variables.GetValueOrDefault(name);
 
 	public bool IsRunningOnCI => false;
 }
 
-public class StorybookInterpolatedRegistryTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookInterpolatedRegistryTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
 :::
@@ -136,19 +137,18 @@ public class StorybookInterpolatedRegistryTests(ITestOutputHelper output) : Stor
 {
 	protected override IEnvironmentVariables? GetEnvironment() => new TestEnvironmentVariables();
 
-	protected override string? GetDocsetExtraYaml() =>
-"""
+	protected override string? GetDocsetExtraYaml() => """
 storybook:
   registry: ${KIBANA_STORYBOOK_REGISTRY:-docs_registry.json}
 """;
 
 	[Fact]
-	public void ResolvesDefaultWhenEnvironmentVariableUnset() =>
-		Block!.StoryId.Should().Be("ai-components-aibutton--default");
+	public void ResolvesDefaultWhenEnvironmentVariableUnset() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
-public class StorybookDisallowedRegistryVariableTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookDisallowedRegistryVariableTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
 :::
@@ -159,21 +159,22 @@ public class StorybookDisallowedRegistryVariableTests(ITestOutputHelper output) 
 	protected override IEnvironmentVariables? GetEnvironment() =>
 		new TestEnvironmentVariables { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" };
 
-	protected override string? GetDocsetExtraYaml() =>
-"""
+	protected override string? GetDocsetExtraYaml() => """
 storybook:
   registry: ${AWS_SECRET_ACCESS_KEY:-docs_registry.json}
 """;
 
 	[Fact]
 	public void WarnsAndLeavesExpressionLiteral() =>
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning
-			&& d.Message.Contains("not allow-listed for interpolation"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("not allow-listed for interpolation"));
 }
 
-public class StorybookStructuredReferenceTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookStructuredReferenceTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :project: kibana
 :storybook: shared_ux
@@ -184,12 +185,12 @@ public class StorybookStructuredReferenceTests(ITestOutputHelper output) : Story
 )
 {
 	[Fact]
-	public void ResolvesComponentAndStory() =>
-		Block!.StoryId.Should().Be("ai-components-aibutton--default");
+	public void ResolvesComponentAndStory() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
-public class StorybookStructuredReferenceWrongStorybookTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookStructuredReferenceWrongStorybookTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :project: kibana
 :storybook: content_management
@@ -200,11 +201,15 @@ public class StorybookStructuredReferenceWrongStorybookTests(ITestOutputHelper o
 {
 	[Fact]
 	public void DoesNotFallbackToAnotherStorybook() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("does not contain id 'kibana:content_management:ai-components-aibutton--default'"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("does not contain id 'kibana:content_management:ai-components-aibutton--default'"));
 }
 
-public class StorybookBareIdTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookBareIdTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :id: ai-components-aibutton--default
 :::
@@ -212,12 +217,12 @@ public class StorybookBareIdTests(ITestOutputHelper output) : StorybookRegistryT
 )
 {
 	[Fact]
-	public void ResolvesFromConfiguredRegistry() =>
-		Block!.StoryId.Should().Be("ai-components-aibutton--default");
+	public void ResolvesFromConfiguredRegistry() => Block!.StoryId.Should().Be("ai-components-aibutton--default");
 }
 
-public class StorybookIframeTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookIframeTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :id: kibana:shared_ux:components-callout--info
 :::
@@ -229,12 +234,15 @@ public class StorybookIframeTests(ITestOutputHelper output) : StorybookRegistryT
 	{
 		Block!.HasInlineStory.Should().BeFalse();
 		Html.Should().Contain("<iframe");
-		Html.Should().Contain("src=\"http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=components-callout--info-storybook&amp;viewMode=story\"");
+		Html.Should().Contain(
+			"src=\"http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=components-callout--info-storybook&amp;viewMode=story\""
+		);
 	}
 }
 
-public class StorybookBodyTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookBodyTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :id: kibana:shared_ux:components-callout--info
 Supporting details for this story.
@@ -243,12 +251,12 @@ Supporting details for this story.
 )
 {
 	[Fact]
-	public void RendersBodyContent() =>
-		Html.Should().Contain("Supporting details for this story.");
+	public void RendersBodyContent() => Html.Should().Contain("Supporting details for this story.");
 }
 
-public class StorybookInvalidHeightTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookInvalidHeightTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook}
 :id: kibana:shared_ux:components-callout--info
 :height: tall
@@ -260,15 +268,17 @@ public class StorybookInvalidHeightTests(ITestOutputHelper output) : StorybookRe
 	public void WarnsAndFallsBackToDefaultHeight()
 	{
 		Block!.Height.Should().Be(400);
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Warning
-			&& d.Message.Contains(":height: must be a positive integer"));
+		Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains(":height: must be a positive integer"));
 		Html.Should().Contain("height:400px");
 	}
 }
 
-public class StorybookMissingRegistryTests(ITestOutputHelper output) : DirectiveTest<StorybookBlock>(output,
-"""
+public class StorybookMissingRegistryTests(ITestOutputHelper output) : DirectiveTest<StorybookBlock>(
+	output,
+	"""
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
 :::
@@ -276,24 +286,21 @@ public class StorybookMissingRegistryTests(ITestOutputHelper output) : Directive
 )
 {
 	[Fact]
-	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires docset.yml storybook.registry"));
+	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires docset.yml storybook.registry"));
 }
 
-public class StorybookMissingIdTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookMissingIdTests(ITestOutputHelper output) : StorybookRegistryTest(output, """
 :::{storybook}
 :::
-"""
-)
+""")
 {
 	[Fact]
-	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires :id: or :project:"));
+	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires :id: or :project:"));
 }
 
-public class StorybookPositionalArgumentWarningTests(ITestOutputHelper output) : StorybookRegistryTest(output,
-"""
+public class StorybookPositionalArgumentWarningTests(ITestOutputHelper output) : StorybookRegistryTest(
+	output,
+	"""
 :::{storybook} /storybook/ignored
 :id: kibana:shared_ux:components-callout--info
 :::
@@ -302,7 +309,8 @@ public class StorybookPositionalArgumentWarningTests(ITestOutputHelper output) :
 {
 	[Fact]
 	public void EmitsWarning() =>
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Warning
-			&& d.Message.Contains("ignores positional arguments"));
+		Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains("ignores positional arguments"));
 }

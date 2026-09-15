@@ -13,6 +13,7 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// with the profile's DocsDescription at composition time.
 /// </summary>
 /// <param name="Name">Profile identifier (e.g. "public", "internal").</param>
+/// <param name="ServiceName">OTEL service.name reported by this profile's deployment (e.g. "docs-mcp", "codex-mcp").</param>
 /// <param name="ResourceNoun">Resource noun for tool names (e.g. "docs", "internal_docs"). Replaces {resource} in tool name templates.</param>
 /// <param name="ScopePrefix">Scope prefix for tool names (e.g. "" for public, "internal_" for internal). Replaces {scope} in tool name templates.</param>
 /// <param name="DocsDescription">Short noun phrase describing this profile's docs (e.g. "Elastic product documentation"). Used to replace {docs} in trigger templates.</param>
@@ -21,25 +22,31 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// <param name="Modules">Enabled feature modules.</param>
 public sealed record McpServerProfile(
 	string Name,
+	string ServiceName,
 	string ResourceNoun,
 	string ScopePrefix,
 	string DocsDescription,
 	string Introduction,
 	string[] ExtraTriggers,
-	McpFeatureModule[] Modules)
+	McpFeatureModule[] Modules
+)
 {
 	public static McpServerProfile Public { get; } = new(
 		"public",
+		"docs-mcp",
 		"docs",
 		"",
 		"Elastic documentation",
 		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs.",
-		["References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."],
+		[
+			"References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."
+		],
 		[McpFeatureModules.Search, McpFeatureModules.Documents, McpFeatureModules.Coherence]
 	);
 
 	public static McpServerProfile Internal { get; } = new(
 		"internal",
+		"codex-mcp",
 		"internal_docs",
 		"internal_",
 		"Elastic internal documentation",
@@ -94,9 +101,7 @@ public sealed record McpServerProfile(
 			.Select(line => ReplaceToolPlaceholders(line, ResourceNoun, ScopePrefix))
 			.ToList();
 
-		var whenToUseBlock = whenToUse.Count > 0
-			? "\n" + string.Join("\n", whenToUse.Select(b => $"- {b}"))
-			: "";
+		var whenToUseBlock = whenToUse.Count > 0 ? "\n" + string.Join("\n", whenToUse.Select(b => $"- {b}")) : "";
 		var toolGuidanceBlock = toolGuidance.Count > 0
 			? "\n<tool_guidance>\n" + string.Join("\n", toolGuidance.Select(l => $"- {l}")) + "\n</tool_guidance>"
 			: "";
@@ -133,9 +138,11 @@ public sealed record McpServerProfile(
 				break;
 			end--;
 			var template = line[templateStart..end];
-			var resolved = template
-				.Replace("{resource}", resourceNoun, StringComparison.Ordinal)
-				.Replace("{scope}", scopePrefix, StringComparison.Ordinal);
+			var resolved = template.Replace("{resource}", resourceNoun, StringComparison.Ordinal).Replace(
+				"{scope}",
+				scopePrefix,
+				StringComparison.Ordinal
+			);
 			_ = sb.Append(line, pos, start - pos);
 			_ = sb.Append(resolved);
 			pos = end + 1;
@@ -146,11 +153,7 @@ public sealed record McpServerProfile(
 
 	private string DeriveCapabilities()
 	{
-		var verbs = Modules
-			.Select(m => m.Capability)
-			.Where(c => !string.IsNullOrEmpty(c))
-			.Distinct()
-			.ToList();
+		var verbs = Modules.Select(m => m.Capability).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
 
 		return verbs.Count switch
 		{

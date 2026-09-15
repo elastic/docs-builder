@@ -7,8 +7,9 @@ using Elastic.Markdown.Myst.Directives.Admonition;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class AdmonitionBaseTests(ITestOutputHelper output, string directive) : DirectiveTest<AdmonitionBlock>(output,
-$$"""
+public abstract class AdmonitionBaseTests(ITestOutputHelper output, string directive) : DirectiveTest<AdmonitionBlock>(
+	output,
+	$$"""
 :::{{{directive}}}
 This is an attention block
 :::
@@ -47,8 +48,9 @@ public class ImportantTests(ITestOutputHelper output) : AdmonitionBaseTests(outp
 	public void SetsTitle() => Block!.Title.Should().Be("Important");
 }
 
-public class NoteTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class NoteTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 ```{note} This is my custom note
 This is an attention block
 ```
@@ -63,9 +65,9 @@ A regular paragraph.
 	public void SetsCustomTitle() => Block!.Title.Should().Be("Note This is my custom note");
 }
 
-
-public class AdmonitionTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class AdmonitionTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 ```{admonition} This is my custom title
 This is an attention block
 ```
@@ -80,8 +82,9 @@ A regular paragraph.
 	public void SetsCustomTitle() => Block!.Title.Should().Be("This is my custom title");
 }
 
-public class DropdownTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class DropdownTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{dropdown} This is my custom dropdown
 :open:
 This is an attention block
@@ -100,8 +103,69 @@ A regular paragraph.
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 }
 
-public class DropdownAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+public class DropdownPlainTextTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
+:::{dropdown} Deprecate `elastic.apm` settings
+Dropdown body content.
+:::
 """
+)
+{
+	[Fact]
+	public void StripsBackticksFromTitle() => Block!.Title.Should().Be("Deprecate elastic.apm settings");
+
+	[Fact]
+	public void RendersPlainTextTitleInHtml()
+	{
+		Html.Should().Contain("Deprecate elastic.apm settings");
+		Html.Should().NotContain("`elastic.apm`");
+	}
+}
+
+public class DropdownPlainTextBoldTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
+:::{dropdown} Disable **Save** button
+Dropdown body content.
+:::
+"""
+)
+{
+	[Fact]
+	public void StripsBoldMarkersFromTitle() => Block!.Title.Should().Be("Disable Save button");
+
+	[Fact]
+	public void RendersBoldTitleAsPlainTextInHtml()
+	{
+		Html.Should().Contain("Disable Save button");
+		Html.Should().NotContain("**Save**");
+	}
+}
+
+public class DropdownPlainTextItalicTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
+:::{dropdown} Use _italic_ emphasis
+Dropdown body content.
+:::
+"""
+)
+{
+	[Fact]
+	public void StripsItalicMarkersFromTitle() => Block!.Title.Should().Be("Use italic emphasis");
+
+	[Fact]
+	public void RendersItalicTitleAsPlainTextInHtml()
+	{
+		Html.Should().Contain("Use italic emphasis");
+		Html.Should().NotContain("_italic_");
+	}
+}
+
+public class DropdownAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{dropdown} This is my custom dropdown
 :applies_to: stack: ga 9.0
 This is an attention block
@@ -123,8 +187,9 @@ A regular paragraph.
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 }
 
-public class DropdownPropertyParsingTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class DropdownPropertyParsingTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{dropdown} Test Dropdown
 :open:
 :name: test-dropdown
@@ -147,8 +212,9 @@ A regular paragraph.
 	public void SetsCrossReferenceName() => Block!.CrossReferenceName.Should().Be("test-dropdown");
 }
 
-public class DropdownNestedContentTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class DropdownNestedContentTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 ::::{dropdown} Nested Content Test
 :open:
 This dropdown contains nested content with colons:
@@ -217,8 +283,9 @@ A regular paragraph.
 	}
 }
 
-public class DropdownComplexPropertyTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class DropdownComplexPropertyTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{dropdown} Complex Properties Test
 :applies_to: stack: ga 9.0
 This is content with applies_to property
@@ -241,8 +308,9 @@ A regular paragraph.
 	}
 }
 
-public class NoteAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class NoteAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{note}
 :applies_to: stack: ga
 This is a note with applies_to information
@@ -273,8 +341,9 @@ A regular paragraph.
 	}
 }
 
-public class WarningAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class WarningAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{warning}
 :applies_to: stack: ga
 This is a warning with applies_to information
@@ -305,8 +374,9 @@ A regular paragraph.
 	}
 }
 
-public class TipAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class TipAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{tip}
 :applies_to: stack: ga
 This is a tip with applies_to information
@@ -337,8 +407,9 @@ A regular paragraph.
 	}
 }
 
-public class ImportantAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class ImportantAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{important}
 :applies_to: stack: ga
 This is an important notice with applies_to information
@@ -369,8 +440,9 @@ A regular paragraph.
 	}
 }
 
-public class AdmonitionAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+public class AdmonitionAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(
+	output,
+	"""
 :::{admonition} Custom Admonition
 :applies_to: stack: ga
 This is a custom admonition with applies_to information

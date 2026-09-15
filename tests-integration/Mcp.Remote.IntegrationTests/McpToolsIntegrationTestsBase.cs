@@ -9,6 +9,7 @@ using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -34,9 +35,11 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	protected async Task LogIndexCount(ElasticsearchClientAccessor clientAccessor, CancellationToken ctx)
 	{
 		var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), ctx);
-		Output.WriteLine(countResponse.IsValidResponse
-			? $"Index document count: {countResponse.Count}"
-			: $"Index count ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}");
+		Output.WriteLine(
+			countResponse.IsValidResponse
+				? $"Index document count: {countResponse.Count}"
+				: $"Index count ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}"
+		);
 	}
 
 	/// <summary>
@@ -78,7 +81,10 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		return (coherenceTools, clientAccessor);
 	}
 
-	private static FullSearchService BuildFullSearchAdapter(ElasticsearchClientAccessor clientAccessor, ProductsConfiguration productsConfig)
+	private static FullSearchService BuildFullSearchAdapter(
+		ElasticsearchClientAccessor clientAccessor,
+		ProductsConfiguration productsConfig
+	)
 	{
 		var queryConfig = new SearchQueryConfiguration
 		{
@@ -88,9 +94,12 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 			SemanticEnabled = true
 		};
 		var inner = new DefaultSearchService<DocumentationDocument>(
-			clientAccessor.Client, clientAccessor.SearchIndex, queryConfig,
+			clientAccessor.Client,
+			clientAccessor.SearchIndex,
+			queryConfig,
 			NullLogger<DefaultSearchService<DocumentationDocument>>.Instance,
-			productsConfig);
+			productsConfig
+		);
 		return new FullSearchService(inner, productsConfig, NullLogger<FullSearchService>.Instance);
 	}
 

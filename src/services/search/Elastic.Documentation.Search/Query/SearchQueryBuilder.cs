@@ -21,22 +21,19 @@ public static class SearchQueryBuilder
 	[
 		new RankFeatureQuery { Field = QueryFieldNames.NavigationDepth, Boost = 0.8f },
 		new RankFeatureQuery { Field = QueryFieldNames.NavigationTableOfContents, Boost = 0.8f },
-		new TermQuery { Field = QueryFieldNames.NavigationSection, Value = "reference", Boost = 0.15f },
-		new TermQuery { Field = QueryFieldNames.NavigationSection, Value = "getting-started", Boost = 0.1f }
+		new TermQuery { Field = QueryFieldNames.Section, Value = "reference", Boost = 0.15f },
+		new TermQuery { Field = QueryFieldNames.Section, Value = "getting-started", Boost = 0.1f }
 	];
 
 	/// <summary>Excludes hidden documents and bare root-URL placeholders.</summary>
-	public static Query DocumentFilter { get; } =
-		new BoolQuery
-		{
-			MustNot =
-			[
-				new TermsQuery(
-					QueryFieldNames.UrlKeyword,
-					new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])),
-				new TermQuery { Field = QueryFieldNames.Hidden, Value = true }
-			]
-		};
+	public static Query DocumentFilter { get; } = new BoolQuery
+	{
+		MustNot =
+		[
+			new TermsQuery(QueryFieldNames.PathKeyword, new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])),
+			new TermQuery { Field = QueryFieldNames.Hidden, Value = true }
+		]
+	};
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)
 	{
@@ -47,7 +44,7 @@ public static class SearchQueryBuilder
 		{
 			Query = string.Join(' ', diminishTerms),
 			Operator = Operator.Or,
-			Fields = new[] { QueryFieldNames.SearchTitle, QueryFieldNames.UrlMatch }
+			Fields = new[] { QueryFieldNames.SearchTitle, QueryFieldNames.PathMatch }
 		};
 	}
 
@@ -64,9 +61,7 @@ public static class SearchQueryBuilder
 		};
 	}
 
-	public static Query? GenerateTitleKeywordQuery(
-		string searchQuery,
-		IReadOnlyDictionary<string, string[]> synonymBiDirectional)
+	public static Query? GenerateTitleKeywordQuery(string searchQuery, IReadOnlyDictionary<string, string[]> synonymBiDirectional)
 	{
 		var q = searchQuery.ToLowerInvariant();
 
@@ -90,19 +85,15 @@ public static class SearchQueryBuilder
 
 	public static Query BuildSemanticQuery(string searchQuery) =>
 		(Query)new SemanticQuery(QueryFieldNames.TitleSemanticText, searchQuery) { Boost = 5.0f }
-		|| new SemanticQuery(QueryFieldNames.AbstractSemanticText, searchQuery) { Boost = 3.0f }
-		|| new SemanticQuery(QueryFieldNames.AiRagSummarySemanticText, searchQuery) { Boost = 4.0f }
-		|| new SemanticQuery(QueryFieldNames.AiQuestionsSemanticText, searchQuery) { Boost = 2.0f };
+			|| new SemanticQuery(QueryFieldNames.SummarySemanticText, searchQuery) { Boost = 3.0f }
+			|| new SemanticQuery(QueryFieldNames.AiRagSummarySemanticText, searchQuery) { Boost = 4.0f }
+			|| new SemanticQuery(QueryFieldNames.AiQuestionsSemanticText, searchQuery) { Boost = 2.0f };
 
-	// NOTE: BuildSemanticQueryProbe / BuildLexicalQueryProbe require SearchQueryComponents from
-	// Elastic.Internal.Search.Contract — restore these when that type is in the published package.
+	// NOTE: BuildSemanticQueryProbe / BuildLexicalQueryProbe use SearchQueryComponents, now available
+	// from the in-repo contract — restore these in a follow-up.
 
 	public static Query BuildUrlMatchQuery(string searchQuery) =>
-		new ConstantScoreQuery
-		{
-			Filter = new MatchQuery { Field = QueryFieldNames.UrlMatch, Query = searchQuery },
-			Boost = 0.3f
-		};
+		new ConstantScoreQuery { Filter = new MatchQuery { Field = QueryFieldNames.PathMatch, Query = searchQuery }, Boost = 0.3f };
 
 	public static Query? BuildTitleStartsWithQuery(string searchQuery)
 	{
@@ -118,12 +109,7 @@ public static class SearchQueryBuilder
 
 		return new ConstantScoreQuery
 		{
-			Filter = new TermQuery
-			{
-				Field = QueryFieldNames.TitleStartsWith,
-				Value = searchQuery.ToLowerInvariant(),
-				Boost = boost
-			},
+			Filter = new TermQuery { Field = QueryFieldNames.TitleStartsWith, Value = searchQuery.ToLowerInvariant(), Boost = boost },
 			Boost = boost
 		};
 	}
@@ -136,7 +122,7 @@ public static class SearchQueryBuilder
 			Type = TextQueryType.Phrase,
 			Analyzer = "synonyms_analyzer",
 			Boost = 0.2f,
-			Fields = new[] { QueryFieldNames.StrippedBody }
+			Fields = new[] { QueryFieldNames.Body }
 		};
 
 	/// <summary>
@@ -149,28 +135,28 @@ public static class SearchQueryBuilder
 		string searchQuery,
 		IReadOnlyDictionary<string, string[]> synonymBiDirectional,
 		IReadOnlyCollection<string> diminishTerms,
-		string? rulesetName)
+		string? rulesetName
+	)
 	{
 		var tokens = searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-		var query =
-			(Query)new ConstantScoreQuery
+		var query = (Query)new ConstantScoreQuery
+		{
+			Filter = new MultiMatchQuery
 			{
-				Filter = new MultiMatchQuery
+				Query = searchQuery,
+				Operator = Operator.And,
+				Type = TextQueryType.BoolPrefix,
+				Analyzer = "synonyms_analyzer",
+				Fields = new[]
 				{
-					Query = searchQuery,
-					Operator = Operator.And,
-					Type = TextQueryType.BoolPrefix,
-					Analyzer = "synonyms_analyzer",
-					Fields = new[]
-					{
-						QueryFieldNames.SearchTitleCompletion,
-						QueryFieldNames.SearchTitleCompletion2Gram,
-						QueryFieldNames.SearchTitleCompletion3Gram
-					}
-				},
-				Boost = 3.0f
-			}
+					QueryFieldNames.SearchTitleCompletion,
+					QueryFieldNames.SearchTitleCompletion2Gram,
+					QueryFieldNames.SearchTitleCompletion3Gram
+				}
+			},
+			Boost = 3.0f
+		}
 			|| new MultiMatchQuery
 			{
 				Query = searchQuery,
@@ -178,7 +164,7 @@ public static class SearchQueryBuilder
 				Type = TextQueryType.BestFields,
 				Analyzer = "synonyms_analyzer",
 				Boost = 0.1f,
-				Fields = new[] { QueryFieldNames.StrippedBody }
+				Fields = new[] { QueryFieldNames.Body }
 			};
 
 		var titleKeywordQuery = GenerateTitleKeywordQuery(searchQuery, synonymBiDirectional);
@@ -195,12 +181,7 @@ public static class SearchQueryBuilder
 		if (tokens.Length > 2)
 			query |= BuildPhraseMatchQuery(searchQuery);
 
-		var positiveQuery = new BoolQuery
-		{
-			Must = [query],
-			Filter = [DocumentFilter],
-			Should = ScoringQueries
-		};
+		var positiveQuery = new BoolQuery { Must = [query], Filter = [DocumentFilter], Should = ScoringQueries };
 
 		var diminishQuery = BuildDiminishQuery(diminishTerms);
 		var baseQuery = ApplyDiminishBoost(positiveQuery, diminishQuery);
@@ -213,12 +194,7 @@ public static class SearchQueryBuilder
 		if (diminishQuery is null)
 			return positiveQuery;
 
-		return new BoostingQuery
-		{
-			Positive = positiveQuery,
-			NegativeBoost = 0.8,
-			Negative = diminishQuery
-		};
+		return new BoostingQuery { Positive = positiveQuery, NegativeBoost = 0.8, Negative = diminishQuery };
 	}
 }
 

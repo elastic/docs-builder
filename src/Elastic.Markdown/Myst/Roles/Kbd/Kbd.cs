@@ -14,12 +14,7 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 {
 	private IReadOnlyList<IKeyNode> Keys { get; } = keys;
 
-	public static KeyboardShortcut Unknown { get; } = new([
-		new CharacterKeyNode
-		{
-			Key = '?'
-		}
-	]);
+	public static KeyboardShortcut Unknown { get; } = new([new CharacterKeyNode { Key = '?' }]);
 
 	public static KeyboardShortcut Parse(string input)
 	{
@@ -59,24 +54,30 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 	public static string Render(KeyboardShortcut shortcut)
 	{
 		var viewModels = shortcut.Keys.Select(ToViewModel);
-		var kbdElements = viewModels.Select(viewModel => viewModel switch
-		{
-			SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => Render(singleKeyboardKeyViewModel),
-			AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel => Render(alternateKeyboardKeyViewModel),
-			_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
-		});
+		var kbdElements = viewModels.Select(
+			viewModel =>
+				viewModel switch
+				{
+					SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => Render(singleKeyboardKeyViewModel),
+					AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel => Render(alternateKeyboardKeyViewModel),
+					_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
+				}
+		);
 		return string.Join(" + ", kbdElements);
 	}
 
 	public static string RenderLlm(KeyboardShortcut shortcut)
 	{
 		var viewModels = shortcut.Keys.Select(ToViewModel);
-		var kbdElements = viewModels.Select(viewModel => viewModel switch
-		{
-			SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => RenderLlm(singleKeyboardKeyViewModel),
-			AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel => RenderLlm(alternateKeyboardKeyViewModel),
-			_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
-		});
+		var kbdElements = viewModels.Select(
+			viewModel =>
+				viewModel switch
+				{
+					SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => RenderLlm(singleKeyboardKeyViewModel),
+					AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel => RenderLlm(alternateKeyboardKeyViewModel),
+					_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
+				}
+		);
 		return string.Join(" + ", kbdElements);
 	}
 
@@ -86,13 +87,16 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 	public static string RenderPlainText(KeyboardShortcut shortcut)
 	{
 		var viewModels = shortcut.Keys.Select(ToViewModel);
-		var keyElements = viewModels.Select(viewModel => viewModel switch
-		{
-			SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => singleKeyboardKeyViewModel.DisplayText,
-			AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel =>
-				$"{alternateKeyboardKeyViewModel.Primary.DisplayText} / {alternateKeyboardKeyViewModel.Alternate.DisplayText}",
-			_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
-		});
+		var keyElements = viewModels.Select(
+			viewModel =>
+				viewModel switch
+				{
+					SingleKeyboardKeyViewModel singleKeyboardKeyViewModel => singleKeyboardKeyViewModel.DisplayText,
+					AlternateKeyboardKeyViewModel alternateKeyboardKeyViewModel =>
+						$"{alternateKeyboardKeyViewModel.Primary.DisplayText} / {alternateKeyboardKeyViewModel.Alternate.DisplayText}",
+					_ => throw new ArgumentException($"Unsupported key: {viewModel}", nameof(viewModel))
+				}
+		);
 		return string.Join(" + ", keyElements);
 	}
 
@@ -121,7 +125,10 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 		var sb = new StringBuilder();
 		_ = sb.Append("<kbd class=\"kbd\"");
 		if (alternateKeyboardKeyViewModel.Primary.AriaLabel is not null)
-			_ = sb.Append(" aria-label=\"" + alternateKeyboardKeyViewModel.Primary.AriaLabel + " or " + alternateKeyboardKeyViewModel.Alternate.AriaLabel + "\"");
+			_ = sb.Append(
+				" aria-label=\"" + alternateKeyboardKeyViewModel.Primary.AriaLabel +
+					" or " + alternateKeyboardKeyViewModel.Alternate.AriaLabel + "\""
+			);
 		_ = sb.Append('>');
 
 		if (alternateKeyboardKeyViewModel.Primary.UnicodeIcon is not null)
@@ -151,14 +158,13 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 		return sb.ToString();
 	}
 
-	private static IKeyboardViewModel ToViewModel(IKeyNode keyNode) =>
-		keyNode switch
-		{
-			AlternateKeyNode alternateKeyNode => ToViewModel(alternateKeyNode),
-			CharacterKeyNode characterKeyNode => ToViewModel(characterKeyNode),
-			NamedKeyNode namedKeyNode => ToViewModel(namedKeyNode),
-			_ => throw new ArgumentException($"Unknown key: {keyNode}")
-		};
+	private static IKeyboardViewModel ToViewModel(IKeyNode keyNode) => keyNode switch
+	{
+		AlternateKeyNode alternateKeyNode => ToViewModel(alternateKeyNode),
+		CharacterKeyNode characterKeyNode => ToViewModel(characterKeyNode),
+		NamedKeyNode namedKeyNode => ToViewModel(namedKeyNode),
+		_ => throw new ArgumentException($"Unknown key: {keyNode}")
+	};
 
 	private static AlternateKeyboardKeyViewModel ToViewModel(AlternateKeyNode keyNode) =>
 		new()
@@ -177,258 +183,149 @@ public class KeyboardShortcut(IReadOnlyList<IKeyNode> keys)
 			},
 		};
 
-	private static SingleKeyboardKeyViewModel ToViewModel(CharacterKeyNode keyNode) => new()
-	{
-		DisplayText = HttpUtility.HtmlEncode(keyNode.Key.ToString()),
-		UnicodeIcon = null
-	};
+	private static SingleKeyboardKeyViewModel ToViewModel(CharacterKeyNode keyNode) =>
+		new() { DisplayText = HttpUtility.HtmlEncode(keyNode.Key.ToString()), UnicodeIcon = null };
 
 	private static SingleKeyboardKeyViewModel ToViewModel(NamedKeyNode keyNode) => ViewModelMapping[keyNode.Key];
 
-	private static FrozenDictionary<NamedKeyboardKey, SingleKeyboardKeyViewModel> ViewModelMapping { get; } =
-		Enum.GetValues<NamedKeyboardKey>().ToFrozenDictionary(k => k, GetDisplayModel);
+	private static FrozenDictionary<NamedKeyboardKey, SingleKeyboardKeyViewModel> ViewModelMapping
+	{
+		get;
+	} = Enum.GetValues<NamedKeyboardKey>().ToFrozenDictionary(k => k, GetDisplayModel);
 
-	private static SingleKeyboardKeyViewModel GetDisplayModel(NamedKeyboardKey key) =>
-		key switch
-		{
-			// Modifier keys with special symbols
-			NamedKeyboardKey.Command => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Cmd",
-				UnicodeIcon = "⌘",
-				AriaLabel = "Command"
-			},
-			NamedKeyboardKey.Shift => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Shift",
-				UnicodeIcon = "⇧"
-			},
-			NamedKeyboardKey.Ctrl => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Ctrl",
-				UnicodeIcon = "⌃",
-				AriaLabel = "Control"
-			},
-			NamedKeyboardKey.Alt => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Alt",
-				UnicodeIcon = "⌥"
-			},
-			NamedKeyboardKey.Option => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Opt",
-				UnicodeIcon = "⌥",
-				AriaLabel = "Option"
-			},
-			NamedKeyboardKey.Win => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Win",
-				UnicodeIcon = "⊞",
-				AriaLabel = "Windows"
-			},
-			// Directional keys
-			NamedKeyboardKey.Up => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Up",
-				UnicodeIcon = "↑",
-				AriaLabel = "Up Arrow"
-			},
-			NamedKeyboardKey.Down => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Down",
-				UnicodeIcon = "↓",
-				AriaLabel = "Down Arrow"
-			},
-			NamedKeyboardKey.Left => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Left",
-				UnicodeIcon = "←",
-				AriaLabel = "Left Arrow"
-			},
-			NamedKeyboardKey.Right => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Right",
-				UnicodeIcon = "→",
-				AriaLabel = "Right Arrow"
-			},
-			// Other special keys with symbols
-			NamedKeyboardKey.Enter => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Enter",
-				UnicodeIcon = "↵"
-			},
-			NamedKeyboardKey.Escape => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Esc",
-				UnicodeIcon = "⎋",
-				AriaLabel = "Escape"
-			},
-			NamedKeyboardKey.Tab => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Tab",
-				UnicodeIcon = "↹",
-				AriaLabel = "Tab"
-			},
-			NamedKeyboardKey.Backspace => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Backspace",
-				UnicodeIcon = "⌫"
-			},
-			NamedKeyboardKey.Delete => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Del",
-				AriaLabel = "Delete"
-			},
-			NamedKeyboardKey.Home => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Home",
-				UnicodeIcon = "⇱"
-			},
-			NamedKeyboardKey.End => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "End",
-				UnicodeIcon = "⇲"
-			},
-			NamedKeyboardKey.PageUp => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "PageUp",
-				UnicodeIcon = "⇞",
-				AriaLabel = "Page Up"
-			},
-			NamedKeyboardKey.PageDown => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "PageDown",
-				UnicodeIcon = "⇟",
-				AriaLabel = "Page Down"
-			},
-			NamedKeyboardKey.Space => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Space",
-				UnicodeIcon = "␣"
-			},
-			NamedKeyboardKey.Insert => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Ins",
-				AriaLabel = "Insert"
-			},
-			NamedKeyboardKey.Plus => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "+",
-			},
-			NamedKeyboardKey.Pipe => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "|",
-				AriaLabel = "Pipe"
-			},
-			NamedKeyboardKey.Fn => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "Fn",
-				AriaLabel = "Function key"
-			},
-			NamedKeyboardKey.F1 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F1",
-			},
-			NamedKeyboardKey.F2 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F2",
-			},
-			NamedKeyboardKey.F3 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F3",
-			},
-			NamedKeyboardKey.F4 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F4",
-			},
-			NamedKeyboardKey.F5 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F5",
-				UnicodeIcon = null
-			},
-			NamedKeyboardKey.F6 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F6",
-			},
-			NamedKeyboardKey.F7 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F7",
-			},
-			NamedKeyboardKey.F8 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F8",
-			},
-			NamedKeyboardKey.F9 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F9",
-			},
-			NamedKeyboardKey.F10 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F10",
-			},
-			NamedKeyboardKey.F11 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F11",
-			},
-			NamedKeyboardKey.F12 => new SingleKeyboardKeyViewModel
-			{
-				DisplayText = "F12",
-			},
-			// Function keys
-			_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)
-		};
+	private static SingleKeyboardKeyViewModel GetDisplayModel(NamedKeyboardKey key) => key switch
+	{
+		// Modifier keys with special symbols
+		NamedKeyboardKey.Command => new SingleKeyboardKeyViewModel { DisplayText = "Cmd", UnicodeIcon = "⌘", AriaLabel = "Command" },
+		NamedKeyboardKey.Shift => new SingleKeyboardKeyViewModel { DisplayText = "Shift", UnicodeIcon = "⇧" },
+		NamedKeyboardKey.Ctrl => new SingleKeyboardKeyViewModel { DisplayText = "Ctrl", UnicodeIcon = "⌃", AriaLabel = "Control" },
+		NamedKeyboardKey.Alt => new SingleKeyboardKeyViewModel { DisplayText = "Alt", UnicodeIcon = "⌥" },
+		NamedKeyboardKey.Option => new SingleKeyboardKeyViewModel { DisplayText = "Opt", UnicodeIcon = "⌥", AriaLabel = "Option" },
+		NamedKeyboardKey.Win => new SingleKeyboardKeyViewModel { DisplayText = "Win", UnicodeIcon = "⊞", AriaLabel = "Windows" },
+		// Directional keys
+		NamedKeyboardKey.Up => new SingleKeyboardKeyViewModel { DisplayText = "Up", UnicodeIcon = "↑", AriaLabel = "Up Arrow" },
+		NamedKeyboardKey.Down => new SingleKeyboardKeyViewModel { DisplayText = "Down", UnicodeIcon = "↓", AriaLabel = "Down Arrow" },
+		NamedKeyboardKey.Left => new SingleKeyboardKeyViewModel { DisplayText = "Left", UnicodeIcon = "←", AriaLabel = "Left Arrow" },
+		NamedKeyboardKey.Right => new SingleKeyboardKeyViewModel { DisplayText = "Right", UnicodeIcon = "→", AriaLabel = "Right Arrow" },
+		// Other special keys with symbols
+		NamedKeyboardKey.Enter => new SingleKeyboardKeyViewModel { DisplayText = "Enter", UnicodeIcon = "↵" },
+		NamedKeyboardKey.Escape => new SingleKeyboardKeyViewModel { DisplayText = "Esc", UnicodeIcon = "⎋", AriaLabel = "Escape" },
+		NamedKeyboardKey.Tab => new SingleKeyboardKeyViewModel { DisplayText = "Tab", UnicodeIcon = "↹", AriaLabel = "Tab" },
+		NamedKeyboardKey.Backspace => new SingleKeyboardKeyViewModel { DisplayText = "Backspace", UnicodeIcon = "⌫" },
+		NamedKeyboardKey.Delete => new SingleKeyboardKeyViewModel { DisplayText = "Del", AriaLabel = "Delete" },
+		NamedKeyboardKey.Home => new SingleKeyboardKeyViewModel { DisplayText = "Home", UnicodeIcon = "⇱" },
+		NamedKeyboardKey.End => new SingleKeyboardKeyViewModel { DisplayText = "End", UnicodeIcon = "⇲" },
+		NamedKeyboardKey.PageUp => new SingleKeyboardKeyViewModel { DisplayText = "PageUp", UnicodeIcon = "⇞", AriaLabel = "Page Up" },
+		NamedKeyboardKey.PageDown =>
+			new SingleKeyboardKeyViewModel { DisplayText = "PageDown", UnicodeIcon = "⇟", AriaLabel = "Page Down" },
+		NamedKeyboardKey.Space => new SingleKeyboardKeyViewModel { DisplayText = "Space", UnicodeIcon = "␣" },
+		NamedKeyboardKey.Insert => new SingleKeyboardKeyViewModel { DisplayText = "Ins", AriaLabel = "Insert" },
+		NamedKeyboardKey.Plus => new SingleKeyboardKeyViewModel { DisplayText = "+", },
+		NamedKeyboardKey.Pipe => new SingleKeyboardKeyViewModel { DisplayText = "|", AriaLabel = "Pipe" },
+		NamedKeyboardKey.Fn => new SingleKeyboardKeyViewModel { DisplayText = "Fn", AriaLabel = "Function key" },
+		NamedKeyboardKey.F1 => new SingleKeyboardKeyViewModel { DisplayText = "F1", },
+		NamedKeyboardKey.F2 => new SingleKeyboardKeyViewModel { DisplayText = "F2", },
+		NamedKeyboardKey.F3 => new SingleKeyboardKeyViewModel { DisplayText = "F3", },
+		NamedKeyboardKey.F4 => new SingleKeyboardKeyViewModel { DisplayText = "F4", },
+		NamedKeyboardKey.F5 => new SingleKeyboardKeyViewModel { DisplayText = "F5", UnicodeIcon = null },
+		NamedKeyboardKey.F6 => new SingleKeyboardKeyViewModel { DisplayText = "F6", },
+		NamedKeyboardKey.F7 => new SingleKeyboardKeyViewModel { DisplayText = "F7", },
+		NamedKeyboardKey.F8 => new SingleKeyboardKeyViewModel { DisplayText = "F8", },
+		NamedKeyboardKey.F9 => new SingleKeyboardKeyViewModel { DisplayText = "F9", },
+		NamedKeyboardKey.F10 => new SingleKeyboardKeyViewModel { DisplayText = "F10", },
+		NamedKeyboardKey.F11 => new SingleKeyboardKeyViewModel { DisplayText = "F11", },
+		NamedKeyboardKey.F12 => new SingleKeyboardKeyViewModel { DisplayText = "F12", },
+		// Function keys
+		_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)
+	};
 }
 
 [EnumExtensions]
 public enum NamedKeyboardKey
 {
 	// Modifier Keys
-	[Display(Name = "shift")] Shift,
-	[Display(Name = "ctrl")] Ctrl,
-	[Display(Name = "alt")] Alt,
-	[Display(Name = "option")] Option,
-	[Display(Name = "cmd")] Command,
-	[Display(Name = "win")] Win,
+	[Display(Name = "shift")]
+	Shift,
+	[Display(Name = "ctrl")]
+	Ctrl,
+	[Display(Name = "alt")]
+	Alt,
+	[Display(Name = "option")]
+	Option,
+	[Display(Name = "cmd")]
+	Command,
+	[Display(Name = "win")]
+	Win,
 
 	// Directional Keys
-	[Display(Name = "up")] Up,
-	[Display(Name = "down")] Down,
-	[Display(Name = "left")] Left,
-	[Display(Name = "right")] Right,
+	[Display(Name = "up")]
+	Up,
+	[Display(Name = "down")]
+	Down,
+	[Display(Name = "left")]
+	Left,
+	[Display(Name = "right")]
+	Right,
 
 	// Control Keys
-	[Display(Name = "space")] Space,
-	[Display(Name = "tab")] Tab,
-	[Display(Name = "enter")] Enter,
-	[Display(Name = "esc")] Escape,
-	[Display(Name = "backspace")] Backspace,
-	[Display(Name = "del")] Delete,
-	[Display(Name = "ins")] Insert,
+	[Display(Name = "space")]
+	Space,
+	[Display(Name = "tab")]
+	Tab,
+	[Display(Name = "enter")]
+	Enter,
+	[Display(Name = "esc")]
+	Escape,
+	[Display(Name = "backspace")]
+	Backspace,
+	[Display(Name = "del")]
+	Delete,
+	[Display(Name = "ins")]
+	Insert,
 
 	// Navigation Keys
-	[Display(Name = "pageup")] PageUp,
-	[Display(Name = "pagedown")] PageDown,
-	[Display(Name = "home")] Home,
-	[Display(Name = "end")] End,
+	[Display(Name = "pageup")]
+	PageUp,
+	[Display(Name = "pagedown")]
+	PageDown,
+	[Display(Name = "home")]
+	Home,
+	[Display(Name = "end")]
+	End,
 
 	// Function Keys
-	[Display(Name = "f1")] F1,
-	[Display(Name = "f2")] F2,
-	[Display(Name = "f3")] F3,
-	[Display(Name = "f4")] F4,
-	[Display(Name = "f5")] F5,
-	[Display(Name = "f6")] F6,
-	[Display(Name = "f7")] F7,
-	[Display(Name = "f8")] F8,
-	[Display(Name = "f9")] F9,
-	[Display(Name = "f10")] F10,
-	[Display(Name = "f11")] F11,
-	[Display(Name = "f12")] F12,
+	[Display(Name = "f1")]
+	F1,
+	[Display(Name = "f2")]
+	F2,
+	[Display(Name = "f3")]
+	F3,
+	[Display(Name = "f4")]
+	F4,
+	[Display(Name = "f5")]
+	F5,
+	[Display(Name = "f6")]
+	F6,
+	[Display(Name = "f7")]
+	F7,
+	[Display(Name = "f8")]
+	F8,
+	[Display(Name = "f9")]
+	F9,
+	[Display(Name = "f10")]
+	F10,
+	[Display(Name = "f11")]
+	F11,
+	[Display(Name = "f12")]
+	F12,
 
 	// Other Keys
-	[Display(Name = "plus")] Plus,
-	[Display(Name = "fn")] Fn,
-	[Display(Name = "pipe")] Pipe
+	[Display(Name = "plus")]
+	Plus,
+	[Display(Name = "fn")]
+	Fn,
+	[Display(Name = "pipe")]
+	Pipe
 }
 
 public class IKeyNode;

@@ -27,14 +27,16 @@ app.Add("notices", async Task<int> (Cancel ctx) =>
 	var packages = await "dotnet thirdlicense --project src/docs-builder/docs-builder.csproj --output NOTICE.txt";
 	var packageLines = packages.Split(Environment.NewLine).Where(l => l.StartsWith("+"));
 
-	await File.WriteAllTextAsync("NOTICE.txt",
+	await File.WriteAllTextAsync(
+		"NOTICE.txt",
 		$"""
 		 Elastic Documentation Tooling
 		 Copyright 2024-{DateTime.UtcNow.Year} Elasticsearch B.V.
 
 
-		 """, ctx);
-
+		 """,
+		ctx
+	);
 
 	Console.WriteLine("Package lines:");
 	foreach (var line in packageLines)
@@ -81,14 +83,17 @@ app.Add("notices", async Task<int> (Cancel ctx) =>
 		if (string.IsNullOrWhiteSpace(license))
 			throw new Exception($"Can not download license for {id}: {projectUrl}");
 
-		await File.AppendAllTextAsync("NOTICE.txt",
+		await File.AppendAllTextAsync(
+			"NOTICE.txt",
 			$"""
 			 License notice for {id} (v{version})
 			 ------------------------------------
 			 {license}
 
 
-			 """, ctx);
+			 """,
+			ctx
+		);
 	}
 
 	try

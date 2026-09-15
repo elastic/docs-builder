@@ -67,15 +67,11 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 			// If the path starts with the source prefix, get the remainder
 			if (!string.IsNullOrEmpty(sourcePrefix) && path.StartsWith(sourcePrefix, StringComparison.Ordinal))
 			{
-				remainingPath = path.Length > sourcePrefix.Length
-					? path[sourcePrefix.Length..].TrimStart('/')
-					: string.Empty;
+				remainingPath = path.Length > sourcePrefix.Length ? path[sourcePrefix.Length..].TrimStart('/') : string.Empty;
 			}
 
 			// Build final path: path_prefix + remaining path
-			var finalPath = string.IsNullOrEmpty(remainingPath)
-				? mapping.SourcePathPrefix
-				: $"{mapping.SourcePathPrefix}/{remainingPath}";
+			var finalPath = string.IsNullOrEmpty(remainingPath) ? mapping.SourcePathPrefix : $"{mapping.SourcePathPrefix}/{remainingPath}";
 
 			// Apply environment prefix if present
 			if (!string.IsNullOrEmpty(_pathPrefix))
@@ -111,7 +107,9 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 		foreach (var mapping in _navigationMappings.Values)
 		{
 			// Build the mapping's source as a string for comparison
-			var mappingSource = $"{mapping.Source.Scheme}://{mapping.Source.Host}/{mapping.Source.AbsolutePath.TrimStart('/')}".TrimEnd('/');
+			var mappingSource = $"{mapping.Source.Scheme}://{mapping.Source.Host}/{mapping.Source.AbsolutePath.TrimStart('/')}".TrimEnd(
+				'/'
+			);
 
 			// Check if the cross-link starts with this mapping's source
 			if (crossLinkSource.StartsWith(mappingSource, StringComparison.Ordinal))
@@ -149,9 +147,7 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 
 		if (!string.IsNullOrEmpty(sourcePrefix) && path.StartsWith(sourcePrefix, StringComparison.Ordinal))
 		{
-			remainingPath = path.Length > sourcePrefix.Length
-				? path.Substring(sourcePrefix.Length).TrimStart('/')
-				: string.Empty;
+			remainingPath = path.Length > sourcePrefix.Length ? path.Substring(sourcePrefix.Length).TrimStart('/') : string.Empty;
 		}
 
 		// Build all sub-paths for this URL path

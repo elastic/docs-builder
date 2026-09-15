@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search.Common;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -51,8 +51,7 @@ public static class ServicesExtension
 				SemanticEnabled = true
 			};
 
-			return new DefaultSearchService<DocumentationDocument>(
-				acc.Client, acc.SearchIndex, queryConfig, innerLogger, lookup);
+			return new DefaultSearchService<DocumentationDocument>(acc.Client, acc.SearchIndex, queryConfig, innerLogger, lookup);
 		});
 
 		// Docs-specific adapters preserve the existing API/MCP wire format.

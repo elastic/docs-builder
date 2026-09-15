@@ -5,10 +5,22 @@ export default () => {
     const config: SyntheticsConfig = {
         params: {
             baseUrl: 'http://localhost:4000',
+            // docsRoot is the URL of the docs site homepage.
+            // Journeys navigate to this URL directly; accessibility paths are relative to it.
+            // For local/prod/staging/edge: baseUrl + '/docs' (set below after the switch).
+            // For preview: the assembler-preview environment_url (no /docs suffix needed).
+            docsRoot: '',
             environment: DOCS_ENVIRONMENT,
         },
         playwrightOptions: {
             ignoreHTTPSErrors: false,
+            // Lets the backend exclude our own monitor traffic from tracing/metrics.
+            // Keep in sync with TelemetryConstants.SyntheticMonitorHeaderName (.NET).
+            // Applies to both the browser context (page) and the API request context (request),
+            // so it covers every journey in ./journeys automatically.
+            extraHTTPHeaders: {
+                'X-Docs-Synthetic-Monitor': 'true',
+            },
         },
         /**
          * Configure global monitor settings
@@ -38,9 +50,24 @@ export default () => {
         case 'staging':
             config.params.baseUrl = 'https://dwnz7p9ulv07a.cloudfront.net'
             break
+        case 'preview':
+            // DOCS_PREVIEW_BASE_URL is the assembler-preview environment_url:
+            // https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/<pr>
+            // The assembled site serves pages directly at this root (no /docs suffix).
+            config.params.docsRoot =
+                process.env.DOCS_PREVIEW_BASE_URL ??
+                'http://localhost:4000/docs'
+            break
     }
 
-    console.log(`Using docs environment: ${config.params.environment}`)
+    // For all non-preview environments the docs site lives at /docs under the base URL.
+    if (!config.params.docsRoot) {
+        config.params.docsRoot = `${config.params.baseUrl}/docs`
+    }
+
+    console.log(
+        `Using docs environment: ${config.params.environment} (${config.params.docsRoot})`
+    )
 
     return config
 }

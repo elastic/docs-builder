@@ -1,0 +1,13 @@
+@inherits RazorSlice<OperationUrlListModel>
+		<ul class="api-url-listing">
+		@foreach (var overload in Model.Operations)
+		{
+			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+			<li class="api-url-list-item">
+				<span class="api-url-row">
+					@(await RenderPartialAsync<_HttpMethodBadge, string>(method))
+					<span class="api-url">@overload.Model.Route</span>
+				</span>
+			</li>
+		}
+		</ul>

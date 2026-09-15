@@ -15,7 +15,7 @@ public abstract class CreateChangelogTestBase(ITestOutputHelper output) : Change
 	protected IGitHubPrService MockGitHubService { get; } = A.Fake<IGitHubPrService>();
 
 	protected ChangelogCreationService CreateService(IEnvironmentVariables? env = null) =>
-		new(LoggerFactory, ConfigurationContext, MockGitHubService, FileSystem, env);
+		new(LoggerFactory, ConfigurationContext, FileSystem, MockGitHubService, env);
 
 	protected async Task<string> CreateConfigDirectory(string configContent)
 	{
@@ -26,6 +26,5 @@ public abstract class CreateChangelogTestBase(ITestOutputHelper output) : Change
 		return configPath;
 	}
 
-	protected string CreateOutputDirectory() =>
-		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+	protected string CreateOutputDirectory() => FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 }

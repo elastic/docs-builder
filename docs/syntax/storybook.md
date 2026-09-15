@@ -48,11 +48,16 @@ Use a registry ID directly:
 :::
 ```
 
+<!--
+Temporarily disabled: the pr-272388 preview registry artifact is gone and there is no
+working `main` registry to fall back to yet. Re-enable once a registry URL resolves.
+
 :::{storybook}
 :id: kibana:shared_ux:ai-components-aibutton--default
 :height: 300
 :title: AI button default story
 :::
+-->
 
 Or use structured properties:
 
@@ -65,12 +70,17 @@ Or use structured properties:
 :::
 ```
 
+<!--
+Temporarily disabled: the pr-272388 preview registry artifact is gone and there is no
+working `main` registry to fall back to yet. Re-enable once a registry URL resolves.
+
 :::{storybook}
 :project: kibana
 :storybook: shared_ux
 :component: ai-components-aibutton
 :story: default
 :::
+-->
 
 If a bare `:id:` is used, it must match exactly one story in the configured registry:
 

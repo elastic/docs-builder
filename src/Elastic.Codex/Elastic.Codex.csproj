@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Navigation.Tests"/>
+    <InternalsVisibleTo Include="docs-builder"/>
   </ItemGroup>
 
   <ItemGroup>

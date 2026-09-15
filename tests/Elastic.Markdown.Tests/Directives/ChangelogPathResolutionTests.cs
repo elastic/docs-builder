@@ -17,14 +17,19 @@ namespace Elastic.Markdown.Tests.Directives;
 /// </summary>
 public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderRelativePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogBundlesFolderRelativePathTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog} custom/path/bundles
 		:::
-		""") => FileSystem.AddFile("docs/custom/path/bundles/1.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/custom/path/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: test-product
 		  target: 1.0.0
@@ -36,7 +41,9 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 		    target: 1.0.0
 		  prs:
 		  - "12345"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void ResolvesRelativePath() => Block!.Found.Should().BeTrue();
@@ -51,14 +58,19 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 
 public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderDocsetRootRelativeTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogBundlesFolderDocsetRootRelativeTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog} /release-notes/versions
 		:::
-		""") => FileSystem.AddFile("docs/release-notes/versions/2.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/release-notes/versions/2.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: test-product
 		  target: 2.0.0
@@ -70,7 +82,9 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 		    target: 2.0.0
 		  prs:
 		  - "67890"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void ResolvesDocsetRootRelativePath() => Block!.Found.Should().BeTrue();
@@ -80,8 +94,7 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 		Block!.BundlesFolderPath.Should().EndWith("release-notes/versions".Replace('/', Path.DirectorySeparatorChar));
 
 	[Fact]
-	public void PathDoesNotContainDoubleSlashes() =>
-		Block!.BundlesFolderPath.Should().NotContain("//");
+	public void PathDoesNotContainDoubleSlashes() => Block!.BundlesFolderPath.Should().NotContain("//");
 
 	[Fact]
 	public void RendersContent() => Html.Should().Contain("Another feature");
@@ -89,18 +102,22 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 
 public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigRelativePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigRelativePathTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:config: config/my-changelog.yml
 		:type: all
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/1.0.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: test-product
 			  target: 1.0.0
@@ -122,16 +139,22 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 			  action: Upgrade.
 			  prs:
 			  - "22222"
-			"""));
-
-		FileSystem.AddFile("docs/config/my-changelog.yml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/config/my-changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - deprecation
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -148,17 +171,21 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 
 public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigDocsetRootRelativePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigDocsetRootRelativePathTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog}
 		:config: /settings/changelog-config.yml
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/1.0.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: test-product
 			  target: 1.0.0
@@ -179,16 +206,22 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 			  - Internal
 			  prs:
 			  - "44444"
-			"""));
-
-		FileSystem.AddFile("docs/settings/changelog-config.yml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/settings/changelog-config.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_areas:
 			      - Internal
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]
@@ -205,14 +238,19 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 
 public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderNestedRelativePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogBundlesFolderNestedRelativePathTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog} deeply/nested/path/to/bundles
 		:::
-		""") => FileSystem.AddFile("docs/deeply/nested/path/to/bundles/3.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/deeply/nested/path/to/bundles/3.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: nested-product
 		  target: 3.0.0
@@ -224,7 +262,9 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 		    target: 3.0.0
 		  prs:
 		  - "99999"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void ResolvesDeepNestedPath() => Block!.Found.Should().BeTrue();
@@ -248,14 +288,19 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 /// </remarks>
 public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPathEdgeCaseTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogPathEdgeCaseTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog} ./relative/bundles
 		:::
-		""") => FileSystem.AddFile("docs/relative/bundles/1.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/relative/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: edge-product
 		  target: 1.0.0
@@ -267,7 +312,9 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 		    target: 1.0.0
 		  prs:
 		  - "55555"
-		"""));
+		"""
+			)
+		);
 
 	[Fact]
 	public void ResolvesPathWithDotSlashPrefix() => Block!.Found.Should().BeTrue();
@@ -278,17 +325,21 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 
 public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigAndBundlesRelativePathsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigAndBundlesRelativePathsTests(ITestOutputHelper output) : base(
+			output,
+			// language=markdown
+			"""
 		:::{changelog} bundles/v1
 		:config: config/changelog.yml
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/bundles/v1/1.0.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/bundles/v1/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: combined-product
 			  target: 1.0.0
@@ -307,16 +358,22 @@ public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<Changel
 			    target: 1.0.0
 			  prs:
 			  - "77777"
-			"""));
-
-		FileSystem.AddFile("docs/config/changelog.yml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/config/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - other
-			"""));
+			"""
+			)
+		);
 	}
 
 	[Fact]

@@ -1,0 +1,21 @@
+@inherits RazorSlice<IReadOnlyList<string>>
+<span class="api-param-summary" data-param-summary>
+	<span class="api-param-summary-line">
+		<span class="api-param-summary-brace">{ </span>
+		@for (var i = 0; i < Model.Count; i++)
+		{
+			<span class="api-param-summary-item" data-param-item>
+				@if (i > 0)
+				{
+					<span class="api-param-summary-sep">, </span>
+				}
+				<code>@Model[i]</code>
+			</span>
+		}
+		<span class="api-param-more" data-param-more hidden>
+			<span class="api-param-summary-sep">, </span>
+			<span class="api-param-more-badge" data-param-more-count></span>
+		</span>
+		<span class="api-param-summary-brace"> }</span>
+	</span>
+</span>

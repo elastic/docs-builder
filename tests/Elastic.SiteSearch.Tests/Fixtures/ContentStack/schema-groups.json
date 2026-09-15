@@ -1,0 +1,124 @@
+{
+  "description": "Maps anonymized test fixture files to the Contentstack content types they represent.",
+  "groups": {
+    "blog_legacy": {
+      "fixture": "blog_legacy.json",
+      "body_strategy": "body_l10n (flat HTML string)",
+      "content_types": ["blog"]
+    },
+    "blog_modern": {
+      "fixture": "blog_modern.json",
+      "body_strategy": "modular_blocks[].title_text.title_text[].paragraph_l10n",
+      "content_types": ["blog_v2", "post_long_form"]
+    },
+    "video": {
+      "fixture": "video.json",
+      "body_strategy": "paragraph_l10n",
+      "content_types": ["videos"]
+    },
+    "press_release": {
+      "fixture": "press_release.json",
+      "body_strategy": "intro_paragraph_l10n + paragraph_l10n",
+      "content_types": ["press"]
+    },
+    "product_release": {
+      "fixture": "product_release.json",
+      "body_strategy": "release_notes / v5_release_notes",
+      "content_types": ["product_versions"]
+    },
+    "paragraph_page": {
+      "fixture": "paragraph_page.json",
+      "body_strategy": "paragraph_l10n (single HTML body)",
+      "content_types": ["agreements", "forms"]
+    },
+    "modular_page": {
+      "fixture": "modular_page.json",
+      "body_strategy": "modular_blocks[].title_text.paragraph_l10n",
+      "content_types": ["default_detail", "account_based_marketing", "product_detail"]
+    },
+    "use_case": {
+      "fixture": "use_case.json",
+      "body_strategy": "introduction.paragraph_l10n + challenge_solution[].paragraph_l10n + modular_blocks",
+      "content_types": ["use_cases"]
+    },
+    "faq_page": {
+      "fixture": "faq_page.json",
+      "body_strategy": "topic[].subtopic[].paragraph_l10n",
+      "content_types": ["faq"]
+    },
+    "customer_tile": {
+      "fixture": "customer_tile.json",
+      "body_strategy": "paragraph_l10n (short text)",
+      "content_types": ["customer_tile"]
+    },
+    "rich_text_page": {
+      "fixture": "rich_text_page.json",
+      "body_strategy": "main_content.content_l10n (ProseMirror-style JSON AST) + description_l10n.content_simple_l10n (rich-text description)",
+      "content_types": ["tutorial", "tutorial_page", "tutorial_chapter", "labs_integration"]
+    },
+    "markdown_body": {
+      "fixture": "markdown_body.json",
+      "body_strategy": "main_content.markdown_l10n (plain Markdown, code fences/images/links stripped) + summary_l10n description",
+      "content_types": ["reports", "threat_command"]
+    },
+    "top_level_subheading_landing": {
+      "fixture": "top_level_subheading_landing.json",
+      "body_strategy": "No body content - top-level subheading_l10n description fallback only (not nested under page_info, unlike landing_page)",
+      "content_types": ["reports_landing", "threat_command_landing"]
+    },
+    "property_homepage": {
+      "fixture": "property_homepage.json",
+      "body_strategy": "No body content - page_description_l10n / blog_description_l10n description fallback only",
+      "content_types": ["security_labs_homepage", "observability_labs_homepage"]
+    },
+    "rich_text_blog_v3": {
+      "fixture": "rich_text_blog_v3.json",
+      "body_strategy": "main_content.body.content_l10n (rich-text nested one level deeper than other rich-text types) + summary_l10n description",
+      "content_types": ["blog_v3"]
+    },
+    "landing_page": {
+      "fixture": "landing_page.json",
+      "body_strategy": "No body content - page_info.subheading_l10n / page_info.description.content_simple_l10n description fallback only",
+      "content_types": ["tutorials_landing", "integrations_landing", "blog_landing"]
+    },
+    "description_only": {
+      "fixture": "description_only.json",
+      "body_strategy": "description_l10n (plain string) - no body content, falls back to description",
+      "content_types": ["notebook", "series", "labs_category", "labs_homepage", "glossary", "examples_landing"]
+    },
+    "minimal_page": {
+      "fixture": "minimal_page.json",
+      "body_strategy": "No body content - title/url/seo only",
+      "content_types": [
+        "product_icons",
+        "blog_overview",
+        "press_overview",
+        "videos_overview",
+        "elasticon_videos_overview",
+        "customers_overview",
+        "integrations",
+        "cloud_regions",
+        "subscriptions_redesign",
+        "subscriptions_cloud",
+        "pricing_redesign",
+        "contact_redesign",
+        "features_overview",
+        "demo_gallery_overview",
+        "blog_archive_overview",
+        "search",
+        "past_releases",
+        "about_our_source_code",
+        "site_navigation",
+        "support_matrix",
+        "downloads_redesign",
+        "blog_category_detail",
+        "demo_gallery_detail",
+        "about_leadership_and_board",
+        "pricing_calculator",
+        "events_overview",
+        "timeline",
+        "threat_command_category"
+      ]
+    }
+  }
+}
