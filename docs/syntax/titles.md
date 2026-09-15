@@ -50,7 +50,13 @@ Generated link text: [](titles.md).
 ```markdown
 ---
 navigation_title: Title as it appears on the left hand site navigation
+meta_title: Title as it appears in search results and browser tabs
 ---
 
 # This is my title
 ```
+
+Use `meta_title` only as a last-resort override when the automatic title needs different wording.
+The public site appends `| Elastic Docs` to the page title.
+Other build types keep their existing site suffix.
+Do not include the suffix in `meta_title`.

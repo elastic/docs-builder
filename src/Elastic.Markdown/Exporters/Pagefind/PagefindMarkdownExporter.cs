@@ -65,6 +65,7 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		);
 		var title = PageTitleResolver.Resolve(
 			file.Title ?? url,
+			file.MetaTitle,
 			inference.RelatedProducts,
 			new(
 				fileContext.BuildContext.BuildType,

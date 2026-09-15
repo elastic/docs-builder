@@ -6,6 +6,10 @@ navigation_title: API Explorer
 
 The API Explorer renders OpenAPI specifications as interactive API documentation. When you configure it in your content set, `docs-builder` automatically generates a product landing page, `/authentication` and `/servers` pages, tag and operation pages, request and response schemas, shared type definitions, and inline examples.
 
+The public site uses `{operation summary} - {product} API | Elastic Docs` as the page title for each operation.
+The level-one heading and navigation title continue to use the operation summary.
+Authored API Markdown pages can use [`meta_title`](../../syntax/frontmatter.md#meta-title) to set a different page title.
+
 The assembler also writes a combined **API catalog** at `/docs/api/`: a grid of product cards on its own layout (no API sidebar). Each card opens the HTML landing page and includes REST and category badges plus JSON and YAML downloads. Markdown, JSON, and YAML stay on the product landing page and in the catalog Markdown export. The card shows `info.description`, clamped to three lines.
 
 The catalog reuses listing filter chips. A click selects one category. Cmd or Ctrl click adds or removes categories. Categories are discovery labels only. They do not claim versioned availability. An API with no `catalog.categories` appears only when **All** is selected. The filter bar shows only categories that at least one API uses. Filter state is not stored in the URL.

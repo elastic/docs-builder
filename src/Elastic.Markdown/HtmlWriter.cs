@@ -14,6 +14,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Page;
 using Markdig.Syntax;
@@ -52,7 +53,16 @@ public class HtmlWriter(
 
 	/// <inheritdoc />
 	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
-		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
+		RenderPreservingFirstHeadingWithMetadata(markdown, source).Html;
+
+	/// <inheritdoc />
+	public MarkdownRenderResult RenderPreservingFirstHeadingWithMetadata(string markdown, IFileInfo? source)
+	{
+		source ??= DocumentationSet.Context.ConfigurationPath;
+		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		var (title, metaTitle) = MarkdownFile.ReadTitles(parsed, DocumentationSet.Context, source);
+		return new(MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: false), title, metaTitle);
+	}
 
 	/// <inheritdoc />
 	public string RenderApiDescription(string markdown, IFileInfo? source) =>
