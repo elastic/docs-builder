@@ -2457,7 +2457,8 @@ button.example-response-tab:focus-visible {
 	border-bottom: 1px solid var(--color-grey-20);
 }
 
-.api-catalog-header h1 {
+.api-catalog-header h1,
+.api-landing-heading h1 {
 	margin: 0;
 	font-size: var(--text-4xl);
 	font-weight: 700;
@@ -2611,4 +2612,16 @@ button.example-response-tab:focus-visible {
 .api-catalog-card-actions a:hover,
 .api-catalog-card-actions a:focus-visible {
 	text-decoration: underline;
+}
+
+.api-landing-heading {
+	display: flex;
+	align-items: center;
+	column-gap: 14px;
+}
+
+.api-landing-icon,
+.api-landing-icon svg {
+	width: auto;
+	height: 40px;
 }
