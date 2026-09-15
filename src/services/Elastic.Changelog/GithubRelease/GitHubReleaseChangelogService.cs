@@ -21,6 +21,24 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Changelog.GithubRelease;
 
 /// <summary>
+/// Result returned by <see cref="GitHubReleaseChangelogService.CreateChangelogsFromRelease"/>.
+/// </summary>
+/// <param name="Success">Whether the operation succeeded.</param>
+/// <param name="BundlePath">
+/// Absolute or repo-relative path of the bundle <c>.yml</c> file that was written, or <c>null</c>
+/// when no bundle was produced (zero entries, <see cref="CreateChangelogsFromReleaseArguments.CreateBundle"/> false,
+/// or an error occurred before the bundle step).
+/// </param>
+public record GitHubReleaseResult(bool Success, string? BundlePath)
+{
+	/// <summary>A failed result with no bundle path.</summary>
+	public static GitHubReleaseResult Failed { get; } = new(false, null);
+
+	/// <summary>A successful result with no bundle path (e.g. zero entries, CreateBundle disabled).</summary>
+	public static GitHubReleaseResult SucceededWithoutBundle { get; } = new(true, null);
+}
+
+/// <summary>
 /// Arguments for the CreateChangelogsFromRelease method
 /// </summary>
 public record CreateChangelogsFromReleaseArguments
@@ -98,7 +116,7 @@ public class GitHubReleaseChangelogService(
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
 
-	public async Task<bool> CreateChangelogsFromRelease(
+	public async Task<GitHubReleaseResult> CreateChangelogsFromRelease(
 		IDiagnosticsCollector collector,
 		CreateChangelogsFromReleaseArguments input,
 		Cancel ctx
@@ -127,7 +145,7 @@ public class GitHubReleaseChangelogService(
 						$"Add a product to config/products.yml whose ID is '{repo}', " +
 						$"or set 'repository: {repo}' on one or more existing products."
 				);
-				return false;
+				return GitHubReleaseResult.Failed;
 			}
 
 			// Use the first product for versioning context; multiple products (e.g., cloud) share the same versioning system.
@@ -144,7 +162,7 @@ public class GitHubReleaseChangelogService(
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
-				return false;
+				return GitHubReleaseResult.Failed;
 			}
 
 			// Resolve StripTitlePrefix from input or config default
@@ -159,7 +177,7 @@ public class GitHubReleaseChangelogService(
 					$"Failed to fetch release for {owner}/{repo}@{input.Version}. " +
 						"Ensure the repository exists and the version tag is valid."
 				);
-				return false;
+				return GitHubReleaseResult.Failed;
 			}
 
 			_logger.LogInformation("Fetched release: {TagName} ({Name})", release.TagName, release.Name);
@@ -167,12 +185,12 @@ public class GitHubReleaseChangelogService(
 			// 5. Resolve PRs via GitHub commit-range API (previous tag → current tag)
 			var pullRequests = await ResolvePrsFromRelease(collector, owner, repo, release.TagName, ctx);
 			if (pullRequests == null)
-				return false;
+				return GitHubReleaseResult.Failed;
 
 			if (pullRequests.Count == 0)
 			{
 				collector.EmitWarning(string.Empty, "No PRs found in commit range for this release. No changelogs will be created.");
-				return true;
+				return GitHubReleaseResult.SucceededWithoutBundle;
 			}
 
 			_logger.LogInformation("Processing {Count} PR(s) from commit range for release {Tag}", pullRequests.Count, release.TagName);
@@ -239,22 +257,24 @@ public class GitHubReleaseChangelogService(
 				);
 				if (bundlePath != null)
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
+
+				// successCount == 0 here means all PRs were intentionally skipped by label rules
+				// (ProcessPr returns false only on explicit label-rule exclusions, never on errors).
+				// Intentional skips are not failures; the warnings per-PR are already emitted above.
+				return new GitHubReleaseResult(true, bundlePath);
 			}
 
-			// successCount == 0 here means all PRs were intentionally skipped by label rules
-			// (ProcessPr returns false only on explicit label-rule exclusions, never on errors).
-			// Intentional skips are not failures; the warnings per-PR are already emitted above.
-			return true;
+			return GitHubReleaseResult.SucceededWithoutBundle;
 		}
 		catch (IOException ioEx)
 		{
 			collector.EmitError(string.Empty, $"IO error creating changelog: {ioEx.Message}", ioEx);
-			return false;
+			return GitHubReleaseResult.Failed;
 		}
 		catch (UnauthorizedAccessException uaEx)
 		{
 			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
-			return false;
+			return GitHubReleaseResult.Failed;
 		}
 	}
 

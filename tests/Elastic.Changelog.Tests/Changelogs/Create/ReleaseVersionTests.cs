@@ -98,7 +98,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No PR") && d.Severity == Severity.Warning);
 	}
 
@@ -134,7 +134,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var yamlFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
@@ -177,7 +177,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var bundlesDir = FileSystem.Path.Join(outputDir, "bundles");
@@ -239,7 +239,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		result.Should().BeFalse();
+		result.Success.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 	}
 
@@ -264,7 +264,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		result.Should().BeFalse();
+		result.Success.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("unknown-repo"));
 	}
@@ -308,7 +308,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 			var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
 
 			// Assert – service resolves output to <cwd>/changelogs
-			result.Should().BeTrue();
+			result.Success.Should().BeTrue();
 			var expectedOutputDir = FileSystem.Path.Join(workDir, "changelogs");
 			FileSystem.Directory.Exists(expectedOutputDir).Should().BeTrue("service defaults Output to ./changelogs when null");
 			FileSystem.Directory.GetFiles(expectedOutputDir, "*.yaml").Should().HaveCount(1);
