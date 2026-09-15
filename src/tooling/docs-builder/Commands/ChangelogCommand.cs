@@ -387,11 +387,12 @@ internal sealed partial class ChangelogCommands(
 				CreateBundle = false
 			};
 
-			serviceInvoker.AddCommand(
-				releaseChangelogService,
-				releaseInput,
-				static async (s, collector, state, ctx) => await s.CreateChangelogsFromRelease(collector, state, ctx)
-			);
+			serviceInvoker.AddCommand(releaseChangelogService, releaseInput, static async (s, collector, state, ctx) =>
+			{
+				// CreateBundle = false on this path; bundle_path output is not needed.
+				var result = await s.CreateChangelogsFromRelease(collector, state, ctx);
+				return result.Success;
+			});
 
 			return await serviceInvoker.InvokeAsync(ctx);
 		}
@@ -1263,13 +1264,18 @@ internal sealed partial class ChangelogCommands(
 			DryRun = dryRun
 		};
 
+		string? bundlePath = null;
+		input = input with { OnBundlePathResolved = path => bundlePath = path };
 		serviceInvoker.AddCommand(
 			service,
 			input,
 			static async (s, collector, state, ctx) => await s.BundleChangelogs(collector, state, ctx)
 		);
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		var exitCode = await serviceInvoker.InvokeAsync(ctx);
+		if (bundlePath != null)
+			await githubActionsService.SetOutputAsync("bundle_path", bundlePath);
+		return exitCode;
 	}
 
 	/// <summary>Delete changelog entry files matching a filter.</summary>
@@ -1756,13 +1762,18 @@ internal sealed partial class ChangelogCommands(
 			ReleaseDate = releaseDate
 		};
 
-		serviceInvoker.AddCommand(
-			service,
-			input,
-			static async (s, collector, state, ctx) => await s.CreateChangelogsFromRelease(collector, state, ctx)
-		);
+		string? bundlePath = null;
+		serviceInvoker.AddCommand(service, input, async (s, collector, state, ctx) =>
+		{
+			var result = await s.CreateChangelogsFromRelease(collector, state, ctx);
+			bundlePath = result.BundlePath;
+			return result.Success;
+		});
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		var exitCode = await serviceInvoker.InvokeAsync(ctx);
+		if (bundlePath != null)
+			await githubActionsService.SetOutputAsync("bundle_path", bundlePath);
+		return exitCode;
 	}
 
 	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
