@@ -40,11 +40,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 	/// <summary>Stubs release and commit-range fakes for a tag that follows <paramref name="currentTag"/>.</summary>
 	private void ArrangeCommitRange(string owner, string repo, string currentTag, string previousTag, params string[] prUrls)
 	{
-		A.CallTo(() => _mockReleaseService.FetchReleasesAsync(owner, repo, 10, A<Cancel>._)).Returns(new GitHubReleaseInfo[]
-		{
-			new() { TagName = currentTag, Name = currentTag.TrimStart('v'), Body = "" },
-			new() { TagName = previousTag, Name = previousTag.TrimStart('v'), Body = "" }
-		});
+		A.CallTo(() => _mockReleaseService.FetchPreviousTagAsync(owner, repo, currentTag, A<Cancel>._)).Returns(previousTag);
 
 		var prs = prUrls.Select((url, i) =>
 		{

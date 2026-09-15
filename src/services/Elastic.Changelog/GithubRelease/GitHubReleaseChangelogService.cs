@@ -310,18 +310,14 @@ public class GitHubReleaseChangelogService(
 		Cancel ctx
 	)
 	{
-		var releases = await _releaseService.FetchReleasesAsync(owner, repo, 10, ctx);
-		var previousTag = releases
-			.SkipWhile(r => !string.Equals(r.TagName, currentTag, StringComparison.OrdinalIgnoreCase))
-			.Skip(1)
-			.FirstOrDefault()?.TagName;
+		var previousTag = await _releaseService.FetchPreviousTagAsync(owner, repo, currentTag, ctx);
 
 		if (previousTag == null)
 		{
 			collector.EmitError(
 				string.Empty,
-				$"No previous release found before '{currentTag}' in the last 10 releases of {owner}/{repo}. " +
-					"Cannot derive PR list from commit range. Create at least one prior release."
+				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo}. " +
+					"Cannot derive PR list from commit range. Ensure at least one prior release exists in the same major version line."
 			);
 			return null;
 		}

@@ -53,11 +53,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 			() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", version, A<Cancel>._)
 		).Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = "" });
 
-		A.CallTo(() => _mockReleaseService.FetchReleasesAsync("elastic", "elasticsearch", 10, A<Cancel>._)).Returns(new GitHubReleaseInfo[]
-		{
-			new() { TagName = "v9.2.0", Name = "9.2.0", Body = "" },
-			new() { TagName = "v9.1.0", Name = "9.1.0", Body = "" }
-		});
+		A.CallTo(() => _mockReleaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns("v9.1.0");
 
 		var prs = prNumbers.Select(
 			n => new CommitRangePullRequest

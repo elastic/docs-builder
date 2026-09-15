@@ -5,6 +5,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.GitHub;
@@ -130,6 +131,70 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory, GitHubAp
 			return null;
 		}
 	}
+
+	/// <inheritdoc />
+	public async Task<string?> FetchPreviousTagAsync(string owner, string repo, string currentTag, CancellationToken ctx = default)
+	{
+		var (currentPrefix, currentMajor) = ParseTagIdentity(currentTag);
+		const int pageSize = 100;
+		var page = 1;
+		var found = false;
+		while (true)
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/releases?per_page={pageSize}&page={page}";
+			_logger.LogDebug("Scanning release list for previous tag (page {Page}): GET {ApiUrl}", page, url);
+
+			using var response = await _transport.GetAsync(url, ctx);
+			if (!response.IsSuccessStatusCode)
+				return null;
+
+			var jsonContent = await response.Content.ReadAsStringAsync(ctx);
+			var releases = JsonSerializer.Deserialize(jsonContent, GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray);
+			if (releases == null || releases.Length == 0)
+				return null;
+
+			foreach (var r in releases)
+			{
+				if (!found)
+				{
+					if (string.Equals(r.TagName, currentTag, StringComparison.OrdinalIgnoreCase))
+						found = true;
+					continue;
+				}
+
+				var (candidatePrefix, candidateMajor) = ParseTagIdentity(r.TagName ?? string.Empty);
+
+				if (!string.Equals(candidatePrefix, currentPrefix, StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				// Both semver: require same major version line.
+				if (currentMajor >= 0 && candidateMajor >= 0 && candidateMajor != currentMajor)
+					continue;
+
+				return r.TagName;
+			}
+
+			if (releases.Length < pageSize)
+				return null;
+			page++;
+		}
+	}
+
+	/// <summary>
+	/// Extracts the non-numeric prefix and semver major version from a release tag.
+	/// Returns major = -1 for non-semver tags; the entire tag is treated as prefix.
+	/// Examples: "v2.3.1" → ("v", 2); "agent-v1.0.0" → ("agent-v", 1); "1.2.3" → ("", 1).
+	/// </summary>
+	private static (string Prefix, int Major) ParseTagIdentity(string tag)
+	{
+		var match = SemverTagRegex().Match(tag);
+		if (!match.Success)
+			return (tag, -1);
+		return (match.Groups["prefix"].Value, int.Parse(match.Groups["major"].Value, System.Globalization.CultureInfo.InvariantCulture));
+	}
+
+	[GeneratedRegex(@"^(?<prefix>.*?)(?<major>\d+)\.\d+\.\d+", RegexOptions.None)]
+	private static partial Regex SemverTagRegex();
 
 	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
 	{
