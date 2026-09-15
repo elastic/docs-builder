@@ -407,8 +407,8 @@ public partial class GitHubReleaseService(
 	/// </summary>
 	private async Task<HttpResponseMessage?> GetWithRetryAsync(string url, CancellationToken ctx)
 	{
-		const int maxAttempts = 3;
-		for (var attempt = 0; attempt < maxAttempts; attempt++)
+		const int maxRetries = 3; // 1 initial attempt + up to 3 retries = 4 total attempts (delays: 1s, 2s, 4s)
+		for (var attempt = 0; attempt <= maxRetries; attempt++)
 		{
 			var response = await _transport.GetAsync(url, ctx);
 			if (response.IsSuccessStatusCode)
@@ -416,7 +416,7 @@ public partial class GitHubReleaseService(
 
 			var status = (int)response.StatusCode;
 			var isTransient = status is 429 or >= 500;
-			if (!isTransient || attempt == maxAttempts - 1)
+			if (!isTransient || attempt == maxRetries)
 			{
 				_logger.LogWarning(
 					"GitHub API {Url} returned HTTP {StatusCode} after {Attempts} attempt(s) — " +
@@ -436,12 +436,12 @@ public partial class GitHubReleaseService(
 				url,
 				delay.TotalMilliseconds,
 				attempt + 1,
-				maxAttempts
+				maxRetries + 1
 			);
 			response.Dispose();
 			await Task.Delay(delay, ctx);
 		}
-		return null; // unreachable — maxAttempts > 0 always exits above
+		return null; // unreachable — loop always exits via return on the final attempt
 	}
 
 	/// <summary>
@@ -479,7 +479,10 @@ public partial class GitHubReleaseService(
 		var minor = int.Parse(m.Groups["minor"].Value, System.Globalization.CultureInfo.InvariantCulture);
 		var patch = int.Parse(m.Groups["patch"].Value, System.Globalization.CultureInfo.InvariantCulture);
 		var isPreRelease = m.Length < tag.Length && tag[m.Length] == '-';
-		var suffix = isPreRelease ? tag[(m.Length + 1)..] : string.Empty;
+		// Strip build metadata (+...) per SemVer 2.0 §10: it MUST be ignored for precedence.
+		var rawSuffix = isPreRelease ? tag[(m.Length + 1)..] : string.Empty;
+		var plusIndex = rawSuffix.IndexOf('+', StringComparison.Ordinal);
+		var suffix = plusIndex >= 0 ? rawSuffix[..plusIndex] : rawSuffix;
 		return new SemVer(major, minor, patch, isPreRelease, suffix);
 	}
 

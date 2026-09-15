@@ -540,6 +540,25 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 		result.Should().Be("v1.0.0-alpha.1");
 	}
 
+	[Fact]
+	public async Task FetchPreviousTag_PreRelease_BuildMetadata_IgnoredForPrecedence()
+	{
+		// SemVer 2.0 §10: build metadata MUST be ignored for precedence.
+		// v1.0.0-rc.2+build.7 and v1.0.0-rc.2 have equal precedence — the build-metadata tag
+		// must NOT be selected as the predecessor of itself.
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return Json("[]");
+			return Json(ReleasesJson("v1.0.0-rc.2+build.7", "v1.0.0-rc.1", "v1.0.0-rc.0"));
+		});
+		var result = await Service(handler).FetchPreviousTagAsync(Owner, Repo, "v1.0.0-rc.2+build.7");
+		result.Should().Be(
+			"v1.0.0-rc.1",
+			"build metadata is stripped before comparison; rc.2+build.7 == rc.2 in precedence, so it cannot be its own predecessor"
+		);
+	}
+
 	// ─────────────────────────────────────────────────────────────────────────
 	// Error handling — transport failures return null, not exceptions
 	// ─────────────────────────────────────────────────────────────────────────
@@ -590,7 +609,7 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 	[Fact]
 	public async Task FetchPreviousTag_TransientFailure_RetriesAndSucceeds()
 	{
-		// Page 2 fails once (502) then succeeds. The retry must recover and return the correct predecessor.
+		// Page 2 fails 3 times (502) then succeeds on the 4th attempt (1 initial + 3 retries).
 		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray(); // full page, no match
 		var page2Tags = new[] { "v4.1.9", "v4.1.0" };
 
@@ -604,15 +623,39 @@ public class GitHubReleaseServiceFetchPreviousTagTests(ITestOutputHelper output)
 			if (query["page"] != "2")
 				return Json(ReleasesJson(page1Tags));
 			page2Attempts++;
-			return page2Attempts == 1
-				? new HttpResponseMessage(HttpStatusCode.BadGateway) // first attempt fails
+			return page2Attempts < 4
+				? new HttpResponseMessage(HttpStatusCode.BadGateway) // first 3 attempts fail
 
-				: Json(ReleasesJson(page2Tags)); // second attempt succeeds
+				: Json(ReleasesJson(page2Tags)); // 4th attempt succeeds
 		});
 
 		var result = await Service(handler, noDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
-		result.Should().Be("v4.1.9", "retry recovered from the transient 502 and completed the scan");
-		page2Attempts.Should().Be(2, "page 2 was attempted twice — once failing, once succeeding");
+		result.Should().Be("v4.1.9", "retry recovered from 3 transient 502s and completed the scan on the 4th attempt");
+		page2Attempts.Should().Be(4, "page 2 was attempted 4 times — 3 failing, 1 succeeding (1 initial + 3 retries)");
+	}
+
+	[Fact]
+	public async Task FetchPreviousTag_TransientFailure_ExhaustsRetries_ReturnsNull()
+	{
+		// Page 2 always returns 502. After 4 total attempts (1 initial + 3 retries) the scan returns null.
+		var page1Tags = Enumerable.Range(0, 100).Select(i => $"v3.{99 - i}.0").ToArray();
+
+		var page2Attempts = 0;
+		var noDelay = (Func<int, TimeSpan>)(_ => TimeSpan.Zero);
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.PathAndQuery.Contains("/tags"))
+				return new HttpResponseMessage(HttpStatusCode.BadGateway);
+			var query = System.Web.HttpUtility.ParseQueryString(req.RequestUri!.Query);
+			if (query["page"] != "2")
+				return Json(ReleasesJson(page1Tags));
+			page2Attempts++;
+			return new HttpResponseMessage(HttpStatusCode.BadGateway);
+		});
+
+		var result = await Service(handler, noDelay).FetchPreviousTagAsync(Owner, Repo, "v4.2.0");
+		result.Should().BeNull("budget exhausted after 4 attempts — result is indeterminate");
+		page2Attempts.Should().Be(4, "page 2 is tried 4 times before the budget is exhausted");
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
