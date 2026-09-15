@@ -33,6 +33,7 @@ environments:
     google_tag_manager:
       enabled: false
     feature_flags:
+      RELATED_PAGES: true
       PAGE_FEEDBACK: true
       # NAVIGATION_PREVIEW: true
   # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
@@ -63,6 +64,7 @@ environments:
     google_tag_manager:
       enabled: false
     feature_flags:
+      RELATED_PAGES: true
       ASSEMBLER_API_EXPLORER: true
       PAGE_FEEDBACK: true
   air-gapped:
