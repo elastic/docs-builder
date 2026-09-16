@@ -41,13 +41,19 @@ public static class ChangelogEntryValidator
 	/// Valid product IDs (already normalised to lower-kebab-case) from products.yml.
 	/// Null means skip product membership check.
 	/// </param>
+	/// <param name="allowedProducts">
+	/// Product IDs this repository is allowed to reference — its own products (from products.yml
+	/// <c>repository:</c> field) plus any listed under <c>release_notes:</c> in <c>docset.yml</c>.
+	/// Null means skip the per-repo restriction check.
+	/// </param>
 	public static IReadOnlyList<EntryFileFinding> Validate(
 		string filePath,
 		ChangelogEntryDto entry,
 		ChangelogConfiguration config,
 		ChangelogEntryType? labelDerivedType,
 		IReadOnlySet<string>? knownProducts,
-		int? filenamePrNumber = null
+		int? filenamePrNumber = null,
+		IReadOnlySet<string>? allowedProducts = null
 	)
 	{
 		var findings = new List<EntryFileFinding>();
@@ -110,6 +116,17 @@ public static class ChangelogEntryValidator
 							Error(
 								filePath,
 								$"product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {available}"
+							)
+						);
+					}
+					else if (allowedProducts is not null && !allowedProducts.Contains(normalized))
+					{
+						findings.Add(
+							Error(
+								filePath,
+								$"product '{product.Product}' is not allowed for this repository. " +
+									"Only products linked to this repository in config/products.yml " +
+									"(or listed under release_notes: in docset.yml) may be referenced."
 							)
 						);
 					}

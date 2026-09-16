@@ -126,6 +126,9 @@ public class ChangelogEntryValidationService(
 		if (availableProducts is { Count: > 0 })
 			knownProducts = new HashSet<string>(availableProducts.Keys.Select(k => k.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
 
+		// ── Allowed products (per-repo restriction) ───────────────────────────────────────────
+		var allowedProductIds = new HashSet<string>(matchedProducts.Select(p => p.Id.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
+
 		// ── Parse files, validate filenames, run field-level rules ───────────────────────────
 		var allFindings = new List<EntryFileFinding>();
 		var entriesByFile = new Dictionary<string, ChangelogEntryDto?>(StringComparer.OrdinalIgnoreCase);
@@ -154,7 +157,15 @@ public class ChangelogEntryValidationService(
 				if (dto is not null)
 				{
 					var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
-					var findings = ChangelogEntryValidator.Validate(relPath, dto, config, labelDerivedType, knownProducts, fnNum);
+					var findings = ChangelogEntryValidator.Validate(
+						relPath,
+						dto,
+						config,
+						labelDerivedType,
+						knownProducts,
+						fnNum,
+						allowedProductIds
+					);
 					allFindings.AddRange(findings);
 				}
 			}
