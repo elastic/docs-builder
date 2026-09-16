@@ -21,7 +21,7 @@ public class SearchToolsTests
 		A.CallTo(() => searchService.SearchAsync(A<FullSearchRequest>._, A<CancellationToken>._)).Returns(EmptyResponse);
 
 		var tools = new SearchTools(searchService, NullLogger<SearchTools>.Instance);
-		_ = await tools.SemanticSearch("cluster setup", versionFilter: "9.0");
+		_ = await tools.SemanticSearch("cluster setup", versionFilter: "9.0", cancellationToken: TestContext.Current.CancellationToken);
 
 		A.CallTo(
 			() => searchService.SearchAsync(A<FullSearchRequest>.That.Matches(r => r.VersionFilter == "9.0"), A<CancellationToken>._)
@@ -35,7 +35,7 @@ public class SearchToolsTests
 		A.CallTo(() => searchService.SearchAsync(A<FullSearchRequest>._, A<CancellationToken>._)).Returns(EmptyResponse);
 
 		var tools = new SearchTools(searchService, NullLogger<SearchTools>.Instance);
-		_ = await tools.SemanticSearch("cluster setup");
+		_ = await tools.SemanticSearch("cluster setup", cancellationToken: TestContext.Current.CancellationToken);
 
 		A.CallTo(
 			() => searchService.SearchAsync(A<FullSearchRequest>.That.Matches(r => r.VersionFilter == null), A<CancellationToken>._)
