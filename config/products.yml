@@ -67,7 +67,6 @@ products:
     versioning: 'terraform-google-edot-cf'
   connectors:
     display: 'Elastic Connectors'
-    repository: 'connectors'
     versioning: 'stack'
     features:
       public-reference: false
@@ -290,7 +289,6 @@ products:
     versioning: 'serverless'
   synthetics-recorder:
     display: 'Elastic Synthetics Recorder'
-    repository: 'synthetics-recorder'
     features:
       public-reference: false
       release-notes: false
