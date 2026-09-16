@@ -303,7 +303,7 @@ public class ChangelogCommentRendererTests
 	{
 		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
 		body.Should().Contain("docs-builder changelog add");
-		body.Should().Contain("--prs 42");
+		body.Should().Contain("--pr 42");
 		body.Should().NotContain("--config");
 		body.Should().NotContain("--output");
 	}

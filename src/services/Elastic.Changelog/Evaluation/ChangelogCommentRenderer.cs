@@ -268,7 +268,7 @@ internal static class ChangelogCommentRenderer
 				"\n",
 				$"docs-builder changelog add \\",
 				$"  --concise \\",
-				$"  --prs {prNumber} \\",
+				$"  --pr {prNumber} \\",
 				"  --type enhancement \\",
 				"  --title \"Describe your change clearly\""
 			);
