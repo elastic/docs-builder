@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using AwesomeAssertions;
@@ -71,9 +72,17 @@ public class McpHandshakeTests
 			var result = doc.RootElement.GetProperty("result");
 			result.GetProperty("protocolVersion").GetString().Should().Be("2025-11-25");
 
+			// Compute the expected version the same way Program.cs does so a regression to the
+			// default assembly version (1.0.0.0) or the fallback ("0.0.0") fails this assertion.
+			var expectedVersion = typeof(Program)
+				.Assembly
+				.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+				.FirstOrDefault()?.InformationalVersion
+				?? "0.0.0";
+
 			var serverInfo = result.GetProperty("serverInfo");
 			serverInfo.GetProperty("name").GetString().Should().Be(McpServerProfile.Public.ServiceName);
-			serverInfo.GetProperty("version").GetString().Should().NotBeNullOrEmpty();
+			serverInfo.GetProperty("version").GetString().Should().Be(expectedVersion);
 		}
 		finally
 		{
