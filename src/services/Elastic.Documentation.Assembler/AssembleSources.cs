@@ -81,7 +81,7 @@ public class AssembleSources
 		if (declaredProducts.Length > 0)
 		{
 			var releaseNotesFetcher = new ReleaseNotesFetcher(logFactory, context.ReadFileSystem);
-			var fetched = await releaseNotesFetcher.FetchAsync(context.Collector, declaredProducts, ctx).ConfigureAwait(false);
+			var fetched = await releaseNotesFetcher.FetchAsync(context.Collector, declaredProducts, ctx: ctx).ConfigureAwait(false);
 			releaseNotesResolver.Populate(fetched);
 			logger.LogInformation("  AssembleAsync: Fetched release notes for {Count} product(s)", declaredProducts.Length);
 		}

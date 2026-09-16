@@ -102,10 +102,13 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 				version: null,
 				emitError: isRequired
 					? msg => collector.EmitError(string.Empty, msg)
-					: _ => { }, // inferred products: swallow 404 errors silently
+					: msg => collector.EmitWarning(string.Empty, msg), // inferred: real errors become warnings, not build failures
 
 				emitWarning: msg => collector.EmitWarning(string.Empty, msg),
-				ctx
+				ctx,
+				emitNotFound: isRequired
+					? msg => collector.EmitError(string.Empty, msg)
+					: _ => { } // inferred: 404 is expected while bundles are not yet published — silently ignore
 			).ConfigureAwait(false);
 			return (product, bundles, isRequired);
 		});

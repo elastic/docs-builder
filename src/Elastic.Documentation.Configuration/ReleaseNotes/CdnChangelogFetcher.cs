@@ -114,9 +114,12 @@ public sealed class CdnChangelogFetcher : IDisposable
 		string? version,
 		Action<string> emitError,
 		Action<string> emitWarning,
-		Cancel ctx
+		Cancel ctx,
+		Action<string>? emitNotFound = null
 	)
 	{
+		emitNotFound ??= emitError;
+
 		// Defense-in-depth mirroring the entry fetcher's pool validation: reject anything the producer
 		// would have refused to upload before building the URI, so normalization (e.g. a ".." product)
 		// cannot redirect the fetch outside the bundle layout.
@@ -142,7 +145,10 @@ public sealed class CdnChangelogFetcher : IDisposable
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
-				emitError($"Could not fetch changelog registry for product '{product}' from {registryUri}: {ex.Message}");
+				if (ex is HttpRequestException { StatusCode: System.Net.HttpStatusCode.NotFound })
+					emitNotFound($"No CDN registry found for product '{product}' at {registryUri} (404).");
+				else
+					emitError($"Could not fetch changelog registry for product '{product}' from {registryUri}: {ex.Message}");
 				return [];
 			}
 
