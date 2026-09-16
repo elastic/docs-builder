@@ -28,7 +28,7 @@ case "${1:-help}" in
     echo "  stop            Stop the development server"
     echo "  docs            Build the current documentation set"
     echo "  test            Run the unit-test suite (delegates to ./build.sh unit-test)"
-    echo "  clean           Stop containers and remove volumes"
+    echo "  clean           Stop containers and remove containers, networks, and volumes"
     ;;
   build)
     _bake --load all
@@ -56,7 +56,7 @@ case "${1:-help}" in
     _compose run --rm tests
     ;;
   clean)
-    _compose down --remove-orphans
+    _compose down --remove-orphans --volumes
     ;;
   *)
     echo "error: unknown command '$1'" >&2
