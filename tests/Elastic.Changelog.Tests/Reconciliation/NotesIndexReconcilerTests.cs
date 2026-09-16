@@ -291,11 +291,12 @@ public class NotesIndexReconcilerTests
 	}
 
 	[Test]
-	public async Task ReconcileRepo_ProductScopedStale_DeletedWithoutDroppingLegacyVersion()
+	public async Task ReconcileRepo_ProductScopedStale_ReturnedAsEmptyBucketWithoutDeleting()
 	{
+		var kibanaKey = ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0");
 		_s3.Seed(
 			PublicBucket,
-			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0"),
+			kibanaKey,
 			/*lang=json,strict*/
 			"""{"schema_version":1,"product":"kibana","version":"9.0.0","notes":[]}"""
 		);
@@ -305,14 +306,8 @@ public class NotesIndexReconcilerTests
 
 		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0")).Should().BeTrue();
 		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")).Should().BeTrue();
-		_s3
-			.Deletes
-			.Should()
-			.ContainSingle()
-			.Which
-			.Key
-			.Should()
-			.Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0"));
+		_s3.Exists(PublicBucket, kibanaKey).Should().BeTrue();
+		_s3.Deletes.Should().NotContain(d => d.Key == kibanaKey);
 		map.Should().ContainKey("kibana");
 		map["kibana"].Should().ContainKey("9.0.0");
 		map["kibana"]["9.0.0"].Should().BeEmpty();
@@ -336,8 +331,9 @@ public class NotesIndexReconcilerTests
 	}
 
 	[Test]
-	public async Task ReconcileRepo_NoNotes_DeletesProductScopedAndLegacyIndexes()
+	public async Task ReconcileRepo_NoNotes_DeletesLegacyOnly_KeepsProductScopedForAmend()
 	{
+		var productKey = ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0");
 		_s3.Seed(
 			PublicBucket,
 			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
@@ -346,7 +342,7 @@ public class NotesIndexReconcilerTests
 		);
 		_s3.Seed(
 			PublicBucket,
-			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0"),
+			productKey,
 			/*lang=json,strict*/
 			"""{"schema_version":1,"product":"elasticsearch","version":"9.0.0","notes":[]}"""
 		);
@@ -355,27 +351,21 @@ public class NotesIndexReconcilerTests
 		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		_s3.Puts.Should().BeEmpty();
-		_s3
-			.Deletes
-			.Select(d => d.Key)
-			.Should()
-			.BeEquivalentTo([
-				ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
-				ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")
-			]);
+		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"));
+		_s3.Exists(PublicBucket, productKey).Should().BeTrue();
 		map.Should().ContainKey("elasticsearch");
 		map["elasticsearch"]["9.0.0"].Should().BeEmpty();
 		map.Should().NotContainKey("9.0.0");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_UnparseableProductScopedIndex_IsLeftInPlace()
 	{
 		var kibanaKey = ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0");
 		_s3.Seed(PublicBucket, kibanaKey, "{not-json");
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
 
-		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		_s3.Exists(PublicBucket, kibanaKey).Should().BeTrue();
 		_s3.Deletes.Should().NotContain(d => d.Key == kibanaKey);
@@ -383,7 +373,7 @@ public class NotesIndexReconcilerTests
 		map["elasticsearch"]["9.0.0"].Should().ContainSingle(e => e.Path == "main/note-slow-rollover.yml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_ProductScopedIndexGetFailure_IsLeftInPlace()
 	{
 		var kibanaKey = ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0");
@@ -400,7 +390,7 @@ public class NotesIndexReconcilerTests
 				throw new AmazonS3Exception("unavailable") { StatusCode = HttpStatusCode.InternalServerError };
 		};
 
-		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		_s3.Exists(PublicBucket, kibanaKey).Should().BeTrue();
 		_s3.Deletes.Should().NotContain(d => d.Key == kibanaKey);
