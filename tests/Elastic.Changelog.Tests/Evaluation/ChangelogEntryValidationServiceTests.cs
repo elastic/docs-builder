@@ -227,6 +227,40 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 	}
 
 	[Fact]
+	public async Task ValidateEntries_BareProductRepo_NormalizesWithOwnerBeforeExistenceCheck()
+	{
+		// products.yml stores bare repo names (e.g. "apm", not "elastic/apm").
+		// The service must qualify them with the submitting owner before the API call.
+		await WriteConfig(MinimalConfig);
+		const string entryYaml =
+			"""
+			type: feature
+			title: My feature
+			products:
+			  - product: apm
+			""";
+		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
+
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)).Returns(
+			(IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, true } }
+		);
+
+		// "apm" is a bare name — no slash
+		var ctx = ContextWithProductRepo("apm", "apm");
+		var svc = new ChangelogEntryValidationService(LoggerFactory, ctx, prService, RunnerTempFileSystem);
+		var args = MakeArgs("elasticsearch") with { Files = ["docs/changelog/42.yaml"] };
+		var result = await svc.ValidateEntries(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		// API must be called as elastic/apm (qualified), not the bare "apm"
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
 	public async Task ValidateEntries_AllProductReposMissingPr_EmitsError()
 	{
 		// Entry references 'apm' whose repo is elastic/apm. PR 42 definitively absent there.

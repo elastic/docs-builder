@@ -181,7 +181,11 @@ public class ChangelogEntryValidationService(
 						continue;
 					var productId = ep.Product.Replace('_', '-');
 					if (availableProducts.TryGetValue(productId, out var product) && !string.IsNullOrWhiteSpace(product.Repository))
-						_ = candidateRepos.Add(product.Repository);
+					{
+						// Repository values are bare names (e.g. "elasticsearch") — qualify with owner.
+						var repoRef = product.Repository.Contains('/') ? product.Repository : $"{input.Owner}/{product.Repository}";
+						_ = candidateRepos.Add(repoRef);
+					}
 				}
 			}
 			if (candidateRepos.Count == 0)
@@ -207,11 +211,9 @@ public class ChangelogEntryValidationService(
 		foreach (var (ownerRepo, numbers) in repoToNumbers)
 		{
 			var slash = ownerRepo.IndexOf('/');
-			if (slash < 0)
-				continue;
 			repoExistenceResults[ownerRepo] = await gitHubPrService.CheckPullRequestsExistAsync(
-				ownerRepo[..slash],
-				ownerRepo[(slash + 1)..],
+				slash < 0 ? input.Owner : ownerRepo[..slash],
+				slash < 0 ? ownerRepo : ownerRepo[(slash + 1)..],
 				[.. numbers],
 				ctx
 			);
