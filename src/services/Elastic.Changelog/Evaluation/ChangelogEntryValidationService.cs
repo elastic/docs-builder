@@ -6,6 +6,7 @@ using Elastic.Changelog.GitHub;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -20,7 +21,7 @@ namespace Elastic.Changelog.Evaluation;
 /// Service implementing the <c>changelog validate-entries</c> gate.
 /// Validates changelog entry files that a PR added or modified: schema, config membership, PR existence, hygiene.
 /// </summary>
-public class ChangelogEntryValidationService(
+public partial class ChangelogEntryValidationService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	IGitHubPrService gitHubPrService,
@@ -127,7 +128,18 @@ public class ChangelogEntryValidationService(
 			knownProducts = new HashSet<string>(availableProducts.Keys.Select(k => k.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
 
 		// ── Allowed products (per-repo restriction) ───────────────────────────────────────────
-		var allowedProductIds = new HashSet<string>(matchedProducts.Select(p => p.Id.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
+		// Prefer release_notes: entries from the repo's docset.yml at the PR head ref —
+		// they are the explicit declaration of which products this repo publishes.
+		// Fall back to products.yml repository-field matching if docset.yml is absent or
+		// has no release_notes: section.
+		var allowedProductIds = await ResolveAllowedProductsAsync(
+			input.Owner,
+			input.Repo,
+			input.HeadRef,
+			matchedProducts,
+			knownProducts,
+			ctx
+		);
 
 		// ── Parse files, validate filenames, run field-level rules ───────────────────────────
 		var allFindings = new List<EntryFileFinding>();
@@ -291,4 +303,98 @@ public class ChangelogEntryValidationService(
 
 		await _metadataWriter.WriteAsync(metadata, ctx);
 	}
+
+	/// <summary>
+	/// Returns the set of product IDs this repository is allowed to reference in changelog entries.
+	/// Prefers <c>release_notes:</c> from the repo's <c>docset.yml</c> at the PR head ref;
+	/// falls back to products.yml repository-field matching when docset.yml is absent or has no entries.
+	/// Only IDs that exist in <paramref name="knownProducts"/> are included — unknown IDs are silently
+	/// skipped so a typo in docset.yml does not bypass the global membership check.
+	/// </summary>
+	private async Task<HashSet<string>> ResolveAllowedProductsAsync(
+		string owner,
+		string repo,
+		string headRef,
+		IReadOnlyList<Product> matchedProducts,
+		IReadOnlySet<string>? knownProducts,
+		CancellationToken ctx
+	)
+	{
+		// Try docset.yml at the PR head ref, then fall back to the repo default.
+		var docsetRef = string.IsNullOrWhiteSpace(headRef) ? null : headRef;
+		var docsetContent = await FetchDocsetYamlAsync(owner, repo, docsetRef, ctx);
+
+		if (docsetContent is not null)
+		{
+			var fromDocset = ParseReleaseNotesProducts(docsetContent);
+			if (fromDocset.Count > 0)
+			{
+				// Intersect with knownProducts so a typo in docset.yml never bypasses the global check.
+				var validated = knownProducts is not null ? fromDocset.Where(p => knownProducts.Contains(p)) : fromDocset;
+				var result = new HashSet<string>(validated, StringComparer.OrdinalIgnoreCase);
+				if (result.Count > 0)
+					return result;
+			}
+		}
+
+		// Fall back: infer from products.yml repository-field matching.
+		return new HashSet<string>(matchedProducts.Select(p => p.Id.Replace('_', '-')), StringComparer.OrdinalIgnoreCase);
+	}
+
+	private async Task<string?> FetchDocsetYamlAsync(string owner, string repo, string? @ref, CancellationToken ctx)
+	{
+		// Try both common locations for docset.yml.
+		foreach (var path in new[] { "docset.yml", ".config/docset.yml" })
+		{
+			var url = @ref is not null ? $"{path}?ref={Uri.EscapeDataString(@ref)}" : path;
+			var content = await gitHubPrService.FetchFileContentAsync(owner, repo, url, ctx);
+			if (content is not null)
+				return content;
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// Extracts product IDs from the <c>release_notes:</c> block of a docset.yml string.
+	/// Returns an empty set when no <c>release_notes:</c> section is present.
+	/// </summary>
+	private static HashSet<string> ParseReleaseNotesProducts(string yaml)
+	{
+		var products = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var inReleaseNotes = false;
+
+		foreach (var rawLine in yaml.Split('\n'))
+		{
+			var line = rawLine.TrimEnd();
+
+			if (line.TrimStart().StartsWith("release_notes:", StringComparison.Ordinal) && line[0] != ' ' && line[0] != '\t')
+			{
+				inReleaseNotes = true;
+				continue;
+			}
+
+			if (!inReleaseNotes)
+				continue;
+
+			// A non-empty, non-indented line closes the block.
+			if (line.Length > 0 && line[0] != ' ' && line[0] != '\t')
+			{
+				inReleaseNotes = false;
+				continue;
+			}
+
+			// Match "  - product: <id>"
+			var trimmed = line.TrimStart();
+			if (!trimmed.StartsWith("- product:", StringComparison.Ordinal))
+				continue;
+			var id = trimmed["- product:".Length..].Trim();
+			if (id.Length > 0 && ProductIdPattern().IsMatch(id))
+				_ = products.Add(id.Replace('_', '-'));
+		}
+
+		return products;
+	}
+
+	[System.Text.RegularExpressions.GeneratedRegex(@"^[a-zA-Z0-9_-]+$")]
+	private static partial System.Text.RegularExpressions.Regex ProductIdPattern();
 }

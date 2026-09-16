@@ -106,6 +106,20 @@ public static class ChangelogEntryValidator
 				var product = entry.Products[i];
 				if (string.IsNullOrWhiteSpace(product.Product))
 					findings.Add(Error(filePath, $"products[{i}].product is required"));
+				else if (allowedProducts is not null)
+				{
+					var normalized = product.Product.Replace('_', '-');
+					if (!allowedProducts.Contains(normalized))
+					{
+						var allowed = string.Join(", ", allowedProducts.OrderBy(p => p));
+						findings.Add(
+							Error(
+								filePath,
+								$"product '{product.Product}' is not allowed for this repository. " + $"Allowed products: {allowed}"
+							)
+						);
+					}
+				}
 				else if (knownProducts is not null)
 				{
 					var normalized = product.Product.Replace('_', '-');
@@ -113,21 +127,7 @@ public static class ChangelogEntryValidator
 					{
 						var available = string.Join(", ", knownProducts.OrderBy(p => p));
 						findings.Add(
-							Error(
-								filePath,
-								$"product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {available}"
-							)
-						);
-					}
-					else if (allowedProducts is not null && !allowedProducts.Contains(normalized))
-					{
-						findings.Add(
-							Error(
-								filePath,
-								$"product '{product.Product}' is not allowed for this repository. " +
-									"Only products linked to this repository in config/products.yml " +
-									"(or listed under release_notes: in docset.yml) may be referenced."
-							)
+							Error(filePath, $"product '{product.Product}' is not a known product id. Available products: {available}")
 						);
 					}
 				}
