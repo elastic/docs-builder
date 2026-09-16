@@ -8,5 +8,8 @@
     <ProjectReference Include="..\..\src\api\Elastic.Documentation.Mcp.Remote\Elastic.Documentation.Mcp.Remote.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
 
 </Project>
