@@ -266,24 +266,28 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		// local-path support can be a dedicated option or removed entirely.
 		if (!string.IsNullOrWhiteSpace(Arguments) && Arguments.StartsWith('/'))
 		{
-			// Local path mode — only allowed in isolated (local dev) builds as a preview mechanism.
-			if (Build.BuildType != BuildType.Isolated)
+			// Local path mode — honored only in isolated (local dev) builds as a temporary preview
+			// override. In non-isolated builds the argument is ignored and CDN is used instead.
+			// TODO: Remove path-argument support once all usages are migrated to explicit product names.
+			if (Build.BuildType == BuildType.Isolated)
 			{
-				this.EmitError(
-					"Local bundle path is only supported in local development builds. " +
-						"Use a product name (e.g. '::{changelog} elasticsearch') for CDN-sourced bundles."
-				);
+				ExtractBundlesFolderPath();
+				if (Found)
+					LoadAndCacheBundles();
 				return;
 			}
 
-			ExtractBundlesFolderPath();
-			if (Found)
-				LoadAndCacheBundles();
-			return;
+			this.EmitWarning(
+				"Local bundle path argument is ignored in non-local builds; CDN will be used instead. " +
+					"Use a product name (e.g. '::{changelog} elasticsearch') to make this explicit."
+			);
+			// Fall through to CDN mode below.
 		}
 
 		// CDN mode: argument is an explicit product name, or infer from repo when omitted.
-		var cdnProduct = !string.IsNullOrWhiteSpace(Arguments) ? Arguments.Trim() : InferCdnProductFromRepository();
+		// A '/'-prefixed argument is a local-path override (handled above); treat it as absent here.
+		var explicitProduct = !string.IsNullOrWhiteSpace(Arguments) && !Arguments.StartsWith('/') ? Arguments.Trim() : null;
+		var cdnProduct = explicitProduct ?? InferCdnProductFromRepository();
 
 		if (string.IsNullOrWhiteSpace(cdnProduct))
 		{

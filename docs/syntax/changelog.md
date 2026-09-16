@@ -16,7 +16,7 @@ Or with an explicit product name (CDN):
 :::
 ```
 
-Or with a local bundles path (local dev / preview builds only):
+Or with a local bundles path (honored only in isolated/local builds; ignored in CI and assembler builds, which always use CDN):
 
 ```markdown
 :::{changelog} /path/to/bundles
