@@ -20,6 +20,13 @@ public sealed record FetchedReleaseNotes
 	/// <summary>Product ids declared under <c>release_notes</c>, used to distinguish "undeclared" from "declared but empty".</summary>
 	public required FrozenSet<string> DeclaredProducts { get; init; }
 
+	/// <summary>
+	/// Product ids that were auto-inferred from the repository name and attempted on the CDN, but were
+	/// not explicitly declared under <c>release_notes</c>. Populated regardless of whether the CDN fetch
+	/// succeeded, so the directive can emit a hint instead of an error when the product is not found.
+	/// </summary>
+	public FrozenSet<string> InferredProducts { get; init; } = [];
+
 	public static FetchedReleaseNotes Empty { get; } = new()
 	{
 		BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,

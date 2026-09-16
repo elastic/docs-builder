@@ -17,6 +17,13 @@ public interface IReleaseNotesResolver
 	bool IsDeclared(string product);
 
 	/// <summary>
+	/// Whether <paramref name="product"/> was auto-inferred from the repository name. Inferred products
+	/// are fetched best-effort: a 404 is not a build error, so <see cref="IsDeclared"/> may return false
+	/// while this returns true. Use this to emit a hint instead of an error in that case.
+	/// </summary>
+	bool IsInferred(string product);
+
+	/// <summary>
 	/// Gets the prefetched bundles for <paramref name="product"/>. Returns false when the product was not
 	/// declared (or not fetched); a declared product with no usable bundles returns true with an empty list.
 	/// </summary>
@@ -35,6 +42,9 @@ public sealed class NoopReleaseNotesResolver : IReleaseNotesResolver
 
 	/// <inheritdoc />
 	public bool IsDeclared(string product) => false;
+
+	/// <inheritdoc />
+	public bool IsInferred(string product) => false;
 
 	/// <inheritdoc />
 	public bool TryGetBundles(string product, out IReadOnlyList<LoadedBundle> bundles)
@@ -58,6 +68,9 @@ public sealed class ReleaseNotesResolver(FetchedReleaseNotes? fetched = null) : 
 
 	/// <inheritdoc />
 	public bool IsDeclared(string product) => _fetched.DeclaredProducts.Contains(product);
+
+	/// <inheritdoc />
+	public bool IsInferred(string product) => _fetched.InferredProducts.Contains(product);
 
 	/// <inheritdoc />
 	public bool TryGetBundles(string product, out IReadOnlyList<LoadedBundle> bundles)
