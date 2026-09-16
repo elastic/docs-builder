@@ -518,6 +518,87 @@ public class ScrubberProcessorTests
 	}
 
 	[Fact]
+	public async Task Process_NoteFile_ListsAmendNotesOnThatProductOnly()
+	{
+		_ = A.CallTo(() => _scrubber.ScrubAsync(A<string>._, A<string>._, A<Cancel>._)).ReturnsLazily(
+			(string _, string content, Cancel _) => Task.FromResult(new ScrubResult { Content = content })
+		);
+
+		const string ece = "cloud-enterprise";
+		const string hosted = "cloud-hosted";
+		const string version = "4.2.0";
+		const string parent = "cloud-4.2.0.yaml";
+		const string hostedSidecar = "cloud-4.2.0.amend-notes.yaml";
+
+		_s3.Seed(PublicBucket, $"bundle/{ece}/{parent}", ProductParentBundle(ece, version, "main/pr-100.yaml"));
+		_s3.Seed(PublicBucket, $"bundle/{hosted}/{parent}", ProductParentBundle(hosted, version, "main/pr-hosted.yaml"));
+		_s3.Seed(PublicBucket, $"bundle/{ece}/registry.json", ProductRegistryJson(ece, version, parent));
+		_s3.Seed(PublicBucket, $"bundle/{hosted}/registry.json", ProductRegistryJson(hosted, version, parent, hostedSidecar));
+		var hostedSidecarYaml = ProductParentBundle(hosted, version, "main/note-hosted.yml");
+		_s3.Seed(PublicBucket, $"bundle/{hosted}/{hostedSidecar}", hostedSidecarYaml);
+
+		const string noteYaml =
+			"""
+			title: ECE known issue
+			type: known-issue
+			products:
+			  - product: cloud-enterprise
+			    versions: [4.2.0]
+			""";
+		_s3.Seed(PrivateBucket, "changelog/elastic/cloud/main/note-ece.yml", noteYaml);
+
+		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "changelog/elastic/cloud/main/note-ece.yml")], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, $"bundle/{ece}/cloud-4.2.0.amend-notes.yaml").Should().BeTrue();
+		_s3.ContentOf(PublicBucket, $"bundle/{hosted}/{hostedSidecar}").Should().Be(hostedSidecarYaml);
+
+		var eceRegistry =
+			JsonSerializer.Deserialize(
+				_s3.ContentOf(PublicBucket, $"bundle/{ece}/registry.json"),
+				ChangelogRegistryJsonContext.Default.ChangelogRegistry
+			)!;
+		eceRegistry.Bundles.Select(b => b.File).Should().BeEquivalentTo([parent, "cloud-4.2.0.amend-notes.yaml"]);
+
+		var hostedRegistry =
+			JsonSerializer.Deserialize(
+				_s3.ContentOf(PublicBucket, $"bundle/{hosted}/registry.json"),
+				ChangelogRegistryJsonContext.Default.ChangelogRegistry
+			)!;
+		hostedRegistry.Bundles.Select(b => b.File).Should().BeEquivalentTo([parent, hostedSidecar]);
+		_metrics.GroupReconciles.Should().Be(1);
+	}
+
+	private static string ProductRegistryJson(string product, string version, params string[] files)
+	{
+		var bundles = files.Select(f => new ChangelogRegistryBundle { File = f, Target = version }).ToList();
+		return JsonSerializer.Serialize(
+			new ChangelogRegistry { Product = product, Bundles = bundles },
+			ChangelogRegistryJsonContext.Default.ChangelogRegistry
+		);
+	}
+
+	private static string ProductParentBundle(string product, string version, params string[] entryFileNames)
+	{
+		var bundle = new Bundle
+		{
+			Products = [new BundledProduct(product, target: version, lifecycle: Lifecycle.Ga)],
+			Entries =
+			[
+				.. entryFileNames.Select(
+					n => new BundledEntry
+					{
+						File = new BundledFile { Name = n, Checksum = "abc123" },
+						Title = $"Entry for {n}",
+						Type = ChangelogEntryType.BugFix
+					}
+				)
+			]
+		};
+		return ReleaseNotesSerialization.SerializeBundle(bundle);
+	}
+
+	[Fact]
 	public async Task Process_PassThroughMarker_DoesNotOverwriteExistingCanonicalContent()
 	{
 		// Issue 1: a private marker derived from raw (pre-allowlist) PRs can arrive after the
