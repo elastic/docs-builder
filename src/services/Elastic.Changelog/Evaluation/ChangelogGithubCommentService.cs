@@ -138,7 +138,13 @@ public class ChangelogGithubCommentService(
 		if (metadata.Gate == ValidationGate.File && string.Equals(metadata.Status, "missing-entry", StringComparison.OrdinalIgnoreCase))
 		{
 			_logger.LogInformation("Rendering missing-entry body for PR #{PrNumber}", metadata.PrNumber);
-			return ChangelogCommentRenderer.RenderMissingEntry(metadata.ChangelogDir, metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderMissingEntry(
+				metadata.ChangelogDir,
+				metadata.PrNumber,
+				metadata.IsFork,
+				metadata.ConfigFile,
+				repo
+			);
 		}
 
 		// Step 1 (label gate): labels are missing — tell the author which ones to add.

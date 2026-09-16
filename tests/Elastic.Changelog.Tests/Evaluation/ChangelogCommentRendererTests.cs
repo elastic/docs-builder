@@ -291,6 +291,46 @@ public class ChangelogCommentRendererTests
 	}
 
 	[Fact]
+	public void RenderMissingEntry_Fork_ContainsBashScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true, repoName: "my-repo");
+		body.Should().Contain("cat > \"docs/changelog/42.yaml\"");
+		body.Should().Contain("product: my-repo");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_ContainsDocsBuilderScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true, configFile: "docs/changelog.yml");
+		body.Should().Contain("docs-builder changelog add");
+		body.Should().Contain("CHANGELOG_PR_NUMBER=42");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_ContainsForkGuidanceExplanation()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry(null, 5, isFork: true);
+		body.Should().Contain("external contributor");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_NotFork_DoesNotContainBashScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false);
+		body.Should().NotContain("cat >");
+		body.Should().NotContain("docs-builder changelog add");
+		body.Should().NotContain("disable");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_HasSofterTone()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
+		body.Should().Contain("needed");
+		body.Should().NotContain("disable");
+	}
+
+	[Fact]
 	public void RenderRepositoryNotOnboarded_StartsWithTitle()
 	{
 		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("my-repo");

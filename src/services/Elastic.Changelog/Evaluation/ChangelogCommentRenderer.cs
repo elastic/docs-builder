@@ -240,11 +240,75 @@ internal static class ChangelogCommentRenderer
 	/// <summary>
 	/// Renders the Step 2 (file gate) body: informs the author that no changelog entry file
 	/// was found for their PR and suggests the expected file path.
+	/// When <paramref name="isFork"/> is <c>true</c>, appends copy-pasteable bash and
+	/// docs-builder one-liner instructions so external contributors can add the file manually.
 	/// </summary>
-	internal static string RenderMissingEntry(string? changelogDir, int prNumber)
+	internal static string RenderMissingEntry(
+		string? changelogDir,
+		int prNumber,
+		bool isFork = false,
+		string? configFile = null,
+		string? repoName = null
+	)
 	{
 		var dir = changelogDir ?? "docs/changelog";
 		var expectedPath = $"{dir}/{prNumber}.yaml";
+
+		if (isFork)
+		{
+			var product = repoName ?? "your-repo";
+			var config = configFile ?? "docs/changelog.yml";
+
+			var bashScript = string.Join(
+				"\n",
+				$"mkdir -p {dir}",
+				$"cat > \"{expectedPath}\" << 'YAML'",
+				$"pr: {prNumber}",
+				"type: enhancement  # feature | enhancement | bug-fix | breaking-change",
+				"title: Describe your change clearly",
+				"products:",
+				$"  - product: {product}",
+				"YAML",
+				$"git add \"{expectedPath}\"",
+				$"git commit -m \"Add changelog entry for PR #{prNumber}\"",
+				"git push"
+			);
+
+			var docsBuilderScript = string.Join(
+				"\n",
+				$"CHANGELOG_PR_NUMBER={prNumber} \\",
+				"CHANGELOG_TITLE=\"Describe your change clearly\" \\",
+				"CHANGELOG_TYPE=\"enhancement\" \\",
+				$"  docs-builder changelog add \\",
+				$"    --concise \\",
+				$"    --config {config} \\",
+				$"    --output {dir}",
+				$"git add \"{expectedPath}\"",
+				$"git commit -m \"Add changelog entry for PR #{prNumber}\"",
+				"git push"
+			);
+
+			var parts = new List<string>
+			{
+				Title,
+				"",
+				$"📋 **Changelog entry needed** — this repository requires {WrapInlineCode(expectedPath)} for labeled PRs.",
+				"",
+				"As an external contributor the workflow cannot commit to your fork — add the entry manually and push.",
+				"",
+				"**Option 1 — create the file manually (no tooling required)**",
+				"",
+				WrapCodeFence(bashScript, "bash"),
+				"",
+				"**Option 2 — generate with `docs-builder`**",
+				"",
+				WrapCodeFence(docsBuilderScript, "bash"),
+				"",
+				"Adjust `type` and `title` to match your change, then push. The changelog validation will re-run automatically.",
+			};
+
+			return Truncate(string.Join("\n", parts));
+		}
 
 		return Truncate(
 			string.Join(
@@ -253,7 +317,7 @@ internal static class ChangelogCommentRenderer
 				"",
 				$"📋 **Changelog entry file required** — no entry file was found for PR #{prNumber}.",
 				"",
-				$"Add {WrapInlineCode(expectedPath)} to the PR branch, or disable the {WrapInlineCode("require-changelog-file")} gate in your {WrapInlineCode("release-notes.yml")} workflow."
+				$"Add {WrapInlineCode(expectedPath)} to the PR branch."
 			)
 		);
 	}
