@@ -138,7 +138,7 @@ public class NoteAmendReconcilerTests
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeTrue("late note must produce an amend sidecar");
 
 		// Notes index must be re-written with bundle_seq = 2.
-		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Version);
+		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version);
 		_s3.Exists(PublicBucket, indexKey).Should().BeTrue("notes index must be re-written with bundle_seq values");
 		var index = ReadNotesIndex(_s3.ContentOf(PublicBucket, indexKey));
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(2);
@@ -165,7 +165,7 @@ public class NoteAmendReconcilerTests
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("note already in parent → no amend needed");
 
 		// bundle_seq must be 1 (shipped in original bundle).
-		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Version);
+		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version);
 		var index = ReadNotesIndex(_s3.ContentOf(PublicBucket, indexKey));
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(1);
 	}
@@ -204,7 +204,7 @@ public class NoteAmendReconcilerTests
 			.Should()
 			.BeFalse("note already in human amend → reconciler amend-notes must not be created");
 
-		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Version);
+		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version);
 		var index = ReadNotesIndex(_s3.ContentOf(PublicBucket, indexKey));
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(1);
 	}
@@ -231,7 +231,7 @@ public class NoteAmendReconcilerTests
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("unknown shipped state → skip, no amend");
 
 		// Notes index is still re-written, but bundle_seq stays 0.
-		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Version);
+		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version);
 		var index = ReadNotesIndex(_s3.ContentOf(PublicBucket, indexKey));
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(0);
 	}
@@ -422,7 +422,7 @@ public class NoteAmendReconcilerTests
 		_s3.Puts.Should().NotContain(p => p.Key.Contains("amend-notes"), "no matching bundle → no amend possible");
 
 		// Notes index re-written with bundle_seq = 0.
-		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Version);
+		var indexKey = ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version);
 		var index = ReadNotesIndex(_s3.ContentOf(PublicBucket, indexKey));
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(0);
 	}
