@@ -263,6 +263,100 @@ public class ConfigurationFileCtaTests
 		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error).Which.Message.Should().Contain("does-not-exist");
 	}
 
+	[Fact]
+	public void ResolveCta_EntryDefault_AppliesToEntryAndDescendants()
+	{
+		var docSet = LoadDocSet(
+			"""
+			project: test
+			cta:
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			  security:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=security
+			toc:
+			  - file: index.md
+			  - file: observability.md
+			    default_cta: observability
+			    children:
+			      - file: observability/apm.md
+			      - folder: observability/get-started
+			  - folder: security
+			    default_cta: security
+			""",
+			("# Solutions", "index.md"),
+			("# Observability", "observability.md"),
+			("# APM", "observability/apm.md"),
+			("# Quickstart", "observability/get-started/quickstart.md"),
+			("# Security", "security/index.md"),
+			("# Detections", "security/detections.md")
+		);
+
+		var config = CreateConfiguration(docSet);
+
+		config.ResolveCta(null, "observability.md", out _).Name.Should().Be("observability");
+		config.ResolveCta(null, "observability/apm.md", out _).Name.Should().Be("observability");
+		config.ResolveCta(null, "observability/get-started/quickstart.md", out _).Name.Should().Be("observability");
+		config.ResolveCta(null, "security/index.md", out _).Name.Should().Be("security");
+		config.ResolveCta(null, "security/detections.md", out _).Name.Should().Be("security");
+		config.ResolveCta(null, "index.md", out _).Name.Should().Be(Cta.DefaultName);
+	}
+
+	[Fact]
+	public void ResolveCta_EntryDefault_SitsBetweenTocFileAndNestedToc()
+	{
+		var docSet = LoadDocSet(
+			"""
+			project: test
+			cta:
+			  solutions:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration
+			  observability:
+			    button:
+			      label: Get started free
+			      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+			  monitor-kubernetes:
+			    button:
+			      label: Monitor Kubernetes
+			      url: https://example.com/kubernetes
+			toc:
+			  - toc: solutions
+			""",
+			("""
+			default_cta: solutions
+			toc:
+			  - file: search.md
+			  - file: observability.md
+			    default_cta: observability
+			    children:
+			      - file: observability/apm.md
+			      - toc: observability/get-started
+			""", "solutions/toc.yml"),
+			("""
+			default_cta: monitor-kubernetes
+			toc:
+			  - file: quickstart.md
+			""", "solutions/observability/get-started/toc.yml"),
+			("# Search", "solutions/search.md"),
+			("# Observability", "solutions/observability.md"),
+			("# APM", "solutions/observability/apm.md"),
+			("# Quickstart", "solutions/observability/get-started/quickstart.md")
+		);
+
+		var config = CreateConfiguration(docSet);
+
+		config.ResolveCta(null, "solutions/search.md", out _).Name.Should().Be("solutions");
+		config.ResolveCta(null, "solutions/observability.md", out _).Name.Should().Be("observability");
+		config.ResolveCta(null, "solutions/observability/apm.md", out _).Name.Should().Be("observability");
+		config.ResolveCta(null, "solutions/observability/get-started/quickstart.md", out _).Name.Should().Be("monitor-kubernetes");
+	}
+
 	private static DocumentationSetFile LoadDocSet(string docsetYaml, params (string Content, string Path)[] files)
 	{
 		var collector = new DiagnosticsCollector([]);

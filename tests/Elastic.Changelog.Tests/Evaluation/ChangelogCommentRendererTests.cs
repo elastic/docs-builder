@@ -272,8 +272,8 @@ public class ChangelogCommentRendererTests
 	public void RenderMissingEntry_ContainsPrNumber()
 	{
 		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 99);
-		body.Should().Contain("#99");
 		body.Should().Contain("99.yaml");
+		body.Should().Contain("pending");
 	}
 
 	[Fact]
@@ -288,6 +288,73 @@ public class ChangelogCommentRendererTests
 	{
 		var body = ChangelogCommentRenderer.RenderMissingEntry("changelogs", 7);
 		body.Should().Contain("changelogs/7.yaml");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_ContainsBashScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true, resolvedProducts: "my-product");
+		body.Should().Contain("mkdir -p -- \"docs/changelog\"");
+		body.Should().Contain("cat > \"docs/changelog/42.yaml\"");
+		body.Should().Contain("product: my-product");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_ContainsDocsBuilderScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
+		body.Should().Contain("docs-builder changelog add");
+		body.Should().Contain("--pr 42");
+		body.Should().NotContain("--config");
+		body.Should().NotContain("--output");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_GitCommandsNotDuplicated()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
+		// git push should appear exactly once (in the shared "Then commit and push" block)
+		body.Split("git push").Length.Should().Be(2);
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_ContainsForkGuidanceExplanation()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry(null, 5, isFork: true);
+		body.Should().Contain("external contributor");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_NotFork_DoesNotContainBashScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false);
+		body.Should().NotContain("cat >");
+		body.Should().NotContain("docs-builder changelog add");
+		body.Should().NotContain("disable");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_HasSofterTone()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
+		body.Should().Contain("needed");
+		body.Should().NotContain("disable");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_NotFork_CanCommit_SaysPending()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false, canCommit: true);
+		body.Should().Contain("pending");
+		body.Should().Contain("automatically");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_NotFork_CannotCommit_SaysNeeded()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false, canCommit: false);
+		body.Should().Contain("needed");
+		body.Should().NotContain("automatically");
 	}
 
 	[Fact]

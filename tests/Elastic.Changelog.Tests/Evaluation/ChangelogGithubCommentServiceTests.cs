@@ -299,7 +299,7 @@ public class ChangelogGithubCommentServiceTests(ITestOutputHelper output) : Chan
 				A<string>._,
 				A<string>._,
 				A<int>._,
-				A<string>.That.Contains("entry file required"),
+				A<string>.That.Contains("pending"),
 				A<CancellationToken>._
 			)
 		).MustHaveHappenedOnceExactly();

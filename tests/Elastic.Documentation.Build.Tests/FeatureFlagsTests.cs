@@ -82,4 +82,58 @@ public class FeatureFlagsTests
 			features.Set(key, value);
 		features.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
+
+	[Fact]
+	public void ApiNavGroupingEnabled_DefaultsToFalse()
+	{
+		var flags = new FeatureFlags([]);
+
+		flags.ApiNavGroupingEnabled.Should().BeFalse();
+	}
+
+	[Fact]
+	public void ApiNavGroupingEnabled_SetEnablesIt()
+	{
+		var flags = new FeatureFlags([]);
+		flags.Set("API_NAV_GROUPING", true);
+
+		flags.ApiNavGroupingEnabled.Should().BeTrue();
+		flags.PrimaryNavEnabled.Should().BeFalse();
+	}
+
+	[Fact]
+	public void ApiNavGroupingEnabled_EnvironmentVariableOverridesYaml()
+	{
+		var previous = Environment.GetEnvironmentVariable("FEATURE_API_NAV_GROUPING");
+		try
+		{
+			Environment.SetEnvironmentVariable("FEATURE_API_NAV_GROUPING", "false");
+			var flags = new FeatureFlags(new Dictionary<string, bool> { ["api-nav-grouping"] = true });
+
+			flags.ApiNavGroupingEnabled.Should().BeFalse();
+		}
+		finally
+		{
+			Environment.SetEnvironmentVariable("FEATURE_API_NAV_GROUPING", previous);
+		}
+	}
+
+	[Fact]
+	public void ProdEnvironment_DoesNotEnableApiNavGrouping()
+	{
+		var config = AssemblyConfiguration.Create(
+			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
+		);
+
+		foreach (var environmentName in new[] { "prod", "staging", "preview" })
+		{
+			var environment = config.Environments[environmentName];
+			environment.FeatureFlags.Should().NotContainKey("API_NAV_GROUPING");
+
+			var features = new FeatureFlags([]);
+			foreach (var (key, value) in environment.FeatureFlags)
+				features.Set(key, value);
+			features.ApiNavGroupingEnabled.Should().BeFalse();
+		}
+	}
 }

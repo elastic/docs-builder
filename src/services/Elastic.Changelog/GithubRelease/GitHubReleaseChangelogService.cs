@@ -204,10 +204,15 @@ public class GitHubReleaseChangelogService(
 			// Create product filter with inferred values
 			var productInfo = new ProductArgument { Product = product.Id, Target = targetVersion, Lifecycle = lifecycle };
 
-			// 7. Fetch the checked-in entry pool once: entries already uploaded via changelog-upload
-			// take precedence over anything synthesized from PR metadata (same fidelity ladder as
-			// commit-range bundling: pool entry → PR-body extraction → title/link fallback).
-			var poolCandidates = await FetchPoolCandidates(collector, config, owner, repo, ctx);
+			// 7. Resolve CDN base URI for per-PR entry probing. Pool entries uploaded via
+			// changelog-upload take precedence over anything synthesized from PR metadata.
+			// We probe per-PR (GET {pr}.yaml) rather than fetching a registry upfront —
+			// the pool registry was retired and is no longer written to S3.
+			var cdnBaseUri = config.Bundle?.UseLocalChangelogs == true ? null : ChangelogCdn.ResolveBaseUri();
+#pragma warning disable CS0618
+			var cdnOwner = config.Bundle?.Owner ?? owner;
+#pragma warning restore CS0618
+			var cdnBranch = config.Bundle?.Branch ?? "main";
 
 			// 8. Process each PR and create changelog files
 			var outputDir = input.Output ?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
@@ -220,11 +225,13 @@ public class GitHubReleaseChangelogService(
 			{
 				Config = config,
 				Owner = owner,
+				CdnOwner = cdnOwner,
 				Repo = repo,
 				ProductInfo = productInfo,
 				StripTitlePrefix = stripTitlePrefix,
 				OutputDir = outputDir,
-				PoolCandidates = poolCandidates
+				CdnBaseUri = cdnBaseUri,
+				CdnBranch = cdnBranch
 			};
 
 			foreach (var pr in pullRequests)
@@ -283,51 +290,13 @@ public class GitHubReleaseChangelogService(
 	{
 		public required ChangelogConfiguration Config { get; init; }
 		public required string Owner { get; init; }
+		public required string CdnOwner { get; init; }
 		public required string Repo { get; init; }
 		public required ProductArgument ProductInfo { get; init; }
 		public required bool StripTitlePrefix { get; init; }
 		public required string OutputDir { get; init; }
-		public required IReadOnlyList<GitRangeEntryResolver.ChangelogPoolCandidate> PoolCandidates { get; init; }
-		public HashSet<string> WrittenPoolFiles { get; } = [with(StringComparer.Ordinal)];
-	}
-
-	/// <summary>
-	/// Downloads the authoring repo's checked-in entry pool from the CDN so entries that already
-	/// landed via changelog-upload win over synthesized ones. Pool unavailability degrades to
-	/// synthesis with a warning — gh-release mode must keep working for repos that never upload
-	/// individual entries.
-	/// </summary>
-	private async Task<IReadOnlyList<GitRangeEntryResolver.ChangelogPoolCandidate>> FetchPoolCandidates(
-		IDiagnosticsCollector collector,
-		ChangelogConfiguration config,
-		string owner,
-		string repo,
-		Cancel ctx
-	)
-	{
-		if (config.Bundle?.UseLocalChangelogs == true)
-			return [];
-		if (ChangelogCdn.ResolveBaseUri() is not { } baseUri)
-			return [];
-
-#pragma warning disable CS0618
-		var poolOwner = config.Bundle?.Owner ?? owner;
-#pragma warning restore CS0618
-		var poolBranch = config.Bundle?.Branch ?? "main";
-		var entries = await _entryFetcher.FetchAsync(
-			baseUri,
-			poolOwner,
-			repo,
-			poolBranch,
-			msg => collector.EmitWarning(
-				string.Empty,
-				$"Checked-in changelog entries are unavailable; entries will be synthesized from PR metadata. {msg}"
-			),
-			msg => collector.EmitWarning(string.Empty, msg),
-			ctx
-		);
-
-		return entries.Select(e => GitRangeEntryResolver.ParseCandidate(e.FileName, e.Content)).ToList();
+		public Uri? CdnBaseUri { get; init; }
+		public required string CdnBranch { get; init; }
 	}
 
 	private async Task<IReadOnlyList<CommitRangePullRequest>?> ResolvePrsFromRelease(
@@ -496,8 +465,8 @@ public class GitHubReleaseChangelogService(
 	}
 
 	/// <summary>
-	/// Writes pool entries matching this PR verbatim into the output directory so the bundle carries
-	/// the curated entry rather than a synthesized one. Returns false when the PR has no pool entry.
+	/// Probes the CDN for a per-PR changelog entry and writes it verbatim when found.
+	/// Returns false when the PR has no uploaded entry (404) — synthesis from PR metadata follows.
 	/// </summary>
 	private async Task<bool> TryWritePoolEntries(
 		IDiagnosticsCollector collector,
@@ -507,43 +476,51 @@ public class GitHubReleaseChangelogService(
 		Cancel ctx
 	)
 	{
-		var matches = context
-			.PoolCandidates
-			.Where(c => GitRangeEntryResolver.MatchesPr(c, pr.Number, context.Owner, context.Repo))
-			.ToList();
-
-		if (matches.Count == 0)
+		if (context.CdnBaseUri is null)
 			return false;
 
-		var wroteAnyFile = false;
-
-		foreach (var match in matches)
+		CdnChangelogEntry? entry;
+		try
 		{
-			if (context.WrittenPoolFiles.Contains(match.FileName))
-			{
-				wroteAnyFile = true;
-				continue;
-			}
-
-			if (match.Entry == null)
-			{
-				collector.EmitError(
-					match.FileName,
-					$"Checked-in changelog entry '{match.FileName}' matches PR #{pr.Number} but could not be parsed: {match.ParseError}"
-				);
-				continue;
-			}
-
-			var filePath = _fileSystem.Path.Join(context.OutputDir, match.FileName);
-			var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(match.Content);
-			await _fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
-			createdFiles.Add(match.FileName);
-			_ = context.WrittenPoolFiles.Add(match.FileName);
-			_logger.LogInformation("PR #{PrNumber}: pool entry '{FileName}' written verbatim", pr.Number, match.FileName);
-			wroteAnyFile = true;
+			entry = await _entryFetcher.FetchPrEntryAsync(
+				context.CdnBaseUri,
+				context.CdnOwner,
+				context.Repo,
+				context.CdnBranch,
+				pr.Number,
+				ctx
+			).ConfigureAwait(false);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			collector.EmitWarning(
+				string.Empty,
+				$"PR #{pr.Number}: could not fetch CDN changelog entry; will synthesize from PR metadata. {ex.Message}"
+			);
+			return false;
 		}
 
-		return wroteAnyFile;
+		if (entry is not { } cdnEntry)
+			return false;
+
+		// Validate the fetched YAML before writing — an unparseable entry must surface as an error
+		// and fall through to synthesis rather than writing a malformed file verbatim.
+		var candidate = GitRangeEntryResolver.ParseCandidate(cdnEntry.FileName, cdnEntry.Content);
+		if (candidate.Entry is null)
+		{
+			collector.EmitError(
+				cdnEntry.FileName,
+				$"Checked-in changelog entry '{cdnEntry.FileName}' matches PR #{pr.Number} but could not be parsed: {candidate.ParseError}"
+			);
+			return false;
+		}
+
+		var filePath = _fileSystem.Path.Join(context.OutputDir, cdnEntry.FileName);
+		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(cdnEntry.Content);
+		await _fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
+		createdFiles.Add(cdnEntry.FileName);
+		_logger.LogInformation("PR #{PrNumber}: pool entry '{FileName}' written verbatim from CDN", pr.Number, cdnEntry.FileName);
+		return true;
 	}
 
 	private static string GenerateYaml(ChangelogEntry data) => ReleaseNotesSerialization.SerializeEntry(data);
