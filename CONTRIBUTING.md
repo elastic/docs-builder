@@ -2,6 +2,8 @@
 
 ## Prerequisites
 
+### Native (recommended for active development)
+
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 - [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
 
@@ -10,6 +12,18 @@ The Aspire toolchain is bundled as a local dotnet tool — no workload install r
 ```bash
 dotnet tool restore
 ```
+
+### Docker (zero-install alternative)
+
+If you only need to validate rendering or authoring changes, the Docker setup removes the .NET/Node prerequisite:
+
+```bash
+./dev.sh build    # build images (once, or after Dockerfile changes)
+./dev.sh serve    # serve docs with hot reload at http://localhost:3000
+./dev.sh test     # run the full unit-test suite
+```
+
+Run `./dev.sh help` for the full list of commands. Docker files live under `build/dev/`.
 
 ## Validate the fully assembled documentation
 
