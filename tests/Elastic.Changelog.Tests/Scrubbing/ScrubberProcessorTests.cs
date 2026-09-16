@@ -512,8 +512,9 @@ public class ScrubberProcessorTests
 		failed.Should().BeEmpty();
 		// The note was scrubbed and copied to the public bucket
 		_s3.ContentOf(PublicBucket, "changelog/elastic/elasticsearch/main/note-rollover.yml").Should().StartWith("scrubbed:");
-		// The notes index was written (reconciler read the note and produced notes-9.0.0.json)
+		// The notes index was written (reconciler dual-writes notes-9.0.0.json and notes-elasticsearch-9.0.0.json)
 		_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/notes-9.0.0.json").Should().BeTrue();
+		_s3.Exists(PublicBucket, "changelog/elastic/elasticsearch/notes-elasticsearch-9.0.0.json").Should().BeTrue();
 	}
 
 	[Fact]
