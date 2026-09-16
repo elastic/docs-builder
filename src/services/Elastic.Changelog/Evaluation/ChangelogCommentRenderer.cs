@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using Elastic.Changelog;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -249,7 +250,6 @@ internal static class ChangelogCommentRenderer
 		string? changelogDir,
 		int prNumber,
 		bool isFork = false,
-		string? repoName = null,
 		bool canCommit = true,
 		string? resolvedProducts = null
 	)
@@ -259,30 +259,30 @@ internal static class ChangelogCommentRenderer
 
 		if (isFork)
 		{
+			// Extract product IDs only — resolvedProducts can carry full specs like "elasticsearch 9.2 ga".
+			var parsedProducts = ProductArgument.ParseProductSpecs(resolvedProducts);
+			var productIds = parsedProducts.Select(p => p.Product).Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p!).ToList();
+
 			// Determine product line(s) for the YAML snippet and --products flag.
 			string productYamlLine;
 			string? productsFlag;
 			string? productsNote;
-			if (resolvedProducts is not null)
+			if (productIds.Count == 1)
 			{
-				var ids = resolvedProducts.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-				if (ids.Length == 1)
-				{
-					productYamlLine = $"  - product: {ids[0]}";
-					productsFlag = $"  --products {ids[0]} \\";
-					productsNote = null;
-				}
-				else
-				{
-					var choices = string.Join(", ", ids.Select(id => WrapInlineCode(id)));
-					productYamlLine = $"  - product: one-of  # pick one of: {string.Join(", ", ids)}";
-					productsFlag = "  --products one-of \\";
-					productsNote = $"Replace `one-of` with one of: {choices}.";
-				}
+				productYamlLine = $"  - product: {productIds[0]}";
+				productsFlag = $"  --products {productIds[0]} \\";
+				productsNote = null;
+			}
+			else if (productIds.Count > 1)
+			{
+				var choices = string.Join(", ", productIds.Select(WrapInlineCode));
+				productYamlLine = $"  - product: your-product-id  # pick one of: {string.Join(", ", productIds)}";
+				productsFlag = null;
+				productsNote = $"Replace `your-product-id` with one of: {choices}.";
 			}
 			else
 			{
-				productYamlLine = $"  - product: {repoName ?? "your-repo"}";
+				productYamlLine = "  - product: your-product-id";
 				productsFlag = null;
 				productsNote = null;
 			}
@@ -300,6 +300,7 @@ internal static class ChangelogCommentRenderer
 
 			var bashScript = string.Join(
 				"\n",
+				$"mkdir -p -- \"{dir}\"",
 				$"cat > \"{expectedPath}\" << 'YAML'",
 				$"pr: {prNumber}",
 				"type: enhancement  # feature | enhancement | bug-fix | breaking-change",

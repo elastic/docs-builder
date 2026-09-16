@@ -293,9 +293,10 @@ public class ChangelogCommentRendererTests
 	[Fact]
 	public void RenderMissingEntry_Fork_ContainsBashScript()
 	{
-		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true, repoName: "my-repo");
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true, resolvedProducts: "my-product");
+		body.Should().Contain("mkdir -p -- \"docs/changelog\"");
 		body.Should().Contain("cat > \"docs/changelog/42.yaml\"");
-		body.Should().Contain("product: my-repo");
+		body.Should().Contain("product: my-product");
 	}
 
 	[Fact]

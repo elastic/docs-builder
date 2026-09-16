@@ -142,7 +142,6 @@ public class ChangelogGithubCommentService(
 				metadata.ChangelogDir,
 				metadata.PrNumber,
 				metadata.IsFork,
-				repo,
 				metadata.CanCommit,
 				metadata.ResolvedProducts
 			);
