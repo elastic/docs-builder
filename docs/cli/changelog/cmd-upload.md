@@ -116,7 +116,7 @@ Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
 If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
-The completion log reports how many objects were **new** versus **replaced**. Omitting `--overwrite` currently still replaces. Pass `--overwrite` so CI is ready for a later release that will refuse replacements unless the flag is set. `--skip-etag-check` implies replace.
+The completion log reports how many objects were **new** versus **replaced**. If an object already exists in S3 with different content, this release still replaces it, whether or not you pass `--overwrite`. Pass `--overwrite` anyway so GitHub Actions keep working after a later release that will leave the remote object in place unless the flag is set. `--skip-etag-check` also replaces.
 :::
 
 ## Options
@@ -124,7 +124,7 @@ The completion log reports how many objects were **new** versus **replaced**. Om
 | Option | Purpose |
 | ------ | ------- |
 | `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Implies `--overwrite`. |
-| `--overwrite` | Replace remote objects whose content differs. Currently the same as omitting the flag. A later release will refuse replacements unless this flag is passed. Unchanged (ETag match) files and PR-alias markers are still skipped. When a replacement is refused, the warning describes the remote object from its YAML (pointer vs full changelog) and whether this run was writing an alias. |
+| `--overwrite` | Replace remote objects whose content differs. Today that still happens if you omit the flag. Pass it so GitHub Actions keep working after a later release that will replace only when the flag is set. Unchanged (ETag match) files and PR-alias markers are still skipped. When a replacement is refused, the warning describes the remote object from its YAML (pointer vs full changelog) and whether this run was writing an alias. |
 
 ## Configuration
 
@@ -189,9 +189,18 @@ docs-builder changelog upload \
   --config ./config/changelog.yml
 ```
 
-### Explicit overwrite (currently the default)
+### Explicit overwrite
 
-`--overwrite` replaces remote objects whose content differs. Omitting the flag currently does the same, so passing `--overwrite` lets CI adopt it before a later release refuses replacements unless it is set:
+If S3 already has a different version of the file, the upload command currently replaces it. `--overwrite` does not change that yet.
+That option was added so GitHub Actions keep working after a later release that will replace only when the flag is set:
+
+```sh
+docs-builder changelog upload \
+  --artifact-type changelog \
+  --target s3 \
+  --s3-bucket-name my-changelog-bundles \
+  --overwrite
+```
 
 ```sh
 docs-builder changelog upload \

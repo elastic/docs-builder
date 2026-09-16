@@ -2329,7 +2329,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Implies --overwrite.</param>
-	/// <param name="overwrite">Replace remote objects whose content differs. Pass this flag so CI is ready for a later release that will refuse replacements unless it is set. Omitting it currently still replaces.</param>
+	/// <param name="overwrite">Replace remote objects whose content differs. Today upload still replaces those objects even if you omit this flag. Pass it so GitHub Actions keep working after a later release that replaces only when the flag is set.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,

@@ -5124,7 +5124,7 @@
               "name": "overwrite",
               "type": "boolean",
               "required": false,
-              "summary": "Replace remote objects whose content differs. Pass this flag so CI is ready for a later release that will refuse replacements unless it is set. Omitting it currently still replaces.",
+              "summary": "Replace remote objects whose content differs. Today upload still replaces those objects even if you omit this flag. Pass it so GitHub Actions keep working after a later release that replaces only when the flag is set.",
               "defaultValue": "false"
             },
             {
