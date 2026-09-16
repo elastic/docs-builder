@@ -76,11 +76,21 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
 
-	public static IReadOnlyList<StructuralNavigationItem> Create(string? urlPathPrefix, string apiUrlSuffix, LandingNavigationItem root) =>
+	public static IReadOnlyList<StructuralNavigationItem> Create(
+		string? urlPathPrefix,
+		string apiUrlSuffix,
+		LandingNavigationItem root,
+		OpenApiDocument document
+	)
+	{
+		List<StructuralNavigationItem> items =
 		[
-			new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Authentication), root, root),
-			new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Servers), root, root)
+			new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Authentication), root, root)
 		];
+		if (StructuralViewModel.ReadServers(document).Count > 0)
+			items.Add(new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Servers), root, root));
+		return items;
+	}
 }
 
 public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(context)

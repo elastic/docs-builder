@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
@@ -33,6 +34,17 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 		authentication.NavigationTitle.Should().Be("Authentication");
 		servers.Url.Should().Be("/api/doc/fixture/servers");
 		servers.NavigationTitle.Should().Be("Servers");
+	}
+
+	[Fact]
+	public void Create_NoServers_OmitsServersPage()
+	{
+		var document = new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } };
+		var root = new LandingNavigationItem("/api/doc/fixture");
+		var items = StructuralNavigationItem.Create(urlPathPrefix: null, "fixture", root, document);
+
+		items.Should().ContainSingle(item => item.Model.Kind == ApiStructuralKind.Authentication);
+		items.Should().NotContain(item => item.Model.Kind == ApiStructuralKind.Servers);
 	}
 
 	[Fact]
