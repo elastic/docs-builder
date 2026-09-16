@@ -341,6 +341,22 @@ public class ChangelogCommentRendererTests
 	}
 
 	[Fact]
+	public void RenderMissingEntry_NotFork_CanCommit_SaysPending()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false, canCommit: true);
+		body.Should().Contain("pending");
+		body.Should().Contain("automatically");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_NotFork_CannotCommit_SaysNeeded()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false, canCommit: false);
+		body.Should().Contain("needed");
+		body.Should().NotContain("automatically");
+	}
+
+	[Fact]
 	public void RenderRepositoryNotOnboarded_StartsWithTitle()
 	{
 		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("my-repo");

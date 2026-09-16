@@ -242,8 +242,16 @@ internal static class ChangelogCommentRenderer
 	/// was found for their PR and suggests the expected file path.
 	/// When <paramref name="isFork"/> is <c>true</c>, appends copy-pasteable bash and
 	/// docs-builder one-liner instructions so external contributors can add the file manually.
+	/// When <paramref name="canCommit"/> is <c>true</c> and <paramref name="isFork"/> is
+	/// <c>false</c>, the non-fork body tells the author automation will commit the entry.
 	/// </summary>
-	internal static string RenderMissingEntry(string? changelogDir, int prNumber, bool isFork = false, string? repoName = null)
+	internal static string RenderMissingEntry(
+		string? changelogDir,
+		int prNumber,
+		bool isFork = false,
+		string? repoName = null,
+		bool canCommit = true
+	)
 	{
 		var dir = changelogDir ?? "docs/changelog";
 		var expectedPath = $"{dir}/{prNumber}.yaml";
@@ -254,7 +262,6 @@ internal static class ChangelogCommentRenderer
 
 			var bashScript = string.Join(
 				"\n",
-				$"mkdir -p {dir}",
 				$"cat > \"{expectedPath}\" << 'YAML'",
 				$"pr: {prNumber}",
 				"type: enhancement  # feature | enhancement | bug-fix | breaking-change",
@@ -306,15 +313,12 @@ internal static class ChangelogCommentRenderer
 			return Truncate(string.Join("\n", parts));
 		}
 
-		return Truncate(
-			string.Join(
-				"\n",
-				Title,
-				"",
-				$"📋 **Changelog entry pending** — {WrapInlineCode(expectedPath)} will be committed automatically. " +
-					$"If it does not appear shortly, add {WrapInlineCode(expectedPath)} to the PR branch manually."
-			)
-		);
+		var nonForkBody = canCommit
+			? $"📋 **Changelog entry pending** — {WrapInlineCode(expectedPath)} will be committed automatically. "
+				+ $"If it does not appear shortly, add {WrapInlineCode(expectedPath)} to the PR branch manually."
+			: $"📋 **Changelog entry needed** — add {WrapInlineCode(expectedPath)} to the PR branch and push.";
+
+		return Truncate(string.Join("\n", Title, "", nonForkBody));
 	}
 
 	/// <summary>
