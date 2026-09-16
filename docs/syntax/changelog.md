@@ -358,18 +358,19 @@ Bundles with the same target version/date are automatically merged into a single
 
 ### Amend bundle merging
 
-Bundles can have associated **amend files** that follow the naming pattern `{bundle-name}.amend-{N}.yaml` (e.g., `9.3.0.amend-1.yaml`). When loading bundles, the directive automatically discovers and merges amend files with their parent bundles.
+Bundles can have associated **amend files**. Numbered sidecars use `{bundle-name}.amend-{N}.yaml` (for example `9.3.0.amend-1.yaml`). The changelog scrubber may also write `{bundle-name}.amend-notes.yaml` for notes that arrived after the parent shipped. When loading bundles, the directive discovers both kinds and merges them with their parent.
 
-This allows you to add or remove late changes to a release without modifying the original bundle file:
+This lets you add or remove late changes to a release without modifying the original bundle file:
 
 ```
 bundles/
-├── 9.3.0.yaml           # Parent bundle
-├── 9.3.0.amend-1.yaml   # First amend (auto-merged with parent)
-└── 9.3.0.amend-2.yaml   # Second amend (auto-merged with parent)
+├── 9.3.0.yaml                 # Parent bundle
+├── 9.3.0.amend-1.yaml         # First numbered amend (auto-merged with parent)
+├── 9.3.0.amend-2.yaml         # Second numbered amend (auto-merged with parent)
+└── 9.3.0.amend-notes.yaml     # Lambda-owned notes sidecar (auto-merged last)
 ```
 
-Amend files may contain `entries` (additions) and `exclude-entries` (removals). Within each amend file, exclusions are applied before additions. Amend files are processed in numeric order.
+Amend files may contain `entries` (additions) and `exclude-entries` (removals). Within each amend file, exclusions are applied before additions. Numbered amends are processed in numeric order, then `.amend-notes`. Do not create `.amend-notes` files yourself; see [](/cli/changelog/bundle-amend.md).
 
 All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (products, hide-features, repo) is preserved.
 
