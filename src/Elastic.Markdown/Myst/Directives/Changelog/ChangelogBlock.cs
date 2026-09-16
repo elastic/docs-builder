@@ -286,8 +286,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 		// CDN mode: argument is an explicit product name, or infer from repo when omitted.
 		// A '/'-prefixed argument is a local-path override (handled above); treat it as absent here.
-		var explicitProduct = !string.IsNullOrWhiteSpace(Arguments) && !Arguments.StartsWith('/') ? Arguments.Trim() : null;
-		var cdnProduct = explicitProduct ?? InferCdnProductFromRepository();
+		var argProduct = !string.IsNullOrWhiteSpace(Arguments) && !Arguments.StartsWith('/') ? Arguments.Trim() : null;
+		var cdnProduct = argProduct ?? InferCdnProductFromRepository();
 
 		if (string.IsNullOrWhiteSpace(cdnProduct))
 		{
