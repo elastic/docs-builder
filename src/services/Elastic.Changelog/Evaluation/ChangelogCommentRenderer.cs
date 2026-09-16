@@ -243,13 +243,7 @@ internal static class ChangelogCommentRenderer
 	/// When <paramref name="isFork"/> is <c>true</c>, appends copy-pasteable bash and
 	/// docs-builder one-liner instructions so external contributors can add the file manually.
 	/// </summary>
-	internal static string RenderMissingEntry(
-		string? changelogDir,
-		int prNumber,
-		bool isFork = false,
-		string? configFile = null,
-		string? repoName = null
-	)
+	internal static string RenderMissingEntry(string? changelogDir, int prNumber, bool isFork = false, string? repoName = null)
 	{
 		var dir = changelogDir ?? "docs/changelog";
 		var expectedPath = $"{dir}/{prNumber}.yaml";
@@ -257,7 +251,6 @@ internal static class ChangelogCommentRenderer
 		if (isFork)
 		{
 			var product = repoName ?? "your-repo";
-			var config = configFile ?? "docs/changelog.yml";
 
 			var bashScript = string.Join(
 				"\n",
@@ -268,21 +261,20 @@ internal static class ChangelogCommentRenderer
 				"title: Describe your change clearly",
 				"products:",
 				$"  - product: {product}",
-				"YAML",
-				$"git add \"{expectedPath}\"",
-				$"git commit -m \"Add changelog entry for PR #{prNumber}\"",
-				"git push"
+				"YAML"
 			);
 
 			var docsBuilderScript = string.Join(
 				"\n",
-				$"CHANGELOG_PR_NUMBER={prNumber} \\",
-				"CHANGELOG_TITLE=\"Describe your change clearly\" \\",
-				"CHANGELOG_TYPE=\"enhancement\" \\",
-				$"  docs-builder changelog add \\",
-				$"    --concise \\",
-				$"    --config {config} \\",
-				$"    --output {dir}",
+				$"docs-builder changelog add \\",
+				$"  --concise \\",
+				$"  --prs {prNumber} \\",
+				"  --type enhancement \\",
+				"  --title \"Describe your change clearly\""
+			);
+
+			var gitScript = string.Join(
+				"\n",
 				$"git add \"{expectedPath}\"",
 				$"git commit -m \"Add changelog entry for PR #{prNumber}\"",
 				"git push"
@@ -300,11 +292,15 @@ internal static class ChangelogCommentRenderer
 				"",
 				WrapCodeFence(bashScript, "bash"),
 				"",
-				"**Option 2 — generate with `docs-builder`**",
+				"**Option 2 — generate with `docs-builder`** (fetches title and type from the PR if `GITHUB_TOKEN` is set)",
 				"",
 				WrapCodeFence(docsBuilderScript, "bash"),
 				"",
-				"Adjust `type` and `title` to match your change, then push. The changelog validation will re-run automatically.",
+				"Then commit and push:",
+				"",
+				WrapCodeFence(gitScript, "bash"),
+				"",
+				"Adjust `type` and `title` to match your change. The changelog validation will re-run automatically once you push.",
 			};
 
 			return Truncate(string.Join("\n", parts));

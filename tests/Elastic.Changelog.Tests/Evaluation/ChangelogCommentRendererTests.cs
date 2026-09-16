@@ -301,9 +301,19 @@ public class ChangelogCommentRendererTests
 	[Fact]
 	public void RenderMissingEntry_Fork_ContainsDocsBuilderScript()
 	{
-		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true, configFile: "docs/changelog.yml");
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
 		body.Should().Contain("docs-builder changelog add");
-		body.Should().Contain("CHANGELOG_PR_NUMBER=42");
+		body.Should().Contain("--prs 42");
+		body.Should().NotContain("--config");
+		body.Should().NotContain("--output");
+	}
+
+	[Fact]
+	public void RenderMissingEntry_Fork_GitCommandsNotDuplicated()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
+		// git push should appear exactly once (in the shared "Then commit and push" block)
+		body.Split("git push").Length.Should().Be(2);
 	}
 
 	[Fact]
