@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using System.Text.Json;
+using Amazon.S3;
 using AwesomeAssertions;
 using Elastic.Changelog.Reconciliation;
 using Elastic.Documentation;
@@ -262,7 +264,8 @@ public class NoteAmendReconcilerTests
 		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("stale amend sidecar must be deleted when no notes remain");
-		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(AmendNotesKey(parent));
+		_s3.Deletes.Select(d => d.Key).Should().Contain(AmendNotesKey(parent));
+		_s3.Deletes.Select(d => d.Key).Should().Contain(ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version));
 		touched.Should().Equal(Product);
 	}
 
@@ -329,6 +332,7 @@ public class NoteAmendReconcilerTests
 		notesByProduct.Should().ContainKey(Product);
 		notesByProduct[Product][Version].Should().BeEmpty();
 		notesByProduct.Should().ContainKey("kibana");
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeTrue();
 
 		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
@@ -336,6 +340,46 @@ public class NoteAmendReconcilerTests
 		touched.Should().Contain(Product);
 		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeFalse();
 		_s3.Exists(PublicBucket, "bundle/kibana/kibana-9.3.0.amend-notes.yaml").Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task SidecarDeleteIoFailure_Throws_AndLeavesProductScopedIndex()
+	{
+		const string parent = "elasticsearch-9.3.0.yaml";
+		_s3.Seed(PublicBucket, RegistryKey(), RegistryJson(parent));
+		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
+		var staleAmend = new Bundle
+		{
+			Products = [new BundledProduct(Product, target: Version, lifecycle: Lifecycle.Ga)],
+			Entries =
+			[
+				new BundledEntry
+				{
+					File = new BundledFile { Name = "main/note-cve.yml", Checksum = "old" },
+					Title = "CVE",
+					Type = ChangelogEntryType.Security
+				}
+			]
+		};
+		_s3.Seed(PublicBucket, AmendNotesKey(parent), ReleaseNotesSerialization.SerializeBundle(staleAmend));
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","version":"9.3.0","notes":[]}"""
+		);
+
+		var notesByProduct = await _notesReconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeTrue();
+
+		var sidecarKey = AmendNotesKey(parent);
+		_s3.DeleteFault =
+			key => key == sidecarKey ? new AmazonS3Exception("unavailable") { StatusCode = HttpStatusCode.InternalServerError } : null;
+
+		var act = async () => await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+		await act.Should().ThrowAsync<AmazonS3Exception>();
+		_s3.Exists(PublicBucket, sidecarKey).Should().BeTrue();
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeTrue();
 	}
 
 	[Fact]
