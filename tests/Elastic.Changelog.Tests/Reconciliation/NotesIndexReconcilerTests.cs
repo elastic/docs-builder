@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using System.Text.Json;
+using Amazon.S3;
 using AwesomeAssertions;
 using Elastic.Changelog.Reconciliation;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -359,5 +361,44 @@ public class NotesIndexReconcilerTests
 		map.Should().ContainKey("elasticsearch");
 		map["elasticsearch"]["9.0.0"].Should().BeEmpty();
 		map.Should().NotContainKey("9.0.0");
+	}
+
+	[Fact]
+	public async Task ReconcileRepo_UnparseableProductScopedIndex_IsLeftInPlace()
+	{
+		var kibanaKey = ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0");
+		_s3.Seed(PublicBucket, kibanaKey, "{not-json");
+		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
+
+		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+
+		_s3.Exists(PublicBucket, kibanaKey).Should().BeTrue();
+		_s3.Deletes.Should().NotContain(d => d.Key == kibanaKey);
+		map.Should().NotContainKey("kibana");
+		map["elasticsearch"]["9.0.0"].Should().ContainSingle(e => e.Path == "main/note-slow-rollover.yml");
+	}
+
+	[Fact]
+	public async Task ReconcileRepo_ProductScopedIndexGetFailure_IsLeftInPlace()
+	{
+		var kibanaKey = ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0");
+		_s3.Seed(
+			PublicBucket,
+			kibanaKey,
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"kibana","version":"9.0.0","notes":[]}"""
+		);
+		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
+		_s3.AfterGet = (key, _) =>
+		{
+			if (key == kibanaKey)
+				throw new AmazonS3Exception("unavailable") { StatusCode = HttpStatusCode.InternalServerError };
+		};
+
+		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+
+		_s3.Exists(PublicBucket, kibanaKey).Should().BeTrue();
+		_s3.Deletes.Should().NotContain(d => d.Key == kibanaKey);
+		map.Should().NotContainKey("kibana");
 	}
 }

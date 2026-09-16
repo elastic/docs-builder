@@ -237,7 +237,10 @@ public sealed class NotesIndexReconciler(
 			if (intendedKeys.Contains(key))
 				continue;
 
-			var identity = await TryReadProductScopedIndexIdentity(key, ctx);
+			var read = await ReadStaleIndexIdentity(key, ctx);
+			if (read.Kind is StaleIndexReadKind.ReadFailed or StaleIndexReadKind.AlreadyGone)
+				continue;
+
 			try
 			{
 				_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
@@ -249,19 +252,19 @@ public sealed class NotesIndexReconciler(
 				continue;
 			}
 
-			if (identity is not null)
-				vanished.Add(identity.Value);
+			if (read.Kind == StaleIndexReadKind.ProductScoped)
+				vanished.Add((read.Product!, read.Version!));
 		}
 
 		return vanished;
 	}
 
 	/// <summary>
-	/// Reads <see cref="NotesIndex.Product"/> and <see cref="NotesIndex.Version"/> from a
-	/// product-scoped body. Legacy version-union indexes omit those fields and are not vanished
-	/// products — callers must not parse the filename slug.
+	/// Reads identity from a stale notes-index body. Does not parse the filename slug.
+	/// A failed GET/deserialize must not delete the object; a legacy body (no product/version)
+	/// may be deleted without a vanished product.
 	/// </summary>
-	private async Task<(string Product, string Version)?> TryReadProductScopedIndexIdentity(string key, Cancel ctx)
+	private async Task<StaleIndexRead> ReadStaleIndexIdentity(string key, Cancel ctx)
 	{
 		try
 		{
@@ -269,15 +272,19 @@ public sealed class NotesIndexReconciler(
 			await using var stream = response.ResponseStream;
 			var index = await JsonSerializer.DeserializeAsync(stream, NotesIndexJsonContext.Default.NotesIndex, ctx);
 			if (index?.Product is not { Length: > 0 } product || index.Version is not { Length: > 0 } version)
-				return null;
+				return new StaleIndexRead(StaleIndexReadKind.Legacy);
 			if (!ChangelogKeys.IsValidProduct(product) || !ChangelogKeys.IsValidRepo(version))
-				return null;
-			return (product, version);
+				return new StaleIndexRead(StaleIndexReadKind.Legacy);
+			return new StaleIndexRead(StaleIndexReadKind.ProductScoped, product, version);
+		}
+		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+		{
+			return new StaleIndexRead(StaleIndexReadKind.AlreadyGone);
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
-			_logger.LogDebug(ex, "Could not read identity from stale notes index {Key}", key);
-			return null;
+			_logger.LogWarning(ex, "Could not read identity from stale notes index {Key}; leaving it for the next reconcile", key);
+			return new StaleIndexRead(StaleIndexReadKind.ReadFailed);
 		}
 	}
 
@@ -520,6 +527,16 @@ public sealed class NotesIndexReconciler(
 	}
 
 	private readonly record struct NotesIndexWrite(string Key, IReadOnlyList<NoteIndexEntry> Entries, string? Product, string? Version);
+
+	private enum StaleIndexReadKind
+	{
+		ReadFailed,
+		AlreadyGone,
+		Legacy,
+		ProductScoped
+	}
+
+	private readonly record struct StaleIndexRead(StaleIndexReadKind Kind, string? Product = null, string? Version = null);
 }
 
 /// <summary>Optional product and version written onto a product-scoped notes index body.</summary>
