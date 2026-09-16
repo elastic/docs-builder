@@ -266,22 +266,23 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		// local-path support can be a dedicated option or removed entirely.
 		if (!string.IsNullOrWhiteSpace(Arguments) && Arguments.StartsWith('/'))
 		{
-			// Local path mode — honored only in isolated (local dev) builds as a temporary preview
-			// override. In non-isolated builds the argument is ignored and CDN is used instead.
-			// TODO: Remove path-argument support once all usages are migrated to explicit product names.
-			if (Build.BuildType == BuildType.Isolated)
+			// Path argument — still honored in all build types for backward compatibility.
+			// In non-isolated builds this emits a deprecation warning; the local path is still used
+			// so existing repos with committed bundle files continue to work until they migrate to
+			// an explicit product name.
+			// TODO: Once all usages are migrated, restrict path arguments to isolated builds only.
+			if (Build.BuildType != BuildType.Isolated)
 			{
-				ExtractBundlesFolderPath();
-				if (Found)
-					LoadAndCacheBundles();
-				return;
+				this.EmitWarning(
+					"Local bundle path argument is deprecated in non-local builds. " +
+						"Migrate to an explicit product name (e.g. '::{changelog} elasticsearch') so CDN is used instead."
+				);
 			}
 
-			this.EmitWarning(
-				"Local bundle path argument is ignored in non-local builds; CDN will be used instead. " +
-					"Use a product name (e.g. '::{changelog} elasticsearch') to make this explicit."
-			);
-			// Fall through to CDN mode below.
+			ExtractBundlesFolderPath();
+			if (Found)
+				LoadAndCacheBundles();
+			return;
 		}
 
 		// CDN mode: argument is an explicit product name, or infer from repo when omitted.
