@@ -47,18 +47,23 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 			return NoopReleaseNotesResolver.Instance;
 
 		var fetcher = new ReleaseNotesFetcher(logFactory, context.ReadFileSystem);
-		var fetched = await fetcher.FetchAsync(context.Collector, explicitProducts, inferredProduct, ctx).ConfigureAwait(false);
+		var fetched = await fetcher.FetchAsync(
+			context.Collector,
+			explicitProducts,
+			inferredProduct is not null ? [inferredProduct] : null,
+			ctx
+		).ConfigureAwait(false);
 		return new ReleaseNotesResolver(fetched);
 	}
 
 	/// <summary>
 	/// Fetches bundles for <paramref name="requiredProducts"/> (error on failure) and optionally for
-	/// <paramref name="inferredProduct"/> (no error on 404 — best-effort only).
+	/// <paramref name="inferredProducts"/> (no error on 404 — best-effort only, one per assembled repo).
 	/// </summary>
 	public async Task<FetchedReleaseNotes> FetchAsync(
 		IDiagnosticsCollector collector,
 		IReadOnlyCollection<string> requiredProducts,
-		string? inferredProduct = null,
+		IReadOnlyCollection<string>? inferredProducts = null,
 		Cancel ctx = default
 	)
 	{
@@ -68,7 +73,9 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 			.Distinct(StringComparer.Ordinal)
 			.ToArray();
 
-		var inferredSet = inferredProduct is { Length: > 0 } ? (new[] { inferredProduct }).ToFrozenSet(StringComparer.Ordinal) : [];
+		var inferredSet = inferredProducts is { Count: > 0 }
+			? inferredProducts.Where(p => p is { Length: > 0 }).Except(required, StringComparer.Ordinal).ToFrozenSet(StringComparer.Ordinal)
+			: [];
 
 		if (required.Length == 0 && inferredSet.Count == 0)
 			return FetchedReleaseNotes.Empty;
