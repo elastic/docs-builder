@@ -116,7 +116,7 @@ Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
 If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
-The completion log reports how many objects were **new** versus **replaced**. Pass `--overwrite` to replace remote objects whose content differs; that is currently the default (same as omitting the flag) so docs-actions can start passing it. A later release will refuse replacements unless `--overwrite` is passed. New objects that appear between HeadObject and PutObject are still created. `--skip-etag-check` implies `--overwrite`.
+The completion log reports how many objects were **new** versus **replaced**. Omitting `--overwrite` currently still replaces. Pass `--overwrite` so CI is ready for a later release that will refuse replacements unless the flag is set. `--skip-etag-check` implies replace.
 :::
 
 ## Options
@@ -124,7 +124,7 @@ The completion log reports how many objects were **new** versus **replaced**. Pa
 | Option | Purpose |
 | ------ | ------- |
 | `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Implies `--overwrite`. |
-| `--overwrite` | Replace remote objects whose content differs. Currently the default (same as omitting the flag). A later release will refuse replacements unless this flag is passed. Unchanged (ETag match) files and PR-alias markers are still skipped. When a replacement is refused, the warning describes the remote object from its YAML (pointer vs full changelog) and whether this run was writing an alias. |
+| `--overwrite` | Replace remote objects whose content differs. Currently the same as omitting the flag. A later release will refuse replacements unless this flag is passed. Unchanged (ETag match) files and PR-alias markers are still skipped. When a replacement is refused, the warning describes the remote object from its YAML (pointer vs full changelog) and whether this run was writing an alias. |
 
 ## Configuration
 
@@ -191,7 +191,7 @@ docs-builder changelog upload \
 
 ### Explicit overwrite (currently the default)
 
-`--overwrite` replaces remote objects whose content differs. It currently matches the default, so passing it is a no-op that lets CI adopt the flag before a later release refuses replacements unless it is set:
+`--overwrite` replaces remote objects whose content differs. Omitting the flag currently does the same, so passing `--overwrite` lets CI adopt it before a later release refuses replacements unless it is set:
 
 ```sh
 docs-builder changelog upload \

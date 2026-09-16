@@ -5117,7 +5117,7 @@
               "name": "overwrite",
               "type": "boolean",
               "required": false,
-              "summary": "Replace remote objects whose content differs. Currently the default (same as omitting the flag). A later release will refuse replacements unless this flag is passed. Implies replace when combined with --skip-etag-check.",
+              "summary": "Replace remote objects whose content differs. Pass this flag so CI is ready for a later release that will refuse replacements unless it is set. Omitting it currently still replaces.",
               "defaultValue": "false"
             },
             {

@@ -2324,7 +2324,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Implies --overwrite.</param>
-	/// <param name="overwrite">Replace remote objects whose content differs. Currently the default (same as omitting the flag). A later release will refuse replacements unless this flag is passed. Implies replace when combined with --skip-etag-check.</param>
+	/// <param name="overwrite">Replace remote objects whose content differs. Pass this flag so CI is ready for a later release that will refuse replacements unless it is set. Omitting it currently still replaces.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -2336,11 +2336,12 @@ internal sealed partial class ChangelogCommands(
 		string? owner = null,
 		string? branch = null,
 		bool skipEtagCheck = false,
-		bool overwrite = true,
+		bool overwrite = false,
 		CancellationToken ct = default
 	)
 	{
 		var ctx = ct;
+		_ = overwrite;
 
 		// Accept a comma-separated list of artifact types (e.g. "changelog,amend")
 		var artifactTypeList = artifactType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -2405,7 +2406,9 @@ internal sealed partial class ChangelogCommands(
 				Owner = resolvedOwner,
 				Branch = resolvedBranch,
 				SkipEtagCheck = skipEtagCheck,
-				Overwrite = overwrite || skipEtagCheck
+				// Plain bool is presence-only: omit parses as false. A nullable bool would also
+				// emit a negated flag. Phase 1 always replaces from the CLI (omit and --overwrite).
+				Overwrite = true
 			};
 			serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
 		}
