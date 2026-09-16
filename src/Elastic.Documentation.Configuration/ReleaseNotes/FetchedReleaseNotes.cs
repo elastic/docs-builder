@@ -20,6 +20,13 @@ public sealed record FetchedReleaseNotes
 	/// <summary>Product ids declared under <c>release_notes</c>, used to distinguish "undeclared" from "declared but empty".</summary>
 	public required FrozenSet<string> DeclaredProducts { get; init; }
 
+	/// <summary>
+	/// Inferred products that returned HTTP 404 during prefetch — bundles are not yet published.
+	/// Kept separate from <see cref="DeclaredProducts"/> so a 404 from repo A does not suppress the
+	/// undeclared-product error for an explicit <c>:cdn:</c> reference in repo B.
+	/// </summary>
+	public FrozenSet<string> NotFoundInferredProducts { get; init; } = [];
+
 	public static FetchedReleaseNotes Empty { get; } = new()
 	{
 		BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,
