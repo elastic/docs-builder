@@ -10,10 +10,8 @@ namespace Elastic.Markdown.Tests.Directives;
 
 /// <summary>
 /// Tests for path resolution in the changelog directive.
-/// Verifies that Path.Combine issues are properly handled for:
-/// - Relative paths (combined with docset root)
-/// - Docset-root-relative paths (starting with '/', combined with docset root after trimming)
-/// - Absolute filesystem paths (used as-is, prevents Path.Combine from silently dropping base)
+/// All local paths must be prefixed with '/' (docset-root-relative).
+/// Non-'/' arguments are interpreted as CDN product names.
 /// </summary>
 public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBlock>
 {
@@ -21,7 +19,7 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 			output,
 			// language=markdown
 			"""
-		:::{changelog} custom/path/bundles
+		:::{changelog} /custom/path/bundles
 		:::
 		"""
 		) =>
@@ -46,7 +44,7 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 		);
 
 	[Fact]
-	public void ResolvesRelativePath() => Block!.Found.Should().BeTrue();
+	public void ResolvesDocsetRootRelativePath() => Block!.Found.Should().BeTrue();
 
 	[Fact]
 	public void PathCombinedWithDocsetRoot() =>
@@ -242,7 +240,7 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 			output,
 			// language=markdown
 			"""
-		:::{changelog} deeply/nested/path/to/bundles
+		:::{changelog} /deeply/nested/path/to/bundles
 		:::
 		"""
 		) =>
@@ -292,7 +290,7 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 			output,
 			// language=markdown
 			"""
-		:::{changelog} ./relative/bundles
+		:::{changelog} /relative/bundles
 		:::
 		"""
 		) =>
@@ -317,7 +315,7 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Fact]
-	public void ResolvesPathWithDotSlashPrefix() => Block!.Found.Should().BeTrue();
+	public void ResolvesSlashPrefixedPath() => Block!.Found.Should().BeTrue();
 
 	[Fact]
 	public void RendersContent() => Html.Should().Contain("Edge case feature");
@@ -329,7 +327,7 @@ public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<Changel
 			output,
 			// language=markdown
 			"""
-		:::{changelog} bundles/v1
+		:::{changelog} /bundles/v1
 		:config: config/changelog.yml
 		:::
 		"""
