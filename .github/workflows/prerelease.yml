@@ -8,44 +8,6 @@ on:
 permissions: {}
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    outputs:
-      full-version: ${{ steps.bootstrap.outputs.full-version }}
-      major-version: ${{ steps.bootstrap.outputs.major-version }}
-    needs: [build]
-    concurrency: 
-      group: deploy-to-github-pages
-
-    environment:
-      name: github-pages
-      url: ${{steps.deployment.outputs.page_url}}
-    steps:
-      - id: repo-basename
-        run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v6.0.0
-      - name: Build documentation
-        uses: elastic/docs-builder@main
-        with:
-          prefix: '${{ steps.repo-basename.outputs.value }}'
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5.0.0
-        with:
-          path: .artifacts/docs/html
-          
-      - name: Deploy artifact
-        id: deployment
-        uses: actions/deploy-pages@v5.0.0
-
   build:
     runs-on: ubuntu-latest
     permissions:
@@ -147,7 +109,7 @@ jobs:
             -F client_payload[sha]="$SHA"
 
   notify-failure:
-    needs: [build, deploy]
+    needs: [build]
     if: always() && contains(needs.*.result, 'failure')
     runs-on: ubuntu-slim
     permissions:
