@@ -90,8 +90,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 			return new FetchedReleaseNotes
 			{
 				BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,
-				DeclaredProducts = required.ToFrozenSet(StringComparer.Ordinal),
-				InferredProducts = inferredSet
+				DeclaredProducts = required.ToFrozenSet(StringComparer.Ordinal)
 			};
 		}
 
@@ -136,7 +135,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 		var resolvedInferred = results.Where(r => !r.isRequired && r.bundles.Count > 0).Select(r => r.product);
 		declaredSet = declaredSet.Union(resolvedInferred).ToFrozenSet(StringComparer.Ordinal);
 
-		return new FetchedReleaseNotes { BundlesByProduct = bundleMap, DeclaredProducts = declaredSet, InferredProducts = inferredSet };
+		return new FetchedReleaseNotes { BundlesByProduct = bundleMap, DeclaredProducts = declaredSet };
 	}
 
 	public static bool IsValidCdnProductId(string product) =>

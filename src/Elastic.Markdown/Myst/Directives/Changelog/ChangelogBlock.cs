@@ -239,7 +239,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		{
 			// :cdn: takes an explicit product, or may be valueless to infer the product from the
 			// repository that holds the doc (the common case where the repo name is the product id).
-			var product = Prop("cdn") is { Length: > 0 } explicitProduct ? explicitProduct.Trim() : InferCdnProductFromRepository();
+			var isAutoInferred = Prop("cdn") is not { Length: > 0 };
+			var product = isAutoInferred ? InferCdnProductFromRepository() : Prop("cdn")!.Trim();
 
 			if (string.IsNullOrWhiteSpace(product))
 			{
@@ -261,7 +262,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
 
 			CdnProduct = product;
-			LoadCdnBundles(product);
+			LoadCdnBundles(product, isAutoInferred);
 			return;
 		}
 
@@ -573,14 +574,16 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ApplyLoadedBundles(loadedBundles);
 	}
 
-	private void LoadCdnBundles(string product)
+	private void LoadCdnBundles(string product, bool isAutoInferred = false)
 	{
 		// :cdn: is a selector over release notes prefetched at build startup.
 		if (!Context.ReleaseNotesResolver.IsDeclared(product))
 		{
-			// Inferred products are fetched best-effort: a 404 is not a build error. Render empty with a hint
+			// Auto-inferred products are fetched best-effort: a 404 is not a build error. Render empty with a hint
 			// so authors know bundles aren't available yet without failing the build.
-			if (Context.ReleaseNotesResolver.IsInferred(product))
+			// isAutoInferred is set at the directive level (valueless :cdn:), not from a global resolver set,
+			// so it is never contaminated by products inferred from other assembled repos.
+			if (isAutoInferred)
 			{
 				this.EmitHint(
 					$"No CDN bundles found for auto-inferred product '{product}'. " +
