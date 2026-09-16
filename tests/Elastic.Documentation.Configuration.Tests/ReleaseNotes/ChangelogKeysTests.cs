@@ -245,6 +245,28 @@ public class ChangelogKeysTests
 	public void IsRegistry_InvalidKeys_ReturnsFalse(string key) => ChangelogKeys.IsRegistry(key).Should().BeFalse();
 
 	[Test]
+	[Arguments("changelog/elastic/elasticsearch/notes-9.0.0.json")]
+	[Arguments("changelog/elastic/elasticsearch/notes-elasticsearch-9.0.0.json")]
+	[Arguments("changelog/elastic/cloud/notes-cloud-enterprise-4.2.0.json")]
+	public void IsNotesIndex_ValidKeys_ReturnsTrue(string key) => ChangelogKeys.IsNotesIndex(key).Should().BeTrue();
+
+	[Test]
+	[Arguments("changelog/elastic/elasticsearch/main/notes-9.0.0.json")]
+	[Arguments("changelog/elastic/elasticsearch/notes-.json")]
+	[Arguments("bundle/elasticsearch/notes-9.0.0.json")]
+	public void IsNotesIndex_InvalidKeys_ReturnsFalse(string key) => ChangelogKeys.IsNotesIndex(key).Should().BeFalse();
+
+	[Test]
+	public void NotesIndexKey_LegacyAndProductScoped_ConstructsWithoutParsing()
+	{
+		ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0").Should().Be("changelog/elastic/elasticsearch/notes-9.0.0.json");
+		ChangelogKeys
+			.NotesIndexKey("elastic", "cloud", "cloud-enterprise", "4.2.0")
+			.Should()
+			.Be("changelog/elastic/cloud/notes-cloud-enterprise-4.2.0.json");
+	}
+
+	[Test]
 	[Arguments("/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
 	[Arguments("bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
 	[Arguments("https://cdn.example/bundle/elasticsearch/9.3.0.yaml", "elasticsearch", "9.3.0.yaml")]
