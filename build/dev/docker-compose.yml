@@ -7,6 +7,7 @@ services:
     working_dir: /workspace
     volumes:
       - .:/workspace
+      - build-artifacts:/workspace/docs-builder/.artifacts
 
   # Run the repository's unit-test suite without installing the .NET SDK on
   # the host machine. Build the image with `./dev.sh build` first.
@@ -55,3 +56,4 @@ volumes:
   node-modules:
   test-artifacts:
   serve-artifacts:
+  build-artifacts:
