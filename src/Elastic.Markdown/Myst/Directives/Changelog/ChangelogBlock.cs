@@ -256,18 +256,22 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				return;
 			}
 
+			// Warn when the author also supplied a folder argument — it is ignored because :cdn: takes priority.
+			if (!string.IsNullOrWhiteSpace(Arguments))
+				this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
+
 			CdnProduct = product;
 			LoadCdnBundles(product);
 			return;
 		}
 
 		// TODO: This argument parsing (path vs product name) needs refactoring when all usages are
-		// updated to use explicit product names. At that point, the '/' check can be dropped and
-		// local-path support can be a dedicated option or removed entirely.
+		// updated to explicit product names. At that point the '/' check and local-path support can
+		// be removed.
 		if (!string.IsNullOrWhiteSpace(Arguments) && Arguments.StartsWith('/'))
 		{
 			// Path argument — still honored in all build types for backward compatibility.
-			// In non-isolated builds this emits a deprecation warning; the local path is still used
+			// In non-isolated builds a deprecation warning is emitted; the local path is still used
 			// so existing repos with committed bundle files continue to work until they migrate to
 			// an explicit product name.
 			// TODO: Once all usages are migrated, restrict path arguments to isolated builds only.
@@ -285,27 +289,30 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return;
 		}
 
-		// CDN mode: argument is an explicit product name, or infer from repo when omitted.
-		// A '/'-prefixed argument is a local-path override (handled above); treat it as absent here.
-		var argProduct = !string.IsNullOrWhiteSpace(Arguments) && !Arguments.StartsWith('/') ? Arguments.Trim() : null;
-		var cdnProduct = argProduct ?? InferCdnProductFromRepository();
-
-		if (string.IsNullOrWhiteSpace(cdnProduct))
+		// Explicit product name as argument: use CDN with that product.
+		// TODO: Once path-argument usages are migrated, the no-argument case below should also
+		// default to CDN (inferring the product from the repository), replacing local-folder discovery.
+		if (!string.IsNullOrWhiteSpace(Arguments))
 		{
-			this.EmitError(
-				"The CDN product could not be inferred from the repository; specify it explicitly, e.g. '::{changelog} elasticsearch'."
-			);
+			var argProduct = Arguments.Trim();
+
+			if (!IsValidCdnProduct(argProduct))
+			{
+				this.EmitError($"Invalid CDN product '{argProduct}'. Product names must match [a-zA-Z0-9_-]+.");
+				return;
+			}
+
+			CdnProduct = argProduct;
+			LoadCdnBundles(argProduct);
 			return;
 		}
 
-		if (!IsValidCdnProduct(cdnProduct))
-		{
-			this.EmitError($"Invalid CDN product '{cdnProduct}'. Product names must match [a-zA-Z0-9_-]+.");
-			return;
-		}
-
-		CdnProduct = cdnProduct;
-		LoadCdnBundles(cdnProduct);
+		// No argument and no :cdn: option: fall back to local folder discovery (existing behavior).
+		// This preserves backward compatibility for bare {changelog} directives until all repos
+		// have declared release_notes in docset.yml and migrated to an explicit product name.
+		ExtractBundlesFolderPath();
+		if (Found)
+			LoadAndCacheBundles();
 	}
 
 	private ChangelogLinkVisibility ParseLinkVisibility()
@@ -568,10 +575,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private void LoadCdnBundles(string product)
 	{
-		// Product validity is checked by the caller before CdnProduct is assigned.
-		if (!string.IsNullOrWhiteSpace(Arguments))
-			this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
-
 		// :cdn: is a selector over release notes prefetched at build startup. A product must be declared
 		// under `release_notes` in docset.yml; otherwise its bundles were never fetched.
 		if (!Context.ReleaseNotesResolver.IsDeclared(product))
