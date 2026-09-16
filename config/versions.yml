@@ -3,7 +3,7 @@ versioning_systems:
   # Updates for Stack versions are manual
   stack: &stack
     base: 9.0
-    current: 9.5.3
+    current: 9.5.4
 
   # Using an unlikely high version
   # So that our logic that would display "planned" doesn't trigger
@@ -76,10 +76,10 @@ versioning_systems:
     current: 9.5.3
   edot-ios:
     base: 1.0
-    current: 2.0.2
+    current: 2.1.0
   edot-android:
     base: 1.0
-    current: 1.8.0
+    current: 1.9.0
   edot-browser:
     base: 0.1
     current: 0.3.0

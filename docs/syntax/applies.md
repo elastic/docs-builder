@@ -398,6 +398,8 @@ applies_to:
 
 This section provides detailed rules for how badges are rendered based on lifecycle, version, and release status. Use this as a reference when you need to understand the exact rendering behavior.
 
+For `{settings}` YAML, still write the version on `stack`. Do not omit it to hide **Planned**. See [applies_to in settings YAML](automated_settings.md#settings-yaml).
+
 ### Rendering order
 
 `applies_to` badges are displayed in a consistent order regardless of how they appear in your source files:

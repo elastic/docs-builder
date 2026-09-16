@@ -146,6 +146,14 @@ public record BundleChangelogsArguments
 	/// entry source) without writing a bundle. Only valid together with a git ref range.
 	/// </summary>
 	public bool DryRun { get; init; }
+
+	/// <summary>
+	/// Optional callback invoked with the resolved output file path immediately after the bundle
+	/// is written to disk. Used by <c>ChangelogCommand.Bundle</c> to capture the path for GitHub
+	/// Actions output without changing the <see cref="ChangelogBundlingService.BundleChangelogs"/>
+	/// return type (tests that don't need the path leave this null).
+	/// </summary>
+	public Action<string>? OnBundlePathResolved { get; init; }
 }
 
 /// <summary>
@@ -635,6 +643,10 @@ public partial class ChangelogBundlingService(
 		// Write bundle file
 		await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
+		// Notify the caller of the resolved output path (used by ChangelogCommand.Bundle to emit
+		// bundle_path as a GitHub Actions step output so callers don't need to predict the path).
+		input.OnBundlePathResolved?.Invoke(outputPath);
+
 		return true;
 	}
 
@@ -661,7 +673,8 @@ public partial class ChangelogBundlingService(
 				_logger,
 				ctx,
 				input.ProfileReport,
-				_releaseService
+				_releaseService,
+				_commitRangeService
 			);
 
 		if (filterResult == null)
