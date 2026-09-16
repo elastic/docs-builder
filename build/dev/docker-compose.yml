@@ -28,9 +28,10 @@ services:
   # CLI, while Markdown and static-file changes use the existing live reload.
   # Start with `./dev.sh serve` and open http://localhost:3000.
   #
-  # node_modules is mounted as a named volume so npm ci never writes
-  # root-owned files into the host checkout. The npm-cache volume retains
-  # downloaded packages so reinstalls after a lockfile change are fast.
+  # .artifacts/ and node_modules are mounted as named volumes so dotnet watch
+  # and npm ci never write root-owned files into the host checkout. The
+  # npm-cache volume retains downloaded packages so reinstalls after a
+  # lockfile change are fast.
   serve:
     image: docs-builder:tooling
     working_dir: /src
@@ -46,9 +47,11 @@ services:
       - nuget-packages:/root/.nuget/packages
       - npm-cache:/root/.npm
       - node-modules:/src/src/Elastic.Documentation.Site/node_modules
+      - serve-artifacts:/src/.artifacts
 
 volumes:
   npm-cache:
   nuget-packages:
   node-modules:
   test-artifacts:
+  serve-artifacts:
