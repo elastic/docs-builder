@@ -172,22 +172,94 @@ public class ChangelogEntryValidationService(
 			entriesByFile[relPath] = dto;
 		}
 
-		// ── Collect own-repo PR numbers for existence check (from filenames) ──────────────────
-		var ownRepoNumbers = new HashSet<int>(filenamePrNumbers.Values);
+		// ── Cross-repo PR existence check ────────────────────────────────────────────────────
+		// For each filename PR number, derive candidate repos from the entry's products field.
+		// Falls back to the submitting repo when products carry no Repository link.
+		var fileCheckRepos = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+		foreach (var (relPath, _) in filenamePrNumbers)
+		{
+			var candidateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			if (entriesByFile.TryGetValue(relPath, out var dto) && dto?.Products is { Count: > 0 })
+			{
+				foreach (var ep in dto.Products)
+				{
+					if (string.IsNullOrWhiteSpace(ep.Product))
+						continue;
+					var productId = ep.Product.Replace('_', '-').ToLowerInvariant();
+					if (availableProducts.TryGetValue(productId, out var product) && !string.IsNullOrWhiteSpace(product.Repository))
+					{
+						// Repository values are bare names (e.g. "elasticsearch") — qualify with owner.
+						var repoRef = product.Repository.Contains('/') ? product.Repository : $"{input.Owner}/{product.Repository}";
+						_ = candidateRepos.Add(repoRef);
+					}
+				}
+			}
+			if (candidateRepos.Count == 0)
+				_ = candidateRepos.Add($"{input.Owner}/{input.Repo}");
+			fileCheckRepos[relPath] = candidateRepos;
+		}
 
-		// ── Batch PR existence check ───────────────────────────────────────────────────────────
-		var existenceResults = ownRepoNumbers.Count > 0
-			? await gitHubPrService.CheckPullRequestsExistAsync(input.Owner, input.Repo, [.. ownRepoNumbers], ctx)
-			: new Dictionary<int, bool>();
+		// Group PR numbers by repo for batched API calls.
+		var repoToNumbers = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
+		foreach (var (relPath, repos) in fileCheckRepos)
+		{
+			if (!filenamePrNumbers.TryGetValue(relPath, out var prNum))
+				continue;
+			foreach (var repo in repos)
+			{
+				if (!repoToNumbers.TryGetValue(repo, out var nums))
+					repoToNumbers[repo] = nums = [];
+				_ = nums.Add(prNum);
+			}
+		}
 
-		// ── Filename PR existence check ───────────────────────────────────────────────────────
+		var repoExistenceResults = new Dictionary<string, IReadOnlyDictionary<int, bool>>(StringComparer.OrdinalIgnoreCase);
+		foreach (var (ownerRepo, numbers) in repoToNumbers)
+		{
+			var slash = ownerRepo.IndexOf('/');
+			repoExistenceResults[ownerRepo] = await gitHubPrService.CheckPullRequestsExistAsync(
+				slash < 0 ? input.Owner : ownerRepo[..slash],
+				slash < 0 ? ownerRepo : ownerRepo[(slash + 1)..],
+				[.. numbers],
+				ctx
+			);
+		}
+
+		// Emit an error only when every candidate repo definitively reports the PR absent.
 		foreach (var (relPath, prNum) in filenamePrNumbers)
 		{
-			if (existenceResults.TryGetValue(prNum, out var exists) && !exists)
-				allFindings.Add(
-					new EntryFileFinding(relPath, FindingSeverity.Error, $"PR #{prNum} does not exist in {input.Owner}/{input.Repo}")
-				);
+			if (!fileCheckRepos.TryGetValue(relPath, out var candidateRepos))
+				continue;
+
+			var allDefinitivelyMissing = true;
+			var anyChecked = false;
+			foreach (var ownerRepo in candidateRepos)
+			{
+				if (!repoExistenceResults.TryGetValue(ownerRepo, out var repoResults))
+					continue;
+				if (!repoResults.TryGetValue(prNum, out var exists))
+				{
+					// Inconclusive: the API did not return a definitive answer for this PR.
+					_logger.LogWarning("PR #{PrNum} existence in {Repo} is inconclusive — skipping error", prNum, ownerRepo);
+					allDefinitivelyMissing = false;
+					continue;
+				}
+				anyChecked = true;
+				if (exists)
+				{
+					allDefinitivelyMissing = false;
+					break;
+				}
+			}
+
+			if (anyChecked && allDefinitivelyMissing)
+			{
+				var repos = string.Join(", ", candidateRepos);
+				allFindings.Add(new EntryFileFinding(relPath, FindingSeverity.Error, $"PR #{prNum} does not exist in {repos}"));
+			}
 		}
+
+		var ownRepoNumbers = new HashSet<int>(filenamePrNumbers.Values);
 
 		// ── Presence check ────────────────────────────────────────────────────────────────────
 		if (input.RequireChangelogFile && !ownRepoNumbers.Contains(input.PrNumber))
