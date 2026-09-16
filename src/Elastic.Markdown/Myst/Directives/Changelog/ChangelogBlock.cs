@@ -575,10 +575,21 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private void LoadCdnBundles(string product)
 	{
-		// :cdn: is a selector over release notes prefetched at build startup. A product must be declared
-		// under `release_notes` in docset.yml; otherwise its bundles were never fetched.
+		// :cdn: is a selector over release notes prefetched at build startup.
 		if (!Context.ReleaseNotesResolver.IsDeclared(product))
 		{
+			// Inferred products are fetched best-effort: a 404 is not a build error. Render empty with a hint
+			// so authors know bundles aren't available yet without failing the build.
+			if (Context.ReleaseNotesResolver.IsInferred(product))
+			{
+				this.EmitHint(
+					$"No CDN bundles found for auto-inferred product '{product}'. " +
+						$"The changelog will render empty until bundles are published. " +
+						$"To suppress this hint, declare it explicitly under 'release_notes:' in docset.yml."
+				);
+				return;
+			}
+
 			this.EmitError(
 				$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}"
 			);
@@ -697,8 +708,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		return matched;
 	}
 
-	private static bool IsValidCdnProduct(string product) =>
-		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+	private static bool IsValidCdnProduct(string product) => ReleaseNotesFetcher.IsValidCdnProductId(product);
 
 	/// <summary>Infers the CDN product for a valueless <c>:cdn:</c> from the repo, mapped to its canonical id via products.yml.</summary>
 	private string? InferCdnProductFromRepository()
