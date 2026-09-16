@@ -21,7 +21,8 @@ public readonly record struct CdnNamedBundle(string FileName, string Content, IR
 /// Fetches changelog bundles for a single product from the public CDN. It reads
 /// <c>{base}/bundle/{product}/registry.json</c> to enumerate bundles, downloads each
 /// <c>{base}/bundle/{product}/{file}</c>, and parses them via
-/// <see cref="BundleLoader.LoadBundlesFromContent"/>.
+/// <see cref="BundleLoader.LoadBundlesFromContent"/>. It does not read notes indexes
+/// (<c>changelog/{org}/{repo}/notes-*.json</c>); those are used only by <c>changelog bundle</c>.
 /// </summary>
 /// <remarks>
 /// <para>

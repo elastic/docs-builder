@@ -93,17 +93,9 @@ public static class ChangelogKeys
 	public static string ChangelogRegistryKey(string poolGroup) => $"{ChangelogPrefix}{poolGroup}/{RegistryFileName}";
 
 	/// <summary>
-	/// The legacy notes-index key for one release version within a repo:
-	/// <c>changelog/{org}/{repo}/notes-{version}.json</c>.
-	/// Repo-level and branch-agnostic — the union of notes for that version across every product.
+	/// The leftover version-only key <c>changelog/{org}/{repo}/notes-{version}.json</c>.
+	/// No longer written. The notes reconciler deletes remaining objects at this key.
 	/// </summary>
-	/// <remarks>
-	/// The slug in the key is the release version (e.g. <c>9.3.0</c> or <c>2026-05-15</c>).
-	/// Previously this parameter was named <c>target</c> to match the obsolete <c>target:</c> YAML field;
-	/// it was renamed to <c>version</c> when that field was replaced by <c>versions:</c> on notes.
-	/// Older <c>changelog bundle</c> clients still GET this key; the scrubber dual-writes it
-	/// alongside <see cref="NotesIndexKey(string, string, string, string)"/>.
-	/// </remarks>
 	public static string NotesIndexKey(string org, string repo, string version) => $"{ChangelogPrefix}{org}/{repo}/notes-{version}.json";
 
 	/// <summary>
@@ -123,8 +115,9 @@ public static class ChangelogKeys
 	/// <summary>
 	/// Returns true when <paramref name="key"/> is a notes-index key of the form
 	/// <c>changelog/{org}/{repo}/notes-{slug}.json</c> (exactly two group segments, then
-	/// a <c>notes-</c>-prefixed JSON file with a non-empty slug). Covers both the legacy
-	/// <c>notes-{version}.json</c> shape and the product-scoped <c>notes-{product}-{version}.json</c> shape.
+	/// a <c>notes-</c>-prefixed JSON file with a non-empty slug). Covers the product-scoped
+	/// <c>notes-{product}-{version}.json</c> shape and leftover version-only
+	/// <c>notes-{version}.json</c> objects so they can still be listed and deleted.
 	/// </summary>
 	public static bool IsNotesIndex(string key)
 	{
