@@ -226,10 +226,11 @@ Legacy form (still supported):
 :::
 ```
 
-The product names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). When no product is specified (neither argument nor `:cdn:` value), the product is inferred from the repository that holds the doc. The repository name is mapped to its canonical product ID via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product).
+The product names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). When `:cdn:` is present without a value, the product is inferred from the repository that holds the doc. The repository name is mapped to its canonical product ID via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product):
 
 ```markdown
 :::{changelog}
+:cdn:
 :::
 ```
 

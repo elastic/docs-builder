@@ -659,6 +659,14 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return bundles;
 
 		var sinceVd = VersionOrDate.Parse(since);
+		if (sinceVd.Raw is not null)
+		{
+			this.EmitWarning(
+				$":since_version: '{since}' is not a valid semver or date (YYYY-MM-DD / YYYY-MM) — filter will not be applied."
+			);
+			return bundles;
+		}
+
 		var visible = new List<LoadedBundle>(bundles.Count);
 		foreach (var bundle in bundles)
 		{
