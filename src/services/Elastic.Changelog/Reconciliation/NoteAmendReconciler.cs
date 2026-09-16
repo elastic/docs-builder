@@ -95,7 +95,7 @@ public sealed class NoteAmendReconciler(
 				_ = touched.Add(product);
 		}
 
-		await RewriteNotesIndexesAsync(org, repo, notesByProduct, seqMap, ctx);
+		await RewriteNotesIndexesAsync(org, repo, notesByProduct, seqMap, touched, ctx);
 		return [.. touched];
 	}
 
@@ -104,6 +104,7 @@ public sealed class NoteAmendReconciler(
 		string repo,
 		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> notesByProduct,
 		IReadOnlyDictionary<string, Dictionary<string, int>> seqMap,
+		HashSet<string> touchedProducts,
 		Cancel ctx
 	)
 	{
@@ -115,12 +116,16 @@ public sealed class NoteAmendReconciler(
 			CancellationToken = ctx
 		}, async (write, ct) =>
 		{
+			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, write.Product, write.Version);
 			if (write.Notes.Count == 0)
+			{
+				if (touchedProducts.Contains(write.Product))
+					await notesIndexReconciler.DeleteIndexAsync(indexKey, ct);
 				return;
+			}
 
 			var seqs = seqMap[ProductVersionKey(write.Product, write.Version)];
 			var updatedEntries = WithSeqs(write.Notes, seqs);
-			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, write.Product, write.Version);
 			await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ct, new NotesIndexMetadata(write.Product, write.Version));
 		});
 
@@ -506,11 +511,6 @@ public sealed class NoteAmendReconciler(
 		{
 			_logger.LogDebug("Amend-notes {Key} was updated concurrently; delete skipped", key);
 			return true;
-		}
-		catch (Exception ex) when (ex is not OperationCanceledException)
-		{
-			_logger.LogWarning(ex, "Could not delete stale amend-notes sidecar {Key}; will retry on next reconcile", key);
-			return false;
 		}
 	}
 
