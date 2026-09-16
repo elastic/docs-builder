@@ -14,7 +14,7 @@ variable "CACHE_REPOSITORY" {
 
 target "common" {
   context    = "."
-  dockerfile = "Dockerfile"
+  dockerfile = "build/dev/Dockerfile"
 
   cache-from = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}"] : []
   cache-to   = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY},mode=max"] : []

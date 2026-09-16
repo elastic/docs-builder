@@ -18,12 +18,12 @@ dotnet tool restore
 If you only need to validate rendering or authoring changes, the Docker setup removes the .NET/Node prerequisite:
 
 ```bash
-make build    # build images (once, or after Dockerfile changes)
-make serve    # serve docs with hot reload at http://localhost:3000
-make test     # run the full unit-test suite
+./dev.sh build    # build images (once, or after Dockerfile changes)
+./dev.sh serve    # serve docs with hot reload at http://localhost:3000
+./dev.sh test     # run the full unit-test suite
 ```
 
-See the `Makefile` for the full list of targets (`make help`).
+Run `./dev.sh help` for the full list of commands. Docker files live under `build/dev/`.
 
 ## Validate the fully assembled documentation
 

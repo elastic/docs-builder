@@ -28,12 +28,6 @@ ARG TARGETARCH
 RUN --mount=type=cache,id=docs-builder-nuget,target=/root/.nuget/packages,sharing=locked \
     dotnet restore src/tooling/docs-builder/docs-builder.csproj
 
-# Seed frontend dependencies in the tooling image. The cache mount avoids
-# downloading unchanged npm packages when the source layer is rebuilt.
-RUN --mount=type=cache,id=docs-builder-npm,target=/root/.npm \
-    npm ci --prefix src/Elastic.Documentation.Site \
-    && touch src/Elastic.Documentation.Site/node_modules/.install-stamp
-
 FROM tooling AS publish
 
 RUN case "${TARGETARCH}" in \
