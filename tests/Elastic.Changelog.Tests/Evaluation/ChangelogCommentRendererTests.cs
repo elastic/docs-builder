@@ -272,8 +272,8 @@ public class ChangelogCommentRendererTests
 	public void RenderMissingEntry_ContainsPrNumber()
 	{
 		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 99);
-		body.Should().Contain("#99");
 		body.Should().Contain("99.yaml");
+		body.Should().Contain("pending");
 	}
 
 	[Fact]

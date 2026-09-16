@@ -315,9 +315,8 @@ internal static class ChangelogCommentRenderer
 				"\n",
 				Title,
 				"",
-				$"📋 **Changelog entry file required** — no entry file was found for PR #{prNumber}.",
-				"",
-				$"Add {WrapInlineCode(expectedPath)} to the PR branch."
+				$"📋 **Changelog entry pending** — {WrapInlineCode(expectedPath)} will be committed automatically. " +
+					$"If it does not appear shortly, add {WrapInlineCode(expectedPath)} to the PR branch manually."
 			)
 		);
 	}
