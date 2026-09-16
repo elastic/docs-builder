@@ -14,11 +14,12 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Changelog.Reconciliation;
 
 /// <summary>
-/// Compares each note in the per-version notes indexes against published bundles for the same
-/// version, and either creates or deletes a reconciler-owned amend sidecar
+/// Compares each note in the product-scoped notes indexes against that product's published
+/// bundles for the same version, and either creates or deletes a reconciler-owned amend sidecar
 /// (<c>{parent}.amend-notes.yaml</c>) that carries notes that arrived after the release shipped.
-/// Also updates each <c>bundle_seq</c> in the notes index: 0 = no bundle yet, 1 = shipped in the
-/// original bundle or a human amend, 2 = carried by the reconciler amend sidecar.
+/// Also updates each <c>bundle_seq</c> on the product-scoped notes index: 0 = no bundle yet,
+/// 1 = shipped in the original bundle or a human amend, 2 = carried by the reconciler amend sidecar.
+/// The dual-written legacy <c>notes-{version}.json</c> path list is refreshed in the same pass.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -49,87 +50,136 @@ public sealed class NoteAmendReconciler(
 	private readonly TimeSpan _retryBaseDelay = retryBaseDelay ?? TimeSpan.FromMilliseconds(200);
 
 	/// <summary>
-	/// For the given repository scope, scans every product's bundle registry to determine which
-	/// notes have shipped and which are late, writes or deletes the reconciler-owned amend sidecars,
-	/// and re-writes the notes indexes with correct <c>bundle_seq</c> values.
+	/// For the given repository scope, scans each product that appears in
+	/// <paramref name="notesByProduct"/> (not every <c>bundle/{product}/</c> prefix), writes or
+	/// deletes that product's reconciler-owned amend sidecars, and re-writes product-scoped and
+	/// legacy notes indexes with correct <c>bundle_seq</c> values.
 	/// </summary>
-	/// <param name="notesScope">The notes scope for this repo.</param>
-	/// <param name="notesByVersion">Output of <see cref="NotesIndexReconciler.ReconcileRepoAsync"/>.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	public async Task ReconcileAsync(
+	/// <returns>
+	/// Product ids that had an amend-notes write, skip-unchanged, or delete. Callers rebuild
+	/// those products' <c>registry.json</c> and the bundle shallow map. Products that were not
+	/// in the notes map are not returned and are not swept.
+	/// </returns>
+	public async Task<IReadOnlyList<string>> ReconcileAsync(
 		ChangelogScope notesScope,
-		IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>> notesByVersion,
+		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> notesByProduct,
 		Cancel ctx
 	)
 	{
-		if (notesByVersion.Count == 0)
-			return;
+		if (notesByProduct.Count == 0)
+			return [];
 
 		var groupParts = notesScope.Group.Split('/');
 		var (org, repo) = (groupParts[0], groupParts[1]);
 
-		// Track bundle_seq for each (version → path → seq).  Default 0 = unreleased.
 		var seqMap = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
-		foreach (var (version, notes) in notesByVersion)
-			seqMap[version] = notes.ToDictionary(n => n.Path, _ => 0, StringComparer.Ordinal);
-
-		// List all product names from the bundle tree.
-		var products = await ListBundleProductsAsync(ctx);
-		_logger.LogDebug("NoteAmendReconciler: scanning {Count} bundle product(s) for repo {Org}/{Repo}", products.Count, org, repo);
-
-		foreach (var product in products)
+		foreach (var (product, byVersion) in notesByProduct)
 		{
-			ctx.ThrowIfCancellationRequested();
-			await ProcessProductAsync(org, repo, product, notesByVersion, seqMap, ctx);
+			foreach (var (version, notes) in byVersion)
+				seqMap[ProductVersionKey(product, version)] = notes.ToDictionary(n => n.Path, _ => 0, StringComparer.Ordinal);
 		}
 
-		// Re-write notes indexes with the updated bundle_seq values.
-		await Parallel.ForEachAsync(notesByVersion, new ParallelOptions
+		_logger.LogDebug(
+			"NoteAmendReconciler: scanning {Count} product(s) from the notes index for repo {Org}/{Repo}",
+			notesByProduct.Count,
+			org,
+			repo
+		);
+
+		var touched = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var (product, byVersion) in notesByProduct)
+		{
+			ctx.ThrowIfCancellationRequested();
+			if (await ProcessProductAsync(org, repo, product, byVersion, seqMap, ctx))
+				_ = touched.Add(product);
+		}
+
+		await RewriteNotesIndexesAsync(org, repo, notesByProduct, seqMap, ctx);
+		return [.. touched];
+	}
+
+	private async Task RewriteNotesIndexesAsync(
+		string org,
+		string repo,
+		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> notesByProduct,
+		IReadOnlyDictionary<string, Dictionary<string, int>> seqMap,
+		Cancel ctx
+	)
+	{
+		var productWrites = notesByProduct.SelectMany(p => p.Value.Select(v => (Product: p.Key, Version: v.Key, Notes: v.Value))).ToList();
+
+		await Parallel.ForEachAsync(productWrites, new ParallelOptions
 		{
 			MaxDegreeOfParallelism = MaxParallelWrites,
 			CancellationToken = ctx
-		}, async (kvp, ct) =>
+		}, async (write, ct) =>
 		{
-			var (version, notes) = kvp;
-			var seqs = seqMap[version];
-			var updatedEntries = notes
-				.Select(n => n with { BundleSeq = seqs.TryGetValue(n.Path, out var s) ? s : 0 })
-				.OrderBy(n => n.Path, StringComparer.Ordinal)
-				.ToList<NoteIndexEntry>();
-			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
-			await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ct);
+			var seqs = seqMap[ProductVersionKey(write.Product, write.Version)];
+			var updatedEntries = WithSeqs(write.Notes, seqs);
+			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, write.Product, write.Version);
+			await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ct, new NotesIndexMetadata(write.Product, write.Version));
 		});
-	}
 
-	// -----------------------------------------------------------------------------------------
-	// Product scanning
-	// -----------------------------------------------------------------------------------------
-
-	private async Task<IReadOnlyList<string>> ListBundleProductsAsync(Cancel ctx)
-	{
-		var products = new List<string>();
-		var request = new ListObjectsV2Request { BucketName = publicBucketName, Prefix = ChangelogKeys.BundlePrefix, Delimiter = "/" };
-
-		ListObjectsV2Response response;
-		do
+		foreach (var (version, unionNotes) in UnionByVersion(notesByProduct))
 		{
-			response = await s3Client.ListObjectsV2Async(request, ctx);
-			foreach (var prefix in response.CommonPrefixes ?? [])
-			{
-				// CommonPrefix is like "bundle/elasticsearch/" — strip the outer segments.
-				var inner = prefix[ChangelogKeys.BundlePrefix.Length..];
-				var product = inner.TrimEnd('/');
-				if (!string.IsNullOrEmpty(product))
-					products.Add(product);
-			}
-			request.ContinuationToken = response.NextContinuationToken;
+			ctx.ThrowIfCancellationRequested();
+			var seqs = MaxSeqsForVersion(notesByProduct.Keys, version, seqMap);
+			var updatedEntries = WithSeqs(unionNotes, seqs);
+			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
+			await notesIndexReconciler.WriteIndexAsync(indexKey, updatedEntries, ctx);
 		}
-		while (response.IsTruncated == true);
-
-		return products;
 	}
 
-	private async Task ProcessProductAsync(
+	private static List<NoteIndexEntry> WithSeqs(IReadOnlyList<NoteIndexEntry> notes, IReadOnlyDictionary<string, int> seqs) =>
+		notes
+			.Select(n => n with { BundleSeq = seqs.TryGetValue(n.Path, out var s) ? s : 0 })
+			.OrderBy(n => n.Path, StringComparer.Ordinal)
+			.ToList();
+
+	private static Dictionary<string, List<NoteIndexEntry>> UnionByVersion(
+		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> notesByProduct
+	)
+	{
+		var byVersion = new Dictionary<string, List<NoteIndexEntry>>(StringComparer.Ordinal);
+		foreach (var byProductVersion in notesByProduct.Values)
+		{
+			foreach (var (version, notes) in byProductVersion)
+			{
+				if (!byVersion.TryGetValue(version, out var union))
+					byVersion[version] = union = [];
+				foreach (var note in notes)
+				{
+					if (!union.Any(e => e.Path == note.Path))
+						union.Add(note);
+				}
+			}
+		}
+		return byVersion;
+	}
+
+	private static Dictionary<string, int> MaxSeqsForVersion(
+		IEnumerable<string> products,
+		string version,
+		IReadOnlyDictionary<string, Dictionary<string, int>> seqMap
+	)
+	{
+		var max = new Dictionary<string, int>(StringComparer.Ordinal);
+		foreach (var product in products)
+		{
+			if (!seqMap.TryGetValue(ProductVersionKey(product, version), out var seqs))
+				continue;
+			foreach (var (path, seq) in seqs)
+			{
+				if (!max.TryGetValue(path, out var current) || seq > current)
+					max[path] = seq;
+			}
+		}
+		return max;
+	}
+
+	private static string ProductVersionKey(string product, string version) => $"{product}/{version}";
+
+	private async Task<bool> ProcessProductAsync(
 		string org,
 		string repo,
 		string product,
@@ -152,23 +202,22 @@ public sealed class NoteAmendReconciler(
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 		{
-			return;
+			return false;
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			_logger.LogWarning(ex, "Could not read bundle registry for product {Product}; skipping", product);
-			return;
+			return false;
 		}
 
 		if (registry is null || registry.Bundles.Count == 0)
-			return;
+			return false;
 
-		// For each version that has notes, look for a matching parent bundle.
+		var touched = false;
 		foreach (var (version, notes) in notesByVersion)
 		{
 			ctx.ThrowIfCancellationRequested();
 
-			// Parent bundle: not an amend file, target matches the version.
 			var parentBundle = registry.Bundles.FirstOrDefault(
 				b => !string.IsNullOrEmpty(b.File) && !BundleAmendMerger.IsAmendFile(b.File) && ChangelogVersionMatch.Matches(
 					version,
@@ -178,13 +227,27 @@ public sealed class NoteAmendReconciler(
 			);
 
 			if (parentBundle is null)
-				continue; // No bundle yet → every note stays at bundle_seq 0.
+				continue;
 
-			await ProcessVersionBundleAsync(org, repo, product, parentBundle, registry, version, notes, seqMap[version], ctx);
+			if (
+				await ProcessVersionBundleAsync(
+					org,
+					repo,
+					product,
+					parentBundle,
+					registry,
+					version,
+					notes,
+					seqMap[ProductVersionKey(product, version)],
+					ctx
+				)
+			)
+				touched = true;
 		}
+		return touched;
 	}
 
-	private async Task ProcessVersionBundleAsync(
+	private async Task<bool> ProcessVersionBundleAsync(
 		string org,
 		string repo,
 		string product,
@@ -201,7 +264,7 @@ public sealed class NoteAmendReconciler(
 
 		var parent = await TryReadBundleAsync(parentKey, ctx);
 		if (parent is null)
-			return;
+			return false;
 
 		// A bundle with no file-annotated entries (hand-authored / legacy) has no reliable
 		// shipped set — skip to avoid false positives.
@@ -213,7 +276,7 @@ public sealed class NoteAmendReconciler(
 				parentKey,
 				version
 			);
-			return;
+			return false;
 		}
 
 		// Read existing numeric amend bundles (in order) to compute the full merged set.
@@ -271,17 +334,16 @@ public sealed class NoteAmendReconciler(
 			{
 				var amendBundle = AmendDocumentBuilder.Build(parent.Products, lateEntries, []);
 				var newJson = ReleaseNotesSerialization.SerializeBundle(amendBundle);
-				await WriteAmendNotesAsync(amendNotesKey, newJson, ctx);
+				_ = await WriteAmendNotesAsync(amendNotesKey, newJson, ctx);
 
 				foreach (var note in lateNotes)
-					seqByPath[note.Path] = 2; // carried by the reconciler amend
+					seqByPath[note.Path] = 2;
+				return true;
 			}
+			return false;
 		}
-		else
-		{
-			// All notes are shipped — delete the sidecar if it exists.
-			await DeleteAmendNotesIfExistsAsync(amendNotesKey, ctx);
-		}
+
+		return await DeleteAmendNotesIfExistsAsync(amendNotesKey, ctx);
 	}
 
 	// -----------------------------------------------------------------------------------------
@@ -331,7 +393,7 @@ public sealed class NoteAmendReconciler(
 	// Conditional S3 write / delete
 	// -----------------------------------------------------------------------------------------
 
-	private async Task WriteAmendNotesAsync(string key, string newJson, Cancel ctx)
+	private async Task<bool> WriteAmendNotesAsync(string key, string newJson, Cancel ctx)
 	{
 		const int maxAttempts = 5;
 		for (var attempt = 1; attempt <= maxAttempts; attempt++)
@@ -366,7 +428,7 @@ public sealed class NoteAmendReconciler(
 						if (existingJson == newJson)
 						{
 							_logger.LogDebug("Amend-notes {Key} is unchanged; skipping write", key);
-							return;
+							return true;
 						}
 					}
 					catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -390,7 +452,7 @@ public sealed class NoteAmendReconciler(
 				_ = await s3Client.PutObjectAsync(putRequest, ctx);
 				_metrics.IncrementRegistryWrites();
 				_logger.LogInformation("Wrote amend-notes sidecar {Key}", key);
-				return;
+				return true;
 			}
 			catch (AmazonS3Exception ex) when (ex.StatusCode is HttpStatusCode.PreconditionFailed || (int)ex.StatusCode == 409)
 			{
@@ -411,9 +473,10 @@ public sealed class NoteAmendReconciler(
 				_logger.LogDebug(ex, "Amend-notes write {Key} failed (attempt {A}/{Max}); retrying", key, attempt, maxAttempts);
 			}
 		}
+		return false;
 	}
 
-	private async Task DeleteAmendNotesIfExistsAsync(string key, Cancel ctx)
+	private async Task<bool> DeleteAmendNotesIfExistsAsync(string key, Cancel ctx)
 	{
 		try
 		{
@@ -425,19 +488,21 @@ public sealed class NoteAmendReconciler(
 
 			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key, IfMatch = etag }, ctx);
 			_logger.LogInformation("Deleted stale amend-notes sidecar {Key}", key);
+			return true;
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 		{
-			// Nothing to delete — this is the expected steady state when all notes are shipped.
+			return false;
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.PreconditionFailed)
 		{
-			// Another reconciler deleted or replaced it concurrently — safe to ignore.
 			_logger.LogDebug("Amend-notes {Key} was updated concurrently; delete skipped", key);
+			return true;
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			_logger.LogWarning(ex, "Could not delete stale amend-notes sidecar {Key}; will retry on next reconcile", key);
+			return false;
 		}
 	}
 

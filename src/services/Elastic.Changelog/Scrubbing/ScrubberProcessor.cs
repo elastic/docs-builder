@@ -140,8 +140,16 @@ public sealed class ScrubberProcessor(
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				var notesByVersion = await notesReconciler.ReconcileRepoAsync(work.Scope, ctx);
-				await noteAmendReconciler.ReconcileAsync(work.Scope, notesByVersion, ctx);
+				var notesByProduct = await notesReconciler.ReconcileRepoAsync(work.Scope, ctx);
+				var touchedProducts = await noteAmendReconciler.ReconcileAsync(work.Scope, notesByProduct, ctx);
+				foreach (var product in touchedProducts)
+				{
+					if (!ChangelogScope.TryCreateBundle(product, out var bundleScope))
+						continue;
+					_ = await reconciler.ReconcileGroupAsync(bundleScope, ctx);
+					foreach (var messageId in work.MessageIds)
+						AddShallow(shallowWork, bundleScope, messageId);
+				}
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
 			{
@@ -207,7 +215,7 @@ public sealed class ScrubberProcessor(
 			return;
 		}
 
-		// Notes indexes (notes-{target}.json) are reconciler-owned; a client that uploads one is
+		// Notes indexes are reconciler-owned; a client that uploads one is
 		// rejected here — the reconciler writes directly to the public bucket, so no copy is needed.
 		if (ChangelogKeys.IsNotesIndex(key))
 		{
