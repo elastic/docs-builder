@@ -63,9 +63,10 @@ public record BundleConfiguration
 	public string? Branch { get; init; }
 
 	/// <summary>
-	/// When set (including an empty list), PR/issue references whose resolved <c>owner/repo</c> is not listed
-	/// are rewritten to <c># PRIVATE:</c> sentinels at bundle time. When absent, no link filtering is applied.
+	/// Obsolete — no longer read. Link sanitization is handled exclusively by the scrubber Lambda.
+	/// Remove <c>link_allow_repos</c> from <c>changelog.yml</c>.
 	/// </summary>
+	[Obsolete("link_allow_repos is no longer read. Remove it from changelog.yml.", error: false)]
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>

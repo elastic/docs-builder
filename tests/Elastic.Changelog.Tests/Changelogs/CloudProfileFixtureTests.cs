@@ -185,13 +185,10 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		bundle.Should().NotContain("Tidy up the hosted docs", "rules.bundle.exclude_types drops docs entries");
 		bundle.Should().NotContain("Serverless-only change", "the cloud-hosted product filter excludes other products");
 
-		// Link allowlist: the allowlisted public PR is kept verbatim; the non-allowlisted repo reference is
-		// rewritten to a "# PRIVATE:" sentinel rather than left as a live link.
+		// Link sanitization is now handled exclusively by the scrubber Lambda, not at bundle creation time.
+		// Both the public and private repo links pass through unscrubbed into the private S3 bundle.
 		bundle.Should().Contain("- https://github.com/elastic/elasticsearch/pull/100");
-		bundle.Should().Contain(
-			"# PRIVATE: https://github.com/elastic/widget-internal/pull/7",
-			"non-allowlisted PR links must be scrubbed to a PRIVATE sentinel in bundle output"
-		);
+		bundle.Should().Contain("- https://github.com/elastic/widget-internal/pull/7");
 
 		// release_dates: false → no auto-populated release date.
 		bundle.Should().NotContain("release_date");
