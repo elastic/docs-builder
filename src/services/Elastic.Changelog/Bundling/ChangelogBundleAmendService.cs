@@ -193,41 +193,9 @@ public class ChangelogBundleAmendService(
 				_ = appliedExclusionKeys.Add(BundleAmendMerger.BuildExclusionKey(entry));
 			}
 
-			var linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
-			var linkAllowlistActive = linkAllowRepos != null;
-
 			var entries = new List<BundledEntry>();
 			if (addSources.Count > 0)
 			{
-				if (linkAllowlistActive)
-				{
-					var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
-					var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
-					if (
-						!LinkAllowlistSanitizer.TryApplyBundle(
-							collector,
-							parentBundle,
-							linkAllowRepos!,
-							owner,
-							repo,
-							out _,
-							out var parentHadAllowlistChanges
-						)
-					)
-						return false;
-
-					if (parentHadAllowlistChanges)
-					{
-						collector.EmitError(
-							string.Empty,
-							"bundle.link_allow_repos requires the parent bundle to already reflect filtered PR/issue references. " +
-								"Re-create the parent bundle with the same bundle.link_allow_repos, " +
-								"or remove bundle.link_allow_repos for amend."
-						);
-						return false;
-					}
-				}
-
 				foreach (var addSource in addSources)
 				{
 					var entry = LoadChangelogContent(collector, addSource);
@@ -281,35 +249,7 @@ public class ChangelogBundleAmendService(
 			// CDN fetches all derive from a bundle file's own products.
 			var amendBundle = AmendDocumentBuilder.Build(parentBundle.Products, entries, excludeEntries);
 
-			var bundleForWrite = amendBundle;
-			if (entries.Count > 0 && linkAllowRepos != null)
-			{
-				var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
-				var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
-
-				if (!LinkAllowlistSanitizer.TryApplyBundle(collector, amendBundle, linkAllowRepos, owner, repo, out var sanitized, out _))
-					return false;
-				bundleForWrite = sanitized;
-
-				if (configurationContext != null && linkAllowRepos.Count > 0)
-				{
-					try
-					{
-						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, linkAllowRepos, assembly);
-					}
-					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-					{
-						collector.EmitWarning(
-							string.Empty,
-							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}"
-						);
-					}
-				}
-			}
-
-			var yaml = ReleaseNotesSerialization.SerializeBundle(bundleForWrite);
+			var yaml = ReleaseNotesSerialization.SerializeBundle(amendBundle);
 
 			var outputDir = _fileSystem.Path.GetDirectoryName(amendFilePath);
 			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))

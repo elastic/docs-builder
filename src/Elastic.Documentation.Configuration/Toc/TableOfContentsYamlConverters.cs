@@ -42,7 +42,19 @@ public class TocItemYamlConverter : IYamlTypeConverter
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
 		if (!parser.TryConsume<MappingStart>(out _))
+		{
+			// A bare scalar (e.g. "- toc.yml") is not a valid toc entry. Consume the token so
+			// TocItemCollectionYamlConverter's while-loop can advance past it; return a sentinel
+			// so the resolver can emit a clear diagnostic instead of silently dropping the entry.
+			if (parser.Accept<Scalar>(out var scalar))
+			{
+				_ = parser.MoveNext();
+				return new InvalidTocItemRef(scalar.Value);
+			}
+			// Anything else unexpected — skip to avoid an infinite loop.
+			parser.SkipThisAndNestedEvents();
 			return null;
+		}
 
 		var dictionary = new Dictionary<string, object?>();
 
