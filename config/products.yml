@@ -157,6 +157,12 @@ products:
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
+  elastic-defend:
+    display: 'Elastic Defend'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
   elastic-docs:
     display: 'Elastic Documentation'
     features:
