@@ -12,10 +12,11 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Changelog.Reconciliation;
 
 /// <summary>
-/// Rebuilds the per-version <c>notes-{version}.json</c> indexes for one repository by listing
-/// all <c>note-*.yml</c> objects under <c>changelog/{org}/{repo}/</c>, reading each to extract
-/// its <c>versions:</c> values (falling back to the legacy <c>target:</c> field for backward
-/// compatibility), and writing the affected indexes atomically with conditional S3 writes.
+/// Rebuilds notes indexes for one repository by listing all <c>note-*.yml</c> objects under
+/// <c>changelog/{org}/{repo}/</c>, reading each to extract <c>(product, version)</c> pairs
+/// from <c>products[]</c> (<c>versions</c>, then legacy <c>target</c>), and writing both
+/// product-scoped <c>notes-{product}-{version}.json</c> keys and the legacy
+/// <c>notes-{version}.json</c> union keys with conditional S3 writes.
 /// </summary>
 /// <remarks>
 /// A note may declare multiple versions, so one note can appear in several indexes. The index
@@ -42,14 +43,13 @@ public sealed class NotesIndexReconciler(
 	private readonly string _sourceBucketName = sourceBucketName ?? publicBucketName;
 
 	/// <summary>
-	/// Rebuilds all <c>notes-{version}.json</c> indexes for the given repository scope.
+	/// Rebuilds product-scoped and legacy version-union notes indexes for the given repository scope.
 	/// All currently published <c>note-*.yml</c> files across every branch are listed and
-	/// read to derive the version grouping; every affected index is then (re)written.
+	/// read to derive the grouping; every affected index is then (re)written.
 	/// </summary>
 	/// <returns>
-	/// A map of <c>version → list of NoteIndexEntry</c> for all versions found.
-	/// Returns an empty dictionary when no notes exist. Consumed by <see cref="NoteAmendReconciler"/>
-	/// in the same SQS-batch pass to compute <c>bundle_seq</c> and publish amend sidecars.
+	/// A map of <c>version → list of NoteIndexEntry</c> (the version-union, same shape NoteAmend
+	/// consumes today). Returns an empty dictionary when no notes exist.
 	/// </returns>
 	public async Task<IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> ReconcileRepoAsync(ChangelogScope notesScope, Cancel ctx)
 	{
@@ -58,74 +58,122 @@ public sealed class NotesIndexReconciler(
 
 		_logger.LogInformation("Reconciling notes indexes for repo {Repo}", notesScope.Group);
 
-		// List every note-*.yml under changelog/{org}/{repo}/ (all branches).
 		var noteObjects = await ListNoteFiles(notesScope, ctx);
 		_logger.LogDebug("Found {Count} note file(s) for {Repo}", noteObjects.Count, notesScope.Group);
 
-		// Read each note to extract its versions.
-		// byVersion: version slug → list of NoteIndexEntry (bundle_seq defaulted to 0; filled by NoteAmendReconciler)
+		var byProductVersion = new Dictionary<string, List<NoteIndexEntry>>(StringComparer.Ordinal);
 		var byVersion = new Dictionary<string, List<NoteIndexEntry>>(StringComparer.Ordinal);
 		foreach (var obj in noteObjects)
 		{
 			ctx.ThrowIfCancellationRequested();
 			var poolRelativePath = obj.Key[notesScope.Prefix.Length..];
 
-			var versions = await ExtractVersionsAsync(obj.Key, ctx);
-			foreach (var version in versions)
+			var pairs = await ExtractProductVersionsAsync(obj.Key, ctx);
+			foreach (var (product, version) in pairs)
 			{
-				if (!byVersion.TryGetValue(version, out var entries))
-					byVersion[version] = entries = [];
-
-				// Deduplicate by path within the same version.
-				if (!entries.Any(e => e.Path == poolRelativePath))
-					entries.Add(new NoteIndexEntry { Path = poolRelativePath, BundleSeq = 0 });
+				AddIndexEntry(byProductVersion, ProductVersionGroupKey(product, version), poolRelativePath);
+				AddIndexEntry(byVersion, version, poolRelativePath);
 			}
 		}
 
 		var groupParts = notesScope.Group.Split('/');
 		var (org, repo) = (groupParts[0], groupParts[1]);
 
-		// List existing notes-*.json indexes so we can remove obsolete ones.
 		var existingIndexKeys = await ListExistingNotesIndexes(notesScope, ctx);
+		var intendedKeys = IntendedIndexKeys(org, repo, byProductVersion.Keys, byVersion.Keys);
 
 		if (byVersion.Count == 0)
 		{
 			_logger.LogDebug("No versions found for repo {Repo}; removing any stale indexes", notesScope.Group);
-			await DeleteStaleIndexes(existingIndexKeys, [], org, repo, ctx);
+			await DeleteStaleIndexes(existingIndexKeys, intendedKeys, ctx);
 			return new Dictionary<string, IReadOnlyList<NoteIndexEntry>>();
 		}
 
-		// Write one index per version. bundle_seq values default to 0 here; NoteAmendReconciler updates them.
-		// DeleteStaleIndexes runs even if some writes fail — stale deletion is safe because we only
-		// remove versions absent from byVersion.Keys, which is independent of write success.
+		var writes = BuildIndexWrites(org, repo, byProductVersion, byVersion);
 		var written = new Dictionary<string, IReadOnlyList<NoteIndexEntry>>(StringComparer.Ordinal);
 		try
 		{
-			await Parallel.ForEachAsync(byVersion, new ParallelOptions
+			await Parallel.ForEachAsync(writes, new ParallelOptions
 			{
 				MaxDegreeOfParallelism = MaxParallelReads,
 				CancellationToken = ctx
-			}, async (kvp, ct) =>
+			}, async (write, ct) =>
 			{
-				var (version, entries) = kvp;
-				var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
-				var sortedEntries = entries
-					.DistinctBy(e => e.Path, StringComparer.Ordinal)
-					.OrderBy(e => e.Path, StringComparer.Ordinal)
-					.ToList();
-				await WriteIndexAsync(indexKey, sortedEntries, ct);
+				await WriteIndexAsync(
+					write.Key,
+					write.Entries,
+					ct,
+					write.Product is null ? null : new NotesIndexMetadata(write.Product, write.Version!)
+				);
+				if (write.Product is not null)
+					return;
 				lock (written)
-					written[version] = sortedEntries;
+					written[write.Version!] = write.Entries;
 			});
 		}
 		finally
 		{
-			// Remove indexes whose versions are no longer present.
-			await DeleteStaleIndexes(existingIndexKeys, byVersion.Keys.ToHashSet(StringComparer.Ordinal), org, repo, ctx);
+			await DeleteStaleIndexes(existingIndexKeys, intendedKeys, ctx);
 		}
 
 		return written;
 	}
+
+	private static void AddIndexEntry(Dictionary<string, List<NoteIndexEntry>> map, string groupKey, string poolRelativePath)
+	{
+		if (!map.TryGetValue(groupKey, out var entries))
+			map[groupKey] = entries = [];
+
+		if (!entries.Any(e => e.Path == poolRelativePath))
+			entries.Add(new NoteIndexEntry { Path = poolRelativePath, BundleSeq = 0 });
+	}
+
+	private static string ProductVersionGroupKey(string product, string version) => $"{product}/{version}";
+
+	private static HashSet<string> IntendedIndexKeys(
+		string org,
+		string repo,
+		IEnumerable<string> productVersionKeys,
+		IEnumerable<string> versions
+	)
+	{
+		var intended = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var groupKey in productVersionKeys)
+		{
+			var slash = groupKey.IndexOf('/', StringComparison.Ordinal);
+			_ = intended.Add(ChangelogKeys.NotesIndexKey(org, repo, groupKey[..slash], groupKey[(slash + 1)..]));
+		}
+		foreach (var version in versions)
+			_ = intended.Add(ChangelogKeys.NotesIndexKey(org, repo, version));
+		return intended;
+	}
+
+	private static List<NotesIndexWrite> BuildIndexWrites(
+		string org,
+		string repo,
+		Dictionary<string, List<NoteIndexEntry>> byProductVersion,
+		Dictionary<string, List<NoteIndexEntry>> byVersion
+	)
+	{
+		var writes = new List<NotesIndexWrite>(byProductVersion.Count + byVersion.Count);
+		foreach (var (groupKey, entries) in byProductVersion)
+		{
+			var slash = groupKey.IndexOf('/', StringComparison.Ordinal);
+			var product = groupKey[..slash];
+			var version = groupKey[(slash + 1)..];
+			writes.Add(
+				new NotesIndexWrite(ChangelogKeys.NotesIndexKey(org, repo, product, version), SortEntries(entries), product, version)
+			);
+		}
+		foreach (var (version, entries) in byVersion)
+		{
+			writes.Add(new NotesIndexWrite(ChangelogKeys.NotesIndexKey(org, repo, version), SortEntries(entries), Product: null, version));
+		}
+		return writes;
+	}
+
+	private static List<NoteIndexEntry> SortEntries(IReadOnlyList<NoteIndexEntry> entries) =>
+		entries.DistinctBy(e => e.Path, StringComparer.Ordinal).OrderBy(e => e.Path, StringComparer.Ordinal).ToList();
 
 	private async Task<IReadOnlyList<string>> ListExistingNotesIndexes(ChangelogScope notesScope, Cancel ctx)
 	{
@@ -148,24 +196,11 @@ public sealed class NotesIndexReconciler(
 		return keys;
 	}
 
-	private async Task DeleteStaleIndexes(
-		IReadOnlyList<string> existingKeys,
-		HashSet<string> currentVersions,
-		string org,
-		string repo,
-		Cancel ctx
-	)
+	private async Task DeleteStaleIndexes(IReadOnlyList<string> existingKeys, HashSet<string> intendedKeys, Cancel ctx)
 	{
-		// "changelog/{org}/{repo}/notes-" — the stable prefix shared by all notes-*.json keys for this repo.
-		var notesKeyPrefix = $"{ChangelogKeys.ChangelogPrefix}{org}/{repo}/notes-";
-
 		foreach (var key in existingKeys)
 		{
-			// Extract the version slug from the key to check if it's still needed.
-			if (!key.StartsWith(notesKeyPrefix, StringComparison.Ordinal))
-				continue;
-			var versionSlug = key[notesKeyPrefix.Length..^".json".Length];
-			if (currentVersions.Contains(versionSlug))
+			if (intendedKeys.Contains(key))
 				continue;
 
 			try
@@ -221,11 +256,11 @@ public sealed class NotesIndexReconciler(
 			&& !fileName.Contains('/', StringComparison.Ordinal);
 
 	/// <summary>
-	/// Reads a note file and returns all version slugs it should be indexed under.
-	/// Prefers <c>products[].versions</c>; falls back to the legacy <c>products[].target</c>
-	/// for already-published notes that pre-date the <c>versions:</c> field.
+	/// Reads a note file and returns every valid <c>(product, version)</c> pair it should be
+	/// indexed under. Prefers <c>products[].versions</c>; falls back to the legacy
+	/// <c>products[].target</c> for already-published notes that pre-date the <c>versions:</c> field.
 	/// </summary>
-	private async Task<IReadOnlyList<string>> ExtractVersionsAsync(string key, Cancel ctx)
+	private async Task<IReadOnlyList<(string Product, string Version)>> ExtractProductVersionsAsync(string key, Cancel ctx)
 	{
 		try
 		{
@@ -241,9 +276,27 @@ public sealed class NotesIndexReconciler(
 			if (dto.Products is not { Count: > 0 })
 				return [];
 
-			var valid = new List<string>();
+			var valid = new List<(string Product, string Version)>();
 			foreach (var productInfo in dto.Products)
 			{
+				var productId = productInfo.Product?.Trim();
+				if (
+					string.IsNullOrEmpty(productId)
+					|| productId.Contains('/', StringComparison.Ordinal)
+					|| !ChangelogKeys.IsValidProduct(productId)
+				)
+				{
+					if (!string.IsNullOrEmpty(productId))
+					{
+						_logger.LogWarning(
+							"Note {Key} has product '{Product}' that is not a valid product segment; skipping",
+							key,
+							productId
+						);
+					}
+					continue;
+				}
+
 				// Prefer the new `versions` list; fall back to the legacy `target` field for compat.
 #pragma warning disable CS0618 // reading obsolete Target for backward compat
 				IEnumerable<string?> rawVersions = productInfo.Versions is { Count: > 0 }
@@ -254,17 +307,13 @@ public sealed class NotesIndexReconciler(
 				foreach (var raw in rawVersions.Where(v => !string.IsNullOrWhiteSpace(v)))
 				{
 					var v = raw!.Trim();
-					if (v.Contains('/', StringComparison.Ordinal))
+					if (v.Contains('/', StringComparison.Ordinal) || !ChangelogKeys.IsValidRepo(v))
 					{
-						_logger.LogWarning(
-							"Note {Key} has version '{Version}' containing '/'; skipping — versions must be single path segments",
-							key,
-							v
-						);
+						_logger.LogWarning("Note {Key} has version '{Version}' that is not a valid single path segment; skipping", key, v);
 						continue;
 					}
-					if (!valid.Contains(v, StringComparer.Ordinal))
-						valid.Add(v);
+					if (!valid.Any(p => p.Product == productId && p.Version == v))
+						valid.Add((productId, v));
 				}
 			}
 			return valid;
@@ -288,10 +337,18 @@ public sealed class NotesIndexReconciler(
 	/// <remarks>
 	/// <paramref name="entries"/> have their <c>bundle_seq</c> already set by the caller
 	/// (0 from this reconciler; updated values from <see cref="NoteAmendReconciler"/>).
+	/// Pass <paramref name="metadata"/> only for product-scoped keys; omit it for the legacy
+	/// version-union body so older deserializers keep seeing <c>notes</c> only.
 	/// </remarks>
-	public async Task WriteIndexAsync(string key, IReadOnlyList<NoteIndexEntry> entries, Cancel ctx)
+	public async Task WriteIndexAsync(string key, IReadOnlyList<NoteIndexEntry> entries, Cancel ctx, NotesIndexMetadata? metadata = null)
 	{
-		var index = new NotesIndex { SchemaVersion = NotesIndex.CurrentSchemaVersion, Notes = entries };
+		var index = new NotesIndex
+		{
+			SchemaVersion = NotesIndex.CurrentSchemaVersion,
+			Product = metadata?.Product,
+			Version = metadata?.Version,
+			Notes = entries
+		};
 		var newJson = JsonSerializer.Serialize(index, NotesIndexJsonContext.Default.NotesIndex);
 
 		for (var attempt = 1; attempt <= MaxWriteAttempts; attempt++)
@@ -395,4 +452,9 @@ public sealed class NotesIndexReconciler(
 			}
 		}
 	}
+
+	private readonly record struct NotesIndexWrite(string Key, IReadOnlyList<NoteIndexEntry> Entries, string? Product, string? Version);
 }
+
+/// <summary>Optional product and version written onto a product-scoped notes index body.</summary>
+public sealed record NotesIndexMetadata(string Product, string Version);

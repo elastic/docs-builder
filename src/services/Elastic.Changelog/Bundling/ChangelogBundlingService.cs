@@ -1493,7 +1493,7 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Fetches notes for <paramref name="target"/> from the CDN and converts them to matched entries.
+	/// Fetches notes for one output product/version from the CDN and converts them to matched entries.
 	/// An absent notes index is not an error (most targets have no notes). Returns <c>null</c> after
 	/// emitting an error when the index exists but a listed note cannot be fetched.
 	/// </summary>
@@ -1501,7 +1501,8 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		string? org,
 		string? repo,
-		string target,
+		string product,
+		string version,
 		Cancel ctx
 	)
 	{
@@ -1519,7 +1520,8 @@ public partial class ChangelogBundlingService(
 			baseUri,
 			resolvedOrg,
 			repo,
-			target,
+			product,
+			version,
 			msg =>
 			{
 				hadError = true;
@@ -1553,13 +1555,29 @@ public partial class ChangelogBundlingService(
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
-				_logger.LogWarning(ex, "Failed to parse note '{FileName}' for {Repo}@{Target}; skipping", entry.FileName, repo, target);
-				collector.EmitError(string.Empty, $"Note '{entry.FileName}' for {repo}@{target} could not be parsed: {ex.Message}");
+				_logger.LogWarning(
+					ex,
+					"Failed to parse note '{FileName}' for {Repo}/{Product}@{Version}; skipping",
+					entry.FileName,
+					repo,
+					product,
+					version
+				);
+				collector.EmitError(
+					string.Empty,
+					$"Note '{entry.FileName}' for {repo}/{product}@{version} could not be parsed: {ex.Message}"
+				);
 				return null;
 			}
 		}
 
-		_logger.LogInformation("Resolved {Count} note(s) for {Repo}@{Target} from CDN", matchedNotes.Count, repo, target);
+		_logger.LogInformation(
+			"Resolved {Count} note(s) for {Repo}/{Product}@{Version} from CDN",
+			matchedNotes.Count,
+			repo,
+			product,
+			version
+		);
 		return matchedNotes;
 	}
 
@@ -1586,17 +1604,19 @@ public partial class ChangelogBundlingService(
 			return entries;
 
 		// Dedup by checksum: a note body identical to a PR entry (edge case) should appear once.
+		// Two output products at the same version may both fall back to notes-{version}.json
+		// until product-scoped indexes exist; checksum skip keeps a single copy.
 		var seen = new HashSet<string>(entries.Select(e => e.Checksum), StringComparer.OrdinalIgnoreCase);
 		var combined = new List<MatchedChangelogFile>(entries);
 
-		foreach (var noteTarget in noteTargets)
+		foreach (var (product, version) in noteTargets)
 		{
-			var noteEntries = await FetchCdnNotesAsync(collector, org, repo, noteTarget, ctx);
+			var noteEntries = await FetchCdnNotesAsync(collector, org, repo, product, version, ctx);
 			if (noteEntries == null)
 				return null;
 
 			// Backport collision: same leaf from different branches at the same version → prefer main/master.
-			var deduped = DeduplicateNotesByLeaf(noteEntries, noteTarget);
+			var deduped = DeduplicateNotesByLeaf(noteEntries, version);
 
 			foreach (var note in deduped)
 			{
@@ -1933,20 +1953,29 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>
-	/// Returns all distinct, explicit, non-wildcard targets from <see cref="BundleChangelogsArguments.OutputProducts"/>.
-	/// Notes are fetched for every resolved target so multi-target bundles are fully covered.
-	/// Returns an empty list when no concrete targets are available.
+	/// Returns distinct <c>(product, version)</c> pairs from <see cref="BundleChangelogsArguments.OutputProducts"/>.
+	/// Notes are fetched per product so two products at the same version do not share an index once
+	/// product-scoped keys exist. Returns an empty list when no concrete product/version is available.
 	/// </summary>
-	private static IReadOnlyList<string> ResolveNoteTargets(BundleChangelogsArguments input)
+	private static IReadOnlyList<(string Product, string Version)> ResolveNoteTargets(BundleChangelogsArguments input)
 	{
 		if (input.OutputProducts is not { Count: > 0 })
 			return [];
-		return input
-			.OutputProducts
-			.Where(p => !string.IsNullOrWhiteSpace(p.Target) && p.Target != "*")
-			.Select(p => p.Target!)
-			.Distinct(StringComparer.Ordinal)
-			.ToList();
+
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		var targets = new List<(string Product, string Version)>();
+		foreach (var p in input.OutputProducts)
+		{
+			if (string.IsNullOrWhiteSpace(p.Product) || p.Product == "*")
+				continue;
+			if (string.IsNullOrWhiteSpace(p.Target) || p.Target == "*")
+				continue;
+			var key = $"{p.Product}/{p.Target}";
+			if (!seen.Add(key))
+				continue;
+			targets.Add((p.Product, p.Target));
+		}
+		return targets;
 	}
 
 	private static ChangelogFilterCriteria BuildFilterCriteria(
