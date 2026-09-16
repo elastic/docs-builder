@@ -405,7 +405,7 @@ If two different canonical tag names normalize to the same tag landing page URL,
 
 ### Tag groups [x-taggroups]
 
-Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-tag-groups)) to define how tags are grouped in the API Explorer sidebar. Each group has a display `name` and a list of tag `name` values that belong to it. Group order in the array is the order of top-level sections in the navigation.
+The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-tag-groups)) names groups of tags. Each group has a display `name` and a list of tag `name` values.
 
 ```json
 {
@@ -425,9 +425,13 @@ Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.c
 }
 ```
 
-**Behavior:**
+The default sidebar matches bump.sh. Tags are top-level folders. Each OpenAPI operation is a visible child of its tag.
+
+Classification folders, collapsing operations that share a grouping key into one endpoint, and Types pages require `FEATURE_API_NAV_GROUPING` (the `api-nav-grouping` feature flag). That flag is off by default.
+
+When the flag is on:
 
 - When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
-- In the navigation tree, a group's section title links to the **main API overview** for that product (it is not a separate page and does not point at the first tag in the group; tag landings stay under `.../tags/...` only for tags).
-- When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
-- Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
+- A group's section title links to the main API overview for that product. It is not a separate page and does not point at the first tag in the group. Tag landings stay under `/group/`.
+- When `x-tagGroups` is absent, tags are listed directly under the API root.
+- Any operation tag that is not listed under any group is still included. It appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
