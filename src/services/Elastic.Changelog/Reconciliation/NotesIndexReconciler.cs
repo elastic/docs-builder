@@ -50,8 +50,9 @@ public sealed class NotesIndexReconciler(
 	/// <returns>
 	/// Notes grouped by product, then version. Legacy version-union indexes are still written
 	/// in this pass but are not part of the return value; <see cref="NoteAmendReconciler"/> uses
-	/// the product map only. A product×version whose notes-index was just deleted as stale is
-	/// included with an empty note list so amend can drop that product's sidecar.
+	/// the product map only. A product×version whose product-scoped index is stale is included
+	/// with an empty note list so amend can drop that product's sidecar. Those keys stay in S3
+	/// until amend succeeds; leftover version-union indexes are deleted in this pass.
 	/// </returns>
 	public async Task<IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>>> ReconcileRepoAsync(
 		ChangelogScope notesScope,
@@ -241,6 +242,12 @@ public sealed class NotesIndexReconciler(
 			if (read.Kind is StaleIndexReadKind.ReadFailed or StaleIndexReadKind.AlreadyGone)
 				continue;
 
+			if (read.Kind == StaleIndexReadKind.ProductScoped)
+			{
+				vanished.Add((read.Product!, read.Version!));
+				continue;
+			}
+
 			try
 			{
 				_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
@@ -249,11 +256,7 @@ public sealed class NotesIndexReconciler(
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
 				_logger.LogWarning(ex, "Failed to delete stale notes index {Key}", key);
-				continue;
 			}
-
-			if (read.Kind == StaleIndexReadKind.ProductScoped)
-				vanished.Add((read.Product!, read.Version!));
 		}
 
 		return vanished;
@@ -400,6 +403,23 @@ public sealed class NotesIndexReconciler(
 		{
 			_logger.LogWarning(ex, "Could not read versions from note {Key}; skipping", key);
 			return [];
+		}
+	}
+
+	/// <summary>
+	/// Deletes a notes-index object. A missing key is success so amend can drop a vanished
+	/// product's index after the sidecar work without racing a prior delete.
+	/// </summary>
+	public async Task DeleteIndexAsync(string key, Cancel ctx)
+	{
+		try
+		{
+			_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = publicBucketName, Key = key }, ctx);
+			_logger.LogInformation("Removed notes index {Key}", key);
+		}
+		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+		{
+			_logger.LogDebug("Notes index {Key} already absent", key);
 		}
 	}
 
