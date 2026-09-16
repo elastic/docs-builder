@@ -108,6 +108,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public string? VersionFilter { get; private set; }
 
 	/// <summary>
+	/// When set (the <c>:since_version:</c> option), bundles at or before this version are excluded from
+	/// the rendered output. Useful when older versions are already hardcoded on the page and the directive
+	/// is used to backfill newer releases from S3/CDN.
+	/// </summary>
+	public string? SinceVersion { get; private set; }
+
+	/// <summary>
 	/// Loaded and parsed bundles, sorted by version (semver descending).
 	/// </summary>
 	public IReadOnlyList<LoadedBundle> LoadedBundles { get; private set; } = [];
@@ -225,7 +232,9 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ReleaseDatesEnabled = PropBool("release-dates");
 		HighlightsEnabled = PropBool("highlights");
 		VersionFilter = Prop("version") is { Length: > 0 } v ? v.Trim() : null;
+		SinceVersion = Prop("since_version") is { Length: > 0 } sv ? sv.Trim() : null;
 
+		// Backward-compat: explicit :cdn: option takes priority over the argument-based parsing.
 		if (Properties?.ContainsKey("cdn") == true)
 		{
 			// :cdn: takes an explicit product, or may be valueless to infer the product from the
@@ -252,9 +261,46 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return;
 		}
 
-		ExtractBundlesFolderPath();
-		if (Found)
-			LoadAndCacheBundles();
+		// TODO: This argument parsing (path vs product name) needs refactoring when all usages are
+		// updated to use explicit product names. At that point, the '/' check can be dropped and
+		// local-path support can be a dedicated option or removed entirely.
+		if (!string.IsNullOrWhiteSpace(Arguments) && Arguments.StartsWith('/'))
+		{
+			// Local path mode — only allowed in isolated (local dev) builds as a preview mechanism.
+			if (Build.BuildType != BuildType.Isolated)
+			{
+				this.EmitError(
+					"Local bundle path is only supported in local development builds. " +
+						"Use a product name (e.g. '::{changelog} elasticsearch') for CDN-sourced bundles."
+				);
+				return;
+			}
+
+			ExtractBundlesFolderPath();
+			if (Found)
+				LoadAndCacheBundles();
+			return;
+		}
+
+		// CDN mode: argument is an explicit product name, or infer from repo when omitted.
+		var cdnProduct = !string.IsNullOrWhiteSpace(Arguments) ? Arguments.Trim() : InferCdnProductFromRepository();
+
+		if (string.IsNullOrWhiteSpace(cdnProduct))
+		{
+			this.EmitError(
+				"The CDN product could not be inferred from the repository; specify it explicitly, e.g. '::{changelog} elasticsearch'."
+			);
+			return;
+		}
+
+		if (!IsValidCdnProduct(cdnProduct))
+		{
+			this.EmitError($"Invalid CDN product '{cdnProduct}'. Product names must match [a-zA-Z0-9_-]+.");
+			return;
+		}
+
+		CdnProduct = cdnProduct;
+		LoadCdnBundles(cdnProduct);
 	}
 
 	private ChangelogLinkVisibility ParseLinkVisibility()
@@ -538,7 +584,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private void ApplyLoadedBundles(IReadOnlyList<LoadedBundle> loadedBundles)
 	{
-		var filteredBundles = FilterUnreleasedVersions(FilterByVersion(loadedBundles));
+		var filteredBundles = FilterBySinceVersion(FilterUnreleasedVersions(FilterByVersion(loadedBundles)));
 
 		// Sort by version (descending - newest first)
 		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions
@@ -585,6 +631,33 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				this.EmitHint(
 					$"Hiding changelog bundle '{CdnProduct} {bundle.Version}': it targets a version newer than the current release ({versioningSystem.Current}) and this build publishes the 'current' content source."
 				);
+				continue;
+			}
+
+			visible.Add(bundle);
+		}
+
+		return visible;
+	}
+
+	/// <summary>
+	/// Filters bundles at or before the optional <c>:since_version:</c> threshold. Bundles whose version
+	/// is ≤ <see cref="SinceVersion"/> are excluded so the directive only shows newer releases — useful
+	/// when older versions are already hardcoded on the page and the directive backfills from S3/CDN.
+	/// </summary>
+	private IReadOnlyList<LoadedBundle> FilterBySinceVersion(IReadOnlyList<LoadedBundle> bundles)
+	{
+		if (SinceVersion is not { Length: > 0 } since)
+			return bundles;
+
+		var sinceVd = VersionOrDate.Parse(since);
+		var visible = new List<LoadedBundle>(bundles.Count);
+		foreach (var bundle in bundles)
+		{
+			var bundleVd = VersionOrDate.Parse(bundle.Version);
+			if (bundleVd <= sinceVd)
+			{
+				this.EmitHint($"Hiding changelog bundle '{bundle.Version}': it is at or before the :since_version: filter '{since}'.");
 				continue;
 			}
 
