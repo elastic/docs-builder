@@ -579,23 +579,35 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		// :cdn: is a selector over release notes prefetched at build startup.
 		if (!Context.ReleaseNotesResolver.IsDeclared(product))
 		{
-			// Auto-inferred products are fetched best-effort: a 404 is not a build error. Render empty with a hint
-			// so authors know bundles aren't available yet without failing the build.
-			// isAutoInferred is set at the directive level (valueless :cdn:), not from a global resolver set,
-			// so it is never contaminated by products inferred from other assembled repos.
-			if (isAutoInferred)
+			if (!isAutoInferred)
+			{
+				this.EmitError(
+					$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}"
+				);
+				return;
+			}
+
+			// Auto-inferred products are fetched best-effort. Inferred bundles are not promoted into
+			// DeclaredProducts to avoid cross-repo contamination in assembler runs (one repo's successful
+			// inference must not suppress the undeclared-product error for an explicit :cdn: in another).
+			// Check BundlesByProduct directly: bundles are present when the CDN fetch succeeded.
+			if (Context.ReleaseNotesResolver.TryGetBundles(product, out var inferredBundles) && inferredBundles.Count > 0)
+			{
+				ApplyLoadedBundles(inferredBundles);
+				Found = LoadedBundles.Count > 0;
+				return;
+			}
+
+			// No bundles available. Emit a hint only for the 404 case (not yet published) — for other
+			// CDN errors a warning was already emitted during prefetch, so no extra message is needed.
+			if (Context.ReleaseNotesResolver.IsNotFound(product))
 			{
 				this.EmitHint(
 					$"No CDN bundles found for auto-inferred product '{product}'. " +
 						$"The changelog will render empty until bundles are published. " +
 						$"To suppress this hint, declare it explicitly under 'release_notes:' in docset.yml."
 				);
-				return;
 			}
-
-			this.EmitError(
-				$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}"
-			);
 			return;
 		}
 

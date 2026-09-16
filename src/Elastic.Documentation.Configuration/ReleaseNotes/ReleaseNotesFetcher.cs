@@ -90,7 +90,8 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 			return new FetchedReleaseNotes
 			{
 				BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,
-				DeclaredProducts = required.ToFrozenSet(StringComparer.Ordinal)
+				DeclaredProducts = required.ToFrozenSet(StringComparer.Ordinal),
+				NotFoundInferredProducts = []
 			};
 		}
 
@@ -101,6 +102,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 		var tasks = allProducts.Select(async product =>
 		{
 			var isRequired = required.Contains(product, StringComparer.Ordinal);
+			var notFound = false;
 			// version: null — prefetch the full set; each directive applies its own :version: filter later.
 			var bundles = await fetcher.FetchAsync(
 				baseUri,
@@ -114,28 +116,37 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 				ctx,
 				emitNotFound: isRequired
 					? msg => collector.EmitError(string.Empty, msg)
-					: _ => { } // inferred: 404 is expected while bundles are not yet published — silently ignore
+					: _ =>
+					{
+						notFound = true;
+					} // inferred: 404 is expected — track it so the directive can emit a hint
+
 			).ConfigureAwait(false);
-			return (product, bundles, isRequired);
+			return (product, bundles, isRequired, notFound);
 		});
 
 		var results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
-		// Only include in DeclaredProducts and BundlesByProduct when the fetch actually returned bundles
-		// (for inferred products a 404 returns an empty list — don't declare them as resolved).
+		// Declared products: only those explicitly listed under release_notes — never inferred products.
+		// Keeping inferred products out of DeclaredProducts prevents cross-repo contamination in assembler
+		// runs where a single resolver is shared: one repo inferring 'foo' must not suppress the
+		// undeclared-product error for an explicit :cdn: foo reference in a different repo.
 		var declaredSet = required.ToFrozenSet(StringComparer.Ordinal);
-		var bundleMap = results.Where(r => r.isRequired || r.bundles.Count > 0).ToFrozenDictionary(
-			r => r.product,
-			r => r.bundles,
-			StringComparer.Ordinal
-		);
 
-		// Promote inferred products that successfully resolved into DeclaredProducts so the directive
-		// can call TryGetBundles without a special code path.
-		var resolvedInferred = results.Where(r => !r.isRequired && r.bundles.Count > 0).Select(r => r.product);
-		declaredSet = declaredSet.Union(resolvedInferred).ToFrozenSet(StringComparer.Ordinal);
+		// BundlesByProduct includes all products that returned bundles (required or inferred).
+		// The directive reaches inferred bundles via TryGetBundles when isAutoInferred is true.
+		var bundleMap = results.Where(r => r.bundles.Count > 0).ToFrozenDictionary(r => r.product, r => r.bundles, StringComparer.Ordinal);
 
-		return new FetchedReleaseNotes { BundlesByProduct = bundleMap, DeclaredProducts = declaredSet };
+		// Track inferred products that returned HTTP 404 so the directive can emit a "not yet published"
+		// hint rather than staying silently empty.
+		var notFoundInferred = results.Where(r => !r.isRequired && r.notFound).Select(r => r.product).ToFrozenSet(StringComparer.Ordinal);
+
+		return new FetchedReleaseNotes
+		{
+			BundlesByProduct = bundleMap,
+			DeclaredProducts = declaredSet,
+			NotFoundInferredProducts = notFoundInferred
+		};
 	}
 
 	public static bool IsValidCdnProductId(string product) =>
