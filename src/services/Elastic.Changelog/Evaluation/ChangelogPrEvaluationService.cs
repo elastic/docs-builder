@@ -170,11 +170,13 @@ public class ChangelogPrEvaluationService(
 		if (resolvedType == null)
 		{
 			_logger.LogInformation("No type label found on PR");
+			var noTypeLabelTable = BuildLabelTable(config.LabelToType);
+			var typeLabels = config.LabelToType is { Count: > 0 } ? string.Join(", ", config.LabelToType.Keys) : "(none configured)";
+			var skipHint = skipLabels != null ? $" To skip changelog generation add one of: {skipLabels}." : "";
 			collector.EmitError(
 				string.Empty,
-				"No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label."
+				$"No matching changelog type label found on this PR. Add one of the following labels: {typeLabels}.{skipHint}"
 			);
-			var noTypeLabelTable = BuildLabelTable(config.LabelToType);
 			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel,
 				title,
@@ -202,9 +204,12 @@ public class ChangelogPrEvaluationService(
 		if (productLabelTable != null && (config.ProductsConfiguration?.Default is null or { Count: 0 }))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
+			var productLabels = config.LabelToProducts is { Count: > 0 }
+				? string.Join(", ", config.LabelToProducts.Keys)
+				: "(none configured)";
 			collector.EmitError(
 				string.Empty,
-				"No matching product label found on this PR. Add a label from your changelog.yml pivot.products."
+				$"No matching product label found on this PR. Add one of the following labels: {productLabels}."
 			);
 			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel,
