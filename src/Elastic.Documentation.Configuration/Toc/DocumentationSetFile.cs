@@ -213,6 +213,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			var resolvedItem = item switch
 			{
+				InvalidTocItemRef invalid => EmitInvalidTocItem(collector, invalid, context),
 				IsolatedTableOfContentsRef tocRef =>
 					ResolveIsolatedToc(
 						collector,
@@ -267,6 +268,23 @@ public class DocumentationSetFile : TableOfContentsFile
 		}
 
 		return resolved;
+	}
+
+	private static ITableOfContentsItem? EmitInvalidTocItem(IDiagnosticsCollector collector, InvalidTocItemRef invalid, string context)
+	{
+		var raw = invalid.RawValue;
+		var isYmlFile = raw.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+			|| raw.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase);
+
+		var hint = isYmlFile
+			? $" An adjacent '{raw}' next to docset.yml is not supported. Inline its entries directly in docset.yml, or use 'toc: <folder>' to point to a subdirectory that contains a toc.yml."
+			: string.Empty;
+
+		collector.EmitError(
+			context,
+			$"'{raw}' is not a valid toc entry. Each entry must be a mapping with a 'file:', 'folder:', or 'toc:' key.{hint}"
+		);
+		return null;
 	}
 
 	/// <summary>
