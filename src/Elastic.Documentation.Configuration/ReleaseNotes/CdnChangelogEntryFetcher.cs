@@ -489,10 +489,9 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// <summary>
 	/// Fetches all <c>note-*.yml</c> entries for <paramref name="org"/>/<paramref name="repo"/> and
 	/// <paramref name="product"/> at <paramref name="version"/> from the CDN. Reads
-	/// <c>notes-{product}-{version}.json</c> first; on HTTP 404 only, falls back to the legacy
-	/// <c>notes-{version}.json</c>. A missing index (both 404) means no notes (not an error).
-	/// An empty product-scoped index does not fall back. A listed note that cannot be fetched
-	/// is a hard error — the index is an authoritative promise that the note exists.
+	/// <c>notes-{product}-{version}.json</c>. A missing index (404) means no notes (not an error).
+	/// A listed note that cannot be fetched is a hard error — the index is an authoritative
+	/// promise that the note exists.
 	/// </summary>
 	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchNotesAsync(
 		Uri baseUri,
@@ -516,44 +515,26 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			return [];
 		}
 
-		var productIndexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{product}-{version}.json"]);
-		var (productMissing, productIndex) = await TryLoadNotesIndexAsync(
-			productIndexUri,
-			org,
-			repo,
-			version,
-			emitError,
-			ctx
-		).ConfigureAwait(false);
-		if (productIndex is not null)
-			return await FetchListedNotesAsync(baseUri, org, repo, version, productIndex, emitError, ctx).ConfigureAwait(false);
-		if (!productMissing)
-			return [];
-
-		var legacyIndexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{version}.json"]);
-		var (legacyMissing, legacyIndex) = await TryLoadNotesIndexAsync(legacyIndexUri, org, repo, version, emitError, ctx).ConfigureAwait(
-			false
-		);
-		if (legacyIndex is not null)
-			return await FetchListedNotesAsync(baseUri, org, repo, version, legacyIndex, emitError, ctx).ConfigureAwait(false);
-		if (legacyMissing)
+		var indexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{product}-{version}.json"]);
+		var (missing, index) = await TryLoadNotesIndexAsync(indexUri, org, repo, version, emitError, ctx).ConfigureAwait(false);
+		if (index is not null)
+			return await FetchListedNotesAsync(baseUri, org, repo, version, index, emitError, ctx).ConfigureAwait(false);
+		if (missing)
 		{
 			_logger.LogDebug(
-				"Notes index for {Org}/{Repo}/{Product}@{Version} not found at {ProductUri} or {LegacyUri}; no notes to bundle",
+				"Notes index for {Org}/{Repo}/{Product}@{Version} not found at {Uri}; no notes to bundle",
 				org,
 				repo,
 				product,
 				version,
-				productIndexUri,
-				legacyIndexUri
+				indexUri
 			);
 		}
 		return [];
 	}
 
 	/// <summary>
-	/// Loads a notes index. Returns <c>missing: true</c> only on HTTP 404. A present but empty
-	/// or unparseable body is <c>missing: false</c> with a null index so callers do not fall back.
+	/// Loads a notes index. Returns <c>missing: true</c> only on HTTP 404.
 	/// </summary>
 	private async Task<(bool Missing, NotesIndex? Index)> TryLoadNotesIndexAsync(
 		Uri indexUri,

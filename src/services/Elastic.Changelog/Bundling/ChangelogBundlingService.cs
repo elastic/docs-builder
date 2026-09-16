@@ -1630,8 +1630,6 @@ public partial class ChangelogBundlingService(
 			return entries;
 
 		// Dedup by checksum: a note body identical to a PR entry (edge case) should appear once.
-		// Two output products at the same version may both fall back to notes-{version}.json
-		// until product-scoped indexes exist; checksum skip keeps a single copy.
 		var seen = new HashSet<string>(entries.Select(e => e.Checksum), StringComparer.OrdinalIgnoreCase);
 		var combined = new List<MatchedChangelogFile>(entries);
 

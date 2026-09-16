@@ -57,11 +57,7 @@ public class NotesIndexReconcilerTests
 	private void SeedNote(string branch, string fileName, string yaml) =>
 		_s3.Seed(PublicBucket, $"changelog/elastic/elasticsearch/{branch}/{fileName}", yaml);
 
-	private NotesIndex ReadIndex(string version) =>
-		JsonSerializer.Deserialize(
-			_s3.ContentOf(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", version)),
-			NotesIndexJsonContext.Default.NotesIndex
-		)!;
+	private NotesIndex ReadIndex(string version) => ReadProductIndex("elasticsearch", version);
 
 	private NotesIndex ReadProductIndex(string product, string version) =>
 		JsonSerializer.Deserialize(
@@ -112,15 +108,11 @@ public class NotesIndexReconcilerTests
 			.Count
 			.Should()
 			.BeGreaterThan(0, $"reconciler should have written the index; ListCalls={_s3.ListCalls} Gets={_s3.Gets.Count}");
-		var index = ReadIndex("9.0.0");
-		Paths(index).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
-		index.Product.Should().BeNull();
-		index.Version.Should().BeNull();
-
 		var productIndex = ReadProductIndex("elasticsearch", "9.0.0");
 		Paths(productIndex).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
 		productIndex.Product.Should().Be("elasticsearch");
 		productIndex.Version.Should().Be("9.0.0");
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0")).Should().BeFalse();
 	}
 
 	[Fact]
@@ -282,7 +274,7 @@ public class NotesIndexReconcilerTests
 
 		Paths(ReadProductIndex("elasticsearch", "9.0.0")).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
 		Paths(ReadProductIndex("kibana", "9.0.0")).Should().BeEquivalentTo(["main/note-kibana.yml"]);
-		Paths(ReadIndex("9.0.0")).Should().BeEquivalentTo(["main/note-kibana.yml", "main/note-slow-rollover.yml"]);
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0")).Should().BeFalse();
 	}
 
 	[Fact]
@@ -295,14 +287,21 @@ public class NotesIndexReconcilerTests
 			/*lang=json,strict*/
 			"""{"schema_version":1,"product":"kibana","version":"9.0.0","notes":[]}"""
 		);
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"notes":[]}"""
+		);
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
 
 		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
 
-		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0")).Should().BeTrue();
 		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")).Should().BeTrue();
 		_s3.Exists(PublicBucket, kibanaKey).Should().BeTrue();
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0")).Should().BeFalse();
 		_s3.Deletes.Should().NotContain(d => d.Key == kibanaKey);
+		_s3.Deletes.Select(d => d.Key).Should().Contain(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"));
 		map.Should().ContainKey("kibana");
 		map["kibana"].Should().ContainKey("9.0.0");
 		map["kibana"]["9.0.0"].Should().BeEmpty();
