@@ -1,22 +1,24 @@
 # Changelog
 
-The `{changelog}` directive renders changelog bundles directly in your documentation pages. Bundles are sourced from the public changelog CDN by default. This is designed for release notes pages that primarily consist of changelog content.
+The `{changelog}` directive renders changelog bundles directly in your documentation pages. This is designed for release notes pages that primarily consist of changelog content.
 
 ## Syntax
 
-```markdown
-:::{changelog}
-:::
-```
-
-Or with an explicit product name (CDN):
+Pass an explicit product name to source bundles from the public changelog CDN:
 
 ```markdown
 :::{changelog} elasticsearch
 :::
 ```
 
-Or with a local bundles path (honored only in isolated/local builds; ignored in CI and assembler builds, which always use CDN):
+Without an argument the directive reads from the local `changelog/bundles/` folder (same behavior as before this feature was added):
+
+```markdown
+:::{changelog}
+:::
+```
+
+A `/`-prefixed argument is a local path override — deprecated in non-isolated builds and will be removed once all usages migrate to an explicit product name:
 
 ```markdown
 :::{changelog} /path/to/bundles
