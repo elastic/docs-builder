@@ -64,10 +64,10 @@ try
 	// In SDK 1.4+, stateless and SSE are mutually exclusive; EnableLegacySse (default false)
 	// cannot be combined with Stateless = true. SSE-only clients should use the mcp-remote bridge:
 	// npx -y mcp-remote https://<host>/docs/_mcp
-	var serverVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split([
-		'+',
-		'-'
-	])[0]
+	var serverVersion = Assembly
+		.GetExecutingAssembly()
+		.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+		.FirstOrDefault()?.InformationalVersion
 		?? "0.0.0";
 
 	var mcpBuilder = builder
