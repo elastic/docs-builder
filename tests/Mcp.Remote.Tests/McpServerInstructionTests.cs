@@ -104,7 +104,7 @@ public class McpServerInstructionTests
 
 		var expected =
 			"""
-			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs.
+			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later.
 
 			<triggers>
 			Use the server when the user:

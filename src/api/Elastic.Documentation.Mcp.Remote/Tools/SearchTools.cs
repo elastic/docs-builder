@@ -34,7 +34,6 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 		[Description("Number of results per page (default: 10, max: 50)")] int pageSize = 10,
 		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana')")] string? productFilter = null,
 		[Description("Filter by navigation section (e.g., 'reference', 'getting-started')")] string? sectionFilter = null,
-		[Description("Filter by product version (e.g., '9.0', '8.19', '7.17', '9.0+')")] string? versionFilter = null,
 		CancellationToken cancellationToken = default
 	)
 	{
@@ -48,8 +47,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 				["pageNumber"] = pageNumber,
 				["pageSize"] = pageSize,
 				["productFilter"] = productFilter,
-				["sectionFilter"] = sectionFilter,
-				["versionFilter"] = versionFilter
+				["sectionFilter"] = sectionFilter
 			}
 		);
 		McpToolTelemetry.LogStart(logger, toolName, payload);
@@ -68,7 +66,6 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 				PageSize = pageSize,
 				ProductFilter = productFilter != null ? [productFilter] : null,
 				SectionFilter = sectionFilter != null ? [sectionFilter] : null,
-				VersionFilter = versionFilter,
 				IncludeHighlighting = false
 			};
 
