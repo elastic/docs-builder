@@ -481,6 +481,42 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void LoadBundles_WithAmendNotesFile_MergesEntriesIntoParentBundle()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendNotes =
+			"""
+			products: []
+			entries:
+			  - title: Late note
+			    type: security
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
+
+		var service = CreateService();
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0");
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Original feature", "Late note");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
 	public void LoadBundles_WithMultipleAmendFiles_MergesAllIntoParent()
 	{
 		// Arrange
