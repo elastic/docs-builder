@@ -83,10 +83,9 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 		OpenApiDocument document
 	)
 	{
-		List<StructuralNavigationItem> items =
-		[
-			new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Authentication), root, root)
-		];
+		var items = new List<StructuralNavigationItem>();
+		if (StructuralViewModel.HasSchemes(document))
+			items.Add(new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Authentication), root, root));
 		if (StructuralViewModel.ReadServers(document).Count > 0)
 			items.Add(new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Servers), root, root));
 		return items;
@@ -122,10 +121,11 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 				EmptyMessage = "This API does not declare servers."
 			};
 
+	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
+
 	internal static IReadOnlyList<AuthenticationSchemeDisplay> ReadSchemes(ApiRenderContext context)
 	{
-		var schemes = context.Model.Components?.SecuritySchemes;
-		if (schemes is not { Count: > 0 })
+		if (context.Model.Components?.SecuritySchemes is not { Count: > 0 } schemes)
 			return [];
 
 		var displays = new List<AuthenticationSchemeDisplay>(schemes.Count);

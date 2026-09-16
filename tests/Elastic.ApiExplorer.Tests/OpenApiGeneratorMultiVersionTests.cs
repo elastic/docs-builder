@@ -277,7 +277,7 @@ public class OpenApiGeneratorMultiVersionTests
 			.File
 			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "authentication", "index.html"))
 			.Should()
-			.BeTrue();
+			.BeFalse();
 		context
 			.WriteFileSystem
 			.File
@@ -290,14 +290,14 @@ public class OpenApiGeneratorMultiVersionTests
 			.File
 			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v9", "authentication", "index.html"))
 			.Should()
-			.BeTrue();
+			.BeFalse();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
 		context
 			.WriteFileSystem
 			.File
 			.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "authentication", "index.html"))
 			.Should()
-			.BeTrue();
+			.BeFalse();
 		context
 			.WriteFileSystem
 			.File

@@ -37,14 +37,56 @@ public class StructuralPageTests(ApiExplorerFixture fixture) : IClassFixture<Api
 	}
 
 	[Fact]
+	public void Create_EmptyDocument_OmitsAuthenticationAndServersPages()
+	{
+		var items = CreateItems(new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } });
+
+		items.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void Create_NoSchemes_OmitsAuthenticationPage()
+	{
+		var document = new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "t", Version = "1" },
+			Servers = [new OpenApiServer { Url = "https://example.com" }]
+		};
+		var items = CreateItems(document);
+
+		items.Should().ContainSingle(item => item.Model.Kind == ApiStructuralKind.Servers);
+		items.Should().NotContain(item => item.Model.Kind == ApiStructuralKind.Authentication);
+	}
+
+	[Fact]
 	public void Create_NoServers_OmitsServersPage()
 	{
-		var document = new OpenApiDocument { Info = new OpenApiInfo { Title = "t", Version = "1" } };
-		var root = new LandingNavigationItem("/api/doc/fixture");
-		var items = StructuralNavigationItem.Create(urlPathPrefix: null, "fixture", root, document);
+		var document = new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "t", Version = "1" },
+			Components = new OpenApiComponents
+			{
+				SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+				{
+					["apiKey"] = new OpenApiSecurityScheme
+					{
+						Type = SecuritySchemeType.ApiKey,
+						Name = "Authorization",
+						In = ParameterLocation.Header
+					}
+				}
+			}
+		};
+		var items = CreateItems(document);
 
 		items.Should().ContainSingle(item => item.Model.Kind == ApiStructuralKind.Authentication);
 		items.Should().NotContain(item => item.Model.Kind == ApiStructuralKind.Servers);
+	}
+
+	private static IReadOnlyList<StructuralNavigationItem> CreateItems(OpenApiDocument document)
+	{
+		var root = new LandingNavigationItem("/api/doc/fixture");
+		return StructuralNavigationItem.Create(urlPathPrefix: null, "fixture", root, document);
 	}
 
 	[Fact]
