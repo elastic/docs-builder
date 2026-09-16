@@ -22,46 +22,62 @@ public class McpHandshakeTests
 	[Fact]
 	public async Task Initialize_PublicProfile_ReturnsCorrectServerInfoAndProtocolVersion()
 	{
-		using var factory = new WebApplicationFactory<Program>();
-		using var client = factory.CreateClient();
+		// Program.cs reads MCP_SERVER_PROFILE via Environment.GetEnvironmentVariable before
+		// any DI override can run, so we set and restore the actual process variable to keep
+		// the test deterministic when a developer's environment has the variable set differently.
+		var previousProfile = Environment.GetEnvironmentVariable("MCP_SERVER_PROFILE");
+		Environment.SetEnvironmentVariable("MCP_SERVER_PROFILE", "public");
+		try
+		{
+			using var factory = new WebApplicationFactory<Program>();
+			using var client = factory.CreateClient();
 
-		const string initRequest = /*lang=json,strict*/
-			"""
-			{
-			  "jsonrpc": "2.0",
-			  "id": 1,
-			  "method": "initialize",
-			  "params": {
-			    "protocolVersion": "2025-11-25",
-			    "capabilities": {},
-			    "clientInfo": { "name": "test-client", "version": "1.0.0" }
-			  }
-			}
-			""";
+			// The client deliberately sends an older protocol version ("2024-11-05") rather than
+			// the one the server pins to ("2025-11-25"). If options.ProtocolVersion regresses to
+			// null the SDK echoes the client value, so this assertion would fail — proving the
+			// pinning is actually enforced.
+			const string initRequest = /*lang=json,strict*/
+				"""
+				{
+				  "jsonrpc": "2.0",
+				  "id": 1,
+				  "method": "initialize",
+				  "params": {
+				    "protocolVersion": "2024-11-05",
+				    "capabilities": {},
+				    "clientInfo": { "name": "test-client", "version": "1.0.0" }
+				  }
+				}
+				""";
 
-		using var content = new StringContent(initRequest, Encoding.UTF8, "application/json");
-		// MCP HTTP transport requires both JSON and SSE in the Accept header; the server
-		// responds with SSE framing (text/event-stream). Extract the JSON from the data: line.
-		using var request = new HttpRequestMessage(HttpMethod.Post, "/docs/_mcp") { Content = content };
-		request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+			using var content = new StringContent(initRequest, Encoding.UTF8, "application/json");
+			// MCP HTTP transport requires both JSON and SSE in the Accept header; the server
+			// responds with SSE framing (text/event-stream). Extract the JSON from the data: line.
+			using var request = new HttpRequestMessage(HttpMethod.Post, "/docs/_mcp") { Content = content };
+			request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
+			using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
-		response.StatusCode.Should().Be(HttpStatusCode.OK);
+			response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-		var rawBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-		// SSE format: lines starting with "data: " carry the JSON payload.
-		var jsonLine = rawBody.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(
-			l => l.StartsWith("data:", StringComparison.Ordinal)
-		);
-		jsonLine.Should().NotBeNull("response body should contain an SSE data line");
-		var json = (jsonLine ?? "data:")["data:".Length..].Trim();
-		using var doc = JsonDocument.Parse(json);
+			var rawBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+			// SSE format: lines starting with "data: " carry the JSON payload.
+			var jsonLine = rawBody.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(
+				l => l.StartsWith("data:", StringComparison.Ordinal)
+			);
+			jsonLine.Should().NotBeNull("response body should contain an SSE data line");
+			var json = (jsonLine ?? "data:")["data:".Length..].Trim();
+			using var doc = JsonDocument.Parse(json);
 
-		var result = doc.RootElement.GetProperty("result");
-		result.GetProperty("protocolVersion").GetString().Should().Be("2025-11-25");
+			var result = doc.RootElement.GetProperty("result");
+			result.GetProperty("protocolVersion").GetString().Should().Be("2025-11-25");
 
-		var serverInfo = result.GetProperty("serverInfo");
-		serverInfo.GetProperty("name").GetString().Should().Be(McpServerProfile.Public.ServiceName);
-		serverInfo.GetProperty("version").GetString().Should().NotBeNullOrEmpty();
+			var serverInfo = result.GetProperty("serverInfo");
+			serverInfo.GetProperty("name").GetString().Should().Be(McpServerProfile.Public.ServiceName);
+			serverInfo.GetProperty("version").GetString().Should().NotBeNullOrEmpty();
+		}
+		finally
+		{
+			Environment.SetEnvironmentVariable("MCP_SERVER_PROFILE", previousProfile);
+		}
 	}
 }
