@@ -27,7 +27,6 @@ type Build =
 
     | [<CliPrefix(CliPrefix.None);SubCommand>] Format
     | [<CliPrefix(CliPrefix.None);SubCommand>] Watch
-    | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] Watch_Docker
     | [<CliPrefix(CliPrefix.None);SubCommand>] Watch_All
 
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] Lint
@@ -70,7 +69,6 @@ with
             | Format -> "runs dotnet format"
 
             | Watch -> "runs dotnet watch to continuous build code/templates and web assets on the fly"
-            | Watch_Docker -> "like watch but with flags suited for the Docker dev environment (--no-restore, --no-hud, --port 3000)"
             | Watch_All -> "runs dotnet watch on the Aspire AppHost to continuously rebuild and serve the fully assembled site"
 
             // steps

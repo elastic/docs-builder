@@ -39,8 +39,6 @@ let private format _ =
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
-let private watchDocker _ = exec { run "dotnet" "watch" "--no-restore" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" "--no-hud" "--port" "3000" }
-
 let private watchAll _ = exec { run "dotnet" "watch" "--project" "aspire" "--configuration" "debug" }
 
 let private lint _ =
@@ -251,7 +249,6 @@ let Setup (parsed:ParseResults<Build>) =
 
         | Format -> Build.Step format
         | Watch -> Build.Step watch
-        | Watch_Docker -> Build.Step watchDocker
         | Watch_All -> Build.Step watchAll
 
         // steps
