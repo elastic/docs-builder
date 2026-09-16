@@ -48,10 +48,14 @@ public sealed class NotesIndexReconciler(
 	/// read to derive the grouping; every affected index is then (re)written.
 	/// </summary>
 	/// <returns>
-	/// A map of <c>version → list of NoteIndexEntry</c> (the version-union, same shape NoteAmend
-	/// consumes today). Returns an empty dictionary when no notes exist.
+	/// Notes grouped by product, then version. Legacy version-union indexes are still written
+	/// in this pass but are not part of the return value; <see cref="NoteAmendReconciler"/> uses
+	/// the product map only.
 	/// </returns>
-	public async Task<IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>> ReconcileRepoAsync(ChangelogScope notesScope, Cancel ctx)
+	public async Task<IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>>> ReconcileRepoAsync(
+		ChangelogScope notesScope,
+		Cancel ctx
+	)
 	{
 		if (notesScope.Kind != ChangelogScopeKind.Notes)
 			throw new ArgumentException($"Notes reconcile requires a Notes scope; got '{notesScope}'.", nameof(notesScope));
@@ -86,11 +90,11 @@ public sealed class NotesIndexReconciler(
 		{
 			_logger.LogDebug("No versions found for repo {Repo}; removing any stale indexes", notesScope.Group);
 			await DeleteStaleIndexes(existingIndexKeys, intendedKeys, ctx);
-			return new Dictionary<string, IReadOnlyList<NoteIndexEntry>>();
+			return new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>>(StringComparer.Ordinal);
 		}
 
 		var writes = BuildIndexWrites(org, repo, byProductVersion, byVersion);
-		var written = new Dictionary<string, IReadOnlyList<NoteIndexEntry>>(StringComparer.Ordinal);
+		var writtenProducts = new Dictionary<string, Dictionary<string, IReadOnlyList<NoteIndexEntry>>>(StringComparer.Ordinal);
 		try
 		{
 			await Parallel.ForEachAsync(writes, new ParallelOptions
@@ -105,10 +109,14 @@ public sealed class NotesIndexReconciler(
 					ct,
 					write.Product is null ? null : new NotesIndexMetadata(write.Product, write.Version!)
 				);
-				if (write.Product is not null)
+				if (write.Product is null)
 					return;
-				lock (written)
-					written[write.Version!] = write.Entries;
+				lock (writtenProducts)
+				{
+					if (!writtenProducts.TryGetValue(write.Product, out var byVer))
+						writtenProducts[write.Product] = byVer = [with(StringComparer.Ordinal)];
+					byVer[write.Version!] = write.Entries;
+				}
 			});
 		}
 		finally
@@ -116,7 +124,11 @@ public sealed class NotesIndexReconciler(
 			await DeleteStaleIndexes(existingIndexKeys, intendedKeys, ctx);
 		}
 
-		return written;
+		return writtenProducts.ToDictionary(
+			kv => kv.Key,
+			kv => (IReadOnlyDictionary<string, IReadOnlyList<NoteIndexEntry>>)kv.Value,
+			StringComparer.Ordinal
+		);
 	}
 
 	private static void AddIndexEntry(Dictionary<string, List<NoteIndexEntry>> map, string groupKey, string poolRelativePath)
