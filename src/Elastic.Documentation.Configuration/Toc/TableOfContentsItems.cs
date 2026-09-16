@@ -186,6 +186,18 @@ public record DeepLinkedFolderRef(
 	string Context
 ) : FolderRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Children, Context);
 
+/// <summary>
+/// Sentinel produced when a bare scalar (e.g. <c>- toc.yml</c>) is used as a toc entry.
+/// The converter consumes the token to prevent an infinite parse loop; this ref carries the
+/// raw value so <see cref="DocumentationSetFile"/> can emit a clear diagnostic.
+/// </summary>
+internal record InvalidTocItemRef(string RawValue) : ITableOfContentsItem
+{
+	public string PathRelativeToDocumentationSet => RawValue;
+	public string PathRelativeToContainer => RawValue;
+	public string Context => "";
+}
+
 /// <param name="Island">
 /// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
 /// <c>- toc: x</c> entry and the child <c>toc.yml</c> root (OR semantics).
