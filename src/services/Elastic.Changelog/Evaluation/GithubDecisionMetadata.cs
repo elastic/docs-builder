@@ -44,6 +44,8 @@ public record GithubDecisionMetadata
 	public string? CommittedFile { get; init; }
 	/// <summary>Findings from the entry-file validation gate. Non-null and non-empty when <see cref="Gate"/> is <see cref="ValidationGate.Entries"/> and validation failed.</summary>
 	public List<EntryFinding>? EntryFindings { get; init; }
+	/// <summary>Comma-separated product IDs resolved for this PR (from labels or products.yml repo lookup). Used to pre-populate the missing-entry comment snippet.</summary>
+	public string? ResolvedProducts { get; init; }
 }
 
 /// <summary>A single finding from the changelog entry file validation gate.</summary>
