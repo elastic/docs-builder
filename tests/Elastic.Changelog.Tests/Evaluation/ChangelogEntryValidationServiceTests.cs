@@ -227,6 +227,42 @@ public class ChangelogEntryValidationServiceTests(ITestOutputHelper output) : Ch
 	}
 
 	[Fact]
+	public async Task ValidateEntries_UppercaseProductId_ResolvesRepoViaCaseInsensitiveLookup()
+	{
+		// Entry uses "APM" — products.yml keys are lowercase "apm".
+		// The lookup must be case-insensitive so the repo is found and used.
+		await WriteConfig(MinimalConfig);
+		const string entryYaml =
+			"""
+			type: feature
+			title: My feature
+			products:
+			  - product: APM
+			""";
+		await WriteEntryFile("docs/changelog/42.yaml", entryYaml);
+
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)).Returns(
+			(IReadOnlyDictionary<int, bool>)new Dictionary<int, bool> { { 42, true } }
+		);
+
+		var ctx = ContextWithProductRepo("apm", "elastic/apm");
+		var svc = new ChangelogEntryValidationService(LoggerFactory, ctx, prService, RunnerTempFileSystem);
+		var args = MakeArgs("elasticsearch") with { Files = ["docs/changelog/42.yaml"] };
+		var result = await svc.ValidateEntries(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		// Repo resolved correctly via case-insensitive lookup — submitting repo not queried
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "apm", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "elasticsearch", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
+	}
+
+	[Fact]
 	public async Task ValidateEntries_BareProductRepo_NormalizesWithOwnerBeforeExistenceCheck()
 	{
 		// products.yml stores bare repo names (e.g. "apm", not "elastic/apm").

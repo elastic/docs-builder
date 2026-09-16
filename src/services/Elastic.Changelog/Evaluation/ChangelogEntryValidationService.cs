@@ -179,7 +179,7 @@ public class ChangelogEntryValidationService(
 				{
 					if (string.IsNullOrWhiteSpace(ep.Product))
 						continue;
-					var productId = ep.Product.Replace('_', '-');
+					var productId = ep.Product.Replace('_', '-').ToLowerInvariant();
 					if (availableProducts.TryGetValue(productId, out var product) && !string.IsNullOrWhiteSpace(product.Repository))
 					{
 						// Repository values are bare names (e.g. "elasticsearch") — qualify with owner.
