@@ -53,12 +53,13 @@ public sealed class NoteAmendReconciler(
 	/// For the given repository scope, scans each product that appears in
 	/// <paramref name="notesByProduct"/> (not every <c>bundle/{product}/</c> prefix), writes or
 	/// deletes that product's reconciler-owned amend sidecars, and re-writes product-scoped and
-	/// legacy notes indexes with correct <c>bundle_seq</c> values.
+	/// legacy notes indexes with correct <c>bundle_seq</c> values. Empty version lists mean that
+	/// product×version just vanished from the notes index; amend still runs so sidecars can drop.
 	/// </summary>
 	/// <returns>
-	/// Product ids that had an amend-notes write, skip-unchanged, or delete. Callers rebuild
-	/// those products' <c>registry.json</c> and the bundle shallow map. Products that were not
-	/// in the notes map are not returned and are not swept.
+	/// Product ids that had an amend-notes write, skip-unchanged, or delete (including when the
+	/// sidecar was already absent). Callers rebuild those products' <c>registry.json</c> and the
+	/// bundle shallow map. Products that were not in the notes map are not returned and are not swept.
 	/// </returns>
 	public async Task<IReadOnlyList<string>> ReconcileAsync(
 		ChangelogScope notesScope,
@@ -114,6 +115,9 @@ public sealed class NoteAmendReconciler(
 			CancellationToken = ctx
 		}, async (write, ct) =>
 		{
+			if (write.Notes.Count == 0)
+				return;
+
 			var seqs = seqMap[ProductVersionKey(write.Product, write.Version)];
 			var updatedEntries = WithSeqs(write.Notes, seqs);
 			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, write.Product, write.Version);
@@ -123,6 +127,9 @@ public sealed class NoteAmendReconciler(
 		foreach (var (version, unionNotes) in UnionByVersion(notesByProduct))
 		{
 			ctx.ThrowIfCancellationRequested();
+			if (unionNotes.Count == 0)
+				continue;
+
 			var seqs = MaxSeqsForVersion(notesByProduct.Keys, version, seqMap);
 			var updatedEntries = WithSeqs(unionNotes, seqs);
 			var indexKey = ChangelogKeys.NotesIndexKey(org, repo, version);
@@ -492,7 +499,8 @@ public sealed class NoteAmendReconciler(
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 		{
-			return false;
+			_logger.LogDebug("Amend-notes {Key} already absent; treating delete as done so registry rebuild can retry", key);
+			return true;
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.PreconditionFailed)
 		{

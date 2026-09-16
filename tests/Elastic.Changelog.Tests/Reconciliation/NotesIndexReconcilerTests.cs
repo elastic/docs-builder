@@ -294,7 +294,7 @@ public class NotesIndexReconcilerTests
 		);
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
 
 		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0")).Should().BeTrue();
 		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")).Should().BeTrue();
@@ -306,6 +306,26 @@ public class NotesIndexReconcilerTests
 			.Key
 			.Should()
 			.Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0"));
+		map.Should().ContainKey("kibana");
+		map["kibana"].Should().ContainKey("9.0.0");
+		map["kibana"]["9.0.0"].Should().BeEmpty();
+		map["elasticsearch"]["9.0.0"].Should().ContainSingle(e => e.Path == "main/note-slow-rollover.yml");
+	}
+
+	[Fact]
+	public async Task ReconcileRepo_NoNotes_LegacyIndexWithoutProduct_DoesNotInventVanishedProduct()
+	{
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"notes":[]}"""
+		);
+
+		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+
+		map.Should().BeEmpty();
+		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"));
 	}
 
 	[Fact]
@@ -325,7 +345,7 @@ public class NotesIndexReconcilerTests
 		);
 		_s3.Seed(PublicBucket, "changelog/elastic/elasticsearch/main/12345.yaml", "title: PR entry");
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		var map = await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
 
 		_s3.Puts.Should().BeEmpty();
 		_s3
@@ -336,5 +356,8 @@ public class NotesIndexReconcilerTests
 				ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
 				ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")
 			]);
+		map.Should().ContainKey("elasticsearch");
+		map["elasticsearch"]["9.0.0"].Should().BeEmpty();
+		map.Should().NotContainKey("9.0.0");
 	}
 }
