@@ -58,6 +58,12 @@ public class McpServerInstructionTests
 	}
 
 	[Fact]
+	public void PublicProfile_ServiceName_IsDocsMcp() => McpServerProfile.Public.ServiceName.Should().Be("docs-mcp");
+
+	[Fact]
+	public void InternalProfile_ServiceName_IsCodexMcp() => McpServerProfile.Internal.ServiceName.Should().Be("codex-mcp");
+
+	[Fact]
 	public void Resolve_WithPublic_ReturnsPublicProfile()
 	{
 		var profile = McpServerProfile.Resolve("public");
