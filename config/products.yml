@@ -223,7 +223,6 @@ products:
     versioning: 'stack'
   enterprise-search:
     display: 'Elastic Enterprise Search'
-    versioning: 'stack'
     features:
       public-reference: false
       release-notes: false
