@@ -125,8 +125,9 @@ public record BundleChangelogsArguments
 	public bool SuppressReleaseDate { get; init; }
 
 	/// <summary>
-	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
+	/// Obsolete — no longer read. Link sanitization is handled by the scrubber Lambda.
 	/// </summary>
+	[Obsolete("link_allow_repos is no longer read.", error: false)]
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
@@ -550,40 +551,6 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		var bundleData = buildResult.Data;
-		if (input.LinkAllowRepos != null)
-		{
-			if (
-				!LinkAllowlistSanitizer.TryApplyBundle(
-					collector,
-					bundleData,
-					input.LinkAllowRepos,
-					input.Owner ?? "elastic",
-					productRepo,
-					out var sanitizedBundle,
-					out _
-				)
-			)
-				return false;
-			bundleData = sanitizedBundle;
-
-			if (configurationContext != null && input.LinkAllowRepos.Count > 0)
-			{
-				try
-				{
-					var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-					var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-					LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, input.LinkAllowRepos, assembly);
-				}
-				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-				{
-					collector.EmitWarning(
-						string.Empty,
-						$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}"
-					);
-				}
-			}
-		}
-
 		// Apply description with placeholder substitution
 		if (!string.IsNullOrEmpty(input.Description))
 		{
@@ -1059,7 +1026,7 @@ public partial class ChangelogBundlingService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
-			return input with { Directory = directory, LinkAllowRepos = null };
+			return input with { Directory = directory };
 
 		// File name is resolved later in ResolveResolvedOutputPath so option-mode can use the
 		// conventional {repo}-{product}-{version}.yaml name. Keep a directory --output as-is.
@@ -1089,8 +1056,7 @@ public partial class ChangelogBundlingService(
 			Owner = owner,
 			Branch = branch,
 			Description = description,
-			SuppressReleaseDate = suppressReleaseDate,
-			LinkAllowRepos = config.Bundle.LinkAllowRepos
+			SuppressReleaseDate = suppressReleaseDate
 		};
 	}
 
