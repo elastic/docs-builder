@@ -259,10 +259,83 @@ public class NoteAmendReconcilerTests
 
 		// No notes for this version (note was deleted from the pool).
 		var notesByProduct = NotesByProduct(Product, Version);
-		await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
 
 		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse("stale amend sidecar must be deleted when no notes remain");
 		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(AmendNotesKey(parent));
+		touched.Should().Equal(Product);
+	}
+
+	[Fact]
+	public async Task SidecarAlreadyAbsent_NoLateNotes_ProductStillTouched()
+	{
+		const string parent = "elasticsearch-9.3.0.yaml";
+		_s3.Seed(PublicBucket, RegistryKey(), RegistryJson(parent));
+		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
+
+		var notesByProduct = NotesByProduct(Product, Version);
+		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+
+		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse();
+		touched.Should().Equal(Product);
+	}
+
+	[Fact]
+	public async Task ReconcileRepoOmitsProduct_ExistingAmendSidecarDeleted()
+	{
+		const string parent = "elasticsearch-9.3.0.yaml";
+		_s3.Seed(PublicBucket, RegistryKey(), RegistryJson(parent));
+		_s3.Seed(PublicBucket, BundleKey(parent), ParentBundleYaml("main/pr-100.yaml"));
+		var staleAmend = new Bundle
+		{
+			Products = [new BundledProduct(Product, target: Version, lifecycle: Lifecycle.Ga)],
+			Entries =
+			[
+				new BundledEntry
+				{
+					File = new BundledFile { Name = "main/note-cve.yml", Checksum = "old" },
+					Title = "CVE",
+					Type = ChangelogEntryType.Security
+				}
+			]
+		};
+		_s3.Seed(PublicBucket, AmendNotesKey(parent), ReleaseNotesSerialization.SerializeBundle(staleAmend));
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","version":"9.3.0","notes":[{"path":"main/note-cve.yml","bundle_seq":2}]}"""
+		);
+		_s3.Seed(
+			PublicBucket,
+			$"bundle/kibana/registry.json",
+			JsonSerializer.Serialize(
+				new ChangelogRegistry
+				{
+					Product = "kibana",
+					Bundles = [new ChangelogRegistryBundle { File = "kibana-9.3.0.yaml", Target = Version }]
+				},
+				ChangelogRegistryJsonContext.Default.ChangelogRegistry
+			)
+		);
+		_s3.Seed(PublicBucket, "bundle/kibana/kibana-9.3.0.yaml", ParentBundleFor("kibana", Version, "main/note-kibana.yml"));
+		_s3.Seed(
+			PublicBucket,
+			NoteKey("main", "note-kibana.yml"),
+			"title: Kibana known issue\n" + "type: known-issue\n" + "products:\n" + "  - product: kibana\n" + "    versions: [9.3.0]\n"
+		);
+
+		var notesByProduct = await _notesReconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		notesByProduct.Should().ContainKey(Product);
+		notesByProduct[Product][Version].Should().BeEmpty();
+		notesByProduct.Should().ContainKey("kibana");
+
+		var touched = await _reconciler.ReconcileAsync(NotesScope(), notesByProduct, TestContext.Current.CancellationToken);
+
+		_s3.Exists(PublicBucket, AmendNotesKey(parent)).Should().BeFalse();
+		touched.Should().Contain(Product);
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey(Org, Repo, Product, Version)).Should().BeFalse();
+		_s3.Exists(PublicBucket, "bundle/kibana/kibana-9.3.0.amend-notes.yaml").Should().BeFalse();
 	}
 
 	[Fact]
